@@ -17,6 +17,7 @@ import org.mitre.openid.connect.model.UserInfo;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import it.infn.mw.iam.core.IamProperties;
 
@@ -350,15 +351,11 @@ public class IamUserInfo implements UserInfo {
       }
 
       if (getGroups() != null) {
+
         JsonArray groups = new JsonArray();
 
         for (IamGroup g : getGroups()) {
-          JsonObject group = new JsonObject();
-          group.addProperty("id", g.getUuid());
-          group.addProperty("name", g.getName());
-
-          groups.add(group);
-
+          groups.add(new JsonPrimitive(g.getName()));
         }
 
         obj.add("groups", groups);

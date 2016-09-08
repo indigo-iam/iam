@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -24,6 +25,7 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.GroupUpdater;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 
 @Service
@@ -33,14 +35,16 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   private final GroupUpdater updater;
 
   private final IamGroupRepository groupRepository;
+  private final IamAccountRepository accountRepository;
 
   @Autowired
   public ScimGroupProvisioning(GroupConverter converter, GroupUpdater updater,
-      IamGroupRepository groupRepository) {
+      IamGroupRepository groupRepository, IamAccountRepository accountRepository) {
 
     this.updater = updater;
     this.converter = converter;
     this.groupRepository = groupRepository;
+    this.accountRepository = accountRepository;
   }
 
   private void idSanityChecks(String id) {
@@ -93,6 +97,13 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     IamGroup group = groupRepository.findByUuid(id)
       .orElseThrow(() -> new ScimResourceNotFoundException("No group mapped to id '" + id + "'"));
+
+    List<IamAccount> accounts = accountRepository.findByGroupId(group.getId());
+
+    if (!accounts.isEmpty()) {
+
+      throw new ScimException("Not empty group");
+    }
 
     groupRepository.delete(group);
   }

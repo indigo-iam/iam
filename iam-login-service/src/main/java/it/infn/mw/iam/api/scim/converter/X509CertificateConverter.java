@@ -2,6 +2,7 @@ package it.infn.mw.iam.api.scim.converter;
 
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.util.x509.X509Utils;
@@ -20,7 +21,7 @@ public class X509CertificateConverter
    */
 
   @Override
-  public IamX509Certificate fromScim(ScimX509Certificate scim) {
+  public IamX509Certificate fromScim(ScimX509Certificate scim) throws ScimValidationException {
 
     IamX509Certificate cert = new IamX509Certificate();
 
@@ -32,7 +33,7 @@ public class X509CertificateConverter
     } else {
       cert.setPrimary(false);
     }
-
+    
     cert.setCertificateSubject(X509Utils.getCertificateSubject(scim.getValue()));
 
     return cert;

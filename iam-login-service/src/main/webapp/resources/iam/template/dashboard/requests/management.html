@@ -1,0 +1,86 @@
+<section class="content-header">
+	<h1>
+		<i class="fa fa-sign-in"></i>&nbsp;&nbsp;Requests
+	</h1>
+	<ol class="breadcrumb">
+		<li>
+			<a href=""><i class="fa fa-sign-in"></i> Requests</a>
+		</li>
+		<li>
+			<a ui-sref="requests"><i class="fa fa-list"></i> List of pending requests</a>
+		</li>
+	</ol>
+</section>
+
+<section class="content" ng-init="ctrl.init()">
+
+	<div ng-show="ctrl.operationResult != null">
+		<div class="alert" ng-class="{'alert-success': ctrl.operationResult=='ok', 'alert-danger': ctrl.operationResult=='err'}">
+			<button class="close" ng-click="ctrl.operationResult=null" aria-label="close">&times;</button>
+			{{ctrl.textAlert}}
+		</div>
+	</div>
+	
+	<div class="alert alert-info" ng-show="ctrl.filteredList == 0">
+		<h4>
+			<i class="icon fa fa-info"></i> No pending requests found!
+		</h4>
+	</div>
+
+	<div class="box-group" id="accordion" ng-show="ctrl.filteredList.length > 0">
+		<div class="panel box box-primary" ng-repeat="r in ctrl.filteredList | orderBy:ctrl.sortType:ctrl.sortReverse">
+			<div class="box-header">
+				<div class="row">
+					<div class="col-sm-10">
+						<h4 class="box-title">
+							<button class="btn btn-link" data-toggle="collapse" data-parent="#accordion" data-target="#collapse_{{$index}}" title="Click for more details">
+								{{r.givenname}} {{r.familyname}} adds a registration request
+							</button>
+						</h4>
+					</div>
+					<div class="btn-group col-sm-2">
+						<button type="button" class="btn btn-default btn-sm" ng-click="ctrl.approveRequest(r)" name="btn_approve" title="Approve request">
+							<span class="glyphicon glyphicon-ok-sign"></span> OK
+						</button>
+						<button type="button" class="btn btn-default btn-sm" ng-click="ctrl.rejectRequest(r)" name="btn_reject" title="Reject request">
+							<span class="glyphicon glyphicon-remove-sign"></span> DEL				
+						</button>
+					</div>
+				</div>
+			</div>
+			<div id="collapse_{{$index}}" class="panel-collapse collapse">
+				<div class="box-body">
+					<div class="row">
+						<label class="control-label col-sm-2" for="time_{{$index}}">Created at</label>
+						<span class="col-sm-10" id="time_{{$index}}">{{r.creationTime | date:'dd/MM/yyyy HH:mm:ss'}}</span>
+					</div>
+					<div class="row">
+						<label class="control-label col-sm-2" for="status_{{$index}}">Current Status</label>
+						<span class="col-sm-10" id="status_{{$index}}">{{r.status}}</span>
+					</div>
+					<div class="row">
+						<label class="control-label col-sm-2" for="name_{{$index}}">Name</label>
+						<span class="col-sm-10" id="name_{{$index}}">{{r.givenname}} {{r.familyname}}</span>
+					</div>
+					<div class="row">
+						<label class="control-label col-sm-2" for="username_{{$index}}">Username</label>
+						<span class="col-sm-10" id="username_{{$index}}">{{r.username}}</span>
+					</div>
+					<div class="row">
+						<label class="control-label col-sm-2" for="email_{{$index}}">Email address</label>
+						<span class="col-sm-10" id="email_{{$index}}">{{r.email}}</span>
+					</div>
+					<div class="row">
+						<label class="control-label col-sm-2" for="notes_{{$index}}">Notes</label>
+						<span class="col-sm-10" id="notes_{{$index}}">{{r.notes}}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div class="row col-sm-12 text-center">
+			<ul uib-pagination ng-model="ctrl.currentPage" ng-change="ctrl.pageChanged()" total-items="ctrl.list.length" max-size="ctrl.maxSize" boundary-links="true"></ul>
+		</div>
+	</div>
+	
+</section>

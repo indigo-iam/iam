@@ -22,4 +22,6 @@ public interface IamRegistrationRequestRepository
   Optional<IamRegistrationRequest> findByAccountConfirmationKey(
       @Param("confirmationKey") String confirmationKey);
 
+  @Query("select r from IamRegistrationRequest r where r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW or r.status = it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED")
+  Optional<List<IamRegistrationRequest>> findPendingRequests();
 }

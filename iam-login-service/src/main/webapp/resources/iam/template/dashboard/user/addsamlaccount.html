@@ -1,0 +1,22 @@
+<div class="modal-header">
+	<h3 class="modal-title">Add SAML Account</h3>
+</div>
+<div class="modal-body">
+
+    <div class="form-group">
+        <label>Identity Provider</label>
+        <input class="form-control" type="text" placeholder="Saml ID Identity Provider ..." ng-model="addSamlAccountCtrl.idpId">
+    </div>
+    <div class="form-group">
+        <label>User ID</label>
+        <input class="form-control" type="text" placeholder="Saml ID User id ..." ng-model="addSamlAccountCtrl.userId">
+    </div>
+
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary" type="button" 
+	   ng-disabled="!addSamlAccountCtrl.idpId ||  !addSamlAccountCtrl.userId"
+	   ng-click="addSamlAccountCtrl.addSamlAccount()">Add Account</button>
+	<button class="btn btn-warning" type="button"
+		ng-click="addSamlAccountCtrl.cancel()">Cancel</button>
+</div>

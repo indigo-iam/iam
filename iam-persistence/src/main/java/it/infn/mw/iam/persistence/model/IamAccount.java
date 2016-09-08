@@ -83,7 +83,8 @@ public class IamAccount {
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   private List<IamSshKey> sshKeys = new LinkedList<>();
 
-  @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+  @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
+      orphanRemoval = true)
   private List<IamX509Certificate> x509Certificates = new LinkedList<>();
 
   @Column(name = "confirmation_key", unique = true, length = 36)
@@ -242,7 +243,7 @@ public class IamAccount {
   }
 
   public boolean hasX509Certificates() {
-    
+
     return !x509Certificates.isEmpty();
   }
 

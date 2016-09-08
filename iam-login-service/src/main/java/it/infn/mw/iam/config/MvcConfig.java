@@ -20,7 +20,7 @@ import org.springframework.web.servlet.view.BeanNameViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
-import it.infn.mw.iam.core.PoliteJsonMessageSource;
+import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
 
 @Configuration
 public class MvcConfig extends WebMvcConfigurerAdapter {

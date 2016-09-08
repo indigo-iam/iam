@@ -35,7 +35,7 @@ import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGrante
 import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswordTokenGranter;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 
-import it.infn.mw.iam.core.TokenExchangeTokenGranter;
+import it.infn.mw.iam.core.oauth.TokenExchangeTokenGranter;
 
 @Configuration
 @EnableAuthorizationServer

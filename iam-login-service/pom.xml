@@ -43,10 +43,30 @@
       <groupId>org.webjars</groupId>
       <artifactId>angular-ui-bootstrap</artifactId>
     </dependency>
-    
+
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>angular-ui-router</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>angular-ui-select</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>angular-sanitize</artifactId>
+    </dependency>
+ 
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>jquery</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>jquery-ui</artifactId>
     </dependency>
 
     <dependency>
@@ -230,6 +250,31 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-joda</artifactId>
     </dependency>
+    
+    <!-- Mail -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.velocity</groupId>
+      <artifactId>velocity</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.subethamail</groupId>
+      <artifactId>subethasmtp-wiser</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    
   </dependencies>
 
   <build>

@@ -16,6 +16,7 @@ import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
@@ -177,7 +178,7 @@ public class UserUpdater implements Updater<IamAccount, ScimUser> {
     if (u.hasX509Certificates()) {
 
       u.getX509Certificates().forEach(x509Cert -> replaceX509Certificate(a, x509Cert));
-      
+
       /* if there's no primary x509 cert, set the first as it */
       if (a.getX509Certificates().stream().noneMatch(x509Cert -> x509Cert.isPrimary())) {
 
@@ -206,7 +207,7 @@ public class UserUpdater implements Updater<IamAccount, ScimUser> {
   }
 
   private void addX509Certificate(IamAccount a, ScimX509Certificate cert)
-      throws ScimResourceExistsException {
+      throws ScimResourceExistsException, ScimValidationException {
 
     Preconditions.checkNotNull(cert, "X509Certificate is null");
 

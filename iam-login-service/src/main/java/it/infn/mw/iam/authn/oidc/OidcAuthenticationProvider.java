@@ -14,7 +14,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import it.infn.mw.iam.authn.ExternalAuthenticationToken;
 import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 
 public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
@@ -49,8 +48,8 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     try {
       User user = (User) userDetailsService.loadUserByOIDC(token.getSub(), token.getIssuer());
 
-      ExternalAuthenticationToken userAuthenticationToken = new ExternalAuthenticationToken(token,
-          getExpirationTimeFromOIDCAuthenticationToken(token), user.getUsername(), null,
+      OidcExternalAuthenticationToken userAuthenticationToken = new OidcExternalAuthenticationToken(
+          token, getExpirationTimeFromOIDCAuthenticationToken(token), user.getUsername(), null,
           user.getAuthorities());
 
       return userAuthenticationToken;

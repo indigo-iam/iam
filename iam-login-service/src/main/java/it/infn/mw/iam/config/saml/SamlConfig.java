@@ -99,6 +99,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.TimestamperSuccessHandler;
 import it.infn.mw.iam.authn.saml.SAMLUserDetailsServiceImpl;
+import it.infn.mw.iam.authn.saml.IamSamlAuthenticationProvider;
 import it.infn.mw.iam.authn.saml.SamlExceptionMessageHelper;
 import it.infn.mw.iam.authn.saml.util.FirstApplicableChainedSamlIdResolver;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
@@ -218,7 +219,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
   public SAMLAuthenticationProvider samlAuthenticationProvider(SamlUserIdentifierResolver resolver,
       IamAccountRepository accountRepo) {
 
-    SAMLAuthenticationProvider samlAuthenticationProvider = new SAMLAuthenticationProvider();
+    IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider();
     samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo));
     samlAuthenticationProvider.setForcePrincipalAsString(false);
     return samlAuthenticationProvider;

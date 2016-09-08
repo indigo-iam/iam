@@ -24,7 +24,7 @@ public class IntrospectionEndpointTests {
   @Before
   public void initAccessToken() {
     accessToken = clientCredentialsTokenGetter("client-cred", "secret")
-        .scope("openid profile offline_access").getAccessToken();
+      .scope("openid profile offline_access").getAccessToken();
 
   }
 

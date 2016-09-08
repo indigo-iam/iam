@@ -85,6 +85,10 @@ public class DefaultMetadataLookupService implements MetadataLookupService {
       }
     }
 
+    if (result.getOrganizationName() == null || result.getOrganizationName().isEmpty()) {
+      result.setOrganizationName(result.getEntityId());
+    }
+
     return result;
   }
 

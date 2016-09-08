@@ -22,6 +22,7 @@ public class RegistrationConverter {
     item.setFamilyname(request.getAccount().getUserInfo().getFamilyName());
     item.setEmail(request.getAccount().getUserInfo().getEmail());
     item.setAccountId(request.getAccount().getUuid());
+    item.setNotes(request.getNotes());
 
     return item;
   }
@@ -45,6 +46,7 @@ public class RegistrationConverter {
     entity.setLastUpdateTime(entity.getLastUpdateTime());
     entity.setStatus(IamRegistrationRequestStatus.valueOf(request.getStatus()));
     entity.setAccount(account);
+    entity.setNotes(request.getNotes());
 
     return entity;
   }

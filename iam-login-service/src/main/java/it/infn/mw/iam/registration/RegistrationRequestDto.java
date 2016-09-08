@@ -12,7 +12,6 @@ public class RegistrationRequestDto {
   private String uuid;
   private Date creationTime;
   private String status;
-  private String approver;
   private Date lastUpdateTime;
   private String username;
   private String password;
@@ -21,20 +20,21 @@ public class RegistrationRequestDto {
   private String email;
   private String birthdate;
   private String accountId;
+  private String notificationStatus;
+  private String notes;
 
   public RegistrationRequestDto() {}
 
   @JsonCreator
-  public RegistrationRequestDto(@JsonProperty("uuid") final String uuid,
-      @JsonProperty("creationdate") final Date creationTime,
-      @JsonProperty("status") final String status, @JsonProperty("approver") final String approver,
-      @JsonProperty("lastupdatetime") final Date lastUpdateTime,
-      @JsonProperty("username") final String username,
-      @JsonProperty("password") final String password,
-      @JsonProperty("givename") final String givenname,
-      @JsonProperty("familyname") final String familyname,
-      @JsonProperty("email") final String email, @JsonProperty("birthdate") final String birthdate,
-      @JsonProperty("accountid") final String accountId) {
+  public RegistrationRequestDto(@JsonProperty("uuid") String uuid,
+      @JsonProperty("creationdate") Date creationTime, @JsonProperty("status") String status,
+      @JsonProperty("lastupdatetime") Date lastUpdateTime,
+      @JsonProperty("username") String username, @JsonProperty("password") String password,
+      @JsonProperty("givename") String givenname, @JsonProperty("familyname") String familyname,
+      @JsonProperty("email") String email, @JsonProperty("birthdate") String birthdate,
+      @JsonProperty("accountid") String accountId,
+      @JsonProperty("notificationstatus") String notificationStatus,
+      @JsonProperty("notes") String notes) {
     super();
     this.username = username;
     this.password = password;
@@ -45,9 +45,10 @@ public class RegistrationRequestDto {
     this.uuid = uuid;
     this.creationTime = creationTime;
     this.status = status;
-    this.approver = approver;
     this.lastUpdateTime = lastUpdateTime;
     this.accountId = accountId;
+    this.notificationStatus = notificationStatus;
+    this.notes = notes;
   }
 
   public String getUuid() {
@@ -55,7 +56,7 @@ public class RegistrationRequestDto {
     return uuid;
   }
 
-  public void setUuid(final String uuid) {
+  public void setUuid(String uuid) {
 
     this.uuid = uuid;
   }
@@ -65,7 +66,7 @@ public class RegistrationRequestDto {
     return creationTime;
   }
 
-  public void setCreationTime(final Date creationTime) {
+  public void setCreationTime(Date creationTime) {
 
     this.creationTime = creationTime;
   }
@@ -75,19 +76,9 @@ public class RegistrationRequestDto {
     return status;
   }
 
-  public void setStatus(final String status) {
+  public void setStatus(String status) {
 
     this.status = status;
-  }
-
-  public String getApprover() {
-
-    return approver;
-  }
-
-  public void setApprover(final String approver) {
-
-    this.approver = approver;
   }
 
   public Date getLastUpdateTime() {
@@ -95,7 +86,7 @@ public class RegistrationRequestDto {
     return lastUpdateTime;
   }
 
-  public void setLastUpdateTime(final Date lastUpdateTime) {
+  public void setLastUpdateTime(Date lastUpdateTime) {
 
     this.lastUpdateTime = lastUpdateTime;
   }
@@ -105,7 +96,7 @@ public class RegistrationRequestDto {
     return username;
   }
 
-  public void setUsername(final String username) {
+  public void setUsername(String username) {
 
     this.username = username;
   }
@@ -115,7 +106,7 @@ public class RegistrationRequestDto {
     return password;
   }
 
-  public void setPassword(final String password) {
+  public void setPassword(String password) {
 
     this.password = password;
   }
@@ -125,7 +116,7 @@ public class RegistrationRequestDto {
     return givenname;
   }
 
-  public void setGivenname(final String givenname) {
+  public void setGivenname(String givenname) {
 
     this.givenname = givenname;
   }
@@ -135,7 +126,7 @@ public class RegistrationRequestDto {
     return familyname;
   }
 
-  public void setFamilyname(final String familyname) {
+  public void setFamilyname(String familyname) {
 
     this.familyname = familyname;
   }
@@ -145,7 +136,7 @@ public class RegistrationRequestDto {
     return email;
   }
 
-  public void setEmail(final String email) {
+  public void setEmail(String email) {
 
     this.email = email;
   }
@@ -155,7 +146,7 @@ public class RegistrationRequestDto {
     return birthdate;
   }
 
-  public void setBirthdate(final String birthdate) {
+  public void setBirthdate(String birthdate) {
 
     this.birthdate = birthdate;
   }
@@ -165,9 +156,25 @@ public class RegistrationRequestDto {
     return accountId;
   }
 
-  public void setAccountId(final String accountId) {
+  public void setAccountId(String accountId) {
 
     this.accountId = accountId;
+  }
+
+  public String getNotificationStatus() {
+    return notificationStatus;
+  }
+
+  public void setNotificationStatus(String notificationStatus) {
+    this.notificationStatus = notificationStatus;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
   }
 
 }

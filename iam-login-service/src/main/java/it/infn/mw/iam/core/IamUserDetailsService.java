@@ -5,23 +5,26 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@Service("iamUserDetailsService")
 public class IamUserDetailsService implements UserDetailsService {
 
   @Autowired
   private IamAccountRepository repo;
 
-  List<GrantedAuthority> convertAuthorities(IamAccount a) {
+  List<GrantedAuthority> convertAuthorities(final IamAccount a) {
 
     List<GrantedAuthority> authorities = new ArrayList<>();
     for (IamAuthority auth : a.getAuthorities()) {
@@ -31,16 +34,21 @@ public class IamUserDetailsService implements UserDetailsService {
   }
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
 
     Optional<IamAccount> account = repo.findByUsername(username);
 
     if (account.isPresent()) {
       IamAccount a = account.get();
 
-      User u = new User(a.getUsername(), a.getPassword(), convertAuthorities(a));
+      if (a.isActive()) {
 
-      return u;
+        User u = new User(a.getUsername(), a.getPassword(), convertAuthorities(a));
+        return u;
+
+      } else {
+        throw new DisabledException("User '" + username + "' is not active.");
+      }
     }
 
     throw new UsernameNotFoundException("User '" + username + "' not found.");

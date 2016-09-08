@@ -1,0 +1,24 @@
+<div class="box box-primary">
+    <form role="form" lpformnum="2" name="addGroupForm">
+	
+		<div class="box-header with-border">
+			<h3 class="box-title">Insert group data:</h3>
+		</div>
+		<!-- /.box-header -->
+		<div class="box-body">
+			<div class="form-group" ng-class="{'has-error': addGroupForm.displayName.$invalid}">
+				<label>Name</label>
+				<input id="groupName" type="text" name="displayName" class="form-control" ng-required="true"
+					placeholder="Enter ..." ng-model="group.displayName"> 
+				<span class="help-block" ng-show="addGroupForm.displayName.$error.required">Required</span>
+			</div>
+		</div>
+		<!-- /.box-body -->
+		<div class="box-footer">
+			<button ng-disabled="!addGroupForm.$valid" ng-click="addGroup()" class="btn btn-primary">Add Group</button>
+		</div>
+		<!-- /.box-footer -->
+
+<!-- 		<pre>group = {{group | json}}</pre> -->
+    </form>
+</div>

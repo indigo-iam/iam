@@ -1,0 +1,9 @@
+Dear $recipient,
+
+Indigo admins have approved your account request. Your Indigo account is active now.
+
+In order to login into Indigo follow this link to set your own new password:
+
+$resetPasswordUrl
+
+The Indigo-DC Team

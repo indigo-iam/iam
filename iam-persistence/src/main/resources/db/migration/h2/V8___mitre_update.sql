@@ -1,0 +1,1 @@
+ALTER TABLE client_details ADD COLUMN ( software_statement VARCHAR(4096), code_challenge_method VARCHAR(256))

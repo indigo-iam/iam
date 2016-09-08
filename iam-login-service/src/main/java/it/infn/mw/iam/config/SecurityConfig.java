@@ -77,7 +77,7 @@ public class SecurityConfig {
       // @formatter:off
 
       http.requestMatchers()
-        .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**")
+        .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**", "/dashboard**")
         .and()
         .sessionManagement()
           .enableSessionUrlRewriting(false)
@@ -101,7 +101,7 @@ public class SecurityConfig {
         .and().anonymous()
         .and()
           .csrf()
-            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable();;
+            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable();
       // @formatter:on
     }
 
@@ -426,14 +426,21 @@ public class SecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      // @formatter:off
-      http.antMatcher("/scim/**").exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint).and()
-          .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
-          .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class).sessionManagement()
-          .sessionCreationPolicy(SessionCreationPolicy.NEVER).and().authorizeRequests()
-          .antMatchers("/scim/**").authenticated().and().csrf().disable();
-      // @formatter:on
+      http.antMatcher("/scim/**")
+        .exceptionHandling()
+        .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+        .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+        .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class)
+        .sessionManagement()
+        .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+        .and()
+        .authorizeRequests()
+        .antMatchers("/scim/**")
+        .authenticated()
+        .and()
+        .csrf()
+        .disable();
     }
   }
 
@@ -454,15 +461,26 @@ public class SecurityConfig {
     protected void configure(final HttpSecurity http) throws Exception {
 
       // @formatter:off
-      http.antMatcher("/registration/**").exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint).and()
-          .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
-          .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class).sessionManagement()
-          .sessionCreationPolicy(SessionCreationPolicy.NEVER).and().authorizeRequests()
-          .antMatchers(HttpMethod.POST, "/registration").permitAll()
-          .antMatchers(HttpMethod.GET, "/registration/add").permitAll()
-          .antMatchers(HttpMethod.POST, "/registration/confirm/**").permitAll()
-          .antMatchers("/registration**").authenticated().and().csrf().disable();
+      http
+        .antMatcher("/registration/**")
+          .exceptionHandling()
+            .authenticationEntryPoint(authenticationEntryPoint)
+          .and()
+            .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+            .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class)
+            .sessionManagement()
+              .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+          .and()
+            .authorizeRequests()
+              .antMatchers(HttpMethod.POST, "/registration/create").permitAll()
+              .antMatchers(HttpMethod.GET, "/registration/username-available/**").permitAll()
+              .antMatchers(HttpMethod.GET, "/registration/confirm/**").permitAll()
+              .antMatchers(HttpMethod.GET, "/registration/verify/**").permitAll()
+              .antMatchers(HttpMethod.GET, "/registration/submitted").permitAll()
+              .antMatchers("/registration/**").authenticated()
+          .and()
+            .csrf()
+              .disable();
       // @formatter:on
     }
   }
@@ -475,8 +493,11 @@ public class SecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      HttpSecurity h2Console = http.requestMatchers().antMatchers("/h2-console", "/h2-console/**")
-          .and().csrf().disable();
+      HttpSecurity h2Console = http.requestMatchers()
+        .antMatchers("/h2-console", "/h2-console/**")
+        .and()
+        .csrf()
+        .disable();
 
       h2Console.httpBasic();
       h2Console.headers().frameOptions().disable();

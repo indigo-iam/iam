@@ -69,6 +69,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     userInfo.setFamilyName(scimUser.getName().getFamilyName());
     userInfo.setMiddleName(scimUser.getName().getMiddleName());
     userInfo.setName(scimUser.getName().getFormatted());
+    userInfo.setPicture(scimUser.getPicture());
 
     account.setUserInfo(userInfo);
 
@@ -155,6 +156,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .locale(entity.getUserInfo().getLocale())
       .nickName(entity.getUserInfo().getNickname())
       .profileUrl(entity.getUserInfo().getProfile())
+      .picture(entity.getUserInfo().getPicture())
       .timezone(entity.getUserInfo().getZoneinfo())
       .addEmail(getScimEmail(entity))
       .indigoUserInfo(indigoUser);

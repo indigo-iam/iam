@@ -11,7 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import it.infn.mw.iam.core.IamProperties;
-import it.infn.mw.iam.core.LoginPageConfiguration;
 
 @Controller
 public class LoginController {

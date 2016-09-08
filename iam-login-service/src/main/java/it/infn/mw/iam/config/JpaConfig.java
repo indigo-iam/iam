@@ -56,9 +56,11 @@ public class JpaConfig extends JpaBaseConfiguration {
 
       final EntityManagerFactoryBuilder factoryBuilder) {
 
-    LocalContainerEntityManagerFactoryBean emf =
-        factoryBuilder.dataSource(dataSource).packages("org.mitre", "it.infn.mw.iam.persistence")
-            .persistenceUnit("defaultPersistenceUnit").properties(getVendorProperties()).build();
+    LocalContainerEntityManagerFactoryBean emf = factoryBuilder.dataSource(dataSource)
+      .packages("org.mitre", "it.infn.mw.iam.persistence")
+      .persistenceUnit("defaultPersistenceUnit")
+      .properties(getVendorProperties())
+      .build();
 
     return emf;
 

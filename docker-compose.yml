@@ -35,7 +35,7 @@ services:
       dockerfile: ./iam-login-service/docker/Dockerfile
 
     environment:
-      IAM_JAVA_OPTS: -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1044 -Dspring.profiles.active=saml,google,mysql-test,dev
+      IAM_JAVA_OPTS: -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1044 -Dspring.profiles.active=registration,saml,google,mysql-test,dev
         # Uncomment and join the lines below to enable debug loggers
         # -Dlogging.level.org.springframework.security=DEBUG -Dlogging.level.org.springframework.mvc=DEBUG
       IAM_JAR: /code/iam-login-service/target/iam-login-service.war
@@ -56,6 +56,7 @@ services:
 
       IAM_SAML_IDP_METADATA: file:///code/docker/saml-idp/idp/shibboleth-idp/metadata/idp-metadata.xml
       IAM_SAML_ENTITY_ID: urn:iam:iam-devel
+      IAM_NOTIFICATION_DISABLE: "true"
 
     ports:
       - "1044:1044"

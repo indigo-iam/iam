@@ -1,0 +1,33 @@
+<!-- Content Header (Page header) -user-image -->
+<section class="content-header">
+	<h1>
+		<i class="fa fa-thumbs-o-down"></i> Error
+	</h1>
+	<ol class="breadcrumb">
+		<li><a href=""><i class="fa fa-thumbs-o-down"></i> Error</a></li>
+	</ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+	<div class="error-page">
+		<div class="row" style="padding: 140px 20px">
+			<img ng-src="{{errorCtrl.error.data.status == 403 ? '/resources/iam/img/403forbidden.png' : '/resources/iam/img/500error.png'}}" class="pull-left"
+				width="200px" />
+
+			<h2 class="headline text-red">Error
+				{{errorCtrl.error.data.status}}</h2>
+
+			<div class="error-content">
+				<h3>
+					<i class="fa fa-warning text-red"></i> Oops! Something went wrong.
+				</h3>
+
+				<p>{{errorCtrl.error.statusText}}</p>
+				<p>{{errorCtrl.error.data.detail || errorCtrl.error.data.error_description || errorCtrl.error.data.message }}</p>
+			</div>
+		</div>
+	</div>
+	<!-- /.error-page -->
+</section>

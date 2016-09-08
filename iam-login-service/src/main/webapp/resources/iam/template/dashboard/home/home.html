@@ -1,0 +1,252 @@
+<!-- Content Header (Page header) -user-image -->
+<section class="content-header">
+	<h1>
+		<i class="fa fa-home"></i> Home
+	</h1>
+	<ol class="breadcrumb">
+		<li><a href="#"><i class="fa fa-home"></i> Home</a></li>
+	</ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+	<div class="row">
+		<div class="col-md-3">
+
+			<!-- Profile Image -->
+			<div class="box box-primary">
+				<div class="box-body box-profile">
+					<img class="profile-user-img img-responsive img-circle"
+						ng-src="{{home.me.picture}}" alt="User profile picture"
+						ng-show="home.me.picture"> <img
+						class="profile-user-img img-responsive img-circle"
+						ng-src="resources/iam/img/default-avatar.png"
+						alt="User profile picture" ng-show="!home.userInfo.picture">
+
+					<h3 class="profile-username text-center">{{home.me.name.formatted}}</h3>
+
+					<p class="text-muted text-center">{{home.me.displayName}}</p>
+
+					<ul class="list-group list-group-unbordered">
+						<li class="list-group-item"><b>E-mail</b> <a
+							class="pull-right" href="mailto:{{home.me.emails[0].value}}">{{home.me.emails[0].value}}</a>
+						</li>
+						<li class="list-group-item"><b>Status</b> <a href=""
+							class="pull-right"> <span ng-show="home.me.active"
+								class="label label-success">ACTIVE</span> <span
+								ng-show="!home.me.active" class="label label-danger">DISABLED</span>
+						</a></li>
+						<li class="list-group-item"><b>Last update</b> <a
+							class="pull-right">{{home.me.meta.lastModified | date :
+								"medium" }}</a></li>
+					</ul>
+
+					<a class="btn btn-app"> <span class="badge bg-purple">{{home.me.groups.length}}</span>
+						<i class="fa fa-users"></i> Groups
+					</a> <a class="btn btn-app"> <span class="badge bg-purple">{{home.me['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds.length}}</span>
+						<i class="fa fa-lock"></i> OpenID IDs
+					</a> <a class="btn btn-app"> <span class="badge bg-purple">{{home.me['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys.length}}</span>
+						<i class="fa fa-key"></i> SSH Keys
+					</a> <a class="btn btn-app"> <span class="badge bg-purple">{{home.me['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds.length}}</span>
+						<i class="fa fa-cloud"></i> Saml IDs
+					</a> <a class="btn btn-app"> <span class="badge bg-purple">{{home.me.x509Certificates.length}}</span>
+						<i class="fa fa-user-secret"></i> x509 certs
+					</a>
+				</div>
+				<!-- /.box-body -->
+			</div>
+			<!-- /.box -->
+
+		</div>
+
+		<div class="col-md-9">
+
+			<!-- Groups Box -->
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">
+						<strong>Groups</strong>
+					</h3>
+					<i class="fa fa-users pull-right"></i>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body">
+
+					<div ng-show="!home.me.groups.length">No groups found</div>
+					<div class="table-responsive" ng-show="home.me.groups.length">
+						<table class="table no-margin">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Name</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr ng-repeat="group in home.me.groups | orderBy:'display' ">
+									<td>{{$index + 1}}</td>
+									<td><a ui-sref="group({id: group.value})">{{group.display}}</a></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+
+			<!-- OidcIds Box -->
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">
+						<strong> OpenID Connect Accounts</strong>
+					</h3>
+					<i class="fa fa-lock pull-right"></i>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body">
+
+					<div
+						ng-show="!home.me['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
+						No Open ID Connect accounts found</div>
+					<div class="table-responsive"
+						ng-show="home.me['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
+						<table class="table no-margin">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Issuer</th>
+									<th>Subject</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									ng-repeat="oidcId in home.me['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
+									<td>{{$index + 1}}</td>
+									<td>{{ oidcId.issuer }}</td>
+									<td>{{ oidcId.subject }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- sshKeys Box -->
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">
+						<strong>SSH keys</strong>
+					</h3>
+					<i class="fa fa-key pull-right"></i>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body">
+
+					<div
+						ng-show="!home.me['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
+						No SSH Key found</div>
+					<div class="table-responsive"
+						ng-show="home.me['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
+						<table class="table no-margin">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Label</th>
+									<th>Fingerprint</th>
+									<th>Primary</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									ng-repeat="sshKey in home.me['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
+									<td>{{$index + 1}}</td>
+									<td>{{sshKey.display}}</td>
+									<td><a href=''
+										ng-click="user.showSshKeyValue(sshKey.value)">{{sshKey.fingerprint}}</a></td>
+									<td><span ng-show="sshKey.primary"
+										class="label label-success">primary</span></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- samlIds Box -->
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">
+						<strong>Saml IDs</strong>
+					</h3>
+					<i class="fa fa-cloud pull-right"></i>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body">
+
+					<div
+						ng-show="!home.me['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+						No SAML Id found</div>
+					<div class="table-responsive"
+						ng-show="home.me['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+						<table class="table no-margin">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Identity Provider</th>
+									<th>User ID</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									ng-repeat="samlId in home.me['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+									<td>{{$index + 1}}</td>
+									<td>{{samlId.idpId}}</td>
+									<td>{{samlId.userId}}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- x509 Certificates Box -->
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h3 class="box-title">
+						<strong>x509 Certificates</strong>
+					</h3>
+					<i class="fa fa-user-secret pull-right"></i>
+				</div>
+				<!-- /.box-header -->
+				<div class="box-body">
+
+					<div ng-show="!home.me.x509Certificates">No x509 Certificate
+						found</div>
+					<div class="table-responsive" ng-show="home.me.x509Certificates">
+						<table class="table no-margin">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Label</th>
+									<th>Primary</th>
+									<th>Value</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr ng-repeat="cert in home.me.x509Certificates">
+									<td>{{$index + 1}}</td>
+									<td>{{ cert.display }}</td>
+									<td><span ng-show="cert.primary" class="label label-success">primary</span>
+									</td>
+									<td><a ng-click=user.showCertValue(cert)>{{cert.value | limitTo : 30 : 0}}...</a></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+</section>

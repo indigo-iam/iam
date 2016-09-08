@@ -4,6 +4,7 @@ target/
 .settings
 .springBeans
 .factoryPath
+*.md.html
 iam-login-service/ddl.sql
 
 # Node rules:

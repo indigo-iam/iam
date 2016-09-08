@@ -45,7 +45,9 @@ public interface IamAccountRepository extends PagingAndSortingRepository<IamAcco
   Optional<IamAccount> findByCertificateSubject(@Param("subject") String subject);
 
   @Query("select a from IamAccount a join a.groups ag where ag.id = :groupId")
-  List<IamAccount> findByGroupId(@Param("groupId") String groupId);
+  List<IamAccount> findByGroupId(@Param("groupId") Long groupId);
 
   Optional<IamAccount> findByConfirmationKey(@Param("confirmationKey") String confirmationKey);
+
+  Optional<IamAccount> findByResetKey(@Param("resetKey") String resetKey);
 }

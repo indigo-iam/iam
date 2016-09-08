@@ -1,0 +1,106 @@
+<!-- Content Header (Page header) -user-image -->
+<section class="content-header">
+	<h1>
+		<i class="fa fa-users"></i>&nbsp;&nbsp;Groups
+	</h1>
+	<ol class="breadcrumb">
+		<li><a href=""><i class="fa fa-users"></i> Groups</a></li>
+		<li><a ui-sref="groups"><i class="fa fa-list"></i> List of
+				groups</a></li>
+	</ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="box">
+				<div class="box-header with-border">
+					<div class="input-group">
+						<input placeholder="Search.." ng-model="gc.search.displayName"
+							class="form-control" />
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default"
+								ng-click="gc.resetFilters()">Show all</button>
+						</div>
+						<!-- /btn-group -->
+					</div>
+				</div>
+				<div class="box-body">
+					<ul uib-pagination ng-model="gc.currentPage"
+						items-per-page="gc.entryLimit" total-items="gc.totalItems"
+						max-size="gc.noOfPages" boundary-links="true"></ul>
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Name</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								ng-repeat="group in gc.filtered = gc.groups | filter:gc.search | startFrom:(gc.currentPage-1)*gc.entryLimit | limitTo:gc.entryLimit">
+								<td>{{$index + (gc.currentPage-1)*gc.entryLimit + 1}}</td>
+								<td><a ui-sref="group({id: group.id})">{{group.displayName}}</a>
+								</td>
+								<td>
+									<button class="btn btn-danger btn-xs"
+										confirmed-click="gc.deleteGroup(group)"
+										ng-confirm-click="Are you sure you want to delete '{{group.displayName}}'?">
+										<i class="fa fa-trash-o"></i> Delete
+									</button>
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr>
+								<th>#</th>
+								<th>Name</th>
+								<th>Actions</th>
+							</tr>
+						</tfoot>
+					</table>
+					<ul uib-pagination ng-model="gc.currentPage"
+						items-per-page="gc.entryLimit" total-items="gc.totalItems"
+						max-size="gc.noOfPages" boundary-links="true"></ul>
+				</div>
+				<div class="box-footer">
+					<button class="btn btn-success" ng-click="gc.clickToOpen()">Add
+						Group</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-12" ng-show="gc.alerts.length">
+			<div class="box">
+				<div class="box box-default">
+					<div class="box-header with-border">
+						<i class="fa fa-info"></i>
+						<h3 class="box-title">Messages</h3>
+					</div>
+					<!-- /.box-header -->
+					<div class="box-body">
+
+						<div ng-repeat="alert in gc.alerts">
+
+							<div style="margin: 5px 5px;">
+								<button type="button" class="close pull-right"
+									ng-click="gc.closeAlert($index)">
+									<i class="fa fa-times"></i>
+								</button>
+								<span>{{alert.time |
+									date:'yyyy-MM-dd&nbsp;HH:mm:ss'}}&nbsp;&nbsp; <strong
+									ng-class="alert.type == 'success' ? 'label bg-green' : ' label bg-red' ">{{alert.title}}</strong>
+									&nbsp;&nbsp;{{alert.text}}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

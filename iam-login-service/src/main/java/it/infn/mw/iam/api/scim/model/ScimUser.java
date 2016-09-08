@@ -38,6 +38,7 @@ public class ScimUser extends ScimResource {
   private final String displayName;
   private final String nickName;
   private final String profileUrl;
+  private final String picture;
   private final String title;
   private final String userType;
   private final String preferredLanguage;
@@ -62,7 +63,8 @@ public class ScimUser extends ScimResource {
       @JsonProperty("userName") String userName, @JsonProperty("password") String password,
       @JsonProperty("name") ScimName name, @JsonProperty("displayName") String displayName,
       @JsonProperty("nickName") String nickName, @JsonProperty("profileUrl") String profileUrl,
-      @JsonProperty("title") String title, @JsonProperty("userType") String userType,
+      @JsonProperty("picture") String picture, @JsonProperty("title") String title,
+      @JsonProperty("userType") String userType,
       @JsonProperty("preferredLanguage") String preferredLanguage,
       @JsonProperty("locale") String locale, @JsonProperty("timezone") String timezone,
       @JsonProperty("active") Boolean active, @JsonProperty("emails") List<ScimEmail> emails,
@@ -79,6 +81,7 @@ public class ScimUser extends ScimResource {
     this.displayName = displayName;
     this.nickName = nickName;
     this.profileUrl = profileUrl;
+    this.picture = picture;
     this.title = title;
     this.userType = userType;
     this.preferredLanguage = preferredLanguage;
@@ -100,6 +103,7 @@ public class ScimUser extends ScimResource {
     this.displayName = b.displayName;
     this.nickName = b.nickName;
     this.profileUrl = b.profileUrl;
+    this.picture = b.picture;
     this.title = b.title;
     this.userType = b.userType;
     this.preferredLanguage = b.preferredLanguage;
@@ -141,6 +145,11 @@ public class ScimUser extends ScimResource {
   public String getProfileUrl() {
 
     return profileUrl;
+  }
+
+  public String getPicture() {
+
+    return picture;
   }
 
   public String getTitle() {
@@ -245,6 +254,7 @@ public class ScimUser extends ScimResource {
     private String displayName;
     private String nickName;
     private String profileUrl;
+    private String picture;
     private String title;
     private String userType;
     private String preferredLanguage;
@@ -313,6 +323,12 @@ public class ScimUser extends ScimResource {
     public Builder profileUrl(String profileUrl) {
 
       this.profileUrl = profileUrl;
+      return this;
+    }
+
+    public Builder picture(String picture) {
+
+      this.picture = picture;
       return this;
     }
 

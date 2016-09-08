@@ -4,7 +4,6 @@ import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
@@ -24,7 +23,6 @@ import org.mitre.openid.connect.service.ClientLogoLoadingService;
 import org.mitre.openid.connect.service.LoginHintExtracter;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.mitre.openid.connect.service.PairwiseIdentiferService;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
@@ -54,14 +52,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
-import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
-
-import it.infn.mw.iam.core.IamScopeClaimTranslationService;
 
 @Configuration
 public class MitreServicesConfig {
@@ -102,11 +97,6 @@ public class MitreServicesConfig {
     return new DefaultOAuth2ProviderTokenService();
   }
 
-  @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-
-    return new DefaultOAuth2AuthorizationCodeService();
-  }
 
   @Bean(name = "mitreUserInfoInterceptor")
   public AsyncHandlerInterceptor userInfoInterceptor() {
@@ -210,17 +200,7 @@ public class MitreServicesConfig {
     return new InMemoryClientLogoLoadingService();
   }
 
-  @Bean
-  ScopeClaimTranslationService defaultScopeClaimTranslationService() {
 
-    return new IamScopeClaimTranslationService();
-  }
-
-  @Bean
-  IntrospectionResultAssembler defaultIntrospectionResultAssembler() {
-
-    return new DefaultIntrospectionResultAssembler();
-  }
 
   @Bean
   SymmetricKeyJWTValidatorCacheService defaultSimmetricKeyJWTValidatorCacheService() {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?> 
-<md:EntityDescriptor ID="urn_iam_iam-devel" entityID="urn:iam:iam-local-devel"
+<md:EntityDescriptor ID="urn_iam_iam_local-devel" entityID="urn:iam:iam-local-devel"
   xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
 
   <md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true"

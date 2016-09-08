@@ -1,0 +1,24 @@
+<div class="modal-header">
+	<h3 class="modal-title">Select groups to add</h3>
+</div>
+<div class="modal-body">
+
+	<ui-select multiple ng-model="addGroupCtrl.groupsSelected"
+		theme="bootstrap" ng-disabled="addGroupCtrl.disabled" sortable="true"
+		close-on-select="false" style="width: 100%;"> <ui-select-match
+		placeholder="Select group...">{{$item.displayName}}</ui-select-match>
+	<ui-select-choices
+		repeat="group in addGroupCtrl.oGroups | filter: {displayName: $select.search}">
+	<div ng-bind-html="group.displayName | highlight: $select.search"></div>
+	</ui-select-choices> 
+	<ui-select-no-choice> No results found </ui-select-no-choice>
+	</ui-select>
+
+</div>
+<div class="modal-footer">
+	<button class="btn btn-primary" type="button"
+		ng-click="addGroupCtrl.addGroup()"
+		ng-disabled="addGroupCtrl.groupsSelected == null">Add Group</button>
+	<button class="btn btn-warning" type="button"
+		ng-click="addGroupCtrl.cancel()">Cancel</button>
+</div>

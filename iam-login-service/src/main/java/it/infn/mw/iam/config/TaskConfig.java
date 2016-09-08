@@ -6,12 +6,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+
+import it.infn.mw.iam.notification.NotificationService;
 
 @Configuration
 @EnableScheduling
@@ -22,6 +25,10 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Autowired
   ApprovedSiteService approvedSiteService;
+
+  @Autowired
+  @Qualifier("defaultNotificationService")
+  NotificationService notificationService;
 
   @Bean(destroyMethod = "shutdown")
   public ScheduledExecutorService taskScheduler() {
@@ -40,6 +47,16 @@ public class TaskConfig implements SchedulingConfigurer {
   public void clearExpiredSites() {
 
     approvedSiteService.clearExpiredSites();
+  }
+
+  @Scheduled(fixedDelayString = "${notification.taskDelay}", initialDelay = 60000)
+  public void sendNotifications() {
+    notificationService.sendPendingNotification();
+  }
+
+  @Scheduled(fixedDelay = 30000, initialDelay = 60000)
+  public void clearExpiredNotifications() {
+    notificationService.clearExpiredNotifications();
   }
 
   @Override

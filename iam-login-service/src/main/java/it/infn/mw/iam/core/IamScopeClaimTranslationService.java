@@ -4,10 +4,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
+@Service
+@Primary
 public class IamScopeClaimTranslationService implements ScopeClaimTranslationService {
 
   private SetMultimap<String, String> scopesToClaims = HashMultimap.create();

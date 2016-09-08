@@ -1,0 +1,93 @@
+<!-- Content Header (Page header) -user-image -->
+<section class="content-header">
+	<h1>
+		<i class="fa fa-user"></i>&nbsp;&nbsp;Users
+	</h1>
+	<ol class="breadcrumb">
+		<li><a href=""><i class="fa fa-users"></i> Users</a></li>
+		<li><a ui-sref="users"><i class="fa fa-list"></i> List of
+				users</a></li>
+	</ol>
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+	<div class="row">
+
+		<div class="col-xs-12">
+			<div class="box">
+				<div class="box-header with-border">
+					<div class="input-group">
+						<input placeholder="Search.." ng-model="uc.search.displayName"
+							class="form-control" />
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default"
+								ng-click="uc.resetFilters()">Show all</button>
+						</div>
+						<!-- /btn-group -->
+					</div>
+				</div>
+				<div class="box-body">
+					<ul uib-pagination ng-model="uc.currentPage"
+						items-per-page="uc.entryLimit" total-items="uc.totalItems"
+						max-size="uc.noOfPages" boundary-links="true"></ul>
+					<table id="userslist" class="table table-striped">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Name</th>
+								<th>E-mail</th>
+								<th>Created</th>
+								<th>Last Update</th>
+								<th>Groups</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								ng-repeat="user in uc.filtered = uc.users | filter:uc.search | startFrom:(uc.currentPage-1)*uc.entryLimit | limitTo:uc.entryLimit">
+								<td>{{$index + (uc.currentPage-1)*uc.entryLimit + 1}}</td>
+								<td><a ui-sref="user({id: user.id})">{{user.name.formatted}}</a></td>
+								<td>{{user.emails[0].value}}</td>
+								<td>{{user.meta.created | date:'medium'}}</td>
+								<td>{{user.meta.lastModified | date:'medium' }}</td>
+								<td>
+									<button ng-repeat="g in user.groups"
+										class="btn btn-xs btn-default">{{g.display}}</button>
+									<button class="btn btn-xs btn-success">
+										<i class="fa fa-plus"></i>
+									</button>
+								</td>
+								<td>
+									<button class="btn btn-warning btn-xs" ng-click="">
+										<i class="fa fa-edit"></i> Edit
+									</button>
+									<button class="btn btn-danger btn-xs" confirmed-click=""
+										ng-confirm-click="Are you sure you want to delete '{{user.name.formatted}}'?">
+										<i class="fa fa-trash-o"></i> Delete
+									</button>
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr>
+								<th>#</th>
+								<th>Name</th>
+								<th>E-mail</th>
+								<th>Created</th>
+								<th>Last Update</th>
+								<th>Groups</th>
+								<th>Actions</th>
+							</tr>
+						</tfoot>
+					</table>
+					<ul uib-pagination ng-model="uc.currentPage"
+						items-per-page="uc.entryLimit" total-items="uc.totalItems"
+						max-size="uc.noOfPages" boundary-links="true"></ul>
+
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
