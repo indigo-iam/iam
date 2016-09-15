@@ -13,18 +13,16 @@
 </section>
 
 <section class="content" ng-init="ctrl.init()">
-
     <div class="row">
         <div class="col-md-12">
-
             <div style="min-height: 650px;">
 
-					<div ng-show="ctrl.operationResult != null">
-						<div class="alert" ng-class="{'alert-success': ctrl.operationResult=='ok', 'alert-danger': ctrl.operationResult=='err'}">
-							<button class="close" ng-click="ctrl.operationResult=null" aria-label="close">&times;</button>
-							{{ctrl.textAlert}}
-						</div>
+				<div ng-show="ctrl.operationResult != null">
+					<div class="alert" ng-class="{'alert-success': ctrl.operationResult=='ok', 'alert-danger': ctrl.operationResult=='err'}">
+						<button class="close" ng-click="ctrl.operationResult=null" aria-label="close">&times;</button>
+						{{ctrl.textAlert}}
 					</div>
+				</div>
 	
 				<div class="alert alert-info" ng-show="!ctrl.filteredList.length">
 					<h4>
@@ -73,15 +71,14 @@
 								</div>
 							</div>
 						</div>
-		
-					<div class="row col-sm-12 text-center">
+            		</div>
+            		
+            		<div class="row col-sm-12 text-center">
 						<ul uib-pagination ng-model="ctrl.currentPage" ng-change="ctrl.pageChanged()" total-items="ctrl.list.length" max-size="ctrl.maxSize" boundary-links="true"></ul>
 					</div>
-            	</div>
-
-           </div>
-       </div>
-    </div>
-
-	
+					
+           		</div>
+           	</div>
+		</div>
+	</div>
 </section>
