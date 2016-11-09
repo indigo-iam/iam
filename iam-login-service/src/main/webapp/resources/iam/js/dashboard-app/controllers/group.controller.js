@@ -2,26 +2,46 @@
 
 angular.module('dashboardApp').controller('GroupController', GroupController);
 
-GroupController.$inject = [ '$state', '$filter', 'scimFactory', 'ModalService', 'Utils' ];
+GroupController.$inject = [ '$rootScope', '$state', '$filter', 'scimFactory', '$uibModal', 'ModalService', 'Utils' ];
 
-function GroupController($state, $filter, scimFactory, ModalService, Utils) {
+function GroupController($rootScope, $state, $filter, scimFactory, $uibModal, ModalService, Utils) {
 
 	var group = this;
+
+	group.loadGroup = loadGroup;
 
 	group.id = $state.params.id;
 	group.data = [];
 
-	scimFactory.getGroup(group.id).then(
-			function(response) {
+	group.loadGroup();
 
-				console.log(response.data);
-				group.data = response.data;
-				group.data.members = $filter('orderBy')(group.data.members,
-						"display", false);
+	function loadGroup() {
 
-			}, function(error) {
-				$scope.operationResult = Utils.buildErrorOperationResult(error);
-			});
+		$rootScope.pageLoadingProgress = 30;
+		group.loadingModal = $uibModal
+		.open({
+			animation: false,
+			templateUrl : '/resources/iam/template/dashboard/loading-modal.html'
+		});
+
+		group.loadingModal.opened.then(function() {
+			scimFactory.getGroup(group.id).then(
+					function(response) {
+
+						group.data = response.data;
+						group.data.members = $filter('orderBy')(group.data.members, "display", false);
+						$rootScope.pageLoadingProgress = 100;
+						group.loadingModal.dismiss("Dismiss");
+
+					}, function(error) {
+
+						$rootScope.pageLoadingProgress = 100;
+						$scope.operationResult = Utils.buildErrorOperationResult(error);
+						group.loadingModal.dismiss("Dismiss");
+
+					});
+		});
+	}
 
 	group.removeMemberFromList = removeMemberFromList;
 

@@ -59,11 +59,11 @@ function GroupsController($scope, $rootScope, $uibModal, $state, $filter,
 
 	function loadGroupList() {
 
-		$rootScope.groupsLoadingProgress = 0;
+		$rootScope.pageLoadingProgress = 0;
 		gc.loadingModal = $uibModal
 		.open({
 			animation: false,
-			templateUrl : '/resources/iam/template/dashboard/groups/loading-modal.html'
+			templateUrl : '/resources/iam/template/dashboard/loading-modal.html'
 		});
 
 		gc.loadingModal.opened.then(function() {
@@ -90,9 +90,9 @@ function GroupsController($scope, $rootScope, $uibModal, $state, $filter,
 							gc.rebuildFilteredList();
 							if (response.data.totalResults > (response.data.startIndex - 1 + response.data.itemsPerPage)) {
 								gc.getGroups(startIndex + count, count);
-								$rootScope.groupsLoadingProgress = Math.floor((startIndex + count) * 100 / response.data.totalResults);
+								$rootScope.pageLoadingProgress = Math.floor((startIndex + count) * 100 / response.data.totalResults);
 							} else {
-								$rootScope.groupsLoadingProgress = 100;
+								$rootScope.pageLoadingProgress = 100;
 								gc.loadingModal.dismiss("Cancel");
 							}
 						}, function(error) {
