@@ -61,6 +61,9 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, filterF
 			if (user.emails[0].value.toLowerCase().indexOf(query) != -1) {
 				return true;
 			}
+			if (user.id.toLowerCase().indexOf(query) != -1) {
+				return true;
+			}
 			return false;
 		});
 		users.filtered = $filter('orderBy')(users.filtered,	"name.formatted", false);

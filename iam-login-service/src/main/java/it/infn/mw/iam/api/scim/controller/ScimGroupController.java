@@ -141,7 +141,9 @@ public class ScimGroupController {
       consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateGroup(@PathVariable final String id,
-      @RequestBody @Validated final ScimGroupPatchRequest groupPatchRequest) {
+      @RequestBody @Validated final ScimGroupPatchRequest groupPatchRequest, final BindingResult validationResult) {
+
+    handleValidationError("Invalid Scim Group", validationResult);
 
     groupProvisioningService.update(id, groupPatchRequest.getOperations());
   }

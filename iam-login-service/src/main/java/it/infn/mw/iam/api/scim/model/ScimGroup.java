@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.validation.Valid;
+
 import org.hibernate.validator.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -22,6 +24,7 @@ public final class ScimGroup extends ScimResource {
   @NotBlank
   private final String displayName;
 
+  @Valid
   private final Set<ScimMemberRef> members;
 
   @JsonCreator

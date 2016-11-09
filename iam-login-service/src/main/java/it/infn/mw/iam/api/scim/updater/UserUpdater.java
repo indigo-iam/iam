@@ -344,20 +344,28 @@ public class UserUpdater implements Updater<IamAccount, ScimUser> {
 
   private void patchEmail(IamAccount a, List<ScimEmail> emails) {
 
-    if (emails != null && !emails.isEmpty()) {
-
-      final String updatedEmail = emails.get(0).getValue();
-
-      accountRepository.findByEmail(updatedEmail).ifPresent(emailAccount -> {
-        if (!emailAccount.equals(a)) {
-          throw new ScimResourceExistsException("email already assigned to an existing user: "
-              + emailAccount.getUserInfo().getEmail());
-        }
-      });
-
-
-      a.getUserInfo().setEmail(emails.get(0).getValue());
+    if (emails == null || emails.isEmpty()) {
+      return;
     }
+
+    if (emails.size() > 1) {
+      throw new ScimException("Specifying more than one email address is not supported!");
+    }
+
+    final ScimEmail email = emails.get(0);
+
+    // Validation should avoid these:
+    Preconditions.checkNotNull(email);
+    Preconditions.checkNotNull(email.getValue());
+    Preconditions.checkArgument(!email.getValue().isEmpty(), "Empty email value");
+
+    Optional<IamAccount> user = accountRepository.findByEmail(email.getValue());
+
+    if (user.isPresent() && !user.get().equals(a)) {
+      throw new ScimResourceExistsException("email already assigned to an existing user: "
+            + user.get().getUserInfo().getEmail());
+    }
+    a.getUserInfo().setEmail(email.getValue());
   }
 
   private void addOidcId(IamAccount owner, ScimOidcId oidcIdToAdd)
