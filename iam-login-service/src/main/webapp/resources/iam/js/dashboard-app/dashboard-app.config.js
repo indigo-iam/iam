@@ -5,8 +5,28 @@ angular.module('dashboardApp').config(function($stateProvider, $urlRouterProvide
     $httpProvider.interceptors.push('gatewayErrorInterceptor');
     $httpProvider.interceptors.push('sessionExpiredInterceptor');
 
-	$urlRouterProvider.otherwise('/home');
+	$urlRouterProvider.otherwise(function($injector, $location){
+		if (getUserAuthorities().indexOf("ROLE_ADMIN") != -1) {
+			return '/user/' + getUserInfo().sub;
+		} else {
+			return '/home';
+		}
+	});
+
 	$stateProvider.state('home', {
+		url : '',
+		onEnter: function($state, $timeout) {
+			if (getUserAuthorities().indexOf("ROLE_ADMIN") == -1) {
+	            $timeout(function() {
+	                $state.go('homeuser');
+	            }, 0);
+	        } else {
+	            $timeout(function() {
+	                $state.go('user', {id: getUserInfo().sub});
+	            }, 0);
+	        }
+	    }
+	}).state('homeuser', {
 		url : '/home',
 		views: {
 		      'content' : {
@@ -21,7 +41,7 @@ angular.module('dashboardApp').config(function($stateProvider, $urlRouterProvide
 		      'content' : {
 		        templateUrl: '/resources/iam/template/dashboard/user/user.html',
 		        controller: 'UserController',
-		        controllerAs: 'user'
+		        controllerAs: 'userCtrl'
 		      }
 		    }
 	}).state('group', {

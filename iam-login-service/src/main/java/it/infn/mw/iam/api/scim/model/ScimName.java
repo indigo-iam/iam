@@ -87,6 +87,55 @@ public class ScimName {
     return honorificSuffix;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((familyName == null) ? 0 : familyName.hashCode());
+    result = prime * result + ((givenName == null) ? 0 : givenName.hashCode());
+    result = prime * result + ((honorificPrefix == null) ? 0 : honorificPrefix.hashCode());
+    result = prime * result + ((honorificSuffix == null) ? 0 : honorificSuffix.hashCode());
+    result = prime * result + ((middleName == null) ? 0 : middleName.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    ScimName other = (ScimName) obj;
+    if (familyName == null) {
+      if (other.familyName != null)
+        return false;
+    } else if (!familyName.equals(other.familyName))
+      return false;
+    if (givenName == null) {
+      if (other.givenName != null)
+        return false;
+    } else if (!givenName.equals(other.givenName))
+      return false;
+    if (honorificPrefix == null) {
+      if (other.honorificPrefix != null)
+        return false;
+    } else if (!honorificPrefix.equals(other.honorificPrefix))
+      return false;
+    if (honorificSuffix == null) {
+      if (other.honorificSuffix != null)
+        return false;
+    } else if (!honorificSuffix.equals(other.honorificSuffix))
+      return false;
+    if (middleName == null) {
+      if (other.middleName != null)
+        return false;
+    } else if (!middleName.equals(other.middleName))
+      return false;
+    return true;
+  }
+
   public static Builder builder() {
 
     return new Builder();

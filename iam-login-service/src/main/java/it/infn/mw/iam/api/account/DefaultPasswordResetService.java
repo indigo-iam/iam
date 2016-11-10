@@ -80,4 +80,24 @@ public class DefaultPasswordResetService implements PasswordResetService {
         && account.getUserInfo().getEmailVerified());
   }
 
+  @Override
+  public void updatePassword(String username, String oldPassword, String newPassword)
+      throws UserNotActiveOrNotVerified, BadUserPasswordError {
+
+    IamAccount account = accountRepository.findByUsername(username)
+      .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
+
+    if (!accountActiveAndEmailVerified(account)) {
+      throw new UserNotActiveOrNotVerified("Account is not active or email is not verified");
+    }
+
+    if (!passwordEncoder.matches(oldPassword, account.getPassword())) {
+      throw new BadUserPasswordError("Wrong password provided");
+    }
+
+    // set the new password
+    account.setPassword(passwordEncoder.encode(newPassword));
+    accountRepository.save(account);
+  }
+
 }

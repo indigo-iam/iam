@@ -168,6 +168,11 @@ public class IamAccount {
     this.groups = groups;
   }
 
+  public boolean isMemberOf(IamGroup group) {
+
+    return groups.contains(group);
+  }
+
   public Date getCreationTime() {
 
     return creationTime;
@@ -260,6 +265,11 @@ public class IamAccount {
   public boolean hasSamlIds() {
 
     return !samlIds.isEmpty();
+  }
+
+  public boolean hasPicture() {
+
+    return userInfo.getPicture() != null && !userInfo.getPicture().isEmpty();
   }
 
   public String getConfirmationKey() {

@@ -1,12 +1,11 @@
 package it.infn.mw.iam.api.scim.updater;
 
-import java.util.List;
+public interface Updater<T, U> {
 
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
+  boolean add(T target, U updates);
 
-public interface Updater<S, T> {
+  boolean remove(T target, U updates);
 
-  void update(S entity, List<ScimPatchOperation<T>> operations);
+  boolean replace(T target, U updates);
 
 }
-

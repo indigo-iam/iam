@@ -53,6 +53,43 @@ public class ScimIndigoUser {
     return samlIds;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((oidcIds == null) ? 0 : oidcIds.hashCode());
+    result = prime * result + ((samlIds == null) ? 0 : samlIds.hashCode());
+    result = prime * result + ((sshKeys == null) ? 0 : sshKeys.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    ScimIndigoUser other = (ScimIndigoUser) obj;
+    if (oidcIds == null) {
+      if (other.oidcIds != null)
+        return false;
+    } else if (!oidcIds.equals(other.oidcIds))
+      return false;
+    if (samlIds == null) {
+      if (other.samlIds != null)
+        return false;
+    } else if (!samlIds.equals(other.samlIds))
+      return false;
+    if (sshKeys == null) {
+      if (other.sshKeys != null)
+        return false;
+    } else if (!sshKeys.equals(other.sshKeys))
+      return false;
+    return true;
+  }
+
   public static Builder builder() {
 
     return new Builder();

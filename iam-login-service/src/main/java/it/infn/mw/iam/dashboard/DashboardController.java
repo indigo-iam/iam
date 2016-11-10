@@ -20,7 +20,7 @@ public class DashboardController {
   @Autowired
   LoginPageConfiguration loginPageConfiguration;
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET)
   public ModelAndView showDashboard(HttpServletRequest request) {
 

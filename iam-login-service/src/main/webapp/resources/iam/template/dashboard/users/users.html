@@ -21,7 +21,7 @@
 
 		<div class="col-xs-12">
 
-			<div class="box" ng-show="$root.pageLoadingProgress == 100">
+			<div class="box" ng-show="users.isPageLoaded()">
 				<div class="box-header with-border">
 					<div class="input-group">
 						<input placeholder="Search.." ng-model="users.searchText"
@@ -37,7 +37,7 @@
 				    <div class="text-center">
 						<ul uib-pagination ng-model="users.currentPage"
 							items-per-page="users.entryLimit" total-items="users.filtered.length"
-							max-size="10" boundary-links="true"></ul>
+							max-size="5" boundary-links="true"></ul>
 					</div>
 					<table id="userslist" class="table table-striped">
 						<thead>
@@ -45,10 +45,10 @@
 								<th>#</th>
 								<th>Pic</th>
 								<th>Name</th>
-								<th class="text-center">Active</th>
-								<th>E-mail</th>
-								<th>Created</th>
-								<th>Groups</th>
+								<th class="hidden-xs text-center">Active</th>
+								<th class="hidden-xs">E-mail</th>
+								<th class="hidden-xs">Created</th>
+								<th class="hidden-xs hidden-sm">Groups</th>
 								<th class="text-right">Actions</th>
 							</tr>
 						</thead>
@@ -62,12 +62,12 @@
 									width="22" ng-src="resources/iam/img/default-avatar.png"
 									alt="User profile picture" ng-show="!user.picture"></td>
 								<td><a ui-sref="user({id: user.id})">{{user.name.formatted}}</a></td>
-								<td class="text-center"><i
+								<td class="hidden-xs text-center"><i
 									class="fa fa-circle text-success" ng-show="user.active"></i> <i
 									class="fa fa-circle text-danger" ng-show="!user.active"></i></td>
-								<td>{{user.emails[0].value}}</td>
-								<td>{{user.meta.created | relativeDate }}</td>
-								<td>
+								<td class="hidden-xs">{{user.emails[0].value}}</td>
+								<td class="hidden-xs">{{user.meta.created | relativeDate }}</td>
+								<td class="hidden-xs hidden-sm">
 									<button ng-repeat="g in user.groups | limitTo: 4"
 										class="btn btn-xs btn-default">{{g.display}}</button>
 									<span ng-show="user.groups.length > 4">...</span>
@@ -84,10 +84,10 @@
 								<th>#</th>
 								<th>Pic</th>
 								<th>Name</th>
-								<th class="text-center">Active</th>
-								<th>E-mail</th>
-								<th>Created</th>
-								<th>Groups</th>
+								<th class="hidden-xs text-center">Active</th>
+								<th class="hidden-xs">E-mail</th>
+								<th class="hidden-xs">Created</th>
+								<th class="hidden-xs hidden-sm">Groups</th>
 								<th class="text-right">Actions</th>
 							</tr>
 						</tfoot>
@@ -95,7 +95,7 @@
 					<div class="text-center">
 						<ul uib-pagination ng-model="users.currentPage"
 							items-per-page="users.entryLimit" total-items="users.filtered.length"
-							max-size="10" boundary-links="true"></ul>
+							max-size="5" boundary-links="true"></ul>
 					</div>
 
 				</div>

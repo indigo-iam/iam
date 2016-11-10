@@ -39,6 +39,12 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, filterF
 		users.searchText = "";
 	}
 
+	users.isPageLoaded = isPageLoaded;
+
+	function isPageLoaded() {
+		return $rootScope.pageLoadingProgress == 100;
+	}
+
 	function rebuildFilteredList() {
 		
 		users.filtered = filterFilter(users.list, function(user) {
@@ -90,35 +96,33 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, filterF
 
 	function getAllUsers(startIndex, count) {
 
-		scimFactory
-				.getUsers(startIndex, count)
-				.then(
-						function(response) {
-							
-							angular.forEach(response.data.Resources, function(
-									user) {
-								users.list.push(user);
-							});
-							
-							users.rebuildFilteredList();
-							
-							if (response.data.totalResults > (response.data.startIndex - 1 + response.data.itemsPerPage)) {
-							
-								users.getAllUsers(startIndex + count, count);
-								$rootScope.pageLoadingProgress = Math.floor((startIndex + count) * 100 / response.data.totalResults);
-							
-							} else {
-							
-								$rootScope.pageLoadingProgress = 100;
-								users.loadingModal.dismiss("Cancel");
-							
-							}
-						}, function(error) {
-							
-							users.loadingModal.dismiss("Error");
-							$scope.operationResult = Utils.buildErrorOperationResult(error);
-						
-						});
+		scimFactory.getUsers(startIndex, count).then(
+			function(response) {
+
+				angular.forEach(response.data.Resources, function(user) {
+					users.list.push(user);
+				});
+
+				users.rebuildFilteredList();
+
+				if (response.data.totalResults > (response.data.startIndex - 1 + response.data.itemsPerPage)) {
+
+					$rootScope.pageLoadingProgress = Math.floor((startIndex + count) * 100 / response.data.totalResults);
+					users.getAllUsers(startIndex + count, count);
+
+				} else {
+
+					$rootScope.pageLoadingProgress = 100;
+					users.loadingModal.dismiss("Cancel");
+
+				}
+
+			}, function(error) {
+
+				users.loadingModal.dismiss("Error");
+				$scope.operationResult = Utils.buildErrorOperationResult(error);
+
+			});
 	}
 
 	function openAddUserDialog() {

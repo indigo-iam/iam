@@ -3,27 +3,16 @@
 angular.module('dashboardApp').controller('EditUserController',
 		EditUserController);
 
-EditUserController.$inject = [ '$scope', '$state', '$uibModalInstance',
+EditUserController.$inject = [ '$scope', '$rootScope', '$state', '$uibModalInstance',
 		'Utils', 'scimFactory', 'user' ];
 
-function EditUserController($scope, $state, $uibModalInstance, Utils,
+function EditUserController($scope, $rootScope, $state, $uibModalInstance, Utils,
 		scimFactory, user) {
 
 	var editUserCtrl = this;
-	
-	console.info("Editing user ", user);
 
+	editUserCtrl.oUser = user;
 	editUserCtrl.id = user.id;
-
-	editUserCtrl.userToEdit = {
-		name : user.name.givenName,
-		surname: user.name.familyName,
-		username : user.userName,
-		email : user.emails[0].value,
-		picture : user.picture == undefined ? "" : user.picture
-	};
-
-	console.info("Copied user ", editUserCtrl.userToEdit);
 
 	editUserCtrl.submit = submit;
 	editUserCtrl.reset = reset;
@@ -36,41 +25,76 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 
 		editUserCtrl.enabled = false;
 
-		var scimUser = {};
+		var operations = [];
 
-		console.info($scope.userUpdateForm.name.$pristine);
-		console.info($scope.userUpdateForm.surname.$pristine);
-		console.info($scope.userUpdateForm.email.$pristine);
-		console.info($scope.userUpdateForm.username.$pristine);
-		console.info($scope.userUpdateForm.picture.$pristine);
+		// remove picture if it's dirty and empty
+		if ($scope.userUpdateForm.picture.$dirty && !editUserCtrl.eUser.picture) {
+			operations.push({
+				op: "remove",
+				value: {
+					photos: editUserCtrl.oUser.photos
+				}
+			});
+		}
 
 		if ($scope.userUpdateForm.name.$dirty || $scope.userUpdateForm.surname.$dirty) {
-			scimUser.displayName = editUserCtrl.user.name + " "
-					+ editUserCtrl.user.surname;
-			scimUser.name = {
-					givenName : editUserCtrl.user.name,
-					familyName : editUserCtrl.user.surname,
-					middleName : ""
-			};
+			
+			operations.push({
+				op: "replace",
+				value: {
+					displayName: editUserCtrl.eUser.name + " " + editUserCtrl.eUser.surname,
+					name: {
+						givenName : editUserCtrl.eUser.name,
+						familyName : editUserCtrl.eUser.surname,
+						middleName : ""
+					}
+				}
+			});
 		}
 		if ($scope.userUpdateForm.email.$dirty) {
-			scimUser.emails = [ {
-				type : "work",
-				value : editUserCtrl.user.email,
-				primary : true
-			} ];
+			
+			operations.push({
+				op: "replace",
+				value: {
+					emails: [ {
+						type : "work",
+						value : editUserCtrl.eUser.email,
+						primary : true
+					} ]
+				}
+			});
 		}
 		if ($scope.userUpdateForm.username.$dirty) {
-			scimUser.userName = editUserCtrl.user.username;
+			
+			operations.push({
+				op: "replace",
+				value: {
+					userName: editUserCtrl.eUser.username
+				}
+			});
 		}
 		if ($scope.userUpdateForm.picture.$dirty) {
-			scimUser.picture = editUserCtrl.user.picture;
+
+			operations.push({
+				op: "replace",
+				value: {
+					photos: [{
+						type : "photo",
+						value : editUserCtrl.eUser.picture
+					}]
+				}
+			});
 		}
 
-		console.info("Edited user ... ", scimUser);
+		console.info("Operations ... ", operations);
 
-		scimFactory.updateUser(user.id, scimUser).then(
+		scimFactory.updateUser(user.id, operations).then(
 			function(response) {
+
+				if (Utils.isMe(user.id)) {
+					$rootScope.reloadUser();
+				}
+
 				$uibModalInstance.close(response);
 				editUserCtrl.enabled = true;
 			},
@@ -81,8 +105,13 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 	}
 
 	function reset() {
-		editUserCtrl.user = angular.copy(editUserCtrl.userToEdit);
-		console.info(editUserCtrl.user);
+		editUserCtrl.eUser = {
+				name : editUserCtrl.oUser.name.givenName,
+				surname : editUserCtrl.oUser.name.familyName,
+				picture : editUserCtrl.oUser.photos ? editUserCtrl.oUser.photos[0].value : "",
+				email : editUserCtrl.oUser.emails[0].value,
+				username : editUserCtrl.oUser.userName
+			};
 		if ($scope.userUpdateForm) {
 			$scope.userUpdateForm.$setPristine();
 		}
@@ -94,10 +123,6 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 	}
 
 	function isSubmitDisabled() {
-		console.log(!editUserCtrl.enabled, !$scope.userUpdateForm.$dirty, 
-				$scope.userUpdateForm.name.$invalid, $scope.userUpdateForm.surname.$invalid, 
-				$scope.userUpdateForm.email.$invalid, $scope.userUpdateForm.username.$invalid, 
-				$scope.userUpdateForm.picture.$invalid);
 		return !editUserCtrl.enabled 
 				|| !$scope.userUpdateForm.$dirty 
 				|| $scope.userUpdateForm.name.$invalid

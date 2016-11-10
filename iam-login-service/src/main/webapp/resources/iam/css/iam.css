@@ -58,3 +58,53 @@
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
   display: none !important;
 }
+
+.profile-user-img {
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.footer {
+  height:48px; /* Replace with the height your footer should be */
+  width: 100%; /* Don't change */
+  background-color: #fff;
+  background-image: none;
+  background-repeat: repeat;
+  background-attachment: scroll;
+  background-position: 0% 0%;
+  position: fixed;
+  bottom: 0pt;
+  left: 0pt;
+  color: #444;
+  border-top: 1px solid #d2d6de;
+  z-index: 820;
+}
+
+.footer_contents {
+  height:48px; /* Replace with the height your footer should be */
+  width: 100%; /* Visible width of footer */
+  margin:auto;
+  padding: 15px;
+}
+
+.footer-indigo-logo {
+  margin: 0px;
+  margin-top: -7px;
+  margin-right: 5px;
+  padding: 0px;
+  width: 30px;
+}
+
+aside {
+  background: #222d32;
+  height: 100%;
+}
+
+body.skin-blue {
+  background-color: #222d32;
+}
+
+.content-wrapper {
+  padding-bottom: 48px;
+  background-color: #ecf0f5;
+}

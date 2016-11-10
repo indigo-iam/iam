@@ -1,351 +1,293 @@
 <!-- Content Header (Page header) -->
-<section class="content-header" ng-show="$root.userLoadingProgress == 100">
+<section class="content-header">
 	<h1>
-		<strong>{{user.userInfo.name.formatted}}</strong> - Profile Page
+		<i class="fa fa-user"></i>&nbsp;&nbsp;User - <i>{{user.name.formatted}}</i>
 	</h1>
 
 	<ol class="breadcrumb">
 		<li><a ui-sref="users"><i class="fa fa-users"></i> Users</a></li>
-		<li class="active"><a ui-sref="user({id: user.userInfo.id})">{{user.userInfo.name.formatted}}</a></li>
+		<li class="active"><a ui-sref="user({id: user.id})">{{user.name.formatted}}</a></li>
 	</ol>
 </section>
 
 <!-- Main content -->
 <section class="content" id="userprofilepage">
 
-	<div class="row">
-		<div class="col-md-12">
-			<operationresult />
-		</div>
-	</div>
+  <div class="row">
+    <div class="col-md-12">
+      <operationresult />
+    </div>
+  </div>
 
-	<div class="row" ng-show="$root.pageLoadingProgress == 100">
-		<div class="col-md-3">
+  <div class="row">
+    <div class="col-sm-12 col-md-4 col-lg-3" ng-show="userCtrl.isPageLoaded()">
 
-			<!-- Profile Image -->
-			<div class="box box-primary" ng-cloak>
-				<div class="box-body box-profile">
-					<img class="profile-user-img img-responsive img-circle"
-						ng-src="{{user.userInfo.picture}}" alt="User profile picture"
-						ng-show="user.userInfo.picture"> <img
-						class="profile-user-img img-responsive img-circle"
-						ng-src="resources/iam/img/default-avatar.png"
-						alt="User profile picture" ng-show="!user.userInfo.picture">
+      <!-- Profile Image -->
+      <div class="box box-primary" ng-cloak>
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>Personal Data</strong>
+          </h3>
+          <i class="fa fa-th-list pull-right"></i>
+        </div>
+        <div class="box-body">
+          <userinfobox ng-cloak />
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-primary btn-block" ng-click="userCtrl.openEditUserDialog()" ng-disabled="userCtrl.isEditUserDisabled" name="edit-user-btn">
+            <i class="fa fa-pencil"></i> <strong>Edit Details</strong>
+          </button>
+          <button class="btn btn-danger btn-block" ng-show="user.active" ng-click="userCtrl.setActive(false)" ng-disabled="userCtrl.isEnableUserDisabled" name="disable-user-btn">
+            <i class="fa fa-ban"></i> <strong>Disable User</strong>
+          </button>
+          <button class="btn btn-warning btn-block" ng-show="!user.active" ng-click="userCtrl.setActive(true)" ng-disabled="userCtrl.isEnableUserDisabled" name="enable-user-btn">
+            <i class="fa fa-power-off"></i> <strong>Enable User</strong>
+          </button>
+          <button class="btn btn-success btn-block" ng-click="userCtrl.sendResetMail()" ng-disabled="userCtrl.isSendResetDisabled" name="reset-password-btn">
+            <i class="fa fa-key"></i> <strong>Reset Password</strong>
+          </button>
+        </div>
+      </div>
 
-					<h3 class="profile-username text-center">{{user.userInfo.name.formatted}}</h3>
+    </div>
 
-					<p class="text-muted text-center">{{user.userInfo.displayName}}</p>
+    <div class="col-sm-12 col-md-8 col-lg-9" ng-show="userCtrl.isPageLoaded()">
 
-					<ul class="list-group list-group-unbordered">
-						<li class="list-group-item"><strong>E-mail</strong> <a
-							class="pull-right"
-							href="mailto:{{user.userInfo.emails[0].value}}">{{user.userInfo.emails[0].value}}</a>
-						</li>
-						<li class="list-group-item"><strong>Status</strong>
-							<div class="pull-right btn-group btn-toggle"
-								ng-show="user.userInfo.active">
-								<button class="btn btn-xs btn-success active">ACTIVE</button>
-								<button class="btn btn-xs btn-default"
-									ng-click="user.setActive(false)">DISABLED</button>
-							</div>
-							<div class="pull-right btn-group btn-toggle"
-								ng-show="!user.userInfo.active">
-								<button class="btn btn-xs btn-default"
-									ng-click="user.setActive(true)">ACTIVE</button>
-								<button class="btn btn-xs btn-danger active">DISABLED</button>
-							</div></li>
-						<li class="list-group-item"><strong>Created</strong> <a
-							class="pull-right">{{user.userInfo.meta.created |
-								relativeDate }}</a></li>
-						<li class="list-group-item"><strong>Last update</strong> <a
-							class="pull-right">{{user.userInfo.meta.lastModified |
-								relativeDate }}</a></li>
-						<li class="list-group-item"><strong>Password</strong>
-							<button class="pull-right btn btn-xs btn-success"
-								ng-click="user.sendResetMail()">Send reset e-mail</button>
-					</ul>
+      <!-- Groups Box -->
+      <div class="box box-primary" id="groups-box">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>Groups</strong>
+          </h3>
+          <i class="fa fa-users pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
 
-				</div>
-				<!-- /.box-body -->
-				<div class="box-footer">
-					<button class="btn btn-primary btn-block" name="edit-user-info"
-						ng-click="user.openEditUserDialog()">
-						<strong>Edit</strong>
-					</button>
-				</div>
-			</div>
-			<!-- /.box -->
+          <div ng-show="!user.groups.length">No groups found</div>
+          <div class="table-responsive" ng-show="user.groups.length">
+            <table class="table no-margin">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="group in user.groups | orderBy:'display' ">
+                  <td>{{$index + 1}}</td>
+                  <td><a ui-sref="group({id: group.value})">{{group.display}}</a></td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="userCtrl.deleteGroup(group)">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-		</div>
-		<div class="col-md-9">
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-success btn-xs" ng-click="userCtrl.openAddGroupDialog()" name="btn-add-group">
+            <i class="fa fa-plus"></i> Add to group
+          </button>
+        </div>
+      </div>
 
-			<!-- Groups Box -->
-			<div class="box box-primary" id="groups-box">
-				<div class="box-header with-border">
-					<h3 class="box-title">
-						<strong>Groups</strong>
-					</h3>
-					<i class="fa fa-users pull-right"></i>
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
+      <!-- OidcIds Box -->
+      <div class="box box-primary">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong> OpenID Connect Accounts</strong>
+          </h3>
+          <i class="fa fa-lock pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
 
-					<div ng-show="!user.userInfo.groups.length">No groups found</div>
-					<div class="table-responsive" ng-show="user.userInfo.groups.length">
-						<table class="table no-margin">
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Name</th>
-									<th class="text-right">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									ng-repeat="group in user.userInfo.groups | orderBy:'display' ">
-									<td>{{$index + 1}}</td>
-									<td><a ui-sref="group({id: group.value})">{{group.display}}</a></td>
-									<td class="text-right">
-										<div class="btn-group">
-											<button class="btn btn-xs btn-danger"
-												ng-click="user.deleteGroup(group)">
-												<i class="fa fa-times"></i> Remove
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="box-footer">
+          <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">No Open ID Connect accounts found</div>
+          <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
+            <table class="table no-margin" id="oidc_account_list">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Issuer</th>
+                  <th>Subject</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="oidcId in user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
+                  <td class="oidcId" id="{{ oidcId.issuer }}_{{ oidcId.subject }}">{{$index + 1}}</td>
+                  <td>{{ oidcId.issuer }}</td>
+                  <td>{{ oidcId.subject }}</td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="userCtrl.deleteOidcAccount(oidcId)">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-success btn-xs" name="btn-add-oidc" ng-click="userCtrl.openAddOIDCAccountDialog()">
+            <i class="fa fa-plus"></i> Add OpenID Account
+          </button>
+        </div>
+      </div>
 
-					<button class="btn btn-success btn-xs"
-						ng-click="user.openAddGroupDialog()" name="btn-add-group">
-						<i class="fa fa-plus"></i> Add to group
-					</button>
-				</div>
-			</div>
+      <!-- sshKeys Box -->
+      <div class="box box-primary">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>SSH keys</strong>
+          </h3>
+          <i class="fa fa-key pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
 
-			<!-- OidcIds Box -->
-			<div class="box box-primary">
-				<div class="box-header with-border">
-					<h3 class="box-title">
-						<strong> OpenID Connect Accounts</strong>
-					</h3>
-					<i class="fa fa-lock pull-right"></i>
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
+          <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">No SSH Key found</div>
+          <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
+            <table class="table no-margin" id="ssh_keys_list">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Label</th>
+                  <th>Fingerprint</th>
+                  <th>Primary</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="sshKey in user['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
+                  <td>{{$index + 1}}</td>
+                  <td>{{ sshKey.display }}</td>
+                  <td><a href='' ng-click="userCtrl.showSshKeyValue(sshKey)">{{ sshKey.fingerprint }}</a></td>
+                  <td><span ng-show="sshKey.primary" class="label label-success">primary</span>
+                    <button ng-show="!sshKey.primary" class="btn btn-xs btn-default">Set primary</button></td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="userCtrl.deleteSshKey(sshKey)">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-success btn-xs" name="btn-add-sshkey" ng-click="userCtrl.openAddSshKeyDialog()">
+            <i class="fa fa-plus"></i> Add SSH Key
+          </button>
+        </div>
+      </div>
 
-					<div
-						ng-show="!user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
-						No Open ID Connect accounts found</div>
-					<div class="table-responsive"
-						ng-show="user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
-						<table class="table no-margin" id="oidc_account_list">
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Issuer</th>
-									<th>Subject</th>
-									<th class="text-right">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									ng-repeat="oidcId in user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
-									<td class="oidcId" id="{{ oidcId.issuer }}_{{ oidcId.subject }}">{{$index + 1}}</td>
-									<td>{{ oidcId.issuer }}</td>
-									<td>{{ oidcId.subject }}</td>
-									<td class="text-right">
-										<div class="btn-group">
-											<button class="btn btn-xs btn-danger"
-											 ng-click="user.deleteOidcAccount(oidcId)">
-												<i class="fa fa-times"></i> Remove
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="box-footer">
-					<button class="btn btn-success btn-xs" name="btn-add-oidc"
-						ng-click="user.openAddOIDCAccountDialog()">
-						<i class="fa fa-plus"></i> Add OpenID Account
-					</button>
-				</div>
-			</div>
+      <!-- samlIds Box -->
+      <div class="box box-primary">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>Saml IDs</strong>
+          </h3>
+          <i class="fa fa-cloud pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
 
-			<!-- sshKeys Box -->
-			<div class="box box-primary">
-				<div class="box-header with-border">
-					<h3 class="box-title">
-						<strong>SSH keys</strong>
-					</h3>
-					<i class="fa fa-key pull-right"></i>
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
+          <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">No SAML Id found</div>
+          <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+            <table class="table no-margin" id="saml_account_list">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Identity Provider</th>
+                  <th>User ID</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="samlId in user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+                  <td class="samlId" id="{{ samlId.idpId }}_{{ samlId.userId }}">{{$index + 1}}</td>
+                  <td>{{ samlId.idpId }}</td>
+                  <td>{{ samlId.userId }}</td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="userCtrl.deleteSamlId(samlId)">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-success btn-xs" name="btn-add-samlid" ng-click="userCtrl.openAddSamlAccountDialog()">
+            <i class="fa fa-plus"></i> Add Saml Account
+          </button>
+        </div>
+      </div>
 
-					<div
-						ng-show="!user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
-						No SSH Key found</div>
-					<div class="table-responsive"
-						ng-show="user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
-						<table class="table no-margin" id="ssh_keys_list">
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Label</th>
-									<th>Fingerprint</th>
-									<th>Primary</th>
-									<th class="text-right">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									ng-repeat="sshKey in user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].sshKeys">
-									<td>{{$index + 1}}</td>
-									<td>{{ sshKey.display }}</td>
-									<td><a href=''
-										ng-click="user.showSshKeyValue(sshKey)">{{
-											sshKey.fingerprint }}</a></td>
-									<td><span ng-show="sshKey.primary"
-										class="label label-success">primary</span>
-										<button ng-show="!sshKey.primary"
-											class="btn btn-xs btn-default">Set primary</button></td>
-									<td class="text-right">
-										<div class="btn-group">
-											<button class="btn btn-xs btn-danger"
-												ng-click="user.deleteSshKey(sshKey)">
-												<i class="fa fa-times"></i> Remove
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="box-footer">
-					<button class="btn btn-success btn-xs" name="btn-add-sshkey"
-						ng-click="user.openAddSshKeyDialog()">
-						<i class="fa fa-plus"></i> Add SSH Key
-					</button>
-				</div>
-			</div>
+      <!-- x509 Certificates Box -->
+      <div class="box box-primary">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>x509 Certificates</strong>
+          </h3>
+          <i class="fa fa-user-secret pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
 
-			<!-- samlIds Box -->
-			<div class="box box-primary">
-				<div class="box-header with-border">
-					<h3 class="box-title">
-						<strong>Saml IDs</strong>
-					</h3>
-					<i class="fa fa-cloud pull-right"></i>
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
+          <div ng-show="!user.x509Certificates">No x509 Certificate found</div>
+          <div class="table-responsive" ng-show="user.x509Certificates">
+            <table class="table no-margin" id="x509_list">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Label</th>
+                  <th>Primary</th>
+                  <th>Value</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="cert in user.x509Certificates">
+                  <td>{{$index + 1}}</td>
+                  <td>{{ cert.display }}</td>
+                  <td><span ng-show="cert.primary" class="label label-success">primary</span>
+                    <button ng-show="!cert.primary" class="btn btn-xs btn-default">Set primary</button></td>
+                  <td><a ng-click=userCtrl.showCertValue(cert)>{{ cert.value | limitTo : 30 : 0}}...</a></td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="userCtrl.deleteX509Certificate(cert)">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="box-footer">
+          <button class="btn btn-success btn-xs" name="btn-add-x509cert" ng-click="userCtrl.openAddX509CertificateDialog()">
+            <i class="fa fa-plus"></i> Add x509 certificate
+          </button>
+        </div>
+      </div>
 
-					<div
-						ng-show="!user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
-						No SAML Id found</div>
-					<div class="table-responsive"
-						ng-show="user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
-						<table class="table no-margin" id="saml_account_list">
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Identity Provider</th>
-									<th>User ID</th>
-									<th class="text-right">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									ng-repeat="samlId in user.userInfo['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
-									<td class="samlId" id="{{ samlId.idpId }}_{{ samlId.userId }}">{{$index + 1}}</td>
-									<td>{{ samlId.idpId }}</td>
-									<td>{{ samlId.userId }}</td>
-									<td class="text-right">
-										<div class="btn-group">
-											<button class="btn btn-xs btn-danger"
-												ng-click="user.deleteSamlId(samlId)">
-												<i class="fa fa-times"></i> Remove
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="box-footer">
-					<button class="btn btn-success btn-xs" name="btn-add-samlid"
-						ng-click="user.openAddSamlAccountDialog()">
-						<i class="fa fa-plus"></i> Add Saml Account
-					</button>
-				</div>
-			</div>
-
-			<!-- x509 Certificates Box -->
-			<div class="box box-primary">
-				<div class="box-header with-border">
-					<h3 class="box-title">
-						<strong>x509 Certificates</strong>
-					</h3>
-					<i class="fa fa-user-secret pull-right"></i>
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
-
-					<div ng-show="!user.userInfo.x509Certificates">No x509
-						Certificate found</div>
-					<div class="table-responsive"
-						ng-show="user.userInfo.x509Certificates">
-						<table class="table no-margin" id="x509_list">
-							<thead>
-								<tr>
-									<th>#</th>
-									<th>Label</th>
-									<th>Primary</th>
-									<th>Value</th>
-									<th class="text-right">Actions</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr ng-repeat="cert in user.userInfo.x509Certificates">
-									<td>{{$index + 1}}</td>
-									<td>{{ cert.display }}</td>
-									<td><span ng-show="cert.primary"
-										class="label label-success">primary</span>
-										<button ng-show="!cert.primary" class="btn btn-xs btn-default">Set
-											primary</button></td>
-									<td><a ng-click=user.showCertValue(cert)>{{ cert.value
-											| limitTo : 30 : 0}}...</a></td>
-									<td class="text-right">
-										<div class="btn-group">
-											<button class="btn btn-xs btn-danger"
-												ng-click="user.deleteX509Certificate(cert)">
-												<i class="fa fa-times"></i> Remove
-											</button>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="box-footer">
-					<button class="btn btn-success btn-xs" name="btn-add-x509cert"
-						ng-click="user.openAddX509CertificateDialog()">
-						<i class="fa fa-plus"></i> Add x509 certificate
-					</button>
-				</div>
-			</div>
-
-		</div>
-	</div>
+    </div>
+  </div>
 </section>

@@ -503,6 +503,40 @@ public class SecurityConfig {
   }
 
   @Configuration
+  @Order(20)
+  public static class PasswordUpdateApiEndpointConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationProcessingFilter resourceFilter;
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    private CorsFilter corsFilter;
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      http.antMatcher("/iam/password-update")
+        .exceptionHandling()
+        .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+        .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+        .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class)
+        .sessionManagement()
+        .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+        .and()
+        .authorizeRequests()
+        .antMatchers("/iam/password-update")
+        .authenticated()
+        .and()
+        .csrf()
+        .disable();
+    }
+  }
+
+  @Configuration
   @Order(Ordered.HIGHEST_PRECEDENCE)
   @Profile("dev")
   public static class H2ConsoleEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {

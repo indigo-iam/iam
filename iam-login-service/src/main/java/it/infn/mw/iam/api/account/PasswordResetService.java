@@ -35,4 +35,19 @@ public interface PasswordResetService {
    */
   public void createPasswordResetToken(String email);
 
+  /**
+   * Updates the password for the account identified by both username and the current active password
+   *
+   * @param username the account username
+   *
+   * @param oldPassword the current active password
+   *
+   * @param newPassword the password to be set
+   *
+   * @throws UserNotActiveOrNotVerified if the user is not enabled
+   *
+   * @throws BadUserPasswordError if the @oldPassword doesn't match
+   */
+  public void updatePassword(String username, String oldPassword, String newPassword);
+
 }

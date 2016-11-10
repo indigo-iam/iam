@@ -123,7 +123,7 @@
                   <span class="caret"></span></a>
                 <ul class="dropdown-menu pull-right">
                   <li><a
-                    href="manage/#user/profile"
+                    href="/dashboard"
                     data-toggle="collapse"
                     data-target=".nav-collapse">${ longName }</a></li>
                   <li class="divider"></li>
@@ -148,7 +148,7 @@
           <!--  use a simplified user button system when collapsed -->
           <ul class="nav hidden-desktop">
             <security:authorize access="hasRole('ROLE_USER')">
-              <li><a href="manage/#user/profile">${ longName }</a></li>
+              <li><a href="/dashboard">${ longName }</a></li>
               <li class="divider"></li>
               <li><a
                 href=""

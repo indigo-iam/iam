@@ -1,0 +1,89 @@
+<form class="form-horizontal" ng-submit="editMeCtrl.submit()" name="userUpdateForm">
+
+    <div class="modal-header">
+        <h3 class="modal-title">User update form</h3>
+    </div>
+
+    <div class="modal-body">
+        <operationresult/>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="name">Name</label>
+            <div ng-class="{'has-error': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'has-success': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" name="name" id="name" type="text" ng-model="editMeCtrl.eUser.name" placeholder="First name" required ng-minlength="3"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'glyphicon-ok': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.minlength">Minimum length required is 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="surname">Surname</label>
+            <div ng-class="{'has-error': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'has-success': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" name="surname" id="surname" type="text" ng-model="editMeCtrl.eUser.surname" placeholder="Family name" required ng-minlength="3"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.surname.$dirty && userUpdateForm.surname.$invalid, 'glyphicon-ok': userUpdateForm.surname.$dirty && userUpdateForm.surname.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="userUpdateForm.surname.$dirty && userUpdateForm.surname.$error.minlength">Minimum length required is 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="email">Email</label>
+            <div ng-class="{'has-error': userUpdateForm.email.$dirty && userUpdateForm.email.$invalid, 'has-success': userUpdateForm.email.$dirty && userUpdateForm.email.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control"
+                        name="email" id="email" type="email"
+                        ng-model="editMeCtrl.eUser.email"
+                        placeholder="Email"
+                        required ng-minlength="3"
+                        iam-email-available-validator />
+
+                    <span class="glyphicon form-control-feedback"
+                      ng-class="{'glyphicon-remove': userUpdateForm.email.$dirty && userUpdateForm.email.$invalid, 'glyphicon-ok': userUpdateForm.email.$dirty && userUpdateForm.email.$valid}" style="right: 15px"></span>
+
+                    <span class="help-block" ng-show="userUpdateForm.email.$dirty && userUpdateForm.email.$error.required">
+                        This is a required field
+                    </span>
+
+                    <span class="help-block" ng-show="userUpdateForm.email.$dirty && userUpdateForm.email.$error.email">
+                        This is not a valid email
+                    </span>
+
+                    <span class="help-block" ng-show="userUpdateForm.email.$dirty && userUpdateForm.email.$error.emailAvailable">
+                        Email already taken by another user
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="picture">Picture</label>
+            <div ng-class="{'has-error': userUpdateForm.picture.$dirty && userUpdateForm.picture.$invalid, 'has-success': userUpdateForm.picture.$dirty && userUpdateForm.picture.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" id="picture" name="picture" type="url" ng-model="editMeCtrl.eUser.picture"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userUpdateForm.picture.$dirty && userUpdateForm.picture.$invalid, 'glyphicon-ok': userUpdateForm.picture.$dirty && userUpdateForm.picture.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="userUpdateForm.picture.$dirty && userUpdateForm.picture.$invalid">This field is invalid</span>
+                    <span class="help-block" ng-show="userUpdateForm.picture.$dirty && userUpdateForm.picture.$error.url">
+                        This field is not a valid URL</span>
+                </div>
+                <div class="col-sm-12">
+                    <br/>
+                    <img ng-src="{{editMeCtrl.eUser.picture}}" ng-show="editMeCtrl.eUser.picture" class="profile-user-img img-responsive img-circle"/>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn btn-primary" type="submit" name="create" id="modal-btn-confirm" ng-disabled="editMeCtrl.isSubmitDisabled()">Update</button>
+        <button class="btn btn-warning" type="button" name="reset" id="modal-btn-reset" ng-click="editMeCtrl.reset()" ng-disabled="userUpdateForm.$pristine">Reset Form</button>
+        <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="editMeCtrl.dismiss()">Cancel</button>
+    </div>
+</form>

@@ -40,12 +40,16 @@ angular.module('dashboardApp').run(
 	$rootScope.loggedUser = Utils.getLoggedUser();
 	$rootScope.isRegistrationEnabled = Utils.isRegistrationEnabled();
 
-	scimFactory.getMe().then(function(response) {
-		console.log(response.data);
-		$rootScope.loggedUser.me = response.data;
-	}, function(error) {
-		console.error(error);
-	});
+	$rootScope.reloadUser = function() {
+		scimFactory.getMe().then(function(response) {
+			console.log(response);
+			$rootScope.loggedUser.me = response.data;
+		}, function(error) {
+			console.error(error);
+		});
+	}
+
+	$rootScope.reloadUser();
 
 	if ($rootScope.isRegistrationEnabled) {
 		RegistrationRequestService.listPending().then(function(response) {
@@ -88,5 +92,4 @@ angular.module('dashboardApp').run(
 			notify : true
 		});
 	}
-
 });

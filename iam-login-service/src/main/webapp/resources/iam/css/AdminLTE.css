@@ -143,7 +143,7 @@ body.hold-transition .main-header .logo {
 }
 /* Content */
 .content {
-  min-height: 250px;
+  min-height: 768px;
   padding: 15px;
   margin-right: auto;
   margin-left: auto;
@@ -484,6 +484,7 @@ a:focus {
   width: 100%;
   max-width: 45px;
   height: auto;
+  border: 3px solid #4a494a;
 }
 .user-panel > .info {
   padding: 5px 5px 5px 15px;
@@ -1159,6 +1160,7 @@ a:focus {
   border-radius: 50%;
   margin-right: 10px;
   margin-top: -2px;
+  border: 2px solid #989ec0;
 }
 @media (max-width: 767px) {
   .navbar-nav > .user-menu .user-image {
@@ -3318,9 +3320,10 @@ table.text-center th {
  */
 .profile-user-img {
   margin: 0 auto;
-  width: 100px;
   padding: 3px;
   border: 3px solid #d2d6de;
+  width: 100px;
+  height: 100px;
 }
 .profile-username {
   font-size: 21px;

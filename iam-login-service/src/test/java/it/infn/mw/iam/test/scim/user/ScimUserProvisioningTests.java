@@ -293,7 +293,7 @@ public class ScimUserProvisioningTests {
     restUtils
       .doPut(lennonCreationResult.getMeta().getLocation(), lennonWantsToBeMcCartney,
           HttpStatus.CONFLICT)
-      .body("detail", containsString("userName is already mapped to another user"));
+      .body("detail", containsString("username paul_mccartney already assigned to another user"));
 
     restUtils.doDelete(lennonCreationResult.getMeta().getLocation());
     restUtils.doDelete(mccartneyCreationResult.getMeta().getLocation());
@@ -614,7 +614,7 @@ public class ScimUserProvisioningTests {
       .build();
 
     restUtils.doPut(user0.getMeta().getLocation(), updatedUser0, HttpStatus.CONFLICT).body("detail",
-        containsString("email already assigned to an existing user"));
+        containsString("email user1@test.org already assigned to another user"));
 
     restUtils.deleteUsers(user0, user1);
   }

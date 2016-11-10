@@ -39,13 +39,13 @@
 			<!-- User Account: style can be found in dropdown.less -->
 			<li class="dropdown user user-menu" uib-dropdown><a href=""
 				class="dropdown-toggle" uib-dropdown-toggle> <img
-					ng-src="{{$root.loggedUser.me.picture ? $root.loggedUser.me.picture : 'resources/iam/img/default-avatar.png'}}"
+					ng-src="{{$root.loggedUser.me.photos ? $root.loggedUser.me.photos[0].value : 'resources/iam/img/default-avatar.png'}}"
 					class="user-image" alt="User Image" /> <span class="hidden-xs">{{$root.loggedUser.me.name.formatted}}</span>
 			</a>
 				<ul class="dropdown-menu">
 					<!-- User image -->
 					<li class="user-header"><img
-						ng-src="{{$root.loggedUser.me.picture ? $root.loggedUser.me.picture : 'resources/iam/img/default-avatar.png'}}"
+						ng-src="{{$root.loggedUser.me.photos ? $root.loggedUser.me.photos[0].value : 'resources/iam/img/default-avatar.png'}}"
 						class="img-circle" alt="User Image" />
 						<p>
 							{{$root.loggedUser.me.name.formatted}}<br /> <small>{{$root.loggedUser.me.userName}}

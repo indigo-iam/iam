@@ -52,6 +52,49 @@ public abstract class ScimResource {
     return schemas;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((externalId == null) ? 0 : externalId.hashCode());
+    result = prime * result + ((id == null) ? 0 : id.hashCode());
+    result = prime * result + ((meta == null) ? 0 : meta.hashCode());
+    result = prime * result + ((schemas == null) ? 0 : schemas.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    ScimResource other = (ScimResource) obj;
+    if (externalId == null) {
+      if (other.externalId != null)
+        return false;
+    } else if (!externalId.equals(other.externalId))
+      return false;
+    if (id == null) {
+      if (other.id != null)
+        return false;
+    } else if (!id.equals(other.id))
+      return false;
+    if (meta == null) {
+      if (other.meta != null)
+        return false;
+    } else if (!meta.equals(other.meta))
+      return false;
+    if (schemas == null) {
+      if (other.schemas != null)
+        return false;
+    } else if (!schemas.equals(other.schemas))
+      return false;
+    return true;
+  }
+
   public static abstract class Builder<T extends ScimResource> {
 
     protected String externalid;

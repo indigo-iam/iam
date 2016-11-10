@@ -1,4 +1,4 @@
-package it.infn.mw.iam.test.scim;
+package it.infn.mw.iam.test.scim.me;
 
 import static com.jayway.restassured.RestAssured.given;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;

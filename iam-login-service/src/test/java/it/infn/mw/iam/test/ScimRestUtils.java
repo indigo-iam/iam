@@ -2,6 +2,9 @@ package it.infn.mw.iam.test;
 
 import static com.jayway.restassured.RestAssured.given;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 
 import com.jayway.restassured.response.ValidatableResponse;
@@ -146,4 +149,12 @@ public class ScimRestUtils {
     }
   }
 
+  public List<ScimUser> createUsers(String location, ScimUser... scimUsers) {
+
+    List<ScimUser> createdUsers = new ArrayList<ScimUser>();
+    for (ScimUser u : scimUsers) {
+      createdUsers.add(doPost(location, u).extract().as(ScimUser.class));
+    }
+    return createdUsers;
+  }
 }

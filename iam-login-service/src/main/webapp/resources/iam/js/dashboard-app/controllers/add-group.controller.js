@@ -17,9 +17,8 @@ function AddGroupController($scope, $rootScope, $uibModalInstance, Utils, scimFa
 
 	function resetGroup() {
 
-		addGroupCtrl.group.id = "";
 		addGroupCtrl.group.displayName = "";
-		addGroupCtrl.enableAdd = true;
+		addGroupCtrl.enabled = true;
 
 	}
 
@@ -29,7 +28,6 @@ function AddGroupController($scope, $rootScope, $uibModalInstance, Utils, scimFa
 
 		addGroupCtrl.enabled = false;
 
-		addGroupCtrl.group.id = Utils.uuid();
 		addGroupCtrl.group.schemas = [];
 		addGroupCtrl.group.schemas[0] = "urn:ietf:params:scim:schemas:core:2.0:Group";
 

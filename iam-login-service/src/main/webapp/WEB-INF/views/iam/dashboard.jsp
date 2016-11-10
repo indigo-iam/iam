@@ -23,29 +23,27 @@
 </div>
 </script>
 
-	<div class="wrapper">
+    <header class="main-header"></header>
 
-		<header class="main-header"></header>
+    <aside class="main-sidebar">
+      <mainsidebar />
+    </aside>
 
-		<aside class="main-sidebar">
-			<mainsidebar />
-		</aside>
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper" ui-view="content"></div>
+    <!-- /.content-wrapper -->
 
-		<!-- Content Wrapper. Contains page content -->
-		<div class="content-wrapper" ui-view="content"></div>
-		<!-- /.content-wrapper -->
-
-	</div>
-
-	<footer class="main-footer">
-		<div class="pull-right hidden-xs">
-			<b>Version</b> ${iamVersion} (${gitCommitId})
-		</div>
-		<strong> Copyright &copy; <a
-			href="https://www.indigo-datacloud.eu/the_project">The INDIGO
-				Project</a>.
-		</strong> All rights reserved.
-	</footer>
+    <footer class="footer">
+      <div class="footer_contents">
+        <div class="pull-right hidden-xs">
+          <b>Version</b> ${iamVersion} (${gitCommitId})
+        </div>
+        <div class="pull-left">
+          <img src="resources/iam/img/logo_new_1.png" class="footer-indigo-logo"/>
+          <a href="https://www.indigo-datacloud.eu/the_project"><strong>INDIGO DataCloud</strong></a> - <small><i>Better software for better science</i></small>
+        </div>
+      </div>
+    </footer>
 
 	<script type="text/javascript" src="<c:url value='/webjars/jquery/jquery.min.js'/>"></script>
 	<script type="text/javascript" src="<c:url value='/webjars/angularjs/angular.min.js'/>"></script>
@@ -68,6 +66,7 @@
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/directives/sidebar.directive.js"></script>
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/directives/registration.directive.js"></script>
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/directives/operation-result.directive.js"></script>
+    <script type="text/javascript" src="/resources/iam/js/dashboard-app/directives/userinfo-box.directive.js"></script>
 
     <script type="text/javascript" src="/resources/iam/js/dashboard-app/factory/gatewayerror.interceptor.js"></script>
     <script type="text/javascript" src="/resources/iam/js/dashboard-app/factory/sessionexpired.interceptor.js"></script>
@@ -91,10 +90,12 @@
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/add-user-saml-account.controller.js"></script>
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/add-user-x509-certificate.controller.js"></script>
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/add-user-group.controller.js"></script>
+    <script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/edit-password.controller.js"></script>
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/edit-user.controller.js"></script>
-	
+    <script type="text/javascript" src="/resources/iam/js/dashboard-app/controllers/edit-me.controller.js"></script>
+
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/filters/start-from.filter.js"></script>
-	
+
 	<script type="text/javascript" src="/resources/iam/js/dashboard-app/dashboard-app.config.js"></script>
 
 </body>

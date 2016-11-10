@@ -9,6 +9,7 @@ function ResetPasswordService($http, $httpParamSerializerJQLike){
 	var service = {
 		forgotPassword : forgotPassword,
 		changePassword : changePassword,
+		updatePassword : updatePassword
 	};
 	
 	return service;
@@ -42,5 +43,27 @@ function ResetPasswordService($http, $httpParamSerializerJQLike){
 		}
 		
 		return $http.post('/iam/password-reset', data, config);
+	}
+
+	function updatePassword(oldPassword, newPassword){
+
+		var config = {
+			headers : {
+				'Accept' : 'text/plain',
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			transformRequest: function(obj) {
+		        var str = [];
+		        for(var p in obj)
+		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		        return str.join("&");
+		    }
+		};
+
+		var data = {
+				'currentPassword' : oldPassword,
+			'updatedPassword' : newPassword
+	    };
+		return $http.post('/iam/password-update', data, config);
 	}
 }

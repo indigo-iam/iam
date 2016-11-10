@@ -70,6 +70,7 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
       .buildName(request.getGivenname(), request.getFamilyname())
       .buildEmail(request.getEmail())
       .userName(request.getUsername())
+      .password(request.getPassword())
       .build();
 
     IamAccount newAccount = userService.createAccount(user);

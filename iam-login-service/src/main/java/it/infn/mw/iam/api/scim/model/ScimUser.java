@@ -43,7 +43,6 @@ public class ScimUser extends ScimResource {
   private final String displayName;
   private final String nickName;
   private final String profileUrl;
-  private final String picture;
   private final String title;
   private final String userType;
   private final String preferredLanguage;
@@ -56,6 +55,7 @@ public class ScimUser extends ScimResource {
   private final List<ScimEmail> emails;
 
   private final List<ScimAddress> addresses;
+  private final List<ScimPhoto> photos;
   private final List<ScimX509Certificate> x509Certificates;
 
   private final Set<ScimGroupRef> groups;
@@ -74,6 +74,7 @@ public class ScimUser extends ScimResource {
       @JsonProperty("locale") String locale, @JsonProperty("timezone") String timezone,
       @JsonProperty("active") Boolean active, @JsonProperty("emails") List<ScimEmail> emails,
       @JsonProperty("addresses") List<ScimAddress> addresses,
+      @JsonProperty("photos") List<ScimPhoto> photos,
       @JsonProperty("groups") Set<ScimGroupRef> groups,
       @JsonProperty("x509Certificates") List<ScimX509Certificate> x509Certificates,
       @JsonProperty("urn:indigo-dc:scim:schemas:IndigoUser") ScimIndigoUser indigoUser) {
@@ -86,7 +87,7 @@ public class ScimUser extends ScimResource {
     this.displayName = displayName;
     this.nickName = nickName;
     this.profileUrl = profileUrl;
-    this.picture = picture;
+    this.photos = photos;
     this.title = title;
     this.userType = userType;
     this.preferredLanguage = preferredLanguage;
@@ -108,7 +109,7 @@ public class ScimUser extends ScimResource {
     this.displayName = b.displayName;
     this.nickName = b.nickName;
     this.profileUrl = b.profileUrl;
-    this.picture = b.picture;
+    this.photos = b.photos;
     this.title = b.title;
     this.userType = b.userType;
     this.preferredLanguage = b.preferredLanguage;
@@ -152,9 +153,14 @@ public class ScimUser extends ScimResource {
     return profileUrl;
   }
 
-  public String getPicture() {
+  public boolean hasPhotos() {
 
-    return picture;
+    return photos != null && !photos.isEmpty();
+  }
+
+  public List<ScimPhoto> getPhotos() {
+
+    return photos;
   }
 
   public String getTitle() {
@@ -241,6 +247,133 @@ public class ScimUser extends ScimResource {
         && !indigoUser.getSamlIds().isEmpty();
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((active == null) ? 0 : active.hashCode());
+    result = prime * result + ((addresses == null) ? 0 : addresses.hashCode());
+    result = prime * result + ((displayName == null) ? 0 : displayName.hashCode());
+    result = prime * result + ((emails == null) ? 0 : emails.hashCode());
+    result = prime * result + ((groups == null) ? 0 : groups.hashCode());
+    result = prime * result + ((indigoUser == null) ? 0 : indigoUser.hashCode());
+    result = prime * result + ((locale == null) ? 0 : locale.hashCode());
+    result = prime * result + ((name == null) ? 0 : name.hashCode());
+    result = prime * result + ((nickName == null) ? 0 : nickName.hashCode());
+    result = prime * result + ((password == null) ? 0 : password.hashCode());
+    result = prime * result + ((photos == null) ? 0 : photos.hashCode());
+    result = prime * result + ((preferredLanguage == null) ? 0 : preferredLanguage.hashCode());
+    result = prime * result + ((profileUrl == null) ? 0 : profileUrl.hashCode());
+    result = prime * result + ((timezone == null) ? 0 : timezone.hashCode());
+    result = prime * result + ((title == null) ? 0 : title.hashCode());
+    result = prime * result + ((userName == null) ? 0 : userName.hashCode());
+    result = prime * result + ((userType == null) ? 0 : userType.hashCode());
+    result = prime * result + ((x509Certificates == null) ? 0 : x509Certificates.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    ScimUser other = (ScimUser) obj;
+    if (active == null) {
+      if (other.active != null)
+        return false;
+    } else if (!active.equals(other.active))
+      return false;
+    if (addresses == null) {
+      if (other.addresses != null)
+        return false;
+    } else if (!addresses.equals(other.addresses))
+      return false;
+    if (displayName == null) {
+      if (other.displayName != null)
+        return false;
+    } else if (!displayName.equals(other.displayName))
+      return false;
+    if (emails == null) {
+      if (other.emails != null)
+        return false;
+    } else if (!emails.equals(other.emails))
+      return false;
+    if (groups == null) {
+      if (other.groups != null)
+        return false;
+    } else if (!groups.equals(other.groups))
+      return false;
+    if (indigoUser == null) {
+      if (other.indigoUser != null)
+        return false;
+    } else if (!indigoUser.equals(other.indigoUser))
+      return false;
+    if (locale == null) {
+      if (other.locale != null)
+        return false;
+    } else if (!locale.equals(other.locale))
+      return false;
+    if (name == null) {
+      if (other.name != null)
+        return false;
+    } else if (!name.equals(other.name))
+      return false;
+    if (nickName == null) {
+      if (other.nickName != null)
+        return false;
+    } else if (!nickName.equals(other.nickName))
+      return false;
+    if (password == null) {
+      if (other.password != null)
+        return false;
+    } else if (!password.equals(other.password))
+      return false;
+    if (photos == null) {
+      if (other.photos != null)
+        return false;
+    } else if (!photos.equals(other.photos))
+      return false;
+    if (preferredLanguage == null) {
+      if (other.preferredLanguage != null)
+        return false;
+    } else if (!preferredLanguage.equals(other.preferredLanguage))
+      return false;
+    if (profileUrl == null) {
+      if (other.profileUrl != null)
+        return false;
+    } else if (!profileUrl.equals(other.profileUrl))
+      return false;
+    if (timezone == null) {
+      if (other.timezone != null)
+        return false;
+    } else if (!timezone.equals(other.timezone))
+      return false;
+    if (title == null) {
+      if (other.title != null)
+        return false;
+    } else if (!title.equals(other.title))
+      return false;
+    if (userName == null) {
+      if (other.userName != null)
+        return false;
+    } else if (!userName.equals(other.userName))
+      return false;
+    if (userType == null) {
+      if (other.userType != null)
+        return false;
+    } else if (!userType.equals(other.userType))
+      return false;
+    if (x509Certificates == null) {
+      if (other.x509Certificates != null)
+        return false;
+    } else if (!x509Certificates.equals(other.x509Certificates))
+      return false;
+    return true;
+  }
+
   public static Builder builder(String username) {
 
     return new Builder(username);
@@ -259,7 +392,6 @@ public class ScimUser extends ScimResource {
     private String displayName;
     private String nickName;
     private String profileUrl;
-    private String picture;
     private String title;
     private String userType;
     private String preferredLanguage;
@@ -270,6 +402,7 @@ public class ScimUser extends ScimResource {
     private List<ScimEmail> emails = new ArrayList<ScimEmail>();
     private Set<ScimGroupRef> groups = new LinkedHashSet<ScimGroupRef>();
     private List<ScimAddress> addresses = new ArrayList<ScimAddress>();
+    private List<ScimPhoto> photos = new ArrayList<ScimPhoto>();
     private List<ScimX509Certificate> x509Certificates = new ArrayList<ScimX509Certificate>();
     private ScimIndigoUser indigoUser;
 
@@ -331,12 +464,6 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
-    public Builder picture(String picture) {
-
-      this.picture = picture;
-      return this;
-    }
-
     public Builder title(String title) {
 
       this.title = title;
@@ -390,6 +517,28 @@ public class ScimUser extends ScimResource {
     public Builder buildName(String givenName, String familyName) {
 
       this.name = ScimName.builder().givenName(givenName).familyName(familyName).build();
+      return this;
+    }
+
+    public Builder buildPhoto(String value) {
+
+      photos.add(ScimPhoto.builder().value(value).build());
+      return this;
+    }
+
+    public Builder addPhoto(ScimPhoto scimPhoto) {
+
+      Preconditions.checkNotNull(scimPhoto, "Null photo");
+
+      photos.add(scimPhoto);
+      return this;
+    }
+
+    public Builder addEmail(ScimEmail scimEmail) {
+
+      Preconditions.checkNotNull(scimEmail, "Null email");
+
+      emails.add(scimEmail);
       return this;
     }
 

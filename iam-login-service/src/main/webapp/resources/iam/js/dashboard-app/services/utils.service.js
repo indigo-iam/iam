@@ -13,7 +13,8 @@ function Utils() {
 			getLoggedUser: getLoggedUser,
 			isRegistrationEnabled: isRegistrationEnabled,
 			buildErrorOperationResult: buildErrorOperationResult,
-			buildSuccessOperationResult: buildSuccessOperationResult
+			buildSuccessOperationResult: buildSuccessOperationResult,
+			buildGenericErrorOperationResult: buildGenericErrorOperationResult
 		};
 
 	return service;
@@ -29,7 +30,7 @@ function Utils() {
 	
 	function isMe(id) {
 		
-		return (id != getUserInfo().sub);
+		return (id == getUserInfo().sub);
 	}
 	
 	function isAdmin() {
@@ -56,13 +57,21 @@ function Utils() {
 
 		return { 
 			type: "error",
-			text: error.data.error_description || error.data.detail
+			text: error.data.error_description || error.data.detail || error.data.message
+		}
+	}
+
+	function buildGenericErrorOperationResult(message) {
+
+		return { 
+			type: "error",
+			text: message
 		}
 	}
 
 	function buildSuccessOperationResult(message) {
 
-		return { 
+		return {
 			type: "success",
 			text: message
 		}

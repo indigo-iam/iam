@@ -153,7 +153,7 @@ public class ScimUserController {
       @RequestBody @Validated(ScimUser.UpdateUserValidation.class) final ScimUserPatchRequest patchRequest,
       final BindingResult validationResult) {
 
-    handleValidationError("Invalid Scim User", validationResult);
+    handleValidationError("Invalid Scim Patch Request", validationResult);
 
     userProvisioningService.update(id, patchRequest.getOperations());
 

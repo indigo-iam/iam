@@ -1,0 +1,65 @@
+<!-- Profile image -->
+<div ng-if="user.photos[0].value">
+  <img class="profile-user-img big-profile-user-img light-bordered-profile-img img-responsive img-circle" ng-src="{{user.photos[0].value}}" alt="User profile picture" />
+</div>
+<div ng-if="!user.photos">
+  <img class="profile-user-img big-profile-user-img light-bordered-profile-img img-responsive img-circle" ng-src="resources/iam/img/default-avatar.png" alt="User profile picture" />
+</div>
+
+<!-- Full name -->
+<h3 class="profile-username text-center">{{user.name.formatted}}</h3>
+
+<!-- Username -->
+<p class="text-muted text-center">{{user.userName}}</p>
+
+<div class="table-responsive">
+  <table class="table no-border table-striped table-sm">
+    <tbody>
+      <tr>
+        <td class="text-bold text-left">
+          UUID
+        </td>
+        <td class="text-right">
+          <a>{{user.id}}</a>
+        </td>
+      </tr>
+      <tr>
+        <td class="text-bold text-left">
+          Email
+        </td>
+        <td class="text-right">
+          <a href="mailto:{{user.emails[0].value}}">{{user.emails[0].value}}</a>
+        </td>
+      </tr>
+      <tr>
+        <td class="text-bold text-left">
+          Status
+        </td>
+        <td class="text-right">
+          <span class="label label-success" ng-show="user.active">
+            <i class="fa fa-check"></i> Active
+          </span>
+          <span class="label label-warning" ng-show="!user.active">
+            <i class="fa fa-check"></i> Disabled
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td class="text-bold text-left">
+          Created
+        </td>
+        <td class="text-right">
+          <a>{{user.meta.created | relativeDate }}</a>
+        </td>
+      </tr>
+      <tr>
+        <td class="text-bold text-left">
+          Updated
+        </td>
+        <td class="text-right">
+          <a>{{user.meta.lastModified | relativeDate }}</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

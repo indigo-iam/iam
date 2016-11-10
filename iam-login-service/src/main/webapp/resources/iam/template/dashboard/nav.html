@@ -1,78 +1,64 @@
 <!-- sidebar: style can be found in sidebar.less -->
 <section class="sidebar">
 
-	<div class="user-panel">
-		<div class="pull-left image">
-			<img class="img-circle hoverZoomLink"
-				ng-src="{{$root.loggedUser.me.picture ? $root.loggedUser.me.picture : 'resources/iam/img/default-avatar.png'}}" alt="User profile picture"/>
-		</div>
-		<div class="pull-left info">
-			<p><a ui-sref="home">{{$root.loggedUser.me.name.formatted}}</a></p>
-			<p>{{$root.loggedUser.info.organisation_name}}</p>
-		</div>
-	</div>
+  <div class="user-panel">
+    <a class="pull-left image" ui-sref="home">
+      <!-- if user picture is defined -->
+      <img class="medium-profile-user-img img-circle hoverZoomLink" ng-src="{{$root.loggedUser.me.photos[0].value}}" ng-show="$root.loggedUser.me.photos" alt="User profile picture" />
+      <!-- if user picture is not defined -->
+      <img class="medium-profile-user-img img-circle hoverZoomLink" src="resources/iam/img/default-avatar.png" ng-show="!$root.loggedUser.me.photos" alt="User profile picture" />
+    </a>
+    <div class="pull-left info">
+      <p>
+        <a ui-sref="home">{{$root.loggedUser.me.name.formatted}}</a>
+      </p>
+      <p>{{$root.loggedUser.info.organisation_name}}</p>
+    </div>
+  </div>
 
-    <!-- Admin sidebar menu -->
-    <ul class="sidebar-menu" name="sidebar-menu" ng-show="$root.loggedUser.isAdmin">
-        <li class="header">IAM</li>
-		<li>
-		  <a ui-sref="user({id: $root.loggedUser.info.sub})">
-		    <i class="fa fa-home"></i>
-		    <span>Home</span>
-		  </a>
-		</li>
-		<li>
-		  <a ui-sref="users">
-		    <i class="fa fa-user"></i>
-		    <span>Users</span>
-		    <span class="pull-right-container" ng-show="$root.loggedUser.totUsers>0">
-		      <small class="label pull-right bg-blue">{{$root.loggedUser.totUsers }}</small>
-		    </span>
-		  </a>
-		</li>
-		<li>
-		  <a ui-sref="groups">
-		    <i class="fa fa-users"></i>
-		    <span>Groups</span>
-		    <span class="pull-right-container" ng-show="$root.loggedUser.totGroups>0">
-		      <small class="label pull-right bg-green">{{$root.loggedUser.totGroups }}</small>
-		    </span>
-		  </a>
-		</li>
-		<li ng-show="$root.isRegistrationEnabled">
-		  <a ui-sref="requests">
-		    <i class="fa fa-sign-in"></i>
-		    <span>Requests</span>
-		    <span class="pull-right-container" ng-show="$root.loggedUser.pendingRequests.length>0">
-		      <small class="label pull-right bg-red">{{ $root.loggedUser.pendingRequests.length }}</small>
-		    </span>
-		  </a>
-		</li>
-		<li class="header">MITREID-CONNECT</li>
-		<li>
-		  <a href="/">
-		    <i class="fa fa-dashboard"></i>
-		    <span>MitreID Dashboard</span>
-		  </a>
-		</li>
-	</ul>
-	
-	<!-- User sidebar menu -->
-    <ul class="sidebar-menu" name="sidebar-menu" ng-show="!$root.loggedUser.isAdmin">
-        <li class="header">IAM</li>
-        <li>
-          <a ui-sref="home">
+  <ul class="sidebar-menu" name="sidebar-menu">
+    <li class="header">MENU</li>
+    <li>
+        <a ui-sref="home">
             <i class="fa fa-home"></i>
             <span>Home</span>
-          </a>
-        </li>
-        <li class="header">MITREID-CONNECT</li>
-        <li>
-          <a href="/">
+        </a>
+    </li>
+    <li ng-show="$root.loggedUser.isAdmin">
+        <a ui-sref="users">
+            <i class="fa fa-user"></i>
+            <span>Users</span>
+            <span class="pull-right-container" ng-show="$root.loggedUser.totUsers>0">
+                <small class="label pull-right bg-blue">{{$root.loggedUser.totUsers}}</small>
+            </span>
+        </a>
+    </li>
+    <li ng-show="$root.loggedUser.isAdmin">
+        <a ui-sref="groups">
+            <i class="fa fa-users"></i>
+            <span>Groups</span>
+            <span class="pull-right-container" ng-show="$root.loggedUser.totGroups>0">
+                <small class="label pull-right bg-green">{{$root.loggedUser.totGroups}}</small>
+            </span>
+        </a>
+    </li>
+    <li ng-show="$root.loggedUser.isAdmin && $root.isRegistrationEnabled">
+        <a ui-sref="requests">
+            <i class="fa fa-sign-in"></i>
+            <span>Requests</span>
+            <span class="pull-right-container" ng-show="$root.loggedUser.pendingRequests.length>0">
+                <small class="label pull-right bg-red">{{$root.loggedUser.pendingRequests.length}}</small>
+            </span>
+        </a>
+    </li>
+    <li class="header">MITREID-CONNECT</li>
+    <li>
+        <a href="/">
             <i class="fa fa-dashboard"></i>
             <span>MitreID Dashboard</span>
-          </a>
-        </li>
-    </ul>
+        </a>
+    </li>
+  </ul>
+
 </section>
 <!-- /.sidebar -->

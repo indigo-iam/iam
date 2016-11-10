@@ -21,7 +21,6 @@ function AddUserGroupController($scope, $state, $filter, Utils, $q, $uibModalIns
 
 	// params
 	addGroupCtrl.user = user;
-	console.log(addGroupCtrl.user);
 
 	// fields
 	addGroupCtrl.groupsSelected = null;
@@ -38,7 +37,7 @@ function AddUserGroupController($scope, $state, $filter, Utils, $q, $uibModalIns
 
 	function loadGroups() {
 
-		addGroupCtrl.loadingGroupsProgress = 0;	
+		addGroupCtrl.loadingGroupsProgress = 30;
 		addGroupCtrl.getAllGroups(1, 10);
 	}
 
@@ -53,7 +52,7 @@ function AddUserGroupController($scope, $state, $filter, Utils, $q, $uibModalIns
 		var requests = [];
 		angular.forEach(addGroupCtrl.groupsSelected, function(groupToAdd) {
 			requests.push(scimFactory.addUserToGroup(groupToAdd.id,
-					addGroupCtrl.user.id));
+					addGroupCtrl.user));
 		});
 
 		$q.all(requests).then(function(response) {

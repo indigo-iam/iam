@@ -6,12 +6,11 @@
 		max="100" value="addGroupCtrl.loadingGroupsProgress" type="danger" ng-show="addGroupCtrl.loadingGroupsProgress < 100">
 	<i>{{addGroupCtrl.loadingGroupsProgress}} / 100</i></uib-progressbar>
 </div>
-<div class="modal-body"
-	ng-disabled="addGroupCtrl.loadingGroupsProgress < 100">
+<div class="modal-body" ng-disabled="addGroupCtrl.loadingGroupsProgress < 100">
 
 
 	<ui-select multiple ng-model="addGroupCtrl.groupsSelected"
-		theme="bootstrap" ng-disabled="addGroupCtrl.disabled" sortable="true"
+		theme="bootstrap" sortable="true"
 		close-on-select="false" style="width: 100%;"> <ui-select-match
 		placeholder="Select group...">{{$item.displayName}}</ui-select-match>
 	<ui-select-choices
@@ -29,7 +28,7 @@
 <div class="modal-footer">
 	<button class="btn btn-primary" type="button" name="modal-btn-confirm"
 		ng-click="addGroupCtrl.addGroup()"
-		ng-disabled="addGroupCtrl.groupsSelected == null">Add Group</button>
+		ng-disabled="!addGroupCtrl.enabled || addGroupCtrl.groupsSelected.length == 0">Add Group</button>
 	<button class="btn btn-danger" type="button" name="modal-btn-cancel"
 		ng-click="addGroupCtrl.cancel()">Cancel</button>
 </div>
