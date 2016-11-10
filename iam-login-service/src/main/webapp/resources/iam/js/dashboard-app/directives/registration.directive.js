@@ -33,6 +33,8 @@ angular.module('dashboardApp').directive('iamEmailAvailableValidator', function(
 					return $http.get('/registration/email-available/'+email).then(
 						function(response){
 							ngModel.$setValidity('emailAvailable', response.data);
+						}, function(error){
+							ngModel.$setValidity('email', false);
 						});
 				}
 			};
