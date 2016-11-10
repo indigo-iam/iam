@@ -53,7 +53,7 @@ function UserController($scope, $rootScope, $state, $uibModal, Utils, scimFactor
 			scimFactory.getUser(userCtrl.id).then(function(response) {
 
 					$scope.user = response.data;
-					$rootScope.userLoadingProgress = 100;
+					$rootScope.pageLoadingProgress = 100;
 					userCtrl.loadingModal.dismiss("Done");
 
 				}, function(error) {

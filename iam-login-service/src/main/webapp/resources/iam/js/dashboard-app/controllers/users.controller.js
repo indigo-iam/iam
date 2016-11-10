@@ -86,7 +86,7 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, filterF
 		users.loadingModal = $uibModal
 		.open({
 			animation: false,
-			templateUrl : '/resources/iam/template/dashboard/users/loading-modal.html'
+			templateUrl : '/resources/iam/template/dashboard/loading-modal.html'
 		});
 
 		users.loadingModal.opened.then(function() {

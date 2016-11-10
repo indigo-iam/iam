@@ -29,15 +29,15 @@ public class PasswordUpdater implements Updater<IamAccount, String> {
   }
 
   @Override
-  public boolean remove(IamAccount accpunt, String username) {
+  public boolean remove(IamAccount accpunt, String password) {
 
     throw new ScimPatchOperationNotSupported("Remove password is not supported");
   }
 
   @Override
-  public boolean replace(IamAccount account, String username) {
+  public boolean replace(IamAccount account, String password) {
 
-    return add(account, username);
+    return add(account, password);
   }
 
 }

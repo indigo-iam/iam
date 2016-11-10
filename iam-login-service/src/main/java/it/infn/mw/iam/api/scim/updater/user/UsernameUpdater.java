@@ -41,7 +41,7 @@ public class UsernameUpdater implements Updater<IamAccount, String> {
   @Override
   public boolean remove(IamAccount accpunt, String username) {
 
-    throw new ScimPatchOperationNotSupported("Remove password is not supported");
+    throw new ScimPatchOperationNotSupported("Remove username is not supported");
   }
 
   @Override
