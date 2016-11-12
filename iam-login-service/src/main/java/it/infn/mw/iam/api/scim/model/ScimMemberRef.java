@@ -1,5 +1,7 @@
 package it.infn.mw.iam.api.scim.model;
 
+import org.hibernate.validator.constraints.NotEmpty;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,8 +9,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public final class ScimMemberRef {
 
+  @NotEmpty
   private final String value;
+
+  @NotEmpty
   private final String display;
+
+  @NotEmpty
   private final String ref;
 
   @JsonCreator

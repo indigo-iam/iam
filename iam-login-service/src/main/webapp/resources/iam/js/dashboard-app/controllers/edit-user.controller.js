@@ -11,11 +11,24 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 
 	var editUserCtrl = this;
 	
-	editUserCtrl.userToEdit = user;
+	console.info("Editing user ", user);
+
+	editUserCtrl.id = user.id;
+
+	editUserCtrl.userToEdit = {
+		name : user.name.givenName,
+		surname: user.name.familyName,
+		username : user.userName,
+		email : user.emails[0].value,
+		picture : user.picture == undefined ? "" : user.picture
+	};
+
+	console.info("Copied user ", editUserCtrl.userToEdit);
 
 	editUserCtrl.submit = submit;
 	editUserCtrl.reset = reset;
 	editUserCtrl.dismiss = dismiss;
+	editUserCtrl.isSubmitDisabled = isSubmitDisabled;
 
 	editUserCtrl.reset();
 
@@ -25,28 +38,38 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 
 		var scimUser = {};
 
-		scimUser.id = user.id;
-		scimUser.schemas = [];
-		scimUser.schemas[0] = "urn:ietf:params:scim:schemas:core:2.0:User";
-		scimUser.displayName = editUserCtrl.user.givenName + " "
-				+ editUserCtrl.user.familyName;
-		scimUser.name = {
-			givenName : editUserCtrl.user.givenName,
-			familyName : editUserCtrl.user.familyName,
-			middleName : ""
-		};
-		scimUser.emails = [ {
-			type : "work",
-			value : editUserCtrl.user.email,
-			primary : true
-		} ];
-		scimUser.userName = editUserCtrl.user.userName;
-		scimUser.active = true;
-		scimUser.picture = editUserCtrl.user.picture;
+		console.info($scope.userUpdateForm.name.$pristine);
+		console.info($scope.userUpdateForm.surname.$pristine);
+		console.info($scope.userUpdateForm.email.$pristine);
+		console.info($scope.userUpdateForm.username.$pristine);
+		console.info($scope.userUpdateForm.picture.$pristine);
 
-		console.info("Adding user ... ", scimUser);
+		if ($scope.userUpdateForm.name.$dirty || $scope.userUpdateForm.surname.$dirty) {
+			scimUser.displayName = editUserCtrl.user.name + " "
+					+ editUserCtrl.user.surname;
+			scimUser.name = {
+					givenName : editUserCtrl.user.name,
+					familyName : editUserCtrl.user.surname,
+					middleName : ""
+			};
+		}
+		if ($scope.userUpdateForm.email.$dirty) {
+			scimUser.emails = [ {
+				type : "work",
+				value : editUserCtrl.user.email,
+				primary : true
+			} ];
+		}
+		if ($scope.userUpdateForm.username.$dirty) {
+			scimUser.userName = editUserCtrl.user.username;
+		}
+		if ($scope.userUpdateForm.picture.$dirty) {
+			scimUser.picture = editUserCtrl.user.picture;
+		}
 
-		scimFactory.updateUser(scimUser).then(
+		console.info("Edited user ... ", scimUser);
+
+		scimFactory.updateUser(user.id, scimUser).then(
 			function(response) {
 				$uibModalInstance.close(response);
 				editUserCtrl.enabled = true;
@@ -58,14 +81,8 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 	}
 
 	function reset() {
-		editUserCtrl.user = {
-				givenName : user.name.givenName,
-				familyName : user.name.familyName,
-				userName : user.userName,
-				email : user.emails[0].value,
-				picture : user.picture,
-				id: user.id
-			};
+		editUserCtrl.user = angular.copy(editUserCtrl.userToEdit);
+		console.info(editUserCtrl.user);
 		if ($scope.userUpdateForm) {
 			$scope.userUpdateForm.$setPristine();
 		}
@@ -74,5 +91,19 @@ function EditUserController($scope, $state, $uibModalInstance, Utils,
 
 	function dismiss() {
 		$uibModalInstance.dismiss('Cancel');
+	}
+
+	function isSubmitDisabled() {
+		console.log(!editUserCtrl.enabled, !$scope.userUpdateForm.$dirty, 
+				$scope.userUpdateForm.name.$invalid, $scope.userUpdateForm.surname.$invalid, 
+				$scope.userUpdateForm.email.$invalid, $scope.userUpdateForm.username.$invalid, 
+				$scope.userUpdateForm.picture.$invalid);
+		return !editUserCtrl.enabled 
+				|| !$scope.userUpdateForm.$dirty 
+				|| $scope.userUpdateForm.name.$invalid
+				|| $scope.userUpdateForm.surname.$invalid
+				|| $scope.userUpdateForm.email.$invalid
+				|| $scope.userUpdateForm.username.$invalid
+				|| $scope.userUpdateForm.picture.$invalid;
 	}
 }

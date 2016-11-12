@@ -80,7 +80,6 @@ import org.springframework.security.saml.websso.WebSSOProfile;
 import org.springframework.security.saml.websso.WebSSOProfileConsumer;
 import org.springframework.security.saml.websso.WebSSOProfileConsumerHoKImpl;
 import org.springframework.security.saml.websso.WebSSOProfileConsumerImpl;
-import org.springframework.security.saml.websso.WebSSOProfileECPImpl;
 import org.springframework.security.saml.websso.WebSSOProfileImpl;
 import org.springframework.security.saml.websso.WebSSOProfileOptions;
 import org.springframework.security.web.DefaultSecurityFilterChain;
@@ -97,9 +96,10 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
+import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.TimestamperSuccessHandler;
-import it.infn.mw.iam.authn.saml.SAMLUserDetailsServiceImpl;
 import it.infn.mw.iam.authn.saml.IamSamlAuthenticationProvider;
+import it.infn.mw.iam.authn.saml.SAMLUserDetailsServiceImpl;
 import it.infn.mw.iam.authn.saml.SamlExceptionMessageHelper;
 import it.infn.mw.iam.authn.saml.util.FirstApplicableChainedSamlIdResolver;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
@@ -261,18 +261,24 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
     return new SAMLDefaultLogger();
   }
 
+  private WebSSOProfileConsumerImpl setAssertionTimeChecks(WebSSOProfileConsumerImpl impl) {
+    impl.setMaxAssertionTime(samlProperties.getMaxAssertionTimeSec());
+    impl.setMaxAuthenticationAge(samlProperties.getMaxAuthenticationAgeSec());
+    return impl;
+  }
+
   // SAML 2.0 WebSSO Assertion Consumer
   @Bean
   public WebSSOProfileConsumer webSSOprofileConsumer() {
 
-    return new WebSSOProfileConsumerImpl();
+    return setAssertionTimeChecks(new WebSSOProfileConsumerImpl());
   }
 
   // SAML 2.0 Holder-of-Key WebSSO Assertion Consumer
   @Bean
-  public WebSSOProfileConsumerHoKImpl hokWebSSOprofileConsumer() {
+  public WebSSOProfileConsumer hokWebSSOprofileConsumer() {
 
-    return new WebSSOProfileConsumerHoKImpl();
+    return setAssertionTimeChecks(new WebSSOProfileConsumerHoKImpl());
   }
 
   // SAML 2.0 Web SSO profile
@@ -280,20 +286,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
   public WebSSOProfile webSSOprofile() {
 
     return new WebSSOProfileImpl();
-  }
-
-  // SAML 2.0 Holder-of-Key Web SSO profile
-  @Bean
-  public WebSSOProfileConsumerHoKImpl hokWebSSOProfile() {
-
-    return new WebSSOProfileConsumerHoKImpl();
-  }
-
-  // SAML 2.0 ECP profile
-  @Bean
-  public WebSSOProfileECPImpl ecpprofile() {
-
-    return new WebSSOProfileECPImpl();
   }
 
   @Bean
@@ -416,7 +408,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
       throws MetadataProviderException, URISyntaxException, IOException {
 
     List<MetadataProvider> providers = new ArrayList<MetadataProvider>();
-    // providers.add(ssoCircleExtendedMetadataProvider());
     providers.add(localIdpMetadataProvider());
     return new CachingMetadataManager(providers);
   }
@@ -432,9 +423,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
     metadataGenerator.setIncludeDiscoveryExtension(false);
     metadataGenerator.setKeyManager(keyManager());
 
-    if (serverProperties.isUseForwardHeaders()) {
-      metadataGenerator.setEntityBaseURL(iamProperties.getBaseUrl());
-    }
+    metadataGenerator.setEntityBaseURL(iamProperties.getBaseUrl());
 
     return metadataGenerator;
   }
@@ -453,7 +442,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
         new SavedRequestAwareAuthenticationSuccessHandler();
     successRedirectHandler.setDefaultTargetUrl("/");
 
-    return new TimestamperSuccessHandler(successRedirectHandler);
+    ExternalAuthenticationSuccessHandler successHandler = new ExternalAuthenticationSuccessHandler(
+	new TimestamperSuccessHandler(successRedirectHandler), "/register");
+    return successHandler;
   }
 
 
@@ -576,6 +567,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
     bindings.add(httpPAOS11Binding());
     return new SAMLProcessorImpl(bindings);
   }
+
 
   /**
    * Define the security filter chain in order to support SSO Auth by using SAML 2.0

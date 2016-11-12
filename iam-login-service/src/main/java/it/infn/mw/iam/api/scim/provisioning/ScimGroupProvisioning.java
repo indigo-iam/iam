@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -78,8 +79,9 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     IamGroup iamGroup = new IamGroup();
 
     Date creationTime = new Date();
+    String uuid = UUID.randomUUID().toString();
 
-    iamGroup.setUuid(group.getId());
+    iamGroup.setUuid(uuid);
     iamGroup.setName(group.getDisplayName());
     iamGroup.setCreationTime(creationTime);
     iamGroup.setLastUpdateTime(creationTime);

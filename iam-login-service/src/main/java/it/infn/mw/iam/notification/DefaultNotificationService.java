@@ -198,7 +198,7 @@ public class DefaultNotificationService implements NotificationService {
     if (!properties.getDisable()) {
       mailSender.send(message);
     } else {
-      logger.info("Notification disabled: message {}", message);
+      logger.info("Notification disabled: statusMessage {}", message);
     }
   }
 

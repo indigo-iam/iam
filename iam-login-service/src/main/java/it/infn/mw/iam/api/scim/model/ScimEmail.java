@@ -1,9 +1,16 @@
 package it.infn.mw.iam.api.scim.model;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import org.hibernate.validator.constraints.Email;
+import org.hibernate.validator.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import it.infn.mw.iam.api.scim.model.ScimUser.NewUserValidation;
+import it.infn.mw.iam.api.scim.model.ScimUser.UpdateUserValidation;
 
 public class ScimEmail {
 
@@ -11,11 +18,15 @@ public class ScimEmail {
     work, home, other;
   }
 
+  @NotNull
+  @Valid
   private final ScimEmailType type;
 
-  @Email(groups = ScimUser.NewUserValidation.class)
+  @NotEmpty(groups = {NewUserValidation.class, UpdateUserValidation.class})
+  @Email(groups = {NewUserValidation.class, UpdateUserValidation.class})
   private final String value;
 
+  @NotNull(groups = {NewUserValidation.class, UpdateUserValidation.class})
   private final Boolean primary;
 
   @JsonCreator
@@ -59,13 +70,23 @@ public class ScimEmail {
     private Boolean primary;
 
     public Builder() {
-      type = ScimEmailType.work;
-      primary = true;
     }
 
     public Builder email(String value) {
 
       this.value = value;
+      return this;
+    }
+
+    public Builder type(ScimEmailType type) {
+
+      this.type = type;
+      return this;
+    }
+
+    public Builder primary(Boolean isPrimary) {
+
+      this.primary = isPrimary;
       return this;
     }
 

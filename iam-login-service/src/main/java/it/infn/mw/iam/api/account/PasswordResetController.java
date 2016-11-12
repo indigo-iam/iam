@@ -60,7 +60,7 @@ public class PasswordResetController {
       message = e.getMessage();
     }
 
-    model.addAttribute("errorMessage", message);
+    model.addAttribute("statusMessage", message);
     model.addAttribute("resetKey", token);
 
     return "iam/resetPassword";

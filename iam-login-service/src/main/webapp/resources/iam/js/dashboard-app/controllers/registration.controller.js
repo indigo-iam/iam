@@ -12,8 +12,7 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 	}
 
 	var requests = this;
-	
-	requests.listPending = listPending;
+
 	requests.approveRequest = approveRequest;
 	requests.rejectRequest = rejectRequest;
 	requests.loadData = loadData;
@@ -35,6 +34,8 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 		// needs to be a function or it won't trigger a $watch
 		requests.searchText = "";
 	}
+
+	requests.loadData();
 
 	function rebuildFilteredList() {
 
@@ -72,12 +73,12 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 
 	function loadData() {
 		
-		$rootScope.requestsLoadingProgress = 0;
+		$rootScope.pageLoadingProgress = 30;
 		
 		requests.loadingModal = $uibModal
 		.open({
 			animation: false,
-			templateUrl : '/resources/iam/template/dashboard/requests/loading-modal.html'
+			templateUrl : '/resources/iam/template/dashboard/loading-modal.html'
 		});
 
 		requests.loadingModal.opened.then(function() {
@@ -86,37 +87,25 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 				function(result) {
 					requests.list = result.data;
 					requests.rebuildFilteredList();
-					$rootScope.requestsLoadingProgress = 100;
+					$rootScope.pageLoadingProgress = 100;
 					$rootScope.loggedUser.pendingRequests = result.data;
-					
 					requests.loadingModal.dismiss("Cancel");
 				},
 				function(error) {
 
+					$rootScope.pageLoadingProgress = 100;
 					$scope.operationResult = Utils.buildErrorOperationResult(error);
 					requests.loadingModal.dismiss("Error");
 				});
 		});
 	}
 
-	function listPending() {
-		RegistrationRequestService.listPending().then(
-			function(result) {
-				requests.list = result.data;
-				requests.rebuildFilteredList();
-				$rootScope.loggedUser.pendingRequests = result.data;
-			},
-			function(error) {
-				$scope.operationResult = Utils.buildErrorOperationResult(error);
-			})
-	};
-
 	function approveRequest(request) {
 		RegistrationRequestService.updateRequest(request.uuid, 'APPROVED').then(
 			function() {
 				var msg = request.givenname + " " + request.familyname + " request APPROVED successfully";
 				$scope.operationResult = Utils.buildSuccessOperationResult(msg);
-				requests.listPending();
+				requests.loadData();
 			},
 			function(error) {
 				$scope.operationResult = Utils.buildErrorOperationResult(error);
@@ -138,7 +127,7 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 							function() {
 								var msg = request.givenname + " " + request.familyname + " request REJECTED successfully";
 								$scope.operationResult = Utils.buildSuccessOperationResult(msg);
-								requests.listPending();
+								requests.loadData();
 							},
 							function(error) {
 								$scope.operationResult = Utils.buildErrorOperationResult(error);

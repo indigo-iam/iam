@@ -12,6 +12,10 @@ public class IamSamlProperties {
   private String keyId;
   private String keyPassword;
 
+  private int maxAssertionTimeSec;
+
+  private int maxAuthenticationAgeSec;
+
   public IamSamlProperties() {}
 
   public String getEntityId() {
@@ -61,4 +65,21 @@ public class IamSamlProperties {
   public void setKeyPassword(String keyPassword) {
     this.keyPassword = keyPassword;
   }
+
+  public int getMaxAssertionTimeSec() {
+    return maxAssertionTimeSec;
+  }
+
+  public void setMaxAssertionTimeSec(int maxAssertionTimeSec) {
+    this.maxAssertionTimeSec = maxAssertionTimeSec;
+  }
+
+  public int getMaxAuthenticationAgeSec() {
+    return maxAuthenticationAgeSec;
+  }
+
+  public void setMaxAuthenticationAgeSec(int maxAuthenticationAgeSec) {
+    this.maxAuthenticationAgeSec = maxAuthenticationAgeSec;
+  }
+
 }

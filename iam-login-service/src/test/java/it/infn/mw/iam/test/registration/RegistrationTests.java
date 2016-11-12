@@ -5,6 +5,9 @@ import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.test.RegistrationUtils.confirmRegistrationRequest;
 import static it.infn.mw.iam.test.RegistrationUtils.createRegistrationRequest;
 import static it.infn.mw.iam.test.RegistrationUtils.deleteUser;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
@@ -16,10 +19,10 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.util.Assert;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.RegistrationUtils;
@@ -36,6 +39,9 @@ public class RegistrationTests {
   @Value("${server.port}")
   private Integer iamPort;
 
+  @Autowired
+  private IamAccountRepository accountRepository;
+
   @BeforeClass
   public static void init() {
 
@@ -47,7 +53,12 @@ public class RegistrationTests {
 
     RegistrationRequestDto reg = createRegistrationRequest("test_create");
 
-    Assert.notNull(reg);
+    assertNotNull(reg);
+    assertThat(reg.getUsername(), equalTo("test_create"));
+    assertThat(reg.getGivenname(), equalTo("Test"));
+    assertThat(reg.getFamilyname(), equalTo("User"));
+    assertThat(reg.getEmail(), equalTo("test_create@example.org"));
+    assertThat(reg.getNotes(), equalTo("Some short notes..."));
 
     deleteUser(reg.getAccountId());
   }
@@ -140,7 +151,8 @@ public class RegistrationTests {
     RegistrationRequestDto reg2 = createRegistrationRequest("test_list_2");
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+    assertNotNull(token);
+
     confirmRegistrationRequest(token);
 
     // @formatter:off
@@ -168,7 +180,8 @@ public class RegistrationTests {
     RegistrationRequestDto reg = createRegistrationRequest("test_confirm");
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+
+    assertNotNull(token);
 
     confirmRegistrationRequest(token);
 
@@ -205,10 +218,10 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_approve");
-    Assert.notNull(reg);
+    assertNotNull(reg);
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+    assertNotNull(token);
 
     // confirm
     confirmRegistrationRequest(token);
@@ -243,10 +256,10 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_reject");
-    Assert.notNull(reg);
+    assertNotNull(reg);
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+    assertNotNull(token);
 
     // confirm
     confirmRegistrationRequest(token);
@@ -298,7 +311,7 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_not_confirmed");
-    Assert.notNull(reg);
+    assertNotNull(reg);
 
     // @formatter:off
     // approve it without confirm
@@ -325,10 +338,10 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_approve_unauth");
-    Assert.notNull(reg);
+    assertNotNull(reg);
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+    assertNotNull(token);
 
     // confirm
     confirmRegistrationRequest(token);
@@ -358,10 +371,10 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_wrong_decision");
-    Assert.notNull(reg);
+    assertNotNull(reg);
 
     String token = generator.getLastToken();
-    Assert.notNull(token);
+    assertNotNull(token);
 
     // confirm
     confirmRegistrationRequest(token);
@@ -427,7 +440,7 @@ public class RegistrationTests {
 
     // create new request
     RegistrationRequestDto reg = createRegistrationRequest("test_confirm_after_approve");
-    Assert.notNull(reg);
+    assertNotNull(reg);
     String confirmationKey = generator.getLastToken();
 
     RegistrationUtils.approveRequest(reg.getUuid());

@@ -1,7 +1,8 @@
 package it.infn.mw.iam.authn.oidc;
 
+import static it.infn.mw.iam.authn.util.SessionUtils.getStoredSessionString;
+
 import java.io.IOException;
-import java.net.URI;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -9,7 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.OIDCAuthenticationFilter;
@@ -17,16 +17,10 @@ import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mitre.openid.connect.model.PendingOIDCAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriUtils;
 
 import com.google.common.base.Strings;
 import com.google.gson.JsonElement;
@@ -34,7 +28,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -49,9 +42,9 @@ import com.nimbusds.jwt.SignedJWT;
  */
 public class OidcClientFilter extends OIDCAuthenticationFilter {
 
-  private static class OpenIDProviderConfiguration {
+  public static class OidcProviderConfiguration {
 
-    public OpenIDProviderConfiguration(ServerConfiguration sc, RegisteredClient cc) {
+    public OidcProviderConfiguration(ServerConfiguration sc, RegisteredClient cc) {
       this.serverConfig = sc;
       this.clientConfig = cc;
     }
@@ -62,7 +55,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   public static final Logger LOG = LoggerFactory.getLogger(OidcClientFilter.class);
 
-  ClientHttpRequestFactory httpRequestFactory;
+  OidcTokenRequestor tokenRequestor;
 
   // Allow for time sync issues by having a window of X seconds.
   private int timeSkewAllowance = 300;
@@ -81,45 +74,34 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
   }
 
-  private RestTemplate basicAuthRequest(RegisteredClient clientConfig) {
 
-    return new RestTemplate(httpRequestFactory) {
+  protected OidcProviderConfiguration lookupProvider(HttpServletRequest request) {
 
-      @Override
-      protected ClientHttpRequest createRequest(URI url, HttpMethod method) throws IOException {
+    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
+    if (issuer == null) {
+      throw new AuthenticationServiceException("Issuser not found in session.");
+    }
+    ServerConfiguration serverConfig =
+	getServerConfigurationService().getServerConfiguration(issuer);
 
-        ClientHttpRequest httpRequest = super.createRequest(url, method);
-        httpRequest.getHeaders().add("Authorization",
-            String.format("Basic %s",
-                Base64.encode(String.format("%s:%s",
-                    UriUtils.encodePathSegment(clientConfig.getClientId(), "UTF-8"),
-                    UriUtils.encodePathSegment(clientConfig.getClientSecret(), "UTF-8")))));
-        return httpRequest;
-      }
-    };
-  }
+    if (serverConfig == null) {
+      throw new AuthenticationServiceException("Unknow OpenID provider :" + issuer);
+    }
 
-  private RestTemplate jwtAuthRequest(RegisteredClient clientConfig) {
+    RegisteredClient clientConfig =
+	getClientConfigurationService().getClientConfiguration(serverConfig);
 
-    throw new NotImplementedException("Signed JWT authN method not yet implemented");
-  }
+    if (clientConfig == null) {
+      throw new AuthenticationServiceException(
+	  "Client configuration not found for OpenID provider :" + issuer);
+    }
 
-  private RestTemplate jwtPrivateKeyAuthRequest(RegisteredClient clientConfig) {
-
-    throw new NotImplementedException("JWT authN method not yet implemented");
-  }
-
-  private RestTemplate formAuthRequest(RegisteredClient clientConfig,
-      MultiValueMap<String, String> requestParams) {
-
-    requestParams.add("client_id", clientConfig.getClientId());
-    requestParams.add("client_secret", clientConfig.getClientSecret());
-    return new RestTemplate(httpRequestFactory);
+    return new OidcProviderConfiguration(serverConfig, clientConfig);
 
   }
 
-  private MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request,
-      OpenIDProviderConfiguration config) {
+  protected MultiValueMap<String, String> initTokenRequestParameters(HttpServletRequest request,
+      OidcProviderConfiguration config) {
 
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");
@@ -138,76 +120,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   }
 
-  private RestTemplate prepareTokenRequest(HttpServletRequest request, RegisteredClient client,
-      MultiValueMap<String, String> requestParams) {
-
-    RestTemplate tokenRequest = null;
-
-    switch (client.getTokenEndpointAuthMethod()) {
-
-      case SECRET_BASIC:
-        tokenRequest = basicAuthRequest(client);
-        break;
-      case SECRET_JWT:
-        tokenRequest = jwtAuthRequest(client);
-        break;
-      case PRIVATE_KEY:
-        tokenRequest = jwtPrivateKeyAuthRequest(client);
-        break;
-      case SECRET_POST:
-        tokenRequest = formAuthRequest(client, requestParams);
-        break;
-      case NONE:
-        tokenRequest = new RestTemplate(httpRequestFactory);
-    }
-
-    if (tokenRequest == null) {
-      throw new AuthenticationServiceException("Unsupported token endpoint authentication method");
-    }
-
-    return tokenRequest;
-  }
-
-  /**
-   * Get the named stored session variable as a string. Return null if not found or not a
-   * string. @param session @param key @return
-   */
-  private static String getStoredSessionString(HttpSession session, String key) {
-
-    Object o = session.getAttribute(key);
-    if (o != null && o instanceof String) {
-      return o.toString();
-    } else {
-      return null;
-    }
-  }
-
-  private OpenIDProviderConfiguration lookupProvider(HttpServletRequest request) {
-
-    String issuer = getStoredSessionString(request.getSession(), ISSUER_SESSION_VARIABLE);
-    if (issuer == null) {
-      throw new AuthenticationServiceException("Issuser not found in session.");
-    }
-    ServerConfiguration serverConfig =
-        getServerConfigurationService().getServerConfiguration(issuer);
-
-    if (serverConfig == null) {
-      throw new AuthenticationServiceException("Unknow OpenID provider :" + issuer);
-    }
-
-    RegisteredClient clientConfig =
-        getClientConfigurationService().getClientConfiguration(serverConfig);
-
-    if (clientConfig == null) {
-      throw new AuthenticationServiceException(
-          "Client configuration not found for OpenID provider :" + issuer);
-    }
-
-    return new OpenIDProviderConfiguration(serverConfig, clientConfig);
-
-  }
-
-  private JsonObject jsonStringSanityChecks(String jsonString) {
+  protected JsonObject jsonStringSanityChecks(String jsonString) {
 
     JsonElement jsonRoot = new JsonParser().parse(jsonString);
     if (!jsonRoot.isJsonObject()) {
@@ -233,7 +146,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
       throws IOException {
 
     OidcClientError error =
-        new OidcClientError("Authentication error", request.getParameter("error"),
+	new OidcClientError("External authentication error", request.getParameter("error"),
             request.getParameter("error_description"), request.getParameter("error_uri"));
 
     throw error;
@@ -244,29 +157,24 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
       HttpServletResponse response) {
 
     validateState(request, response);
+    OidcProviderConfiguration config = lookupProvider(request);
 
-    OpenIDProviderConfiguration config = lookupProvider(request);
-
-    MultiValueMap<String, String> requestParams = initTokenRequestParameters(request, config);
-
-    RestTemplate tokenRequest = prepareTokenRequest(request, config.clientConfig, requestParams);
-
-    String jsonString = null;
+    String tokenResponseString = null;
 
     try {
-      jsonString = tokenRequest.postForObject(config.serverConfig.getTokenEndpointUri(),
-          requestParams, String.class);
-    } catch (RestClientException e) {
 
-      // Handle error
-      LOG.error("Token Endpoint error response:  {}", e.getMessage(), e);
+      tokenResponseString =
+	  tokenRequestor.requestTokens(config, initTokenRequestParameters(request, config));
 
-      throw new AuthenticationServiceException("Unable to obtain Access Token: " + e.getMessage());
+    } catch (OidcClientError e) {
+      LOG.error("Error executing token request against endpoint {}: {}",
+	  config.serverConfig.getTokenEndpointUri(), e.getMessage(), e);
+      throw e;
     }
 
-    LOG.debug("Token Endpoint returned string: {}", jsonString);
+    LOG.debug("Token Endpoint returned string: {}", tokenResponseString);
 
-    JsonObject tokenResponse = jsonStringSanityChecks(jsonString);
+    JsonObject tokenResponse = jsonStringSanityChecks(tokenResponseString);
 
     String accessTokenValue = null;
     String idTokenValue = null;
@@ -276,7 +184,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
       accessTokenValue = tokenResponse.get("access_token").getAsString();
     } else {
       throw new AuthenticationServiceException(
-          "Token Endpoint did not return an access_token: " + jsonString);
+	  "Token Endpoint did not return an access_token. Response: " + tokenResponseString);
     }
 
     if (tokenResponse.has("id_token")) {
@@ -314,7 +222,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   }
 
-  private void validateSignature(JWT idToken, OpenIDProviderConfiguration config) {
+  protected void validateSignature(JWT idToken, OidcProviderConfiguration config) {
 
     Algorithm tokenAlg = idToken.getHeader().getAlgorithm();
 
@@ -368,8 +276,8 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   }
 
-  private void validateClaims(HttpSession session, JWT idToken, JWTClaimsSet idClaims,
-      OpenIDProviderConfiguration config) {
+  protected void validateClaims(HttpSession session, JWT idToken, JWTClaimsSet idClaims,
+      OidcProviderConfiguration config) {
 
     // check the issuer
     if (idClaims.getIssuer() == null) {
@@ -462,16 +370,6 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     }
   }
 
-  public ClientHttpRequestFactory getHttpRequestFactory() {
-
-    return httpRequestFactory;
-  }
-
-  public void setHttpRequestFactory(ClientHttpRequestFactory httpRequestFactory) {
-
-    this.httpRequestFactory = httpRequestFactory;
-  }
-
   public int getTimeSkewAllowance() {
 
     return timeSkewAllowance;
@@ -481,5 +379,11 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
 
     this.timeSkewAllowance = timeSkewAllowance;
   }
+
+
+  public void setTokenRequestor(OidcTokenRequestor tokenRequestor) {
+    this.tokenRequestor = tokenRequestor;
+  }
+
 
 }

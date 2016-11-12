@@ -10,3 +10,8 @@ flyway:
   locations:
     - classpath:db/migration/mysql
     - classpath:db/migration/test
+
+management:
+  health:
+    mail:
+      enabled: false

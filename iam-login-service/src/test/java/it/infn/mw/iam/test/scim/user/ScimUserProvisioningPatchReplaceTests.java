@@ -1,5 +1,7 @@
 package it.infn.mw.iam.test.scim.user;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +25,7 @@ import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.test.ScimRestUtils;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.util.JacksonUtils;
+import it.infn.mw.iam.test.util.JacksonUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
@@ -270,5 +272,53 @@ public class ScimUserProvisioningPatchReplaceTests {
         ScimUser.builder().buildSshKey("fake_label", "fake_key", "fake_fingerprint", true).build());
 
     restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.NOT_FOUND);
+  }
+
+
+  @Test
+  public void testReplaceEmailWithEmptyValue() {
+
+    ScimUser user = testUsers.get(0);
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(
+        ScimUser.builder().buildEmail("").build());
+
+    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
+        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
+  }
+
+  @Test
+  public void testReplaceEmailWithNullValue() {
+
+    ScimUser user = testUsers.get(0);
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(
+        ScimUser.builder().buildEmail(null).build());
+
+    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
+        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
+  }
+
+  @Test
+  public void testReplaceEmailWithSameValue() {
+
+    ScimUser user = testUsers.get(0);
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(
+        ScimUser.builder().buildEmail(user.getEmails().get(0).getValue()).build());
+
+    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.NO_CONTENT);
+  }
+
+  @Test
+  public void testReplaceEmailWithInvalidValue() {
+
+    ScimUser user = testUsers.get(0);
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(
+        ScimUser.builder().buildEmail("fakeEmail").build());
+
+    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
+        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : not a well-formed email address"));;
   }
 }

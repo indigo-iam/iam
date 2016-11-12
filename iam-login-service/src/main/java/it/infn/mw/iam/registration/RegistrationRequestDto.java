@@ -32,7 +32,7 @@ public class RegistrationRequestDto {
       @JsonProperty("givename") String givenname, @JsonProperty("familyname") String familyname,
       @JsonProperty("email") String email, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountid") String accountId, @JsonProperty("notes") String notes) {
-    super();
+
     this.username = username;
     this.password = password;
     this.givenname = givenname;

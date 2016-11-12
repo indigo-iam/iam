@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.hasSize;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -23,7 +22,7 @@ import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.ScimRestUtils;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.util.JacksonUtils;
+import it.infn.mw.iam.test.util.JacksonUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
@@ -66,9 +65,7 @@ public class ScimGroupProvisioningPatchTests {
 
   private ScimGroup addTestGroup(String displayName) {
 
-    String uuid = UUID.randomUUID().toString();
-
-    ScimGroup group = ScimGroup.builder(displayName).id(uuid).build();
+    ScimGroup group = ScimGroup.builder(displayName).build();
 
     return restUtils.doPost("/scim/Groups/", group).extract().as(ScimGroup.class);
   }

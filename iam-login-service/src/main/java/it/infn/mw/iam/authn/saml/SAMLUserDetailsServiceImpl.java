@@ -1,7 +1,9 @@
 package it.infn.mw.iam.authn.saml;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport;
 import it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolver;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
@@ -38,6 +41,15 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     return authorities;
   }
 
+  protected User buildUserFromIamAccount(IamAccount account) {
+    return new User(account.getUsername(), account.getPassword(), convertAuthorities(account));
+  }
+
+  protected User buildUserFromSamlCredential(String userSamlId, SAMLCredential credential) {
+    return new User(userSamlId, "", Arrays
+      .asList(ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH));
+  }
+
   @Override
   public Object loadUserBySAML(SAMLCredential credential) throws UsernameNotFoundException {
 
@@ -47,15 +59,13 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         resolver.getUserIdentifier(credential).orElseThrow(() -> new UsernameNotFoundException(
             "Could not extract a user identifier from the SAML assertion"));
 
-    IamAccount account = repo.findBySamlId(issuerId, userSamlId).orElseThrow(() -> {
-      String errorMessage =
-          String.format("No local user found linked to SAML identity (%s) %s ", issuerId, userSamlId);
-      
-      return new UsernameNotFoundException(errorMessage);
-    });
+    Optional<IamAccount> account = repo.findBySamlId(issuerId, userSamlId);
 
-    return new User(account.getUsername(), account.getPassword(), convertAuthorities(account));
+    if (account.isPresent()) {
+      return buildUserFromIamAccount(account.get());
+    }
 
+    return buildUserFromSamlCredential(userSamlId, credential);
   }
 
 }

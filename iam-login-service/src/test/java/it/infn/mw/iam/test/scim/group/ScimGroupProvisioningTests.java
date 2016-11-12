@@ -23,7 +23,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.test.ScimRestUtils;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.util.JacksonUtils;
+import it.infn.mw.iam.test.util.JacksonUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
@@ -95,14 +95,12 @@ public class ScimGroupProvisioningTests {
   public void testCreateAndDeleteGroupSuccessResponse() {
 
     String name = "engineers";
-    String uuid = UUID.randomUUID().toString();
 
-    ScimGroup group = ScimGroup.builder(name).id(uuid).build();
+    ScimGroup group = ScimGroup.builder(name).build();
 
     ScimGroup createdGroup = restUtils.doPost("/scim/Groups/", group).extract().as(ScimGroup.class);
 
     restUtils.doGet(createdGroup.getMeta().getLocation())
-      .body("id", equalTo(uuid))
       .body("displayName", equalTo(name));
 
     restUtils.doDelete(createdGroup.getMeta().getLocation(), HttpStatus.NO_CONTENT);
@@ -111,17 +109,14 @@ public class ScimGroupProvisioningTests {
   @Test
   public void testUpdateGroupDisplaynameSuccessResponse() {
 
-    String uuid = UUID.randomUUID().toString();
-
-    ScimGroup requestedGroup = ScimGroup.builder("engineers").id(uuid).build();
+    ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
     ScimGroup createdGroup =
         restUtils.doPost("/scim/Groups/", requestedGroup).extract().as(ScimGroup.class);
 
-    requestedGroup = ScimGroup.builder("engineers_updated").id(uuid).build();
+    requestedGroup = ScimGroup.builder("engineers_updated").build();
 
     restUtils.doPut(createdGroup.getMeta().getLocation(), requestedGroup)
-      .body("id", equalTo(createdGroup.getId()))
       .body("displayName", equalTo(requestedGroup.getDisplayName()));
 
     restUtils.doDelete(createdGroup.getMeta().getLocation(), HttpStatus.NO_CONTENT);
@@ -131,9 +126,8 @@ public class ScimGroupProvisioningTests {
   public void testCreateGroupEmptyDisplayNameValidationError() {
 
     String displayName = "";
-    String uuid = UUID.randomUUID().toString();
 
-    ScimGroup group = ScimGroup.builder(displayName).id(uuid).build();
+    ScimGroup group = ScimGroup.builder(displayName).build();
 
     restUtils.doPost("/scim/Groups/", group, HttpStatus.BAD_REQUEST).body("detail",
         containsString("scimGroup.displayName : may not be empty"));
@@ -143,14 +137,12 @@ public class ScimGroupProvisioningTests {
   @Test
   public void testUpdateGroupEmptyDisplayNameValidationErro() {
 
-    String uuid = UUID.randomUUID().toString();
-
-    ScimGroup requestedGroup = ScimGroup.builder("engineers").id(uuid).build();
+    ScimGroup requestedGroup = ScimGroup.builder("engineers").build();
 
     ScimGroup createdGroup =
         restUtils.doPost("/scim/Groups/", requestedGroup).extract().as(ScimGroup.class);
 
-    requestedGroup = ScimGroup.builder("").id(uuid).build();
+    requestedGroup = ScimGroup.builder("").build();
 
     restUtils.doPut(createdGroup.getMeta().getLocation(), requestedGroup, HttpStatus.BAD_REQUEST);
 
@@ -160,21 +152,18 @@ public class ScimGroupProvisioningTests {
   @Test
   public void testUpdateGroupAlreadyUsedDisplaynameError() {
 
-    String engineers_uuid = UUID.randomUUID().toString();
-    String artists_uuid = UUID.randomUUID().toString();
-
     ScimGroup engineers =
-        restUtils.doPost("/scim/Groups/", ScimGroup.builder("engineers").id(engineers_uuid).build())
+        restUtils.doPost("/scim/Groups/", ScimGroup.builder("engineers").build())
           .extract()
           .as(ScimGroup.class);
 
     ScimGroup artists =
-        restUtils.doPost("/scim/Groups/", ScimGroup.builder("artists").id(artists_uuid).build())
+        restUtils.doPost("/scim/Groups/", ScimGroup.builder("artists").build())
           .extract()
           .as(ScimGroup.class);
 
     restUtils.doPut(engineers.getMeta().getLocation(),
-        ScimGroup.builder("artists").id(engineers_uuid).build(), HttpStatus.CONFLICT);
+        ScimGroup.builder("artists").build(), HttpStatus.CONFLICT);
 
     restUtils.doDelete(engineers.getMeta().getLocation(), HttpStatus.NO_CONTENT);
     restUtils.doDelete(artists.getMeta().getLocation(), HttpStatus.NO_CONTENT);

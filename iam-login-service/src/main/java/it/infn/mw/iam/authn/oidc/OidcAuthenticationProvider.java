@@ -12,7 +12,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 
@@ -45,21 +44,11 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
       return null;
     }
 
-    try {
-      User user = (User) userDetailsService.loadUserByOIDC(token.getSub(), token.getIssuer());
+    User user = (User) userDetailsService.loadUserByOIDC(token);
 
-      OidcExternalAuthenticationToken userAuthenticationToken = new OidcExternalAuthenticationToken(
-          token, getExpirationTimeFromOIDCAuthenticationToken(token), user.getUsername(), null,
-          user.getAuthorities());
-
-      return userAuthenticationToken;
-
-    } catch (UsernameNotFoundException e) {
-      LOG.info("OIDC User not found:{}", e.getMessage());
-      throw e;
-    }
-
+    return new OidcExternalAuthenticationToken(token,
+	getExpirationTimeFromOIDCAuthenticationToken(token), user.getUsername(), null,
+	user.getAuthorities());
   }
-
 
 }

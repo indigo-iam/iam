@@ -148,10 +148,12 @@ public class ScimUserController {
   @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('ADMIN')")
   @RequestMapping(value = "/{id}", method = RequestMethod.PATCH,
       consumes = ScimConstants.SCIM_CONTENT_TYPE)
-
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateUser(@PathVariable final String id,
-      @RequestBody final ScimUserPatchRequest patchRequest) {
+      @RequestBody @Validated(ScimUser.UpdateUserValidation.class) final ScimUserPatchRequest patchRequest,
+      final BindingResult validationResult) {
+
+    handleValidationError("Invalid Scim User", validationResult);
 
     userProvisioningService.update(id, patchRequest.getOperations());
 

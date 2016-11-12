@@ -39,30 +39,29 @@ function UserController($scope, $rootScope, $state, $uibModal, $filter, filterFi
 
 	function getIndigoUserInfo() {
 
-		$rootScope.userLoadingProgress = 0;
-		console.log("progress", $rootScope.userLoadingProgress);
-	
-		
+		$rootScope.pageLoadingProgress = 0;
+
 		user.loadingModal = $uibModal
 		.open({
 			animation: false,
-			templateUrl : '/resources/iam/template/dashboard/user/loading-modal.html'
+			templateUrl : '/resources/iam/template/dashboard/loading-modal.html'
 		});
 
 		user.loadingModal.opened.then(function() {
 
-			$rootScope.userLoadingProgress = 50;
+			$rootScope.pageLoadingProgress = 50;
 
 			scimFactory.getUser(user.id).then(function(response) {
-				
+
 				user.userInfo = response.data;
 				console.log("Added indigoUserInfo: ", user.userInfo);
 
-				$rootScope.userLoadingProgress = 100;
+				$rootScope.pageLoadingProgress = 100;
 				user.loadingModal.dismiss("Cancel");
-				
+
 			}, function(error) {
-				
+
+				$rootScope.pageLoadingProgress = 100;
 				console.error("getUser", error)
 				user.loadingModal.dismiss("Error");
 				$scope.operationResult = Utils.buildErrorOperationResult(error);

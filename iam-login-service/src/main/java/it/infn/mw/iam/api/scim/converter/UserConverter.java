@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
-import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
@@ -158,7 +157,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .profileUrl(entity.getUserInfo().getProfile())
       .picture(entity.getUserInfo().getPicture())
       .timezone(entity.getUserInfo().getZoneinfo())
-      .addEmail(getScimEmail(entity))
+      .buildEmail(entity.getUserInfo().getEmail())
       .indigoUserInfo(indigoUser);
 
     if (address != null) {
@@ -188,11 +187,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .familyName(entity.getUserInfo().getFamilyName())
       .middleName(entity.getUserInfo().getMiddleName())
       .build();
-  }
-
-  private ScimEmail getScimEmail(IamAccount entity) {
-
-    return ScimEmail.builder().email(entity.getUserInfo().getEmail()).build();
   }
 
   private ScimIndigoUser getScimIndigoUser(IamAccount entity) {

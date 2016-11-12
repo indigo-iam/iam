@@ -403,9 +403,9 @@ angular.module('dashboardApp').factory("scimFactory", [ '$http', '$httpParamSeri
 		return $http.patch(url, data, config);
 	};
 	
-	function updateUser(scimUser) {
+	function updateUser(userId, scimUser) {
 		
-		console.info("Patch user ", scimUser);
+		console.info("Patch user ", userId, scimUser);
 		
 		var config = {
 				headers: { 'Content-Type': 'application/scim+json' }
@@ -417,7 +417,7 @@ angular.module('dashboardApp').factory("scimFactory", [ '$http', '$httpParamSeri
 					value: scimUser
 				}]
 			};
-		var url = urlUsers + '/' + scimUser.id;
+		var url = urlUsers + '/' + userId;
 		
 		return $http.patch(url, data, config);
 	};

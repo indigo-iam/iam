@@ -1,23 +1,26 @@
 package it.infn.mw.iam.registration;
 
 import java.util.List;
+import java.util.Optional;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 
 public interface RegistrationRequestService {
 
-  public RegistrationRequestDto createRequest(RegistrationRequestDto request);
+  RegistrationRequestDto createRequest(RegistrationRequestDto request,
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo);
 
-  public List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
+  List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
 
-  public List<RegistrationRequestDto> listPendingRequests();
+  List<RegistrationRequestDto> listPendingRequests();
 
-  public RegistrationRequestDto updateStatus(String uuid, IamRegistrationRequestStatus status);
+  RegistrationRequestDto updateStatus(String uuid, IamRegistrationRequestStatus status);
 
-  public RegistrationRequestDto confirmRequest(String confirmationKey);
+  RegistrationRequestDto confirmRequest(String confirmationKey);
 
-  public Boolean usernameAvailable(String username);
+  Boolean usernameAvailable(String username);
 
-  public Boolean emailAvailable(String emailAddress);
+  Boolean emailAvailable(String emailAddress);
 
 }

@@ -1,5 +1,6 @@
 package it.infn.mw.iam.api.scim.model;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -13,9 +14,12 @@ public class ScimPatchOperation<T> {
     add, remove, replace
   }
 
-  private final ScimPatchOperationType op;
-  private final String path;
   @NotNull
+  private final ScimPatchOperationType op;
+
+  private final String path;
+
+  @Valid
   private final T value;
 
   @JsonCreator

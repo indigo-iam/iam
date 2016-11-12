@@ -1,4 +1,4 @@
-package it.infn.mw.iam.util;
+package it.infn.mw.iam.test.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
@@ -10,37 +10,32 @@ import com.jayway.restassured.mapper.factory.Jackson2ObjectMapperFactory;
 
 public class JacksonUtils {
 
-  public JacksonUtils() {
-    // TODO Auto-generated constructor stub
-  }
-
   public static void initRestAssured() {
-  
+
     RestAssured.config = RestAssuredConfig.config().objectMapperConfig(
-        new ObjectMapperConfig().jackson2ObjectMapperFactory(JacksonUtils.getJacksonObjectMapperFactory()));
-  
+	new ObjectMapperConfig().jackson2ObjectMapperFactory(JacksonUtils.getJacksonObjectMapperFactory()));
   }
 
   public static Jackson2ObjectMapperFactory getJacksonObjectMapperFactory() {
-  
+
     return new Jackson2ObjectMapperFactory() {
-  
+
       @Override
       public ObjectMapper create(@SuppressWarnings("rawtypes") Class cls, String charset) {
-  
-        return createJacksonObjectMapper();
+
+	return createJacksonObjectMapper();
       }
     };
   }
 
   public static ObjectMapper createJacksonObjectMapper() {
-  
+
     FilterProvider filters = new SimpleFilterProvider().setFailOnUnknownId(false);
-  
+
     ObjectMapper mapper = new ObjectMapper();
     mapper.setFilterProvider(filters);
     return mapper;
-  
+
   }
 
 }

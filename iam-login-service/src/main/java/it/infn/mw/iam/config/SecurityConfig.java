@@ -121,6 +121,7 @@ public class SecurityConfig {
 
   @Configuration
   @Order(105)
+  @Profile("google")
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -131,7 +132,7 @@ public class SecurityConfig {
     OidcAuthenticationProvider authProvider;
 
     @Autowired
-    @Qualifier("openIdConnectAuthenticationFilter")
+    @Qualifier("OIDCAuthenticationFilter")
     private OidcClientFilter oidcFilter;
 
     @Override
@@ -140,7 +141,7 @@ public class SecurityConfig {
       return oidcAuthManager;
     }
 
-    @Bean(name = "ExternalAuthenticationEntryPoint")
+    // @Bean(name = "ExternalAuthenticationEntryPoint")
     public LoginUrlAuthenticationEntryPoint authenticationEntryPoint() {
 
       return new LoginUrlAuthenticationEntryPoint("/openid_connect_login");
@@ -156,12 +157,19 @@ public class SecurityConfig {
     protected void configure(final HttpSecurity http) throws Exception {
 
       // @formatter:off
-      http.antMatcher("/openid_connect_login**").exceptionHandling()
+      http
+	.antMatcher("/openid_connect_login**")
+	.exceptionHandling()
           .authenticationEntryPoint(authenticationEntryPoint())
-          .accessDeniedHandler(new OidcAccessDeniedHandler()).and()
+	  .accessDeniedHandler(new OidcAccessDeniedHandler())
+	.and()
           .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class).authorizeRequests()
-          .antMatchers("/openid_connect_login**").permitAll().and().sessionManagement()
-          .enableSessionUrlRewriting(false).sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
+	  .antMatchers("/openid_connect_login**")
+	    .permitAll()
+	.and()
+	  .sessionManagement()
+	    .enableSessionUrlRewriting(false)
+	    .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
     }
   }
@@ -499,6 +507,48 @@ public class SecurityConfig {
             .csrf()
               .disable();
       // @formatter:on
+    }
+  }
+
+  @Configuration
+  @Order(20)
+  public static class AuthnInfoEndpointConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher("/iam/authn-info/**")
+	.exceptionHandling()
+	.authenticationEntryPoint(authenticationEntryPoint)
+	.and()
+	.sessionManagement()
+	.sessionCreationPolicy(SessionCreationPolicy.NEVER)
+	.and()
+	.authorizeRequests()
+	.antMatchers("/iam/authn-info/**")
+	.authenticated();
+    }
+
+  }
+  @Configuration
+  @Order(21)
+  public static class AccountLinkingEndpointConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher("/iam/account-linking/**")
+	.exceptionHandling()
+	.authenticationEntryPoint(authenticationEntryPoint)
+	.and()
+	.sessionManagement()
+	.sessionCreationPolicy(SessionCreationPolicy.NEVER)
+	.and()
+	.authorizeRequests()
+	.antMatchers("/iam/account-linking/**")
+	.authenticated();
     }
   }
 

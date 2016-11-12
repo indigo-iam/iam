@@ -135,6 +135,7 @@ following profiles are defined:
 | google | no | Enables Google authentication |
 | saml | no | Enables SAML authentication |
 | dev | yes | Enables development debugging information |
+| registration | yes | Enables user registration and reset password functionalities |
 
 Profiles are enabled by setting the `spring.profiles.active` Java system
 property when starting the IAM service. This can be done, using the official
@@ -155,7 +156,7 @@ All configurable aspects of the IAM are configured via environment variables.
 |IAM_ISSUER | http://localhost:8080 | This is the endpoint on which the IAM will receive requests. |
 |IAM_KEY_STORE_LOCATION | N/A | The path to the JSON key store that holds the keys used to sign the tokens |
 |IAM_X509_TRUST_ANCHORS_DIR | /etc/grid-security/certificates | Where CA certificates will be searched |
-|IAM_X509_TRUST_ANCHORS_REFRESH | 14400| How frequentyly (in seconds) should trust anchors be refreshed |
+|IAM_X509_TRUST_ANCHORS_REFRESH | 14400| How frequently (in seconds) should trust anchors be refreshed |
 
 #### Database access options
 
@@ -185,6 +186,29 @@ All configurable aspects of the IAM are configured via environment variables.
 |IAM_SAML_KEY_ID | N/A | The identifier of the key that should be used to sign requests/assertions |
 |IAM_SAML_KEY_PASSWORD | N/A | The SAML key password |
 |IAM_SAML_IDP_METADATA | N/A | The path to the SAML federation idp metadata |
+
+#### Notification service options
+
+IAM notification service use an external SMTP server for sending email notifications.
+The table below contains the options for configure the SMTP server.
+
+|*Env. variable*  |*Default value*|*Meaning*|
+|-----------------|---------------|---------|
+|IAM_MAIL_HOST    |localhost      |Hostname of the SMTP server to use for sending notification emails|
+|IAM_MAIL_PORT    |25             |Port on which SMTP server to use is listening|
+|IAM_MAIL_USERNAME|N/A            |Username to use for authentication on SMTP server, if required|
+|IAM_MAIL_PASSWORD|N/A            |Password to use for authentication on SMTP server, if required|
+
+Specific options:
+
+|*Env. variable*               |*Default value*        |*Meaning*|
+|------------------------------|-----------------------|---------|
+|IAM_NOTIFICATION_DISABLE      |false                  |Turn on the notification service. If set to `true`, notifications aren't send to mail server, but logged into the log file|
+|IAM_NOTIFICATION_FROM         |indigo@localhost       |Mail address used as mail sender| 
+|IAM_NOTIFICATION_TASK_DELAY   |30000                  |Time interval, in milliseconds, between two consecutive runs of the job that send notifications|
+|IAM_NOTIFICATION_CLEANUP_AGE  |30                     |Retention of delivered messages, in days|
+|IAM_NOTIFICATION_ADMIN_ADDRESS|indigo-alerts@localhost|Mail address used as receiver for administrative notifications|
+
 
 ### Example configuration
 
@@ -220,6 +244,10 @@ IAM_SAML_KEYSTORE_PASSWORD=********
 IAM_SAML_KEY_ID=iam-test
 IAM_SAML_KEY_PASSWORD=********
 IAM_SAML_IDP_METADATA=file:///idp-metadata.xml
+IAM_NOTIFICATION_FROM=iam@iam-test.mydomain.eu
+IAM_NOTIFICATION_TASK_DELAY=5000
+IAM_NOTIFICATION_ADMIN_ADDRESS=iam-admins@mydomain.eu
+IAM_MAIL_HOST=mailman.mydomain.eu
 ```
 
 [jwk-generator]: https://github.com/mitreid-connect/json-web-key-generator
