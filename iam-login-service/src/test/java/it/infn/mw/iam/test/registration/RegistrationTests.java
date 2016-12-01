@@ -22,7 +22,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.RegistrationUtils;
@@ -38,9 +37,6 @@ public class RegistrationTests {
 
   @Value("${server.port}")
   private Integer iamPort;
-
-  @Autowired
-  private IamAccountRepository accountRepository;
 
   @BeforeClass
   public static void init() {

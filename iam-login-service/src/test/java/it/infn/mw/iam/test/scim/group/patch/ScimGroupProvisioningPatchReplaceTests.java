@@ -2,6 +2,7 @@ package it.infn.mw.iam.test.scim.group.patch;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -143,8 +143,13 @@ public class ScimGroupProvisioningPatchReplaceTests {
   public void testGroupPatchReplaceWithEmptyMemberList() {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
-    ScimGroupPatchRequest patchReq = ScimGroupPatchUtils.getPatchAddUsersRequest(members);
+    ScimGroupPatchRequest patchReq = ScimGroupPatchUtils.getPatchReplaceUsersRequest(members);
 
-    restUtils.doPatch(engineers.getMeta().getLocation(), patchReq, HttpStatus.BAD_REQUEST);
+    restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
+    
+    ScimGroup updatedGroup =
+        restUtils.doGet(engineers.getMeta().getLocation()).extract().as(ScimGroup.class);
+    assertThat(updatedGroup.getMembers().isEmpty(), equalTo(true));
+    
   }
 }

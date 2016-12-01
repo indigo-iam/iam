@@ -141,12 +141,12 @@ public class ScimGroupProvisioningPatchAddTests {
   }
 
   @Test
-  public void testGroupPatchAddMEmptyMembersList() {
+  public void testGroupPatchAddEmptyMembersList() {
 
     ScimGroupPatchRequest patchAddReq =
         ScimGroupPatchUtils.getPatchAddUsersRequest(new ArrayList<ScimUser>());
 
-    restUtils.doPatch(engineers.getMeta().getLocation(), patchAddReq, HttpStatus.BAD_REQUEST);
+    restUtils.doPatch(engineers.getMeta().getLocation(), patchAddReq);
 
     restUtils.doGet(engineers.getMeta().getLocation())
       .body("id", equalTo(engineers.getId()))

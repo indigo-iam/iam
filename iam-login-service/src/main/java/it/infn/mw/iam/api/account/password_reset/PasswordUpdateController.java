@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.account.password_reset.error.BadUserPasswordError;
-import it.infn.mw.iam.api.account.password_reset.error.InvalidCredentialsError;
 import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordError;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerified;
 import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
@@ -74,13 +73,6 @@ public class PasswordUpdateController {
   @ExceptionHandler(InvalidPasswordError.class)
   @ResponseBody
   public String invalidPasswordError(HttpServletRequest req, Exception ex) {
-    return ex.getMessage();
-  }
-
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidCredentialsError.class)
-  @ResponseBody
-  public String invalidCredentialsError(HttpServletRequest req, Exception ex) {
     return ex.getMessage();
   }
 

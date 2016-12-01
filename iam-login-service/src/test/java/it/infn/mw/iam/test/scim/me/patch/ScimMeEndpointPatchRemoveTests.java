@@ -1,6 +1,8 @@
 package it.infn.mw.iam.test.scim.me.patch;
 
 import static it.infn.mw.iam.test.TestUtils.passwordTokenGetter;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -10,14 +12,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.model.ScimAddress;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
+import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
+import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.test.ScimRestUtils;
@@ -38,14 +40,10 @@ public class ScimMeEndpointPatchRemoveTests {
   final ScimName TESTUSER_NAME = ScimName.builder().givenName("John").familyName("Lennon").build();
   final ScimEmail TESTUSER_EMAIL = ScimEmail.builder().email("john.lennon@liverpool.uk").build();
   final ScimPhoto TESTUSER_PHOTO = ScimPhoto.builder().value("http://site.org/user.png").build();
-  final ScimAddress TESTUSER_ADDRESS = ScimAddress.builder()
-    .country("IT")
-    .formatted("viale Berti Pichat 6/2\nBologna IT")
-    .locality("Bologna")
-    .postalCode("40121")
-    .region("Emilia Romagna")
-    .streetAddress("viale Berti Pichat")
-    .build();
+  final ScimOidcId TESTUSER_OIDCID =
+      ScimOidcId.builder().issuer("OIDC_ID_ISSUER").subject("OIDC_ID_SUBJECT").build();
+  final ScimSamlId TESTUSER_SAMLID =
+      ScimSamlId.builder().idpId("SAML_ID_IDP").userId("SAML_ID_USER").build();
 
   @BeforeClass
   public static void init() {
@@ -67,8 +65,11 @@ public class ScimMeEndpointPatchRemoveTests {
             .password(TESTUSER_PASSWORD)
             .addEmail(TESTUSER_EMAIL)
             .name(TESTUSER_NAME)
+            .addOidcId(TESTUSER_OIDCID)
+            .addSamlId(TESTUSER_SAMLID)
             .build())
-      .extract().as(ScimUser.class);
+      .extract()
+      .as(ScimUser.class);
 
     userRestUtils = ScimRestUtils.getInstance(passwordTokenGetter().username(TESTUSER_USERNAME)
       .password(TESTUSER_PASSWORD)
@@ -116,36 +117,31 @@ public class ScimMeEndpointPatchRemoveTests {
   }
 
   @Test
-  public void testPatchRemoveAddress() {
+  public void testPatchRemoveOidcId() {
 
-    final ScimUserPatchRequest patchAddRequest = ScimUserPatchRequest.builder()
-      .add(ScimUser.builder().addAddress(TESTUSER_ADDRESS).build())
-      .build();
-
-    doPatch(patchAddRequest);
-
-    ScimAddress updatedAddress = doGet().getAddresses().get(0);
-
-    Assert.assertTrue(updatedAddress.equals(TESTUSER_ADDRESS));
-
-    ScimUserPatchRequest patchRemoveRequest = ScimUserPatchRequest.builder()
-      .remove(ScimUser.builder().addAddress(TESTUSER_ADDRESS).build())
+    final ScimUserPatchRequest patchRemoveRequest = ScimUserPatchRequest.builder()
+      .remove(ScimUser.builder().addOidcId(TESTUSER_OIDCID).build())
       .build();
 
     doPatch(patchRemoveRequest);
 
     ScimUser updatedUser = doGet();
 
-    Assert.assertFalse(updatedUser.hasAddresses());
+    assertThat(updatedUser.hasOidcIds(), equalTo(false));
   }
 
   @Test
-  public void testPatchRemoveAddressNotExists() {
+  public void testPatchRemoveSamlId() {
 
     final ScimUserPatchRequest patchRemoveRequest = ScimUserPatchRequest.builder()
-      .remove(ScimUser.builder().addAddress(TESTUSER_ADDRESS).build())
+      .remove(ScimUser.builder().addSamlId(TESTUSER_SAMLID).build())
       .build();
 
-    userRestUtils.doPatch("/scim/Me", patchRemoveRequest, HttpStatus.NOT_FOUND);
+    doPatch(patchRemoveRequest);
+
+    ScimUser updatedUser = doGet();
+
+    assertThat(updatedUser.hasSamlIds(), equalTo(false));
   }
+
 }

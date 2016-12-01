@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimException;
+import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -22,22 +23,34 @@ import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.provisioning.paging.OffsetPageable;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
-import it.infn.mw.iam.api.scim.updater.ScimGroupUpdater;
+import it.infn.mw.iam.api.scim.updater.AccountUpdater;
+import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 
 @Service
 public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<ScimMemberRef>> {
 
-  @Autowired
-  private GroupConverter converter;
+  private final IamGroupRepository groupRepository;
+
+  private final IamAccountRepository accountRepository;
+
+  private final GroupConverter converter;
+
+  private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
   @Autowired
-  private ScimGroupUpdater groupUpdater;
+  public ScimGroupProvisioning(IamGroupRepository groupRepository,
+      IamAccountRepository accountRepository, GroupConverter converter) {
 
-  @Autowired
-  private IamGroupRepository groupRepository;
+    this.accountRepository = accountRepository;
+    this.groupRepository = groupRepository;
+    this.converter = converter;
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountRepository);
+
+  }
 
   private void idSanityChecks(String id) {
 
@@ -159,7 +172,44 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     IamGroup iamGroup = groupRepository.findByUuid(id)
       .orElseThrow(() -> new ScimResourceNotFoundException("No group mapped to id '" + id + "'"));
 
-    groupUpdater.update(iamGroup, operations);
+    operations.forEach(op -> executePatchOperation(iamGroup, op));
+  }
+
+  private void executePatchOperation(IamGroup group, ScimPatchOperation<List<ScimMemberRef>> op) {
+
+    checkUnsupportedPath(op);
+
+    List<AccountUpdater> updaters = groupUpdaterFactory.getUpdatersForPatchOperation(group, op);
+
+    boolean hasChanged = false;
+
+    for (AccountUpdater u : updaters) {
+      if (u.update()) {
+        IamAccount a = u.getAccount();
+        a.touch();
+        accountRepository.save(a);
+        hasChanged = true;
+      }
+    }
+
+    if (hasChanged) {
+
+      group.touch();
+      groupRepository.save(group);
+
+    }
+  }
+
+  private void checkUnsupportedPath(ScimPatchOperation<List<ScimMemberRef>> op) {
+
+    if (op.getPath() == null || op.getPath().isEmpty()) {
+      throw new ScimPatchOperationNotSupported("empty path value is not currently supported");
+    }
+    if (op.getPath().equals("members")) {
+      return;
+    }
+    throw new ScimPatchOperationNotSupported(
+        "path value " + op.getPath() + " is not currently supported");
   }
 
 }

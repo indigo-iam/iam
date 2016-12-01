@@ -1,7 +1,8 @@
 package it.infn.mw.iam.test.scim.group.patch;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
@@ -49,7 +51,7 @@ public class ScimGroupProvisioningPatchRemoveTests {
   }
 
   @Before
-  public void initAccessToken() {
+  public void initTests() {
 
     accessToken = TestUtils.getAccessToken("scim-client-rw", "secret", "scim:read scim:write");
     restUtils = ScimRestUtils.getInstance(accessToken);
@@ -97,33 +99,47 @@ public class ScimGroupProvisioningPatchRemoveTests {
 
     restUtils.doPatch(group.getMeta().getLocation(), patchAddReq);
 
-    ScimGroup g = restUtils.doGet(group.getMeta().getLocation()).extract().as(ScimGroup.class);
+    ScimGroup g = getGroup(group.getMeta().getLocation());
 
     Assert.assertTrue(g.getMembers().contains(TestUtils.getMemberRef(members.get(0))));
     Assert.assertTrue(g.getMembers().contains(TestUtils.getMemberRef(members.get(1))));
     Assert.assertTrue(g.getMembers().contains(TestUtils.getMemberRef(members.get(2))));
   }
 
+  private void assertMembership(ScimUser user, ScimGroup group, boolean isMember) {
+
+    assertThat(group.getMembers().stream().anyMatch(m -> m.getValue().equals(user.getId())),
+        equalTo(isMember));
+  }
+
+  private ScimGroup getGroup(String location) {
+    return restUtils.doGet(location).extract().as(ScimGroup.class);
+  }
+
   @Test
   public void testGroupPatchRemoveMember() {
 
-    List<ScimUser> membersToRemove = new ArrayList<ScimUser>();
-    membersToRemove.add(lennon);
+    ScimGroupPatchRequest patchRemoveRequest =
+        ScimGroupPatchUtils.getPatchRemoveUsersRequest(Lists.newArrayList(lennon));
 
-    ScimGroupPatchRequest patchReq =
-        ScimGroupPatchUtils.getPatchRemoveUsersRequest(membersToRemove);
+    ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
-    restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
+    assertThat(engineersBeforeUpdate.getMembers().size(), equalTo(3));
+    assertMembership(lennon, engineersBeforeUpdate, true);
+    assertMembership(lincoln, engineersBeforeUpdate, true);
+    assertMembership(kennedy, engineersBeforeUpdate, true);
 
-    ScimGroup updatedGroup = restUtils.doGet(engineers.getMeta().getLocation())
-      .body("id", equalTo(engineers.getId()))
-      .body("displayName", equalTo(engineers.getDisplayName()))
-      .body("members", hasSize(equalTo(2)))
-      .extract()
-      .as(ScimGroup.class);
+    restUtils.doPatch(engineers.getMeta().getLocation(), patchRemoveRequest);
 
-    Assert.assertTrue(updatedGroup.getMembers().contains(TestUtils.getMemberRef(lincoln)));
-    Assert.assertTrue(updatedGroup.getMembers().contains(TestUtils.getMemberRef(kennedy)));
+    ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
+
+    assertThat(engineersAfterUpdate.getMembers().size(), equalTo(2));
+    assertMembership(lennon, engineersAfterUpdate, false);
+    assertMembership(lincoln, engineersAfterUpdate, true);
+    assertMembership(kennedy, engineersAfterUpdate, true);
+
+    assertThat(engineersBeforeUpdate.getMeta().getLastModified(),
+        not(equalTo(engineersAfterUpdate.getMeta().getLastModified())));
   }
 
   @Test
@@ -138,14 +154,11 @@ public class ScimGroupProvisioningPatchRemoveTests {
 
     restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
 
-    ScimGroup updatedGroup = restUtils.doGet(engineers.getMeta().getLocation())
-      .body("id", equalTo(engineers.getId()))
-      .body("displayName", equalTo(engineers.getDisplayName()))
-      .body("members", hasSize(equalTo(1)))
-      .extract()
-      .as(ScimGroup.class);
+    ScimGroup updatedGroup = getGroup(engineers.getMeta().getLocation());
 
-    Assert.assertTrue(updatedGroup.getMembers().contains(TestUtils.getMemberRef(kennedy)));
+    assertMembership(kennedy, updatedGroup, true);
+    assertMembership(lennon, updatedGroup, false);
+    assertMembership(lincoln, updatedGroup, false);
   }
 
   @Test
@@ -161,13 +174,9 @@ public class ScimGroupProvisioningPatchRemoveTests {
 
     restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
 
-    ScimGroup updatedGroup = restUtils.doGet(engineers.getMeta().getLocation())
-      .body("id", equalTo(engineers.getId()))
-      .body("displayName", equalTo(engineers.getDisplayName()))
-      .extract()
-      .as(ScimGroup.class);
+    ScimGroup updatedGroup = getGroup(engineers.getMeta().getLocation());
 
-    Assert.assertTrue(updatedGroup.getMembers().isEmpty());
+    assertThat(updatedGroup.getMembers().isEmpty(), equalTo(true));
   }
 
   @Test
@@ -179,31 +188,29 @@ public class ScimGroupProvisioningPatchRemoveTests {
 
     restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
 
-    ScimGroup updatedGroup = restUtils.doGet(engineers.getMeta().getLocation())
-      .body("id", equalTo(engineers.getId()))
-      .body("displayName", equalTo(engineers.getDisplayName()))
-      .extract()
-      .as(ScimGroup.class);
+    ScimGroup updatedGroup = getGroup(engineers.getMeta().getLocation());
 
     Assert.assertTrue(updatedGroup.getMembers().isEmpty());
   }
 
   @Test
-  public void testGroupPatchRemoveNonMember() {
+  public void testGroupPatchRemoveMemberTwice() {
 
-    List<ScimUser> members = new ArrayList<ScimUser>();
-    members.add(lennon);
+    ScimGroupPatchRequest patchRemoveRequest =
+        ScimGroupPatchUtils.getPatchRemoveUsersRequest(Lists.newArrayList(lennon));
 
-    ScimGroupPatchRequest patchReq = ScimGroupPatchUtils.getPatchRemoveUsersRequest(members);
+    restUtils.doPatch(engineers.getMeta().getLocation(), patchRemoveRequest);
 
-    restUtils.doPatch(engineers.getMeta().getLocation(), patchReq);
+    ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
-    ScimGroup updatedGroup =
-        restUtils.doGet(engineers.getMeta().getLocation()).extract().as(ScimGroup.class);
+    restUtils.doPatch(engineers.getMeta().getLocation(), patchRemoveRequest);
 
-    Assert.assertFalse(updatedGroup.getMembers().contains(lennon));
+    ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
 
-    restUtils.doPatch(engineers.getMeta().getLocation(), patchReq, HttpStatus.NOT_FOUND);
+    assertMembership(lennon, engineersAfterUpdate, false);
+
+    assertThat(engineersBeforeUpdate.getMeta().getLastModified(),
+        equalTo(engineersAfterUpdate.getMeta().getLastModified()));
   }
 
 }

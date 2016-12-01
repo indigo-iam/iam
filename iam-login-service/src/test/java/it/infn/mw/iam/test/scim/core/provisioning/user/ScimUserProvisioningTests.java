@@ -11,7 +11,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.model.ScimAddress;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -40,14 +39,6 @@ public class ScimUserProvisioningTests {
   final ScimName TESTUSER_NAME = ScimName.builder().givenName("John").familyName("Lennon").build();
   final ScimEmail TESTUSER_EMAIL = ScimEmail.builder().email("john.lennon@liverpool.uk").build();
   final ScimPhoto TESTUSER_PHOTO = ScimPhoto.builder().value("http://site.org/user.png").build();
-  final ScimAddress TESTUSER_ADDRESS = ScimAddress.builder()
-    .country("IT")
-    .formatted("viale Berti Pichat 6/2\nBologna IT")
-    .locality("Bologna")
-    .postalCode("40121")
-    .region("Emilia Romagna")
-    .streetAddress("viale Berti Pichat")
-    .build();
   final ScimOidcId TESTUSER_OIDCID =
       ScimOidcId.builder().issuer("urn:oidc:test:issuer").subject("1234").build();
   final ScimSamlId TESTUSER_SAMLID = ScimSamlId.builder().idpId("idpID").userId("userId").build();
@@ -72,7 +63,6 @@ public class ScimUserProvisioningTests {
       .name(TESTUSER_NAME)
       .addEmail(TESTUSER_EMAIL)
       .addPhoto(TESTUSER_PHOTO)
-      .addAddress(TESTUSER_ADDRESS)
       .addOidcId(TESTUSER_OIDCID)
       .addSamlId(TESTUSER_SAMLID)
       .addSshKey(TESTUSER_SSHKEY)
@@ -101,19 +91,6 @@ public class ScimUserProvisioningTests {
 
     Assert.assertThat(iamAccount.getUserInfo().getEmail(),
         Matchers.equalTo(TESTUSER_EMAIL.getValue()));
-
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getCountry(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getCountry()));
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getFormatted(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getFormatted()));
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getLocality(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getLocality()));
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getPostalCode(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getPostalCode()));
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getRegion(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getRegion()));
-    Assert.assertThat(iamAccount.getUserInfo().getAddress().getStreetAddress(),
-        Matchers.equalTo(TESTUSER_ADDRESS.getStreetAddress()));
 
     Assert.assertThat(iamAccount.getOidcIds().get(0).getIssuer(),
         Matchers.equalTo(TESTUSER_OIDCID.getIssuer()));

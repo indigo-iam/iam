@@ -41,8 +41,6 @@ import it.infn.mw.iam.test.util.saml.SamlUtils;
 @Transactional
 public class SamlExtAuthRegistrationTests extends SamlExternalAuthenticationTestSupport {
 
-  private static final String TEST_100_USER = "test_100";
-
   @Autowired
   private IamAccountRepository iamAccountRepo;
 

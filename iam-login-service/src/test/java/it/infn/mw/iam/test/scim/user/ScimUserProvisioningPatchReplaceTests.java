@@ -9,6 +9,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -110,6 +111,7 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceX509CertificateDisplay() {
 
     ScimUser user = testUsers.get(0);
@@ -124,16 +126,16 @@ public class ScimUserProvisioningPatchReplaceTests {
     ScimUser updated_user =
         restUtils.doGet(user.getMeta().getLocation()).extract().as(ScimUser.class);
 
-    Assert
-      .assertTrue(updated_user.getX509Certificates()
-        .stream()
-        .filter(cert -> cert.getValue().equals(user.getX509Certificates().get(0).getValue()) && cert
-          .getDisplay().equals(user.getX509Certificates().get(0).getDisplay() + "_updated"))
-        .findFirst()
-        .isPresent());
+    Assert.assertTrue(updated_user.getX509Certificates()
+      .stream()
+      .filter(cert -> cert.getValue().equals(user.getX509Certificates().get(0).getValue())
+          && cert.getDisplay().equals(user.getX509Certificates().get(0).getDisplay() + "_updated"))
+      .findFirst()
+      .isPresent());
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceX509CertificatePrimary() {
 
     ScimUser user = testUsers.get(0);
@@ -151,6 +153,7 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceX509CertificatePrimarySwitch() {
 
     ScimUser user = testUsers.get(0);
@@ -181,6 +184,7 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceX509CertificateNotFound() {
 
     ScimUser user = testUsers.get(0);
@@ -192,6 +196,7 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceSshKeyDisplay() {
 
     ScimUser user = testUsers.get(0);
@@ -217,6 +222,7 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
   public void testPatchReplaceSshKeyPrimary() {
 
     ScimUser user = testUsers.get(0);
@@ -240,6 +246,35 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
+  public void testPatchReplaceSshKeyNotSupported() {
+
+    String location = testUsers.get(0).getMeta().getLocation();
+    String keyValue = testUsers.get(0).getIndigoUser().getSshKeys().get(0).getValue();
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(ScimUser.builder()
+      .addSshKey(ScimSshKey.builder().value(keyValue).display("NEW LABEL").build())
+      .build());
+
+    restUtils.doPatch(location, req, HttpStatus.BAD_REQUEST);
+  }
+
+  @Test
+  @Ignore
+  public void testPatchReplaceX509CertificateNotSupported() {
+
+    String location = testUsers.get(0).getMeta().getLocation();
+    String certValue = testUsers.get(0).getX509Certificates().get(0).getValue();
+
+    ScimUserPatchRequest req = getPatchReplaceRequest(ScimUser.builder()
+      .addX509Certificate(ScimX509Certificate.builder().value(certValue).display("NEW LABEL").build())
+      .build());
+
+    restUtils.doPatch(location, req, HttpStatus.BAD_REQUEST);
+  }
+
+  @Test
+  @Ignore
   public void testPatchReplaceSshKeyPrimarySwitch() {
 
     ScimUser user = testUsers.get(0);
@@ -256,13 +291,12 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     String sshKeyValue = user.getIndigoUser().getSshKeys().get(0).getValue();
 
-    Assert.assertTrue(
-        updated_user.getIndigoUser()
-          .getSshKeys()
-          .stream()
-          .filter(sshKey -> (sshKey.getValue().equals(sshKeyValue) && !sshKey.isPrimary()))
-          .findFirst()
-          .isPresent());
+    Assert.assertTrue(updated_user.getIndigoUser()
+      .getSshKeys()
+      .stream()
+      .filter(sshKey -> (sshKey.getValue().equals(sshKeyValue) && !sshKey.isPrimary()))
+      .findFirst()
+      .isPresent());
 
     Assert.assertTrue(
         updated_user.getIndigoUser()
@@ -275,6 +309,8 @@ public class ScimUserProvisioningPatchReplaceTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchReplaceSshKeyNotFound() {
 
     ScimUser user = testUsers.get(0);
@@ -291,11 +327,11 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     ScimUser user = testUsers.get(0);
 
-    ScimUserPatchRequest req = getPatchReplaceRequest(
-        ScimUser.builder().buildEmail("").build());
+    ScimUserPatchRequest req = getPatchReplaceRequest(ScimUser.builder().buildEmail("").build());
 
     restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
-        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
+        containsString(
+            "scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
   }
 
   @Test
@@ -303,11 +339,11 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     ScimUser user = testUsers.get(0);
 
-    ScimUserPatchRequest req = getPatchReplaceRequest(
-        ScimUser.builder().buildEmail(null).build());
+    ScimUserPatchRequest req = getPatchReplaceRequest(ScimUser.builder().buildEmail(null).build());
 
     restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
-        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
+        containsString(
+            "scimUserPatchRequest.operations[0].value.emails[0].value : may not be empty"));
   }
 
   @Test
@@ -326,11 +362,12 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     ScimUser user = testUsers.get(0);
 
-    ScimUserPatchRequest req = getPatchReplaceRequest(
-        ScimUser.builder().buildEmail("fakeEmail").build());
+    ScimUserPatchRequest req =
+        getPatchReplaceRequest(ScimUser.builder().buildEmail("fakeEmail").build());
 
-    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST).body("detail",
-        containsString("scimUserPatchRequest.operations[0].value.emails[0].value : not a well-formed email address"));
+    restUtils.doPatch(user.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST)
+      .body("detail", containsString(
+          "scimUserPatchRequest.operations[0].value.emails[0].value : not a well-formed email address"));
   }
 
   @Test
@@ -344,7 +381,8 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     Assert.assertTrue(uUser1.getPhotos() == null);
 
-    ScimUserPatchRequest req = getPatchAddRequest(ScimUser.builder().buildPhoto(pictureURL).build());
+    ScimUserPatchRequest req =
+        getPatchAddRequest(ScimUser.builder().buildPhoto(pictureURL).build());
 
     restUtils.doPatch(user.getMeta().getLocation(), req);
 
@@ -361,7 +399,8 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     Assert.assertFalse(uUser2.getPhotos().isEmpty());
     Assert.assertTrue(uUser2.getPhotos().get(0).getValue().equals(pictureURL));
-    Assert.assertTrue(uUser2.getMeta().getLastModified().equals(uUser1.getMeta().getLastModified()));
+    Assert
+      .assertTrue(uUser2.getMeta().getLastModified().equals(uUser1.getMeta().getLastModified()));
 
     req = getPatchReplaceRequest(ScimUser.builder().buildPhoto(pictureURL2).build());
 
@@ -371,7 +410,8 @@ public class ScimUserProvisioningPatchReplaceTests {
 
     Assert.assertFalse(uUser3.getPhotos().isEmpty());
     Assert.assertTrue(uUser3.getPhotos().get(0).getValue().equals(pictureURL2));
-    Assert.assertFalse(uUser3.getMeta().getLastModified().equals(uUser2.getMeta().getLastModified()));
+    Assert
+      .assertFalse(uUser3.getMeta().getLastModified().equals(uUser2.getMeta().getLastModified()));
 
     req = getPatchRemoveRequest(ScimUser.builder().buildPhoto(pictureURL2).build());
 

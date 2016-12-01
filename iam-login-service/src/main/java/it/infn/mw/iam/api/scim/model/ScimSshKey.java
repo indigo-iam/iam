@@ -4,11 +4,9 @@ import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.infn.mw.iam.api.scim.model.ScimUser.NewUserValidation;
 
@@ -26,9 +24,6 @@ public class ScimSshKey {
 
   @NotBlank(groups = {NewUserValidation.class})
   private final String value;
-
-  @JsonIgnore
-  private ScimMemberRef accountRef;
 
   @JsonCreator
   private ScimSshKey(@JsonProperty("display") String display,
@@ -61,19 +56,12 @@ public class ScimSshKey {
     return primary;
   }
 
-  @JsonIgnore
-  public ScimMemberRef getAccountRef() {
-
-    return accountRef;
-  }
-
   private ScimSshKey(Builder b) {
 
     this.display = b.display;
     this.primary = b.primary;
     this.value = b.value;
     this.fingerprint = b.fingerprint;
-    this.accountRef = b.accountRef;
   }
 
   public static Builder builder() {
@@ -87,7 +75,6 @@ public class ScimSshKey {
     private String value;
     private Boolean primary;
     private String fingerprint;
-    private ScimMemberRef accountRef;
 
     public Builder() {
 
@@ -117,12 +104,6 @@ public class ScimSshKey {
       return this;
     }
 
-    public Builder accountRef(ScimMemberRef accountRef) {
-
-      this.accountRef = accountRef;
-      return this;
-    }
-
     public ScimSshKey build() {
 
       return new ScimSshKey(this);
@@ -132,6 +113,6 @@ public class ScimSshKey {
   @Override
   public String toString() {
     return "ScimSshKey [display=" + display + ", primary=" + primary + ", fingerprint="
-        + fingerprint + ", value=" + value + ", accountRef=" + accountRef + "]";
+        + fingerprint + ", value=" + value + "]";
   }
 }

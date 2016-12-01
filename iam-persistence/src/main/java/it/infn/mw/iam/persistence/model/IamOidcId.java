@@ -11,7 +11,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "iam_oidc_id")
-public class IamOidcId {
+public class IamOidcId implements IamAccountRef {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,11 +44,13 @@ public class IamOidcId {
     this.id = id;
   }
 
+  @Override
   public IamAccount getAccount() {
 
     return account;
   }
 
+  @Override
   public void setAccount(final IamAccount account) {
 
     this.account = account;

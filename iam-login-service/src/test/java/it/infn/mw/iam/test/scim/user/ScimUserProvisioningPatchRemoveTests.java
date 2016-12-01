@@ -11,6 +11,7 @@ import javax.transaction.Transactional;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,57 +55,51 @@ public class ScimUserProvisioningPatchRemoveTests {
 
   private void initTestUsers() {
 
-    testUsers.add(restUtils
-      .doPost("/scim/Users/",
-          ScimUser.builder("john_lennon")
-            .buildEmail("lennon@email.test")
-            .buildName("John", "Lennon")
-            .addOidcId(ScimOidcId.builder()
-              .issuer(TestUtils.oidcIds.get(0).issuer)
-              .subject(TestUtils.oidcIds.get(0).subject)
-              .build())
-            .addSshKey(ScimSshKey.builder()
-              .value(TestUtils.sshKeys.get(0).key)
-              .fingerprint(TestUtils.sshKeys.get(0).fingerprintSHA256)
-              .primary(true)
-              .build())
-            .addSamlId(ScimSamlId.builder()
-              .idpId(TestUtils.samlIds.get(0).idpId)
-              .userId(TestUtils.samlIds.get(0).userId)
-              .build())
-            .addX509Certificate(ScimX509Certificate.builder()
-              .display(TestUtils.x509Certs.get(0).display)
-              .value(TestUtils.x509Certs.get(0).certificate)
-              .primary(true)
-              .build())
-            .build())
-      .extract().as(ScimUser.class));
+    testUsers.add(restUtils.doPost("/scim/Users/", ScimUser.builder("john_lennon")
+      .buildEmail("lennon@email.test")
+      .buildName("John", "Lennon")
+      .addOidcId(ScimOidcId.builder()
+        .issuer(TestUtils.oidcIds.get(0).issuer)
+        .subject(TestUtils.oidcIds.get(0).subject)
+        .build())
+      .addSshKey(ScimSshKey.builder()
+        .value(TestUtils.sshKeys.get(0).key)
+        .fingerprint(TestUtils.sshKeys.get(0).fingerprintSHA256)
+        .primary(true)
+        .build())
+      .addSamlId(ScimSamlId.builder()
+        .idpId(TestUtils.samlIds.get(0).idpId)
+        .userId(TestUtils.samlIds.get(0).userId)
+        .build())
+      .addX509Certificate(ScimX509Certificate.builder()
+        .display(TestUtils.x509Certs.get(0).display)
+        .value(TestUtils.x509Certs.get(0).certificate)
+        .primary(true)
+        .build())
+      .build()).extract().as(ScimUser.class));
 
-    testUsers.add(restUtils
-      .doPost("/scim/Users/",
-          ScimUser.builder("abraham_lincoln")
-            .buildEmail("lincoln@email.test")
-            .buildName("Abraham", "Lincoln")
-            .addOidcId(ScimOidcId.builder()
-              .issuer(TestUtils.oidcIds.get(1).issuer)
-              .subject(TestUtils.oidcIds.get(1).subject)
-              .build())
-            .addSshKey(ScimSshKey.builder()
-              .value(TestUtils.sshKeys.get(1).key)
-              .fingerprint(TestUtils.sshKeys.get(1).fingerprintSHA256)
-              .primary(true)
-              .build())
-            .addSamlId(ScimSamlId.builder()
-              .idpId(TestUtils.samlIds.get(1).idpId)
-              .userId(TestUtils.samlIds.get(1).userId)
-              .build())
-            .addX509Certificate(ScimX509Certificate.builder()
-              .display(TestUtils.x509Certs.get(1).display)
-              .value(TestUtils.x509Certs.get(1).certificate)
-              .primary(true)
-              .build())
-            .build())
-      .extract().as(ScimUser.class));
+    testUsers.add(restUtils.doPost("/scim/Users/", ScimUser.builder("abraham_lincoln")
+      .buildEmail("lincoln@email.test")
+      .buildName("Abraham", "Lincoln")
+      .addOidcId(ScimOidcId.builder()
+        .issuer(TestUtils.oidcIds.get(1).issuer)
+        .subject(TestUtils.oidcIds.get(1).subject)
+        .build())
+      .addSshKey(ScimSshKey.builder()
+        .value(TestUtils.sshKeys.get(1).key)
+        .fingerprint(TestUtils.sshKeys.get(1).fingerprintSHA256)
+        .primary(true)
+        .build())
+      .addSamlId(ScimSamlId.builder()
+        .idpId(TestUtils.samlIds.get(1).idpId)
+        .userId(TestUtils.samlIds.get(1).userId)
+        .build())
+      .addX509Certificate(ScimX509Certificate.builder()
+        .display(TestUtils.x509Certs.get(1).display)
+        .value(TestUtils.x509Certs.get(1).certificate)
+        .primary(true)
+        .build())
+      .build()).extract().as(ScimUser.class));
   }
 
   @Before
@@ -119,7 +114,7 @@ public class ScimUserProvisioningPatchRemoveTests {
   @After
   public void teardownTest() {
 
-    testUsers.forEach(user -> restUtils.doDelete(user.getMeta().getLocation()));
+    restUtils.deleteUsers(testUsers.get(0), testUsers.get(1));
   }
 
   private ScimUserPatchRequest getPatchRemoveRequest(ScimUser updates) {
@@ -142,6 +137,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveAnotherUserOidcId() {
 
     ScimUser user1 = testUsers.get(0);
@@ -159,6 +156,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveNotFoundOidcId() {
 
     ScimUser user = testUsers.get(0);
@@ -189,6 +188,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveAnotherUserX509Certificate() {
 
     ScimUser user1 = testUsers.get(0);
@@ -206,6 +207,8 @@ public class ScimUserProvisioningPatchRemoveTests {
 
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveNotFoundX509Certificate() {
 
     ScimUser user1 = testUsers.get(0);
@@ -232,6 +235,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveAnotherUserSshKey() {
 
     ScimUser user1 = testUsers.get(0);
@@ -247,6 +252,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveNotFoundSshKey() {
 
     ScimUser user1 = testUsers.get(0);
@@ -259,6 +266,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveSamlId() {
 
     ScimUser user = testUsers.get(0);
@@ -273,6 +282,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveAnotherUserSamlId() {
 
     ScimUser user1 = testUsers.get(0);
@@ -290,6 +301,8 @@ public class ScimUserProvisioningPatchRemoveTests {
   }
 
   @Test
+  @Ignore
+  @Deprecated
   public void testPatchRemoveNotFoundSamlId() {
 
     ScimUser user = testUsers.get(0);

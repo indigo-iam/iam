@@ -2,7 +2,6 @@ package it.infn.mw.iam.config;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.web.CorsFilter;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,9 +53,6 @@ public class SecurityConfig {
 
     @Value("${iam.baseUrl}")
     private String iamBaseUrl;
-
-    @Autowired
-    private AuthenticationTimeStamper authenticationTimeStamper;
 
     @Autowired
     private OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler;

@@ -353,7 +353,7 @@ public class ScimUserProvisioningTests {
       .build();
 
     restUtils.doPost("/scim/Users/", anotherUser, HttpStatus.CONFLICT).body("detail",
-        equalTo("OIDC id (urn:oidc:test:issuer,1234) is already mapped to another user"));
+        containsString("already bounded to another user"));
 
     restUtils.doDelete(creationResult.getMeta().getLocation());
 
@@ -447,8 +447,7 @@ public class ScimUserProvisioningTests {
       .build();
 
     restUtils.doPost("/scim/Users/", anotherUser, HttpStatus.CONFLICT).body("detail",
-        equalTo("ssh key " + TestUtils.sshKeys.get(0).fingerprintSHA256
-            + " is already mapped to another user"));
+        containsString("already bounded to another user"));
 
     restUtils.doDelete(creationResult.getMeta().getLocation());
 

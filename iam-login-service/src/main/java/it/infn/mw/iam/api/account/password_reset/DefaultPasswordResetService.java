@@ -22,17 +22,21 @@ public class DefaultPasswordResetService implements PasswordResetService {
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultPasswordResetService.class);
 
-  @Autowired
-  private IamAccountRepository accountRepository;
+  private final IamAccountRepository accountRepository;
+  private final NotificationService notificationService;
+  private final TokenGenerator tokenGenerator;
+  private final PasswordEncoder passwordEncoder;
 
   @Autowired
-  private NotificationService notificationService;
+  public DefaultPasswordResetService(IamAccountRepository accountRepository,
+      NotificationService notificationService, TokenGenerator tokenGenerator,
+      PasswordEncoder passwordEncoder) {
 
-  @Autowired
-  private TokenGenerator tokenGenerator;
-
-  @Autowired
-  private PasswordEncoder passwordEncoder;
+    this.accountRepository = accountRepository;
+    this.notificationService = notificationService;
+    this.tokenGenerator = tokenGenerator;
+    this.passwordEncoder = passwordEncoder;
+  }
 
   @Override
   public void validateResetToken(String resetToken) {
