@@ -11,7 +11,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "iam_ssh_key")
-public class IamSshKey {
+public class IamSshKey implements IamAccountRef {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +35,11 @@ public class IamSshKey {
 
   public IamSshKey() {
 
+  }
+
+  public IamSshKey(String value) {
+
+	setValue(value);
   }
 
   public Long getId() {
@@ -77,11 +82,13 @@ public class IamSshKey {
     this.fingerprint = fingerprint;
   }
 
+  @Override
   public IamAccount getAccount() {
 
     return account;
   }
 
+  @Override
   public void setAccount(IamAccount account) {
 
     this.account = account;
@@ -100,28 +107,28 @@ public class IamSshKey {
   @Override
   public int hashCode() {
 
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((fingerprint == null) ? 0 : fingerprint.hashCode());
-    return result;
+	final int prime = 31;
+	int result = 1;
+	result = prime * result + ((value == null) ? 0 : value.hashCode());
+	return result;
   }
 
   @Override
   public boolean equals(Object obj) {
 
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    IamSshKey other = (IamSshKey) obj;
-    if (fingerprint == null) {
-      if (other.fingerprint != null)
-        return false;
-    } else if (!fingerprint.equals(other.fingerprint))
-      return false;
-    return true;
+	if (this == obj)
+	  return true;
+	if (obj == null)
+	  return false;
+	if (getClass() != obj.getClass())
+	  return false;
+	IamSshKey other = (IamSshKey) obj;
+	if (value == null) {
+	  if (other.value != null)
+		return false;
+	} else if (!value.equals(other.value))
+	  return false;
+	return true;
   }
 
 }

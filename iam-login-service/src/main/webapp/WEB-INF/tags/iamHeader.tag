@@ -18,14 +18,11 @@
 <link
   rel="stylesheet"
   href="<c:url value='/webjars/angular-ui-select/select.min.css'/>"></link>
-
-<link
-  rel="stylesheet"
-  href="resources/iam/css/iam.css"></link>
-
+  
 <link
   rel="stylesheet"
   href="resources/iam/css/AdminLTE.css"></link>
+
 
 <link
   rel="stylesheet"
@@ -40,17 +37,30 @@
   href="<c:url value='/webjars/font-awesome/css/font-awesome.css'/>"></link>
 
 <link
-  href="resources/bootstrap-social/bootstrap-social.css"
-  rel="stylesheet">
+  rel="stylesheet"
+  href="resources/bootstrap-social/bootstrap-social.css">
+
+<link 
+  rel="stylesheet"
+  href="resources/iam/css/toaster.min.css" />
+
+<link
+  rel="stylesheet"
+  href="resources/iam/css/iam.css"></link>
+
 </head>
 
 <script>
-//get the info of the current user, if available (null otherwise)
+
+var _accountLinkingMessage = "${accountLinkingMessage}";
+var _accountLinkingError = "${accountLinkingError}";
+
+//get the info of the currently authenticated user, if available (null otherwise)
 function getUserInfo() {
   return ${userInfoJson};
 }
 
-// get the authorities of the current user, if available (null otherwise)
+// get the authorities of the currently authenticated user, if available (null otherwise)
 function getUserAuthorities() {
   return ${userAuthorities};
 }
@@ -64,6 +74,10 @@ function getIamGitCommitId() {
 }
 
 function getRegistrationEnabled() {
-  return ${isRegistrationEnabled};
+  return ${loginPageConfiguration.registrationEnabled};
+}
+
+function getOrganisationName() {
+ return '${iamProperties.organisationName}'; 
 }
 </script>

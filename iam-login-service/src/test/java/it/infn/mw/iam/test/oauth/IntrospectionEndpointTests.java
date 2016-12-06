@@ -1,7 +1,6 @@
 package it.infn.mw.iam.test.oauth;
 
 import static com.jayway.restassured.RestAssured.given;
-import static it.infn.mw.iam.test.TestUtils.clientCredentialsTokenGetter;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.Before;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.test.TestUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
@@ -23,8 +23,13 @@ public class IntrospectionEndpointTests {
 
   @Before
   public void initAccessToken() {
-    accessToken = clientCredentialsTokenGetter("client-cred", "secret")
-      .scope("openid profile offline_access").getAccessToken();
+
+
+    accessToken = TestUtils.passwordTokenGetter()
+      .username("test")
+      .password("password")
+      .scope("openid profile offline_access")
+      .getAccessToken();
 
   }
 

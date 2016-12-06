@@ -1,12 +1,25 @@
 package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_OIDC_ID;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SAML_ID;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_PICTURE;
+
+import java.util.EnumSet;
+import java.util.List;
+
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -16,7 +29,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
+import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
+import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
+import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -24,22 +41,39 @@ import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
-import it.infn.mw.iam.api.scim.updater.MeUpdater;
+import it.infn.mw.iam.api.scim.updater.AccountUpdater;
+import it.infn.mw.iam.api.scim.updater.UpdaterType;
+import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @RestController
 @RequestMapping("/scim/Me")
+@Transactional
 public class ScimMeController {
 
-  @Autowired
-  private IamAccountRepository iamAccountRepository;
+  public static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_REPLACE_EMAIL,
+          ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PICTURE,
+          ACCOUNT_REMOVE_PICTURE);
+
+  private final IamAccountRepository iamAccountRepository;
+
+  private final UserConverter userConverter;
+
+  private final DefaultAccountUpdaterFactory updatersFactory;
 
   @Autowired
-  private UserConverter userConverter;
+  public ScimMeController(IamAccountRepository accountRepository, UserConverter userConverter,
+      PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
+      SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
+      X509CertificateConverter x509CertificateConverter) {
 
-  @Autowired
-  private MeUpdater meUpdater;
+    this.iamAccountRepository = accountRepository;
+    this.userConverter = userConverter;
+    this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
+        oidcIdConverter, samlIdConverter, sshKeyConverter, x509CertificateConverter);
+  }
 
   @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET)
@@ -61,23 +95,30 @@ public class ScimMeController {
 
     IamAccount account = getCurrentUserAccount();
 
-    for (ScimPatchOperation<ScimUser> op : patchRequest.getOperations()) {
+    patchRequest.getOperations().forEach(op -> executePatchOperation(account, op));
 
-      if (op.getPath() != null) {
-        throw new ScimPatchOperationNotSupported("Path " + op.getPath() + " is not supported");
-      }
+  }
 
-      switch (op.getOp()) {
-        case add:
-          meUpdater.add(account, op.getValue());
-          break;
-        case remove:
-          meUpdater.remove(account, op.getValue());
-          break;
-        case replace:
-          meUpdater.replace(account, op.getValue());
-          break;
+  private void executePatchOperation(IamAccount account, ScimPatchOperation<ScimUser> op) {
+
+    List<AccountUpdater> updaters = updatersFactory.getUpdatersForPatchOperation(account, op);
+
+    boolean hasChanged = false;
+
+    for (AccountUpdater u : updaters) {
+      if (!SUPPORTED_UPDATER_TYPES.contains(u.getType())) {
+        throw new ScimPatchOperationNotSupported(u.getType().getDescription() + " not supported");
       }
+      if (u.update()) {
+        hasChanged = true;
+      }
+    }
+
+    if (hasChanged) {
+
+      account.touch();
+      iamAccountRepository.save(account);
+
     }
   }
 

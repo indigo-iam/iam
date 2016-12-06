@@ -1,0 +1,21 @@
+<!-- Disable user button -->
+<button class="btn btn-danger btn-block"
+    style="margin-top: 5px"
+    ng-if="$ctrl.user.active && !$ctrl.isMe()" 
+    ng-click="$ctrl.openDialog()" 
+    ng-enabled="$ctrl.enabled"
+    name="disable-user-btn">
+    <i class="fa fa-ban"></i>
+    <strong>Disable User</strong>
+</button>
+
+<!-- Enable user button -->
+<button class="btn btn-primary btn-block" 
+    ng-if="!$ctrl.user.active && !$ctrl.isMe()"
+    style="margin-top: 5px" 
+    ng-click="$ctrl.openDialog()" 
+    ng-enabled="$ctrl.enabled"
+    name="enable-user-btn">
+    <i class="fa fa-power-off"></i>
+    <strong>Restore User</strong>
+</button>

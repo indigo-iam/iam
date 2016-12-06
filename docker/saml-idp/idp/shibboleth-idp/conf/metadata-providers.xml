@@ -13,6 +13,7 @@
                         
     <MetadataProvider id="TestSP"  xsi:type="FilesystemMetadataProvider" metadataFile="%{idp.home}/metadata/sp-metadata.xml"/>
 
+    <MetadataProvider id="iam-home-dev"  xsi:type="FilesystemMetadataProvider" metadataFile="%{idp.home}/metadata/iam-home-dev-metadata.xml"/>
     <MetadataProvider id="iam-local-dev"  xsi:type="FilesystemMetadataProvider" metadataFile="%{idp.home}/metadata/iam-local-dev-metadata.xml"/>
     <MetadataProvider id="iam-dev"  xsi:type="FilesystemMetadataProvider" metadataFile="%{idp.home}/metadata/iam-dev-metadata.xml"/>
 

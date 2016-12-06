@@ -2,9 +2,9 @@
 
 angular.module('dashboardApp').controller('HomeController', HomeController);
 
-HomeController.$inject = [ '$scope', '$state', 'Utils', 'scimFactory', 'ModalService', '$uibModal' ];
+HomeController.$inject = [ '$scope', '$state', '$cookies', 'Utils', 'scimFactory', 'ModalService', '$uibModal' ];
 
-function HomeController($scope, $state, Utils, scimFactory, ModalService, $uibModal) {
+function HomeController($scope, $state, $cookies, Utils, scimFactory, ModalService, $uibModal) {
 
 	var home = this;
 
@@ -17,7 +17,28 @@ function HomeController($scope, $state, Utils, scimFactory, ModalService, $uibMo
 	home.loaded = false;
 	home.isEditUserDisabled = false;
 
+	home.linkOidcAccount = linkOidcAccount;
+	home.unlinkOidcAccount = unlinkOidcAccount;
+	home.showAccountLinkingFeedback = showAccountLinkingFeedback;
+
 	home.loadUserData();
+	home.showAccountLinkingFeedback();
+
+	function showAccountLinkingFeedback(){
+
+		var accountLinkingError = $cookies.get('account-linking.error');
+		
+		if (accountLinkingError){
+			$scope.operationResult = Utils.buildErrorResult(angular.fromJson(accountLinkingError));
+			$cookies.remove('account-linking.error');
+		}
+
+		var accountLinkingMessage = $cookies.get('account-linking.message');
+		if (accountLinkingMessage){
+			$scope.operationResult = Utils.buildSuccessOperationResult(angular.fromJson(accountLinkingMessage));
+			$cookies.remove('account-linking.message');
+		}
+	}
 
 	function loadUserData() {
 		scimFactory.getMe().then(function(response) {
@@ -89,5 +110,37 @@ function HomeController($scope, $state, Utils, scimFactory, ModalService, $uibMo
 			console.log('Modal dismissed at: ', new Date());
 			home.isEditUserDisabled = false;
 		});
+	}
+
+	function linkOidcAccount(){
+
+		var opts = {
+			type: 'Google',
+			action: 'link'
+		}
+
+		var modal = $uibModal
+				.open({
+					templateUrl : '/resources/iam/template/dashboard/home/account-link-dialog.html',
+					controller: 'AccountLinkingController',
+					controllerAs: 'ctrl',
+					resolve: {
+						opts: function(){
+							return opts;
+						}
+					}
+				});
+
+		modal.result.then(function(){
+			home.loadUserData();
+			$scope.operationResult = Utils.buildSuccessOperationResult("Account linked successfully");
+		}, function(){
+			console.log('Modal dismissed at: ', new Date());
+		});
+	
+	}
+
+	function unlinkOidcAccount(){
+
 	}
 }

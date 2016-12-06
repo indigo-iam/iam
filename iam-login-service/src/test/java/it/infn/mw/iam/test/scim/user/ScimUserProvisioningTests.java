@@ -34,7 +34,7 @@ import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.ScimRestUtils;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.util.JacksonUtils;
+import it.infn.mw.iam.test.util.JacksonUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
@@ -353,7 +353,7 @@ public class ScimUserProvisioningTests {
       .build();
 
     restUtils.doPost("/scim/Users/", anotherUser, HttpStatus.CONFLICT).body("detail",
-        equalTo("OIDC id (urn:oidc:test:issuer,1234) is already mapped to another user"));
+        containsString("already bounded to another user"));
 
     restUtils.doDelete(creationResult.getMeta().getLocation());
 
@@ -447,8 +447,7 @@ public class ScimUserProvisioningTests {
       .build();
 
     restUtils.doPost("/scim/Users/", anotherUser, HttpStatus.CONFLICT).body("detail",
-        equalTo("ssh key " + TestUtils.sshKeys.get(0).fingerprintSHA256
-            + " is already mapped to another user"));
+        containsString("already bounded to another user"));
 
     restUtils.doDelete(creationResult.getMeta().getLocation());
 

@@ -12,7 +12,7 @@ public class AddressConverter implements Converter<ScimAddress, Address> {
   @Override
   public Address fromScim(ScimAddress scim) {
 
-    DefaultAddress address = new DefaultAddress();
+    Address address = new DefaultAddress();
 
     address.setCountry(scim.getCountry());
     address.setFormatted(scim.getFormatted());

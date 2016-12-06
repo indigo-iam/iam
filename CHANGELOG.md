@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.0 (2016-12-5)
+
+This release provides new functionality and bug fixes:
+
+- It is now possible for users to link external authentication accounts
+  (Google, SAML) to the user IAM account (#39)
+- It is now possible to register at the IAM starting from an external
+  authentication (#44)
+- The IAM now exposes an authority management endpoint (integrated in the
+  dashboard) that allows to assign/remove administrative rights to/from users
+  (#46)
+- The token exchange granter now enforces audience restrictions correctly (#32)
+- It is now possible to set custom SAML maxAssertionTime and
+  maxAuthenticationAge to customize how the SAML filter should check incoming
+  SAML responses and assertions (#65)
+- Improved token exchange documentation (#51,#52)
+- The IAM now includes spring boot actuator endpoints that allow fine-grained
+  monitoring of the status of the service (#62)
+- Group creation in the dashboard now behaves as expected (#34)
+- Editing first name and other information from the dashboard now behaves as
+  expected (#57)
+- The overall test coverage has been improved
+
 ## 0.4.0 (2016-09-30)
 
 This release provides new functionality and some fixes:

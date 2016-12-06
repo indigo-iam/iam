@@ -1,6 +1,7 @@
 package it.infn.mw.iam.persistence.model;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -31,7 +32,7 @@ public class IamGroup {
   private String description;
 
   @ManyToMany(mappedBy = "groups")
-  private Set<IamAccount> accounts;
+  private Set<IamAccount> accounts = new HashSet<IamAccount>();
 
   @Temporal(TemporalType.TIMESTAMP)
   @Column(nullable = false)
@@ -152,7 +153,7 @@ public class IamGroup {
 
     return "IamGroup [id=" + id + ", uuid=" + uuid + ", name=" + name + ", description="
         + description + ", creationTime=" + creationTime + ", lastUpdateTime=" + lastUpdateTime
-        + ", accounts=" + accounts + "]";
+        + "]";
   }
 
 }

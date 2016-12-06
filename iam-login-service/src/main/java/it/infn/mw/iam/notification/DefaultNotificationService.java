@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.velocity.VelocityEngineUtils;
 
-import it.infn.mw.iam.api.account.PasswordResetController;
+import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.core.time.TimeProvider;
@@ -198,7 +198,7 @@ public class DefaultNotificationService implements NotificationService {
     if (!properties.getDisable()) {
       mailSender.send(message);
     } else {
-      logger.info("Notification disabled: message {}", message);
+      logger.info("Notification disabled: statusMessage {}", message);
     }
   }
 

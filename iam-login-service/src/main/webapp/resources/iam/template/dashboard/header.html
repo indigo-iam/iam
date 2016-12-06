@@ -1,18 +1,18 @@
-<!-- Logo -->
-<a href="" ng-click="$root.reload()" class="logo"><b>INDIGO</b> IAM</a>
-<!-- Header Navbar: style can be found in header.less -->
-<nav class="navbar navbar-static-top" role="navigation">
-	<!-- Sidebar toggle button-->
+<nav id="iam-nav" class="navbar navbar-static-top" role="navigation">
+	
 	<a href="#" class="sidebar-toggle" data-toggle="offcanvas"
 		role="button"> <span class="sr-only">Toggle navigation</span>
 	</a>
+
+	
+	<a href="" ng-click="$root.reload()" class="logo-sm">
+		<b class="hidden-xs">INDIGO</b> IAM
+	</a>
+	
+	
 	<!-- Navbar Right Menu -->
 	<div class="navbar-custom-menu">
 		<ul class="nav navbar-nav">
-<!-- 			<li ng-show="online" class="dropdown"><a href="" class="success"><i -->
-<!-- 					class="fa fa-link"></i><span class="label label-success">ONLINE</span></a></li> -->
-<!-- 			<li ng-show="!online" class="dropdown"><a href="" class="danger"><i -->
-<!-- 					class="fa fa-unlink"></i><span class="label label-danger">OFFLINE</span></a></li> -->
 			<!-- Notifications: style can be found in dropdown.less -->
 			<li class="dropdown notifications-menu" uib-dropdown
 				ng-show="$root.loggedUser.isAdmin && $root.isRegistrationEnabled"><a href=""

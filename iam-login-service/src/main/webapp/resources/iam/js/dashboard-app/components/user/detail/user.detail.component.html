@@ -1,0 +1,58 @@
+<!-- Profile image -->
+<div ng-if="$ctrl.user.photos[0].value">
+    <img class="profile-user-img big-profile-user-img light-bordered-profile-img img-responsive img-circle" ng-src="{{$ctrl.user.photos[0].value}}"
+        alt="User profile picture" />
+</div>
+<div ng-if="!$ctrl.user.photos">
+    <img class="profile-user-img big-profile-user-img light-bordered-profile-img img-responsive img-circle" ng-src="resources/iam/img/default-avatar.png"
+        alt="User profile picture" />
+</div>
+<!-- Full name -->
+<h3 class="profile-username text-center">{{$ctrl.user.name.formatted}}</h3>
+<p class="text-center" ng-show="$ctrl.isVoAdmin()">VO administrator</p>
+<!-- Username -->
+<p class="text-muted text-center">{{$ctrl.user.userName}}</p>
+<p class="text-muted text-center" style="font-size: 9pt">{{$ctrl.user.id}}</p>
+<div class="table-responsive">
+    <table class="table no-border table-striped table-sm">
+        <tbody>
+            <tr>
+                <td class="text-bold text-left">
+                    Email
+                </td>
+                <td class="text-right">
+                    <a href="mailto:{{$ctrl.user.emails[0].value}}">{{$ctrl.user.emails[0].value}}</a>
+                </td>
+            </tr>
+            <tr>
+                <td class="text-bold text-left">
+                    Status
+                </td>
+                <td class="text-right">
+                    <span class="label label-success" ng-show="$ctrl.user.active">
+            <i class="fa fa-check"></i> Active
+          </span>
+                    <span class="label label-warning" ng-show="!$ctrl.user.active">
+            <i class="fa fa-check"></i> Disabled
+          </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="text-bold text-left">
+                    Created
+                </td>
+                <td class="text-right">
+                    <a>{{$ctrl.user.meta.created | relativeDate }}</a>
+                </td>
+            </tr>
+            <tr>
+                <td class="text-bold text-left">
+                    Updated
+                </td>
+                <td class="text-right">
+                    <a>{{$ctrl.user.meta.lastModified | relativeDate }}</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

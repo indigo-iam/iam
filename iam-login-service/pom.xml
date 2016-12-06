@@ -7,7 +7,7 @@
   <parent>
     <groupId>it.infn.mw</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>0.5.0.rc0-SNAPSHOT</version>
+    <version>0.5.0.rc0</version>
   </parent>
 
   <artifactId>iam-login-service</artifactId>
@@ -38,7 +38,7 @@
       <groupId>org.webjars</groupId>
       <artifactId>angularjs</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>angular-ui-bootstrap</artifactId>
@@ -58,12 +58,12 @@
       <groupId>org.webjars</groupId>
       <artifactId>angular-sanitize</artifactId>
     </dependency>
- 
+
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>jquery</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>jquery-ui</artifactId>
@@ -75,9 +75,9 @@
     </dependency>
 
     <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>font-awesome</artifactId>
-      </dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>font-awesome</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.webjars</groupId>
@@ -103,10 +103,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
-    
+
     <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-actuator</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
     <dependency>
@@ -118,6 +118,13 @@
     <dependency>
       <groupId>com.jayway.restassured</groupId>
       <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -125,13 +132,13 @@
       <artifactId>javax.persistence</artifactId>
       <version>2.1.0</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>4.7.2</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-common</artifactId>
@@ -142,6 +149,12 @@
     <dependency>
       <groupId>org.springframework.security.oauth</groupId>
       <artifactId>spring-security-oauth2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -260,18 +273,18 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-joda</artifactId>
     </dependency>
-    
+
     <!-- Mail -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-mail</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.velocity</groupId>
       <artifactId>velocity</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.subethamail</groupId>
       <artifactId>subethasmtp-wiser</artifactId>

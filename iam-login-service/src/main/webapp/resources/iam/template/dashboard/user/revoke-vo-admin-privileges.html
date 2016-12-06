@@ -1,0 +1,28 @@
+<form class="form-horizontal" ng-submit="ctrl.revoke()" name="revokeVoAdminForm">
+  <div class="modal-header">
+        <h3 class="modal-title">Revoke administrator privileges from <strong>{{ctrl.userName}}</strong>?</h3>
+  </div>
+    
+  <div class="modal-body">
+    <operationresult/>
+    
+    <p>  
+    {{ctrl.userName}} will lose administrative rights on this this IAM instance.
+    </p>
+    
+    <p>
+      Do you want to proceed?
+    </p>     
+   </div>
+  
+   <div class="modal-footer">
+        <button class="btn btn-primary" 
+          type="submit" name="revoke" id="modal-btn-confirm" 
+          ng-enabled="ctrl.enabled">
+          Ok
+        </button>
+        
+        <button class="btn btn-danger" type="button" 
+          name="cancel" id="modal-btn-cancel" ng-click="ctrl.cancel()">Cancel</button>
+    </div>
+</form>

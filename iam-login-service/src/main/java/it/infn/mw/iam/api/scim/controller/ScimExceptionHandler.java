@@ -17,6 +17,7 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimErrorResponse;
+import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 
 @ControllerAdvice
 public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
@@ -43,6 +44,14 @@ public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   @ResponseBody
   public ScimErrorResponse handleInvalidArgumentException(IllegalArgumentException e) {
+
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidSshKeyException.class)
+  @ResponseBody
+  public ScimErrorResponse handleInvalidArgumentException(InvalidSshKeyException e) {
 
     return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
   }

@@ -1,23 +1,37 @@
 package it.infn.mw.iam.authn.oidc.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import com.google.common.base.Strings;
+
+import it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport;
+import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class DefaultOidcUserDetailsService implements OidcUserDetailsService {
 
-  @Autowired
+
   IamAccountRepository repo;
-  
+  InactiveAccountAuthenticationHander inactiveAccountHandler;
+
+  @Autowired
+  public DefaultOidcUserDetailsService(IamAccountRepository repo,
+      InactiveAccountAuthenticationHander handler) {
+    this.repo = repo;
+    this.inactiveAccountHandler = handler;
+  }
+
   List<GrantedAuthority> convertAuthorities(IamAccount a) {
 
     List<GrantedAuthority> authorities = new ArrayList<>();
@@ -30,15 +44,37 @@ public class DefaultOidcUserDetailsService implements OidcUserDetailsService {
     return authorities;
   }
 
+  protected User buildUserFromIamAccount(IamAccount account) {
+
+    inactiveAccountHandler.handleInactiveAccount(account);
+
+    return new User(account.getUsername(), account.getPassword(), account.isActive(), true, true,
+        true, convertAuthorities(account));
+  }
+
+  protected User buildUserFromOIDCAuthentication(OIDCAuthenticationToken token) {
+    String username = token.getSub();
+
+    if (token.getUserInfo() != null) {
+      if (!Strings.isNullOrEmpty(token.getUserInfo().getName())) {
+        username = token.getUserInfo().getName();
+      }
+    }
+
+    return new User(username, "",
+        Arrays.asList(ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH));
+  }
+
   @Override
-  public Object loadUserByOIDC(String subject, String issuer) {
+  public Object loadUserByOIDC(OIDCAuthenticationToken token) {
 
-    IamAccount account =
-        repo.findByOidcId(issuer, subject).orElseThrow(() -> new UsernameNotFoundException(String
-          .format("No user found linked with OpenID connect subject \"%s:%s\"", issuer, subject)));
+    Optional<IamAccount> account = repo.findByOidcId(token.getIssuer(), token.getSub());
 
-    return new User(account.getUsername(), account.getPassword(), convertAuthorities(account));
-    
+    if (account.isPresent()) {
+      return buildUserFromIamAccount(account.get());
+    }
+
+    return buildUserFromOIDCAuthentication(token);
   }
 
 }

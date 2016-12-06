@@ -50,41 +50,24 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   public IamAccount fromScim(ScimUser scimUser) {
 
     IamAccount account = new IamAccount();
-    IamUserInfo userInfo = new IamUserInfo();
 
     account.setUuid(scimUser.getId());
+    account.setUsername(scimUser.getUserName());
 
     if (scimUser.getActive() != null) {
+
       account.setActive(scimUser.getActive());
     }
 
-    account.setUsername(scimUser.getUserName());
-
     if (scimUser.getPassword() != null) {
+
       account.setPassword(scimUser.getPassword());
-    }
-
-    userInfo.setEmail(scimUser.getEmails().get(0).getValue());
-    userInfo.setGivenName(scimUser.getName().getGivenName());
-    userInfo.setFamilyName(scimUser.getName().getFamilyName());
-    userInfo.setMiddleName(scimUser.getName().getMiddleName());
-    userInfo.setName(scimUser.getName().getFormatted());
-
-    if (scimUser.hasPhotos()) {
-      userInfo.setPicture(scimUser.getPhotos().get(0).getValue());
-    }
-
-    account.setUserInfo(userInfo);
-
-    if (scimUser.hasAddresses()) {
-
-      userInfo.setAddress(addressConverter.fromScim(scimUser.getAddresses().get(0)));
-
     }
 
     if (scimUser.hasX509Certificates()) {
 
       scimUser.getX509Certificates().forEach(scimCert -> {
+
         IamX509Certificate iamCert = x509CertificateConverter.fromScim(scimCert);
         iamCert.setAccount(account);
         account.getX509Certificates().add(iamCert);
@@ -139,8 +122,24 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       });
     }
 
-    return account;
+    IamUserInfo userInfo = new IamUserInfo();
 
+    userInfo.setEmail(scimUser.getEmails().get(0).getValue());
+    userInfo.setGivenName(scimUser.getName().getGivenName());
+    userInfo.setFamilyName(scimUser.getName().getFamilyName());
+    userInfo.setMiddleName(scimUser.getName().getMiddleName());
+
+    if (scimUser.hasPhotos()) {
+      userInfo.setPicture(scimUser.getPhotos().get(0).getValue());
+    }
+
+    if (scimUser.hasAddresses()) {
+      userInfo.setAddress(addressConverter.fromScim(scimUser.getAddresses().get(0)));
+    }
+
+    account.setUserInfo(userInfo);
+
+    return account;
   }
 
   @Override

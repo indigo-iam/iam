@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 
+import it.infn.mw.iam.persistence.model.IamAccount;
+
 public abstract class AbstractExternalAuthenticationToken<T>
     extends ExpiringUsernameAuthenticationToken {
 
@@ -36,5 +38,9 @@ public abstract class AbstractExternalAuthenticationToken<T>
   }
 
   public abstract Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor);
+
+  public abstract void linkToIamAccount(ExternalAccountLinker visitor, IamAccount account);
+
+  public abstract ExternalAuthenticationRegistrationInfo toExernalAuthenticationInfo();
 
 }

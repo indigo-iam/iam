@@ -1,0 +1,43 @@
+<!-- Groups Box -->
+<div class="box box-primary" id="groups-box">
+    <div class="box-header with-border">
+        <h3 class="box-title"><strong>Groups</strong></h3>
+        <i class="fa fa-users pull-right"></i>
+    </div>
+    <div class="box-body">
+        <div ng-if="!$ctrl.user.groups.length">No groups found</div>
+        <div class="table-responsive" ng-if="$ctrl.user.groups.length">
+            <table class="table no-margin" id="groupslist">
+                <thead>
+                    <tr>
+                        
+                        <th>Name</th>
+                        <th class="text-right"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="group in $ctrl.user.groups | orderBy:'display' ">
+                        
+                        <td>
+                            <a ui-sref="group({id: group.value})" ng-if="$ctrl.isVoAdmin()">{{group.display}}</a>
+
+                            <span ng-if="!$ctrl.isVoAdmin()">{{group.display}}</span>
+                        </td>
+                        <td class="text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-xs btn-danger" ng-click="$ctrl.openRemoveGroupDialog(group)" ng-if="$ctrl.isVoAdmin()">
+                        <i class="fa fa-times"></i> Remove
+                      </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="box-footer">
+        <button class="btn btn-success btn-sm" ng-click="$ctrl.openAddGroupDialog()" name="btn-add-group" ng-if="$ctrl.isVoAdmin()">
+            <i class="fa fa-plus"></i> Add to group
+          </button>
+    </div>
+</div>

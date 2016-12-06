@@ -1,0 +1,5 @@
+<div ng-if="$ctrl.result">
+    <div class="alert" ng-class="{'alert-success': $ctrl.result.type == 'success', 'alert-danger': $ctrl.result.type == 'error'}">
+        <button class="close" ng-click="$ctrl.result = null" aria-label="close">&times;</button> {{$ctrl.result.text}}
+    </div>
+</div>

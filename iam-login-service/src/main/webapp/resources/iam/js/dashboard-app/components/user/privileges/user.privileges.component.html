@@ -1,0 +1,23 @@
+<!-- Assign admin privileges -->
+<button 
+    ng-if="!$ctrl.userIsVoAdmin()" 
+    class="btn btn-primary btn-block"
+    style="margin-top: 5px" 
+    name="assign-vo-admin-privileges"
+    ng-click="$ctrl.openAssignDialog()">
+
+    <i class="fa fa-cog"></i>
+    <strong>Assign admin privileges</strong>
+</button>
+
+<!-- Revoke admin privileges -->
+<button 
+    ng-if="$ctrl.userIsVoAdmin() && !$ctrl.isMe()" 
+    class="btn btn-primary btn-block" 
+    name="revoke-vo-admin-privileges"
+    style="margin-top: 5px"
+    ng-click="$ctrl.openRevokeDialog()">
+
+    <i class="fa fa-cog"></i>
+    <strong>Revoke admin privileges</strong>
+</button>

@@ -8,8 +8,4 @@ public class ScimResourceExistsException extends ScimException {
   public ScimResourceExistsException(String s) {
     super(s);
   }
-
-  public ScimResourceExistsException(String s, Throwable cause) {
-    super(s, cause);
-  }
 }

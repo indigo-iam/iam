@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
 import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -104,5 +105,13 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
 
     return messageSource;
   }
+
+  @Override
+  public void addCorsMappings(CorsRegistry registry) {
+    registry.addMapping("/iam/account/**").allowedOrigins("*");
+    registry.addMapping("/iam/me/**").allowedOrigins("*");
+    registry.addMapping("/scim/**").allowedOrigins("*");
+  }
+
 
 }

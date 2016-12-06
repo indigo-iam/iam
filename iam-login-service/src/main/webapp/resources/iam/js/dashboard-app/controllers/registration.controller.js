@@ -13,6 +13,8 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 
 	var requests = this;
 
+	$rootScope.requestsLoaded = undefined;
+
 	requests.approveRequest = approveRequest;
 	requests.rejectRequest = rejectRequest;
 	requests.loadData = loadData;
@@ -89,6 +91,7 @@ function RequestManagementController($scope, $rootScope, $state, $filter, filter
 					requests.rebuildFilteredList();
 					$rootScope.pageLoadingProgress = 100;
 					$rootScope.loggedUser.pendingRequests = result.data;
+					$rootScope.requestsLoaded = true;
 					requests.loadingModal.dismiss("Cancel");
 				},
 				function(error) {

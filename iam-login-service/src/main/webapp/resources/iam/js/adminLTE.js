@@ -98,7 +98,7 @@ $(function () {
   var o = $.AdminLTE.options;
 
   //Activate the layout maker
-  $.AdminLTE.layout.activate();
+  // $.AdminLTE.layout.activate();
 
   //Add slimscroll to navbar dropdown
   if (o.navbarMenuSlimscroll && typeof $.fn.slimscroll != 'undefined') {
@@ -108,12 +108,6 @@ $(function () {
       size: "3px"
     }).css("width", "100%");
   }
-
-  //Activate Bootstrap tooltip
-  //Deprecated by angular-bootstrap
-  //if (o.enableBSToppltip) {
-  //  $(o.BSTooltipSelector).tooltip();
-  //}
 
   //Activate fast click
   if (o.enableFastclick && typeof FastClick != 'undefined') {
@@ -221,6 +215,7 @@ $.AdminLTE.pushMenu = function (toggleBtn) {
     //Enable sidebar push menu
     if ($(window).width() > (screenSizes.sm - 1)) {
       $("body").toggleClass('sidebar-collapse');
+      
     }
     //Handle sidebar push menu for small screens
     else {

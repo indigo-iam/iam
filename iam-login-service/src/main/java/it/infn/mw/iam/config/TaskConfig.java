@@ -37,7 +37,7 @@ public class TaskConfig implements SchedulingConfigurer {
     return Executors.newSingleThreadScheduledExecutor();
   }
 
-  @Scheduled(fixedDelay = 30000, initialDelay = 60000)
+  @Scheduled(fixedDelay = 60000 * 5, initialDelay = 60000 * 10)
   public void clearExpiredTokens() {
 
     tokenEntityService.clearExpiredTokens();
@@ -49,7 +49,7 @@ public class TaskConfig implements SchedulingConfigurer {
     approvedSiteService.clearExpiredSites();
   }
 
-  @Scheduled(fixedDelayString = "${notification.taskDelay}", initialDelay = 60000)
+  @Scheduled(fixedDelayString = "${notification.taskDelay}", initialDelay = 10000)
   public void sendNotifications() {
     notificationService.sendPendingNotifications();
   }

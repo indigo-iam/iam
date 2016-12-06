@@ -13,7 +13,7 @@ server:
 
 spring:
   profiles:
-    active: h2-test,google,registration,saml
+    active: h2-test,registration
 
   application:
     name: INDIGO IAM
@@ -31,8 +31,9 @@ spring:
     enabled: false
 
 iam:
-  baseUrl: ${IAM_BASE_URL:http://localhost:8080}
-  issuer: ${IAM_ISSUER:http://localhost:8080}
+  host: ${IAM_HOST:localhost}
+  baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
+  issuer: ${IAM_ISSUER:http://${iam.host}:8080}
 
   token:
     lifetime: 86400

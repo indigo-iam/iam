@@ -13,7 +13,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "iam_x509_cert")
-public class IamX509Certificate {
+public class IamX509Certificate implements IamAccountRef {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,24 +38,40 @@ public class IamX509Certificate {
 
   public IamX509Certificate() {}
 
+  public IamX509Certificate(String certificate) {
+
+    this.setCertificate(certificate);
+  }
+
+  @Override
+  public int hashCode() {
+
+	final int prime = 31;
+	int result = 1;
+	result = prime * result
+	  + ((certificate == null) ? 0 : certificate.hashCode());
+	return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
 
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    IamX509Certificate other = (IamX509Certificate) obj;
-    if (certificate == null) {
-      if (other.certificate != null)
-        return false;
-    } else if (!certificate.equals(other.certificate))
-      return false;
-    return true;
+	if (this == obj)
+	  return true;
+	if (obj == null)
+	  return false;
+	if (getClass() != obj.getClass())
+	  return false;
+	IamX509Certificate other = (IamX509Certificate) obj;
+	if (certificate == null) {
+	  if (other.certificate != null)
+		return false;
+	} else if (!certificate.equals(other.certificate))
+	  return false;
+	return true;
   }
 
+  @Override
   public IamAccount getAccount() {
 
     return account;
@@ -81,20 +97,12 @@ public class IamX509Certificate {
     return label;
   }
 
-  @Override
-  public int hashCode() {
-
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((certificate == null) ? 0 : certificate.hashCode());
-    return result;
-  }
-
   public boolean isPrimary() {
 
     return primary;
   }
 
+  @Override
   public void setAccount(IamAccount account) {
 
     this.account = account;

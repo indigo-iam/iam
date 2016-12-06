@@ -30,9 +30,6 @@ public class ScimGroupPatchRequest {
       @JsonProperty("operations") List<ScimPatchOperation<List<ScimMemberRef>>> operations) {
 
     this.schemas = schemas;
-    if (operations == null) {
-      throw new IllegalArgumentException("Operations list is null");
-    }
     this.operations = operations;
   }
 

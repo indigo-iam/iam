@@ -1,10 +1,13 @@
 package it.infn.mw.iam.registration;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +21,8 @@ import org.springframework.web.servlet.ModelAndView;
 
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 
 @RestController
@@ -26,6 +31,23 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 public class RegistrationController {
 
   private RegistrationRequestService service;
+
+  private Optional<ExternalAuthenticationRegistrationInfo> getExternalAuthenticationInfo() {
+
+    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authn == null) {
+      return Optional.empty();
+    }
+
+    if (authn instanceof AbstractExternalAuthenticationToken<?>) {
+
+      return Optional
+        .of(((AbstractExternalAuthenticationToken<?>) authn).toExernalAuthenticationInfo());
+    }
+
+    return Optional.empty();
+  }
 
   @Autowired
   public RegistrationController(RegistrationRequestService registrationService) {
@@ -66,7 +88,8 @@ public class RegistrationController {
   public RegistrationRequestDto createRegistrationRequest(
       @RequestBody RegistrationRequestDto request) {
 
-    return service.createRequest(request);
+    return service.createRequest(request, getExternalAuthenticationInfo());
+
   }
 
   @PreAuthorize("#oauth2.hasScope('registration:write') or hasRole('ADMIN')")
@@ -95,17 +118,19 @@ public class RegistrationController {
     try {
       service.confirmRequest(token);
       model.addAttribute("verificationSuccess", true);
+      SecurityContextHolder.clearContext();
     } catch (ScimResourceNotFoundException e) {
       String message = "Activation failed: " + e.getMessage();
       model.addAttribute("verificationMessage", message);
       model.addAttribute("verificationFailure", true);
     }
 
-    return new ModelAndView("iam/verify");
+    return new ModelAndView("iam/requestVerified");
   }
 
   @RequestMapping(value = "/registration/submitted", method = RequestMethod.GET)
   public ModelAndView submissionSuccess() {
+    SecurityContextHolder.clearContext();
     return new ModelAndView("iam/requestSubmitted");
   }
 

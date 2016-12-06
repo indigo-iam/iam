@@ -1,17 +1,18 @@
 <!-- Content Header (Page header) -->
-<section class="content-header">
+<div ng-show="userCtrl.loaded">
+<section class="content-header" ng-cloak>
 	<h1>
-		<i class="fa fa-user"></i>&nbsp;&nbsp;User - <i>{{user.name.formatted}}</i>
+		{{user.name.formatted}}
 	</h1>
 
 	<ol class="breadcrumb">
-		<li><a ui-sref="users"><i class="fa fa-users"></i> Users</a></li>
+		<li><a ui-sref="users"><i class="fa fa-user"></i> Users</a></li>
 		<li class="active"><a ui-sref="user({id: user.id})">{{user.name.formatted}}</a></li>
 	</ol>
 </section>
 
 <!-- Main content -->
-<section class="content" id="userprofilepage">
+<section class="content" id="userprofilepage" ng-cloak>
 
   <div class="row">
     <div class="col-md-12">
@@ -20,38 +21,43 @@
   </div>
 
   <div class="row">
-    <div class="col-sm-12 col-md-4 col-lg-3" ng-show="userCtrl.isPageLoaded()">
+    <div class="col-sm-12 col-md-4 col-lg-3">
 
       <!-- Profile Image -->
       <div class="box box-primary" ng-cloak>
-        <div class="box-header with-border">
-          <h3 class="box-title">
-            <strong>Personal Data</strong>
-          </h3>
-          <i class="fa fa-th-list pull-right"></i>
-        </div>
         <div class="box-body">
-          <userinfobox ng-cloak />
+          <userinfobox ng-cloak/>
         </div>
         <div class="box-footer">
           <button class="btn btn-primary btn-block" ng-click="userCtrl.openEditUserDialog()" ng-disabled="userCtrl.isEditUserDisabled" name="edit-user-btn">
             <i class="fa fa-pencil"></i> <strong>Edit Details</strong>
           </button>
-          <button class="btn btn-danger btn-block" ng-show="user.active" ng-click="userCtrl.setActive(false)" ng-disabled="userCtrl.isEnableUserDisabled" name="disable-user-btn">
+
+          <button class="btn btn-danger btn-block" ng-show="user.active && !userCtrl.isMe()" ng-click="userCtrl.setActive(false)" ng-disabled="userCtrl.isEnableUserDisabled" name="disable-user-btn">
             <i class="fa fa-ban"></i> <strong>Disable User</strong>
           </button>
-          <button class="btn btn-warning btn-block" ng-show="!user.active" ng-click="userCtrl.setActive(true)" ng-disabled="userCtrl.isEnableUserDisabled" name="enable-user-btn">
+          <button class="btn btn-warning btn-block" ng-show="!user.active && !userCtrl.isMe()" ng-click="userCtrl.setActive(true)" ng-disabled="userCtrl.isEnableUserDisabled" name="enable-user-btn">
             <i class="fa fa-power-off"></i> <strong>Enable User</strong>
           </button>
+
+          <button ng-show="userCtrl.loaded && !userCtrl.isVoAdmin()" class="btn btn-primary btn-block"       
+              name="assign-vo-admin-privileges" ng-click="userCtrl.openAssignVoAdminPrivilegesDialog()">
+               <i class="fa fa-cog"></i> <strong>Assign admin privileges</strong>
+          </button>
+          
+          <button ng-show="userCtrl.loaded && userCtrl.isVoAdmin() && !userCtrl.isMe()" class="btn btn-primary btn-block" name="revoke-vo-admin-privileges"
+            ng-click="userCtrl.openRevokeVoAdminPrivilegesDialog()">
+            <i class="fa fa-cog"></i> <strong>Revoke admin privileges</strong>
+          </button>
+
           <button class="btn btn-success btn-block" ng-click="userCtrl.sendResetMail()" ng-disabled="userCtrl.isSendResetDisabled" name="reset-password-btn">
             <i class="fa fa-key"></i> <strong>Reset Password</strong>
           </button>
         </div>
       </div>
-
     </div>
 
-    <div class="col-sm-12 col-md-8 col-lg-9" ng-show="userCtrl.isPageLoaded()">
+    <div class="col-sm-12 col-md-8 col-lg-9" ng-show="userCtrl.loaded">
 
       <!-- Groups Box -->
       <div class="box box-primary" id="groups-box">
@@ -66,7 +72,7 @@
 
           <div ng-show="!user.groups.length">No groups found</div>
           <div class="table-responsive" ng-show="user.groups.length">
-            <table class="table no-margin">
+            <table class="table no-margin" id="groupslist">
               <thead>
                 <tr>
                   <th>#</th>
@@ -89,8 +95,8 @@
               </tbody>
             </table>
           </div>
-
         </div>
+
         <div class="box-footer">
           <button class="btn btn-success btn-xs" ng-click="userCtrl.openAddGroupDialog()" name="btn-add-group">
             <i class="fa fa-plus"></i> Add to group
@@ -291,3 +297,4 @@
     </div>
   </div>
 </section>
+</div>

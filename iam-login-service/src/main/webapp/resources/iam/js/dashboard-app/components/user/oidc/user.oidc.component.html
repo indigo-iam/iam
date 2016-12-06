@@ -1,0 +1,46 @@
+<!-- OidcIds Box -->
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title"><strong>OpenID-Connect accounts</strong></h3>
+        <i class="fa fa-lock pull-right"></i>
+    </div>
+    <div class="box-body">
+        <div ng-if="! $ctrl.hasOidcIds()">No OpenID-Connect accounts found</div>
+        <div class="table-responsive" ng-if="$ctrl.hasOidcIds()">
+            <table class="table no-margin" id="oidc_account_list">
+                <thead>
+                    <tr>
+                        <th>Issuer</th>
+                        <th>Subject</th>
+                        <th class="text-right"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="oidcId in $ctrl.getOidcIds()">
+                        <td>{{ oidcId.issuer }}</td>
+                        <td>{{ oidcId.subject }}</td>
+                        <td class="text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-xs btn-danger" ng-click="$ctrl.openRemoveOidcAccountDialog(oidcId)" ng-if="$ctrl.isVoAdmin() && !$ctrl.isMe()">
+                                    <i class="fa fa-times"></i> Remove
+                                </button>
+                                <button class="btn btn-xs btn-danger" ng-click="$ctrl.openUnlinkOidcAccountDialog(oidcId)" ng-if="$ctrl.isMe()">
+                                    <i class="fa fa-times"></i> Unlink
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="box-footer">
+        <button class="btn btn-success btn-sm" name="btn-add-oidc" ng-click="$ctrl.openAddOidcAccountDialog()" ng-if="$ctrl.isVoAdmin() && !$ctrl.isMe()">
+            <i class="fa fa-plus"></i> Add OpenID-Connect account
+        </button>
+
+        <button class="btn btn-success btn-sm" name="btn-link-oidc" ng-click="$ctrl.openLinkOidcAccountDialog()" ng-if="$ctrl.isMe()">
+            <i class="fa fa-google"></i> Link Google account
+        </button>
+    </div>
+</div>

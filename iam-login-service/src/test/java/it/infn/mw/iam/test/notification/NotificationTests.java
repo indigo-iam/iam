@@ -29,7 +29,7 @@ import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.account.PasswordResetController;
+import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.notification.MockTimeProvider;
 import it.infn.mw.iam.notification.NotificationProperties;

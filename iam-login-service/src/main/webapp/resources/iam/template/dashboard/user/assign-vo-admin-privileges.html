@@ -1,0 +1,28 @@
+<form class="form-horizontal" ng-submit="ctrl.assign()" name="assignVoAdminForm">
+  <div class="modal-header">
+        <h3 class="modal-title">Assign administrator privileges to <strong>{{ctrl.userName}}</strong>?</h3>
+  </div>
+    
+  <div class="modal-body">
+    <operationresult/>
+    
+    <p>  
+    {{ctrl.userName}} will have complete administrative control on this IAM instance.
+    </p>
+    
+    <p>
+      Do you want to proceed?
+    </p>     
+   </div>
+  
+   <div class="modal-footer">
+        <button class="btn btn-primary" 
+          type="submit" name="assign" id="modal-btn-confirm" 
+          ng-disabled="!ctrl.enabled">
+          Ok
+        </button>
+        
+        <button class="btn btn-danger" type="button" 
+          name="cancel" id="modal-btn-cancel" ng-click="ctrl.cancel()">Cancel</button>
+    </div>
+</form>

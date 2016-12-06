@@ -1,54 +1,51 @@
-'use strict';
+(function() {
+  'use strict';
 
-angular
-		.module('iam-login-app', [ 'ui.bootstrap' ])
-		.controller(
-				'idp-selection',
-				[
-						'$scope',
-						'$http',
-						'$uibModalInstance',
-						'$log',
-						'$window',
-						function($scope, $http, $uibModalInstance, $log,
-								$window) {
+  angular.module('iam-login-app', ['ui.bootstrap'])
+      .controller(
+          'idp-selection',
+          [
+            '$scope', '$http', '$uibModalInstance', '$log', '$window',
+			'$timeout',
+            function($scope, $http, $uibModalInstance, $log, $window, $timeout) {
 
-							$scope.ok = function() {
-								$window.location.href = "/saml/login?idp="
-										+ $scope.idpSelected.entityId;
-							};
+              $scope.ok = function() {
+                $window.location.href =
+                    '/saml/login?idp=' + $scope.idpSelected.entityId;
+              };
 
-							$scope.cancel = function() {
-								$uibModalInstance.close();
-							};
+              $scope.cancel = function() { $uibModalInstance.close(); };
 
-							$scope.lookupIdp = function(val) {
+			  $scope.reset = function(){
+				  $scope.idpSelected = null;
+				  $timeout(function(){
+					  $window.document.getElementById("idp-selection-input").focus();
+				  },0);
+			  };
 
-								var result = $http.get('/saml/idps', {
-									params : {
-										q : val
-									}
-								}).then(function(response) {
-									return response.data;
-								});
+              $scope.lookupIdp = function(val) {
 
-								return result;
-							}
-						} ])
-		.controller(
-				'idp-selection-modal-ctrl',
-				[
-						'$scope',
-						'$uibModal',
-						function($scope, $uibModal) {
+                var result =
+                    $http.get('/saml/idps', {params: {q: val}})
+                        .then(function(response) { return response.data; });
 
-							$scope.open = function() {
-								$uibModal
-										.open({
-											templateUrl : "/resources/iam/template/idpSelectionModalContent.html",
-											controller : "idp-selection",
-											size : 'lg',
-											animation : true
-										});
-							};
-						} ]);
+                return result;
+              };
+            }
+          ])
+      .controller('idp-selection-modal-ctrl', [
+        '$scope', '$uibModal',
+        function($scope, $uibModal) {
+
+          $scope.open = function() {
+            $uibModal.open({
+              templateUrl:
+                  '/resources/iam/template/idpSelectionModalContent.html',
+              controller: 'idp-selection',
+              size: 'lg',
+              animation: true
+            });
+          };
+        }
+      ]);
+})();

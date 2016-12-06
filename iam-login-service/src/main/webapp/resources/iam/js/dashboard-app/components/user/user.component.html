@@ -1,0 +1,51 @@
+<!-- Content Header (Page header) -->
+<div ng-if="$ctrl.loaded">
+    <section class="content-header" ng-cloak>
+        <h1>
+            {{$ctrl.user.name.formatted}}
+        </h1>
+        <ol class="breadcrumb hidden-xs">
+            <li><a ui-sref="users"><i class="fa fa-user"></i> Users</a></li>
+            <li class="active"><a ui-sref="user({id: user.id})">{{$ctrl.user.name.formatted}}</a></li>
+        </ol>
+    </section>
+    <section class="content" id="userprofilepage" ng-cloak>
+        <!-- Error result bar -->
+        <div class="row">
+            <div class="col-md-12">
+                <result result="$ctrl.result"></result>
+            </div>
+        </div>
+        <!-- Main content -->
+        <div class="row" ng-cloak>
+            <!-- Left part of the main content -->
+            <section id="user-profile-left" class="col-sm-12 col-md-5 col-lg-4">
+                <div class="box box-primary">
+                    <div class="box-body">
+                        <user-detail user="$ctrl.user"></user-detail>
+                    </div>
+                    <div class="box-footer">
+                        <!-- Edit details button -->
+                        <user-edit user="$ctrl.user"></user-edit>
+                        
+                        <div ng-if="$ctrl.isVoAdmin()">
+                            <!-- Enable/disable user buttons -->
+                            <user-status user="$ctrl.user"></user-status>
+                            <!-- Assign/Revoke VO admin privileges -->
+                            <user-privileges user="$ctrl.user"></user-privileges>
+                        </div>
+                        
+                        <!-- Send reset password email or change password-->
+                        <user-password user="$ctrl.user"></user-password>
+                        
+                    </div>
+                </div>
+            </section>
+            <section id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
+                <user-groups user="$ctrl.user"></user-groups>
+                <user-oidc user="$ctrl.user"></user-oidc>
+                <user-saml user="$ctrl.user"></user-saml>
+            </section>
+        </div>
+    </section>
+</div>

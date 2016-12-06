@@ -7,38 +7,25 @@
   <h3 class="modal-title">Select your home Identity Provider</h3>
 </div>
 <div class="modal-body">
-  <div
-    class="alert alert-info"
-    role="alert"
-    ng-show="idpSelected.organizationName != null">
-    You selected:<br>
-    <strong><span>{{idpSelected.organizationName}}</span></strong>
+  <div ng-show="idpSelected.organizationName != null" style="font-size: large">
+    <p>
+      You will be redirected to <strong>{{idpSelected.organizationName}}</strong> for authentication. Proceed?
+    </p>
   </div>
-  <input
-    type="text"
-    ng-model="idpSelected"
-    placeholder="Search for your IdP..."
-    uib-typeahead="idpDesc as idpDesc.organizationName for idpDesc in lookupIdp($viewValue)"
-    typeahead-loading="loadingIdps"
-    typeahead-no-results="noResults"
-    typeahead-min-length="0"
-    typeahead-template-url="result-template.html"
-    autofocus="autofocus"
-    class="form-control"> <i
-    ng-show="loadingIdps"
-    class="glyphicon glyphicon-refresh"></i>
+
+  <input 
+    id="idp-selection-input"
+    ng-show="idpSelected.organizationName == null"
+    type="text" ng-model="idpSelected" placeholder="Look for your IdP..." uib-typeahead="idpDesc as idpDesc.organizationName for idpDesc in lookupIdp($viewValue)"
+    typeahead-loading="loadingIdps" typeahead-no-results="noResults" typeahead-min-length="0" typeahead-template-url="result-template.html"
+    autofocus="autofocus" class="form-control"> <i ng-show="loadingIdps" class="glyphicon glyphicon-refresh"></i>
   <div ng-show="noResults">
     <i class="glyphicon glyphicon-remove"></i> No Results Found
   </div>
+  
 </div>
 <div class="modal-footer">
-  <button
-    class="btn btn-primary"
-    type="button"
-    ng-click="ok()"
-    ng-disabled="idpSelected.organizationName == null">Sign in with IdP</button>
-  <button
-    class="btn btn-warning"
-    type="button"
-    ng-click="cancel()">Cancel</button>
+  <button class="btn btn-primary" type="button" ng-click="ok()" ng-disabled="idpSelected.organizationName == null">Sign in with IdP</button>
+  <button class="btn btn-default" type="button" ng-click="reset()" ng-if="idpSelected.organizationName != null">Search again</button>
+  <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
 </div>

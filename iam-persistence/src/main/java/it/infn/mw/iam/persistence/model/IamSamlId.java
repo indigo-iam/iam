@@ -11,7 +11,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "iam_saml_id")
-public class IamSamlId {
+public class IamSamlId implements IamAccountRef {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +27,11 @@ public class IamSamlId {
   @Column(nullable = false, length = 256)
   String userId;
 
+  public IamSamlId(String idpId, String userId) {
+    setIdpId(idpId);
+    setUserId(userId);
+  }
+
   public IamSamlId() {}
 
   public Long getId() {
@@ -39,11 +44,13 @@ public class IamSamlId {
     this.id = id;
   }
 
+  @Override
   public IamAccount getAccount() {
 
     return account;
   }
 
+  @Override
   public void setAccount(IamAccount account) {
 
     this.account = account;

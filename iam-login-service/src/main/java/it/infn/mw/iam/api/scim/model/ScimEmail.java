@@ -62,8 +62,6 @@ public class ScimEmail {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((primary == null) ? 0 : primary.hashCode());
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
     result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
   }
@@ -77,13 +75,6 @@ public class ScimEmail {
     if (getClass() != obj.getClass())
       return false;
     ScimEmail other = (ScimEmail) obj;
-    if (primary == null) {
-      if (other.primary != null)
-        return false;
-    } else if (!primary.equals(other.primary))
-      return false;
-    if (type != other.type)
-      return false;
     if (value == null) {
       if (other.value != null)
         return false;
@@ -104,23 +95,13 @@ public class ScimEmail {
     private Boolean primary;
 
     public Builder() {
+      type = ScimEmailType.work;
+      primary = true;
     }
 
     public Builder email(String value) {
 
       this.value = value;
-      return this;
-    }
-
-    public Builder type(ScimEmailType type) {
-
-      this.type = type;
-      return this;
-    }
-
-    public Builder primary(Boolean isPrimary) {
-
-      this.primary = isPrimary;
       return this;
     }
 

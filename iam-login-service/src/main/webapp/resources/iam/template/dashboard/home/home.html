@@ -1,10 +1,8 @@
 <!-- Content Header (Page header) -user-image -->
 <section class="content-header">
-  <h1>
-    <i class="fa fa-home"></i>&nbsp;&nbsp;Home - <i>{{user.name.formatted}}</i>
-  </h1>
+  <h1><strong>{{user.name.formatted}}</strong></h1>
   <ol class="breadcrumb">
-    <li><a ui-sref="home"><i class="fa fa-home"></i> Home</a></li>
+    <li><a ui-sref="home"><i class="fa fa-home"></i> {{user.name.formatted}}</a></li>
   </ol>
 </section>
 
@@ -23,12 +21,6 @@
     <div class="col-md-3">
 
       <div class="box box-primary">
-        <div class="box-header with-border">
-          <h3 class="box-title">
-            <strong>Personal Data</strong>
-          </h3>
-          <i class="fa fa-th-list pull-right"></i>
-        </div>
         <div class="box-body">
 
           <!-- $scope.user = SCIM User -->
@@ -94,8 +86,8 @@
           <i class="fa fa-lock pull-right"></i>
         </div>
         <!-- /.box-header -->
-        <div class="box-body">
 
+        <div class="box-body">
           <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">No Open ID Connect accounts found</div>
           <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds">
             <table class="table no-margin">
@@ -104,6 +96,7 @@
                   <th>#</th>
                   <th>Issuer</th>
                   <th>Subject</th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,15 +104,74 @@
                   <td>{{$index + 1}}</td>
                   <td>{{ oidcId.issuer }}</td>
                   <td>{{ oidcId.subject }}</td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="home.unlinkOidcAccount(oidcId)">
+                        <i class="fa fa-times"></i> Unlink
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+        
+        <div class="box-footer" ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds || user['urn:indigo-dc:scim:schemas:IndigoUser'].oidcIds.length == 0">
+          <button class="btn btn-danger btn-xs" name="btn-add-oidc" ng-click="home.linkOidcAccount()">
+            <i class="fa fa-google"></i> Link Google account
+          </button>
+        </div>
+      </div>
+
+      <!-- samlIds Box -->
+      <div class="box box-primary">
+        <div class="box-header with-border">
+          <h3 class="box-title">
+            <strong>Saml IDs</strong>
+          </h3>
+          <i class="fa fa-cloud pull-right"></i>
+        </div>
+        <!-- /.box-header -->
+        <div class="box-body">
+
+          <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">No SAML Id found</div>
+          <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+            <table class="table no-margin">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Identity Provider</th>
+                  <th>User ID</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="samlId in user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
+                  <td>{{$index + 1}}</td>
+                  <td>{{samlId.idpId}}</td>
+                  <td>{{samlId.userId}}</td>
+                  <td class="text-right">
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-danger" ng-click="home.unlinkSamlAccount(oidcId)">
+                        <i class="fa fa-times"></i> Unlink
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+         <div class="box-footer">
+          <button class="btn btn-success btn-xs" name="btn-add-saml" ng-click="home.openLinkSamlAccountDialog()">
+            <i class="fa fa-plus"></i> Link SAML account
+          </button>
+        </div>
       </div>
 
       <!-- sshKeys Box -->
-      <div class="box box-primary">
+      <div class="box box-primary hidden">
         <div class="box-header with-border">
           <h3 class="box-title">
             <strong>SSH keys</strong>
@@ -153,41 +205,8 @@
         </div>
       </div>
 
-      <!-- samlIds Box -->
-      <div class="box box-primary">
-        <div class="box-header with-border">
-          <h3 class="box-title">
-            <strong>Saml IDs</strong>
-          </h3>
-          <i class="fa fa-cloud pull-right"></i>
-        </div>
-        <!-- /.box-header -->
-        <div class="box-body">
-
-          <div ng-show="!user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">No SAML Id found</div>
-          <div class="table-responsive" ng-show="user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
-            <table class="table no-margin">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Identity Provider</th>
-                  <th>User ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr ng-repeat="samlId in user['urn:indigo-dc:scim:schemas:IndigoUser'].samlIds">
-                  <td>{{$index + 1}}</td>
-                  <td>{{samlId.idpId}}</td>
-                  <td>{{samlId.userId}}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <!-- x509 Certificates Box -->
-      <div class="box box-primary">
+      <div class="box box-primary hidden">
         <div class="box-header with-border">
           <h3 class="box-title">
             <strong>x509 Certificates</strong>

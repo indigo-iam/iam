@@ -1,6 +1,5 @@
 <!-- sidebar: style can be found in sidebar.less -->
-<section class="sidebar">
-
+<section class="sidebar" ng-cloak>
   <div class="user-panel">
     <a class="pull-left image" ui-sref="home">
       <!-- if user picture is defined -->
@@ -17,15 +16,15 @@
   </div>
 
   <ul class="sidebar-menu" name="sidebar-menu">
-    <li class="header">MENU</li>
+    <li class="header">Organization Management</li>
     <li>
-        <a ui-sref="home">
+        <a ui-sref="home" ui-sref-opts="{reload: true}">
             <i class="fa fa-home"></i>
             <span>Home</span>
         </a>
     </li>
     <li ng-show="$root.loggedUser.isAdmin">
-        <a ui-sref="users">
+        <a ui-sref="users" ui-sref-opts="{reload: true}">
             <i class="fa fa-user"></i>
             <span>Users</span>
             <span class="pull-right-container" ng-show="$root.loggedUser.totUsers>0">
@@ -34,7 +33,7 @@
         </a>
     </li>
     <li ng-show="$root.loggedUser.isAdmin">
-        <a ui-sref="groups">
+        <a ui-sref="groups" ui-sref-opts="{reload: true}">
             <i class="fa fa-users"></i>
             <span>Groups</span>
             <span class="pull-right-container" ng-show="$root.loggedUser.totGroups>0">
@@ -43,7 +42,7 @@
         </a>
     </li>
     <li ng-show="$root.loggedUser.isAdmin && $root.isRegistrationEnabled">
-        <a ui-sref="requests">
+        <a ui-sref="requests" ui-sref-opts="{reload: true}">
             <i class="fa fa-sign-in"></i>
             <span>Requests</span>
             <span class="pull-right-container" ng-show="$root.loggedUser.pendingRequests.length>0">
@@ -51,7 +50,7 @@
             </span>
         </a>
     </li>
-    <li class="header">MITREID-CONNECT</li>
+    <li class="header">Client management</li>
     <li>
         <a href="/">
             <i class="fa fa-dashboard"></i>
@@ -59,6 +58,10 @@
         </a>
     </li>
   </ul>
-
+  
+  <div class="version-info">
+      IAM {{$root.iamVersion}} ({{$root.iamCommitId}}) 
+  </div>
+  
 </section>
 <!-- /.sidebar -->

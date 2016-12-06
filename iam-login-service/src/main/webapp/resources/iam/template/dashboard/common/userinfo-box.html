@@ -9,6 +9,8 @@
 <!-- Full name -->
 <h3 class="profile-username text-center">{{user.name.formatted}}</h3>
 
+<p class="text-center" ng-show="user.isAdmin">VO administrator</p>
+
 <!-- Username -->
 <p class="text-muted text-center">{{user.userName}}</p>
 
@@ -17,7 +19,7 @@
     <tbody>
       <tr>
         <td class="text-bold text-left">
-          UUID
+          Sub
         </td>
         <td class="text-right">
           <a>{{user.id}}</a>

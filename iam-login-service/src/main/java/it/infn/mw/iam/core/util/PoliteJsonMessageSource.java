@@ -62,7 +62,7 @@ public class PoliteJsonMessageSource extends AbstractMessageSource {
       // if it's still null, return null
       return null;
     } else {
-      // otherwise format the message
+      // otherwise format the statusMessage
       return new MessageFormat(value, locale);
     }
 

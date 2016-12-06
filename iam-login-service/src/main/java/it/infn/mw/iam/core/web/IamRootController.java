@@ -1,8 +1,9 @@
 package it.infn.mw.iam.core.web;
 
-import javax.servlet.http.HttpServletRequest;
+import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,7 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class IamRootController {
 
   @RequestMapping({"", "home", "index"})
-  public String home(HttpServletRequest request) {
+  public String home(Authentication authentication) {
+
+    if (authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH)) {
+      return "iam/register";
+    }
     return "home";
   }
 

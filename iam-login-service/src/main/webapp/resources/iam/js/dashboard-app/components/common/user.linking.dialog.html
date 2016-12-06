@@ -1,0 +1,42 @@
+<div class="modal-header">
+    <h3 class="modal-title" ng-show="$ctrl.action == 'link'">
+        Link a {{$ctrl.type}} account to your IAM account?
+    </h3>
+    <h3 class="modal-title" ng-show="$ctrl.action == 'unlink'">
+        Unlink {{$ctrl.type}} account from your IAM account?
+    </h3>
+</div>
+<div class="modal-body">
+    <div ng-show="$ctrl.action == 'link'">
+        <p class="text-justify text-wrapped">
+            Do you want to link a {{$ctrl.type}} account to your IAM account?
+        </p>
+        <p class="text-justify text-wrapped">
+            This will allow you to log into the IAM with your {{$ctrl.type}} account.
+        </p>
+    </div>
+    <div ng-show="$ctrl.action == 'unlink'">
+        <p class="text-justify text-wrapped">
+            Do you want to unlink the following {{$ctrl.type}} account from your IAM account?
+        </p>
+        <p>
+            <strong>{{$ctrl.account.iss}} {{$ctrl.account.sub}}</strong>
+        </p>
+        <p class="text-justify text-wrapped">
+                You will not <strong>NOT</strong> able to login into the IAM with such account if you proceed.
+            </p>
+        </p>
+    </div>
+</div>
+<div class="modal-footer">
+    
+    <form id="link-account-form" action="{{$ctrl.actionUrl}}" method="post" ng-if="$ctrl.action == 'link'">
+        <button class="btn btn-primary" id="btn-link" data-dismiss="modal" type="button" data-ng-click="$ctrl.doLink()" ng-disabled="!$ctrl.enabled">Link</button>
+        <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button" data-ng-click="$ctrl.cancel()">Cancel</button>
+    </form>
+
+    <div ng-if="$ctrl.action == 'unlink'">
+        <button class="btn btn-primary" id="btn-unlink" data-dismiss="modal" type="button" data-ng-click="$ctrl.doUnlink()" ng-disabled="!$ctrl.enabled">Unlink</button>
+        <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button" data-ng-click="$ctrl.cancel()">Cancel</button>
+    </div>
+</div>

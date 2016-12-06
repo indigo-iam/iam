@@ -57,7 +57,7 @@ public class IamLoginService {
   }
 
   @Bean
-  PropertySourcesPlaceholderConfigurer iamVersionPlaceholderConfigurer() {
+  static PropertySourcesPlaceholderConfigurer iamVersionPlaceholderConfigurer() {
     PropertySourcesPlaceholderConfigurer propsConfig = new PropertySourcesPlaceholderConfigurer();
 
     propsConfig.setLocation(new ClassPathResource("iam.version.properties"));
@@ -69,7 +69,7 @@ public class IamLoginService {
 
 
   @Bean
-  PropertySourcesPlaceholderConfigurer gitCommitPlaceholderConfigurer() {
+  static PropertySourcesPlaceholderConfigurer gitCommitPlaceholderConfigurer() {
     PropertySourcesPlaceholderConfigurer propsConfig = new PropertySourcesPlaceholderConfigurer();
 
     propsConfig.setLocation(new ClassPathResource("git.properties"));

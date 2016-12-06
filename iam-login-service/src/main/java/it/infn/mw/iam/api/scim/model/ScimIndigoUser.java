@@ -11,6 +11,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ScimIndigoUser {
 
+  public enum INDIGO_USER_SCHEMA {
+
+    SSH_KEYS(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys"),
+    OIDC_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".oidcIds"),
+    SAML_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".samlIds");
+
+    private final String text;
+
+    private INDIGO_USER_SCHEMA(String text) {
+      this.text = text;
+    }
+
+    @Override
+    public String toString() {
+      return text;
+    }
+  };
+
   private final List<ScimSshKey> sshKeys;
   private final List<ScimOidcId> oidcIds;
   private final List<ScimSamlId> samlIds;
@@ -53,43 +71,6 @@ public class ScimIndigoUser {
     return samlIds;
   }
 
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((oidcIds == null) ? 0 : oidcIds.hashCode());
-    result = prime * result + ((samlIds == null) ? 0 : samlIds.hashCode());
-    result = prime * result + ((sshKeys == null) ? 0 : sshKeys.hashCode());
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    ScimIndigoUser other = (ScimIndigoUser) obj;
-    if (oidcIds == null) {
-      if (other.oidcIds != null)
-        return false;
-    } else if (!oidcIds.equals(other.oidcIds))
-      return false;
-    if (samlIds == null) {
-      if (other.samlIds != null)
-        return false;
-    } else if (!samlIds.equals(other.samlIds))
-      return false;
-    if (sshKeys == null) {
-      if (other.sshKeys != null)
-        return false;
-    } else if (!sshKeys.equals(other.sshKeys))
-      return false;
-    return true;
-  }
-
   public static Builder builder() {
 
     return new Builder();
@@ -116,29 +97,6 @@ public class ScimIndigoUser {
     public Builder addSamlId(ScimSamlId samlId) {
 
       samlIds.add(samlId);
-      return this;
-    }
-
-    public Builder buildOidcId(String issuer, String subject) {
-
-      oidcIds.add(ScimOidcId.builder().subject(subject).issuer(issuer).build());
-      return this;
-    }
-
-    public Builder buildSshKey(String label, String key, String fingerprint, boolean isPrimary) {
-
-      sshKeys.add(ScimSshKey.builder()
-        .display(label)
-        .value(key)
-        .fingerprint(fingerprint)
-        .primary(isPrimary)
-        .build());
-      return this;
-    }
-
-    public Builder buildSamlId(String idpId, String userId) {
-
-      samlIds.add(ScimSamlId.builder().idpId(idpId).userId(userId).build());
       return this;
     }
 

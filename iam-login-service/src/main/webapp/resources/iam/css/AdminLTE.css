@@ -143,7 +143,7 @@ body.hold-transition .main-header .logo {
 }
 /* Content */
 .content {
-  min-height: 768px;
+  
   padding: 15px;
   margin-right: auto;
   margin-left: auto;
@@ -430,7 +430,7 @@ a:focus {
 @media (max-width: 767px) {
   .main-sidebar,
   .left-side {
-    padding-top: 100px;
+    padding-top: 50px;
   }
 }
 @media (max-width: 767px) {

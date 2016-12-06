@@ -82,7 +82,7 @@ function EditMeController($scope, $rootScope, $state, $uibModalInstance, Utils,
 		scimFactory.updateMe(operations).then(
 			function(response) {
 
-				$rootScope.reloadUser();
+				$rootScope.reloadInfo();
 
 				$uibModalInstance.close(response);
 				editMeCtrl.enabled = true;

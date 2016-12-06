@@ -1,5 +1,7 @@
 package it.infn.mw.iam.registration;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
@@ -21,8 +23,12 @@ import com.google.common.collect.Table;
 
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.model.ScimOidcId;
+import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.notification.NotificationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -63,26 +69,52 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
         .put(REJECTED, CONFIRMED, true)
         .build();
 
-  @Override
-  public RegistrationRequestDto createRequest(RegistrationRequestDto request) {
 
-    ScimUser user = ScimUser.builder()
+  private void addExternalAuthnInfo(ScimUser.Builder user,
+      ExternalAuthenticationRegistrationInfo extAuthnInfo) {
+
+    checkNotNull(extAuthnInfo.getType());
+    checkNotNull(extAuthnInfo.getSubject());
+    checkNotNull(extAuthnInfo.getIssuer());
+
+    if (OIDC.equals(extAuthnInfo.getType())) {
+      ScimOidcId oidcId = new ScimOidcId.Builder().issuer(extAuthnInfo.getIssuer())
+        .subject(extAuthnInfo.getSubject())
+        .build();
+      user.addOidcId(oidcId);
+    } else if (ExternalAuthenticationType.SAML.equals(extAuthnInfo.getType())) {
+      ScimSamlId samlId = new ScimSamlId.Builder().idpId(extAuthnInfo.getIssuer())
+        .userId(extAuthnInfo.getSubject())
+        .build();
+      user.addSamlId(samlId);
+    }
+  }
+
+  @Override
+  public RegistrationRequestDto createRequest(RegistrationRequestDto request,
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
+
+    ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(request.getGivenname(), request.getFamilyname())
       .buildEmail(request.getEmail())
       .userName(request.getUsername())
-      .password(request.getPassword())
-      .build();
+      .password(request.getPassword());
 
-    IamAccount newAccount = userService.createAccount(user);
+    extAuthnInfo.ifPresent(i -> addExternalAuthnInfo(userBuilder, i));
+
+    IamAccount newAccount = userService.createAccount(userBuilder.build());
     newAccount.setConfirmationKey(tokenGenerator.generateToken());
     newAccount.setActive(false);
 
     IamRegistrationRequest regRequest = new IamRegistrationRequest();
     regRequest.setUuid(UUID.randomUUID().toString());
     regRequest.setCreationTime(new Date());
-    regRequest.setAccount(newAccount);
+
     regRequest.setStatus(NEW);
     regRequest.setNotes(request.getNotes());
+
+    regRequest.setAccount(newAccount);
+    newAccount.setRegistrationRequest(regRequest);
 
     requestRepository.save(regRequest);
 

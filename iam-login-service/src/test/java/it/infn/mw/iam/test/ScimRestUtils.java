@@ -87,6 +87,7 @@ public class ScimRestUtils {
       .when()
       .delete(location)
       .then()
+      .log().all(true)
       .statusCode(statusExpected.value());
     /** @formatter:on */
   }
