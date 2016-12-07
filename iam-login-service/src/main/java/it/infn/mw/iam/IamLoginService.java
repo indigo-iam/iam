@@ -1,5 +1,6 @@
 package it.infn.mw.iam;
 
+import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.openid.connect.web.RootController;
 import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.boot.SpringApplication;
@@ -39,7 +40,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=UserInfoEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-    value=RootController.class),
+        value=RootController.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=DiscoveryEndpoint.class)
 })
 // @formatter:on
 

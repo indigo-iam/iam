@@ -54,6 +54,7 @@ services:
 
       IAM_SAML_IDP_METADATA: file:///code/docker/saml-idp/idp/shibboleth-idp/metadata/idp-metadata.xml
       IAM_SAML_ENTITY_ID: urn:iam:iam-devel
+      # IAM_SAML_ENTITY_ID: https://iam.local.io
       IAM_NOTIFICATION_DISABLE: "true"
 
     ports:

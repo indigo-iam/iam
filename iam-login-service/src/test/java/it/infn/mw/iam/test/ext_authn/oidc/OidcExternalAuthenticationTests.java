@@ -7,6 +7,8 @@ import static org.junit.Assert.assertThat;
 
 import java.io.UnsupportedEncodingException;
 
+import javax.transaction.Transactional;
+
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +38,7 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {IamLoginService.class, OidcTestConfig.class})
 @WebIntegrationTest("server.port:0")
+@Transactional
 public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationTestsSupport {
 
 

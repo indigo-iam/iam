@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (2016-12-5)
+## 0.5.0 (2016-12-6)
 
 This release provides new functionality and bug fixes:
 
@@ -21,6 +21,8 @@ This release provides new functionality and bug fixes:
 - Group creation in the dashboard now behaves as expected (#34)
 - Editing first name and other information from the dashboard now behaves as
   expected (#57)
+- The IAM now provides a refactored SAML WAYF service that remembers the identity
+  provider chosen by the user (#59)
 - The overall test coverage has been improved
 
 ## 0.4.0 (2016-09-30)

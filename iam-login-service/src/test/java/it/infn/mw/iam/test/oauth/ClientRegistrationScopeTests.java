@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.util.Set;
 
+import javax.transaction.Transactional;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +33,7 @@ import it.infn.mw.iam.IamLoginService;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
 @WebIntegrationTest
+@Transactional
 public class ClientRegistrationScopeTests {
 
   @Value("${server.port}")

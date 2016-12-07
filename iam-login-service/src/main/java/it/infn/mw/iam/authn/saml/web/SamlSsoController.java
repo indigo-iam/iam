@@ -38,7 +38,7 @@ public class SamlSsoController {
   }
 
 
-  @RequestMapping(value = "/selectIdp", method = RequestMethod.GET)
+  @RequestMapping(value = "/discovery", method = RequestMethod.GET)
   public String selectIdp(@RequestParam("entityID") String entityId,
       @RequestParam("returnIDParam") String returnIDParam) {
     return "iam/samlDiscovery";

@@ -3,6 +3,8 @@ package it.infn.mw.iam.test.oauth;
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
+import javax.transaction.Transactional;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -14,6 +16,7 @@ import it.infn.mw.iam.IamLoginService;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = IamLoginService.class)
 @WebIntegrationTest
+@Transactional
 public class TokenEndpointClientAuthenticationTests {
 
   @Test

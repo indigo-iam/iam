@@ -55,7 +55,7 @@ docker-compose up db
 And then run the tests with the following command:
 
 ```bash
-mvn -Dspring.profiles.active=mysql-tests test
+mvn -Dspring.profiles.active=mysql-test test
 ```
 
 ## Building Docker production images
