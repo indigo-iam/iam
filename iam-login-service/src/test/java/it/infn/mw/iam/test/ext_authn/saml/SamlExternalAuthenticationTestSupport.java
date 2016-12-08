@@ -1,6 +1,7 @@
 package it.infn.mw.iam.test.ext_authn.saml;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -70,7 +71,10 @@ public class SamlExternalAuthenticationTestSupport {
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    mvc = MockMvcBuilders.webAppContextSetup(context)
+      .apply(springSecurity())
+      .alwaysDo(print())
+      .build();
   }
 
   public String samlLoginUrl() throws UnsupportedEncodingException {
@@ -86,7 +90,7 @@ public class SamlExternalAuthenticationTestSupport {
 
     KeyStore ks = testKeyStore();
     JKSKeyManager keyManager =
-	new JKSKeyManager(ks, ImmutableMap.of(KEY_ALIAS, KS_PASSWORD), KEY_ALIAS);
+        new JKSKeyManager(ks, ImmutableMap.of(KEY_ALIAS, KS_PASSWORD), KEY_ALIAS);
 
     return keyManager.getDefaultCredential();
   }
@@ -239,7 +243,7 @@ public class SamlExternalAuthenticationTestSupport {
   public AuthnRequest getAuthnRequestFromSession(MockHttpSession session) {
     @SuppressWarnings("unchecked")
     Map<String, SAMLObject<?>> samlStorage =
-	(Map<String, SAMLObject<?>>) session.getAttribute("_springSamlStorageKey");
+        (Map<String, SAMLObject<?>>) session.getAttribute("_springSamlStorageKey");
 
     String authnRequestKey = samlStorage.keySet().iterator().next();
 

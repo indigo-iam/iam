@@ -18,7 +18,7 @@ import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthe
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 
-public class externalAuthnRegistrationInfoTests {
+public class ExternalAuthenticationRegistrationInfoTests {
 
   @Test
   public void testOidcMinimalInfoConversion() {

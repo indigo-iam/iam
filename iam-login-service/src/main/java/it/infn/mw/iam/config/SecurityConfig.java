@@ -32,6 +32,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -128,7 +129,8 @@ public class SecurityConfig {
 
     public AuthenticationSuccessHandler successHandler() {
 
-      return new TimestamperSuccessHandler(new RootIsDashboardSuccessHandler(iamBaseUrl));
+      return new TimestamperSuccessHandler(
+          new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache()));
     }
   }
 

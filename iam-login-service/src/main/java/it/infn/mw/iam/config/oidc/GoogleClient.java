@@ -30,6 +30,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -108,7 +109,8 @@ public class GoogleClient {
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
   public AuthenticationSuccessHandler successHandler() {
 
-    RootIsDashboardSuccessHandler sa = new RootIsDashboardSuccessHandler(iamBaseUrl);
+    RootIsDashboardSuccessHandler sa =
+        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
     AuthenticationSuccessHandler successHandler = new TimestamperSuccessHandler(sa);
 
     return new ExternalAuthenticationSuccessHandler(successHandler, "/");

@@ -65,11 +65,6 @@ public class IamUserInfoEndpoint {
       @RequestHeader(value = HttpHeaders.ACCEPT, required = false) String acceptHeader,
       OAuth2Authentication auth, Model model) {
 
-    if (auth == null) {
-      LOG.error("Call to /userinfo failed; no principal.");
-      model.addAttribute(HttpCodeView.CODE, HttpStatus.FORBIDDEN);
-      return HttpCodeView.VIEWNAME;
-    }
 
     String username = auth.getName();
 

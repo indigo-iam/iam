@@ -91,6 +91,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
@@ -437,8 +438,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter {
   public AuthenticationSuccessHandler successRedirectHandler() {
 
 
-    RootIsDashboardSuccessHandler sa =
-        new RootIsDashboardSuccessHandler(iamProperties.getBaseUrl());
+    RootIsDashboardSuccessHandler sa = new RootIsDashboardSuccessHandler(iamProperties.getBaseUrl(),
+        new HttpSessionRequestCache());
 
     ExternalAuthenticationSuccessHandler successHandler =
         new ExternalAuthenticationSuccessHandler(new TimestamperSuccessHandler(sa), "/");

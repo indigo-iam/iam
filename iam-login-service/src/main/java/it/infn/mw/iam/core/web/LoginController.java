@@ -5,7 +5,6 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -29,7 +28,7 @@ public class LoginController {
   @RequestMapping("/login")
   public String login(Authentication authentication, Model model, HttpServletRequest request) {
 
-    if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+    if (authentication == null) {
       return "iam/login";
     }
 
@@ -42,9 +41,7 @@ public class LoginController {
   }
 
   @RequestMapping("/register")
-  public String register(Authentication authentication, Model model) {
-    model.addAttribute(LOGIN_PAGE_CONFIGURATION_KEY, loginPageConfiguration);
-    model.addAttribute(IAM_PROPERTIES_KEY, properties);
+  public String register() {
     return "iam/register";
   }
 

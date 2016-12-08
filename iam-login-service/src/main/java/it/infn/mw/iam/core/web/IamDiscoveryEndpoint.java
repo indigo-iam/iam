@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.mitre.discovery.util.WebfingerURLNormalizer;
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
@@ -67,7 +68,8 @@ public class IamDiscoveryEndpoint {
   private Function<Algorithm, String> toAlgorithmName = new Function<Algorithm, String>() {
     @Override
     public String apply(Algorithm alg) {
-      if (alg == null) {
+
+      if (Objects.isNull(alg)) {
         return null;
       } else {
         return alg.getName();
@@ -262,11 +264,6 @@ public class IamDiscoveryEndpoint {
     // @formatter: on
     String baseUrl = config.getIssuer();
 
-    if (!baseUrl.endsWith("/")) {
-      logger.warn("Configured issuer doesn't end in /, adding for discovery: " + baseUrl);
-      baseUrl = baseUrl.concat("/");
-    }
-
     Collection<JWSAlgorithm> clientSymmetricAndAsymmetricSigningAlgs = Lists.newArrayList(
         JWSAlgorithm.HS256, JWSAlgorithm.HS384, JWSAlgorithm.HS512, JWSAlgorithm.RS256,
         JWSAlgorithm.RS384, JWSAlgorithm.RS512, JWSAlgorithm.ES256, JWSAlgorithm.ES384,
@@ -323,14 +320,14 @@ public class IamDiscoveryEndpoint {
         Collections2.transform(encService.getAllEncryptionAlgsSupported(), toAlgorithmName));
     m.put("request_object_encryption_enc_values_supported",
         Collections2.transform(encService.getAllEncryptionEncsSupported(), toAlgorithmName));
+
     // @formatter:off
     m.put("token_endpoint_auth_methods_supported", Lists.newArrayList(
         "client_secret_post",
-        "client_secret_basic", 
-        "client_secret_jwt", 
-        "private_key_jwt", 
+        "client_secret_basic",  
         "none"));
     // @formatter:on
+
     m.put("token_endpoint_auth_signing_alg_values_supported",
         Collections2.transform(clientSymmetricAndAsymmetricSigningAlgs, toAlgorithmName));
 

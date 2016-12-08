@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
 
@@ -16,12 +15,13 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
 
   public static final String DASHBOARD_URL = "/dashboard";
 
-  private RequestCache requestCache = new HttpSessionRequestCache();
+  private final RequestCache requestCache;
 
   private final String iamBaseUrl;
 
-  public RootIsDashboardSuccessHandler(String iamBaseUrl) {
-    setRequestCache(requestCache);
+  public RootIsDashboardSuccessHandler(String iamBaseUrl, RequestCache cache) {
+    setRequestCache(cache);
+    this.requestCache = cache;
     setDefaultTargetUrl(DASHBOARD_URL);
     this.iamBaseUrl = iamBaseUrl;
   }
@@ -47,4 +47,5 @@ public class RootIsDashboardSuccessHandler extends SavedRequestAwareAuthenticati
 
     super.onAuthenticationSuccess(request, response, authentication);
   }
+
 }

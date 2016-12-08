@@ -1,6 +1,6 @@
 package it.infn.mw.iam.test.util;
 
-import static it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler.EXT_AUTHN_UNREGISTERED_USER_ROLE;
+import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_ROLE;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -25,7 +25,7 @@ public @interface WithMockOIDCUser {
 
   String issuer() default "test-oidc-issuer";
 
-  String[] authorities() default {EXT_AUTHN_UNREGISTERED_USER_ROLE};
+  String[] authorities() default {"ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE};
 
   long expirationTime() default -1;
 }
