@@ -85,12 +85,12 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, $q, fil
 			angular.forEach(response.data.Resources, function(user){
 				users.list.push(user);
 			});
-		}
+		};
 		
 		var handleError = function(error) {
 			users.loadingModal.dismiss("Error");
 			$scope.operationResult = Utils.buildErrorOperationResult(error);
-		}
+		};
 		
 		var handleFirstResponse = function(response){
 			var totalResults = response.data.totalResults;
@@ -114,7 +114,7 @@ function UsersController($scope, $rootScope, $uibModal, $state, $filter, $q, fil
 				users.rebuildFilteredList();
 				users.loadingModal.dismiss("Cancel");
 			}, handleError);
-		}
+		};
 		
 		$rootScope.pageLoadingProgress = 0;
 		

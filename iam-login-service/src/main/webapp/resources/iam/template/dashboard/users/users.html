@@ -55,11 +55,19 @@
 							<tr
 								ng-repeat="user in users.filtered | startFrom:(users.currentPage-1)*users.entryLimit | limitTo:users.entryLimit">
 								<td class="uuid" id="{{user.id}}">{{$index + (users.currentPage-1)*users.entryLimit + 1}}</td>
-								<td><img class="img-circle" width="22"
-									ng-src="{{user.picture}}" alt="User profile picture"
-									ng-show="user.picture"> <img class="img-circle"
-									width="22" ng-src="resources/iam/img/default-avatar.png"
-									alt="User profile picture" ng-show="!user.picture"></td>
+								<td>	
+									<img 
+										class="img-circle" width="22"
+										ng-src="{{user.photos[0].value}}" 
+										alt="User profile picture"
+										ng-if="user.photos[0].value"> 
+									
+									<img class="img-circle"
+										width="22" 
+										ng-src="resources/iam/img/default-avatar.png"
+										alt="User profile picture" 
+										ng-if="!user.photos">
+								</td>
 								<td><a ui-sref="user({id: user.id})">{{user.name.formatted}}</a></td>
 								<td class="hidden-xs text-center"><i
 									class="fa fa-circle text-success" ng-show="user.active"></i> <i
