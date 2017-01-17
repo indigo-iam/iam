@@ -1,5 +1,7 @@
 package it.infn.mw.iam.api.scim.model;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,15 +29,21 @@ public final class ScimGroup extends ScimResource {
   @Valid
   private final Set<ScimMemberRef> members;
 
+  @JsonInclude(Include.ALWAYS)
+  @JsonProperty(value = ScimConstants.INDIGO_GROUP_SCHEMA)
+  private final ScimIndigoGroup indigoGroup;
+
   @JsonCreator
   private ScimGroup(@JsonProperty("id") String id, @JsonProperty("externalId") String externalId,
       @JsonProperty("meta") ScimMeta meta, @JsonProperty("schemas") Set<String> schemas,
       @JsonProperty("displayName") String displayName,
-      @JsonProperty("members") Set<ScimMemberRef> members) {
+      @JsonProperty("members") Set<ScimMemberRef> members,
+      @JsonProperty(INDIGO_GROUP_SCHEMA) ScimIndigoGroup indigoGroup) {
 
     super(id, externalId, meta, schemas);
     this.displayName = displayName;
     this.members = (members != null ? members : Collections.<ScimMemberRef>emptySet());
+    this.indigoGroup = indigoGroup;
   }
 
   private ScimGroup(Builder b) {
@@ -43,6 +51,7 @@ public final class ScimGroup extends ScimResource {
     super(b);
     this.displayName = b.displayName;
     this.members = b.members;
+    this.indigoGroup = b.indigoGroup;
   }
 
   public String getDisplayName() {
@@ -54,6 +63,10 @@ public final class ScimGroup extends ScimResource {
 
     return members;
   }
+  
+  public ScimIndigoGroup getIndigoGroup() {
+    return indigoGroup;
+  }
 
   public static Builder builder(String groupName) {
 
@@ -64,11 +77,14 @@ public final class ScimGroup extends ScimResource {
 
     private String displayName;
     private Set<ScimMemberRef> members = new HashSet<ScimMemberRef>();
+    private ScimIndigoGroup indigoGroup = null;
 
     public Builder(String displayName) {
       super();
       schemas.add(GROUP_SCHEMA);
+      schemas.add(INDIGO_GROUP_SCHEMA);
       this.displayName = displayName;
+      indigoGroup = new ScimIndigoGroup.Builder().build();
     }
 
     public Builder id(String id) {
@@ -86,6 +102,11 @@ public final class ScimGroup extends ScimResource {
     public Builder setMembers(Set<ScimMemberRef> members) {
 
       this.members = members;
+      return this;
+    }
+
+    public Builder indigoGroup(ScimIndigoGroup indigoGroup) {
+      this.indigoGroup = indigoGroup;
       return this;
     }
 

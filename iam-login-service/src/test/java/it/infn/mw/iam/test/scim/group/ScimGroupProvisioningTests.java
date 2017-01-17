@@ -2,9 +2,9 @@ package it.infn.mw.iam.test.scim.group;
 
 import static com.jayway.restassured.matcher.ResponseAwareMatcherComposer.and;
 import static com.jayway.restassured.matcher.RestAssuredMatchers.endsWithPath;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 
@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.test.ScimRestUtils;
 import it.infn.mw.iam.test.TestUtils;
@@ -87,7 +88,7 @@ public class ScimGroupProvisioningTests {
       .body("members", hasSize(equalTo(1)))
       .body("members[0].$ref",
           and(startsWith("http://localhost:8080/scim/Users/"), endsWithPath("members[0].value")))
-      .body("schemas", contains(ScimGroup.GROUP_SCHEMA));
+      .body("schemas", hasItems(ScimGroup.GROUP_SCHEMA, ScimConstants.INDIGO_GROUP_SCHEMA));
 
   }
 

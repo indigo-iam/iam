@@ -7,7 +7,7 @@
   <parent>
     <groupId>it.infn.mw</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>0.5.0</version>
+    <version>0.6.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>iam-common</artifactId>

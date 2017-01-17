@@ -296,7 +296,7 @@ public class ScimUser extends ScimResource {
     public Builder(String userName) {
       this();
       schemas.add(USER_SCHEMA);
-      schemas.add(ScimConstants.INDIGO_USER_SCHEMA);
+      schemas.add(INDIGO_USER_SCHEMA);
       this.userName = userName;
     }
 
