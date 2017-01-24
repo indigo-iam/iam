@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +42,11 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
+
   @Autowired
   public ScimGroupProvisioning(IamGroupRepository groupRepository,
-      IamAccountRepository accountRepository, GroupConverter converter) {
 
+      IamAccountRepository accountRepository, GroupConverter converter) {
     this.accountRepository = accountRepository;
     this.groupRepository = groupRepository;
     this.converter = converter;
@@ -87,12 +89,31 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     iamGroup.setCreationTime(creationTime);
     iamGroup.setLastUpdateTime(creationTime);
     iamGroup.setAccounts(new HashSet<IamAccount>());
+    iamGroup.setChildrenGroups(new HashSet<>());
 
     if (groupRepository.findByName(group.getDisplayName()).isPresent()) {
       throw new ScimResourceExistsException("Duplicated group '" + group.getDisplayName() + "'");
     }
 
+    IamGroup iamParentGroup = null;
+
+    if (group.getIndigoGroup().getParentGroup() != null) {
+      String parentGroupUuid = group.getIndigoGroup().getParentGroup().getValue();
+
+      iamParentGroup = groupRepository.findByUuid(parentGroupUuid)
+        .orElseThrow(() -> new ScimResourceNotFoundException(
+            String.format("Parent group '%s' not found", parentGroupUuid)));
+
+      iamGroup.setParentGroup(iamParentGroup);
+
+      Set<IamGroup> children = iamParentGroup.getChildrenGroups();
+      children.add(iamGroup);
+    }
+
     groupRepository.save(iamGroup);
+    if (iamParentGroup != null) {
+      groupRepository.save(iamParentGroup);
+    }
 
     return converter.toScim(iamGroup);
   }
@@ -105,9 +126,18 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     IamGroup group = groupRepository.findByUuid(id)
       .orElseThrow(() -> new ScimResourceNotFoundException("No group mapped to id '" + id + "'"));
 
-    if (!group.getAccounts().isEmpty()) {
+    if (!(group.getAccounts().isEmpty() && group.getChildrenGroups().isEmpty())) {
 
-      throw new ScimException("Not empty group");
+      throw new ScimException("Group is not empty");
+    }
+
+    IamGroup parent = group.getParentGroup();
+    if (parent != null) {
+      Set<IamGroup> children = parent.getChildrenGroups();
+      children.remove(group);
+      parent.setChildrenGroups(children);
+
+      groupRepository.save(parent);
     }
 
     groupRepository.delete(group);
@@ -134,6 +164,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     updatedGroup.setAccounts(existingGroup.getAccounts());
     /* description is not mapped into SCIM group */
     updatedGroup.setDescription(existingGroup.getDescription());
+    updatedGroup.setParentGroup(existingGroup.getParentGroup());
+    updatedGroup.setChildrenGroups(existingGroup.getChildrenGroups());
 
     updatedGroup.touch();
 

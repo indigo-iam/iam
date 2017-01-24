@@ -1,5 +1,6 @@
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -20,5 +21,11 @@ public interface IamGroupRepository extends PagingAndSortingRepository<IamGroup,
   @Query("select g from IamGroup g where g.name = :name and g.uuid != :uuid")
   Optional<IamGroup> findByNameWithDifferentId(@Param("name") String name,
       @Param("uuid") String uuid);
+
+  @Query("select g from IamGroup g where g.parentGroup is null")
+  List<IamGroup> findRootGroups();
+
+  @Query("select g from IamGroup g where g.parentGroup = :parentGroup")
+  List<IamGroup> findSubgroups(@Param("parentGroup") IamGroup parentGroup);
 
 }

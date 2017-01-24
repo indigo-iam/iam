@@ -101,8 +101,7 @@ public class ScimGroupProvisioningTests {
 
     ScimGroup createdGroup = restUtils.doPost("/scim/Groups/", group).extract().as(ScimGroup.class);
 
-    restUtils.doGet(createdGroup.getMeta().getLocation())
-      .body("displayName", equalTo(name));
+    restUtils.doGet(createdGroup.getMeta().getLocation()).body("displayName", equalTo(name));
 
     restUtils.doDelete(createdGroup.getMeta().getLocation(), HttpStatus.NO_CONTENT);
   }
@@ -117,8 +116,8 @@ public class ScimGroupProvisioningTests {
 
     requestedGroup = ScimGroup.builder("engineers_updated").build();
 
-    restUtils.doPut(createdGroup.getMeta().getLocation(), requestedGroup)
-      .body("displayName", equalTo(requestedGroup.getDisplayName()));
+    restUtils.doPut(createdGroup.getMeta().getLocation(), requestedGroup).body("displayName",
+        equalTo(requestedGroup.getDisplayName()));
 
     restUtils.doDelete(createdGroup.getMeta().getLocation(), HttpStatus.NO_CONTENT);
   }
@@ -153,21 +152,18 @@ public class ScimGroupProvisioningTests {
   @Test
   public void testUpdateGroupAlreadyUsedDisplaynameError() {
 
-    ScimGroup engineers =
-        restUtils.doPost("/scim/Groups/", ScimGroup.builder("engineers").build())
-          .extract()
-          .as(ScimGroup.class);
+    ScimGroup engineers = restUtils.doPost("/scim/Groups/", ScimGroup.builder("engineers").build())
+      .extract()
+      .as(ScimGroup.class);
 
-    ScimGroup artists =
-        restUtils.doPost("/scim/Groups/", ScimGroup.builder("artists").build())
-          .extract()
-          .as(ScimGroup.class);
+    ScimGroup artists = restUtils.doPost("/scim/Groups/", ScimGroup.builder("artists").build())
+      .extract()
+      .as(ScimGroup.class);
 
-    restUtils.doPut(engineers.getMeta().getLocation(),
-        ScimGroup.builder("artists").build(), HttpStatus.CONFLICT);
+    restUtils.doPut(engineers.getMeta().getLocation(), ScimGroup.builder("artists").build(),
+        HttpStatus.CONFLICT);
 
     restUtils.doDelete(engineers.getMeta().getLocation(), HttpStatus.NO_CONTENT);
     restUtils.doDelete(artists.getMeta().getLocation(), HttpStatus.NO_CONTENT);
   }
-
 }

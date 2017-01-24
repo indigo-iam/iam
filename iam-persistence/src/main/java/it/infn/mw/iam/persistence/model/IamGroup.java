@@ -4,12 +4,16 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -32,7 +36,7 @@ public class IamGroup {
   private String description;
 
   @ManyToMany(mappedBy = "groups")
-  private Set<IamAccount> accounts = new HashSet<IamAccount>();
+  private Set<IamAccount> accounts = new HashSet<>();
 
   @Temporal(TemporalType.TIMESTAMP)
   @Column(nullable = false)
@@ -41,6 +45,13 @@ public class IamGroup {
   @Temporal(TemporalType.TIMESTAMP)
   @Column(nullable = false)
   Date lastUpdateTime;
+
+  @ManyToOne
+  @JoinColumn(name = "parent_group_id", nullable = true)
+  private IamGroup parentGroup;
+
+  @OneToMany(mappedBy = "parentGroup", cascade = CascadeType.PERSIST)
+  private Set<IamGroup> childrenGroups = new HashSet<>();
 
   public IamGroup() {
 
@@ -114,6 +125,22 @@ public class IamGroup {
   public void setLastUpdateTime(Date lastUpdateTime) {
 
     this.lastUpdateTime = lastUpdateTime;
+  }
+
+  public IamGroup getParentGroup() {
+    return parentGroup;
+  }
+
+  public void setParentGroup(IamGroup parentGroup) {
+    this.parentGroup = parentGroup;
+  }
+
+  public Set<IamGroup> getChildrenGroups() {
+    return childrenGroups;
+  }
+
+  public void setChildrenGroups(Set<IamGroup> childrenGroups) {
+    this.childrenGroups = childrenGroups;
   }
 
   public void touch() {

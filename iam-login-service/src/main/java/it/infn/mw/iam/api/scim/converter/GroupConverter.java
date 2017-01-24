@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.model.ScimGroup;
+import it.infn.mw.iam.api.scim.model.ScimGroupRef;
+import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -59,10 +61,33 @@ public class GroupConverter implements Converter<ScimGroup, IamGroup> {
       members.add(memberRef);
     }
 
+    for (IamGroup subgroup : entity.getChildrenGroups()) {
+      ScimMemberRef memberRef = new ScimMemberRef.Builder().display(subgroup.getName())
+        .value(subgroup.getUuid())
+        .ref(resourceLocationProvider.groupLocation(subgroup.getUuid()))
+        .build();
+      members.add(memberRef);
+    }
+
+    IamGroup iamParentGroup = entity.getParentGroup();
+    ScimIndigoGroup scimParentGroup = null;
+
+    if (iamParentGroup != null) {
+      ScimGroupRef parentGroupRef = ScimGroupRef.builder()
+        .display(iamParentGroup.getName())
+        .value(iamParentGroup.getUuid())
+        .ref(resourceLocationProvider.groupLocation(iamParentGroup.getUuid()))
+        .build();
+
+      ScimIndigoGroup.Builder builder = new ScimIndigoGroup.Builder();
+      scimParentGroup = builder.parentGroup(parentGroupRef).build();
+    }
+
     return ScimGroup.builder(entity.getName())
       .id(entity.getUuid())
       .meta(meta)
       .setMembers(members)
+      .indigoGroup(scimParentGroup)
       .build();
   }
 
