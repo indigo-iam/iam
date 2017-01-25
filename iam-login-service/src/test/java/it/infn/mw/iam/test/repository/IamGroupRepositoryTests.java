@@ -1,5 +1,10 @@
 package it.infn.mw.iam.test.repository;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -7,7 +12,6 @@ import java.util.UUID;
 
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +50,9 @@ public class IamGroupRepositoryTests {
     parent = createGroup(null);
 
     IamGroup group = groupRepository.findByUuid(parent.getUuid()).get();
-    Assert.assertNotNull(group);
-    Assert.assertNull(group.getParentGroup());
-    Assert.assertThat(group.getChildrenGroups(), Matchers.empty());
+    assertNotNull(group);
+    assertNull(group.getParentGroup());
+    assertThat(group.getChildrenGroups(), Matchers.empty());
   }
 
   @Test
@@ -58,12 +62,12 @@ public class IamGroupRepositoryTests {
     child = createGroup(parent);
 
     IamGroup group = groupRepository.findByUuid(child.getUuid()).get();
-    Assert.assertNotNull(group.getParentGroup());
-    Assert.assertEquals(parent.getUuid(), group.getParentGroup().getUuid());
+    assertNotNull(group.getParentGroup());
+    assertEquals(parent.getUuid(), group.getParentGroup().getUuid());
 
     group = groupRepository.findByUuid(parent.getUuid()).get();
-    Assert.assertThat(group.getChildrenGroups(), Matchers.not(Matchers.empty()));
-    Assert.assertThat(child, Matchers.isIn(group.getChildrenGroups()));
+    assertThat(group.getChildrenGroups(), Matchers.not(Matchers.empty()));
+    assertThat(child, Matchers.isIn(group.getChildrenGroups()));
   }
 
   @Test
@@ -81,7 +85,7 @@ public class IamGroupRepositoryTests {
     groupRepository.save(parent);
 
     group = groupRepository.findByUuid(parent.getUuid()).get();
-    Assert.assertThat(group.getChildrenGroups(), Matchers.empty());
+    assertThat(group.getChildrenGroups(), Matchers.empty());
   }
 
   @Test
@@ -92,7 +96,7 @@ public class IamGroupRepositoryTests {
     try {
       groupRepository.delete(parent);
     } catch (Exception e) {
-      Assert.assertThat(e, Matchers.instanceOf(TransactionSystemException.class));
+      assertThat(e, Matchers.instanceOf(TransactionSystemException.class));
     }
   }
 
@@ -102,18 +106,18 @@ public class IamGroupRepositoryTests {
     int count = rootGroups.size();
 
     parent = createGroup(null);
-    Assert.assertEquals(count + 1, groupRepository.findRootGroups().size());
+    assertEquals(count + 1, groupRepository.findRootGroups().size());
   }
 
   @Test
   public void listSubgroups() {
     parent = createGroup(null);
     List<IamGroup> subgroups = groupRepository.findSubgroups(parent);
-    Assert.assertThat(subgroups, Matchers.empty());
+    assertThat(subgroups, Matchers.empty());
 
     child = createGroup(parent);
     subgroups = groupRepository.findSubgroups(parent);
-    Assert.assertEquals(1, subgroups.size());
+    assertEquals(1, subgroups.size());
   }
 
 
