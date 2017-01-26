@@ -1,5 +1,9 @@
 package it.infn.mw.iam.test.repository;
 
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -7,10 +11,8 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,7 +54,7 @@ public class IamGroupRepositoryTests {
     IamGroup group = groupRepository.findByUuid(parent.getUuid()).get();
     assertNotNull(group);
     assertNull(group.getParentGroup());
-    assertThat(group.getChildrenGroups(), Matchers.empty());
+    assertThat(group.getChildrenGroups(), empty());
   }
 
   @Test
@@ -66,8 +68,8 @@ public class IamGroupRepositoryTests {
     assertEquals(parent.getUuid(), group.getParentGroup().getUuid());
 
     group = groupRepository.findByUuid(parent.getUuid()).get();
-    assertThat(group.getChildrenGroups(), Matchers.not(Matchers.empty()));
-    assertThat(child, Matchers.isIn(group.getChildrenGroups()));
+    assertThat(group.getChildrenGroups(), not(empty()));
+    assertThat(child, isIn(group.getChildrenGroups()));
   }
 
   @Test
@@ -78,14 +80,12 @@ public class IamGroupRepositoryTests {
 
     IamGroup group = groupRepository.findByUuid(child.getUuid()).get();
     groupRepository.delete(group);
-    Set<IamGroup> children = parent.getChildrenGroups();
-    children.remove(child);
-    parent.setChildrenGroups(children);
+    parent.getChildrenGroups().remove(child);
 
     groupRepository.save(parent);
 
     group = groupRepository.findByUuid(parent.getUuid()).get();
-    assertThat(group.getChildrenGroups(), Matchers.empty());
+    assertThat(group.getChildrenGroups(), empty());
   }
 
   @Test
@@ -96,7 +96,7 @@ public class IamGroupRepositoryTests {
     try {
       groupRepository.delete(parent);
     } catch (Exception e) {
-      assertThat(e, Matchers.instanceOf(TransactionSystemException.class));
+      assertThat(e, instanceOf(TransactionSystemException.class));
     }
   }
 
@@ -113,7 +113,7 @@ public class IamGroupRepositoryTests {
   public void listSubgroups() {
     parent = createGroup(null);
     List<IamGroup> subgroups = groupRepository.findSubgroups(parent);
-    assertThat(subgroups, Matchers.empty());
+    assertThat(subgroups, empty());
 
     child = createGroup(parent);
     subgroups = groupRepository.findSubgroups(parent);
@@ -132,9 +132,7 @@ public class IamGroupRepositoryTests {
     groupRepository.save(group);
 
     if (parentGroup != null) {
-      Set<IamGroup> children = parentGroup.getChildrenGroups();
-      children.add(group);
-      parentGroup.setChildrenGroups(children);
+      parentGroup.getChildrenGroups().add(group);
       groupRepository.save(parentGroup);
     }
 
@@ -144,9 +142,7 @@ public class IamGroupRepositoryTests {
   private void deleteGroup(IamGroup group) {
     IamGroup parent = group.getParentGroup();
     if (parent != null) {
-      Set<IamGroup> children = parent.getChildrenGroups();
-      children.remove(group);
-      parent.setChildrenGroups(children);
+      parent.getChildrenGroups().remove(group);
       groupRepository.save(parent);
     }
     groupRepository.delete(group);

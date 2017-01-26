@@ -1,6 +1,12 @@
 package it.infn.mw.iam.test.scim.group;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,13 +17,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import javax.transaction.Transactional;
 
-import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,7 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
@@ -53,7 +57,10 @@ public class ScimGroupTests {
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    mvc = MockMvcBuilders.webAppContextSetup(context)
+      .apply(springSecurity())
+      .alwaysDo(print())
+      .build();
     objectMapper = JacksonUtils.createJacksonObjectMapper();
   }
 
@@ -62,7 +69,12 @@ public class ScimGroupTests {
   public void testCreateNewChildGroup() throws Exception {
 
     ScimGroup animals = createGroup("animals");
-    createGroup("mammals", animals);
+    assertNotNull(animals);
+
+    ScimGroup mammals = createGroup("mammals", animals);
+    assertNotNull(mammals);
+
+    Assert.assertEquals(animals.getId(), mammals.getIndigoGroup().getParentGroup().getValue());
   }
 
   @Test
@@ -80,12 +92,11 @@ public class ScimGroupTests {
 
     // @formatter:off
     mvc.perform(post("/scim/Groups")
-        .contentType(ScimConstants.SCIM_CONTENT_TYPE)
+        .contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(ScimGroup.builder("mammals").indigoGroup(scimFakeParentGroup).build())))
-      .andDo(print())
       .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.status", equalTo(HttpStatus.NOT_FOUND.toString())))
-      .andExpect(jsonPath("$.detail", equalTo(String.format("Parent group '%s' not found", uuid))));
+      .andExpect(jsonPath("$.status", equalTo(NOT_FOUND.toString())))
+      .andExpect(jsonPath("$.detail", equalTo(format("Parent group '%s' not found", uuid))));
     // @formatter:on
   }
 
@@ -97,10 +108,9 @@ public class ScimGroupTests {
 
     // @formatter:off
     mvc.perform(delete(animals.getMeta().getLocation()))
-      .andDo(print())
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.status", Matchers.equalTo(HttpStatus.BAD_REQUEST.toString())))
-      .andExpect(jsonPath("$.detail", Matchers.equalTo("Group is not empty")));
+      .andExpect(jsonPath("$.status", equalTo(BAD_REQUEST.toString())))
+      .andExpect(jsonPath("$.detail", equalTo("Group is not empty")));
     // @formatter:on
   }
 
@@ -112,13 +122,11 @@ public class ScimGroupTests {
 
     // @formatter:off
     mvc.perform(delete(mammals.getMeta().getLocation()))
-      .andDo(print())
       .andExpect(status().isNoContent());
     // @formatter:on
 
     // @formatter:off
     mvc.perform(get("/scim/Groups/{id}", animals.getId()))
-      .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id", equalTo(animals.getId())))
       .andExpect(jsonPath("$.members").doesNotExist());
@@ -133,7 +141,6 @@ public class ScimGroupTests {
 
     // @formatter:off
     mvc.perform(get("/scim/Groups/{id}", animals.getId()))
-      .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id", equalTo(animals.getId())))
       .andExpect(jsonPath("$.displayName", equalTo(animals.getDisplayName())))
@@ -151,13 +158,12 @@ public class ScimGroupTests {
 
     // @formatter:off
     mvc.perform(get("/scim/Groups/{id}", mammals.getId()))
-      .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.id", equalTo(mammals.getId())))
       .andExpect(jsonPath("$.displayName", equalTo(mammals.getDisplayName())))
-      .andExpect(jsonPath("$."+ScimConstants.INDIGO_GROUP_SCHEMA+".parentGroup.display", equalTo(animals.getDisplayName())))
-      .andExpect(jsonPath("$."+ScimConstants.INDIGO_GROUP_SCHEMA+".parentGroup.value", equalTo(animals.getId())))
-      .andExpect(jsonPath("$."+ScimConstants.INDIGO_GROUP_SCHEMA+".parentGroup.$ref", equalTo(animals.getMeta().getLocation())));
+      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.display", equalTo(animals.getDisplayName())))
+      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.value", equalTo(animals.getId())))
+      .andExpect(jsonPath("$."+INDIGO_GROUP_SCHEMA+".parentGroup.$ref", equalTo(animals.getMeta().getLocation())));
     // @formatter:on
   }
 
@@ -181,9 +187,8 @@ public class ScimGroupTests {
     }
 
     String response = mvc
-      .perform(post("/scim/Groups").contentType(ScimConstants.SCIM_CONTENT_TYPE)
+      .perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(group)))
-      .andDo(print())
       .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
@@ -191,7 +196,5 @@ public class ScimGroupTests {
 
     return objectMapper.readValue(response, ScimGroup.class);
   }
-
-
 
 }

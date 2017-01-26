@@ -133,9 +133,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     IamGroup parent = group.getParentGroup();
     if (parent != null) {
-      Set<IamGroup> children = parent.getChildrenGroups();
-      children.remove(group);
-      parent.setChildrenGroups(children);
+      parent.getChildrenGroups().remove(group);
 
       groupRepository.save(parent);
     }
