@@ -14,7 +14,6 @@ import org.mitre.oauth2.service.impl.DefaultSystemScopeService;
 import org.mitre.oauth2.token.StructuredScopeAwareOAuth2RequestValidator;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
-import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.ClientLogoLoadingService;
@@ -56,6 +55,8 @@ import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
+import it.infn.mw.iam.core.IamOAuth2RequestFactory;
+
 @Configuration
 public class MitreServicesConfig {
 
@@ -79,8 +80,8 @@ public class MitreServicesConfig {
 
   @Bean
   OAuth2RequestFactory requestFactory() {
-
-    return new ConnectOAuth2RequestFactory(clientDetailsService());
+    
+    return new IamOAuth2RequestFactory(clientDetailsService());
   }
 
   @Bean

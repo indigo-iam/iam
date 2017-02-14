@@ -30,19 +30,21 @@ public class OidcTokenEnhancer extends ConnectTokenEnhancer {
 
   @Autowired
   private OIDCTokenService connectTokenService;
-
-  private SignedJWT signClaims(JWTClaimsSet claims){
+  
+  private static final String AUD_KEY = "aud";
+  
+  private SignedJWT signClaims(JWTClaimsSet claims) {
     JWSAlgorithm signingAlg = getJwtService().getDefaultSigningAlgorithm();
-    
+
     JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null,
         null, getJwtService().getDefaultSignerKeyId(), null, null);
     SignedJWT signedJWT = new SignedJWT(header, claims);
 
     getJwtService().signJwt(signedJWT);
     return signedJWT;
-    
+
   }
-  
+
   protected OAuth2AccessTokenEntity buildAccessToken(OAuth2AccessToken accessToken,
       OAuth2Authentication authentication, UserInfo userInfo, Date issueTime) {
 
@@ -66,7 +68,7 @@ public class OidcTokenEnhancer extends ConnectTokenEnhancer {
           .jwtID(UUID.randomUUID().toString());
     // @formatter:on
 
-    String audience = (String) authentication.getOAuth2Request().getExtensions().get("aud");
+    String audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
 
     if (!Strings.isNullOrEmpty(audience)) {
       builder.audience(Lists.newArrayList(audience));
@@ -74,7 +76,7 @@ public class OidcTokenEnhancer extends ConnectTokenEnhancer {
 
     JWTClaimsSet claims = builder.build();
     token.setJwt(signClaims(claims));
-    
+
     return token;
 
   }

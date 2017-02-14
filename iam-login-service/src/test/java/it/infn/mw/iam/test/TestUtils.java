@@ -14,6 +14,7 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.config.ObjectMapperConfig;
 import com.jayway.restassured.config.RestAssuredConfig;
 import com.jayway.restassured.mapper.factory.Jackson2ObjectMapperFactory;
+import com.jayway.restassured.specification.RequestSpecification;
 
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -207,6 +208,8 @@ public class TestUtils {
     private String grantType;
     private String username;
     private String password;
+    private String audience;
+
     private int port = 8080;
 
     public AccessTokenGetter(String clientId, String clientSecret) {
@@ -234,45 +237,35 @@ public class TestUtils {
       return this;
     }
 
+    public AccessTokenGetter audience(String audience) {
+      this.audience = audience;
+      return this;
+    }
 
     public String getAccessToken() {
 
-      switch (grantType) {
-        case "client_credentials":
-          return given().port(port)
-            .param("grant_type", grantType)
-            .param("client_id", clientId)
-            .param("client_secret", clientSecret)
-            .param("scope", scope)
-            .when()
-            .post("/token")
-            .then()
-            .log()
-            .all(true)
-            .statusCode(HttpStatus.OK.value())
-            .extract()
-            .path("access_token");
+      RequestSpecification req = given().port(port)
+        .param("grant_type", grantType)
+        .param("client_id", clientId)
+        .param("client_secret", clientSecret)
+        .param("scope", scope);
 
-        case "password":
-          return given().port(port)
-            .param("grant_type", grantType)
-            .param("client_id", clientId)
-            .param("client_secret", clientSecret)
-            .param("scope", scope)
-            .param("username", username)
-            .param("password", password)
-            .when()
-            .post("/token")
-            .then()
-            .log()
-            .all(true)
-            .statusCode(HttpStatus.OK.value())
-            .extract()
-            .path("access_token");
-
-        default:
-          throw new IllegalArgumentException("Unsupported grant type: " + grantType);
+      if (audience != null) {
+        req.param("aud", audience);
       }
+
+      if ("password".equals(grantType)) {
+        req.param("username", username).param("password", password);
+      }
+
+      return req.when()
+        .post("/token")
+        .then()
+        .log()
+        .all(true)
+        .statusCode(HttpStatus.OK.value())
+        .extract()
+        .path("access_token");
     }
   }
 }
