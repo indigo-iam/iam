@@ -8,7 +8,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (7, 'scim-client-rw', 'secret', 'SCIM client (read-write)', false, null, 3600, 600, true, 'SECRET_POST'),
   (8, 'token-exchange-actor', 'secret', 'Token Exchange grant client actor', false, null, 3600, 600, true, 'SECRET_POST'),
   (9, 'token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST'),
-  (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST');
+  (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST'),
+  (11, 'token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC');
 
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
@@ -70,14 +71,23 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (10, 'registration:read'),
   (10, 'registration:write'),
   (10, 'scim:write'),
-  (10, 'scim:read');
+  (10, 'scim:read'),
+  (11, 'openid'),
+  (11, 'profile'),
+  (11, 'email'),
+  (11, 'address'),
+  (11, 'phone'),
+  (11, 'offline_access'),
+  (11, 'read-tasks'),
+  (11, 'write-tasks');
   
   
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
   (1, 'https://iam.local.io/iam-test-client/openid_connect_login'),
   (3, 'http://localhost:4000/callback'),
-  (4, 'http://localhost:5000/callback');
+  (4, 'http://localhost:5000/callback'),
+  (11, 'http://localhost:1234/callback');
 
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
@@ -97,7 +107,10 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (9, 'password'),
   (9, 'refresh_token'),
   (10, 'client_credentials'),
-  (10, 'refresh_token');
+  (10, 'refresh_token'),
+  (11, 'authorization_code'),
+  (11, 'refresh_token'),
+  (11, 'client_credentials');
     
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER) VALUES
 (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M');

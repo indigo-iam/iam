@@ -1,7 +1,6 @@
 package it.infn.mw.iam.test.repository;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.iterableWithSize;
 import static org.junit.Assert.assertThat;
 
 import java.util.Date;
@@ -34,10 +33,11 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 @Transactional
 public class IamTokenRepositoryTests {
 
-  public static final String TEST_USER = "test";
-  public static final String ADMIN_USER = "admin";
+  public static final String TEST_347_USER = "test_347";
+  public static final String TEST_346_USER = "test_346";
+  
   public static final String ISSUER = "issuer";
-  public static final String TEST_CLIEND_ID = "client";
+  public static final String TEST_CLIEND_ID = "token-lookup-client";
 
   public static final String[] SCOPES = {"openid", "profile", "offline_access"};
 
@@ -89,21 +89,21 @@ public class IamTokenRepositoryTests {
   @Test
   public void testTokenResolutionCorrectlyEnforcesUsernameChecks() {
 
-    buildAccessToken(loadTestClient(), TEST_USER);
+    buildAccessToken(loadTestClient(), TEST_347_USER);
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(ADMIN_USER), hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(ADMIN_USER), hasSize(0));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_346_USER), hasSize(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_346_USER), hasSize(0));
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_USER), hasSize(2)); // access token
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER), hasSize(2)); // access token
                                                                                      // + ID token
 
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_USER), hasSize(1));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER), hasSize(1));
   }
 
   @Test
   public void testExpiredTokensAreNotReturned() {
 
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_USER);
+    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
 
     Date now = new Date();
     at.setExpiration(now);
@@ -114,18 +114,16 @@ public class IamTokenRepositoryTests {
     tokenService.saveAccessToken(at.getIdToken());
     tokenService.saveRefreshToken(at.getRefreshToken());
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_USER), hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_USER), hasSize(0));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER), hasSize(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER), hasSize(0));
   }
 
   @Test
   public void testClientTokensNotBoundToUsersAreIgnored() {
     buildAccessToken(loadTestClient());
 
-    assertThat(accessTokenRepo.findAll(), iterableWithSize(1));
-    assertThat(refreshTokenRepo.findAll(), iterableWithSize(0));
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_USER), hasSize(0));
-    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_USER), hasSize(0));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER), hasSize(0));
+    assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER), hasSize(0));
   }
 
 }
