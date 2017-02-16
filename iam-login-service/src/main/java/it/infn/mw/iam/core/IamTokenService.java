@@ -32,7 +32,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public Set<OAuth2AccessTokenEntity> getAllAccessTokensForUser(String id) {
 
-    Set<OAuth2AccessTokenEntity> results = Sets.newHashSet();
+    Set<OAuth2AccessTokenEntity> results = Sets.newLinkedHashSet();
     results.addAll(accessTokenRepo.findValidAccessTokensForUser(id));
     return results;
   }
@@ -40,7 +40,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
   @Override
   public Set<OAuth2RefreshTokenEntity> getAllRefreshTokensForUser(String id) {
-    Set<OAuth2RefreshTokenEntity> results = Sets.newHashSet();
+    Set<OAuth2RefreshTokenEntity> results = Sets.newLinkedHashSet();
     results.addAll(refreshTokenRepo.findValidRefreshTokensForUser(id));
     return results;
   }
