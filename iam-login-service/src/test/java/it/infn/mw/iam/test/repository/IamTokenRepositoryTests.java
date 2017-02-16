@@ -3,6 +3,7 @@ package it.infn.mw.iam.test.repository;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import javax.persistence.EntityManager;
@@ -35,7 +36,7 @@ public class IamTokenRepositoryTests {
 
   public static final String TEST_347_USER = "test_347";
   public static final String TEST_346_USER = "test_346";
-  
+
   public static final String ISSUER = "issuer";
   public static final String TEST_CLIEND_ID = "token-lookup-client";
 
@@ -94,8 +95,9 @@ public class IamTokenRepositoryTests {
     assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_346_USER), hasSize(0));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_346_USER), hasSize(0));
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER), hasSize(2)); // access token
-                                                                                     // + ID token
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER), hasSize(2)); // access
+                                                                                         // token
+    // + ID token
 
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER), hasSize(1));
   }
@@ -105,10 +107,15 @@ public class IamTokenRepositoryTests {
 
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
 
-    Date now = new Date();
-    at.setExpiration(now);
-    at.getIdToken().setExpiration(now);
-    at.getRefreshToken().setExpiration(now);
+    Calendar cal = Calendar.getInstance();
+
+    cal.add(Calendar.DAY_OF_YEAR, -1);
+
+    Date yesterday = cal.getTime();
+
+    at.setExpiration(yesterday);
+    at.getIdToken().setExpiration(yesterday);
+    at.getRefreshToken().setExpiration(yesterday);
 
     tokenService.saveAccessToken(at);
     tokenService.saveAccessToken(at.getIdToken());

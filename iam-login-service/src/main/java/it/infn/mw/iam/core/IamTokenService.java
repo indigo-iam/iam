@@ -44,4 +44,15 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     results.addAll(refreshTokenRepo.findValidRefreshTokensForUser(id));
     return results;
   }
+
+  @Override
+  public void revokeAccessToken(OAuth2AccessTokenEntity accessToken) {
+    accessTokenRepo.delete(accessToken);
+  }
+
+  @Override
+  public void revokeRefreshToken(OAuth2RefreshTokenEntity refreshToken) {
+    refreshTokenRepo.delete(refreshToken);
+  }
+
 }
