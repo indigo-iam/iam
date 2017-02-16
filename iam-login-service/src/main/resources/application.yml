@@ -36,7 +36,8 @@ iam:
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
 
   token:
-    lifetime: 86400
+    # This is the registration access token lifetime
+    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}  
 
   organisation:
     name: ${IAM_ORGANISATION_NAME:indigo-dc}
@@ -72,7 +73,7 @@ github:
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:false}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
-  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:30000}
+  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:5000}
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
   subject:
@@ -81,3 +82,7 @@ notification:
     rejected: Indigo Account request rejected
     adminHandleRequest: New Indigo account request
     resetPassword: Indigo account reset password
+
+task:
+  tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
+  approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}

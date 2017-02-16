@@ -20,6 +20,12 @@ import it.infn.mw.iam.notification.NotificationService;
 @EnableScheduling
 public class TaskConfig implements SchedulingConfigurer {
 
+  public static final long ONE_SECOND_MSEC = 1000;
+  public static final long TEN_SECONDS_MSEC = 10 * ONE_SECOND_MSEC;
+  public static final long THIRTY_SECONDS_MSEC = 30 * ONE_SECOND_MSEC;
+  public static final long ONE_MINUTE_MSEC = 60 * ONE_SECOND_MSEC;
+  public static final long TEN_MINUTES_MSEC = 10 * ONE_MINUTE_MSEC;
+
   @Autowired
   OAuth2TokenEntityService tokenEntityService;
 
@@ -32,29 +38,28 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Bean(destroyMethod = "shutdown")
   public ScheduledExecutorService taskScheduler() {
-
-    // Do we need more than one executor here?
     return Executors.newSingleThreadScheduledExecutor();
   }
 
-  @Scheduled(fixedDelay = 60000 * 5, initialDelay = 60000 * 10)
+  @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredTokens() {
 
     tokenEntityService.clearExpiredTokens();
   }
 
-  @Scheduled(fixedDelay = 30000, initialDelay = 60000)
+  @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}",
+      initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredSites() {
 
     approvedSiteService.clearExpiredSites();
   }
 
-  @Scheduled(fixedDelayString = "${notification.taskDelay}", initialDelay = 10000)
+  @Scheduled(fixedDelayString = "${notification.taskDelay}", initialDelay = TEN_SECONDS_MSEC)
   public void sendNotifications() {
     notificationService.sendPendingNotifications();
   }
 
-  @Scheduled(fixedDelay = 30000, initialDelay = 60000)
+  @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredNotifications() {
     notificationService.clearExpiredNotifications();
   }
