@@ -15,6 +15,8 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,10 @@ import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.audit.events.RegistrationApproveEvent;
+import it.infn.mw.iam.audit.events.RegistrationConfirmEvent;
+import it.infn.mw.iam.audit.events.RegistrationRejectEvent;
+import it.infn.mw.iam.audit.events.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
@@ -37,7 +43,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 
 @Service
-public class DefaultRegistrationRequestService implements RegistrationRequestService {
+public class DefaultRegistrationRequestService
+    implements RegistrationRequestService, ApplicationEventPublisherAware {
 
   @Autowired
   private IamRegistrationRequestRepository requestRepository;
@@ -57,6 +64,12 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
+
+  private ApplicationEventPublisher eventPublisher;
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
+  }
 
   private static final Table<IamRegistrationRequestStatus, IamRegistrationRequestStatus, Boolean> allowedStateTransitions =
       new ImmutableTable.Builder<IamRegistrationRequestStatus, IamRegistrationRequestStatus, Boolean>()
@@ -117,6 +130,9 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
     newAccount.setRegistrationRequest(regRequest);
 
     requestRepository.save(regRequest);
+
+    eventPublisher.publishEvent(new RegistrationRequestEvent(this, regRequest,
+        "New registration request from user " + newAccount.getUsername()));
 
     notificationService.createConfirmationMessage(regRequest);
 
@@ -230,6 +246,9 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
     request.setLastUpdateTime(new Date());
     requestRepository.save(request);
 
+    eventPublisher.publishEvent(new RegistrationApproveEvent(this, request,
+        "Approved registration request for user " + account.getUsername()));
+
     return converter.fromEntity(request);
   }
 
@@ -245,6 +264,9 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
     request.setLastUpdateTime(new Date());
     requestRepository.save(request);
 
+    eventPublisher.publishEvent(new RegistrationConfirmEvent(this, request,
+        String.format("User %s confirm registration request", request.getAccount().getUsername())));
+
     return converter.fromEntity(request);
   }
 
@@ -254,6 +276,9 @@ public class DefaultRegistrationRequestService implements RegistrationRequestSer
     RegistrationRequestDto retval = converter.fromEntity(request);
 
     userService.delete(request.getAccount().getUuid());
+
+    eventPublisher.publishEvent(new RegistrationRejectEvent(this, request,
+        "Reject registration request for user " + request.getAccount().getUsername()));
 
     return retval;
   }

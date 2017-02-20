@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -32,12 +33,16 @@ public class PasswordUpdateServiceTests {
 
   DefaultPasswordResetService updateService;
 
+  @Mock
+  ApplicationEventPublisher eventPublisher;
+
   private final String OLD_PASSWORD = "old";
   private final String NEW_PASSWORD = "new";
 
   @Before
   public void init() {
     updateService = new DefaultPasswordResetService(accountRepository, null, null, encoder);
+    updateService.setApplicationEventPublisher(eventPublisher);
   }
 
   private IamAccount newAccount(String username) {
@@ -49,11 +54,11 @@ public class PasswordUpdateServiceTests {
     return result;
   }
 
-  @Test(expected=UserNotActiveOrNotVerified.class)
+  @Test(expected = UserNotActiveOrNotVerified.class)
   public void testUserIsNotActive() {
 
     final String USERNAME = "inactive_user";
-    
+
     IamAccount account = newAccount(USERNAME);
     account.setActive(false);
 
@@ -63,11 +68,11 @@ public class PasswordUpdateServiceTests {
 
   }
 
-  @Test(expected=UserNotActiveOrNotVerified.class)
+  @Test(expected = UserNotActiveOrNotVerified.class)
   public void testUserIsNotVerified() {
 
     final String USERNAME = "inactive_user";
-    
+
     IamAccount account = newAccount(USERNAME);
     account.setActive(true);
     account.getUserInfo().setEmailVerified(false);
@@ -78,7 +83,7 @@ public class PasswordUpdateServiceTests {
 
   }
 
-  @Test(expected=UserNotFoundError.class)
+  @Test(expected = UserNotFoundError.class)
   public void testUserNotFound() {
 
     final String USERNAME = "not_found_user";
@@ -89,7 +94,7 @@ public class PasswordUpdateServiceTests {
 
   }
 
-  @Test(expected=BadUserPasswordError.class)
+  @Test(expected = BadUserPasswordError.class)
   public void testBadUserPassword() {
 
     final String USERNAME = "active_user";

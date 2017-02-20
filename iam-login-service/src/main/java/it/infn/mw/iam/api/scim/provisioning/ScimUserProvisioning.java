@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,10 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
+import it.infn.mw.iam.audit.events.AccountCreateEvent;
+import it.infn.mw.iam.audit.events.AccountRemoveEvent;
+import it.infn.mw.iam.audit.events.AccountReplaceEvent;
+import it.infn.mw.iam.audit.events.AccountUpdateEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -58,7 +64,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 
 @Service
-public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser> {
+public class ScimUserProvisioning
+    implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
   public static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(ACCOUNT_ADD_OIDC_ID,
       ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY,
@@ -72,6 +79,7 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final PasswordEncoder passwordEncoder;
   private final UserConverter userConverter;
+  private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public ScimUserProvisioning(IamAccountRepository accountRepository,
@@ -85,6 +93,10 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         oidcIdConverter, samlIdConverter, sshKeyConverter, x509CertificateConverter);
+  }
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
   }
 
   private void idSanityChecks(final String id) {
@@ -120,6 +132,8 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
 
     accountRepository.delete(account);
 
+    eventPublisher.publishEvent(
+        new AccountRemoveEvent(this, account, "Delete account for user " + account.getUsername()));
   }
 
   private void checkForDuplicates(ScimUser user) throws ScimResourceExistsException {
@@ -217,6 +231,9 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
     }
 
     accountRepository.save(account);
+
+    eventPublisher.publishEvent(
+        new AccountCreateEvent(this, account, "Account created for user " + account.getUsername()));
 
     return account;
   }
@@ -332,6 +349,11 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
     updatedAccount.touch();
 
     accountRepository.save(updatedAccount);
+
+    eventPublisher.publishEvent(new AccountReplaceEvent(this, updatedAccount, existingAccount,
+        String.format("Replaced user %s with new user %s", updatedAccount.getUsername(),
+            existingAccount.getUsername())));
+
     return userConverter.toScim(updatedAccount);
   }
 
@@ -346,6 +368,9 @@ public class ScimUserProvisioning implements ScimProvisioning<ScimUser, ScimUser
         throw new ScimPatchOperationNotSupported(u.getType().getDescription() + " not supported");
       }
       hasChanged |= u.update();
+
+      eventPublisher.publishEvent(new AccountUpdateEvent(this, account, u.getType(),
+          String.format("Update account for user %s", account.getUsername())));
     }
 
     if (hasChanged) {

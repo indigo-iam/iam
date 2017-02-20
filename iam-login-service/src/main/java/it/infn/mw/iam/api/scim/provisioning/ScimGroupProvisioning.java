@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +28,18 @@ import it.infn.mw.iam.api.scim.provisioning.paging.OffsetPageable;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
+import it.infn.mw.iam.audit.events.GroupAddEvent;
+import it.infn.mw.iam.audit.events.GroupRemoveEvent;
+import it.infn.mw.iam.audit.events.GroupReplaceEvent;
+import it.infn.mw.iam.audit.events.GroupUpdateEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 
 @Service
-public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<ScimMemberRef>> {
+public class ScimGroupProvisioning
+    implements ScimProvisioning<ScimGroup, List<ScimMemberRef>>, ApplicationEventPublisherAware {
 
   private final IamGroupRepository groupRepository;
 
@@ -42,6 +49,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
+  private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public ScimGroupProvisioning(IamGroupRepository groupRepository,
@@ -52,6 +60,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     this.converter = converter;
     this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountRepository);
 
+  }
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
   }
 
   private void idSanityChecks(String id) {
@@ -113,7 +125,12 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     groupRepository.save(iamGroup);
     if (iamParentGroup != null) {
       groupRepository.save(iamParentGroup);
+      eventPublisher.publishEvent(
+          new GroupAddEvent(this, iamGroup, "Group created with name " + iamParentGroup.getName()));
     }
+
+    eventPublisher.publishEvent(
+        new GroupAddEvent(this, iamGroup, "Group created with name " + iamGroup.getName()));
 
     return converter.toScim(iamGroup);
   }
@@ -139,6 +156,9 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
     groupRepository.delete(group);
+
+    eventPublisher
+      .publishEvent(new GroupRemoveEvent(this, group, "Deleted group " + group.getName()));
   }
 
   @Override
@@ -168,6 +188,11 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     updatedGroup.touch();
 
     groupRepository.save(updatedGroup);
+
+    eventPublisher
+      .publishEvent(new GroupReplaceEvent(this, updatedGroup, existingGroup, String.format(
+          "Replaced group %s with new group %s", existingGroup.getName(), updatedGroup.getName())));
+
     return converter.toScim(updatedGroup);
   }
 
@@ -219,6 +244,9 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
         a.touch();
         accountRepository.save(a);
         hasChanged = true;
+
+        eventPublisher.publishEvent(new GroupUpdateEvent(this, group, u.getType(),
+            String.format("Update group %s", group.getName())));
       }
     }
 

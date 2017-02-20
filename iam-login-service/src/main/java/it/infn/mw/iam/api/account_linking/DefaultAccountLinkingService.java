@@ -5,9 +5,13 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.Extern
 import java.security.Principal;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.audit.events.AccountLinkEvent;
+import it.infn.mw.iam.audit.events.AccountUnlinkEvent;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
@@ -17,15 +21,21 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Service
-public class DefaultAccountLinkingService implements AccountLinkingService {
+public class DefaultAccountLinkingService
+    implements AccountLinkingService, ApplicationEventPublisherAware {
 
   final IamAccountRepository iamAccountRepository;
   final ExternalAccountLinker externalAccountLinker;
+  private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public DefaultAccountLinkingService(IamAccountRepository repo, ExternalAccountLinker linker) {
     this.iamAccountRepository = repo;
     this.externalAccountLinker = linker;
+  }
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
   }
 
   private IamAccount findAccount(Principal authenticatedUser) {
@@ -42,6 +52,11 @@ public class DefaultAccountLinkingService implements AccountLinkingService {
     IamAccount userAccount = findAccount(authenticatedUser);
 
     externalAuthenticationToken.linkToIamAccount(externalAccountLinker, userAccount);
+
+    eventPublisher.publishEvent(new AccountLinkEvent(this, userAccount,
+        externalAuthenticationToken.toExernalAuthenticationInfo(),
+        String.format("User %s link new %s account", userAccount.getUsername(),
+            externalAuthenticationToken.toExernalAuthenticationInfo().getType().toString())));
   }
 
 
@@ -84,6 +99,9 @@ public class DefaultAccountLinkingService implements AccountLinkingService {
     if (modified) {
       userAccount.touch();
       iamAccountRepository.save(userAccount);
+
+      eventPublisher.publishEvent(new AccountUnlinkEvent(this, userAccount, type, iss, sub,
+          String.format("User %s unlink %s account", userAccount.getUsername(), type.toString())));
     }
   }
 

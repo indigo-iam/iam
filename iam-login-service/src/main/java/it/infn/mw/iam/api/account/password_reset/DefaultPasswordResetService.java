@@ -5,6 +5,8 @@ import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,13 +14,16 @@ import it.infn.mw.iam.api.account.password_reset.error.BadUserPasswordError;
 import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordResetTokenError;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerified;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotFoundError;
+import it.infn.mw.iam.audit.events.PasswordResetEvent;
+import it.infn.mw.iam.audit.events.PasswordUpdateEvent;
 import it.infn.mw.iam.notification.NotificationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.TokenGenerator;
 
 @Service
-public class DefaultPasswordResetService implements PasswordResetService {
+public class DefaultPasswordResetService
+    implements PasswordResetService, ApplicationEventPublisherAware {
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultPasswordResetService.class);
 
@@ -26,6 +31,7 @@ public class DefaultPasswordResetService implements PasswordResetService {
   private final NotificationService notificationService;
   private final TokenGenerator tokenGenerator;
   private final PasswordEncoder passwordEncoder;
+  private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public DefaultPasswordResetService(IamAccountRepository accountRepository,
@@ -36,6 +42,10 @@ public class DefaultPasswordResetService implements PasswordResetService {
     this.notificationService = notificationService;
     this.tokenGenerator = tokenGenerator;
     this.passwordEncoder = passwordEncoder;
+  }
+
+  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
+    this.eventPublisher = publisher;
   }
 
   @Override
@@ -57,6 +67,9 @@ public class DefaultPasswordResetService implements PasswordResetService {
     validateResetToken(resetToken);
 
     IamAccount account = accountRepository.findByResetKey(resetToken).get();
+
+    eventPublisher.publishEvent(new PasswordResetEvent(this, account,
+        String.format("User % reset its password", account.getUsername())));
 
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);
@@ -106,6 +119,9 @@ public class DefaultPasswordResetService implements PasswordResetService {
     // set the new password
     account.setPassword(passwordEncoder.encode(newPassword));
     accountRepository.save(account);
+
+    eventPublisher.publishEvent(new PasswordUpdateEvent(this, account,
+        String.format("User %s update its password", account.getUsername())));
   }
 
 }

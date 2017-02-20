@@ -30,6 +30,7 @@ import it.infn.mw.iam.core.IamBanner;
     "it.infn.mw.iam.registration", 
     "it.infn.mw.iam.dashboard",
     "it.infn.mw.iam.notification",
+    "it.infn.mw.iam.audit",
     "org.mitre.oauth2.web",
     "org.mitre.oauth2.view", 
     "org.mitre.openid.connect.web", 
