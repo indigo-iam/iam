@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
+import it.infn.mw.iam.core.util.IamAuthenticationLogger;
+
 public class TimestamperSuccessHandler implements AuthenticationSuccessHandler {
 
   public static final Logger LOG = getLogger(TimestamperSuccessHandler.class);
@@ -30,8 +32,7 @@ public class TimestamperSuccessHandler implements AuthenticationSuccessHandler {
     Date timestamp = new Date();
     HttpSession session = request.getSession();
     session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, timestamp);
-    LOG.info("{} was authenticated successfully", authentication.getName());
-
+    IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(authentication);
   }
 
   @Override

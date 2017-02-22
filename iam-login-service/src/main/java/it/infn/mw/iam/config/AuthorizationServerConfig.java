@@ -38,6 +38,7 @@ import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswo
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 
 import it.infn.mw.iam.core.oauth.TokenExchangeTokenGranter;
+import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
 
 @Configuration
 @EnableAuthorizationServer
@@ -83,7 +84,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
     provider.setUserDetailsService(iamUserDetailsService);
     provider.setPasswordEncoder(passwordEncoder);
-    return new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+
+    ProviderManager pm =
+        new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
+
+    pm.setAuthenticationEventPublisher(new IamAuthenticationEventPublisher());
+    return pm;
 
   }
 
