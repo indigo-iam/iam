@@ -1,5 +1,9 @@
 package it.infn.mw.iam.audit.events;
 
+import static it.infn.mw.iam.audit.IamAuditField.extAccountIssuer;
+import static it.infn.mw.iam.audit.IamAuditField.extAccountSubject;
+import static it.infn.mw.iam.audit.IamAuditField.extAccountType;
+
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -18,8 +22,8 @@ public class AccountLinkEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put("extAccIssuer", externalAccountInfo.getIssuer());
-    getData().put("extAccSubject", externalAccountInfo.getSubject());
-    getData().put("extAccType", externalAccountInfo.getType().toString());
+    getData().put(extAccountIssuer, externalAccountInfo.getIssuer());
+    getData().put(extAccountSubject, externalAccountInfo.getSubject());
+    getData().put(extAccountType, externalAccountInfo.getType().toString());
   }
 }

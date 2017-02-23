@@ -1,5 +1,7 @@
 package it.infn.mw.iam.audit.events;
 
+import static it.infn.mw.iam.audit.IamAuditUtils.NULL_PRINCIPAL;
+
 import java.util.Map;
 
 import org.springframework.context.ApplicationEvent;
@@ -8,11 +10,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.google.common.collect.Maps;
 
+import it.infn.mw.iam.audit.IamAuditField;
+import it.infn.mw.iam.audit.IamAuditUtils;
+
 public class IamAuditApplicationEvent extends ApplicationEvent {
 
   private static final long serialVersionUID = -6276169409979227109L;
-
-  private static final String NULL_PRINCIPAL = "none";
 
   private final String principal;
   private final String message;
@@ -49,23 +52,15 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
   }
 
   protected void addAuditData() {
-    getData().put("source", super.source.getClass().getSimpleName());
-    getData().put("principal", principal);
-    getData().put("message", message);
-  }
-
-  protected String printAuditData() {
-    addAuditData();
-    StringBuilder str = new StringBuilder();
-    for (Map.Entry<String, Object> entry : getData().entrySet()) {
-      str.append(String.format(" \"%s\": \"%s\",", entry.getKey(), entry.getValue()));
-    }
-    return str.toString();
+    getData().put(IamAuditField.source, super.source.getClass().getSimpleName());
+    getData().put(IamAuditField.principal, principal);
+    getData().put(IamAuditField.message, message);
   }
 
   @Override
   public String toString() {
-    return String.format("AuditEvent {%s}", printAuditData());
+    addAuditData();
+    return String.format("AuditEvent: %s", IamAuditUtils.printAuditData(getData()));
   }
 
 }

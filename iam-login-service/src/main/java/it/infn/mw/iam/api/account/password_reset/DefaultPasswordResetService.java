@@ -69,7 +69,7 @@ public class DefaultPasswordResetService
     IamAccount account = accountRepository.findByResetKey(resetToken).get();
 
     eventPublisher.publishEvent(new PasswordResetEvent(this, account,
-        String.format("User % reset its password", account.getUsername())));
+        String.format("User %s reset its password", account.getUsername())));
 
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);

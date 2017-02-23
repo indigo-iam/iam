@@ -1,6 +1,7 @@
 package it.infn.mw.iam.audit.events;
 
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
+import it.infn.mw.iam.audit.IamAuditField;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class GroupUpdateEvent extends GroupEvent {
@@ -17,7 +18,7 @@ public class GroupUpdateEvent extends GroupEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put("updateType", updateType.getDescription());
+    getData().put(IamAuditField.updateType, updateType.getDescription());
   }
 
 }

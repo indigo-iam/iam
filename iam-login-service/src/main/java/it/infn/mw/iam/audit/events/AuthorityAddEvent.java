@@ -1,5 +1,6 @@
 package it.infn.mw.iam.audit.events;
 
+import it.infn.mw.iam.audit.IamAuditField;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class AuthorityAddEvent extends AccountEvent {
@@ -15,7 +16,7 @@ public class AuthorityAddEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put("authority", authority);
+    getData().put(IamAuditField.authority, authority);
   }
 
 }

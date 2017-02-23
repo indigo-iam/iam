@@ -1,5 +1,8 @@
 package it.infn.mw.iam.audit.events;
 
+import static it.infn.mw.iam.audit.IamAuditField.previousGroupName;
+import static it.infn.mw.iam.audit.IamAuditField.previousGroupUuid;
+
 import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class GroupReplaceEvent extends GroupEvent {
@@ -16,7 +19,7 @@ public class GroupReplaceEvent extends GroupEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put("previousGroupUuid", previousGroup.getUuid());
-    getData().put("previousGroupName", previousGroup.getName());
+    getData().put(previousGroupUuid, previousGroup.getUuid());
+    getData().put(previousGroupName, previousGroup.getName());
   }
 }

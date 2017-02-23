@@ -17,6 +17,5 @@ public class IamAuditListener implements ApplicationListener<IamAuditApplication
 
     logger.info(event);
   }
-
 }
 

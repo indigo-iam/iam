@@ -1,5 +1,7 @@
 package it.infn.mw.iam.audit.events;
 
+import static it.infn.mw.iam.audit.IamAuditField.confirmationKey;
+
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public class RegistrationConfirmEvent extends RegistrationEvent {
@@ -13,7 +15,7 @@ public class RegistrationConfirmEvent extends RegistrationEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put("confirmationKey", getRequest().getAccount().getConfirmationKey());
+    getData().put(confirmationKey, getRequest().getAccount().getConfirmationKey());
   }
 
 }
