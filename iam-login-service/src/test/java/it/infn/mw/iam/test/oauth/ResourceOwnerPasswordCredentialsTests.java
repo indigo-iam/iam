@@ -2,6 +2,9 @@ package it.infn.mw.iam.test.oauth;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+
+import java.text.ParseException;
 
 import javax.transaction.Transactional;
 
@@ -10,6 +13,9 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 
@@ -90,4 +96,32 @@ public class ResourceOwnerPasswordCredentialsTests {
 
   }
 
+  @Test
+  public void testResourceOwnerPasswordCredentialAuthenticationTimestamp() throws ParseException {
+
+    String clientId = "password-grant";
+    String clientSecret = "secret";
+
+    String idToken = given().auth()
+      .preemptive()
+      .basic(clientId, clientSecret)
+      .port(8080)
+      .param("grant_type", "password")
+      .param("username", "test")
+      .param("password", "password")
+      .param("scope", "openid profile")
+      .when()
+      .post("/token")
+      .then()
+      .log()
+      .body(true)
+      .statusCode(200)
+      .extract()
+      .path("id_token");
+
+    JWT token = JWTParser.parse(idToken);
+    System.out.println(token.getJWTClaimsSet());
+    assertNotNull(token.getJWTClaimsSet().getClaim("auth_time"));
+
+  }
 }
