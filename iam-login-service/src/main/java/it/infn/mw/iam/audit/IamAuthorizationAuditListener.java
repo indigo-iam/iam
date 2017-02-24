@@ -1,11 +1,11 @@
 package it.infn.mw.iam.audit;
 
-import static it.infn.mw.iam.audit.IamAuditField.category;
-import static it.infn.mw.iam.audit.IamAuditField.failureType;
-import static it.infn.mw.iam.audit.IamAuditField.message;
-import static it.infn.mw.iam.audit.IamAuditField.principal;
-import static it.infn.mw.iam.audit.IamAuditField.source;
-import static it.infn.mw.iam.audit.IamAuditField.type;
+import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
+import static it.infn.mw.iam.audit.IamAuditField.FAILURE_TYPE;
+import static it.infn.mw.iam.audit.IamAuditField.MESSAGE;
+import static it.infn.mw.iam.audit.IamAuditField.PRINCIPAL;
+import static it.infn.mw.iam.audit.IamAuditField.SOURCE;
+import static it.infn.mw.iam.audit.IamAuditField.TYPE;
 import static it.infn.mw.iam.audit.IamAuditUtils.AUTHZ_CATEGORY;
 import static it.infn.mw.iam.audit.IamAuditUtils.NULL_PRINCIPAL;
 import static it.infn.mw.iam.audit.IamAuditUtils.printAuditData;
@@ -34,24 +34,24 @@ public class IamAuthorizationAuditListener
   @Override
   public void onApplicationEvent(AbstractAuthorizationEvent event) {
 
-    data = Maps.newLinkedHashMap();
-    data.put(source, event.getSource().getClass().getSimpleName());
-    data.put(category, AUTHZ_CATEGORY);
-    data.put(type, event.getClass().getSimpleName());
+    data.clear();
+    data.put(SOURCE, event.getSource().getClass().getSimpleName());
+    data.put(CATEGORY, AUTHZ_CATEGORY);
+    data.put(TYPE, event.getClass().getSimpleName());
 
     if (event instanceof AuthenticationCredentialsNotFoundEvent) {
       AuthenticationCredentialsNotFoundEvent localEvent =
           (AuthenticationCredentialsNotFoundEvent) event;
-      data.put(principal, NULL_PRINCIPAL);
-      data.put(failureType,
+      data.put(PRINCIPAL, NULL_PRINCIPAL);
+      data.put(FAILURE_TYPE,
           localEvent.getCredentialsNotFoundException().getClass().getSimpleName());
-      data.put(message, localEvent.getCredentialsNotFoundException().getMessage());
+      data.put(MESSAGE, localEvent.getCredentialsNotFoundException().getMessage());
 
     } else if (event instanceof AuthorizationFailureEvent) {
       AuthorizationFailureEvent localEvent = (AuthorizationFailureEvent) event;
-      data.put(principal, localEvent.getAuthentication().getName());
-      data.put(failureType, localEvent.getAccessDeniedException().getClass().getSimpleName());
-      data.put(message, localEvent.getSource().toString());
+      data.put(PRINCIPAL, localEvent.getAuthentication().getName());
+      data.put(FAILURE_TYPE, localEvent.getAccessDeniedException().getClass().getSimpleName());
+      data.put(MESSAGE, localEvent.getSource().toString());
     }
 
     logger.info(String.format("AuditEvent: %s", printAuditData(data)));

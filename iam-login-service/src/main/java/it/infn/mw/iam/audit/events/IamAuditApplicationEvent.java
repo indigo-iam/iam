@@ -52,9 +52,9 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
   }
 
   protected void addAuditData() {
-    getData().put(IamAuditField.source, super.source.getClass().getSimpleName());
-    getData().put(IamAuditField.principal, principal);
-    getData().put(IamAuditField.message, message);
+    getData().put(IamAuditField.SOURCE, super.source.getClass().getSimpleName());
+    getData().put(IamAuditField.PRINCIPAL, principal);
+    getData().put(IamAuditField.MESSAGE, message);
   }
 
   @Override

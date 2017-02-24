@@ -55,7 +55,7 @@ public class DefaultAccountLinkingService
 
     eventPublisher.publishEvent(new AccountLinkEvent(this, userAccount,
         externalAuthenticationToken.toExernalAuthenticationInfo(),
-        String.format("User %s link new %s account", userAccount.getUsername(),
+        String.format("User %s has linked a new account of type %s", userAccount.getUsername(),
             externalAuthenticationToken.toExernalAuthenticationInfo().getType().toString())));
   }
 
@@ -101,7 +101,8 @@ public class DefaultAccountLinkingService
       iamAccountRepository.save(userAccount);
 
       eventPublisher.publishEvent(new AccountUnlinkEvent(this, userAccount, type, iss, sub,
-          String.format("User %s unlink %s account", userAccount.getUsername(), type.toString())));
+          String.format("User %s has unlinked an account of type %s", userAccount.getUsername(),
+              type.toString())));
     }
   }
 

@@ -1,10 +1,10 @@
 package it.infn.mw.iam.test.audit;
 
-import static it.infn.mw.iam.audit.IamAuditField.category;
-import static it.infn.mw.iam.audit.IamAuditField.failureType;
-import static it.infn.mw.iam.audit.IamAuditField.generatedBy;
-import static it.infn.mw.iam.audit.IamAuditField.target;
-import static it.infn.mw.iam.audit.IamAuditField.type;
+import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
+import static it.infn.mw.iam.audit.IamAuditField.FAILURE_TYPE;
+import static it.infn.mw.iam.audit.IamAuditField.GENERATED_BY;
+import static it.infn.mw.iam.audit.IamAuditField.TARGET;
+import static it.infn.mw.iam.audit.IamAuditField.TYPE;
 import static it.infn.mw.iam.audit.IamAuditUtils.AUTHN_CATEGORY;
 import static it.infn.mw.iam.audit.IamAuditUtils.AUTHZ_CATEGORY;
 import static org.junit.Assert.assertEquals;
@@ -74,9 +74,9 @@ public class AuditTests {
 
     data = authenticationListener.getAuditData();
     assertNotNull(data);
-    assertEquals(data.get(category), AUTHN_CATEGORY);
-    assertEquals(data.get(type), AuthenticationFailureBadCredentialsEvent.class.getSimpleName());
-    assertEquals(data.get(failureType), BadCredentialsException.class.getSimpleName());
+    assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
+    assertEquals(data.get(TYPE), AuthenticationFailureBadCredentialsEvent.class.getSimpleName());
+    assertEquals(data.get(FAILURE_TYPE), BadCredentialsException.class.getSimpleName());
   }
 
   @Test
@@ -91,9 +91,9 @@ public class AuditTests {
 
     data = authenticationListener.getAuditData();
     assertNotNull(data);
-    assertEquals(data.get(category), AUTHN_CATEGORY);
-    assertEquals(data.get(type), AuthenticationSwitchUserEvent.class.getSimpleName());
-    assertEquals(data.get(target), targetUsername);
+    assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
+    assertEquals(data.get(TYPE), AuthenticationSwitchUserEvent.class.getSimpleName());
+    assertEquals(data.get(TARGET), targetUsername);
   }
 
   @Test
@@ -106,9 +106,9 @@ public class AuditTests {
 
     data = authenticationListener.getAuditData();
     assertNotNull(data);
-    assertEquals(data.get(category), AUTHN_CATEGORY);
-    assertEquals(data.get(type), InteractiveAuthenticationSuccessEvent.class.getSimpleName());
-    assertEquals(data.get(generatedBy), this.getClass().getSimpleName());
+    assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
+    assertEquals(data.get(TYPE), InteractiveAuthenticationSuccessEvent.class.getSimpleName());
+    assertEquals(data.get(GENERATED_BY), this.getClass().getSimpleName());
   }
 
   @Test
@@ -122,9 +122,9 @@ public class AuditTests {
 
     data = authorizationListener.getAuditData();
     assertNotNull(data);
-    assertEquals(data.get(category), AUTHZ_CATEGORY);
-    assertEquals(data.get(type), AuthenticationCredentialsNotFoundEvent.class.getSimpleName());
-    assertEquals(data.get(failureType),
+    assertEquals(data.get(CATEGORY), AUTHZ_CATEGORY);
+    assertEquals(data.get(TYPE), AuthenticationCredentialsNotFoundEvent.class.getSimpleName());
+    assertEquals(data.get(FAILURE_TYPE),
         AuthenticationCredentialsNotFoundException.class.getSimpleName());
   }
 
@@ -140,9 +140,9 @@ public class AuditTests {
 
     data = authorizationListener.getAuditData();
     assertNotNull(data);
-    assertEquals(data.get(category), AUTHZ_CATEGORY);
-    assertEquals(data.get(type), AuthorizationFailureEvent.class.getSimpleName());
-    assertEquals(data.get(failureType), AccessDeniedException.class.getSimpleName());
+    assertEquals(data.get(CATEGORY), AUTHZ_CATEGORY);
+    assertEquals(data.get(TYPE), AuthorizationFailureEvent.class.getSimpleName());
+    assertEquals(data.get(FAILURE_TYPE), AccessDeniedException.class.getSimpleName());
   }
 
 

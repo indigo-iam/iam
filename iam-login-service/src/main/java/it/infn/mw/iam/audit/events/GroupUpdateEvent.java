@@ -18,7 +18,7 @@ public class GroupUpdateEvent extends GroupEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(IamAuditField.updateType, updateType.getDescription());
+    getData().put(IamAuditField.UPDATE_TYPE, updateType.getDescription());
   }
 
 }

@@ -133,7 +133,7 @@ public class ScimUserProvisioning
     accountRepository.delete(account);
 
     eventPublisher.publishEvent(
-        new AccountRemoveEvent(this, account, "Delete account for user " + account.getUsername()));
+        new AccountRemoveEvent(this, account, "Removed account for user " + account.getUsername()));
   }
 
   private void checkForDuplicates(ScimUser user) throws ScimResourceExistsException {
@@ -370,7 +370,7 @@ public class ScimUserProvisioning
       hasChanged |= u.update();
 
       eventPublisher.publishEvent(new AccountUpdateEvent(this, account, u.getType(),
-          String.format("Update account for user %s", account.getUsername())));
+          String.format("Updated account information for user %s", account.getUsername())));
     }
 
     if (hasChanged) {

@@ -1,10 +1,10 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.category;
-import static it.infn.mw.iam.audit.IamAuditField.requestStatus;
-import static it.infn.mw.iam.audit.IamAuditField.requestUuid;
-import static it.infn.mw.iam.audit.IamAuditField.type;
-import static it.infn.mw.iam.audit.IamAuditField.user;
+import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
+import static it.infn.mw.iam.audit.IamAuditField.REQUEST_STATUS;
+import static it.infn.mw.iam.audit.IamAuditField.REQUEST_UUID;
+import static it.infn.mw.iam.audit.IamAuditField.TYPE;
+import static it.infn.mw.iam.audit.IamAuditField.USER;
 
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
@@ -28,10 +28,10 @@ public class RegistrationEvent extends IamAuditApplicationEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(category, categoryValue);
-    getData().put(type, this.getClass().getSimpleName());
-    getData().put(requestUuid, request.getUuid());
-    getData().put(requestStatus, request.getStatus());
-    getData().put(user, request.getAccount().getUsername());
+    getData().put(CATEGORY, categoryValue);
+    getData().put(TYPE, this.getClass().getSimpleName());
+    getData().put(REQUEST_UUID, request.getUuid());
+    getData().put(REQUEST_STATUS, request.getStatus());
+    getData().put(USER, request.getAccount().getUsername());
   }
 }

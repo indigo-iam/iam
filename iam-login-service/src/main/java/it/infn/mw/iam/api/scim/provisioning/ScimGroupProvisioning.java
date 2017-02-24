@@ -157,8 +157,8 @@ public class ScimGroupProvisioning
 
     groupRepository.delete(group);
 
-    eventPublisher
-      .publishEvent(new GroupRemoveEvent(this, group, "Deleted group " + group.getName()));
+    eventPublisher.publishEvent(new GroupRemoveEvent(this, group,
+        String.format("Group %s has been removed", group.getName())));
   }
 
   @Override
@@ -246,7 +246,7 @@ public class ScimGroupProvisioning
         hasChanged = true;
 
         eventPublisher.publishEvent(new GroupUpdateEvent(this, group, u.getType(),
-            String.format("Update group %s", group.getName())));
+            String.format("Updated information for group %s", group.getName())));
       }
     }
 

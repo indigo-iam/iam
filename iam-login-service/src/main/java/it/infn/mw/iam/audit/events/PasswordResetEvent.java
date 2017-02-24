@@ -1,6 +1,6 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.resetKey;
+import static it.infn.mw.iam.audit.IamAuditField.RESET_KEY;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -15,7 +15,7 @@ public class PasswordResetEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(resetKey, getAccount().getResetKey());
+    getData().put(RESET_KEY, getAccount().getResetKey());
   }
 
 }

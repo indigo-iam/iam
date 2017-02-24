@@ -1,9 +1,9 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.accountUuid;
-import static it.infn.mw.iam.audit.IamAuditField.category;
-import static it.infn.mw.iam.audit.IamAuditField.type;
-import static it.infn.mw.iam.audit.IamAuditField.user;
+import static it.infn.mw.iam.audit.IamAuditField.ACCOUNT_UUID;
+import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
+import static it.infn.mw.iam.audit.IamAuditField.TYPE;
+import static it.infn.mw.iam.audit.IamAuditField.USER;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -27,9 +27,9 @@ public class AccountEvent extends IamAuditApplicationEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(category, categoryValue);
-    getData().put(type, this.getClass().getSimpleName());
-    getData().put(accountUuid, account.getUuid());
-    getData().put(user, account.getUsername());
+    getData().put(CATEGORY, categoryValue);
+    getData().put(TYPE, this.getClass().getSimpleName());
+    getData().put(ACCOUNT_UUID, account.getUuid());
+    getData().put(USER, account.getUsername());
   }
 }

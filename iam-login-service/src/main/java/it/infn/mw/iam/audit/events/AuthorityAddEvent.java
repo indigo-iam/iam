@@ -16,7 +16,7 @@ public class AuthorityAddEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(IamAuditField.authority, authority);
+    getData().put(IamAuditField.AUTHORITY, authority);
   }
 
 }

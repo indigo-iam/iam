@@ -1,8 +1,8 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.extAccountIssuer;
-import static it.infn.mw.iam.audit.IamAuditField.extAccountSubject;
-import static it.infn.mw.iam.audit.IamAuditField.extAccountType;
+import static it.infn.mw.iam.audit.IamAuditField.EXT_ACCOUNT_ISSUER;
+import static it.infn.mw.iam.audit.IamAuditField.EXT_ACCOUNT_SUBJECT;
+import static it.infn.mw.iam.audit.IamAuditField.EXT_ACCOUNT_TYPE;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -26,8 +26,8 @@ public class AccountUnlinkEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(extAccountType, accountType);
-    getData().put(extAccountIssuer, issuer);
-    getData().put(extAccountSubject, subject);
+    getData().put(EXT_ACCOUNT_TYPE, accountType);
+    getData().put(EXT_ACCOUNT_ISSUER, issuer);
+    getData().put(EXT_ACCOUNT_SUBJECT, subject);
   }
 }

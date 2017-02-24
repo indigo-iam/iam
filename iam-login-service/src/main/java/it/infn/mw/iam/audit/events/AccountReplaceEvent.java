@@ -1,7 +1,7 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.previousAccountUsername;
-import static it.infn.mw.iam.audit.IamAuditField.previousAccountUuid;
+import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_ACCOUNT_USERNAME;
+import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_ACCOUNT_UUID;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -20,7 +20,7 @@ public class AccountReplaceEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(previousAccountUuid, previousAccount.getUuid());
-    getData().put(previousAccountUsername, previousAccount.getUsername());
+    getData().put(PREVIOUS_ACCOUNT_UUID, previousAccount.getUuid());
+    getData().put(PREVIOUS_ACCOUNT_USERNAME, previousAccount.getUsername());
   }
 }

@@ -1,6 +1,6 @@
 package it.infn.mw.iam.audit.events;
 
-import static it.infn.mw.iam.audit.IamAuditField.updateType;
+import static it.infn.mw.iam.audit.IamAuditField.UPDATE_TYPE;
 
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -19,6 +19,6 @@ public class AccountUpdateEvent extends AccountEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(updateType, type.getDescription());
+    getData().put(UPDATE_TYPE, type.getDescription());
   }
 }
