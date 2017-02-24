@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.registration;
 
 import static it.infn.mw.iam.audit.IamAuditField.CONFIRMATION_KEY;
 

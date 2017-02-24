@@ -1,5 +1,6 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.account.password;
 
+import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class PasswordUpdateEvent extends AccountEvent {

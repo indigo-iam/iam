@@ -10,8 +10,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.audit.events.AuthorityAddEvent;
-import it.infn.mw.iam.audit.events.AuthorityRemoveEvent;
+import it.infn.mw.iam.audit.events.account.authority.AuthorityAddEvent;
+import it.infn.mw.iam.audit.events.account.authority.AuthorityRemoveEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;

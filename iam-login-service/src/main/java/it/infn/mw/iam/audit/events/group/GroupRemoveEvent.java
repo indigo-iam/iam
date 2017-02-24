@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.group;
 
 import it.infn.mw.iam.persistence.model.IamGroup;
 

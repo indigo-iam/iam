@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.account;
 
 import static it.infn.mw.iam.audit.IamAuditField.UPDATE_TYPE;
 

@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.group;
 
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.audit.IamAuditField;

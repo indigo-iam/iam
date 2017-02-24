@@ -5,8 +5,8 @@ import static it.infn.mw.iam.audit.IamAuditField.FAILURE_TYPE;
 import static it.infn.mw.iam.audit.IamAuditField.GENERATED_BY;
 import static it.infn.mw.iam.audit.IamAuditField.TARGET;
 import static it.infn.mw.iam.audit.IamAuditField.TYPE;
-import static it.infn.mw.iam.audit.IamAuditUtils.AUTHN_CATEGORY;
-import static it.infn.mw.iam.audit.IamAuditUtils.AUTHZ_CATEGORY;
+import static it.infn.mw.iam.audit.events.auth.IamAuthenticationEvent.AUTHN_CATEGORY;
+import static it.infn.mw.iam.audit.events.auth.IamAuthorizationEvent.AUTHZ_CATEGORY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -72,7 +72,7 @@ public class AuditTests {
 
     eventPublisher.publishEvent(new AuthenticationFailureBadCredentialsEvent(auth, e));
 
-    data = authenticationListener.getAuditData();
+    data = authenticationListener.getLastEvent().getData();
     assertNotNull(data);
     assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
     assertEquals(data.get(TYPE), AuthenticationFailureBadCredentialsEvent.class.getSimpleName());
@@ -89,7 +89,7 @@ public class AuditTests {
 
     eventPublisher.publishEvent(new AuthenticationSwitchUserEvent(auth, targetUser));
 
-    data = authenticationListener.getAuditData();
+    data = authenticationListener.getLastEvent().getData();
     assertNotNull(data);
     assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
     assertEquals(data.get(TYPE), AuthenticationSwitchUserEvent.class.getSimpleName());
@@ -104,7 +104,7 @@ public class AuditTests {
 
     eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(auth, this.getClass()));
 
-    data = authenticationListener.getAuditData();
+    data = authenticationListener.getLastEvent().getData();
     assertNotNull(data);
     assertEquals(data.get(CATEGORY), AUTHN_CATEGORY);
     assertEquals(data.get(TYPE), InteractiveAuthenticationSuccessEvent.class.getSimpleName());
@@ -120,7 +120,7 @@ public class AuditTests {
 
     eventPublisher.publishEvent(event);
 
-    data = authorizationListener.getAuditData();
+    data = authorizationListener.getLastEvent().getData();
     assertNotNull(data);
     assertEquals(data.get(CATEGORY), AUTHZ_CATEGORY);
     assertEquals(data.get(TYPE), AuthenticationCredentialsNotFoundEvent.class.getSimpleName());
@@ -138,7 +138,7 @@ public class AuditTests {
 
     eventPublisher.publishEvent(event);
 
-    data = authorizationListener.getAuditData();
+    data = authorizationListener.getLastEvent().getData();
     assertNotNull(data);
     assertEquals(data.get(CATEGORY), AUTHZ_CATEGORY);
     assertEquals(data.get(TYPE), AuthorizationFailureEvent.class.getSimpleName());

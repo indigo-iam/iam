@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.registration;
 
 import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
 import static it.infn.mw.iam.audit.IamAuditField.REQUEST_STATUS;
@@ -6,6 +6,7 @@ import static it.infn.mw.iam.audit.IamAuditField.REQUEST_UUID;
 import static it.infn.mw.iam.audit.IamAuditField.TYPE;
 import static it.infn.mw.iam.audit.IamAuditField.USER;
 
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public class RegistrationEvent extends IamAuditApplicationEvent {

@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.group;
 
 import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_GROUP_NAME;
 import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_GROUP_UUID;

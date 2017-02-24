@@ -1,10 +1,11 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.group;
 
 import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
 import static it.infn.mw.iam.audit.IamAuditField.GROUP_NAME;
 import static it.infn.mw.iam.audit.IamAuditField.GROUP_UUID;
 import static it.infn.mw.iam.audit.IamAuditField.TYPE;
 
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class GroupEvent extends IamAuditApplicationEvent {

@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.account;
 
 import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_ACCOUNT_USERNAME;
 import static it.infn.mw.iam.audit.IamAuditField.PREVIOUS_ACCOUNT_UUID;

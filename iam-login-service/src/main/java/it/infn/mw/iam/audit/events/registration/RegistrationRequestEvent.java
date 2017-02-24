@@ -1,4 +1,4 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.registration;
 
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 

@@ -10,8 +10,8 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.audit.events.AccountLinkEvent;
-import it.infn.mw.iam.audit.events.AccountUnlinkEvent;
+import it.infn.mw.iam.audit.events.account.AccountLinkEvent;
+import it.infn.mw.iam.audit.events.account.AccountUnlinkEvent;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;

@@ -1,10 +1,11 @@
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.audit.events.account;
 
 import static it.infn.mw.iam.audit.IamAuditField.ACCOUNT_UUID;
 import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
 import static it.infn.mw.iam.audit.IamAuditField.TYPE;
 import static it.infn.mw.iam.audit.IamAuditField.USER;
 
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class AccountEvent extends IamAuditApplicationEvent {
