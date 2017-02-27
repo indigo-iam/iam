@@ -14,18 +14,30 @@ import it.infn.mw.iam.audit.IamAuditField;
 
 public class IamAuditApplicationEvent extends ApplicationEvent {
 
+  public static enum IamEventCategory {
+    NONE,
+    ACCOUNT,
+    GROUP,
+    REGISTRATION,
+    AUTHENTICATION,
+    AUTHORIZATION
+  }
+
   private static final long serialVersionUID = -6276169409979227109L;
   public static final String NULL_PRINCIPAL = "<unknown>";
 
   private final String principal;
   private final String message;
+  private final IamEventCategory category;
+
   private final Map<String, Object> data;
 
-  public IamAuditApplicationEvent(Object source, String message, Map<String, Object> data) {
+  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message,
+      Map<String, Object> data) {
     super(source);
     this.message = message;
     this.data = data;
-
+    this.category = category;
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
     if (auth == null) {
@@ -35,12 +47,12 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
     }
   }
 
-  public IamAuditApplicationEvent(Object source, String message) {
-    this(source, message, Maps.newLinkedHashMap());
+  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message) {
+    this(category, source, message, Maps.newLinkedHashMap());
   }
-  
-  protected IamAuditApplicationEvent(Object source) {
-    this(source, null, Maps.newLinkedHashMap());
+
+  protected IamAuditApplicationEvent(IamEventCategory category, Object source) {
+    this(category, source, null, Maps.newLinkedHashMap());
   }
 
   public String getPrincipal() {
@@ -51,6 +63,10 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
     return message;
   }
 
+  public IamEventCategory getCategory() {
+    return category;
+  }
+  
   public Map<String, Object> getData() {
     return data;
   }
@@ -60,7 +76,7 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
     getData().put(IamAuditField.PRINCIPAL, principal);
     getData().put(IamAuditField.MESSAGE, message);
   }
-  
+
   public void build() {
     addAuditData();
   }

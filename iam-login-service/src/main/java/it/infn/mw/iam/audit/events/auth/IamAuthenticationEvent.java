@@ -28,7 +28,7 @@ public class IamAuthenticationEvent extends IamAuditApplicationEvent {
   final AbstractAuthenticationEvent sourceAuthEvent;
   
   public IamAuthenticationEvent(AbstractAuthenticationEvent authEvent) {
-    super(authEvent.getSource());
+    super(IamEventCategory.AUTHENTICATION, authEvent.getSource());
     this.sourceAuthEvent = authEvent;
   }
 

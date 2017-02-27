@@ -13,12 +13,10 @@ public class RegistrationEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -3428745338283606683L;
 
-  private static final String categoryValue = "REGISTRATION";
-
   private final IamRegistrationRequest request;
 
   public RegistrationEvent(Object source, IamRegistrationRequest request, String message) {
-    super(source, message);
+    super(IamEventCategory.REGISTRATION,source, message);
     this.request = request;
   }
 
@@ -29,7 +27,7 @@ public class RegistrationEvent extends IamAuditApplicationEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(CATEGORY, categoryValue);
+    getData().put(CATEGORY, getCategory().name());
     getData().put(TYPE, this.getClass().getSimpleName());
     getData().put(REQUEST_UUID, request.getUuid());
     getData().put(REQUEST_STATUS, request.getStatus());

@@ -12,12 +12,10 @@ public class GroupEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -6490018220086638357L;
 
-  private static final String categoryValue = "GROUP";
-
   private final IamGroup group;
 
   public GroupEvent(Object source, IamGroup group, String message) {
-    super(source, message);
+    super(IamEventCategory.GROUP,source, message);
     this.group = group;
   }
 
@@ -28,7 +26,7 @@ public class GroupEvent extends IamAuditApplicationEvent {
   @Override
   protected void addAuditData() {
     super.addAuditData();
-    getData().put(CATEGORY, categoryValue);
+    getData().put(CATEGORY, getCategory().name());
     getData().put(TYPE, this.getClass().getSimpleName());
     getData().put(GROUP_UUID, group.getUuid());
     getData().put(GROUP_NAME, group.getName());

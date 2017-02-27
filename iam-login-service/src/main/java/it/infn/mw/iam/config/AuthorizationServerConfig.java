@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -71,6 +72,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
   @Autowired
   private SystemScopeService systemScopeService;
+  
 
   @Bean
   WebResponseExceptionTranslator webResponseExceptionTranslator() {
@@ -78,6 +80,11 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     return new DefaultWebResponseExceptionTranslator();
   }
 
+  @Bean(name = "iamAuthenticationEventPublisher")
+  AuthenticationEventPublisher iamAuthenticationEventPublisher(){
+    return new IamAuthenticationEventPublisher();
+  }
+  
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager() {
 
@@ -88,7 +95,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     ProviderManager pm =
         new ProviderManager(Collections.<AuthenticationProvider>singletonList(provider));
 
-    pm.setAuthenticationEventPublisher(new IamAuthenticationEventPublisher());
+    pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
     return pm;
 
   }
