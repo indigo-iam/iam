@@ -1,18 +1,16 @@
 package it.infn.mw.iam.audit.events.registration;
 
-import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
-import static it.infn.mw.iam.audit.IamAuditField.REQUEST_STATUS;
-import static it.infn.mw.iam.audit.IamAuditField.REQUEST_UUID;
-import static it.infn.mw.iam.audit.IamAuditField.TYPE;
-import static it.infn.mw.iam.audit.IamAuditField.USER;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.utils.IamRegistrationRequestSerializer;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public class RegistrationEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -3428745338283606683L;
 
+  @JsonSerialize(using=IamRegistrationRequestSerializer.class)
   private final IamRegistrationRequest request;
 
   public RegistrationEvent(Object source, IamRegistrationRequest request, String message) {
@@ -24,13 +22,5 @@ public class RegistrationEvent extends IamAuditApplicationEvent {
     return request;
   }
 
-  @Override
-  protected void addAuditData() {
-    super.addAuditData();
-    getData().put(CATEGORY, getCategory().name());
-    getData().put(TYPE, this.getClass().getSimpleName());
-    getData().put(REQUEST_UUID, request.getUuid());
-    getData().put(REQUEST_STATUS, request.getStatus());
-    getData().put(USER, request.getAccount().getUsername());
-  }
+
 }

@@ -10,8 +10,8 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.audit.events.account.AccountLinkEvent;
-import it.infn.mw.iam.audit.events.account.AccountUnlinkEvent;
+import it.infn.mw.iam.audit.events.account.AccountLinkedEvent;
+import it.infn.mw.iam.audit.events.account.AccountUnlinkedEvent;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
@@ -53,7 +53,7 @@ public class DefaultAccountLinkingService
 
     externalAuthenticationToken.linkToIamAccount(externalAccountLinker, userAccount);
 
-    eventPublisher.publishEvent(new AccountLinkEvent(this, userAccount,
+    eventPublisher.publishEvent(new AccountLinkedEvent(this, userAccount,
         externalAuthenticationToken.toExernalAuthenticationInfo(),
         String.format("User %s has linked a new account of type %s", userAccount.getUsername(),
             externalAuthenticationToken.toExernalAuthenticationInfo().getType().toString())));
@@ -100,7 +100,7 @@ public class DefaultAccountLinkingService
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
-      eventPublisher.publishEvent(new AccountUnlinkEvent(this, userAccount, type, iss, sub,
+      eventPublisher.publishEvent(new AccountUnlinkedEvent(this, userAccount, type, iss, sub,
           String.format("User %s has unlinked an account of type %s", userAccount.getUsername(),
               type.toString())));
     }

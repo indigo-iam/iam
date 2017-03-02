@@ -2,17 +2,20 @@ package it.infn.mw.iam.audit.events;
 
 
 
-import java.util.Map;
-
 import org.springframework.context.ApplicationEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.google.common.collect.Maps;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
-import it.infn.mw.iam.audit.IamAuditField;
-
-public class IamAuditApplicationEvent extends ApplicationEvent {
+@JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message"})
+@JsonTypeInfo(use=Id.NAME, property="@type")
+public abstract class IamAuditApplicationEvent extends ApplicationEvent {
 
   public static enum IamEventCategory {
     NONE,
@@ -24,19 +27,22 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
   }
 
   private static final long serialVersionUID = -6276169409979227109L;
+  
   public static final String NULL_PRINCIPAL = "<unknown>";
 
-  private final String principal;
-  private final String message;
+  @JsonInclude
   private final IamEventCategory category;
+  
+  @JsonInclude
+  private final String principal;
+  
+  @JsonInclude
+  private final String message;
+  
 
-  private final Map<String, Object> data;
-
-  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message,
-      Map<String, Object> data) {
+  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message) {
     super(source);
     this.message = message;
-    this.data = data;
     this.category = category;
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -47,12 +53,8 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
     }
   }
 
-  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message) {
-    this(category, source, message, Maps.newLinkedHashMap());
-  }
-
   protected IamAuditApplicationEvent(IamEventCategory category, Object source) {
-    this(category, source, null, Maps.newLinkedHashMap());
+    this(category, source, null);
   }
 
   public String getPrincipal() {
@@ -66,19 +68,15 @@ public class IamAuditApplicationEvent extends ApplicationEvent {
   public IamEventCategory getCategory() {
     return category;
   }
+
+  @JsonIgnore
+  @Override
+  public Object getSource() {
+    return super.getSource();
+  }
   
-  public Map<String, Object> getData() {
-    return data;
+  @JsonProperty("source")
+  public String getSourceClass(){
+    return super.getSource().getClass().getSimpleName();
   }
-
-  protected void addAuditData() {
-    getData().put(IamAuditField.SOURCE, super.source.getClass().getSimpleName());
-    getData().put(IamAuditField.PRINCIPAL, principal);
-    getData().put(IamAuditField.MESSAGE, message);
-  }
-
-  public void build() {
-    addAuditData();
-  }
-
 }

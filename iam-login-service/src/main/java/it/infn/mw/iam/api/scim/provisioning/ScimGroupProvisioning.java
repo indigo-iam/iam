@@ -28,10 +28,10 @@ import it.infn.mw.iam.api.scim.provisioning.paging.OffsetPageable;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
-import it.infn.mw.iam.audit.events.group.GroupAddEvent;
-import it.infn.mw.iam.audit.events.group.GroupRemoveEvent;
-import it.infn.mw.iam.audit.events.group.GroupReplaceEvent;
-import it.infn.mw.iam.audit.events.group.GroupUpdateEvent;
+import it.infn.mw.iam.audit.events.group.GroupCreatedEvent;
+import it.infn.mw.iam.audit.events.group.GroupRemovedEvent;
+import it.infn.mw.iam.audit.events.group.GroupReplacedEvent;
+import it.infn.mw.iam.audit.events.group.GroupUpdatedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -126,11 +126,11 @@ public class ScimGroupProvisioning
     if (iamParentGroup != null) {
       groupRepository.save(iamParentGroup);
       eventPublisher.publishEvent(
-          new GroupAddEvent(this, iamGroup, "Group created with name " + iamParentGroup.getName()));
+          new GroupCreatedEvent(this, iamGroup, "Group created with name " + iamParentGroup.getName()));
     }
 
     eventPublisher.publishEvent(
-        new GroupAddEvent(this, iamGroup, "Group created with name " + iamGroup.getName()));
+        new GroupCreatedEvent(this, iamGroup, "Group created with name " + iamGroup.getName()));
 
     return converter.toScim(iamGroup);
   }
@@ -157,7 +157,7 @@ public class ScimGroupProvisioning
 
     groupRepository.delete(group);
 
-    eventPublisher.publishEvent(new GroupRemoveEvent(this, group,
+    eventPublisher.publishEvent(new GroupRemovedEvent(this, group,
         String.format("Group %s has been removed", group.getName())));
   }
 
@@ -190,7 +190,7 @@ public class ScimGroupProvisioning
     groupRepository.save(updatedGroup);
 
     eventPublisher
-      .publishEvent(new GroupReplaceEvent(this, updatedGroup, existingGroup, String.format(
+      .publishEvent(new GroupReplacedEvent(this, updatedGroup, existingGroup, String.format(
           "Replaced group %s with new group %s", existingGroup.getName(), updatedGroup.getName())));
 
     return converter.toScim(updatedGroup);
@@ -245,7 +245,7 @@ public class ScimGroupProvisioning
         accountRepository.save(a);
         hasChanged = true;
 
-        eventPublisher.publishEvent(new GroupUpdateEvent(this, group, u.getType(),
+        eventPublisher.publishEvent(new GroupUpdatedEvent(this, group, u.getType(),
             String.format("Updated information for group %s", group.getName())));
       }
     }

@@ -15,23 +15,26 @@ public class IamAuditEventLogger implements AuditEventLogger {
   public static final String AUDIT_MARKER_STRING = "AUDIT";
   public static final Marker AUDIT_MARKER = MarkerFactory.getMarker(AUDIT_MARKER_STRING);
   
-  public static final Logger LOG = LoggerFactory.getLogger(IamAuditEventLogger.class);
+  public static final Logger LOG = LoggerFactory.getLogger(AUDIT_MARKER_STRING);
   final AuditDataSerializer serializer;
+  
+  private IamAuditApplicationEvent lastEvent;
   
   @Autowired
   public IamAuditEventLogger(AuditDataSerializer serializer) {
     this.serializer = serializer;
   }
-  
-  @Override
-  public void log(String auditEventMessage) {
-    LOG.info(AUDIT_MARKER, auditEventMessage);
-  }
 
   @Override
   public void logAuditEvent(IamAuditApplicationEvent event) {
-    event.build();
-    LOG.info("AuditEvent: {}", serializer.serialize(event.getData()));
+    lastEvent = event;
+    LOG.info(AUDIT_MARKER, serializer.serialize(event));
+  }
+  
+  public IamAuditApplicationEvent getLastEvent() {
+    IamAuditApplicationEvent e = lastEvent;
+    lastEvent = null;
+    return e;
   }
 
 }

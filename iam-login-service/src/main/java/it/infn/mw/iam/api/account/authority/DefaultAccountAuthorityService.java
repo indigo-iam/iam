@@ -10,8 +10,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.audit.events.account.authority.AuthorityAddEvent;
-import it.infn.mw.iam.audit.events.account.authority.AuthorityRemoveEvent;
+import it.infn.mw.iam.audit.events.account.authority.AuthorityAddedEvent;
+import it.infn.mw.iam.audit.events.account.authority.AuthorityRemovedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -58,8 +58,10 @@ public class DefaultAccountAuthorityService
     account.getAuthorities().add(iamAuthority);
     accountRepo.save(account);
 
-    eventPublisher.publishEvent(new AuthorityAddEvent(this, account, authority,
-        String.format("Add authority %s to user %s.", authority, account.getUsername())));
+    final String message = String.format("Authority %s was added to user %s.", 
+        authority, account.getUsername()); 
+    
+    eventPublisher.publishEvent(new AuthorityAddedEvent(this, account, message, authority));
   }
 
   @Override
@@ -69,8 +71,10 @@ public class DefaultAccountAuthorityService
     account.getAuthorities().remove(iamAuthority);
     accountRepo.save(account);
 
-    eventPublisher.publishEvent(new AuthorityRemoveEvent(this, account, authority,
-        String.format("Remove authority %s from user %s.", authority, account.getUsername())));
+    final String message = 
+        String.format("Authority %s was removed from user %s.", authority, account.getUsername());
+    
+    eventPublisher.publishEvent(new AuthorityRemovedEvent(this, account, message, authority));
   }
 
   @Override

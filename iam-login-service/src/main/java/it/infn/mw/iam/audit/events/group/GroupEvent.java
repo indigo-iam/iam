@@ -1,17 +1,17 @@
 package it.infn.mw.iam.audit.events.group;
 
-import static it.infn.mw.iam.audit.IamAuditField.CATEGORY;
-import static it.infn.mw.iam.audit.IamAuditField.GROUP_NAME;
-import static it.infn.mw.iam.audit.IamAuditField.GROUP_UUID;
-import static it.infn.mw.iam.audit.IamAuditField.TYPE;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.utils.IamGroupSerializer;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
-public class GroupEvent extends IamAuditApplicationEvent {
+
+public abstract class GroupEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -6490018220086638357L;
-
+  
+  @JsonSerialize(using=IamGroupSerializer.class)
   private final IamGroup group;
 
   public GroupEvent(Object source, IamGroup group, String message) {
@@ -19,16 +19,8 @@ public class GroupEvent extends IamAuditApplicationEvent {
     this.group = group;
   }
 
-  public IamGroup getgroup() {
+  public IamGroup getGroup() {
     return group;
   }
-
-  @Override
-  protected void addAuditData() {
-    super.addAuditData();
-    getData().put(CATEGORY, getCategory().name());
-    getData().put(TYPE, this.getClass().getSimpleName());
-    getData().put(GROUP_UUID, group.getUuid());
-    getData().put(GROUP_NAME, group.getName());
-  }
+  
 }

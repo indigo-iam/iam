@@ -1,7 +1,5 @@
 package it.infn.mw.iam.audit.utils;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.audit.AuditDataSerializer;
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 
 @Component
 public class Jackson2AuditDataSerializer implements AuditDataSerializer {
@@ -25,12 +24,12 @@ public class Jackson2AuditDataSerializer implements AuditDataSerializer {
   }
   
   @Override
-  public String serialize(Map<String, Object> data) {
+  public String serialize(IamAuditApplicationEvent event) {
     String json;
 
     try {
 
-      json = mapper.writeValueAsString(data);
+      json = mapper.writeValueAsString(event);
 
     } catch (JsonProcessingException e) {
       LOG.error(e.getMessage(), e);

@@ -1,9 +1,9 @@
 package it.infn.mw.iam.audit;
 
-import java.util.Map;
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 
 public interface AuditDataSerializer {
 
-  public String serialize(Map<String, Object> data);
+  public String serialize(IamAuditApplicationEvent event);
   
 }

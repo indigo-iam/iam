@@ -51,10 +51,10 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
-import it.infn.mw.iam.audit.events.account.AccountCreateEvent;
-import it.infn.mw.iam.audit.events.account.AccountRemoveEvent;
-import it.infn.mw.iam.audit.events.account.AccountReplaceEvent;
-import it.infn.mw.iam.audit.events.account.AccountUpdateEvent;
+import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
+import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
+import it.infn.mw.iam.audit.events.account.AccountReplacedEvent;
+import it.infn.mw.iam.audit.events.account.AccountUpdatedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -133,7 +133,7 @@ public class ScimUserProvisioning
     accountRepository.delete(account);
 
     eventPublisher.publishEvent(
-        new AccountRemoveEvent(this, account, "Removed account for user " + account.getUsername()));
+        new AccountRemovedEvent(this, account, "Removed account for user " + account.getUsername()));
   }
 
   private void checkForDuplicates(ScimUser user) throws ScimResourceExistsException {
@@ -233,7 +233,7 @@ public class ScimUserProvisioning
     accountRepository.save(account);
 
     eventPublisher.publishEvent(
-        new AccountCreateEvent(this, account, "Account created for user " + account.getUsername()));
+        new AccountCreatedEvent(this, account, "Account created for user " + account.getUsername()));
 
     return account;
   }
@@ -350,7 +350,7 @@ public class ScimUserProvisioning
 
     accountRepository.save(updatedAccount);
 
-    eventPublisher.publishEvent(new AccountReplaceEvent(this, updatedAccount, existingAccount,
+    eventPublisher.publishEvent(new AccountReplacedEvent(this, updatedAccount, existingAccount,
         String.format("Replaced user %s with new user %s", updatedAccount.getUsername(),
             existingAccount.getUsername())));
 
@@ -369,7 +369,7 @@ public class ScimUserProvisioning
       }
       hasChanged |= u.update();
 
-      eventPublisher.publishEvent(new AccountUpdateEvent(this, account, u.getType(),
+      eventPublisher.publishEvent(new AccountUpdatedEvent(this, account, u.getType(),
           String.format("Updated account information for user %s", account.getUsername())));
     }
 
