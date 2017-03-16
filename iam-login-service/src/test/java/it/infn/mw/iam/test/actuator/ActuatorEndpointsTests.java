@@ -1,211 +1,203 @@
 package it.infn.mw.iam.test.actuator;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.util.Set;
 
-import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import com.google.common.collect.Sets;
-import com.jayway.restassured.RestAssured;
 
 import it.infn.mw.iam.IamLoginService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@WebIntegrationTest
+@SpringApplicationConfiguration(classes = {IamLoginService.class})
+@WebAppConfiguration
 public class ActuatorEndpointsTests {
 
-  @Value("${server.port}")
-  private Integer iamPort;
-
   private static final String ADMIN_USERNAME = "admin";
-  private static final String ADMIN_PASSWORD = "password";
+  private static final String ADMIN_ROLE = "ADMIN";
 
   private static final String USER_USERNAME = "test";
-  private static final String USER_PASSWORD = "password";
+  private static final String USER_ROLE = "USER";
+
+  private static final String STATUS_UP = "UP";
+  private static final String STATUS_DOWN = "DOWN";
 
   private static final Set<String> SENSITIVE_ENDPOINTS = Sets.newHashSet("/metrics", "/configprops",
       "/env", "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace");
 
+  @Value("${spring.mail.host}")
+  private String mailHost;
+
+  @Value("${spring.mail.port}")
+  private Integer mailPort;
+
+  @Autowired
+  private WebApplicationContext context;
+
+  private MockMvc mvc;
+
+  @Before
+  public void setup() {
+    mvc = MockMvcBuilders.webAppContextSetup(context)
+      .apply(springSecurity())
+      .alwaysDo(print())
+      .build();
+
+    SecurityContextHolder.clearContext();
+  }
+
   @Test
-  public void testHealthEndpoint() {
+  public void testHealthEndpoint() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-    .when()
-      .get("/health")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("status", Matchers.equalTo("UP"))
-    ;
+    mvc.perform(get("/health"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_UP)));
     // @formatter:on
   }
 
   @Test
-  public void testHealthEndpointAsUser() {
+  @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
+  public void testHealthEndpointAsUser() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-      .auth()
-        .preemptive()
-          .basic(USER_USERNAME, USER_PASSWORD)
-    .when()
-      .get("/health")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("status", Matchers.equalTo("UP"))
-      .body("diskSpace", Matchers.isEmptyOrNullString())
-      .body("db", Matchers.isEmptyOrNullString())
-    ;
+    mvc.perform(get("/health"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.diskSpace").doesNotExist())
+      .andExpect(jsonPath("$.db").doesNotExist());
     // @formatter:on
   }
 
   @Test
-  public void testHealthEndpointAsAdmin() {
+  @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
+  public void testHealthEndpointAsAdmin() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-      .auth()
-        .preemptive()
-          .basic(ADMIN_USERNAME, ADMIN_PASSWORD)
-    .when()
-      .get("/health")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("status", Matchers.equalTo("UP"))
-      .body("diskSpace.status", Matchers.equalTo("UP"))
-      .body("db.status", Matchers.equalTo("UP"))
-    ;
+    mvc.perform(get("/health"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.diskSpace.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.db.status", equalTo(STATUS_UP)))
+      .andExpect(jsonPath("$.mail").doesNotExist());
     // @formatter:on
   }
 
   @Test
-  public void testInfoEndpoint() {
+  public void testInfoEndpoint() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-    .when()
-      .get("/info")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("git", Matchers.notNullValue())
-      .body("app", Matchers.notNullValue())
-      .body("app.name", Matchers.equalTo("IAM Login Service"))
-    ;
+    mvc.perform(get("/info"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.git", notNullValue()))
+      .andExpect(jsonPath("$.app", notNullValue()))
+      .andExpect(jsonPath("$.app.name", equalTo("IAM Login Service")));
     // @formatter:on
   }
 
   @Test
-  public void testInfoEndpointAsUser() {
+  @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
+  public void testInfoEndpointAsUser() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-      .auth()
-        .preemptive()
-          .basic(USER_USERNAME, USER_PASSWORD)
-    .when()
-      .get("/info")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("git", Matchers.notNullValue())
-      .body("app", Matchers.notNullValue())
-      .body("app.name", Matchers.equalTo("IAM Login Service"))
-    ;
+    mvc.perform(get("/info"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.git", notNullValue()))
+      .andExpect(jsonPath("$.app", notNullValue()))
+      .andExpect(jsonPath("$.app.name", equalTo("IAM Login Service")));
     // @formatter:on
   }
 
   @Test
-  public void testInfoEndpointAsAdmin() {
+  @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
+  public void testInfoEndpointAsAdmin() throws Exception {
     // @formatter:off
-    RestAssured.given()
-      .port(iamPort)
-      .auth()
-        .preemptive()
-          .basic(ADMIN_USERNAME, ADMIN_PASSWORD)
-    .when()
-      .get("/info")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("git", Matchers.notNullValue())
-      .body("app", Matchers.notNullValue())
-      .body("app.name", Matchers.equalTo("IAM Login Service"))
-    ;
+    mvc.perform(get("/info"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.git", notNullValue()))
+      .andExpect(jsonPath("$.app", notNullValue()))
+      .andExpect(jsonPath("$.app.name", equalTo("IAM Login Service")));
     // @formatter:on
   }
 
   @Test
-  public void testSensitiveEndpointsAsAnonymous() {
+  public void testSensitiveEndpointsAsAnonymous() throws Exception {
     for (String endpoint : SENSITIVE_ENDPOINTS) {
       // @formatter:off
-	  RestAssured.given()
-	    .port(iamPort)
-	  .when()
-	    .get(endpoint)
-	  .then()
-	    .log()
-	      .body(true)
-	    .statusCode(HttpStatus.UNAUTHORIZED.value())
-	  ;
-	  // @formatter:on
+      mvc.perform(get(endpoint))
+        .andExpect(status().isUnauthorized());
+      // @formatter:on
     }
   }
 
   @Test
-  public void testSensitiveEndpointAsUser() {
+  @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
+  public void testSensitiveEndpointsAsUser() throws Exception {
     for (String endpoint : SENSITIVE_ENDPOINTS) {
       // @formatter:off
-	  RestAssured.given()
-	    .port(iamPort)
-	    .auth()
-	      .preemptive()
-	        .basic(USER_USERNAME, USER_PASSWORD)
-	  .when()
-	    .get(endpoint)
-	  .then()
-	    .log()
-	      .body(true)
-	    .statusCode(HttpStatus.FORBIDDEN.value())
-	  ;
-	  // @formatter:on
+      mvc.perform(get(endpoint))
+        .andExpect(status().isForbidden());
+      // @formatter:on
     }
   }
 
   @Test
-  public void testSensitiveEndpointAsAdmin() {
+  @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
+  public void testSensitiveEndpointsAsAdmin() throws Exception {
     for (String endpoint : SENSITIVE_ENDPOINTS) {
       // @formatter:off
-	  RestAssured.given()
-	    .port(iamPort)
-	    .auth()
-	      .preemptive()
-	        .basic(ADMIN_USERNAME, ADMIN_PASSWORD)
-	  .when()
-	    .get(endpoint)
-	  .then()
-	    .log()
-	      .body(true)
-	    .statusCode(HttpStatus.OK.value())
-	  ;
-	  // @formatter:on
+      mvc.perform(get(endpoint))
+        .andExpect(status().isOk());
+      // @formatter:on
     }
   }
 
+  @Test
+  public void testMailHealthEndpointWithoutSmtp() throws Exception {
+    // @formatter:off
+    mvc.perform(get("/healthMail"))
+      .andExpect(status().isServiceUnavailable())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
+      .andExpect(jsonPath("$.mail").doesNotExist());
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
+  public void testMailHealthEndpointWithoutSmtpAsUser() throws Exception {
+    // @formatter:off
+    mvc.perform(get("/healthMail"))
+      .andExpect(status().isServiceUnavailable())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
+      .andExpect(jsonPath("$.mail").doesNotExist());
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
+  public void testMailHealthEndpointWithoutSmtpAsAdmin() throws Exception {
+    // @formatter:off
+    mvc.perform(get("/healthMail"))
+      .andExpect(status().isServiceUnavailable())
+      .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
+      .andExpect(jsonPath("$.mail.status", equalTo(STATUS_DOWN)))
+      .andExpect(jsonPath("$.mail.location", equalTo(String.format("%s:%d", mailHost, mailPort))))
+      .andExpect(jsonPath("$.mail.error").exists());
+    // @formatter:on
+  }
 }

@@ -4,6 +4,7 @@ import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.openid.connect.web.RootController;
 import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.endpoint.HealthEndpoint;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
@@ -31,6 +32,7 @@ import it.infn.mw.iam.core.IamBanner;
     "it.infn.mw.iam.dashboard",
     "it.infn.mw.iam.notification",
     "it.infn.mw.iam.audit",
+    "it.infn.mw.iam.actuator",
     "org.mitre.oauth2.web",
     "org.mitre.oauth2.view", 
     "org.mitre.openid.connect.web", 
@@ -43,7 +45,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=RootController.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DiscoveryEndpoint.class)
+        value=DiscoveryEndpoint.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+    value=HealthEndpoint.class)
 })
 // @formatter:on
 

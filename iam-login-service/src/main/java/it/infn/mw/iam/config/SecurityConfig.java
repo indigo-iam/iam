@@ -26,6 +26,7 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -627,6 +628,41 @@ public class SecurityConfig {
         .and()
         .csrf()
         .disable();
+    }
+  }
+
+  @Configuration
+  @Order(24)
+  public static class ActuatorEndpointsConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationProcessingFilter resourceFilter;
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http
+        .requestMatchers()
+          .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace","/info", "/health", "/healthMail")
+        .and()
+          .httpBasic()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .exceptionHandling()
+            .accessDeniedHandler(new AccessDeniedHandlerImpl())
+        .and()
+          .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+        .sessionManagement()
+          .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+        .and()
+          .authorizeRequests()
+            .antMatchers(HttpMethod.GET, "/info", "/health", "/healthMail").permitAll()
+            .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace").hasRole("ADMIN");
+      // @formatter:on
     }
   }
 

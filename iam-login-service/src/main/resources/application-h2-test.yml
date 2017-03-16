@@ -15,8 +15,3 @@ flyway:
   locations:
     - classpath:db/migration/h2
     - classpath:db/migration/test
-
-management:
-  health:
-    mail:
-      enabled: false
