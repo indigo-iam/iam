@@ -137,7 +137,9 @@ public class ActuatorEndpointsTests {
     for (String endpoint : SENSITIVE_ENDPOINTS) {
       // @formatter:off
       mvc.perform(get(endpoint))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error", equalTo("unauthorized")))
+        .andExpect(jsonPath("$.error_description").exists());
       // @formatter:on
     }
   }
