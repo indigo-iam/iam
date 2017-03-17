@@ -647,7 +647,9 @@ public class SecurityConfig {
       // @formatter:off
       http
         .requestMatchers()
-          .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace","/info", "/health", "/healthMail")
+          .antMatchers("/metrics", "/configprops", "/env", "/mappings", 
+              "/flyway", "/autoconfig", "/beans", "/dump", "/trace", 
+              "/info", "/health", "/healthMail")
         .and()
           .httpBasic()
           .authenticationEntryPoint(authenticationEntryPoint)
@@ -661,7 +663,8 @@ public class SecurityConfig {
         .and()
           .authorizeRequests()
             .antMatchers(HttpMethod.GET, "/info", "/health", "/healthMail").permitAll()
-            .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace").hasRole("ADMIN");
+            .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway",
+                "/autoconfig", "/beans", "/dump", "/trace").hasRole("ADMIN");
       // @formatter:on
     }
   }

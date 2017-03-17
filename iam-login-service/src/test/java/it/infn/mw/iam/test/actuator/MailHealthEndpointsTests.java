@@ -65,7 +65,6 @@ public class MailHealthEndpointsTests {
   @After
   public void teardown() throws InterruptedException {
     wiser.stop();
-    Thread.sleep(1000L);
   }
 
   @Test
