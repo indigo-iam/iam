@@ -79,8 +79,7 @@ public class GroupConverter implements Converter<ScimGroup, IamGroup> {
         .ref(resourceLocationProvider.groupLocation(iamParentGroup.getUuid()))
         .build();
 
-      ScimIndigoGroup.Builder builder = new ScimIndigoGroup.Builder();
-      scimParentGroup = builder.parentGroup(parentGroupRef).build();
+      scimParentGroup = ScimIndigoGroup.getBuilder().parentGroup(parentGroupRef).build();
     }
 
     return ScimGroup.builder(entity.getName())

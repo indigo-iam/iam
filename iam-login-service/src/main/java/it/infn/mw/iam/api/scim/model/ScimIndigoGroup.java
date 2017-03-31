@@ -20,6 +20,9 @@ public class ScimIndigoGroup {
     return parentGroup;
   }
 
+  public static Builder getBuilder() {
+    return new Builder();
+  }
 
   public static class Builder {
     private ScimGroupRef parentGroup = null;

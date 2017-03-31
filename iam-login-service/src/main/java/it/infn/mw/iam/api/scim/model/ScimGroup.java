@@ -43,7 +43,7 @@ public final class ScimGroup extends ScimResource {
     super(id, externalId, meta, schemas);
     this.displayName = displayName;
     this.members = (members != null ? members : Collections.<ScimMemberRef>emptySet());
-    this.indigoGroup = indigoGroup;
+    this.indigoGroup = (indigoGroup != null ? indigoGroup : ScimIndigoGroup.getBuilder().build());
   }
 
   private ScimGroup(Builder b) {
@@ -84,7 +84,7 @@ public final class ScimGroup extends ScimResource {
       schemas.add(GROUP_SCHEMA);
       schemas.add(INDIGO_GROUP_SCHEMA);
       this.displayName = displayName;
-      indigoGroup = new ScimIndigoGroup.Builder().build();
+      indigoGroup = ScimIndigoGroup.getBuilder().build();
     }
 
     public Builder id(String id) {
