@@ -87,8 +87,8 @@ public class ScimGroupTests {
       .ref(scimResourceLocationProvider.groupLocation(uuid))
       .build();
 
-		ScimIndigoGroup scimFakeParentGroup =
-				ScimIndigoGroup.getBuilder().parentGroup(fakeGroupRef).build();
+    ScimIndigoGroup scimFakeParentGroup =
+        ScimIndigoGroup.getBuilder().parentGroup(fakeGroupRef).build();
 
     // @formatter:off
     mvc.perform(post("/scim/Groups")
@@ -180,8 +180,8 @@ public class ScimGroupTests {
         .ref(scimResourceLocationProvider.groupLocation(parent.getId()))
         .build();
 
-			ScimIndigoGroup parentIndigoGroup =
-					ScimIndigoGroup.getBuilder().parentGroup(parentGroupRef).build();
+      ScimIndigoGroup parentIndigoGroup =
+          ScimIndigoGroup.getBuilder().parentGroup(parentGroupRef).build();
 
       group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
     }

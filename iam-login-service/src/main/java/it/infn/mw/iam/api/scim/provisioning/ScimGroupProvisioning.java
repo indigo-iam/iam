@@ -53,8 +53,8 @@ public class ScimGroupProvisioning
 
   @Autowired
   public ScimGroupProvisioning(IamGroupRepository groupRepository,
-
       IamAccountRepository accountRepository, GroupConverter converter) {
+
     this.accountRepository = accountRepository;
     this.groupRepository = groupRepository;
     this.converter = converter;
