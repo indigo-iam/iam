@@ -12,25 +12,31 @@ public class MitreConfig {
 
   @Value("${iam.issuer}")
   private String issuer;
-  
+
   @Value("${iam.baseUrl}")
   private String baseUrl;
 
   @Value("${iam.token.lifetime}")
   private Long tokenLifeTime;
 
+  @Value("${iam.logoImageUrl}")
+  private String logoImageUrl;
+
+  @Value("${iam.topbarTitle}")
+  private String topbarTitle;
+
   @Bean
   public ConfigurationPropertiesBean config() {
 
     ConfigurationPropertiesBean config = new ConfigurationPropertiesBean();
 
-    config.setLogoImageUrl("resources/images/indigo-logo.png");
-    config.setTopbarTitle("INDIGO IAM server");
-    
-    if (!issuer.endsWith("/")){
+    config.setLogoImageUrl(logoImageUrl);
+    config.setTopbarTitle(topbarTitle);
+
+    if (!issuer.endsWith("/")) {
       issuer = issuer + "/";
     }
-    
+
     config.setIssuer(issuer);
     config.setRegTokenLifeTime(tokenLifeTime);
     config.setForceHttps(false);

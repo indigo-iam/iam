@@ -93,7 +93,7 @@
 <body>
   <div class="container">
     <div class="absolute-center">
-      <div id="logo-container">
+      <div id="logo-container" style="background-image: url(${config.logoImageUrl})">
         <a href="/"></a>
       </div>
       <div class="container-fluid page-content">

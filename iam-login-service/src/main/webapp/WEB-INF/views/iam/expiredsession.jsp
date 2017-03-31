@@ -7,7 +7,7 @@
 
     <div class="absolute-center is-responsive">
 
-        <div id="logo-container"></div>
+        <div id="logo-container" style="background-image: url(${config.logoImageUrl})"></div>
 
         <div style="text-align: center;">
             <h3>Session Expired</h3>

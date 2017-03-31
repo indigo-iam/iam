@@ -34,6 +34,8 @@ iam:
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
+  logoImageUrl: ${IAM_LOGO_URL:resources/images/indigo-logo.png}
+  topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
 
   token:
     # This is the registration access token lifetime
