@@ -133,7 +133,7 @@ function GroupsController($scope, $rootScope, $uibModal, $state, $filter,
 			closeButtonText: 'Cancel',
 			actionButtonText: 'Delete Group',
 			headerText: "Delete Group «" + group.displayName + "»",
-			bodyText: `Are you sure you want to delete group «${group.displayName}»?`	
+			bodyText: `Are you sure you want to delete group '${group.displayName}'?`
 		};
 		
 		ModalService.showModal({}, modalOptions).then(

@@ -47,11 +47,11 @@
 						<tbody>
 							<tr
 								ng-repeat="group in gc.filtered | startFrom:(gc.currentPage-1)*gc.entryLimit | limitTo:gc.entryLimit">
-								<td>{{$index + (gc.currentPage-1)*gc.entryLimit + 1}}</td>
+								<td class="uuid" id="{{group.id}}">{{$index + (gc.currentPage-1)*gc.entryLimit + 1}}</td>
 								<td><a ui-sref="group({id: group.id})">{{group.displayName}}</a>
 								</td>
 								<td class="text-right">
-									<button class="btn btn-danger btn-xs" ng-click="gc.deleteGroup(group)">
+									<button id="delete_group_{{group.id}}" class="btn btn-danger btn-xs" ng-click="gc.deleteGroup(group)">
 										<i class="fa fa-times"></i> Remove
 									</button>
 								</td>
