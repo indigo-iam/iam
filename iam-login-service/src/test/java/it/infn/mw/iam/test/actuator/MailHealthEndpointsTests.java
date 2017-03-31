@@ -1,5 +1,6 @@
 package it.infn.mw.iam.test.actuator;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -43,6 +44,9 @@ public class MailHealthEndpointsTests {
   @Value("${spring.mail.port}")
   private Integer mailPort;
 
+  @Value("${endpoints.healthMail.path}")
+  private String mailEndpointPath;
+
   @Autowired
   private WebApplicationContext context;
 
@@ -70,7 +74,7 @@ public class MailHealthEndpointsTests {
   @Test
   public void testMailHealthEndpointWithSmtp() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get(mailEndpointPath))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
       .andExpect(jsonPath("$.mail").doesNotExist());
@@ -81,7 +85,7 @@ public class MailHealthEndpointsTests {
   @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
   public void testMailHealthEndpointWithSmtpAsUser() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get(mailEndpointPath))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
       .andExpect(jsonPath("$.mail").doesNotExist());
@@ -93,14 +97,13 @@ public class MailHealthEndpointsTests {
   @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
   public void testMailHealthEndpointWithSmtpAsAdmin() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get(mailEndpointPath))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status", equalTo(STATUS_UP)))
       .andExpect(jsonPath("$.mail.status", equalTo(STATUS_UP)))
-      .andExpect(jsonPath("$.mail.location", equalTo(String.format("%s:%d", mailHost, mailPort))))
+      .andExpect(jsonPath("$.mail.location", equalTo(format("%s:%d", mailHost, mailPort))))
       ;
     // @formatter:on
   }
-
 
 }

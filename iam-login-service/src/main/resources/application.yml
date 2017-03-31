@@ -86,3 +86,7 @@ notification:
 task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
+
+endpoints:
+  healthMail:
+    path: /health/mail

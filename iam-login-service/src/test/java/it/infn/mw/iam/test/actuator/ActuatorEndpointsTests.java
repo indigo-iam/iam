@@ -1,5 +1,6 @@
 package it.infn.mw.iam.test.actuator;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -169,7 +170,7 @@ public class ActuatorEndpointsTests {
   @Test
   public void testMailHealthEndpointWithoutSmtp() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get("/health/mail"))
       .andExpect(status().isServiceUnavailable())
       .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
       .andExpect(jsonPath("$.mail").doesNotExist());
@@ -180,7 +181,7 @@ public class ActuatorEndpointsTests {
   @WithMockUser(username = USER_USERNAME, roles = {USER_ROLE})
   public void testMailHealthEndpointWithoutSmtpAsUser() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get("/health/mail"))
       .andExpect(status().isServiceUnavailable())
       .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
       .andExpect(jsonPath("$.mail").doesNotExist());
@@ -191,11 +192,11 @@ public class ActuatorEndpointsTests {
   @WithMockUser(username = ADMIN_USERNAME, roles = {ADMIN_ROLE})
   public void testMailHealthEndpointWithoutSmtpAsAdmin() throws Exception {
     // @formatter:off
-    mvc.perform(get("/healthMail"))
+    mvc.perform(get("/health/mail"))
       .andExpect(status().isServiceUnavailable())
       .andExpect(jsonPath("$.status", equalTo(STATUS_DOWN)))
       .andExpect(jsonPath("$.mail.status", equalTo(STATUS_DOWN)))
-      .andExpect(jsonPath("$.mail.location", equalTo(String.format("%s:%d", mailHost, mailPort))))
+      .andExpect(jsonPath("$.mail.location", equalTo(format("%s:%d", mailHost, mailPort))))
       .andExpect(jsonPath("$.mail.error").exists());
     // @formatter:on
   }

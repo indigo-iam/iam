@@ -47,7 +47,7 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=DiscoveryEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-    value=HealthEndpoint.class)
+        value=HealthEndpoint.class)
 })
 // @formatter:on
 
