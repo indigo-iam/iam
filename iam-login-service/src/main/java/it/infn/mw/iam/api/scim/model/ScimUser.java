@@ -236,6 +236,12 @@ public class ScimUser extends ScimResource {
         && !indigoUser.getSamlIds().isEmpty();
   }
 
+  public boolean hasAuthorities() {
+
+    return indigoUser != null && indigoUser.getAuthorities() != null
+        && !indigoUser.getAuthorities().isEmpty();
+  }
+
   public static Builder builder(String uuid) {
 
     return new Builder(uuid);

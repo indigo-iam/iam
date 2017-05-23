@@ -162,7 +162,7 @@ public class ScimUserProvisioningPatchTests {
     restUtils.doPatch(lennon.getMeta().getLocation(), req);
 
     restUtils.doGet(lennon.getMeta().getLocation()).body("id", equalTo(lennon.getId())).body(
-        "urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
+        ScimConstants.INDIGO_USER_SCHEMA + ".oidcIds", equalTo(null));
 
     restUtils.doDelete(lennon.getMeta().getLocation());
     restUtils.doDelete(lincoln.getMeta().getLocation());
@@ -200,7 +200,7 @@ public class ScimUserProvisioningPatchTests {
     restUtils.doPatch(lennon.getMeta().getLocation(), req);
 
     restUtils.doGet(lennon.getMeta().getLocation()).body("id", equalTo(lennon.getId())).body(
-        "urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
+        ScimConstants.INDIGO_USER_SCHEMA + ".samlIds", equalTo(null));
 
     restUtils.doDelete(lennon.getMeta().getLocation());
     restUtils.doDelete(lincoln.getMeta().getLocation());
@@ -385,7 +385,7 @@ public class ScimUserProvisioningPatchTests {
     restUtils.doGet(lennon.getMeta().getLocation())
       .body("id", equalTo(lennon.getId()))
       .body("userName", equalTo(lennon.getUserName()))
-      .body("urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
+      .body(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys", equalTo(null));
 
     restUtils.doDelete(lennon.getMeta().getLocation());
   }
@@ -421,7 +421,7 @@ public class ScimUserProvisioningPatchTests {
     restUtils.doGet(lennon.getMeta().getLocation())
       .body("id", equalTo(lennon.getId()))
       .body("userName", equalTo(lennon.getUserName()))
-      .body("urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
+      .body(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys", equalTo(null));
 
     restUtils.doDelete(lennon.getMeta().getLocation());
   }
@@ -457,7 +457,7 @@ public class ScimUserProvisioningPatchTests {
     restUtils.doGet(lennon.getMeta().getLocation())
       .body("id", equalTo(lennon.getId()))
       .body("userName", equalTo(lennon.getUserName()))
-      .body("urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
+      .body(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys", equalTo(null));
 
     restUtils.doDelete(lennon.getMeta().getLocation());
   }

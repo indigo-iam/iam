@@ -40,7 +40,7 @@ public class ScimUserProvisioningAttributeFilterTests {
   }
 
   @Test
-  public void testReuturnOnlyUsernameRequest() {
+  public void testReturnOnlyOneUsername() {
 
     given().port(8080)
       .auth()
@@ -78,6 +78,25 @@ public class ScimUserProvisioningAttributeFilterTests {
       .body("Resources[0].groups", is(nullValue()))
       .body("Resources[0].urn:indigo-dc:scim:schemas:IndigoUser", is(nullValue()));
 
+  }
+
+  @Test
+  public void testReturnOnlyAllUsername() {
+
+    given().port(8080)
+      .auth()
+      .preemptive()
+      .oauth2(accessToken)
+      .accept(SCIM_CONTENT_TYPE)
+      .log()
+      .all(true)
+      .param("attributes", "userName")
+      .when()
+      .get("/scim/Users")
+      .then()
+      .log()
+      .all(true)
+      .statusCode(HttpStatus.OK.value());
   }
 
   @Test

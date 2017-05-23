@@ -1,7 +1,9 @@
 package it.infn.mw.iam.api.scim.model;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,14 +17,21 @@ public class ScimIndigoUser {
   private final List<ScimOidcId> oidcIds;
   private final List<ScimSamlId> samlIds;
 
+  private final ScimIndigoUserInfo userInfo;
+  private final Set<ScimAuthority> authorities;
+
   @JsonCreator
   private ScimIndigoUser(@JsonProperty("oidcIds") List<ScimOidcId> oidcIds,
       @JsonProperty("sshKeys") List<ScimSshKey> sshKeys,
-      @JsonProperty("samlIds") List<ScimSamlId> samlIds) {
+      @JsonProperty("samlIds") List<ScimSamlId> samlIds,
+      @JsonProperty("userInfo") ScimIndigoUserInfo userInfo,
+      @JsonProperty("authorities") Set<ScimAuthority> authorities) {
 
     this.oidcIds = oidcIds != null ? oidcIds : new LinkedList<ScimOidcId>();
     this.sshKeys = sshKeys != null ? sshKeys : new LinkedList<ScimSshKey>();
     this.samlIds = samlIds != null ? samlIds : new LinkedList<ScimSamlId>();
+    this.userInfo = userInfo;
+    this.authorities = authorities;
 
   }
 
@@ -30,12 +39,15 @@ public class ScimIndigoUser {
     this.sshKeys = b.sshKeys;
     this.oidcIds = b.oidcIds;
     this.samlIds = b.samlIds;
+    this.userInfo = b.userInfo;
+    this.authorities = b.authorities;
   }
 
   @JsonIgnore
   public boolean isEmpty() {
 
-    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty();
+    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && authorities.isEmpty()
+        && userInfo == null;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -53,6 +65,16 @@ public class ScimIndigoUser {
     return samlIds;
   }
 
+  public ScimIndigoUserInfo getUserInfo() {
+
+    return userInfo;
+  }
+
+  public Set<ScimAuthority> getAuthorities() {
+
+    return authorities;
+  }
+
   public static Builder builder() {
 
     return new Builder();
@@ -63,6 +85,10 @@ public class ScimIndigoUser {
     private List<ScimSshKey> sshKeys = new LinkedList<ScimSshKey>();
     private List<ScimOidcId> oidcIds = new LinkedList<ScimOidcId>();
     private List<ScimSamlId> samlIds = new LinkedList<ScimSamlId>();
+
+    private ScimIndigoUserInfo userInfo;
+
+    private Set<ScimAuthority> authorities = new HashSet<ScimAuthority>();
 
     public Builder addSshKey(ScimSshKey sshKey) {
 
@@ -79,6 +105,18 @@ public class ScimIndigoUser {
     public Builder addSamlId(ScimSamlId samlId) {
 
       samlIds.add(samlId);
+      return this;
+    }
+
+    public Builder indigoUserInfo(ScimIndigoUserInfo userInfo) {
+
+      this.userInfo = userInfo;
+      return this;
+    }
+
+    public Builder authorities(Set<ScimAuthority> authorities) {
+
+      this.authorities = authorities;
       return this;
     }
 

@@ -1,10 +1,14 @@
 package it.infn.mw.iam.api.scim.converter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
+import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
@@ -12,6 +16,7 @@ import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -33,10 +38,14 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   private final SshKeyConverter sshKeyConverter;
   private final SamlIdConverter samlIdConverter;
 
+  private final IndigoUserInfoConverter indigoUserInfoConverter;
+  private final AuthorityConverter authorityConverter;
+
 
   @Autowired
   public UserConverter(ScimResourceLocationProvider rlp, X509CertificateConverter x509cc,
-      AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc) {
+      AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
+      IndigoUserInfoConverter uic, AuthorityConverter authc) {
 
     this.resourceLocationProvider = rlp;
     this.addressConverter = ac;
@@ -44,6 +53,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     this.oidcIdConverter = oidc;
     this.sshKeyConverter = sshc;
     this.samlIdConverter = samlc;
+    this.indigoUserInfoConverter = uic;
+    this.authorityConverter = authc;
   }
 
   @Override
@@ -72,6 +83,15 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     userInfo.setPicture(scimUser.getPicture());
 
     account.setUserInfo(userInfo);
+
+    if (scimUser.hasAuthorities()) {
+
+      Set<IamAuthority> authorities = new HashSet<>();
+
+      scimUser.getIndigoUser().getAuthorities().forEach(a -> {
+        authorities.add(authorityConverter.fromScim(a));
+      });
+    }
 
     if (scimUser.hasAddresses()) {
 
@@ -207,6 +227,14 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     entity.getSamlIds()
       .forEach(samlId -> indigoUserBuilder.addSamlId(samlIdConverter.toScim(samlId)));
+
+    indigoUserBuilder.indigoUserInfo(indigoUserInfoConverter.toScim(entity.getUserInfo()));
+
+    Set<ScimAuthority> authorities = new HashSet<ScimAuthority>();
+    entity.getAuthorities().forEach(iamAuth -> {
+      authorities.add(authorityConverter.toScim(iamAuth));
+    });
+    indigoUserBuilder.authorities(authorities);
 
     ScimIndigoUser indigoUser = indigoUserBuilder.build();
 
