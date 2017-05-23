@@ -5,12 +5,14 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "iam_saml_id")
+@Table(name = "iam_saml_id", 
+indexes = {@Index(columnList="idpId,attribute_id,userId", name="IDX_IAM_SAML_ID_1")})
 public class IamSamlId implements IamAccountRef {
 
   @Id
@@ -24,7 +26,7 @@ public class IamSamlId implements IamAccountRef {
   @Column(nullable = false, length = 256)
   String idpId;
 
-  @Column(name = "attribute_id", length = 64)
+  @Column(name = "attribute_id", nullable=false, length = 256)
   String attributeId;
 
   @Column(nullable = false, length = 256)

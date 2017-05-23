@@ -60,6 +60,7 @@ public class ScimUser extends ScimResource {
 
   private final Set<ScimGroupRef> groups;
 
+  @Valid
   private final ScimIndigoUser indigoUser;
 
   @JsonCreator

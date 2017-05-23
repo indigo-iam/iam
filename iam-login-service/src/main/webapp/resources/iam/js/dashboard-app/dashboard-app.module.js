@@ -16,7 +16,7 @@ angular.module('dashboardApp')
       $rootScope.iamVersion = getIamVersion();
       $rootScope.iamCommitId = getIamGitCommitId();
       
-      LoadTemplatesService.loadTemplates();
+      // LoadTemplatesService.loadTemplates();
 
       $trace.enable('TRANSITION');
 

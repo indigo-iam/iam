@@ -106,7 +106,7 @@
     };
 
     self.openRemoveSamlAccountDialog = function(samlId) {
-      var account = `${samlId.idpId} : ${samlId.userId}`;
+      var account = `${samlId.idpId} ${samlId.attributeId} = ${samlId.userId}`;
 
       var modalOptions = {
         closeButtonText: 'Cancel',

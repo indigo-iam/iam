@@ -23,6 +23,9 @@ public class SamlIdConverter implements Converter<ScimSamlId, IamSamlId> {
   @Override
   public ScimSamlId toScim(IamSamlId entity) {
 
-    return ScimSamlId.builder().idpId(entity.getIdpId()).userId(entity.getUserId()).build();
+    return ScimSamlId.builder().idpId(entity.getIdpId()).
+        userId(entity.getUserId())
+        .attributeId(entity.getAttributeId())
+        .build();
   }
 }

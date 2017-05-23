@@ -332,9 +332,9 @@ angular.module('dashboardApp').factory("scimFactory", [ '$http', '$httpParamSeri
 		return $http.patch(url, data, config);
 	};
 	
-	function addSamlId(userId, samlIdpId, samlUserId) {
+	function addSamlId(userId, samlIdpId, samlAttributeId, samlUserId) {
 		
-		console.info("Patch user-id, add saml-account ", userId, samlIdpId, samlUserId);
+		console.info("Patch user-id, add saml-account ", userId, samlIdpId, samlAttributeId, samlUserId);
 		
 		var config = {
 				headers: { 'Content-Type': 'application/scim+json' }
@@ -347,6 +347,7 @@ angular.module('dashboardApp').factory("scimFactory", [ '$http', '$httpParamSeri
 						"urn:indigo-dc:scim:schemas:IndigoUser": {
 							samlIds: [{
 								"idpId": samlIdpId,
+								"attributeId": samlAttributeId,
 								"userId": samlUserId
 								}
 							]
@@ -374,6 +375,7 @@ angular.module('dashboardApp').factory("scimFactory", [ '$http', '$httpParamSeri
 						"urn:indigo-dc:scim:schemas:IndigoUser": {
 							samlIds: [{
 								"idpId": samlId.idpId,
+								"attributeId": samlId.attributeId,
 								"userId": samlId.userId
 								}
 							]

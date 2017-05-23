@@ -3,6 +3,8 @@ package it.infn.mw.iam.api.scim.model;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.validation.Valid;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -31,6 +33,8 @@ public class ScimIndigoUser {
 
   private final List<ScimSshKey> sshKeys;
   private final List<ScimOidcId> oidcIds;
+  
+  @Valid
   private final List<ScimSamlId> samlIds;
 
   @JsonCreator

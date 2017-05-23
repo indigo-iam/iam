@@ -13,14 +13,17 @@
             <table class="table no-margin" id="saml_account_list">
                 <thead>
                     <tr>
-                        <th>Identity Provider ID</th>
-                        <th>User ID</th>
+                        <th>IdP Entity ID</th>
+                        <th>Attribute</th>
+                        <th>Attribute Value</th>
+
                         <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-repeat="samlId in $ctrl.getSamlIds()">
                         <td>{{ samlId.idpId }}</td>
+                        <td>{{ samlId.attributeId }}</td>
                         <td>{{ samlId.userId }}</td>
                         <td class="text-right">
                             <div class="btn-group">

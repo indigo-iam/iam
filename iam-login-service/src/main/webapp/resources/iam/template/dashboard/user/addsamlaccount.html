@@ -4,12 +4,25 @@
 <div class="modal-body">
 
     <div class="form-group">
-        <label>Identity Provider</label>
+        <label>Idp Entity Id</label>
         <input id="idp" class="form-control" type="text" placeholder="Saml ID Identity Provider ..." ng-model="addSamlAccountCtrl.idpId">
     </div>
+
     <div class="form-group">
-        <label>User ID</label>
-        <input id="userid" class="form-control" type="text" placeholder="Saml ID User id ..." ng-model="addSamlAccountCtrl.userId">
+        <label>Attribute Id</label>
+        <select id="attributeId" name="attributeId" class="form-control" 
+            ng-model="addSamlAccountCtrl.attributeId">
+            <option value="urn:oid:1.3.6.1.4.1.5923.1.1.1.13">eduPersonUniqueId</option>
+            <option value="urn:oid:1.3.6.1.4.1.5923.1.1.1.6">eduPersonPrincipalName</option>
+            <option value="urn:oid:2.16.840.1.113730.3.1.3">employeeNumber</option>
+            <option value="urn:oid:1.3.6.1.4.1.5923.1.1.1.16">eduPersonOrcid</option>
+            <option value="spidCode">spidCode</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Attribute Value</label>
+        <input id="userid" class="form-control" type="text" placeholder="Saml attribute value ..." ng-model="addSamlAccountCtrl.userId">
     </div>
 
     <div class="row">
@@ -21,7 +34,7 @@
 </div>
 <div class="modal-footer">
 	<button class="btn btn-primary" type="button" id="modal-btn-confirm"
-	   ng-disabled="!addSamlAccountCtrl.idpId ||  !addSamlAccountCtrl.userId || !addSamlAccountCtrl.enabled"
+	   ng-disabled="!addSamlAccountCtrl.idpId ||  !addSamlAccountCtrl.userId || !addSamlAccountCtrl.attributeId || !addSamlAccountCtrl.enabled"
 	   ng-click="addSamlAccountCtrl.addSamlAccount()">Add Account</button>
 	<button class="btn btn-danger" type="button" id="modal-btn-cancel"
 		ng-click="addSamlAccountCtrl.cancel()">Cancel</button>

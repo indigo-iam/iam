@@ -4,6 +4,7 @@ import static it.infn.mw.iam.test.TestUtils.passwordTokenGetter;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
 
 import java.util.Base64;
 
@@ -157,6 +158,25 @@ public class ScimUserProvisioningPatchTests {
         "urn:indigo-dc:scim:schemas:IndigoUser", equalTo(null));
 
   }
+
+  @Test
+  public void testAddSamlIdAttributeIdFailsIfAttributeIdIsEmpty() {
+
+    ScimIndigoUser indigoUser = ScimIndigoUser.builder()
+      .addSamlId(
+          ScimSamlId.builder().idpId("test_idp").userId("test_user").attributeId(null).build())
+      .build();
+
+
+    ScimUser user = ScimUser.builder().indigoUserInfo(indigoUser).build();
+    ScimUserPatchRequest req = getPatchAddRequest(user);
+
+    restUtils.doPatch(lennon.getMeta().getLocation(), req, HttpStatus.BAD_REQUEST)
+      .and()
+      .body("detail", startsWith("attributeId cannot be null"));
+
+  }
+
 
   @Test
   public void testAddReassignAndRemoveSamlId() {

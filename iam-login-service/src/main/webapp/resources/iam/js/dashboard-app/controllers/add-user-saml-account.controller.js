@@ -19,13 +19,15 @@ function AddSamlAccountController($scope, $uibModalInstance, scimFactory, Utils,
 
 		addSamlAccountCtrl.idpId = "";
 		addSamlAccountCtrl.userId = "";
+		addSamlAccountCtrl.attributeId = "";
 		addSamlAccountCtrl.enabled = true;
 	};
 	
 	function addSamlAccount() {
 
 		addSamlAccountCtrl.enabled = false;
-		scimFactory.addSamlId(addSamlAccountCtrl.user.id, addSamlAccountCtrl.idpId, addSamlAccountCtrl.userId).then(function(response) {
+		scimFactory.addSamlId(addSamlAccountCtrl.user.id, addSamlAccountCtrl.idpId,		
+			addSamlAccountCtrl.attributeId, addSamlAccountCtrl.userId).then(function(response) {
 			$uibModalInstance.close(response.data);
 			addSamlAccountCtrl.enabled = true;
 		},function(error) {

@@ -13,6 +13,9 @@ import java.util.function.Predicate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.google.common.base.Strings;
+
+import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.DefaultAccountUpdater;
@@ -63,6 +66,27 @@ public class Adders extends Replacers {
   }
 
   private Predicate<Collection<IamSamlId>> buildSamlIdsAddChecks() {
+    
+    Predicate<Collection<IamSamlId>> samlIdWellFormed =
+        c -> {
+          c.removeIf(Objects::isNull);
+          c.stream().forEach(id -> {
+            if (Strings.isNullOrEmpty(id.getIdpId())){
+              throw new IllegalArgumentException("idpId cannot be null or empty!");
+            }
+            
+            if (Strings.isNullOrEmpty(id.getAttributeId())){
+              throw new IllegalArgumentException("attributeId cannot be null or empty!");
+            }
+            
+            if (Strings.isNullOrEmpty(id.getUserId())){
+              throw new IllegalArgumentException("userId cannot be null or empty!");
+            }
+          });
+          
+          return true;
+        };
+    
     Predicate<IamSamlId> samlIdNotBound =
         new IdNotBoundChecker<IamSamlId>(findBySamlId, account, (id, a) -> {
           throw new ScimResourceExistsException(
@@ -70,7 +94,6 @@ public class Adders extends Replacers {
         });
 
     Predicate<Collection<IamSamlId>> samlIdsNotBound = c -> {
-      c.removeIf(Objects::isNull);
       c.stream().forEach(id -> samlIdNotBound.test(id));
       return true;
     };
@@ -79,7 +102,7 @@ public class Adders extends Replacers {
       return !account.getSamlIds().containsAll(c);
     };
 
-    return samlIdsNotBound.and(samlIdsNotOwned);
+    return samlIdWellFormed.and(samlIdsNotBound.and(samlIdsNotOwned));
 
   }
 

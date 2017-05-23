@@ -22,7 +22,7 @@ public class ScimSamlId {
   private final String userId;
   
   @NotBlank
-  @Length(max = 64)
+  @Length(max = 256)
   private final String attributeId;
 
   @JsonCreator
