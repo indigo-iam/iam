@@ -1,9 +1,11 @@
 package it.infn.mw.iam.api.tokens.service.filtering;
 
+import java.util.Optional;
+
 public class DefaultTokensFilterRequest implements TokensFilterRequest {
 
-  private final String clientId;
-  private final String userId;
+  private final Optional<String> clientId;
+  private final Optional<String> userId;
 
   private DefaultTokensFilterRequest(Builder b) {
     this.clientId = b.clientId;
@@ -11,27 +13,27 @@ public class DefaultTokensFilterRequest implements TokensFilterRequest {
   }
 
   @Override
-  public String getClientId() {
+  public Optional<String> getClientId() {
     return clientId;
   }
 
   @Override
-  public String getUserId() {
+  public Optional<String> getUserId() {
     return userId;
   }
 
   public static class Builder {
 
-    private String clientId;
-    private String userId;
+    private Optional<String> clientId = Optional.empty();
+    private Optional<String> userId = Optional.empty();
 
-    public Builder clientId(String clientId) {
+    public Builder clientId(Optional<String> clientId) {
 
       this.clientId = clientId;
       return this;
     }
 
-    public Builder userId(String userId) {
+    public Builder userId(Optional<String> userId) {
 
       this.userId = userId;
       return this;

@@ -57,10 +57,26 @@ public class DefaultAccessTokenService implements TokenService<AccessToken> {
       OffsetPageable op) {
 
     Date now = new Date();
-    String userId = emptyIfNull(filters.getUserId());
-    String clientId = emptyIfNull(filters.getClientId());
+    Optional<String> userId = filters.getUserId();
+    Optional<String> clientId = filters.getClientId();
 
-    return tokenRepository.findValidTokensForUserAndClientLike(userId, clientId, now, op);
+    if (userId.isPresent() && clientId.isPresent()) {
+
+      return tokenRepository.findValidAccessTokensForUserAndClient(userId.get(), clientId.get(),
+          now, op);
+    }
+
+    if (userId.isPresent()) {
+
+      return tokenRepository.findValidAccessTokensForUser(userId.get(), now, op);
+    }
+
+    if (clientId.isPresent()) {
+
+      return tokenRepository.findValidAccessTokensForClient(clientId.get(), now, op);
+    }
+
+    return tokenRepository.findAllValidAccessTokens(now, op);
   }
 
   @Override
@@ -87,9 +103,5 @@ public class DefaultAccessTokenService implements TokenService<AccessToken> {
 
     return new TokensListResponse<>(resources, results.getTotalElements(), resources.size(),
         op.getOffset() + 1);
-  }
-
-  private String emptyIfNull(String s) {
-    return s != null ? s : "";
   }
 }

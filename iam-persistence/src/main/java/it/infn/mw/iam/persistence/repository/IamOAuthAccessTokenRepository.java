@@ -22,9 +22,31 @@ public interface IamOAuthAccessTokenRepository
       @Param("timestamp") Date timestamp);
 
   @Query("select t from OAuth2AccessTokenEntity t "
-      + "where (t.authenticationHolder.userAuth.name LIKE %:userId%) "
-      + "and (t.authenticationHolder.clientId LIKE %:clientId%) "
-      + "and (t.expiration is NULL or t.expiration > :timestamp)")
-  Page<OAuth2AccessTokenEntity> findValidTokensForUserAndClientLike(@Param("userId") String userId,
-      @Param("clientId") String clientId, @Param("timestamp") Date timestamp, Pageable op);
+      + "where (t.authenticationHolder.userAuth.name = :userId) "
+      + "and (t.expiration is NULL or t.expiration > :timestamp) "
+      + "order by t.expiration")
+  Page<OAuth2AccessTokenEntity> findValidAccessTokensForUser(@Param("userId") String userId,
+      @Param("timestamp") Date timestamp, Pageable op);
+
+  @Query("select t from OAuth2AccessTokenEntity t "
+      + "where (t.authenticationHolder.clientId = :clientId) "
+      + "and (t.expiration is NULL or t.expiration > :timestamp) "
+      + "order by t.expiration")
+  Page<OAuth2AccessTokenEntity> findValidAccessTokensForClient(@Param("clientId") String clientId,
+      @Param("timestamp") Date timestamp, Pageable op);
+
+  @Query("select t from OAuth2AccessTokenEntity t "
+      + "where (t.authenticationHolder.userAuth.name = :userId) "
+      + "and (t.authenticationHolder.clientId = :clientId) "
+      + "and (t.expiration is NULL or t.expiration > :timestamp) "
+      + "order by t.expiration")
+  Page<OAuth2AccessTokenEntity> findValidAccessTokensForUserAndClient(
+      @Param("userId") String userId, @Param("clientId") String clientId,
+      @Param("timestamp") Date timestamp, Pageable op);
+
+  @Query("select t from OAuth2AccessTokenEntity t "
+      + "where (t.expiration is NULL or t.expiration > :timestamp) "
+      + "order by t.expiration")
+  Page<OAuth2AccessTokenEntity> findAllValidAccessTokens(@Param("timestamp") Date timestamp,
+      Pageable op);
 }

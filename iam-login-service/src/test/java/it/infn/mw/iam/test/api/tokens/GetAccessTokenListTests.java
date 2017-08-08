@@ -272,7 +272,7 @@ public class GetAccessTokenListTests extends TokensUtils {
   }
 
   @Test
-  public void getAccessTokenListWithPartialUserIdFilter() throws Exception {
+  public void getAccessTokenListWithPartialUserIdFilterReturnsEmpty() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
@@ -288,10 +288,10 @@ public class GetAccessTokenListTests extends TokensUtils {
             .getContentAsString(),
         new TypeReference<TokensListResponse<AccessToken>>() {});
 
-    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(4)));
+    assertThat(atl.getTotalResults(), equalTo(Long.valueOf(0)));
     assertThat(atl.getStartIndex(), equalTo(Long.valueOf(1)));
-    assertThat(atl.getItemsPerPage(), equalTo(Long.valueOf(4)));
-    assertThat(atl.getResources().size(), equalTo(4));
+    assertThat(atl.getItemsPerPage(), equalTo(Long.valueOf(0)));
+    assertThat(atl.getResources().size(), equalTo(0));
   }
 
   @Test

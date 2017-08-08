@@ -17,6 +17,7 @@ import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
 import org.springframework.http.converter.json.MappingJacksonValue;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 public class TokensControllerSupport {
@@ -29,7 +30,10 @@ public class TokensControllerSupport {
   }
 
   protected TokensFilterRequest buildTokensFilterRequest(String userId, String clientId) {
-    return new DefaultTokensFilterRequest.Builder().clientId(clientId).userId(userId).build();
+
+    Optional<String> user = userId == null ? Optional.empty() : Optional.of(userId);
+    Optional<String> client = clientId == null ? Optional.empty() : Optional.of(clientId);
+    return new DefaultTokensFilterRequest.Builder().clientId(client).userId(user).build();
   }
 
   private TokensPageRequest buildPageRequest(Integer count, Integer startIndex, int maxPageSize) {
@@ -70,15 +74,16 @@ public class TokensControllerSupport {
     Set<String> result = new HashSet<>();
     if (!Strings.isNullOrEmpty(attributesParameter)) {
       result = Sets.newHashSet(Splitter.on(CharMatcher.anyOf(".,"))
-        .trimResults()
-        .omitEmptyStrings()
-        .split(attributesParameter));
+          .trimResults()
+          .omitEmptyStrings()
+          .split(attributesParameter));
     }
     result.add("id");
     return result;
   }
 
-  protected <T> MappingJacksonValue filterAttributes(TokensListResponse<T> result, String attributes) {
+  protected <T> MappingJacksonValue filterAttributes(TokensListResponse<T> result,
+      String attributes) {
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
 

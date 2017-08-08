@@ -58,10 +58,26 @@ public class DefaultRefreshTokenService implements TokenService<RefreshToken> {
       OffsetPageable op) {
 
     Date now = new Date();
-    String userId = emptyIfNull(filters.getUserId());
-    String clientId = emptyIfNull(filters.getClientId());
+    Optional<String> userId = filters.getUserId();
+    Optional<String> clientId = filters.getClientId();
 
-    return tokenRepository.findValidTokensForUserAndClientLike(userId, clientId, now, op);
+    if (userId.isPresent() && clientId.isPresent()) {
+
+      return tokenRepository.findValidRefreshTokensForUserAndClient(userId.get(), clientId.get(),
+          now, op);
+    }
+
+    if (userId.isPresent()) {
+
+      return tokenRepository.findValidRefreshTokensForUser(userId.get(), now, op);
+    }
+
+    if (clientId.isPresent()) {
+
+      return tokenRepository.findValidRefreshTokensForClient(clientId.get(), now, op);
+    }
+
+    return tokenRepository.findAllValidRefreshTokens(now, op);
   }
 
   @Override
@@ -88,9 +104,5 @@ public class DefaultRefreshTokenService implements TokenService<RefreshToken> {
 
     return new TokensListResponse<>(resources, results.getTotalElements(), resources.size(),
         op.getOffset() + 1);
-  }
-
-  private String emptyIfNull(String s) {
-    return s != null ? s : "";
   }
 }
