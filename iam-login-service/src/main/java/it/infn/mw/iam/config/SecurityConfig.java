@@ -106,7 +106,7 @@ public class SecurityConfig {
     }
 
 
-    public IamX509PreauthenticationProcessingFilter iamX509Filter() throws Exception {
+    public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
           iamX509AuthenticationProvider());
     }
@@ -694,6 +694,45 @@ public class SecurityConfig {
             .antMatchers(HttpMethod.GET, "/info", "/health", "/health/mail", "/health/external").permitAll()
             .antMatchers("/metrics", "/configprops", "/env", "/mappings", "/flyway",
                 "/autoconfig", "/beans", "/dump", "/trace").hasRole("ADMIN");
+      // @formatter:on
+    }
+  }
+
+  @Configuration
+  @Order(25)
+  public static class TokensApiEndpointConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationProcessingFilter resourceFilter;
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    private CorsFilter corsFilter;
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http
+        .requestMatchers()
+        .antMatchers("/access-tokens/**", "/refresh-tokens/**")
+        .and()
+        .exceptionHandling()
+        .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+        .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+        .addFilterBefore(corsFilter, WebAsyncManagerIntegrationFilter.class)
+        .sessionManagement()
+        .sessionCreationPolicy(SessionCreationPolicy.NEVER)
+        .and()
+        .authorizeRequests()
+        .antMatchers("/access-tokens/**", "/refresh-tokens/**")
+        .authenticated()
+        .and()
+        .csrf()
+        .disable();
       // @formatter:on
     }
   }
