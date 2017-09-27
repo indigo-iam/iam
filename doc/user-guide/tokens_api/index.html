@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="main.css">
+    <meta charset="UTF-8">
+    <title>IAM Tokens APIs</title>
+                                                         </head>
+<body>
+<div class="container">
+    <h1>IAM Tokens APIs</h1>
+    <p class="sw-info">
+        Base URL: <span class="sw-info-basePath">/iam/api</span>,
+        Version: <span class="sw-info-version">1.0.0</span>
+    </p>
+    <p><p>A set of APIs to manage active tokens for the Indigo Identity and Access Manager</p>
+    </p>
+    
+    
+    <div id="sw-schemes" class="sw-default-value">
+        <span class="sw-default-value-header">Schemes:</span>
+        http
+    </div>
+    
+        <h2 id="swagger--summary-no-tags">Summary</h2>
+        <table class="table table-bordered table-condensed swagger--summary">
+            <thead>
+            <tr>
+                <th>Path</th>
+                <th>Operation</th>
+                <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                            <td class="swagger--summary-path" rowspan="1">
+                                <a href="#path--access-tokens">/access-tokens</a>
+                            </td>
+                        <td>
+                            <a href="#operation--access-tokens-get">GET</a>
+                        </td>
+                        <td>
+                            <p>Lists currently active access tokens</p>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                            <td class="swagger--summary-path" rowspan="2">
+                                <a href="#path--access-tokens--accessTokenId-">/access-tokens/{accessTokenId}</a>
+                            </td>
+                        <td>
+                            <a href="#operation--access-tokens--accessTokenId--delete">DELETE</a>
+                        </td>
+                        <td>
+                            <p>Revoke a specified access token</p>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="#operation--access-tokens--accessTokenId--get">GET</a>
+                        </td>
+                        <td>
+                            <p>Get a specified access token</p>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                            <td class="swagger--summary-path" rowspan="1">
+                                <a href="#path--refresh-tokens">/refresh-tokens</a>
+                            </td>
+                        <td>
+                            <a href="#operation--refresh-tokens-get">GET</a>
+                        </td>
+                        <td>
+                            <p>Lists currently active refresh tokens</p>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                            <td class="swagger--summary-path" rowspan="2">
+                                <a href="#path--refresh-tokens--refreshTokenId-">/refresh-tokens/{refreshTokenId}</a>
+                            </td>
+                        <td>
+                            <a href="#operation--refresh-tokens--refreshTokenId--delete">DELETE</a>
+                        </td>
+                        <td>
+                            <p>Revoke a specified refresh token</p>
+        
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="#operation--refresh-tokens--refreshTokenId--get">GET</a>
+                        </td>
+                        <td>
+                            <p>Get a specified refresh token</p>
+        
+                        </td>
+                    </tr>
+            </tbody>
+        </table>
+    
+    
+    
+    <h2>Paths</h2>
+    
+        
+        <span id="path--access-tokens"></span>
+            <div id="operation--access-tokens-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Lists currently active access tokens</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/access-tokens</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>A list of AccessToken</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                count
+                                            </td>
+                                            <td><p>Specifies the desired maximum number of query results per page</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                startIndex
+                                            </td>
+                                            <td><p>The 1-based index of the first query result</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                userId
+                                            </td>
+                                            <td><p>Filters by userId</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                clientId
+                                            </td>
+                                            <td><p>Filters by clientId</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                                <p><span class="label label-default">application/json</span> 
+                    </p>
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>A list of AccessToken</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                                <div  class="panel panel-definition">
+                                                    <div class="panel-body">
+                                                                <a class="json-schema-ref" href="#/definitions/AccessTokenList">AccessTokenList</a>
+                                                    </div>
+                                                </div></div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path--access-tokens--accessTokenId-"></span>
+            <div id="operation--access-tokens--accessTokenId--delete" class="swagger--panel-operation-delete panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Revoke a specified access token</div>
+                    <h3 class="panel-title"><span class="operation-name">DELETE</span> <strong>/access-tokens/{accessTokenId}</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                accessTokenId
+                                            </td>
+                                            <td><p>Specifies the id of the desired access token</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-204">
+                                        204 No Content
+                                    
+                                    </dt>
+                                    <dd class="sw-response-204">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>AccessToken revoked</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+            <div id="operation--access-tokens--accessTokenId--get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a specified access token</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/access-tokens/{accessTokenId}</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                accessTokenId
+                                            </td>
+                                            <td><p>Specifies the id of the desired access token</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                                <p><span class="label label-default">application/json</span> 
+                    </p>
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>A AccessToken</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                                <div  class="panel panel-definition">
+                                                    <div class="panel-body">
+                                                                <a class="json-schema-ref" href="#/definitions/AccessToken">AccessToken</a>
+                                                    </div>
+                                                </div></div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path--refresh-tokens"></span>
+            <div id="operation--refresh-tokens-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Lists currently active refresh tokens</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/refresh-tokens</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>A list of RefreshToken</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                count
+                                            </td>
+                                            <td><p>Specifies the desired maximum number of query results per page</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                startIndex
+                                            </td>
+                                            <td><p>The 1-based index of the first query result</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                userId
+                                            </td>
+                                            <td><p>Filters by userId</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                clientId
+                                            </td>
+                                            <td><p>Filters by clientId</p>
+                                        </td>
+                                            <td>query</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                                <p><span class="label label-default">application/json</span> 
+                    </p>
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>A list of RefreshToken</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                                <div  class="panel panel-definition">
+                                                    <div class="panel-body">
+                                                                <a class="json-schema-ref" href="#/definitions/RefreshTokenList">RefreshTokenList</a>
+                                                    </div>
+                                                </div></div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path--refresh-tokens--refreshTokenId-"></span>
+            <div id="operation--refresh-tokens--refreshTokenId--delete" class="swagger--panel-operation-delete panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Revoke a specified refresh token</div>
+                    <h3 class="panel-title"><span class="operation-name">DELETE</span> <strong>/refresh-tokens/{refreshTokenId}</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                refreshTokenId
+                                            </td>
+                                            <td><p>Specifies the id of the desired refresh token</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-204">
+                                        204 No Content
+                                    
+                                    </dt>
+                                    <dd class="sw-response-204">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>RefreshToken revoked</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+            <div id="operation--refresh-tokens--refreshTokenId--get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a specified refresh token</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/refresh-tokens/{refreshTokenId}</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                refreshTokenId
+                                            </td>
+                                            <td><p>Specifies the id of the desired refresh token</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                                <p><span class="label label-default">application/json</span> 
+                    </p>
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <p>A RefreshToken</p>
+                                            
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                                <div  class="panel panel-definition">
+                                                    <div class="panel-body">
+                                                                <a class="json-schema-ref" href="#/definitions/RefreshToken">RefreshToken</a>
+                                                    </div>
+                                                </div></div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+    
+     
+    
+                       
+        <h2>Schema definitions</h2>
+    
+            
+                <div id="definition-AccessToken" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/AccessToken"></a>AccessToken:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="id">
+                                                    <span class="json-property-name">id:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Unique identifier of the AccessToken</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">6</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="value">
+                                                    <span class="json-property-name">value:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Token value</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE0MDEzMTQ1MjksImF1ZCI6WyJhOGFmNzUzYy1mMzI0LTRlNDAtYTE3Ny04N2RmYzA2MjQ5YjciXSwiaXNzIjoiaHR0cDpcL1wvbG9jYWxob3N0OjgwODBcL29wZW5pZC1jb25uZWN0LXNlcnZlci13ZWJhcHBcLyIsImp0aSI6Ijg4ZjM4OGE4LTk1NzctNGQyMC1hZTZjLWMyMDMxOGQ1OWJjNiIsImlhdCI6MTQwMTMxMDkyOX0.HYnNxRvGRdKFykVChL-hdxszcFBvygkeUmc8_iv2Jl4MU-jPJVzMnTwKJbCMWBjeBp8hrb0Dgd9XbnHUDyXxwj8MDrWQEH3QnwYJGRW9JFWjHMGfKDQDFY6Ffl3OFERVbyoB2ObiGTUgbw4Nkl1L1ihuMpMAc5nKi0rk3QXcS1M&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="scopes">
+                                                    <span class="json-property-name">scopes:</span>
+                                                    
+                                                    <span class="json-property-type">string[]</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>List of token scopes</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json">[<br>    <span class="hljs-string">&quot;openid&quot;</span>,<br>    <span class="hljs-string">&quot;phone&quot;</span>,<br>    <span class="hljs-string">&quot;email&quot;</span>,<br>    <span class="hljs-string">&quot;address&quot;</span>,<br>    <span class="hljs-string">&quot;profile&quot;</span><br>]
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                                        <section class="json-schema-array-items">
+                                                                            
+                                                                            <span class="json-property-type">string</span>
+                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                            
+                                                                            <div class="json-inner-schema">
+                                                                                
+                                                                            </div>
+                                                                        </section>                </div>
+                                                </dd>
+                                                <dt data-property-name="expiration">
+                                                    <span class="json-property-name">expiration:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>    <span class="json-property-format">(date-time)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Expiration timestamp</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;2014-05-28T18:02:09-0400&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="client">
+                                                    <span class="json-property-name">client:</span>
+                                                    
+                                                    <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/ClientRef">ClientRef</a>
+                                                    </span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="user">
+                                                    <span class="json-property-name">user:</span>
+                                                    
+                                                    <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/UserRef">UserRef</a>
+                                                    </span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="idToken">
+                                                    <span class="json-property-name">idToken:</span>
+                                                    
+                                                    <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/IdTokenRef">IdTokenRef</a>
+                                                    </span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                    </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-AccessTokenList" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/AccessTokenList"></a>AccessTokenList:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="totalResults">
+                                                    <span class="json-property-name">totalResults:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Number of total items that can be retrieved</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">100</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="itemsPerPage">
+                                                    <span class="json-property-name">itemsPerPage:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Number of items showed</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">20</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="startIndex">
+                                                    <span class="json-property-name">startIndex:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Offset of the first item showed.</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">1</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="resources">
+                                                    <span class="json-property-name">resources:</span>
+                                                    
+                                                    <span class="json-property-type">object[]</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                                        <section class="json-schema-array-items">
+                                                                            
+                                                                            <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/AccessToken">AccessToken</a>
+                                                                            </span>
+                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                            
+                                                                            <div class="json-inner-schema">
+                                                                                
+                                                                            </div>
+                                                                        </section>                </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-ClientRef" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/ClientRef"></a>ClientRef:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="id">
+                                                    <span class="json-property-name">id:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Unique identifier of the Client</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">2</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="clientId">
+                                                    <span class="json-property-name">clientId:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Human readable unique identifier of the Client</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;iam-test-client&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="contacts">
+                                                    <span class="json-property-name">contacts:</span>
+                                                    
+                                                    <span class="json-property-type">string[]</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>List of emails</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json">[<br>    <span class="hljs-string">&quot;andrea.ceccanti@cnaf.infn.it&quot;</span><br>]
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                                        <section class="json-schema-array-items">
+                                                                            
+                                                                            <span class="json-property-type">string</span>
+                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                            
+                                                                            <div class="json-inner-schema">
+                                                                                
+                                                                            </div>
+                                                                        </section>                </div>
+                                                </dd>
+                                                <dt data-property-name="ref">
+                                                    <span class="json-property-name">ref:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>    <span class="json-property-format">(url)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>URL of the resource at the API client endpoint</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;https://iam-test.indigo-datacloud.eu/api/clients/2&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-IdTokenRef" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/IdTokenRef"></a>IdTokenRef:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="id">
+                                                    <span class="json-property-name">id:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Unique identifier of the IdToken</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">5</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="ref">
+                                                    <span class="json-property-name">ref:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>    <span class="json-property-format">(url)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>URL of the AccessToken</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;https://iam-test.indigo-datacloud.eu/access-tokens/5&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-RefreshToken" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/RefreshToken"></a>RefreshToken:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="id">
+                                                    <span class="json-property-name">id:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Unique identifier of the RefreshToken</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">1083</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="value">
+                                                    <span class="json-property-name">value:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Token value</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;eyJhbGciOiJub25lIn0.eyJqdGkiOiIxMTdmMWRkOS1iOWViLTQ5MjctYThkMS1hYzQ4NjIwYWQzOWYifQ.&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="expiration">
+                                                    <span class="json-property-name">expiration:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>    <span class="json-property-format">(date-time)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Expiration timestamp</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;2014-05-28T18:02:09-0400&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="client">
+                                                    <span class="json-property-name">client:</span>
+                                                    
+                                                    <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/ClientRef">ClientRef</a>
+                                                    </span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="user">
+                                                    <span class="json-property-name">user:</span>
+                                                    
+                                                    <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/UserRef">UserRef</a>
+                                                    </span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                    </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-RefreshTokenList" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/RefreshTokenList"></a>RefreshTokenList:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="totalResults">
+                                                    <span class="json-property-name">totalResults:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Number of total items that can be retrieved</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">100</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="itemsPerPage">
+                                                    <span class="json-property-name">itemsPerPage:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Number of items showed</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">20</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="startIndex">
+                                                    <span class="json-property-name">startIndex:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Offset of the first item showed.</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-number">1</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="resources">
+                                                    <span class="json-property-name">resources:</span>
+                                                    
+                                                    <span class="json-property-type">object[]</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    
+                                                    <div class="json-inner-schema">
+                                                        
+                                                                        <section class="json-schema-array-items">
+                                                                            
+                                                                            <span class="json-property-type">    <a class="json-schema-ref" href="#/definitions/RefreshToken">RefreshToken</a>
+                                                                            </span>
+                                                                            <span class="json-property-range" title="Value limits"></span>
+                                                                            
+                                                                            <div class="json-inner-schema">
+                                                                                
+                                                                            </div>
+                                                                        </section>                </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>        
+                <div id="definition-UserRef" class="panel panel-definition">
+                        <div class="panel-heading">
+                                <h3 class="panel-title"><a name="/definitions/UserRef"></a>UserRef:
+                                    <span class="json-property-type">
+                <span class="json-property-type">object</span>
+                <span class="json-property-range" title="Value limits"></span>
+                
+                </span>
+                                </h3>
+                        </div>
+                    <div class="panel-body">
+                            
+                                    <section class="json-schema-properties">
+                                        <dl>
+                                                <dt data-property-name="id">
+                                                    <span class="json-property-name">id:</span>
+                                                    
+                                                    <span class="json-property-type">integer</span>    <span class="json-property-format">(int64)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>Unique identifier of the User</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;e1eb758b-b73c-4761-bfff-adc793da409c&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="userName">
+                                                    <span class="json-property-name">userName:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>The unique user-name</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;andrea&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                                <dt data-property-name="ref">
+                                                    <span class="json-property-name">ref:</span>
+                                                    
+                                                    <span class="json-property-type">string</span>    <span class="json-property-format">(url)</span>
+                                                    <span class="json-property-range" title="Value limits"></span>
+                                                    
+                                                </dt>
+                                                <dd>
+                                                    <p>URL of the SCIM user resource</p>
+                                    
+                                                    <div class="json-inner-schema">
+                                                            <section class="json-schema-example">
+                                                                <pre><code class="lang-json"><span class="hljs-string">&quot;https://iam-test.indigo-datacloud.eu/scim/Users/e1eb758b-b73c-4761-bfff-adc793da409c&quot;</span>
+                                                        </code></pre>
+                                                        
+                                                            </section>
+                                                        
+                                                    </div>
+                                                </dd>
+                                        </dl>
+                                    </section>
+                    </div>
+                </div>
+</div>
+<script src="bundle.js" type="application/javascript"></script>
+</body>
+</html>
