@@ -90,8 +90,8 @@ function getOrganisationName() {
  return '${iamProperties.organisationName}'; 
 }
 
-function getGoogleEnabled() {
-  return ${loginPageConfiguration.googleEnabled};
+function getOidcEnabled() {
+  return ${loginPageConfiguration.oidcEnabled};
 }
 	
 function getSamlEnabled() {

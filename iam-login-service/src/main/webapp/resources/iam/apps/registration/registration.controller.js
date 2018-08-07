@@ -80,7 +80,7 @@ function RegistrationController($scope, $q, $window, $cookies,
             };
 
             if (info.type === 'OIDC') {
-                $scope.extAuthProviderName = 'Google';
+                $scope.extAuthProviderName = 'an OIDC identity provider';
             } else {
                 $scope.extAuthProviderName = 'a SAML identity provider';
             }

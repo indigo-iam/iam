@@ -27,7 +27,7 @@ function Utils() {
 			isUser: isUser,
 			getLoggedUser: getLoggedUser,
 			isRegistrationEnabled: isRegistrationEnabled,
-			isGoogleEnabled: isGoogleEnabled,
+			isOidcEnabled: isOidcEnabled,
 			isSamlEnabled: isSamlEnabled,
 			buildErrorOperationResult: buildErrorOperationResult,
 			buildSuccessOperationResult: buildSuccessOperationResult,
@@ -80,9 +80,9 @@ function Utils() {
 		return getRegistrationEnabled();
 	}
 	
-	function isGoogleEnabled() {
+	function isOidcEnabled() {
 
-		return getGoogleEnabled();
+		return getOidcEnabled();
 	}
 	
 	function isSamlEnabled() {

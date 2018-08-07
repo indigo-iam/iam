@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.web;
 import static it.infn.mw.iam.api.account_linking.AccountLinkingConstants.ACCOUNT_LINKING_DISABLE_PROPERTY;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.PostConstruct;
@@ -30,17 +31,18 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.config.oidc.GoogleClientProperties;
+import it.infn.mw.iam.api.config.OidcConfigurationService;
+import it.infn.mw.iam.config.oidc.OidcProvider;
 
 @Component
 public class DefaultLoginPageConfiguration implements LoginPageConfiguration, EnvironmentAware {
 
   public static final String DEFAULT_PRIVACY_POLICY_TEXT = "Privacy policy";
   public static final String DEFAULT_LOGIN_BUTTON_TEXT = "Sign in";
-  
+
   private Environment env;
 
-  private boolean googleEnabled;
+  private boolean oidcEnabled;
   private boolean githubEnabled;
   private boolean samlEnabled;
   private boolean registrationEnabled;
@@ -58,13 +60,13 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private String loginButtonText;
 
   @Autowired
-  GoogleClientProperties googleClientConfiguration;
+  private OidcConfigurationService oidcConfService;
 
-  
+
   @PostConstruct
   public void init() {
 
-    googleEnabled = activeProfilesContains("google");
+    oidcEnabled = !oidcConfService.getOidcProviders().isEmpty();
     githubEnabled = activeProfilesContains("github");
     samlEnabled = activeProfilesContains("saml");
     registrationEnabled = activeProfilesContains("registration");
@@ -76,9 +78,9 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   }
 
   @Override
-  public boolean isGoogleEnabled() {
+  public boolean isOidcEnabled() {
 
-    return googleEnabled;
+    return oidcEnabled;
   }
 
   @Override
@@ -134,6 +136,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       return DEFAULT_LOGIN_BUTTON_TEXT;
     }
     return loginButtonText;
+  }
+
+  @Override
+  public List<OidcProvider> getOidcProviders() {
+    return oidcConfService.getOidcProviders();
   }
 
 }

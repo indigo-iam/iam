@@ -37,7 +37,7 @@ import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 
-public class ExternalAuthenticationHandlerSupport implements AccountLinkingConstants{
+public class ExternalAuthenticationHandlerSupport implements AccountLinkingConstants {
 
   public static final String ACCCOUNT_LINKING_BASE_RESOURCE = "/iam/account-linking";
 
@@ -165,17 +165,11 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
 
     switch (type) {
       case OIDC:
-        redirectUrl = "/openid_connect_login";
+        redirectUrl = buildRedirectUrl("/openid_connect_login", "iss", externalIdpId);
         break;
 
       case SAML:
-        redirectUrl = "/saml/login";
-        if (!Strings.isNullOrEmpty(externalIdpId)) {
-          redirectUrl = UriComponentsBuilder.fromUriString("/saml/login")
-            .queryParam("idpId", externalIdpId)
-            .build()
-            .toString();
-        }
+        redirectUrl = buildRedirectUrl("/saml/login", "idpId", externalIdpId);
         break;
 
       default:
@@ -183,8 +177,6 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
     }
 
     return redirectUrl;
-
-
   }
 
   protected String getAccountLinkingForwardTarget(HttpServletRequest request) {
@@ -201,6 +193,12 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
       .setAuthentication(getAccountLinkingSavedAuthentication(session));
   }
 
-
-
+  private String buildRedirectUrl(String baseUrl, String param, String value) {
+    String retval = baseUrl;
+    if (!Strings.isNullOrEmpty(value)) {
+      retval =
+          UriComponentsBuilder.fromUriString(baseUrl).queryParam(param, value).build().toString();
+    }
+    return retval;
+  }
 }

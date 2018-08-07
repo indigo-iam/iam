@@ -28,7 +28,8 @@
     var service = {
       unlinkOidcAccount: unlinkOidcAccount,
       unlinkSamlAccount: unlinkSamlAccount,
-      unlinkX509Certificate: unlinkX509Certificate
+      unlinkX509Certificate: unlinkX509Certificate,
+      getOidcProviders: getOidcProviders,
     };
 
     return service;
@@ -47,6 +48,10 @@
       return $http.delete(
         X509_RESOURCE, {params: {certificateSubject: cert.subjectDn}});
     }
+    
+    function getOidcProviders(){
+		return $http.get('/iam/config/oidc/providers');
+	}
   }
 
 })();

@@ -32,6 +32,7 @@ public class IamViewInfoInterceptor extends HandlerInterceptorAdapter {
   public static final String LOGIN_PAGE_CONFIGURATION_KEY = "loginPageConfiguration";
   public static final String IAM_PROPERTIES_KEY = "iamProperties";
   public static final String IAM_SAML_PROPERTIES_KEY = "iamSamlProperties";
+  public static final String IAM_OIDC_PROPERTIES_KEY = "iamOidcProperties";
 
   @Value("${iam.version}")
   String iamVersion;
@@ -47,7 +48,7 @@ public class IamViewInfoInterceptor extends HandlerInterceptorAdapter {
 
   @Autowired
   IamSamlProperties samlProperties;
-  
+
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws Exception {

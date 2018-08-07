@@ -93,8 +93,6 @@
             </div>
         </c:if>
 
-       
-
         <div id="login-external-authn">     
             <c:if test="${IAM_X509_CAN_LOGIN}">
               <div id="x509-login" class="ext-authn-login-button">
@@ -103,11 +101,13 @@
               </div>
             </c:if>
             
-            <c:if test="${loginPageConfiguration.googleEnabled}">
-                <div id="google-login" class="ext-authn-login-button">
-                    <a class='btn btn-block btn-social btn-google' href="/openid_connect_login">
-                        <i class="fa fa-google"></i> Sign in with Google</a>
-                </div>
+            <c:if test="${loginPageConfiguration.oidcEnabled}">
+            	<c:forEach items="${loginPageConfiguration.getOidcProviders()}" var="provider">
+            		<div id="oidc-login-${provider.getName()}" class="ext-authn-login-button">
+                    	<a class='btn btn-block btn-social btn-${provider.getLoginButton().getStyle()}' href="/openid_connect_login?iss=${provider.getIssuer()}">
+                        <i class="fa fa-${provider.getLoginButton().getStyle()}"></i> ${provider.getLoginButton().getText()}</a>
+					</div>
+            	</c:forEach> 
             </c:if>
 
             <c:if test="${loginPageConfiguration.samlEnabled}">

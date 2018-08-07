@@ -60,7 +60,7 @@
             </section>
             <section id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
                 <user-groups user="$ctrl.user"></user-groups>
-                <user-oidc user="$ctrl.user" ng-if="$root.isGoogleEnabled"></user-oidc>
+                <user-oidc user="$ctrl.user" ng-if="$root.isOidcEnabled"></user-oidc>
                 <user-saml user="$ctrl.user" ng-if="$root.isSamlEnabled"></user-saml>
                 <user-x509 user="$ctrl.user"></user-x509>
             </section>

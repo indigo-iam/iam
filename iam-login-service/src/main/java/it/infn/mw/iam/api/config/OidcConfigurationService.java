@@ -13,31 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.web;
+package it.infn.mw.iam.api.config;
 
 import java.util.List;
-import java.util.Optional;
 
 import it.infn.mw.iam.config.oidc.OidcProvider;
 
-public interface LoginPageConfiguration {
+@FunctionalInterface
+public interface OidcConfigurationService {
 
-  boolean isOidcEnabled();
-
-  boolean isGithubEnabled();
-
-  boolean isSamlEnabled();
-
-  boolean isRegistrationEnabled();
-
-  boolean isAccountLinkingEnabled();
-
-  Optional<String> getPrivacyPolicyUrl();
-
-  String getPrivacyPolicyText();
-
-  String getLoginButtonText();
-
-  List<OidcProvider> getOidcProviders();
-
+  public List<OidcProvider> getOidcProviders();
 }

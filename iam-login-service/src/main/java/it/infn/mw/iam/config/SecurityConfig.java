@@ -196,7 +196,6 @@ public class SecurityConfig {
 
   @Configuration
   @Order(105)
-  @Profile("google")
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -233,18 +232,18 @@ public class SecurityConfig {
 
       // @formatter:off
       http
-	.antMatcher("/openid_connect_login**")
-	.exceptionHandling()
+        .antMatcher("/openid_connect_login**")
+          .exceptionHandling()
           .authenticationEntryPoint(authenticationEntryPoint())
-	  .accessDeniedHandler(new OidcAccessDeniedHandler())
-	.and()
+          .accessDeniedHandler(new OidcAccessDeniedHandler())
+        .and()
           .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class).authorizeRequests()
-	  .antMatchers("/openid_connect_login**")
-	    .permitAll()
-	.and()
-	  .sessionManagement()
-	    .enableSessionUrlRewriting(false)
-	    .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
+        .antMatchers("/openid_connect_login**")
+          .permitAll()
+        .and()
+          .sessionManagement()
+            .enableSessionUrlRewriting(false)
+            .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
     }
   }

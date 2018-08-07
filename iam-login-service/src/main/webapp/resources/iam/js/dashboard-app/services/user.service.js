@@ -73,7 +73,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
     function updateLoggedUserInfo() {
         $rootScope.loggedUser = Utils.getLoggedUser();
         $rootScope.isRegistrationEnabled = Utils.isRegistrationEnabled();
-        $rootScope.isGoogleEnabled = Utils.isGoogleEnabled();
+        $rootScope.isOidcEnabled = Utils.isOidcEnabled();
         $rootScope.isSamlEnabled = Utils.isSamlEnabled();
 
         var promises = [];

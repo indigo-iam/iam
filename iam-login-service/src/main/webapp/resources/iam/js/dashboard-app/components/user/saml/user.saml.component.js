@@ -82,6 +82,7 @@
     var self = this;
 
     self.enabled = true;
+    self.showLinkButton=true;
     self.action = action;
     self.actionUrl = '/iam/account-linking/SAML';
     self.type = 'SAML';

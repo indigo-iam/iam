@@ -78,14 +78,19 @@ x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
 
-google:
+oidc:
+  providers:
+  - name: google
     issuer: https://accounts.google.com
-
     client:
       clientId: ${IAM_GOOGLE_CLIENT_ID:define_me_please}
       clientSecret: ${IAM_GOOGLE_CLIENT_SECRET:define_me_please}
       redirectUris: ${IAM_GOOGLE_CLIENT_REDIRECT_URIS:${iam.baseUrl}/openid_connect_login}
       scope: openid,profile,email,address,phone
+    loginButton:
+      order: 0
+      text: Sign-in with Google
+      style: google
 
 github:
   client:

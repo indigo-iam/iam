@@ -63,7 +63,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void unlinkX509Certificate(Principal principal, @RequestParam String certificateSubject,
       RedirectAttributes attributes) {
-    
+
     checkAccountLinkingEnabled(attributes);
     linkingService.unlinkX509Certificate(principal, certificateSubject);
   }
@@ -76,12 +76,12 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
 
     clearAccountLinkingSessionAttributes(session);
     checkAccountLinkingEnabled(attributes);
-    
+
     try {
       IamX509AuthenticationCredential cred = getSavedX509AuthenticationCredential(session)
-          .orElseThrow(() -> new IllegalArgumentException(
-              format("No X.509 credential found in session for user '%s'", principal.getName())));
-      
+        .orElseThrow(() -> new IllegalArgumentException(
+            format("No X.509 credential found in session for user '%s'", principal.getName())));
+
       linkingService.linkX509Certificate(principal, cred);
       saveX509LinkingSuccess(cred, attributes);
 
@@ -161,7 +161,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void unlinkAccount(@PathVariable ExternalAuthenticationType type, Principal principal,
       @RequestParam("iss") String issuer, @RequestParam("sub") String subject,
-      @RequestParam(name = "attr", required = false) String attributeId, 
+      @RequestParam(name = "attr", required = false) String attributeId,
       final RedirectAttributes redirectAttributes) {
 
     checkAccountLinkingEnabled(redirectAttributes);

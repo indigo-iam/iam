@@ -17,7 +17,7 @@
 -->
 <div class="modal-header">
     <h3 class="modal-title" ng-show="$ctrl.action == 'link'">
-        Link a {{$ctrl.type}} account to your IAM account?
+        Link an {{$ctrl.type}} account to your IAM account?
     </h3>
     <h3 class="modal-title" ng-show="$ctrl.action == 'unlink'">
         Unlink {{$ctrl.type}} account from your IAM account?
@@ -26,11 +26,25 @@
 <div class="modal-body">
     <div ng-show="$ctrl.action == 'link'">
         <p class="text-justify text-wrapped">
-            Do you want to link a {{$ctrl.type}} account to your IAM account?
+            Do you want to link an {{$ctrl.type}} account to your IAM account?
         </p>
         <p class="text-justify text-wrapped">
             This will allow you to log into the IAM with your {{$ctrl.type}} account.
         </p>
+        
+        <div id="login-external-authn">
+        	<form class="hidden" id="oidc-link-account" action="{{$ctrl.actionUrl}}" method="post">
+				<input id="oidc-issuer" type="hidden" name="id" value="">
+			</form>
+        	<div ng-repeat="provider in $ctrl.providers">
+        		<div id="oidc-login-{{provider.name}}" class="ext-authn-login-button">
+        			<button class='btn btn-block btn-social btn-{{provider.loginButton.style}} social-authn' 
+        				type="submit" form="oidc-link-account" data-ng-click="$ctrl.linkOidcAccount(provider.name)">
+        				<i class="fa fa-{{provider.loginButton.style}}"></i> {{provider.loginButton.text}}
+        			</button>
+				</div>
+        	</div>
+        </div>
     </div>
     <div ng-show="$ctrl.action == 'unlink'">
         <p class="text-justify text-wrapped">
@@ -40,15 +54,14 @@
             <strong>{{$ctrl.account.iss}} {{$ctrl.account.sub}}</strong>
         </p>
         <p class="text-justify text-wrapped">
-                You will not <strong>NOT</strong> able to login into the IAM with such account if you proceed.
-            </p>
+        	You will not <strong>NOT</strong> able to login into the IAM with such account if you proceed.
         </p>
     </div>
 </div>
 <div class="modal-footer">
     
     <form id="link-account-form" action="{{$ctrl.actionUrl}}" method="post" ng-if="$ctrl.action == 'link'">
-        <button class="btn btn-primary" id="btn-link" data-dismiss="modal" type="button" data-ng-click="$ctrl.doLink()" ng-disabled="!$ctrl.enabled">Link</button>
+    	<button class="btn btn-primary" id="btn-link" data-dismiss="modal" type="button" data-ng-click="$ctrl.doLink()" ng-disabled="!$ctrl.enabled" ng-show="$ctrl.showLinkButton">Link</button>
         <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button" data-ng-click="$ctrl.cancel()">Cancel</button>
     </form>
 

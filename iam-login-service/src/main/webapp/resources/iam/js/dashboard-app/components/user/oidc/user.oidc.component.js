@@ -91,9 +91,14 @@
 
     self.action = action;
     self.actionUrl = '/iam/account-linking/OIDC';
-    self.type = 'google';
+    self.type = 'OpenID-Connect';
     self.account = account;
     self.enabled = true;
+    self.showLinkButton=false;
+    self.providers;
+    
+    self.loadOidcProviders = loadOidcProviders;
+    self.linkOidcAccount = linkOidcAccount;
 
     self.doLink = function () {
       self.enabled = false;
@@ -103,15 +108,40 @@
     self.doUnlink = function () {
       self.enabled = false;
       AccountLinkingService.unlinkOidcAccount(self.account).then(function (response) {
-        $uibModalInstance.close("Google account unlinked");
+        $uibModalInstance.close("OIDC account unlinked");
       }).catch(function (error) {
         console.error(error);
       });
     };
-
+    
     self.cancel = function () {
       $uibModalInstance.dismiss('Dismissed');
     };
+    
+    self.loadOidcProviders();
+    
+    function loadOidcProviders (){
+    	AccountLinkingService.getOidcProviders().then(
+    	  function(result){
+    		self.providers = result.data;
+    	  },
+    	  function(error) {
+			console.log(error);
+		  });
+    }
+    
+    function linkOidcAccount(issuerName){
+    	var provider = findOidcProvider(issuerName);
+    	var input = angular.element( document.querySelector( '#oidc-issuer' ) );
+    	input.val(provider.issuer);
+    	document.getElementById("oidc-link-account").submit();
+    }
+    
+    function findOidcProvider(name){
+    	return self.providers.find(item => {
+    		return item.name == name;
+    	})
+    }
   }
 
   function UserOidcController($uibModal, toaster, ModalService, scimFactory) {

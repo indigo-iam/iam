@@ -15,29 +15,45 @@
  */
 package it.infn.mw.iam.config.oidc;
 
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.RegisteredClient;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "google")
-public class GoogleClientProperties extends RegisteredClient {
+public class OidcClient {
 
-  String issuer;
+  private String clientId;
+  private String clientSecret;
+  private String redirectUris;
+  private String scope;
 
-  public GoogleClientProperties() {
-    setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+  public String getClientId() {
+    return clientId;
   }
 
-  public String getIssuer() {
-
-    return issuer;
+  public void setClientId(String clientId) {
+    this.clientId = clientId;
   }
 
-  public void setIssuer(String issuer) {
-
-    this.issuer = issuer;
+  public String getClientSecret() {
+    return clientSecret;
   }
 
+  public void setClientSecret(String clientSecret) {
+    this.clientSecret = clientSecret;
+  }
+
+  public String getRedirectUris() {
+    return redirectUris;
+  }
+
+  public void setRedirectUris(String redirectUris) {
+    this.redirectUris = redirectUris;
+  }
+
+  public String getScope() {
+    return scope;
+  }
+
+  public void setScope(String scope) {
+    this.scope = scope;
+  }
 }
