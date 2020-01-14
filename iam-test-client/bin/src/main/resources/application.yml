@@ -1,0 +1,25 @@
+spring:
+  mvc:
+    view:
+      suffix: .html
+
+server:
+  context-path: /iam-test-client
+  port: ${IAM_CLIENT_PORT:9090}
+  use-forward-headers: ${IAM_CLIENT_USE_FORWARD_HEADERS:false}
+
+iam:
+    issuer: ${IAM_CLIENT_ISSUER:http://localhost:8080/}
+    organizationName: ${IAM_CLIENT_ORGANIZATION_NAME:indigo-dc}
+    extAuthnHint: ${IAM_CLIENT_EXT_AUTHN_HINT:}
+    
+    tls:
+      version: ${IAM_CLIENT_TLS_VERSION:TLSv1.2}
+      ignore-namespace-checks: ${IAM_CLIENT_TLS_IGNORE_NAMESPACE_CHECKS:false} 
+      use-grid-trust-anchors: ${IAM_CLIENT_TLS_USE_GRID_TRUST_ANCHORS:true}
+      
+    client:
+      clientId: ${IAM_CLIENT_ID:client}
+      clientSecret: ${IAM_CLIENT_SECRET:secret}
+      redirectUris: ${IAM_CLIENT_REDIRECT_URIS:http://localhost:9090/iam-test-client/openid_connect_login}
+      scope: ${IAM_CLIENT_SCOPES:openid,profile,email,address,phone,offline_access}

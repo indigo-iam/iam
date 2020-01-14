@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Demo</title>
+  <meta name="description" content="" />
+  <meta name="viewport" content="width=device-width" />
+  <base href="/iam-test-client" th:href="@{/}" />
+  <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"
+    th:href="@{webjars/bootstrap/css/bootstrap.min.css}" />
+  <script type="text/javascript" th:src="@{webjars/jquery/jquery.min.js}"></script>
+  <script type="text/javascript" th:src="@{webjars/bootstrap/js/bootstrap.min.js}"></script>
+  <style>
+    [ng\:cloak],
+    [ng-cloak],
+    [data-ng-cloak],
+    [x-ng-cloak],
+    .ng-cloak,
+    .x-ng-cloak {
+      display: none !important;
+
+    }
+  </style>
+</head>
+
+<body ng-app="app" ng-controller="home as home" ng-cloak="">
+  <div class="container">
+    <h1>INDIGO IAM Test Client Application</h1>
+    <div class="alert alert-danger" th:if="${error != null}">
+      <div th:text="${error}"></div>
+    </div>
+  </div>
+
+
+
+  <div class="container" ng-show="!home.authenticated">
+    <p>This is an example OpenID Connect client application for IAM hosted at:
+      <pre th:text="${iamIssuer}"></pre>
+    </p>
+    <p>
+      The authorization request will include the following scopes:
+      <pre th:text="${scopes}"></pre>
+    </p>
+    <div>
+      <a href="/openid_connect_login" class="btn btn-primary" th:href="@{/openid_connect_login}">Login</a>
+    </div>
+  </div>
+
+  <div class="container" ng-show="home.authenticated">
+    <p>You're now logged in as: {{home.user}}</p>
+    <p>The authorization request included the following scopes:
+      <pre th:text="${scopes}"></pre>
+    </p>
+    <p>This application has received the following information:</p>
+    <ul>
+      <li>access_token (JWT):
+        <pre>{{home.access_token_jwt}}</pre>
+      </li>
+
+      <li>access_token (decoded):
+        <pre>{{home.access_token | prettyJSON }}</pre>
+      </li>
+      <li ng-show="home.has_introspect_result">OAuth2 token introspection endpoint response (invoked on access_token,
+        authorized by client credentials):
+        <pre>{{home.introspect_result | prettyJSON}}</pre>
+      </li>
+      <li>id_token (JWT):
+        <pre>{{home.id_token_jwt}}</pre>
+      </li>
+      <li>id_token (decoded):
+        <pre>{{home.id_token | prettyJSON }}</pre>
+      </li>
+      <li>OpenID-Connect user info endpoint response (authorized via access_token):
+        <pre>{{home.user_info | prettyJSON }}</pre>
+      </li>
+      <li ng-show="home.has_refresh_token">refresh_token:
+        <pre>{{home.refresh_token}}</pre>
+      </li>
+    </ul>
+
+    <div>
+      <button ng-click="home.logout()" class="btn btn-primary">Logout</button>
+    </div>
+  </div>
+  <script type="text/javascript" src="/webjars/angularjs/angular.min.js" th:src="@{webjars/angularjs/angular.min.js}">
+  </script>
+  <script type="text/javascript" src="https://cdn.rawgit.com/auth0/angular-jwt/master/dist/angular-jwt.js"></script>
+
+  <script type="text/javascript">
+    angular
+      .module("app", ['angular-jwt'])
+
+      .config(
+        function ($httpProvider) {
+          $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        }).filter('prettyJSON', function () {
+        function prettyPrintJson(json) {
+          return JSON ? JSON.stringify(json, null, '  ') : 'your browser doesnt support JSON so cant pretty print';
+        }
+        return prettyPrintJson;
+      })
+      .controller("home", function ($http, $location, jwtHelper) {
+        var self = this;
+        $http.get("/iam-test-client/user").success(function (data) {
+
+          if (!$.trim(data)) {
+            self.authenticated = false;
+            return;
+          }
+
+          self.authenticated = true;
+
+          self.user = data.name;
+          self.sub = data.sub;
+          self.issuer = data.issuer;
+          self.access_token_jwt = data.accessToken;
+          self.access_token = jwtHelper.decodeToken(data.accessToken);
+          self.id_token_jwt = data.idToken;
+          self.id_token = jwtHelper.decodeToken(data.idToken);
+          self.user_info = $.parseJSON(data.userInfo);
+
+          if (data.refreshToken) {
+            self.has_refresh_token = true;
+            self.refresh_token = data.refreshToken;
+          }
+
+          $http.get("/iam-test-client/introspect").success(function (idata) {
+
+            self.introspect_result = idata;
+            self.has_introspect_result = true;
+
+          }).error(function () {
+            self.has_introspect_result = false;
+          });
+        }).error(function () {
+          self.user = "N/A";
+          self.authenticated = false;
+        });
+        self.logout = function () {
+          $http.post('logout', {}).success(function () {
+            self.authenticated = false;
+            $location.path("/");
+          }).error(function (data) {
+            console.log("Logout failed")
+            self.authenticated = false;
+          });
+        };
+      });
+  </script>
+</body>
+
+</html>

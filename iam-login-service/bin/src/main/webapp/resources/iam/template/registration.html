@@ -1,0 +1,119 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form class="form-horizontal" ng-submit="submit()" name="registrationForm" id="registrationForm">
+
+    <div class="modal-header">
+        <h3 class="modal-title">User registration form</h3>
+    </div>
+
+    <div class="modal-body">
+        <div ng-show="operationResult != null">
+            <div class="alert" ng-class="{'alert-success': operationResult=='ok', 'alert-danger': operationResult=='err'}">
+                <button class="close" ng-click="operationResult=null" aria-label="close">&times;</button>
+                {{textAlert}}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="name">Name</label>
+            <div ng-class="{'has-error': registrationForm.name.$dirty && registrationForm.name.$invalid, 'has-success': registrationForm.name.$dirty && registrationForm.name.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" name="name" id="name" type="text" ng-model="request.givenname" placeholder="First name" required ng-minlength="3"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': registrationForm.name.$dirty && registrationForm.name.$invalid, 'glyphicon-ok': registrationForm.name.$dirty && registrationForm.name.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="registrationForm.name.$dirty && registrationForm.name.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="registrationForm.name.$dirty && registrationForm.name.$error.minlength">Minimum length required is 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="surname">Surname</label>
+            <div ng-class="{'has-error': registrationForm.surname.$dirty && registrationForm.surname.$invalid, 'has-success': registrationForm.surname.$dirty && registrationForm.surname.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" name="surname" id="surname" type="text" ng-model="request.familyname" placeholder="Family name" required ng-minlength="3"/>
+                    <span
+                        class="glyphicon form-control-feedback"
+                        ng-class="{'glyphicon-remove': registrationForm.surname.$dirty && registrationForm.surname.$invalid, 'glyphicon-ok': registrationForm.surname.$dirty && registrationForm.surname.$valid}"
+                        style="right: 15px"></span>
+                    <span class="help-block" ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.minlength">Minimum length required is 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="email">Email</label>
+            <div ng-class="{'has-error': registrationForm.email.$dirty && registrationForm.email.$invalid, 'has-success': registrationForm.email.$dirty && registrationForm.email.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" 
+                      name="email" id="email" type="email" 
+                      ng-model="request.email" 
+                      placeholder="Email" 
+                      required 
+                      ng-minlength="3"
+                      iam-email-available-validator 
+                      ng-model-options="{ debounce : { 'default' : 500 } }"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': registrationForm.email.$dirty && registrationForm.email.$invalid, 'glyphicon-ok': registrationForm.email.$dirty && registrationForm.email.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="registrationForm.email.$dirty && registrationForm.email.$error.required">This is a required field</span>
+                    <span class="help-block" ng-show="registrationForm.email.$dirty && registrationForm.email.$error.email">This is not a valid email</span>
+                    <span class="help-block" ng-show="registrationForm.email.$dirty && registrationForm.email.$error.emailAvailable">Email already taken by another user</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="username">Username</label>
+            <div ng-class="{'has-error': registrationForm.username.$dirty && registrationForm.username.$invalid, 'has-success': registrationForm.username.$dirty && registrationForm.username.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" id="username" name="username" type="text" ng-model="request.username" placeholder="Username" required 
+                    ng-minlength="3" 
+                    iam-username-available-validator ng-model-options="{ debounce : { 'default' : 500 } }"/>
+                    <span
+                        class="glyphicon form-control-feedback"
+                        ng-class="{'glyphicon-remove': registrationForm.username.$dirty && registrationForm.username.$invalid, 'glyphicon-ok': registrationForm.username.$dirty && registrationForm.username.$valid}"
+                        style="right: 15px"></span>
+                    <span class="help-block" ng-show="registrationForm.username.$dirty && registrationForm.username.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="registrationForm.username.$dirty && registrationForm.username.$error.minlength">Minimum username length is 3 characters</span>
+                    <span class="help-block" ng-show="registrationForm.username.$dirty && registrationForm.username.$error.usernameAvailable">Username already taken by another user</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="notes">Notes</label>
+            <div>
+                <div class="col-sm-10">
+                    <textarea class="form-control" id="notes" name="notes" rows="5" placeholder="Notes for admins (not mandatory)" ng-model=request.notes></textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn btn-primary" type="submit" name="register" ng-disabled="!registrationForm.$valid || registrationForm.$pristine || submitButtonDisabled">Register</button>
+
+        <button class="btn btn-warning" type="button" name="reset" ng-click="reset()" ng-disabled="registrationForm.$pristine">Reset Form</button>
+
+        <button class="btn btn-danger" type="button" name="dismiss" ng-click="dismiss()">Cancel</button>
+    </div>
+
+</form>

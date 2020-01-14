@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<EntitiesDescriptor 
+  xmlns="urn:oasis:names:tc:SAML:2.0:metadata" 
+  xmlns:mdrpi="urn:oasis:names:tc:SAML:metadata:rpi" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:mdattr="urn:oasis:names:tc:SAML:metadata:attribute"
+  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+  ID="TEST-14092017" Name="urn:mace:garr.it:edugain-idem">
+
+<!-- INFN IDP -->
+<EntityDescriptor  
+xmlns="urn:oasis:names:tc:SAML:2.0:metadata" 
+xmlns:ds="http://www.w3.org/2000/09/xmldsig#" 
+xmlns:shibmd="urn:mace:shibboleth:metadata:1.0" 
+xmlns:xml="http://www.w3.org/XML/1998/namespace" 
+xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui" 
+entityID="urn:example:idp1">
+<Extensions>
+<mdattr:EntityAttributes>
+<saml:Attribute Name="http://macedir.org/entity-category-support" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml:AttributeValue>http://refeds.org/category/research-and-scholarship</saml:AttributeValue>
+<saml:AttributeValue>http://www.geant.net/uri/dataprotection-code-of-conduct/v1</saml:AttributeValue>
+</saml:Attribute>
+<saml:Attribute Name="urn:oasis:names:tc:SAML:attribute:assurance-certification" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml:AttributeValue>https://refeds.org/sirtfi</saml:AttributeValue>
+</saml:Attribute>
+</mdattr:EntityAttributes>
+</Extensions>
+<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+<Extensions>
+<shibmd:Scope regexp="false">infn.it</shibmd:Scope>
+<mdui:UIInfo>
+<mdui:DisplayName xml:lang="it">INFN - Istituto Nazionale di Fisica Nucleare</mdui:DisplayName>
+<mdui:DisplayName xml:lang="en">INFN - National Institute for Nuclear Physics</mdui:DisplayName>
+<mdui:Description xml:lang="it">Identity Provider per gli utenti dell'INFN</mdui:Description>
+<mdui:Description xml:lang="en">Identity Provider for INFN users</mdui:Description>
+<mdui:InformationURL xml:lang="it">https://web.infn.it/CCR/index.php/i-progetti/aai/federazione-idem</mdui:InformationURL>
+<mdui:Logo height="13" width="16" xml:lang="it">https://idp.infn.it/utils/NewINFNlogo-16x16.png</mdui:Logo>
+<mdui:Logo height="13" width="16" xml:lang="en">https://idp.infn.it/utils/NewINFNlogo-16x16.png</mdui:Logo>
+<mdui:Logo height="64" width="80" xml:lang="it">https://idp.infn.it/utils/NewINFNlogo-80x80.png</mdui:Logo>
+<mdui:Logo height="64" width="80" xml:lang="en">https://idp.infn.it/utils/NewINFNlogo-80x80.png</mdui:Logo>
+</mdui:UIInfo>
+<mdui:DiscoHints>
+<mdui:DomainHint>infn.it</mdui:DomainHint>
+</mdui:DiscoHints>
+</Extensions>
+<KeyDescriptor use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDtTCCAp2gAwIBAgIJAOU29OWoolW3MA0GCSqGSIb3DQEBBQUAMEUxFDASBgNV
+BAMTC2lkcC5pbmZuLml0MREwDwYDVQQLEwhJTkZOLUFBSTENMAsGA1UEChMESU5G
+TjELMAkGA1UEBhMCSVQwHhcNMTQwNDE0MTQ1NzI2WhcNNDEwODI5MTQ1NzI2WjBF
+MRQwEgYDVQQDEwtpZHAuaW5mbi5pdDERMA8GA1UECxMISU5GTi1BQUkxDTALBgNV
+BAoTBElORk4xCzAJBgNVBAYTAklUMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAxTXQ7OFlyqDxcDkdUgPXtKrHw2vUkKuGkEMpQrrK/PU/emzT13Jualti
+38jV4NTSBSIXc7P3PTTUsfnk3o+IAej1JKNlQ2klqFDvPiwl9sKFh4Pd66K0g6eb
+GunsRZtR5LJLMJrrqOhRiLZdAcJzB4RxZsqSYxz0EDw6S5r6w6Sgm4xiupviC9gI
+NAzpTkjFR78dbJ7fDzvvVUXxPz1T4awL01RCt0s/05fHeWM1I4cPjoVSB0t6wzv0
+CfaWWlid3I6yyFWiFYeVGvn7eeqhvRckthumYOayL18Ri+S2vxYkDqDcY6b6y2OW
+YhFZ1VTosUoUBPhwXyCYYJ2wAmi2VwIDAQABo4GnMIGkMB0GA1UdDgQWBBROEkiq
+rjIVFsHZKsnYbh+xPNmilDB1BgNVHSMEbjBsgBROEkiqrjIVFsHZKsnYbh+xPNmi
+lKFJpEcwRTEUMBIGA1UEAxMLaWRwLmluZm4uaXQxETAPBgNVBAsTCElORk4tQUFJ
+MQ0wCwYDVQQKEwRJTkZOMQswCQYDVQQGEwJJVIIJAOU29OWoolW3MAwGA1UdEwQF
+MAMBAf8wDQYJKoZIhvcNAQEFBQADggEBALVVWVWP9nrWlmU37KbTE3kuqJWptGma
+DS2uuOg5RN5lGevQvVu4cac23qaZZ+TN+b6WDXuhEfmVJzBYczxByVeGEvew0fHg
+RRMZLqST6j2gyb89qzNNFyTcyRZ/5Z7jXWjrnDp3pOLNvrr9BhVojoC2F7EYjSdd
+dwq2pb++9FiHglwSTl5WV+V4ZuNUMemY8jzhqayOK6UuwdL61UE4dPGKnlCgMaiY
+VST86HkiqFh9oOJ8D6jtlk695pRaz1h3ajxwB9zOa2VAWEsi40P2tZIzY3ek25wT
+M2vuvHO4YsOmkAOxj2Wk/itj5MnK1tT0u840b61Q/j4SJGuKLe4Tzzg=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<KeyDescriptor use="encryption">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDtTCCAp2gAwIBAgIJAOU29OWoolW3MA0GCSqGSIb3DQEBBQUAMEUxFDASBgNV
+BAMTC2lkcC5pbmZuLml0MREwDwYDVQQLEwhJTkZOLUFBSTENMAsGA1UEChMESU5G
+TjELMAkGA1UEBhMCSVQwHhcNMTQwNDE0MTQ1NzI2WhcNNDEwODI5MTQ1NzI2WjBF
+MRQwEgYDVQQDEwtpZHAuaW5mbi5pdDERMA8GA1UECxMISU5GTi1BQUkxDTALBgNV
+BAoTBElORk4xCzAJBgNVBAYTAklUMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAxTXQ7OFlyqDxcDkdUgPXtKrHw2vUkKuGkEMpQrrK/PU/emzT13Jualti
+38jV4NTSBSIXc7P3PTTUsfnk3o+IAej1JKNlQ2klqFDvPiwl9sKFh4Pd66K0g6eb
+GunsRZtR5LJLMJrrqOhRiLZdAcJzB4RxZsqSYxz0EDw6S5r6w6Sgm4xiupviC9gI
+NAzpTkjFR78dbJ7fDzvvVUXxPz1T4awL01RCt0s/05fHeWM1I4cPjoVSB0t6wzv0
+CfaWWlid3I6yyFWiFYeVGvn7eeqhvRckthumYOayL18Ri+S2vxYkDqDcY6b6y2OW
+YhFZ1VTosUoUBPhwXyCYYJ2wAmi2VwIDAQABo4GnMIGkMB0GA1UdDgQWBBROEkiq
+rjIVFsHZKsnYbh+xPNmilDB1BgNVHSMEbjBsgBROEkiqrjIVFsHZKsnYbh+xPNmi
+lKFJpEcwRTEUMBIGA1UEAxMLaWRwLmluZm4uaXQxETAPBgNVBAsTCElORk4tQUFJ
+MQ0wCwYDVQQKEwRJTkZOMQswCQYDVQQGEwJJVIIJAOU29OWoolW3MAwGA1UdEwQF
+MAMBAf8wDQYJKoZIhvcNAQEFBQADggEBALVVWVWP9nrWlmU37KbTE3kuqJWptGma
+DS2uuOg5RN5lGevQvVu4cac23qaZZ+TN+b6WDXuhEfmVJzBYczxByVeGEvew0fHg
+RRMZLqST6j2gyb89qzNNFyTcyRZ/5Z7jXWjrnDp3pOLNvrr9BhVojoC2F7EYjSdd
+dwq2pb++9FiHglwSTl5WV+V4ZuNUMemY8jzhqayOK6UuwdL61UE4dPGKnlCgMaiY
+VST86HkiqFh9oOJ8D6jtlk695pRaz1h3ajxwB9zOa2VAWEsi40P2tZIzY3ek25wT
+M2vuvHO4YsOmkAOxj2Wk/itj5MnK1tT0u840b61Q/j4SJGuKLe4Tzzg=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://idp.infn.it/saml2/idp/ArtifactResolutionService.php" index="0"/>
+<SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp.infn.it/saml2/idp/SingleLogoutService.php"/>
+<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp.infn.it/saml2/idp/SSOService.php"/>
+</IDPSSODescriptor>
+<Organization>
+<OrganizationName xml:lang="it">INFN - Istituto Nazionale di Fisica Nucleare</OrganizationName>
+<OrganizationName xml:lang="en">INFN - National Institute for Nuclear Physics</OrganizationName>
+<OrganizationDisplayName xml:lang="it">INFN - Istituto Nazionale di Fisica Nucleare</OrganizationDisplayName>
+<OrganizationDisplayName xml:lang="en">INFN - National Institute for Nuclear Physics</OrganizationDisplayName>
+<OrganizationURL xml:lang="it">http://www.infn.it/index.php?lang=it</OrganizationURL>
+<OrganizationURL xml:lang="en">http://www.infn.it/index.php?lang=en</OrganizationURL>
+</Organization>
+<ContactPerson xmlns:remd="http://refeds.org/metadata" contactType="other" remd:contactType="http://refeds.org/metadata/contactType/security">
+<GivenName>GARR-CERT</GivenName>
+<EmailAddress>mailto:cert@garr.it</EmailAddress>
+</ContactPerson>
+<ContactPerson contactType="technical">
+<GivenName>Enrico Maria Vincenzo</GivenName>
+<SurName>Fasanelli</SurName>
+<EmailAddress>mailto:Enrico.M.V.Fasanelli@le.infn.it</EmailAddress>
+</ContactPerson>
+<ContactPerson contactType="technical">
+<GivenName>Dael</GivenName>
+<SurName>Maselli</SurName>
+<EmailAddress>mailto:Dael.Maselli@lnf.infn.it</EmailAddress>
+</ContactPerson>
+<ContactPerson contactType="administrative">
+<GivenName>Claudio</GivenName>
+<SurName>Grandi</SurName>
+<EmailAddress>mailto:Claudio.Grandi@bo.infn.it</EmailAddress>
+</ContactPerson>
+<ContactPerson contactType="support">
+<GivenName>INFN-AAI Support</GivenName>
+<EmailAddress>mailto:aai-support@lists.infn.it</EmailAddress>
+</ContactPerson>
+</EntityDescriptor>
+
+<!-- TEST IDP -->
+<EntityDescriptor  
+xmlns="urn:oasis:names:tc:SAML:2.0:metadata" 
+xmlns:ds="http://www.w3.org/2000/09/xmldsig#" 
+xmlns:shibmd="urn:mace:shibboleth:metadata:1.0" 
+xmlns:xml="http://www.w3.org/XML/1998/namespace" 
+xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui" 
+entityID="https://idptestbed/idp/shibboleth">
+
+<IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol urn:oasis:names:tc:SAML:1.1:protocol urn:mace:shibboleth:1.0">
+
+<Extensions>
+<shibmd:Scope regexp="false">example.org</shibmd:Scope>
+</Extensions>
+
+<KeyDescriptor use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDEzCCAfugAwIBAgIUS9SuTXwsFVVG+LjOEAbLqqT/el0wDQYJKoZIhvcNAQEL
+BQAwFTETMBEGA1UEAwwKaWRwdGVzdGJlZDAeFw0xNTEyMTEwMjIwMjZaFw0zNTEy
+MTEwMjIwMjZaMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCMAoDHx8xCIfv/6QKqt9mcHYmEJ8y2dKprUbpdcOjH
+YvNPIl/lHPsUyrb+Nc+q2CDeiWjVk1mWYq0UpIwpBMuw1H6+oOqr4VQRi65pin0M
+SfE0MWIaFo5FPvpvoptkHD4gvREbm4swyXGMczcMRfqgalFXhUD2wz8W3XAM5Cq2
+03XeJbj6TwjvKatG5XPdeUe2FBGuOO2q54L1hcIGnLMCQrg7D31lR13PJbjnJ0No
+5C3k8TPuny6vJsBC03GNLNKfmrKVTdzr3VKp1uay1G3DL9314fgmbl8HA5iRQmy+
+XInUU6/8NXZSF59p3ITAOvZQeZsbJjg5gGDip5OZo9YlAgMBAAGjWzBZMB0GA1Ud
+DgQWBBRPlM4VkKZ0U4ec9GrIhFQl0hNbLDA4BgNVHREEMTAvggppZHB0ZXN0YmVk
+hiFodHRwczovL2lkcHRlc3RiZWQvaWRwL3NoaWJib2xldGgwDQYJKoZIhvcNAQEL
+BQADggEBAIZ0a1ov3my3ljJG588I/PHx+TxAWONWmpKbO9c/qI3Drxk4oRIffiac
+ANxdvtabgIzrlk5gMMisD7oyqHJiWgKv5Bgctd8w3IS3lLl7wHX65mTKQRXniG98
+NIjkvfrhe2eeJxecOqnDI8GOhIGCIqZUn8ShdM/yHjhQ2Mh0Hj3U0LlKvnmfGSQl
+j0viGwbFCaNaIP3zc5UmCrdE5h8sWL3Fu7ILKM9RyFa2ILHrJScV9t623IcHffHP
+IeaY/WtuapsrqRFxuQL9QFWN0FsRIdLmjTq+00+B/XnnKRKFBuWfjhHLF/uu8f+E
+t6Lf23Kb8yD6ZR7dihMZAGHnYQ/hlhM=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<KeyDescriptor use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDFDCCAfygAwIBAgIVAN3vv+b7KN5Se9m1RZsCllp/B/hdMA0GCSqGSIb3DQEB
+CwUAMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwHhcNMTUxMjExMDIyMDE0WhcNMzUx
+MjExMDIyMDE0WjAVMRMwEQYDVQQDDAppZHB0ZXN0YmVkMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAh91caeY0Q85uhaUyqFwP2bMjwMFxMzRlAoqBHd7g
+u6eo4duaeLz1BaoR2XTBpNNvFR5oHH+TkKahVDGeH5+kcnIpxI8JPdsZml1srvf2
+Z6dzJsulJZUdpqnngycTkGtZgEoC1vmYVky2BSAIIifmdh6s0epbHnMGLsHzMKfJ
+Cb/Q6dYzRWTCPtzE2VMuQqqWgeyMr7u14x/Vqr9RPEFsgY8GIu5jzB6AyUIwrLg+
+MNkv6aIdcHwxYTGL7ijfy6rSWrgBflQoYRYNEnseK0ZHgJahz4ovCag6wZAoPpBs
+uYlY7lEr89Ucb6NHx3uqGMsXlDFdE4QwfDLLhCYHPvJ0uwIDAQABo1swWTAdBgNV
+HQ4EFgQUAkOgED3iYdmvQEOMm6u/JmD/UTQwOAYDVR0RBDEwL4IKaWRwdGVzdGJl
+ZIYhaHR0cHM6Ly9pZHB0ZXN0YmVkL2lkcC9zaGliYm9sZXRoMA0GCSqGSIb3DQEB
+CwUAA4IBAQBIdd4YWlnvJjql8+zKKgmWgIY7U8DA8e6QcbAf8f8cdE33RSnjI63X
+sv/y9GfmbAVAD6RIAXPFFeRYJ08GOxGI9axfNaKdlsklJ9bk4ducHqgCSWYVer3s
+RQBjxyOfSTvk9YCJvdJVQRJLcCvxwKakFCsOSnV3t9OvN86Ak+fKPVB5j2fM/0fZ
+Kqjn3iqgdNPTLXPsuJLJO5lITRiBa4onmVelAiCstI9PQiaEck+oAHnMTnC9JE/B
+DHv3e4rwq3LznlqPw0GSd7xqNTdMDwNOWjkuOr3sGpWS8ms/ZHHXV1Vd22uPe70i
+s00xrv14zLifcc8oj5DYzOhYRifRXgHX
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<KeyDescriptor use="encryption">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDEzCCAfugAwIBAgIUG6Nn1rlERS1vsi88tcdzSYX0oqAwDQYJKoZIhvcNAQEL
+BQAwFTETMBEGA1UEAwwKaWRwdGVzdGJlZDAeFw0xNTEyMTEwMjIwMTRaFw0zNTEy
+MTEwMjIwMTRaMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCBXv0o3fmT8iluyLjJ4lBAVCW+ZRVyEXPYQuRi7vfD
+cO4a6d1kxiJLsaK0W88VNxjFQRr8PgDkWr28vwoH1rgk4pLsszLD48DBzD942peJ
+l/S6FnsIJjmaHcBh4pbNhU4yowu63iKkvttrcZAEbpEro6Z8CziWEx8sywoaYEQG
+ifPkr9ORV6Cn3txq+9gMBePG41GrtZrUGIu+xrndL0Shh4Pq0eq/9MAsVlIIXEa8
+9WfH8J2kFcTOfoWtIc70b7TLZQsx4YnNcnrGLSUEcstFyPLX+Xtv5SNZF89OOIxX
+VNjNvgE5DbJb9hMM4UAFqI+1bo9QqtxwThjc/sOvIxzNAgMBAAGjWzBZMB0GA1Ud
+DgQWBBStTyogRPuAVG6q7yPyav1uvE+7pTA4BgNVHREEMTAvggppZHB0ZXN0YmVk
+hiFodHRwczovL2lkcHRlc3RiZWQvaWRwL3NoaWJib2xldGgwDQYJKoZIhvcNAQEL
+BQADggEBAFMfoOv+oISGjvamq7+Y4G7ep5vxlAPeK3RATYPYvAmyH946qZXh98ni
+QXyuqZW5P5eEt86toY45IwDU5r09SKwHughEe99iiEkxh0mb2qo84qX9/qcg+kyN
+jeLd/OSyolpUCEFNwOFcog7pj7Eer+6AHbwTn1Mjb5TBsKwtDMJsaxPvdj0u7M5r
+xL/wHkFhn1rCo2QiojzjSlV3yLTh49iTyhE3cG+RxaNKDCxhp0jSSLX1BW/ZoPA8
++PMJEA+Q0QbyRD8aJOHN5O8jGxCa/ZzcOnYVL6AsEXoDiY3vAUYh1FUonOWw0m9H
+p+tGUbGS2l873J5PrsbpeKEVR/IIoKo=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+
+<ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+Location="https://idptestbed:8443/idp/profile/SAML1/SOAP/ArtifactResolution" index="1"/>
+
+<ArtifactResolutionService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+Location="https://idptestbed:8443/idp/profile/SAML2/SOAP/ArtifactResolution" index="2"/>
+
+<NameIDFormat>urn:mace:shibboleth:1.0:nameIdentifier</NameIDFormat>
+<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+
+<SingleSignOnService Binding="urn:mace:shibboleth:1.0:profiles:AuthnRequest"
+Location="https://idptestbed/idp/profile/Shibboleth/SSO"/>
+<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+Location="https://idptestbed/idp/profile/SAML2/POST/SSO"/>
+<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign"
+Location="https://idptestbed/idp/profile/SAML2/POST-SimpleSign/SSO"/>
+<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+Location="https://idptestbed/idp/profile/SAML2/Redirect/SSO"/>
+</IDPSSODescriptor>
+<AttributeAuthorityDescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:1.1:protocol urn:oasis:names:tc:SAML:2.0:protocol">
+
+<Extensions>
+<shibmd:Scope regexp="false">example.org</shibmd:Scope>
+</Extensions>
+
+<KeyDescriptor use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDEzCCAfugAwIBAgIUS9SuTXwsFVVG+LjOEAbLqqT/el0wDQYJKoZIhvcNAQEL
+BQAwFTETMBEGA1UEAwwKaWRwdGVzdGJlZDAeFw0xNTEyMTEwMjIwMjZaFw0zNTEy
+MTEwMjIwMjZaMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCMAoDHx8xCIfv/6QKqt9mcHYmEJ8y2dKprUbpdcOjH
+YvNPIl/lHPsUyrb+Nc+q2CDeiWjVk1mWYq0UpIwpBMuw1H6+oOqr4VQRi65pin0M
+SfE0MWIaFo5FPvpvoptkHD4gvREbm4swyXGMczcMRfqgalFXhUD2wz8W3XAM5Cq2
+03XeJbj6TwjvKatG5XPdeUe2FBGuOO2q54L1hcIGnLMCQrg7D31lR13PJbjnJ0No
+5C3k8TPuny6vJsBC03GNLNKfmrKVTdzr3VKp1uay1G3DL9314fgmbl8HA5iRQmy+
+XInUU6/8NXZSF59p3ITAOvZQeZsbJjg5gGDip5OZo9YlAgMBAAGjWzBZMB0GA1Ud
+DgQWBBRPlM4VkKZ0U4ec9GrIhFQl0hNbLDA4BgNVHREEMTAvggppZHB0ZXN0YmVk
+hiFodHRwczovL2lkcHRlc3RiZWQvaWRwL3NoaWJib2xldGgwDQYJKoZIhvcNAQEL
+BQADggEBAIZ0a1ov3my3ljJG588I/PHx+TxAWONWmpKbO9c/qI3Drxk4oRIffiac
+ANxdvtabgIzrlk5gMMisD7oyqHJiWgKv5Bgctd8w3IS3lLl7wHX65mTKQRXniG98
+NIjkvfrhe2eeJxecOqnDI8GOhIGCIqZUn8ShdM/yHjhQ2Mh0Hj3U0LlKvnmfGSQl
+j0viGwbFCaNaIP3zc5UmCrdE5h8sWL3Fu7ILKM9RyFa2ILHrJScV9t623IcHffHP
+IeaY/WtuapsrqRFxuQL9QFWN0FsRIdLmjTq+00+B/XnnKRKFBuWfjhHLF/uu8f+E
+t6Lf23Kb8yD6ZR7dihMZAGHnYQ/hlhM=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+
+</KeyDescriptor>
+<KeyDescriptor use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDFDCCAfygAwIBAgIVAN3vv+b7KN5Se9m1RZsCllp/B/hdMA0GCSqGSIb3DQEB
+CwUAMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwHhcNMTUxMjExMDIyMDE0WhcNMzUx
+MjExMDIyMDE0WjAVMRMwEQYDVQQDDAppZHB0ZXN0YmVkMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAh91caeY0Q85uhaUyqFwP2bMjwMFxMzRlAoqBHd7g
+u6eo4duaeLz1BaoR2XTBpNNvFR5oHH+TkKahVDGeH5+kcnIpxI8JPdsZml1srvf2
+Z6dzJsulJZUdpqnngycTkGtZgEoC1vmYVky2BSAIIifmdh6s0epbHnMGLsHzMKfJ
+Cb/Q6dYzRWTCPtzE2VMuQqqWgeyMr7u14x/Vqr9RPEFsgY8GIu5jzB6AyUIwrLg+
+MNkv6aIdcHwxYTGL7ijfy6rSWrgBflQoYRYNEnseK0ZHgJahz4ovCag6wZAoPpBs
+uYlY7lEr89Ucb6NHx3uqGMsXlDFdE4QwfDLLhCYHPvJ0uwIDAQABo1swWTAdBgNV
+HQ4EFgQUAkOgED3iYdmvQEOMm6u/JmD/UTQwOAYDVR0RBDEwL4IKaWRwdGVzdGJl
+ZIYhaHR0cHM6Ly9pZHB0ZXN0YmVkL2lkcC9zaGliYm9sZXRoMA0GCSqGSIb3DQEB
+CwUAA4IBAQBIdd4YWlnvJjql8+zKKgmWgIY7U8DA8e6QcbAf8f8cdE33RSnjI63X
+sv/y9GfmbAVAD6RIAXPFFeRYJ08GOxGI9axfNaKdlsklJ9bk4ducHqgCSWYVer3s
+RQBjxyOfSTvk9YCJvdJVQRJLcCvxwKakFCsOSnV3t9OvN86Ak+fKPVB5j2fM/0fZ
+Kqjn3iqgdNPTLXPsuJLJO5lITRiBa4onmVelAiCstI9PQiaEck+oAHnMTnC9JE/B
+DHv3e4rwq3LznlqPw0GSd7xqNTdMDwNOWjkuOr3sGpWS8ms/ZHHXV1Vd22uPe70i
+s00xrv14zLifcc8oj5DYzOhYRifRXgHX
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+
+</KeyDescriptor>
+<KeyDescriptor use="encryption">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>
+MIIDEzCCAfugAwIBAgIUG6Nn1rlERS1vsi88tcdzSYX0oqAwDQYJKoZIhvcNAQEL
+BQAwFTETMBEGA1UEAwwKaWRwdGVzdGJlZDAeFw0xNTEyMTEwMjIwMTRaFw0zNTEy
+MTEwMjIwMTRaMBUxEzARBgNVBAMMCmlkcHRlc3RiZWQwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQCBXv0o3fmT8iluyLjJ4lBAVCW+ZRVyEXPYQuRi7vfD
+cO4a6d1kxiJLsaK0W88VNxjFQRr8PgDkWr28vwoH1rgk4pLsszLD48DBzD942peJ
+l/S6FnsIJjmaHcBh4pbNhU4yowu63iKkvttrcZAEbpEro6Z8CziWEx8sywoaYEQG
+ifPkr9ORV6Cn3txq+9gMBePG41GrtZrUGIu+xrndL0Shh4Pq0eq/9MAsVlIIXEa8
+9WfH8J2kFcTOfoWtIc70b7TLZQsx4YnNcnrGLSUEcstFyPLX+Xtv5SNZF89OOIxX
+VNjNvgE5DbJb9hMM4UAFqI+1bo9QqtxwThjc/sOvIxzNAgMBAAGjWzBZMB0GA1Ud
+DgQWBBStTyogRPuAVG6q7yPyav1uvE+7pTA4BgNVHREEMTAvggppZHB0ZXN0YmVk
+hiFodHRwczovL2lkcHRlc3RiZWQvaWRwL3NoaWJib2xldGgwDQYJKoZIhvcNAQEL
+BQADggEBAFMfoOv+oISGjvamq7+Y4G7ep5vxlAPeK3RATYPYvAmyH946qZXh98ni
+QXyuqZW5P5eEt86toY45IwDU5r09SKwHughEe99iiEkxh0mb2qo84qX9/qcg+kyN
+jeLd/OSyolpUCEFNwOFcog7pj7Eer+6AHbwTn1Mjb5TBsKwtDMJsaxPvdj0u7M5r
+xL/wHkFhn1rCo2QiojzjSlV3yLTh49iTyhE3cG+RxaNKDCxhp0jSSLX1BW/ZoPA8
++PMJEA+Q0QbyRD8aJOHN5O8jGxCa/ZzcOnYVL6AsEXoDiY3vAUYh1FUonOWw0m9H
+p+tGUbGS2l873J5PrsbpeKEVR/IIoKo=
+</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+
+</KeyDescriptor>
+
+<AttributeService Binding="urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding"
+Location="https://idptestbed:8443/idp/profile/SAML1/SOAP/AttributeQuery"/>
+<AttributeService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+Location="https://idptestbed:8443/idp/profile/SAML2/SOAP/AttributeQuery"/>
+
+</AttributeAuthorityDescriptor>
+</EntityDescriptor>
+</EntitiesDescriptor>

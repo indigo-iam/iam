@@ -1,0 +1,75 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<script type="text/ng-template" id="result-template.html">
+    <a>
+        <span ng-bind-html="match.model.organizationName | uibTypeaheadHighlight:query"> </span>
+    </a>
+</script>
+<h2 class="text-center">
+    Sign in with your IdP
+</h2>
+<div class="container center-block text-center" style="margin-top: 40px; max-width: 500px">
+    <div ng-if="idpSelected.organizationName != null" style="font-size: large">
+        <p ng-if="hasRememberCookie">
+            Last time you choose the following IdP:
+        </p>
+        <p ng-if="!hasRememberCookie">
+            You will be redirected for authentication to:
+        </p>
+        <p>
+            <strong>{{idpSelected.organizationName}}</strong>
+        </p>
+        <p>
+            Proceed?
+        </p>
+    </div>
+    <form>
+        <div class="form-group">
+            <input id="idp-selection-input" 
+                ng-show="idpSelected.organizationName == null" 
+                type="text" ng-model="idpSelected" placeholder="Look for your IdP..."
+                uib-typeahead="idpDesc as idpDesc.organizationName for idpDesc in lookupIdp($viewValue)" typeahead-loading="loadingIdps"
+                typeahead-no-results="noResults" typeahead-min-length="0" typeahead-template-url="result-template.html" autofocus="autofocus"
+                class="form-control"> 
+            <div ng-show="loadingIdps" class="text-muted" style="text-align: right; padding:10px;">
+                <i class="fa fa-refresh"></i>
+            </div>
+            <div ng-show="noResults" class="text-danger" style="padding: 10px; text-align: left">
+                <i class="fa fa-remove"></i> No IdP found matching "{{idpSelected}}"
+            </div>
+        </div>
+        
+        <div class="form-group text-center" style="margin-top: 40px">
+            <button class="btn btn-primary btn-lg" type="button" ng-click="ok()" ng-if="idpSelected.organizationName != null">Sign in with IdP</button>
+            <div class="checkbox" ng-show="idpSelected.organizationName != null && !hasRememberCookie">
+                <label>
+                    <input type="checkbox" ng-model="rememberChoice" ng-true-value="'y'" ng-false-value="'n'">
+                    Remember this choice on this computer
+                </label>
+            </div>
+        </div>
+        <div class="form-group text-center" style="margin-top: 40px">
+            <div ng-if="idpSelected.organizationName != null">
+                <a href="" ng-click="reset()">Search again</a>
+            </div>
+            <a href="/">Back to login page</a>
+        </div>
+        <div class="form-group text-center">
+        </div>
+    </form>
+</div>

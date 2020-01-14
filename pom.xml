@@ -6,7 +6,7 @@
 
   <groupId>it.infn.mw</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.6.0-issue-308-SNAPSHOT</version>
+  <version>1.6.1-issue-308</version>
   <packaging>pom</packaging>
   <name>INDIGO Identity and Access Manager (IAM)</name>
 

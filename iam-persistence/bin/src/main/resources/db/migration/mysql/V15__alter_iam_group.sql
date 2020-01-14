@@ -1,0 +1,1 @@
+ALTER TABLE iam_group MODIFY name varchar(512) NOT NULL;

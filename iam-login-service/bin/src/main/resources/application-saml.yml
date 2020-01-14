@@ -1,0 +1,46 @@
+#
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+saml:
+  entity-id: ${IAM_SAML_ENTITY_ID:urn:iam:iam-devel}
+  keystore: ${IAM_SAML_KEYSTORE:classpath:/saml/samlKeystore.jks}
+  keystore-password: ${IAM_SAML_KEYSTORE_PASSWORD:password}
+  key-id: ${IAM_SAML_KEY_ID:iam}
+  key-password: ${IAM_SAML_KEY_PASSWORD:password}
+  max-assertion-time-sec: ${IAM_SAML_MAX_ASSERTION_TIME:3000}
+  max-authentication-age-sec: ${IAM_SAML_MAX_AUTHENTICATION_AGE:86400}
+  id-resolvers: ${IAM_SAML_ID_RESOLVERS:eduPersonUniqueId,eduPersonTargetedId,eduPersonPrincipalName}
+  metadata-refresh-period-sec: ${IAM_SAML_METADATA_REFRESH_PERIOD_SEC:43200}
+  nameid-policy: ${IAM_SAML_NAMEID_POLICY:transient}
+  
+  wayf-login-button:
+    text: ${IAM_SAML_LOGIN_BUTTON_TEXT:Your institutional account}
+    
+  idp-entity-id-whilelist: ${IAM_SAML_IDP_ENTITY_ID_WHITELIST}
+  
+  jit-account-provisioning:
+    enabled: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_ENABLED:false}
+    trusted-idps: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_TRUSTED_IDPS:all}
+    cleanup-task-enabled: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_ENABLED:false}
+    cleanup-task-period-sec: ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_PERIOD_SEC:86400}
+    inactive-account-lifetime-days:  ${IAM_SAML_JIT_ACCOUNT_PROVISIONING_INACTIVE_ACCOUNT_LIFETIME_DAYS:15}
+  
+  idp-metadata: 
+    - 
+      metadata-url: ${IAM_SAML_IDP_METADATA:classpath:/saml/idp-metadata.xml}
+      require-valid-signature: ${IAM_SAML_METADATA_REQUIRE_VALID_SIGNATURE:false}
+      require-sirtfi: ${IAM_SAML_METADATA_REQUIRE_SIRTFI:false}
+      require-rs: ${IAM_SAML_METADATA_REQUIRE_RS:false}

@@ -106,7 +106,7 @@ public class AccessTokenGetRevokeTests extends TestTokensUtils {
     System.out.println(remoteAt);
 
     assertThat(remoteAt.getId(), equalTo(at.getId()));
-    assertThat(remoteAt.getValue(), equalTo(at.getValue()));
+    assertThat(remoteAt.getValue(), equalTo(null)); 
     assertThat(remoteAt.getExpiration(), new DateEqualModulo1Second(at.getExpiration()));
 
     assertThat(remoteAt.getScopes().contains("openid"), equalTo(true));

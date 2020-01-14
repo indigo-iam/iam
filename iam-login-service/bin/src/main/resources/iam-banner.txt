@@ -1,0 +1,12 @@
+ ___  ________  _____ ______      
+|\  \|\   __  \|\   _ \  _   \    
+\ \  \ \  \|\  \ \  \\\__\ \  \   
+ \ \  \ \   __  \ \  \\|__| \  \  
+  \ \  \ \  \ \  \ \  \    \ \  \ 
+   \ \__\ \__\ \__\ \__\    \ \__\
+    \|__|\|__|\|__|\|__|     \|__|
+                                  
+IAM version: ${iam.version} 
+IAM git commit id: ${git.commit.id.abbrev}
+
+Spring boot version: ${spring-boot.version}

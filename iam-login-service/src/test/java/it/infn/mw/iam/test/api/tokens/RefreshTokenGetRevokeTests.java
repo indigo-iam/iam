@@ -100,7 +100,7 @@ public class RefreshTokenGetRevokeTests extends TestTokensUtils {
     System.out.println(remoteRt);
 
     assertThat(remoteRt.getId(), equalTo(rt.getId()));
-    assertThat(remoteRt.getValue(), equalTo(rt.getValue()));
+    assertThat(remoteRt.getValue(), equalTo(null));
     assertThat(remoteRt.getExpiration(), equalTo(rt.getExpiration()));
 
     assertThat(remoteRt.getClient().getId(), equalTo(client.getId()));
