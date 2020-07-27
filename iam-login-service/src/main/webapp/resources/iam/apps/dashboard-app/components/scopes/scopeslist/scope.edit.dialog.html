@@ -1,0 +1,71 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form class="form-horizontal" ng-submit="$ctrl.submit()" name="scopeEditionForm" id="scopeEditionForm" ng-init="$ctrl.reset()">
+
+  <div class="modal-header">
+    <h3 class="modal-title">Edit Scope</h3>
+  </div>
+
+  <div class="modal-body">
+    <operationresult />
+
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="value">Scope</label>
+        <div class="col-sm-10">
+          <label class="control-label" name="value" id="value" type="text">{{$ctrl.scope.value}}</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-sm-2" for="description">Description</label>
+      <div ng-class="{'has-error': scopeEditionForm.description.$dirty && scopeEditionForm.description.$invalid, 'has-success': scopeEditionForm.description.$dirty && scopeEditionForm.description.$valid}">
+        <div class="col-sm-10">
+          <input class="form-control" name="description" id="description" type="text" ng-model="$ctrl.scope.description" placeholder="description" required ng-minlength="1"/>
+          <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': scopeEditionForm.description.$dirty && scopeEditionForm.description.$invalid, 'glyphicon-ok': scopeEditionForm.description.$dirty && scopeEditionForm.description.$valid}" style="right: 15px"></span>
+          <span class="help-block" ng-show="scopeEditionForm.description.$dirty && scopeEditionForm.description.$error.required"> This is a required field</span>
+          <small>Human-readable text description</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-group" id="defaultScope">
+      <label class="control-label"><i class="fa fa-flag"></i></label>
+      <div class="controls">
+        <label class="checkboxDefaultScope">
+          <input type="checkbox" ng-model="$ctrl.scope.defaultScope"></span>Default Scope</span>
+        </label>
+        <small>Newly-created clients get this scope by default?</small>
+      </div>
+    </div>
+
+    <div class="control-group" id="restricted">
+      <label class="control-label"><i class="fa fa-ban"></i></label>
+      <div class="controls">
+        <label class="checkboxRestricted">
+          <input type="checkbox" ng-model="$ctrl.scope.restricted"></span>Restricted</span>
+        </label>
+        <small>Restricted scopes are only usable by system administrators and are unavailable to dynamically registered clients and protected resources</small>
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" type="submit" name="create" id="modal-btn-confirm" ng-disabled="scopeEditionForm.$invalid || scopeEditionForm.$pristine || !$ctrl.enabled" ng-click="$ctrl.updateScope($ctrl.scope)">Save</button>
+    <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
+  </div>
+</form>
