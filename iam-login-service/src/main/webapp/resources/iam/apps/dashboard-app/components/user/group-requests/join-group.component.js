@@ -66,6 +66,8 @@
             var sanitizedNotes = $sanitize(self.req.notes);
             var promises = [];
 
+            self.enabled = false
+            
             self.selectedGroups.forEach(function(g){
                 var req = {
                     notes: sanitizedNotes,

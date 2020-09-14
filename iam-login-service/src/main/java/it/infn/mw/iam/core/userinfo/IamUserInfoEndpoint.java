@@ -47,11 +47,14 @@ public class IamUserInfoEndpoint {
 
   private final JWTProfileResolver profileResolver;
 
-  @Autowired
-  public IamUserInfoEndpoint(JWTProfileResolver profileResolver) {
-    this.profileResolver = profileResolver;
-  }
+  private final OAuth2AuthenticationScopeResolver scopeResolver;
 
+  @Autowired
+  public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
+      OAuth2AuthenticationScopeResolver scopeResolver) {
+    this.profileResolver = profileResolver;
+    this.scopeResolver = scopeResolver;
+  }
 
   @PreAuthorize("hasRole('ROLE_USER') and #oauth2.hasScope('" + SystemScopeService.OPENID_SCOPE
       + "')")
@@ -70,8 +73,7 @@ public class IamUserInfoEndpoint {
       model.addAttribute(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
       return HttpCodeView.VIEWNAME;
     }
-
-    model.addAttribute(UserInfoView.SCOPE, auth.getOAuth2Request().getScope());
+    model.addAttribute(UserInfoView.SCOPE, scopeResolver.resolveScope(auth));
     model.addAttribute(UserInfoView.AUTHORIZED_CLAIMS,
         auth.getOAuth2Request().getExtensions().get("claims"));
 

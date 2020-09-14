@@ -27,6 +27,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,6 +52,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -67,6 +70,7 @@ import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 import net.minidev.json.JSONObject;
@@ -103,8 +107,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
       TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
   private static final String REFRESH_TOKEN_GRANT_TYPE = "refresh_token";
 
-
-
   private static final String CLIENT_ID = "password-grant";
   private static final String CLIENT_SECRET = "secret";
   private static final String USERNAME = "test";
@@ -130,7 +132,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
   @Before
   public void setup() {
-    oauth2Filter.cleanupSecurityContext();
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
@@ -139,6 +140,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   public void teardown() {
     oauth2Filter.cleanupSecurityContext();
   }
+
 
   private void setOAuthAdminSecurityContext() {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -240,13 +242,14 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getStringListClaim("wlcg.groups"),
         hasItems("/Production", "/Analysis"));
   }
-  
+
   @Test
   @WithAnonymousUser
   public void testWlcgProfileGroupRequest() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups:/Analysis"));
 
-    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile wlcg.groups:/Analysis"));
+    assertThat(token.getJWTClaimsSet().getClaim("scope"),
+        is("openid profile wlcg.groups:/Analysis"));
     assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
@@ -461,8 +464,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     JSONObject nestedActClaimValue =
         (JSONObject) exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("act");
     assertThat(nestedActClaimValue.getAsString("sub"), is(ACTOR_CLIENT_ID));
-    
- // Check that token can be introspected properly
+
+    // Check that token can be introspected properly
     mvc
       .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
         .param("token", tokenResponseObject2.getValue()))
@@ -565,5 +568,80 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(claims.getAudience().size(), equalTo(1));
     assertThat(claims.getAudience(), hasItem("https://wlcg.cern.ch/jwt/v1/any"));
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
+      scopes = {"openid"})
+  public void testUserInfoEndpointRetursMinimalInformation() throws Exception {
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andExpect(jsonPath("$.preferred_username").doesNotExist())
+      .andExpect(jsonPath("$.given_name").doesNotExist())
+      .andExpect(jsonPath("$.family_name").doesNotExist())
+      .andExpect(jsonPath("$.name").doesNotExist())
+      .andExpect(jsonPath("$.updated_at").doesNotExist());
+    // @formatter:on
+  }
+
+  @Test
+  public void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
+
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", CLIENT_ID)
+        .param("client_secret", CLIENT_SECRET)
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid profile offline_access email"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+
+    tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", CLIENT_ID)
+        .param("client_secret", CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String at = mapper.readTree(tokenResponseJson).get("access_token").asText();
+
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    Authentication userAuth = new UsernamePasswordAuthenticationToken("test", "",
+        AuthorityUtils.createAuthorityList("ROLE_USER"));
+
+    String[] authnScopes = new String[] {"openid"};
+
+    OAuth2Authentication authn =
+        new OAuth2Authentication(new MockOAuth2Request("password-grant", authnScopes), userAuth);
+
+    authn.setAuthenticated(true);
+
+    OAuth2AuthenticationDetails details = mock(OAuth2AuthenticationDetails.class);
+    when(details.getTokenValue()).thenReturn(at);
+    authn.setDetails(details);
+    context.setAuthentication(authn);
+
+    oauth2Filter.setSecurityContext(context);
+
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.*", hasSize(1)))
+      .andExpect(jsonPath("$.sub").exists());
+
+
   }
 }

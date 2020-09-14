@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,8 +82,8 @@ public class UserInfoEndpointTests {
     // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub").exists())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist());
+      .andExpect(jsonPath("$.*", Matchers.hasSize(1)))
+      .andExpect(jsonPath("$.sub").exists());
     // @formatter:on
   }
 
@@ -121,4 +122,5 @@ public class UserInfoEndpointTests {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.updated_at").isNumber());
   }
+
 }

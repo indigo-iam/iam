@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.util.oauth;
 import java.util.Map;
 
 import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,6 +26,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
 import com.google.common.collect.Maps;
@@ -100,7 +102,9 @@ public class WithMockOAuth2SecurityContextFactory
 
     authn.setAuthenticated(true);
 
-    authn.setDetails("No details");
+    OAuth2AuthenticationDetails details = Mockito.mock(OAuth2AuthenticationDetails.class);
+
+    authn.setDetails(details);
     context.setAuthentication(authn);
 
     filter.setSecurityContext(context);
