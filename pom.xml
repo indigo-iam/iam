@@ -15,7 +15,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <java.version>1.8</java.version>
-    <voms.version>3.3.1.v20190827</voms.version>
+    <voms.version>3.3.2</voms.version>
     <jvm.test.args>-Xmx2500m</jvm.test.args>
     <eclipselink.version>2.5.2</eclipselink.version>
     <mitreid.version>1.3.5.cnaf.20200119</mitreid.version>
