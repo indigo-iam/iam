@@ -37,19 +37,17 @@ public class CoreControllerTestSupport {
 
     return new MockOAuth2Filter();
   }
-  
+
   @Bean
   @Primary
   MockTimeProvider mockTimeProvider() {
     return new MockTimeProvider();
   }
-  
+
   @Bean
   @Primary
   ApplicationEventPublisher mockApplicationEventPublisher() {
     return Mockito.mock(ApplicationEventPublisher.class);
   }
-  
 
-  
 }

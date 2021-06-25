@@ -43,6 +43,19 @@ public class IamProperties {
     VISIBLE, HIDDEN, HIDDEN_WITH_LINK
   }
 
+  public static class TokenExchangeProperties {
+    Long expirePolicyCacheAfterSeconds = 300L;
+
+    public Long getExpirePolicyCacheAfterSeconds() {
+      return expirePolicyCacheAfterSeconds;
+    }
+
+    public void setExpirePolicyCacheAfterSeconds(Long expirePolicyCacheAfterSeconds) {
+      this.expirePolicyCacheAfterSeconds = expirePolicyCacheAfterSeconds;
+    }
+
+  }
+
   public static class LocalAuthenticationProperties {
 
     LocalAuthenticationLoginPageMode loginPageVisibility;
@@ -429,6 +442,8 @@ public class IamProperties {
 
   private IamTokenEnhancerProperties tokenEnhancer = new IamTokenEnhancerProperties();
 
+  private TokenExchangeProperties tokenExchange = new TokenExchangeProperties();
+
   public String getBaseUrl() {
     return baseUrl;
   }
@@ -605,4 +620,11 @@ public class IamProperties {
     this.tokenEnhancer = tokenEnhancer;
   }
 
+  public TokenExchangeProperties getTokenExchange() {
+    return tokenExchange;
+  }
+
+  public void setTokenExchange(TokenExchangeProperties tokenExchange) {
+    this.tokenExchange = tokenExchange;
+  }
 }

@@ -15,13 +15,7 @@
  */
 package it.infn.mw.iam.api.exchange_policy;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
-
-import java.time.Clock;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import javax.validation.Valid;
 
@@ -39,29 +33,19 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
-import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
 @RestController
 @RequestMapping("/iam/api/exchange")
 @PreAuthorize("hasRole('ADMIN')")
 public class ExchangePolicyController {
 
-  final IamTokenExchangePolicyRepository repo;
-  final ExchangePolicyConverter converter;
-  final Clock clock;
+  private final TokenExchangePolicyService service;
 
   @Autowired
-  public ExchangePolicyController(Clock clock, IamTokenExchangePolicyRepository repo,
-      ExchangePolicyConverter converter) {
-    this.clock = clock;
-    this.repo = repo;
-    this.converter = converter;
+  public ExchangePolicyController(TokenExchangePolicyService service) {
+    this.service = service;
   }
 
-  private ExchangePolicyNotFoundError notFoundError(Long id) {
-    return new ExchangePolicyNotFoundError("Exchange policy not found for id: " + id);
-  }
 
   protected InvalidExchangePolicyError buildValidationError(BindingResult result) {
     String firstErrorMessage = result.getAllErrors().get(0).getDefaultMessage();
@@ -70,16 +54,19 @@ public class ExchangePolicyController {
 
   @RequestMapping(value = "/policies", method = RequestMethod.GET)
   public List<ExchangePolicyDTO> getExchangePolicies() {
-    return stream(repo.findAll().spliterator(), false).map(converter::dtoFromEntity)
-      .collect(toList());
+    return service.getTokenExchangePolicies();
+  }
+
+
+  @RequestMapping(value = "/policies/{id}", method = RequestMethod.GET)
+  public ExchangePolicyDTO getExchangePolicy(@PathVariable Long id) {
+    return service.getTokenExchangePolicyById(id);
   }
 
   @RequestMapping(value = "/policies/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
   public void deleteExchangePolicy(@PathVariable Long id) {
-    IamTokenExchangePolicyEntity p =
-        Optional.ofNullable(repo.findOne(id)).orElseThrow(() -> notFoundError(id));
-    repo.delete(p.getId());
+    service.deleteTokenExchangePolicyById(id);
   }
 
   @RequestMapping(value = "/policies", method = RequestMethod.POST)
@@ -91,14 +78,13 @@ public class ExchangePolicyController {
       throw buildValidationError(validationResult);
     }
 
-    Date now = Date.from(clock.instant());
+    service.createTokenExchangePolicy(dto);
+  }
 
-    IamTokenExchangePolicyEntity policy = converter.entityFromDto(dto);
-
-    policy.setCreationTime(now);
-    policy.setLastUpdateTime(now);
-
-    repo.save(policy);
+  @RequestMapping(value = "/policies/clear-cache", method = RequestMethod.POST)
+  @ResponseStatus(code = HttpStatus.OK)
+  public void invalidateExchangePolicyCache() {
+    service.clearTokenExchangePolicyCache();
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)

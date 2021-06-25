@@ -20,6 +20,7 @@ import static it.infn.mw.iam.api.exchange_policy.ClientMatchingPolicyDTO.clientB
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -50,6 +51,7 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.exchange_policy.ClientMatchingPolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangePolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangeScopePolicyDTO;
+import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
@@ -59,7 +61,8 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
+@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    TokenExchangePdpTestSupport.class})
 @WebAppConfiguration
 @Transactional
 @WithAnonymousUser
@@ -78,6 +81,9 @@ public class ExchangePolicyApiIntegrationTests {
 
   @Autowired
   IamTokenExchangePolicyRepository repo;
+
+  @Autowired
+  TokenExchangePdp pdp;
 
   private MockMvc mvc;
 
@@ -193,6 +199,20 @@ public class ExchangePolicyApiIntegrationTests {
       .andExpect(jsonPath("$[1].rule").value("DENY"))
       .andExpect(jsonPath("$[1].originClient.type").value("ANY"))
       .andExpect(jsonPath("$[1].destinationClient.type").value("ANY"));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  public void cleanPolicyCachePolicyWorks() throws Exception {
+    repo.deleteAll();
+
+    String policy = mapper.writeValueAsString(denyAllExchangesPolicy());
+    mvc.perform(post(ENDPOINT).content(policy).contentType(APPLICATION_JSON))
+      .andExpect(status().isCreated());
+
+    mvc.perform(post(ENDPOINT + "/clear-cache")).andExpect(status().isOk());
+
+    verify(pdp).clearPolicyCache();
   }
 
   @Test

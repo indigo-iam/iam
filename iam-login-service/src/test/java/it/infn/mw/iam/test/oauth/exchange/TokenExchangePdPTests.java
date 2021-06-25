@@ -33,13 +33,14 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.TokenExchangeProperties;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
@@ -65,9 +66,14 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   IamTokenExchangePolicyRepository repo;
 
   @Mock
+  IamProperties iamProperties;
+
+  @Mock
+  TokenExchangeProperties teProperties;
+
+  @Mock
   ScopeMatcherRegistry scopeMatchersRegistry;
 
-  @InjectMocks
   DefaultTokenExchangePdp pdp;
 
   private TokenRequest buildTokenRequest() {
@@ -87,6 +93,11 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         .map(StringEqualsScopeMatcher::stringEqualsMatcher)
         .collect(toSet()));
     when(repo.findAll()).thenReturn(emptyList());
+    when(teProperties.getExpirePolicyCacheAfterSeconds()).thenReturn(60L);
+    when(iamProperties.getTokenExchange()).thenReturn(teProperties);
+
+    pdp = new DefaultTokenExchangePdp(iamProperties, repo, scopeMatchersRegistry);
+
   }
 
   @Test
@@ -239,6 +250,5 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
     assertThat(result.invalidScope().get(), is("s1"));
     assertThat(result.message().isPresent(), is (true));
     assertThat(result.message().get(), is("scope exchange not allowed by policy"));
-    
   }
 }

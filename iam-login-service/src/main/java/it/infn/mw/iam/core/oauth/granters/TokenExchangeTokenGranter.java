@@ -93,6 +93,11 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
           actorClient.getClientId(), subjectClient.getClientId(), audience, requestedScopes);
     }
 
+    if (subjectClient.equals(actorClient)) {
+      throw new OAuth2AccessDeniedException(
+          "Token exchange not allowed: the actor and the subject are the same client");
+    }
+
     TokenExchangePdpResult result =
         exchangePdp.validateTokenExchange(tokenRequest, subjectClient, actorClient);
 

@@ -19,14 +19,25 @@ import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.EQ;
 
 import java.util.Set;
 
+import org.mockito.Mockito;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
+import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy.ClientMatchingPolicyType;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.model.IamTokenExchangeScopePolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
+import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
+@Configuration
 public class TokenExchangePdpTestSupport {
 
   public static final String ORIGIN_CLIENT_ID = "origin";
@@ -35,7 +46,8 @@ public class TokenExchangePdpTestSupport {
   public static final Set<String> ORIGIN_CLIENT_SCOPES = Sets.newHashSet("s1", "s2");
   public static final Set<String> DESTINATION_CLIENT_SCOPES = Sets.newHashSet("s2", "s3");
 
-  public IamTokenExchangePolicyEntity buildExamplePolicy(Long id, PolicyRule rule, String description) {
+  public IamTokenExchangePolicyEntity buildExamplePolicy(Long id, PolicyRule rule,
+      String description) {
     IamClientMatchingPolicy anyClient = new IamClientMatchingPolicy();
     anyClient.setType(ClientMatchingPolicyType.ANY);
 
@@ -77,18 +89,27 @@ public class TokenExchangePdpTestSupport {
     client.setMatchParam(scope);
     return client;
   }
-  
+
   public IamTokenExchangeScopePolicy buildPermitScopePolicy(String scope) {
     return buildScopePolicy(PolicyRule.PERMIT, scope);
   }
-  
+
   public IamTokenExchangeScopePolicy buildScopePolicy(PolicyRule rule, String scope) {
     IamTokenExchangeScopePolicy policy = new IamTokenExchangeScopePolicy();
     policy.setRule(rule);
     policy.setType(EQ);
     policy.setMatchParam(scope);
-    
+
     return policy;
+  }
+
+  @Bean
+  @Primary
+  TokenExchangePdp tokenExchangePdp(IamProperties properties, IamTokenExchangePolicyRepository repo,
+      ScopeMatcherRegistry registry) {
+    DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(properties, repo, registry);
+
+    return Mockito.spy(pdp);
   }
 
 }

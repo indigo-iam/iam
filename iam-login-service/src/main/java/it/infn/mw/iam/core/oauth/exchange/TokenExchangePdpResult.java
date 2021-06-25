@@ -70,7 +70,7 @@ public class TokenExchangePdpResult {
     return Optional.ofNullable(message);
   }
 
-  public static TokenExchangePdpResult fromPolicy(TokenExchangePolicy policy) {
+  public static TokenExchangePdpResult resultFromPolicy(TokenExchangePolicy policy) {
     checkNotNull(policy);
     if (PolicyRule.DENY.equals(policy.getRule())) {
       return new TokenExchangePdpResult(Decision.DENY, policy);

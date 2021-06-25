@@ -121,6 +121,9 @@ iam:
    
   aarc-profile:
     urn-namespace: ${IAM_AARC_PROFILE_URN_NAMESPACE:example:iam}
+    
+  token-exchange:
+    expire-policy-cache-after-seconds: ${IAM_TOKEN_EXCHANGE_EXPIRE_POLICY_CACHE_AFTER_SECONDS:300}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}

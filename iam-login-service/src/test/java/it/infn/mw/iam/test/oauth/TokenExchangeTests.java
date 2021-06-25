@@ -349,13 +349,13 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     JSONObject actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
     assertThat(actClaim.getAsString("act"), nullValue());
@@ -381,11 +381,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
     assertThat(actClaim.getAsString("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .param("token", refreshedToken.getValue()))
@@ -502,7 +502,35 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.scope",
           allOf(containsString("read-tasks"), containsString("offline_access"))));
   }
-  
+
+
+  @Test
+  public void testTokenExchangeForbiddenWhenActorClientIsSubjectClient() throws Exception {
+
+
+    String clientId = "token-exchange-actor";
+    String clientSecret = "secret";
+
+
+    String accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile offline_access")
+      .getAccessTokenValue();
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", accessToken)
+        .param("subject_token_type", TOKEN_TYPE)
+        .param("scope", "openid offline_access"))
+      .andExpect(status().isForbidden());
+    // @formatter:on
+  }
+
   @Test
   public void testActClaimSetting() throws Exception {
 
@@ -544,13 +572,13 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     JSONObject actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
     assertThat(actClaim.getAsString("act"), nullValue());
@@ -576,20 +604,20 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
     assertThat(actClaim.getAsString("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .param("token", refreshedToken.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    
-    
+
+
     String secondActorClient = "token-lookup-client";
-    
+
     // @formatter:off
     response = mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(secondActorClient, "secret"))
@@ -608,18 +636,19 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    
-    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    DefaultOAuth2AccessToken secondExchangeResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.getAsString("sub"), is("token-lookup-client"));
-    
+
     JSONObject innerActClaim = (JSONObject) actClaim.get("act");
     assertThat(innerActClaim.getAsString("sub"), is("token-exchange-actor"));
-    
+
 
   }
 }

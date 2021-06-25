@@ -23,4 +23,6 @@ public interface TokenExchangePdp {
   TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetails originClient,
       ClientDetails destinationClient);
 
+  void clearPolicyCache();
+
 }

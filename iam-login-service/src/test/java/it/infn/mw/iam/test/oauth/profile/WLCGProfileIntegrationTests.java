@@ -128,6 +128,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   private static final String ACTOR_CLIENT_ID = "token-exchange-actor";
   private static final String ACTOR_CLIENT_SECRET = "secret";
 
+  private static final String ANOTHER_TOKEN_EXCHANGE_CLIENT_ID = "token-lookup-client";
+  private static final String ANOTHER_TOKEN_EXCHANGE_CLIENT_SECRET = "secret";
+
   private static final String ALL_AUDIENCES_VALUE = "https://wlcg.cern.ch/jwt/v1/any";
 
   @Autowired
@@ -479,25 +482,35 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
-    tokenResponse =
-        mvc
-          .perform(post("/token").with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
-            .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
-            .param("subject_token", tokenResponseObject.getValue())
-            .param("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
-            .param("scope",
-                "storage.read:/subpath storage.write:/subpath/test openid offline_access")
-            .param("audience", "se4.example"))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.access_token").exists())
-          .andExpect(jsonPath("$.refresh_token").exists())
-          .andExpect(jsonPath("$.scope",
-              allOf(containsString("storage.read:/subpath "), containsString("offline_access"),
-                  containsString("storage.write:/subpath/test"), containsString("openid"),
-                  containsString("offline_access"))))
-          .andReturn()
-          .getResponse()
-          .getContentAsString();
+    mvc
+      .perform(post("/token").with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+        .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
+        .param("subject_token", tokenResponseObject.getValue())
+        .param("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+        .param("scope", "storage.read:/subpath storage.write:/subpath/test openid offline_access")
+        .param("audience", "se4.example"))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error").value("access_denied"))
+      .andExpect(jsonPath("$.error_description",
+          containsString("the actor and the subject are the same client")));
+
+
+    tokenResponse = mvc
+      .perform(post("/token")
+        .with(httpBasic(ANOTHER_TOKEN_EXCHANGE_CLIENT_ID, ANOTHER_TOKEN_EXCHANGE_CLIENT_SECRET))
+        .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
+        .param("subject_token", tokenResponseObject.getValue())
+        .param("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
+        .param("scope", "openid offline_access")
+        .param("audience", "se5.example"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token").exists())
+      .andExpect(jsonPath("$.refresh_token").exists())
+      .andExpect(jsonPath("$.scope",
+          allOf(containsString("offline_access"), containsString("openid"))))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
     DefaultOAuth2AccessToken tokenResponseObject2 =
         mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
@@ -506,7 +519,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(exchangedToken2.getJWTClaimsSet().getSubject(), is(USER_SUBJECT));
 
     assertThat(exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").getAsString("sub"),
-        is(ACTOR_CLIENT_ID));
+        is(ANOTHER_TOKEN_EXCHANGE_CLIENT_ID));
 
 
     JSONObject nestedActClaimValue =
