@@ -82,6 +82,16 @@
                 <span>AUP</span>
             </a>
         </li>
+        
+
+        <li>
+            <a id="nav-policies" ui-sref="policies" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isAdmin">
+                <i class="fa fa-balance-scale"></i>
+                <span>Scope Policies</span>
+                <span class="badge pull-right" ng-show="$root.policiesCount>0">{{$root.policiesCount}}</span>
+            </a>
+        </li>
+
 
         <li class="header">Client management</li>
         <li>

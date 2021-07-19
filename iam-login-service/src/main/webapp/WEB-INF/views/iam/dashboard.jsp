@@ -104,6 +104,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/labels.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/account-lifecycle.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/attributes.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/policies.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/proxycert.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/find.service.js"></script>
   
@@ -160,7 +161,16 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/members/group.members.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/group.managers.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/labels/group.labels.component.js"></script>
-  
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group-membership/adder/group-membership.adder.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.description.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/subgroups/group.subgroups.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/members/group.members.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/group.managers.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/labels/group.labels.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policies.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policieslist/policies.policieslist.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/add_policies.component.js"></script>
+
 
 </body>

@@ -88,6 +88,36 @@ angular
                         }
                     })
                 .state(
+                    'policies', {
+                        url: '/scope_policies',
+                        resolve: {
+                            policies: loadPolicies
+                        },
+                        views: {
+                            content: {
+                                component: 'policies'
+                            }
+                        }
+                    })
+				.state(
+                    'add_policies', {
+                        url: '/scope_policies/add_policies',
+                        views: {
+                            content: {
+                                component: 'add_policies'
+                            }
+                        }
+                    })
+				.state(
+                    'edit_policies', {
+                        url: '/scope_policies/edit_policies/:id',
+                        views: {
+                            content: {
+                                component: 'edit_policies'
+                            }
+                        }
+                    })                
+                .state(
                     'requests', {
                         url: '/requests',
                         views: {
@@ -132,6 +162,18 @@ angular
 
             function loadAup(AupService) {
                 return AupService.getAup();
+            }
+
+            function loadPolicies(PoliciesService) {
+                return PoliciesService.getAllPolicies();
+            }
+
+			function addPolicy(PoliciesService) {
+                return PoliciesService.getAllPolicies();
+            }
+
+			function editPolicy(PoliciesService) {
+                return PoliciesService.getAllPolicies();
             }
 
             function loadGroupLabels(LabelsService, $stateParams) {
