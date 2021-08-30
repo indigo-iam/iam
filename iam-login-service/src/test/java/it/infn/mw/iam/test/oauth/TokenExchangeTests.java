@@ -520,15 +520,26 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .scope("openid profile offline_access")
       .getAccessTokenValue();
 
-    // @formatter:off
-    mvc.perform(post(TOKEN_ENDPOINT)
-        .with(httpBasic(clientId, clientSecret))
+
+    mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)
         .param("scope", "openid offline_access"))
       .andExpect(status().isForbidden());
-    // @formatter:on
+
+
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
+        .param("grant_type", GRANT_TYPE)
+        .param("subject_token", accessToken)
+        .param("subject_token_type", TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope", equalTo("openid")))
+      .andExpect(jsonPath("$.id_token", notNullValue()))
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andExpect(jsonPath("$.refresh_token").doesNotExist());
   }
 
   @Test

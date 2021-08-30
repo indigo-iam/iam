@@ -56,6 +56,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
       "urn:ietf:params:oauth:grant-type:token-exchange";
   private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
   private static final String AUDIENCE_FIELD = "audience";
+  private static final String OFFLINE_ACCESS_SCOPE = "offline_access";
 
   private final OAuth2TokenEntityService tokenServices;
 
@@ -93,9 +94,9 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
           actorClient.getClientId(), subjectClient.getClientId(), audience, requestedScopes);
     }
 
-    if (subjectClient.equals(actorClient)) {
+    if (subjectClient.equals(actorClient) && requestedScopes.contains(OFFLINE_ACCESS_SCOPE)) {
       throw new OAuth2AccessDeniedException(
-          "Token exchange not allowed: the actor and the subject are the same client");
+          "Token exchange not allowed: the actor and the subject are the same client and offline_access is in the requested scopes");
     }
 
     TokenExchangePdpResult result =
