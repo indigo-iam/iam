@@ -5,7 +5,11 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
+<<<<<<< HEAD
     <version>1.11.0</version>
+=======
+    <version>1.7.1</version>
+>>>>>>> a2dcabba (Bumped version to v1.7.1)
   </parent>
 
   <groupId>it.infn.mw.iam-common</groupId>
