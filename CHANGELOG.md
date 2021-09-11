@@ -270,6 +270,10 @@ This release provides changes and bug fixes to the IAM test client application.
 
 ### Added
 
+This release provides changes and bug fixes to the IAM test client application.
+
+### Added
+
 - The IAM test client application, in its default configuration, no longer
   exposes tokens, but only the claims contained in tokens. It's possible to
   revert to the previous behavior by setting the `IAM_CLIENT_HIDE_TOKENS=false`
