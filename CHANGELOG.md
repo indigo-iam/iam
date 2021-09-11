@@ -259,7 +259,6 @@ fixes several bugs for the IAM login service.
 ## 1.7.2 (2021-12-03)
 
 This release provides a single dependency change for the IAM login service
-application.
 
 ### Added
 
