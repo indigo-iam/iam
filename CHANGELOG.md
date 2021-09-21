@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.1 (2021-09-13)
+
+This release provides changes and bug fixes to the IAM test client application.
+
+### Added
+
+- The IAM test client application, in its default configuration, no longer
+  exposes tokens, but only the claims contained in tokens. It's possible to
+  revert to the previous behavior by setting the `IAM_CLIENT_HIDE_TOKENS=false`
+  environment variable (#414)
+
+### Fixed
+
+- A problem that prevented the correct behaviour of the IAM test client has
+  been fixed (#415)
 
 ## 1.7.0 (2021-09-02)
 

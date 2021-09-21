@@ -1,35 +1,21 @@
 package it.infn.mw.tc;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-
 public class OpenIDAuthentication {
 
-  String issuer;
-  String sub;
+  private String issuer;
+  private String sub;
 
-  String name;
-  String familyName;
+  private String name;
+  private String familyName;
 
-  String accessToken;
-  String refreshToken;
-  String idToken;
+  private String accessToken;
+  private String refreshToken;
+  private String idToken;
 
-  String userInfo;
+  private String idTokenClaims;
 
-  public OpenIDAuthentication(OIDCAuthenticationToken token) {
-    issuer = token.getIssuer();
-    sub = token.getSub();
-
-    accessToken = token.getAccessTokenValue();
-    refreshToken = token.getRefreshTokenValue();
-    idToken = token.getIdToken().getParsedString();
-
-
-    name = token.getUserInfo().getName();
-    familyName = token.getUserInfo().getFamilyName();
-    userInfo = token.getUserInfo().toJson().toString();
-
-  }
+  private String userInfo;
+  private String accessTokenClaims;
 
   public String getIssuer() {
 
@@ -69,6 +55,54 @@ public class OpenIDAuthentication {
   public String getFamilyName() {
 
     return familyName;
+  }
+
+  public String getAccessTokenClaims() {
+    return accessTokenClaims;
+  }
+
+  public void setIssuer(String issuer) {
+    this.issuer = issuer;
+  }
+
+  public void setSub(String sub) {
+    this.sub = sub;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setFamilyName(String familyName) {
+    this.familyName = familyName;
+  }
+
+  public void setAccessToken(String accessToken) {
+    this.accessToken = accessToken;
+  }
+
+  public void setRefreshToken(String refreshToken) {
+    this.refreshToken = refreshToken;
+  }
+
+  public void setIdToken(String idToken) {
+    this.idToken = idToken;
+  }
+
+  public void setUserInfo(String userInfo) {
+    this.userInfo = userInfo;
+  }
+
+  public void setAccessTokenClaims(String accessTokenClaims) {
+    this.accessTokenClaims = accessTokenClaims;
+  }
+
+  public String getIdTokenClaims() {
+    return idTokenClaims;
+  }
+
+  public void setIdTokenClaims(String idTokenClaims) {
+    this.idTokenClaims = idTokenClaims;
   }
 
 }

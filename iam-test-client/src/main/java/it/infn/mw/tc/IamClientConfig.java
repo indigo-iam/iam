@@ -31,6 +31,8 @@ public class IamClientConfig extends RegisteredClient {
   String extAuthnHint;
   TlsConfig tls;
 
+  boolean hideTokens = true;
+
   public IamClientConfig() {
     setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
   }
@@ -53,5 +55,13 @@ public class IamClientConfig extends RegisteredClient {
 
   public void setOrganizationName(String organizationName) {
     this.organizationName = organizationName;
+  }
+
+  public boolean isHideTokens() {
+    return hideTokens;
+  }
+
+  public void setHideTokens(boolean hideTokens) {
+    this.hideTokens = hideTokens;
   }
 }

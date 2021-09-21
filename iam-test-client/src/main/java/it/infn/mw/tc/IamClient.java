@@ -25,9 +25,8 @@ import org.italiangrid.voms.util.CertificateValidatorBuilder;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.OIDCAuthenticationFilter;
 import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
+import org.mitre.openid.connect.client.service.AuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.IssuerService;
-import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
-import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.client.service.impl.StaticSingleIssuerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +71,7 @@ public class IamClient {
 
     filter.setClientConfigurationService(staticClientConfiguration());
     filter.setAuthRequestOptionsService(authOptions());
-    filter.setAuthRequestUrlBuilder(new PlainAuthRequestUrlBuilder());
+    filter.setAuthRequestUrlBuilder(new IamAuthRequestUrlBuilder());
     filter.setHttpRequestFactory(httpRequestFactory());
 
 
@@ -120,9 +119,9 @@ public class IamClient {
     return config;
   }
 
-  private StaticAuthRequestOptionsService authOptions() {
+  private AuthRequestOptionsService authOptions() {
 
-    return new StaticAuthRequestOptionsService();
+    return new IamAuthRequestOptionsService(iamClientConfig);
   }
 
   public X509CertChainValidatorExt certificateValidator() {

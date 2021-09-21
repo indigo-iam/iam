@@ -1,7 +1,9 @@
 package it.infn.mw.tc;
 
 import java.util.stream.Collectors;
+
 import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.ErrorController;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -33,6 +35,11 @@ public class LocalController implements ErrorController {
   @ModelAttribute("organizationName")
   public String organizationName() {
     return clientConfig.getOrganizationName();
+  }
+
+  @ModelAttribute("hidesTokens")
+  public Boolean hidesTokens() {
+    return clientConfig.isHideTokens();
   }
 
   @RequestMapping("/")
