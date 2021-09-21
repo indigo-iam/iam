@@ -29,7 +29,7 @@
 <spring:message code="approve.title" var="title"/>
 <o:header title="${title}"/>
 <o:topbar pageName="Approve" />
-<meta description="Client consent page" />
+<!-- IAM client consent page -->
 <div class="container main">
 	<% if (session.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION) != null && !(session.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION) instanceof UnapprovedClientAuthenticationException)) { %>
 	<div class="alert-message error">

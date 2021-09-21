@@ -111,7 +111,7 @@ public class IamClientApprovalTests {
     .then()
       .log().all()
       .statusCode(HttpStatus.OK.value())
-      .body(containsString("Client consent page"));
+      .body(containsString("IAM client consent page"));
     // @formatter:on
 
   }
