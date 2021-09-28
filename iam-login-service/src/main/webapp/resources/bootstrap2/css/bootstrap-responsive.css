@@ -481,7 +481,6 @@
     clear: both;
   }
   [class*="span"] {
-    float: left;
     min-height: 1px;
     margin-left: 20px;
   }
@@ -516,7 +515,10 @@
     width: 290px;
   }
   .span4 {
-    width: 228px;
+    text-align: left;
+    background-color: #ffffff;
+    padding: 19px;
+    margin: 0 auto;
   }
   .span3 {
     width: 166px;
@@ -850,6 +852,9 @@
     display: block;
     float: none;
     width: 100%;
+    padding: 19px;
+    text-align: left;
+    background-color: #ffffff;
     margin-left: 0;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
