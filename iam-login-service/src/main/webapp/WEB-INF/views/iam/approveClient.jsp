@@ -35,8 +35,7 @@
 <o:header title="${title}" />
 
 <!-- IAM client consent page -->
-
-<div class="container main">
+<body style="background-color: #f5f5f5;">
 	<%
 	if (session.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION) != null && !(session
 			.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION) instanceof UnapprovedClientAuthenticationException)) {
@@ -69,13 +68,51 @@
 				</c:choose>
 			</h2>
 			<c:if test="${ not empty client.logoUri }">
-				<img src="api/clients/${ client.id }/logo"  width="60" height="60"/>
+				<img src="api/clients/${ client.id }/logo" width="60" height="60" />
+			</c:if>
+
+			<c:if
+				test="${ (not empty client.clientDescription) || (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri) || (not empty contacts) }">
+				<div class="muted">
+					<c:out value="${client.clientDescription}" />
+					<c:if
+						test="${ (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri)  || (not empty contacts) }">
+						<div id="toggleMoreInformation" style="cursor: pointer;">
+							<spring:message code="More information" />
+							</small>
+						</div>
+						<div id="moreInformation" style="display: none" class="list">
+							<ul>
+								<c:if test="${ not empty client.clientUri }">
+									<li><spring:message code="approve.home_page" />: <a
+										href="<c:out value="${ client.clientUri }" />"><c:out
+												value="${ client.clientUri }" /></a></li>
+								</c:if>
+								<c:if test="${ not empty client.policyUri }">
+									<li><spring:message code="Policy" />: <a
+										href="<c:out value="${ client.policyUri }" />"><c:out
+												value="${ client.policyUri }" /></a></li>
+								</c:if>
+								<c:if test="${ not empty client.tosUri }">
+									<li><spring:message code="approve.terms" />: <a
+										href="<c:out value="${ client.tosUri }" />"><c:out
+												value="${ client.tosUri }" /></a></li>
+								</c:if>
+								<c:if test="${ (not empty contacts) }">
+									<li><spring:message code="approve.contacts" />: <c:out
+											value="${ contacts }" /></li>
+								</c:if>
+							</ul>
+						</div>
+					</c:if>
+				</div>
 			</c:if>
 
 			<form name="confirmationForm"
 				action="${pageContext.request.contextPath.endsWith('/') ? pageContext.request.contextPath : pageContext.request.contextPath.concat('/') }authorize"
-				method="post">&nbsp;
-				<div class=row>
+				method="post">
+				&nbsp;
+				<div class="row">
 					<div class="span4">
 						<legend style="margin-bottom: 0;">
 							<spring:message code="approve.access_to" />
@@ -97,21 +134,19 @@
 
 						<c:forEach var="scope" items="${ scopes }">
 
-							<label for="scope_${ fn:escapeXml(scope.value) }"
-								class="checkbox"> <input type="checkbox"
-								name="scope_${ fn:escapeXml(scope.value) }"
-								id="scope_${ fn:escapeXml(scope.value) }"
-								value="${ fn:escapeXml(scope.value) }" checked="checked">
+							<p style="margin-top: 10px">
 								<c:if test="${ not empty scope.icon }">
 									<i class="icon-${ fn:escapeXml(scope.icon) }"></i>
-								</c:if> <c:choose>
+								</c:if>
+								<c:choose>
 									<c:when test="${ not empty scope.description }">
-										<c:out value="${ scope.description }" />
+										<b><c:out value="${ scope.description }" /></b>
 									</c:when>
 									<c:otherwise>
 										<c:out value="${ scope.value }" />
 									</c:otherwise>
-								</c:choose> <c:if test="${ not empty claims[scope.value] }">
+								</c:choose>
+								<c:if test="${ not empty claims[scope.value] }">
 									<span class="claim-tooltip" data-toggle="popover"
 										data-html="true" data-placement="right" data-trigger="hover"
 										data-title="These values will be sent:"
@@ -126,7 +161,7 @@
 					" > <i class="icon-question-sign"></i> </span>
 					</c:if>
 
-					</label>
+					</p>
 
 					</c:forEach>
 
@@ -148,48 +183,94 @@
 						${ consent ? 'checked="checked"' : '' }> <spring:message
 							code="approve.remember.next_time" />
 					</label>
-				</div>
-				&nbsp;
-				<div>
-					<c:choose>
-						<c:when test="${ empty client.redirectUris }">
-							<div class="alert alert-block alert-error">
-								<h4>
-									<i class="icon-info-sign"></i>
-									<spring:message code="approve.warning" />
-									:
-								</h4>
-								<spring:message code="approve.no_redirect_uri" />
+					<hr>
+					<div style="font-size: 12px; text-align: center;">
+						<c:choose>
+							<c:when test="${ empty client.redirectUris }">
+								<div class="alert alert-block alert-error">
+									<h4>
+										<i class="icon-info-sign"></i>
+										<spring:message code="approve.warning" />
+										:
+									</h4>
+									<spring:message code="approve.no_redirect_uri" />
+									<spring:message code="Authorizing will redirect to" />
+									<b><p>${ fn:escapeXml(redirect_uri) }</p></b>
+								</div>
+							</c:when>
+							<c:otherwise>
 								<spring:message code="Authorizing will redirect to" />
 								<b><p>${ fn:escapeXml(redirect_uri) }</p></b>
-							</div>
-						</c:when>
-						<c:otherwise>
-							<spring:message code="Authorizing will redirect to" />
-							<b><p>${ fn:escapeXml(redirect_uri) }</p></b>
-						</c:otherwise>
-					</c:choose>
+							</c:otherwise>
+						</c:choose>
+					</div>
+					<div style="text-align: center;">
+						<spring:message code="approve.label.authorize"
+							var="authorize_label" />
+						<spring:message code="approve.label.deny" var="deny_label" />
+						<input id="user_oauth_approval" name="user_oauth_approval"
+							value="true" type="hidden" /> <input type="hidden"
+							name="${_csrf.parameterName}" value="${_csrf.token}" /> <input
+							name="authorize" value="${authorize_label}" type="submit"
+							onclick="$('#user_oauth_approval').attr('value',true)"
+							class="btn btn-success btn-large" /> &nbsp; <input name="deny"
+							value="${deny_label}" type="submit"
+							onclick="$('#user_oauth_approval').attr('value',false)"
+							class="btn btn-deny btn-large" />
+					</div>
 				</div>
 				&nbsp;
-				<div class="row">
-					<spring:message code="approve.label.authorize"
-						var="authorize_label" />
-					<spring:message code="approve.label.deny" var="deny_label" />
-					<input id="user_oauth_approval" name="user_oauth_approval"
-						value="true" type="hidden" /> <input type="hidden"
-						name="${_csrf.parameterName}" value="${_csrf.token}" /> <input
-						name="authorize" value="${authorize_label}" type="submit"
-						onclick="$('#user_oauth_approval').attr('value',true)"
-						class="btn btn-success btn-large" /> &nbsp; <input name="deny"
-						value="${deny_label}" type="submit"
-						onclick="$('#user_oauth_approval').attr('value',false)"
-						class="btn btn-secondary btn-large" />
-				</div>
+				<c:choose>
+					<c:when test="${ client.dynamicallyRegistered }">
+						<div class="column">
+							<div style="width: 50%; float: left;">
+								<i class="icon-time"></i>
+								<spring:message code="Created" />
+								<p id="registrationTime"></p>
+							</div>
+							<div style="width: 50%; float: right">
+								<c:choose>
+									<c:when test="${ gras }">
+										<!-- client is "generally recognized as safe, display a more muted block -->
+										<i class="icon-globe"></i>
+										<spring:message code="approve.dynamically_registered" />
+									</c:when>
+									<c:otherwise>
+										<!-- client is dynamically registered -->
+										<i class="icon-globe"></i>
+										<spring:message code="The client was dynamically registered." />
+										<p>
+											<c:choose>
+												<c:when test="${count == 0}">
+													<spring:message code="approve.caution.message.none"
+														arguments="${count}" />
+												</c:when>
+												<c:when test="${count == 1}">
+													<spring:message code="approve.caution.message.singular"
+														arguments="${count}" />
+												</c:when>
+												<c:otherwise>
+													<spring:message code="approve.caution.message.plural"
+														arguments="${count}" />
+												</c:otherwise>
+											</c:choose>
+										</p>
+									</c:otherwise>
+								</c:choose>
+							</div>
+						</div>
+					</c:when>
+					<c:otherwise>
+						<div></div>
+						<i class="icon-time"></i>
+						<spring:message code="Created" />
+						<p id="registrationTime"></p>
+					</c:otherwise>
+				</c:choose>
 			</form>
 		</div>
 
 		<script type="text/javascript">
-		<!--
 			$(document)
 					.ready(
 							function() {
@@ -199,51 +280,11 @@
 									$(this).popover('show');
 								});
 
-								$(document)
-										.on(
-												'click',
-												'#toggleMoreInformation',
-												function(event) {
-													event.preventDefault();
-													if ($('#moreInformation')
-															.is(':visible')) {
-														// hide it
-														$(
-																'.moreInformationContainer',
-																this.el)
-																.removeClass(
-																		'alert')
-																.removeClass(
-																		'alert-info')
-																.addClass(
-																		'muted');
-														$('#moreInformation')
-																.hide('fast');
-														$(
-																'#toggleMoreInformation i')
-																.attr('class',
-																		'icon-chevron-right');
-													} else {
-														// show it
-														$(
-																'.moreInformationContainer',
-																this.el)
-																.addClass(
-																		'alert')
-																.addClass(
-																		'alert-info')
-																.removeClass(
-																		'muted');
-														$('#moreInformation')
-																.show('fast');
-														$(
-																'#toggleMoreInformation i')
-																.attr('class',
-																		'icon-chevron-down');
-													}
-												});
+								$("#toggleMoreInformation").click(function() {
+									$("#moreInformation").slideToggle();
+								});
 
-								var creationDate = "<c:out value="${ client.createdAt }" />";
+								var creationDate = "<fmt:formatDate value="${client.createdAt}" pattern="yyyy-MM-dd HH:mm:ss" />";
 								var displayCreationDate = $
 										.t('approve.dynamically-registered-unkown');
 								var hoverCreationDate = "";
@@ -267,6 +308,6 @@
 										hoverCreationDate);
 
 							});
-		//-->
 		</script>
+		<o:footer />
 	</t:page>
