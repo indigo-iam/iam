@@ -139,6 +139,9 @@
 						<c:forEach var="scope" items="${ scopes }">
 
 							<p style="margin-top: 10px">
+								<input type="hidden" name="scope_${ fn:escapeXml(scope.value) }"
+									id="scope_${ fn:escapeXml(scope.value) }"
+									value="${ fn:escapeXml(scope.value) }">
 								<c:if test="${ not empty scope.icon }">
 									<i class="icon-${ fn:escapeXml(scope.icon) }"></i>
 								</c:if>
