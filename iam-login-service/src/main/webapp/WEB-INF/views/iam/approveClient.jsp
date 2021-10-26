@@ -99,8 +99,12 @@
 												value="${ client.tosUri }" /></a></li>
 								</c:if>
 								<c:if test="${ (not empty contacts) }">
-									<li><spring:message code="approve.contacts" />: <c:out
-											value="${ contacts }" /></li>
+									<li><spring:message code="approve.contacts" />: <c:forEach
+											var="contact" items="${ contacts }">
+											<ul>
+												<li><c:out value="${ contact }" /></li>
+											</ul>
+										</c:forEach></li>
 								</c:if>
 							</ul>
 						</div>

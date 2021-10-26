@@ -644,13 +644,14 @@ body.skin-blue {
 }
 
 .btn-deny:active,
+.btn-deny:focus,
 .btn-deny:hover {
   background-color: #8b0000;
   color: #fff;
 }
 
 .list {
-    width: 350px;
+    width: 250px;
     margin: auto;
     text-align: left;
   }
