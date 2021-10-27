@@ -78,8 +78,7 @@
 					<c:if
 						test="${ (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri)  || (not empty contacts) }">
 						<div id="toggleMoreInformation" style="cursor: pointer;">
-							<spring:message code="More information" />
-							</small>
+							<i class="icon-chevron-right"></i><spring:message code="More information" />
 						</div>
 						<div id="moreInformation" style="display: none" class="list">
 							<ul>
@@ -286,10 +285,16 @@
 									e.preventDefault();
 									$(this).popover('show');
 								});
-
+						
 								$("#toggleMoreInformation").click(function() {
-									$("#moreInformation").slideToggle();
-								});
+								if ($('#moreInformation').is(':visible')) {
+									$('#moreInformation').hide();
+									$('#toggleMoreInformation i').attr('class', 'icon-chevron-right');
+								} else {
+									$('#moreInformation').show();
+									$('#toggleMoreInformation i').attr('class', 'icon-chevron-down');
+								}
+							});
 
 								var creationDate = "<fmt:formatDate value="${client.createdAt}" pattern="yyyy-MM-dd HH:mm:ss" />";
 								var displayCreationDate = $
