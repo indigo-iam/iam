@@ -510,27 +510,8 @@
   .span5 {
     width: 290px;
   }
-  .list{
-    width: 350px;
-    margin: auto;
-    text-align: left;
-  }
   .span4 {
     width: 228px;
-  }
-  .column{
-    width: 370px;
-    margin: 0 auto;
-    overflow-y: auto;
-    padding: 19px;
-    text-align: left;
-    font-size: 13px;
-    background-color: #f5f5f5;
-    border: 1px solid lightgrey;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    border-bottom-left-radius: 5px;
-    border-bottom-right-radius: 5px;
   }
   .span3 {
     width: 166px;

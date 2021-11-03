@@ -656,7 +656,7 @@ body.skin-blue {
     text-align: left;
   }
   
-.column {
+.more-info {
    width: 370px;
    margin: 0 auto;
    overflow-y: auto;
@@ -671,7 +671,7 @@ body.skin-blue {
    border-bottom-right-radius: 5px;
 }
 
-.span4 {
+.scopes-box {
     width: 370px;
     margin: 0 auto;
     padding: 19px;

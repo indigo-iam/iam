@@ -116,7 +116,7 @@
 				method="post">
 				&nbsp;
 				<div class="row">
-					<div class="span4">
+					<div class="scopes-box">
 						<legend style="margin-bottom: 0;">
 							<spring:message code="approve.access_to" />
 							:
@@ -228,7 +228,7 @@
 				&nbsp;
 				<c:choose>
 					<c:when test="${ client.dynamicallyRegistered }">
-						<div class="column">
+						<div class="more-info">
 							<div style="width: 50%; float: left;">
 								<i class="icon-time"></i>
 								<spring:message code="Created" />
