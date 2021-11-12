@@ -19,7 +19,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 
 import java.net.URISyntaxException;
-import java.security.Principal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -42,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
@@ -56,6 +56,11 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.persistence.model.IamAccount;
+
 /**
  * @author jricher
  *
@@ -65,173 +70,191 @@ import com.google.gson.JsonObject;
 public class IamOAuthConfirmationController {
 
 
-    @Autowired
-    private ClientDetailsEntityService clientService;
+  @Autowired
+  private ClientDetailsEntityService clientService;
 
-    @Autowired
-    private SystemScopeService scopeService;
+  @Autowired
+  private SystemScopeService scopeService;
 
-    @Autowired
-    private ScopeClaimTranslationService scopeClaimTranslationService;
+  @Autowired
+  private ScopeClaimTranslationService scopeClaimTranslationService;
 
-    @Autowired
-    private UserInfoService userInfoService;
+  @Autowired
+  private UserInfoService userInfoService;
 
-    @Autowired
-    private StatsService statsService;
+  @Autowired
+  private StatsService statsService;
 
-    @Autowired
-    private RedirectResolver redirectResolver;
+  @Autowired
+  private RedirectResolver redirectResolver;
 
-    /**
-     * Logger for this class
-     */
-    private static final Logger logger = LoggerFactory.getLogger(IamOAuthConfirmationController.class);
+  @Autowired
+  private ScopePolicyPDP pdp;
 
-    public IamOAuthConfirmationController() {
+  @Autowired
+  private AccountUtils accountUtils;
 
+
+  /**
+   * Logger for this class
+   */
+  private static final Logger logger =
+      LoggerFactory.getLogger(IamOAuthConfirmationController.class);
+
+  public IamOAuthConfirmationController() {
+
+  }
+
+  public IamOAuthConfirmationController(ClientDetailsEntityService clientService) {
+    this.clientService = clientService;
+  }
+
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @RequestMapping("/oauth/confirm_access")
+  public String confimAccess(Map<String, Object> model,
+      @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
+      Authentication authUser) {
+
+    // Check the "prompt" parameter to see if we need to do special processing
+
+    String prompt = (String) authRequest.getExtensions().get(PROMPT);
+    List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
+    ClientDetailsEntity client = null;
+
+    try {
+      client = clientService.loadClientByClientId(authRequest.getClientId());
+    } catch (OAuth2Exception e) {
+      logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client", e);
+      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
+      return HttpCodeView.VIEWNAME;
+    } catch (IllegalArgumentException e) {
+      logger.error(
+          "confirmAccess: IllegalArgumentException was thrown when attempting to load client", e);
+      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
+      return HttpCodeView.VIEWNAME;
     }
 
-    public IamOAuthConfirmationController(ClientDetailsEntityService clientService) {
-        this.clientService = clientService;
+    if (client == null) {
+      logger.error("confirmAccess: could not find client " + authRequest.getClientId());
+      model.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
+      return HttpCodeView.VIEWNAME;
     }
 
-    @PreAuthorize("hasRole('ROLE_USER')")
-    @RequestMapping("/oauth/confirm_access")
-    public String confimAccess(Map<String, Object> model, @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
-            Principal p) {
+    if (prompts.contains("none")) {
+      // if we've got a redirect URI then we'll send it
 
-        // Check the "prompt" parameter to see if we need to do special processing
+      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
 
-        String prompt = (String)authRequest.getExtensions().get(PROMPT);
-        List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
-        ClientDetailsEntity client = null;
+      try {
+        URIBuilder uriBuilder = new URIBuilder(url);
 
-        try {
-            client = clientService.loadClientByClientId(authRequest.getClientId());
-        } catch (OAuth2Exception e) {
-            logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client", e);
-            model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-            return HttpCodeView.VIEWNAME;
-        } catch (IllegalArgumentException e) {
-            logger.error("confirmAccess: IllegalArgumentException was thrown when attempting to load client", e);
-            model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-            return HttpCodeView.VIEWNAME;
+        uriBuilder.addParameter("error", "interaction_required");
+        if (!Strings.isNullOrEmpty(authRequest.getState())) {
+          uriBuilder.addParameter("state", authRequest.getState()); // copy the state parameter if
+                                                                    // one was given
         }
 
-        if (client == null) {
-            logger.error("confirmAccess: could not find client " + authRequest.getClientId());
-            model.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-            return HttpCodeView.VIEWNAME;
-        }
+        return "redirect:" + uriBuilder.toString();
 
-        if (prompts.contains("none")) {
-            // if we've got a redirect URI then we'll send it
-
-            String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
-
-            try {
-                URIBuilder uriBuilder = new URIBuilder(url);
-
-                uriBuilder.addParameter("error", "interaction_required");
-                if (!Strings.isNullOrEmpty(authRequest.getState())) {
-                    uriBuilder.addParameter("state", authRequest.getState()); // copy the state parameter if one was given
-                }
-
-                return "redirect:" + uriBuilder.toString();
-
-            } catch (URISyntaxException e) {
-                logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
-                model.put("code", HttpStatus.FORBIDDEN);
-                return HttpCodeView.VIEWNAME;
-            }
-        }
-
-        model.put("auth_request", authRequest);
-        model.put("client", client);
-
-        String redirect_uri = authRequest.getRedirectUri();
-
-        model.put("redirect_uri", redirect_uri);
-
-
-        // pre-process the scopes
-        Set<SystemScope> scopes = scopeService.fromStrings(authRequest.getScope());
-
-        Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-        Set<SystemScope> systemScopes = scopeService.getAll();
-
-        // sort scopes for display based on the inherent order of system scopes
-        for (SystemScope s : systemScopes) {
-            if (scopes.contains(s)) {
-                sortedScopes.add(s);
-            }
-        }
-
-        // add in any scopes that aren't system scopes to the end of the list
-        sortedScopes.addAll(Sets.difference(scopes, systemScopes));
-
-        model.put("scopes", sortedScopes);
-
-        // get the userinfo claims for each scope
-        UserInfo user = userInfoService.getByUsername(p.getName());
-        Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
-        if (user != null) {
-            JsonObject userJson = user.toJson();
-
-            for (SystemScope systemScope : sortedScopes) {
-                Map<String, String> claimValues = new HashMap<>();
-
-                Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
-                for (String claim : claims) {
-                    if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-                        // TODO: this skips the address claim
-                        claimValues.put(claim, userJson.get(claim).getAsString());
-                    }
-                }
-
-                claimsForScopes.put(systemScope.getValue(), claimValues);
-            }
-        }
-
-        model.put("claims", claimsForScopes);
-
-        // client stats
-        Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
-        model.put("count", count);
-
-
-        // contacts
-        if (client.getContacts() != null) {
-            String contacts = Joiner.on(", ").join(client.getContacts());
-            model.put("contacts", contacts);
-        }
-
-        // if the client is over a week old and has more than one registration, don't give such a big warning
-        // instead, tag as "Generally Recognized As Safe" (gras)
-        Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-        if (count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek)) {
-            model.put("gras", true);
-        } else {
-            model.put("gras", false);
-        }
-
-        return "iam/approveClient";
+      } catch (URISyntaxException e) {
+        logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
+        model.put("code", HttpStatus.FORBIDDEN);
+        return HttpCodeView.VIEWNAME;
+      }
     }
 
-    /**
-     * @return the clientService
-     */
-    public ClientDetailsEntityService getClientService() {
-        return clientService;
+    model.put("auth_request", authRequest);
+    model.put("client", client);
+
+    String redirect_uri = authRequest.getRedirectUri();
+
+    model.put("redirect_uri", redirect_uri);
+
+
+    // pre-process the scopes
+    Set<SystemScope> scopes = scopeService.fromStrings(authRequest.getScope());
+
+    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
+    Set<SystemScope> systemScopes = scopeService.getAll();
+
+    // filter requested scopes according to the scope policy
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
+
+    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+
+    // sort scopes for display based on the inherent order of system scopes
+    for (SystemScope s : systemScopes) {
+      if (scopeService.fromStrings(filteredScopes).contains(s)) {
+        sortedScopes.add(s);
+      }
     }
 
-    /**
-     * @param clientService the clientService to set
-     */
-    public void setClientService(ClientDetailsEntityService clientService) {
-        this.clientService = clientService;
+    // add in any scopes that aren't system scopes to the end of the list
+    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+
+    model.put("scopes", sortedScopes);
+
+    // get the userinfo claims for each scope
+    UserInfo user = userInfoService.getByUsername(authUser.getName());
+    Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
+    if (user != null) {
+      JsonObject userJson = user.toJson();
+
+      for (SystemScope systemScope : sortedScopes) {
+        Map<String, String> claimValues = new HashMap<>();
+
+        Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
+        for (String claim : claims) {
+          if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
+            // TODO: this skips the address claim
+            claimValues.put(claim, userJson.get(claim).getAsString());
+          }
+        }
+
+        claimsForScopes.put(systemScope.getValue(), claimValues);
+      }
     }
+
+    model.put("claims", claimsForScopes);
+
+    // client stats
+    Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
+    model.put("count", count);
+
+
+    // contacts
+    if (client.getContacts() != null) {
+      String contacts = Joiner.on(", ").join(client.getContacts());
+      model.put("contacts", contacts);
+    }
+
+    // if the client is over a week old and has more than one registration, don't give such a big
+    // warning
+    // instead, tag as "Generally Recognized As Safe" (gras)
+    Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
+    if (count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek)) {
+      model.put("gras", true);
+    } else {
+      model.put("gras", false);
+    }
+
+    return "iam/approveClient";
+  }
+
+  /**
+   * @return the clientService
+   */
+  public ClientDetailsEntityService getClientService() {
+    return clientService;
+  }
+
+  /**
+   * @param clientService the clientService to set
+   */
+  public void setClientService(ClientDetailsEntityService clientService) {
+    this.clientService = clientService;
+  }
 
 
 }
