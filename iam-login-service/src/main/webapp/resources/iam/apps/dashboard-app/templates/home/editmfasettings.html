@@ -1,0 +1,121 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form class="form-horizontal" ng-submit="userMfaCtrl.submit()" name="userMfaForm">
+
+    <div class="modal-header">
+        <h3 class="modal-title">Edit multi-factor authentication settings for '{{userMfaCtrl.eUser.name.formatted}}'</h3>
+    </div>
+
+    <div class="modal-body">
+        <operationresult/>
+
+        <div class="form-group">
+          <label class="control-label col-sm-2" for="name">Authenticator app</label>
+          <!-- Some of this is stolen from Status section in user.detail component -->
+          <td class="text-right">
+            <span class="label label-success" ng-show="$ctrl.user.mfa.authenticatorAppActive">
+              <i class="fa fa-check"></i> Enabled
+            </span>
+            <button class="btn btn-danger" type="button" name="disable-authenticator-app" id="disable-authenticator-app-btn" ng-show="$ctrl.user.mfa.authenticatorAppActive" ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
+            <span class="label label-warning" ng-show="!$ctrl.user.mfa.authenticatorAppActive">
+              <i class="fa fa-check"></i> Disabled
+            </span>
+            <button class="btn btn-primary" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!$ctrl.user.mfa.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
+          </td>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-sm-2" for="name">YubiKey</label>
+          <!-- Some of this is stolen from Status section in user.detail component -->
+          <td class="text-right">
+            <span class="label label-success" ng-show="$ctrl.user.mfa.yubikeyActive">
+              <i class="fa fa-check"></i> Enabled
+            </span>
+            <button class="btn btn-danger" type="button" name="disable-yubikey" id="disable-yubikey-btn" ng-show="$ctrl.user.mfa.yubikeyActive" ng-click="userMfaCtrl.disableYubiKey()">Disable</button>
+            <span class="label label-warning" ng-show="!$ctrl.user.mfa.yubikeyActive">
+              <i class="fa fa-check"></i> Disabled
+            </span>
+            <button class="btn btn-primary" type="button" name="enable-yubikey" id="enable-yubikey-btn" ng-show="!$ctrl.user.mfa.yubikeyActive" ng-click="userMfaCtrl.enableYubiKey()">Enable</button>
+          </td>
+        </div>
+
+        <!-- <div class="form-group">
+            <label class="control-label col-sm-2" for="surname">Surname</label>
+            <div ng-class="{'has-error': userMfaForm.surname.$dirty && userMfaForm.surname.$invalid, 'has-success': userMfaForm.surname.$dirty && userMfaForm.surname.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" name="surname" id="surname" type="text" ng-model="userMfaCtrl.eUser.surname" placeholder="Family name" required ng-minlength="3"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userMfaForm.surname.$dirty && userMfaForm.surname.$invalid, 'glyphicon-ok': userMfaForm.surname.$dirty && userMfaForm.surname.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="userMfaForm.surname.$dirty && userMfaForm.surname.$error.required">
+                        This is a required field</span>
+                    <span class="help-block" ng-show="userMfaForm.surname.$dirty && userMfaForm.surname.$error.minlength">Minimum length required is 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="email">Email</label>
+            <div ng-class="{'has-error': userMfaForm.email.$dirty && userMfaForm.email.$invalid, 'has-success': userMfaForm.email.$dirty && userMfaForm.email.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control"
+                        name="email" id="email" type="email"
+                        ng-model="userMfaCtrl.eUser.email"
+                        placeholder="Email"
+                        required ng-minlength="3"
+                        iam-email-available-validator />
+
+                    <span class="glyphicon form-control-feedback"
+                      ng-class="{'glyphicon-remove': userMfaForm.email.$dirty && userMfaForm.email.$invalid, 'glyphicon-ok': userMfaForm.email.$dirty && userMfaForm.email.$valid}" style="right: 15px"></span>
+
+                    <span class="help-block" ng-show="userMfaForm.email.$dirty && userMfaForm.email.$error.required">
+                        This is a required field
+                    </span>
+
+                    <span class="help-block" ng-show="userMfaForm.email.$dirty && userMfaForm.email.$error.email">
+                        This is not a valid email
+                    </span>
+
+                    <span class="help-block" ng-show="userMfaForm.email.$dirty && userMfaForm.email.$error.emailAvailable">
+                        Email already taken by another user
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="picture">Picture</label>
+            <div ng-class="{'has-error': userMfaForm.picture.$dirty && userMfaForm.picture.$invalid, 'has-success': userMfaForm.picture.$dirty && userMfaForm.picture.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" id="picture" name="picture" type="url" ng-model="userMfaCtrl.eUser.picture"/>
+                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': userMfaForm.picture.$dirty && userMfaForm.picture.$invalid, 'glyphicon-ok': userMfaForm.picture.$dirty && userMfaForm.picture.$valid}" style="right: 15px"></span>
+                    <span class="help-block" ng-show="userMfaForm.picture.$dirty && userMfaForm.picture.$invalid">This field is invalid</span>
+                    <span class="help-block" ng-show="userMfaForm.picture.$dirty && userMfaForm.picture.$error.url">
+                        This field is not a valid URL</span>
+                </div>
+                <div class="col-sm-12">
+                    <br/>
+                    <img ng-src="{{userMfaCtrl.eUser.picture}}" ng-show="userMfaCtrl.eUser.picture" class="profile-user-img img-responsive img-circle"/>
+                </div>
+            </div>
+        </div> -->
+
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="userMfaCtrl.dismiss()">Cancel</button>
+    </div>
+</form>
