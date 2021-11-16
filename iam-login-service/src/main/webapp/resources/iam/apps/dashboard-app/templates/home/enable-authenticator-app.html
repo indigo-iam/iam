@@ -15,7 +15,6 @@
     limitations under the License.
 
 -->
-
 <form class="form-horizontal" ng-submit="authAppCtrl.submitEnable()" name="authenticatorAppForm">
 
   <div class="modal-header">
@@ -23,7 +22,6 @@
   </div>
 
   <div class="modal-body">
-    <operationresult />
 
     <p>Scan the QR code through your authenticator app and input a TOTP to validate configuration.</p>
     <img th:src="${dataUri}" />
@@ -41,6 +39,7 @@
         <span class="help-block" ng-show="authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$error.minlength">Minimum length required is {{authAppCtrl.codeMinlength}}</span>
       </div>
     </div>
+   </div>
 
   <div class="modal-footer">
     <button class="btn btn-primary" type="submit" name="submit" id="modal-btn-submit" ng-disabled="!authenticatorAppForm.$dirty || authenticatorAppForm.$invalid || !authenticatorAppForm.enabled">Submit</button>
