@@ -31,14 +31,9 @@
     };
 
     userMfaCtrl.userToEdit = user;
-    
-    userMfaCtrl.authenticatorAppActive = false;
-    userMfaCtrl.yubiKeyActive = false;
-    userMfaCtrl.authenticatorApp2Active = true;
+
     userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
     userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
-    userMfaCtrl.enableYubiKey = enableYubiKey;
-    userMfaCtrl.disableYubiKey = disableYubiKey;
 
     function enableAuthenticatorApp() {
       var modalInstance = $uibModal.open({
@@ -66,14 +61,6 @@
       });
     }
 
-    function enableYubiKey() {
-      return true;
-    }
-
-    function disableYubiKey() {
-      return true;
-    }
-
     userMfaCtrl.dismiss = dismiss;
     userMfaCtrl.reset = reset;
 
@@ -95,32 +82,5 @@
 
     userMfaCtrl.submit = function() {
       return $uibModalInstance.close('Updated settings');
-      // ResetPasswordService
-      //     .updatePassword(
-      //         userMfaCtrl.user.currentPassword,
-      //         userMfaCtrl.user.password)
-      //     .then(function() { return $uibModalInstance.close('Password updated'); })
-      //     .catch(function(error) {
-      //       console.error(error);
-      //       $scope.operationResult = Utils.buildErrorResult(error.data);
-      //     });
     };
   }
-
-//   var compareTo = function() {
-//     return {
-//       require: 'ngModel',
-//       scope: {otherModelValue: '=compareTo'},
-//       link: function(scope, element, attributes, ngModel) {
-
-//         ngModel.$validators.compareTo = function(modelValue) {
-//           return modelValue == scope.otherModelValue;
-//         };
-
-//         scope.$watch('otherModelValue', function() { ngModel.$validate(); });
-//       }
-//     };
-//   };
-
-//   angular.module('dashboardApp').directive('compareTo', compareTo);
-// })();
