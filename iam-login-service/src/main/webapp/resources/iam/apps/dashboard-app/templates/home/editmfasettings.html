@@ -18,7 +18,7 @@
 <form class="form-horizontal" ng-submit="userMfaCtrl.submit()" name="userMfaForm">
 
     <div class="modal-header">
-        <h3 class="modal-title">Edit multi-factor authentication settings for '{{userMfaCtrl.eUser.name.formatted}}'</h3>
+        <h3 class="modal-title">Edit multi-factor authentication settings for {{userMfaCtrl.userToEdit.name.formatted}}</h3>
     </div>
 
     <div class="modal-body">
@@ -28,14 +28,15 @@
           <label class="control-label col-sm-2" for="name">Authenticator app</label>
           <!-- Some of this is stolen from Status section in user.detail component -->
           <td class="text-right">
-            <span class="label label-success" ng-show="$ctrl.user.mfa.authenticatorAppActive">
+            <!-- The ng-show here might more realistically be userMfaCtrl.user.mfa.authenticatorAppActive -->
+            <span class="label label-success" ng-show="userMfaCtrl.authenticatorAppActive">
               <i class="fa fa-check"></i> Enabled
             </span>
-            <button class="btn btn-danger" type="button" name="disable-authenticator-app" id="disable-authenticator-app-btn" ng-show="$ctrl.user.mfa.authenticatorAppActive" ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
-            <span class="label label-warning" ng-show="!$ctrl.user.mfa.authenticatorAppActive">
+            <button class="btn btn-danger" type="button" name="disable-authenticator-app" id="disable-authenticator-app-btn" ng-show="userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
+            <span class="label label-warning" ng-show="!userMfaCtrl.authenticatorAppActive">
               <i class="fa fa-check"></i> Disabled
             </span>
-            <button class="btn btn-primary" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!$ctrl.user.mfa.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
+            <button class="btn btn-primary" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
           </td>
         </div>
 
@@ -43,14 +44,15 @@
           <label class="control-label col-sm-2" for="name">YubiKey</label>
           <!-- Some of this is stolen from Status section in user.detail component -->
           <td class="text-right">
-            <span class="label label-success" ng-show="$ctrl.user.mfa.yubikeyActive">
+              <!-- The ng-show here might more realistically be userMfaCtrl.user.mfa.yubikeyActive -->
+            <span class="label label-success" ng-show="userMfaCtrl.yubikeyActive">
               <i class="fa fa-check"></i> Enabled
             </span>
-            <button class="btn btn-danger" type="button" name="disable-yubikey" id="disable-yubikey-btn" ng-show="$ctrl.user.mfa.yubikeyActive" ng-click="userMfaCtrl.disableYubiKey()">Disable</button>
-            <span class="label label-warning" ng-show="!$ctrl.user.mfa.yubikeyActive">
+            <button class="btn btn-danger" type="button" name="disable-yubikey" id="disable-yubikey-btn" ng-show="userMfaCtrl.yubikeyActive" ng-click="userMfaCtrl.disableYubiKey()">Disable</button>
+            <span class="label label-warning" ng-show="!userMfaCtrl.yubikeyActive">
               <i class="fa fa-check"></i> Disabled
             </span>
-            <button class="btn btn-primary" type="button" name="enable-yubikey" id="enable-yubikey-btn" ng-show="!$ctrl.user.mfa.yubikeyActive" ng-click="userMfaCtrl.enableYubiKey()">Enable</button>
+            <button class="btn btn-primary" type="button" name="enable-yubikey" id="enable-yubikey-btn" ng-show="!userMfaCtrl.yubikeyActive" ng-click="userMfaCtrl.enableYubiKey()">Enable</button>
           </td>
         </div>
 

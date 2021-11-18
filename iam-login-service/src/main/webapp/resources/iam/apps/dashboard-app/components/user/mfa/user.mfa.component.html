@@ -16,7 +16,11 @@
 
 -->
 <!-- Edit details button -->
-<button class="btn btn-primary btn-block" ng-click="$ctrl.openUserMfaModal()" ng-enabled="$ctrl.enabled" name="user-mfa-btn">
-    <i class="fa fa-pencil"></i>
+<button 
+    class="btn btn-success btn-block"
+    style="margin-top: 5px" 
+    ng-click="$ctrl.openUserMfaModal()" 
+    name="edit-mfa-btn" ng-if="$ctrl.isMe()">
+    <i class="fa fa-key"></i> 
     <strong>Edit multi-factor settings</strong>
 </button>
