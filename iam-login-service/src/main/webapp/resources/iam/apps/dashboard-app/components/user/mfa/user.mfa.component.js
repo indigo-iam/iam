@@ -16,12 +16,12 @@
 (function() {
   'use strict';
 
-  function UserMfaController(
+  function EditMfaController(
       toaster, Utils, ModalService, $uibModal) {
     var self = this;
 
     self.$onInit = function() {
-      console.log('UserMfaController onInit');
+      console.log('EditMfaController onInit');
       self.enabled = true;
       self.user = self.userCtrl.user;
     };
@@ -29,7 +29,6 @@
     self.isMe = function() { return self.userCtrl.isMe(); };
 
     self.openUserMfaModal = function() {
-      self.enabled = false;
       var modalInstance = $uibModal.open({
         templateUrl: '/resources/iam/apps/dashboard-app/templates/home/editmfasettings.html',
         controller: 'UserMfaController',
@@ -51,7 +50,7 @@
         '/resources/iam/apps/dashboard-app/components/user/mfa/user.mfa.component.html',
     controller: [
       'toaster', 'Utils', 'ModalService', '$uibModal',
-      UserMfaController
+      EditMfaController
     ]
   });
 })();

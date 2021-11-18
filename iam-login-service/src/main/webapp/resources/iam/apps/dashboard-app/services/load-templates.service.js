@@ -26,6 +26,7 @@
         '/resources/iam/apps/dashboard-app/templates/common/userinfo-box.html',
         '/resources/iam/apps/dashboard-app/templates/header.html',
         '/resources/iam/apps/dashboard-app/templates/home/account-link-dialog.html',
+        '/resources/iam/apps/dashboard-app/templates/home/editmfasettings.html',
         '/resources/iam/apps/dashboard-app/templates/home/editpassword.html',
         '/resources/iam/apps/dashboard-app/templates/home/edituser.html',
         '/resources/iam/apps/dashboard-app/templates/home/home.html',
