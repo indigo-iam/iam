@@ -16,74 +16,43 @@
   'use strict';
 
   angular.module('dashboardApp')
-      .controller('UserMfaController', UserMfaController);
+      .controller('EnableAuthenticatorAppController', EnableAuthenticatorAppController);
 
-  UserMfaController.$inject = [
-    '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal'
+  EnableAuthenticatorAppController.$inject = [
+    '$scope', '$state', '$uibModalInstance', 'Utils', 'user'
   ];
 
-  function UserMfaController(
-      $scope, $state, $uibModalInstance, Utils, user, $uibModal) {
-    var userMfaCtrl = this;
+  function EnableAuthenticatorAppController(
+      $scope, $state, $uibModalInstance, Utils, user) {
+    var enableAuthAppCtrl = this;
 
-    userMfaCtrl.$onInit = function() {
-      console.log('UserMfaController onInit');
-    };
+    enableAuthAppCtrl.userToEdit = user;
+    enableAuthAppCtrl.codeMinlength = 6;
 
-    userMfaCtrl.userToEdit = user;
-    
-    userMfaCtrl.authenticatorAppActive = false;
-    userMfaCtrl.yubiKeyActive = false;
-    userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
-    userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
-    userMfaCtrl.enableYubiKey = enableYubiKey;
-    userMfaCtrl.disableYubiKey = disableYubiKey;
-
-    function enableAuthenticatorApp() {
-      var modalInstance = $uibModal.open({
-        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/enable-authenticator-app.html',
-        controller: 'EnableAuthenticatorAppController',
-        controllerAs: 'enableAuthAppCtrl',
-        resolve: {user: function() { return self.user; }}
-      });
-
-      modalInstance.result.then(function(msg) {
-        toaster.pop({type: 'success', body: msg});
-      });
-    }
-
-    function disableAuthenticatorApp() {
-      return true;
-    }
-
-    function enableYubiKey() {
-      return true;
-    }
-
-    function disableYubiKey() {
-      return true;
-    }
-
-    userMfaCtrl.dismiss = dismiss;
-    userMfaCtrl.reset = reset;
+    enableAuthAppCtrl.dismiss = dismiss;
+    enableAuthAppCtrl.reset = reset;
 
     function reset() {
       console.log('reset form');
 
-      userMfaCtrl.enabled = true;
+      enableAuthAppCtrl.enabled = true;
+
+      enableAuthAppCtrl.user = {
+        code: ''
+      };
 
       if ($scope.userMfaForm) {
         $scope.userMfaForm.$setPristine();
       }
     }
 
-    userMfaCtrl.reset();
+    enableAuthAppCtrl.reset();
 
     function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
 
-    userMfaCtrl.message = '';
+    enableAuthAppCtrl.message = '';
 
-    userMfaCtrl.submit = function() {
+    enableAuthAppCtrl.submit = function() {
       return $uibModalInstance.close('Updated settings');
       // ResetPasswordService
       //     .updatePassword(
