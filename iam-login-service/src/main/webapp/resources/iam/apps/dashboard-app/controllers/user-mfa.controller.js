@@ -34,6 +34,7 @@
     
     userMfaCtrl.authenticatorAppActive = false;
     userMfaCtrl.yubiKeyActive = false;
+    userMfaCtrl.authenticatorApp2Active = true;
     userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
     userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
     userMfaCtrl.enableYubiKey = enableYubiKey;
@@ -53,7 +54,16 @@
     }
 
     function disableAuthenticatorApp() {
-      return true;
+      var modalInstance = $uibModal.open({
+        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disable-authenticator-app.html',
+        controller: 'DisableAuthenticatorAppController',
+        controllerAs: 'disableAuthAppCtrl',
+        resolve: {user: function() { return self.user; }}
+      });
+
+      modalInstance.result.then(function(msg) {
+        toaster.pop({type: 'success', body: msg});
+      });
     }
 
     function enableYubiKey() {
