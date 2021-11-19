@@ -25,7 +25,7 @@
         <operationresult/>
 
         <div class="form-group">
-          <label class="control-label col-sm-2" for="name">Authenticator app</label>
+          <label class="control-label col-sm-2" for="authenticator-app">Authenticator app</label>
           <!-- Some of this is stolen from Status section in user.detail component -->
           <td class="text-right">
             <!-- The ng-show here might more realistically be userMfaCtrl.user.mfa.authenticatorAppActive -->
@@ -37,6 +37,22 @@
               <i class="fa fa-check"></i> Disabled
             </span>
             <button class="btn btn-success" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
+          </td>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label col-sm-2" for="authenticator-app2">Authenticator app</label>
+          <!-- Some of this is stolen from Status section in user.detail component -->
+          <td class="text-right">
+            <!-- The ng-show here might more realistically be userMfaCtrl.user.mfa.authenticatorAppActive -->
+            <span class="label label-success" ng-show="userMfaCtrl.authenticatorApp2Active">
+              <i class="fa fa-check"></i> Enabled
+            </span>
+            <button class="btn btn-danger" type="button" name="disable-authenticator-app" id="disable-authenticator-app-btn" ng-show="userMfaCtrl.authenticatorApp2Active" ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
+            <span class="label label-danger" ng-show="!userMfaCtrl.authenticatorApp2Active">
+              <i class="fa fa-check"></i> Disabled
+            </span>
+            <button class="btn btn-success" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!userMfaCtrl.authenticatorApp2Active" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
           </td>
         </div>
 
