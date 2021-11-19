@@ -29,6 +29,7 @@
         '/resources/iam/apps/dashboard-app/templates/home/editmfasettings.html',
         '/resources/iam/apps/dashboard-app/templates/home/editpassword.html',
         '/resources/iam/apps/dashboard-app/templates/home/edituser.html',
+        '/resources/iam/apps/dashboard-app/templates/home/enable-authenticator-app.html',
         '/resources/iam/apps/dashboard-app/templates/home/home.html',
         '/resources/iam/apps/dashboard-app/templates/loading-modal.html',
         '/resources/iam/apps/dashboard-app/templates/nav.html',

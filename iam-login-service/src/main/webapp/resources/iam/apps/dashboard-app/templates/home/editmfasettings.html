@@ -33,10 +33,10 @@
               <i class="fa fa-check"></i> Enabled
             </span>
             <button class="btn btn-danger" type="button" name="disable-authenticator-app" id="disable-authenticator-app-btn" ng-show="userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
-            <span class="label label-warning" ng-show="!userMfaCtrl.authenticatorAppActive">
+            <span class="label label-danger" ng-show="!userMfaCtrl.authenticatorAppActive">
               <i class="fa fa-check"></i> Disabled
             </span>
-            <button class="btn btn-primary" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
+            <button class="btn btn-success" type="button" name="enable-authenticator-app" id="enable-authenticator-app-btn" ng-show="!userMfaCtrl.authenticatorAppActive" ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
           </td>
         </div>
 
@@ -49,10 +49,10 @@
               <i class="fa fa-check"></i> Enabled
             </span>
             <button class="btn btn-danger" type="button" name="disable-yubikey" id="disable-yubikey-btn" ng-show="userMfaCtrl.yubikeyActive" ng-click="userMfaCtrl.disableYubiKey()">Disable</button>
-            <span class="label label-warning" ng-show="!userMfaCtrl.yubikeyActive">
+            <span class="label label-danger" ng-show="!userMfaCtrl.yubikeyActive">
               <i class="fa fa-check"></i> Disabled
             </span>
-            <button class="btn btn-primary" type="button" name="enable-yubikey" id="enable-yubikey-btn" ng-show="!userMfaCtrl.yubikeyActive" ng-click="userMfaCtrl.enableYubiKey()">Enable</button>
+            <button class="btn btn-success" type="button" name="enable-yubikey" id="enable-yubikey-btn" ng-show="!userMfaCtrl.yubikeyActive" ng-click="userMfaCtrl.enableYubiKey()">Enable</button>
           </td>
         </div>
 
