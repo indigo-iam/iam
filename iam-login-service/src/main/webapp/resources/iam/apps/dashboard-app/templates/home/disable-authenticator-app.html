@@ -16,7 +16,7 @@
 
 -->
 
-<form class="form-horizontal" ng-submit="disableAuthAppCtrl.submit()" name="disableAuthenticatorAppForm">
+<form class="form-horizontal" ng-submit="authAppCtrl.submitDisable()" name="authenticatorAppForm">
 
   <div class="modal-header">
     <h3 class="modal-title">Disable MFA through authenticator app</h3>
@@ -31,20 +31,20 @@
 
     <div class="form-group">
       <div class="col-sm-3">
-        <label class="control-label" for="code">New Code</label>
+        <label class="control-label" for="code">Code</label>
       </div>
-      <div class="col-sm-9"  ng-class="{'has-error': disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$invalid, 'has-success': disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$valid}">
-        <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="disableAuthAppCtrl.user.code" required ng-minlength="disableAuthAppCtrl.codeMinlength" />
-        <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$invalid, 'glyphicon-ok': disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$valid}" style="right: 15px"></span>
-        <span class="help-block" ng-show="disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$error.required"> This is a required field</span>
-        <span class="help-block" ng-show="disableAuthenticatorAppForm.code.$dirty && disableAuthenticatorAppForm.code.$error.minlength">Minimum length required is {{disableAuthAppCtrl.codeMinlength}}</span>
+      <div class="col-sm-9"  ng-class="{'has-error': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'has-success': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}">
+        <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="authAppCtrl.user.code" required ng-minlength="authAppCtrl.codeMinlength" />
+        <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'glyphicon-ok': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}" style="right: 15px"></span>
+        <span class="help-block" ng-show="authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$error.required"> This is a required field</span>
+        <span class="help-block" ng-show="authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$error.minlength">Minimum length required is {{authAppCtrl.codeMinlength}}</span>
       </div>
     </div>
 
   <div class="modal-footer">
-    <button class="btn btn-primary" type="submit" name="submit" id="modal-btn-submit" ng-disabled="!disableAuthenticatorAppForm.$dirty || disableAuthenticatorAppForm.$invalid || !disableAuthenticatorAppForm.disabled">Submit</button>
-    <button class="btn btn-warning" type="button" name="reset" id="modal-btn-reset" ng-click="disableAuthAppCtrl.reset()" ng-disabled="disableAuthenticatorAppForm.$pristine">Reset</button>
-    <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="disableAuthAppCtrl.dismiss()">Cancel</button>
+    <button class="btn btn-primary" type="submit" name="submit" id="modal-btn-submit" ng-disabled="!authenticatorAppForm.$dirty || authenticatorAppForm.$invalid || !authenticatorAppForm.disabled">Submit</button>
+    <button class="btn btn-warning" type="button" name="reset" id="modal-btn-reset" ng-click="authAppCtrl.reset()" ng-disabled="authenticatorAppForm.$pristine">Reset</button>
+    <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="authAppCtrl.dismiss()">Cancel</button>
   </div>
 
 </form>
