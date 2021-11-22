@@ -23,4 +23,5 @@ public interface CertificateDTO {
 
     String getIssuerDn();
 
+    void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException;
 }

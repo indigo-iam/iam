@@ -17,6 +17,10 @@ package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+<<<<<<< HEAD
+=======
+import static org.hamcrest.MatcherAssert.assertThat;
+>>>>>>> af13c9c9 (Merging changes for updating Spring boot and Java version. Squashed commit of the following:)
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
