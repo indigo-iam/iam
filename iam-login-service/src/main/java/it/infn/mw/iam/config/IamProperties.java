@@ -646,6 +646,11 @@ public class IamProperties {
 
   private ClientProperties client = new ClientProperties();
 
+  private ExternalConnectivityProbeProperties externalConnectivityProbe =
+      new ExternalConnectivityProbeProperties();
+
+  private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
+
   public String getBaseUrl() {
     return baseUrl;
   }

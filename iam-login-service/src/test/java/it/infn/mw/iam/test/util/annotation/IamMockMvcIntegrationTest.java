@@ -37,6 +37,7 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc(printOnlyOnFailure = true, print = MockMvcPrint.LOG_DEBUG)
+
 @Transactional
 public @interface IamMockMvcIntegrationTest {
 

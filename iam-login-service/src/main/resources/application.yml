@@ -25,6 +25,7 @@ server:
   port: ${IAM_PORT:8080}
   
   tomcat:
+    
     accesslog:
       enabled: ${IAM_TOMCAT_ACCESS_LOG_ENABLED:false}
       directory: ${IAM_TOMCAT_ACCESS_LOG_DIRECTORY:/tmp}

@@ -17,8 +17,8 @@ package it.infn.mw.iam.test.scim.core.provisioning.user;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -26,11 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.scim.model.ScimAttribute;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
@@ -42,9 +40,6 @@ import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamOidcId;
-import it.infn.mw.iam.persistence.model.IamSamlId;
-import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
@@ -73,7 +68,6 @@ public class ScimUserServiceTests {
   final String TESTUSER_LABEL_NAME = "label-name";
   final String TESTUSER_LABEL_VALUE = "label-value";
   final String PRODUCTION_GROUP_UUID = "c617d586-54e6-411d-8e38-64967798fa8a";
-
   final String TESTUSER_USERNAME = "testProvisioningUser";
   final String TESTUSER_PASSWORD = "password";
   final ScimName TESTUSER_NAME = ScimName.builder().givenName("John").familyName("Lennon").build();
