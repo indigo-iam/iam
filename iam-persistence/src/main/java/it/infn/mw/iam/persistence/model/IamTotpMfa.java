@@ -60,7 +60,7 @@ public class IamTotpMfa implements Serializable {
   @Column(name = "last_update_time", nullable = false)
   private Date lastUpdateTime;
 
-  @OneToMany(mappedBy = "totpMfa", cascade = CascadeType.ALL, fetch = FetchType.LAZY,
+  @OneToMany(mappedBy = "totpMfa", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
   private Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
