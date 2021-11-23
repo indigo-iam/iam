@@ -59,6 +59,11 @@ iam:
   
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
+    default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
+    default-jwe-decrypt-key-id: ${IAM_JWK_DEFAULT_JWE_DECRYPT_KEY_ID:${iam.jwk.default-key-id}}
+    default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
+    default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
+    default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
     
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}

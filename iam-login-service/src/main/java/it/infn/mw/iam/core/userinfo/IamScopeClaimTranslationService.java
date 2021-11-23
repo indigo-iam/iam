@@ -41,6 +41,7 @@ import static it.infn.mw.iam.core.userinfo.UserInfoClaim.SSH_KEYS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.SUB;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.UPDATED_AT;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WEBSITE;
+import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WLCG_GROUPS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ZONEINFO;
 
 import java.util.EnumSet;
@@ -70,6 +71,7 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
   public static final String EDUPERSON_ENTITLEMENT_SCOPE = "eduperson_entitlement";
   public static final String ATTR_SCOPE = "attr";
   public static final String SSH_KEYS_SCOPE = "ssh-keys";
+  public static final String WLCG_GROUPS_SCOPE = "wlcg.groups";
 
   protected static final Set<UserInfoClaim> PROFILE_CLAIMS = EnumSet.of(NAME, PREFERRED_USERNAME,
       GIVEN_NAME, FAMILY_NAME, MIDDLE_NAME, NICKNAME, PROFILE, PICTURE, WEBSITE, GENDER, ZONEINFO,
@@ -90,10 +92,11 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
     mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, EDUPERSON_ENTITLEMENT);
     mapScopeToClaim(ATTR_SCOPE, ATTR);
     mapScopeToClaim(SSH_KEYS_SCOPE, SSH_KEYS);
+    mapScopeToClaim(WLCG_GROUPS_SCOPE, WLCG_GROUPS);
   }
 
   private void mapScopeToClaim(String scope, UserInfoClaim claim) {
-    scopesToClaims.put(scope, claim.name().toLowerCase());
+    scopesToClaims.put(scope, claim.getClaimName());
   }
 
   private void mapScopeToClaim(String scope, Set<UserInfoClaim> claimSet) {

@@ -15,9 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+
+
+import static java.util.Objects.isNull;
+
 import org.mitre.openid.connect.model.UserInfo;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import it.infn.mw.iam.core.userinfo.DelegateUserInfoAdapter;
 
@@ -25,8 +31,11 @@ public class WLCGUserInfoAdapter extends DelegateUserInfoAdapter {
 
   private static final long serialVersionUID = 1L;
 
-  private WLCGUserInfoAdapter(UserInfo delegate) {
+  private final String[] resolvedGroups;
+
+  private WLCGUserInfoAdapter(UserInfo delegate, String[] resolvedGroups) {
     super(delegate);
+    this.resolvedGroups = resolvedGroups;
   }
 
   @Override
@@ -34,11 +43,24 @@ public class WLCGUserInfoAdapter extends DelegateUserInfoAdapter {
     JsonObject json = super.toJson();
 
     json.remove("groups");
+    json.remove("organisation_name");
+
+    if (!isNull(resolvedGroups)) {
+      JsonArray groups = new JsonArray();
+      for (String g : resolvedGroups) {
+        groups.add(new JsonPrimitive(g));
+      }
+      json.add("wlcg.groups", groups);
+    }
 
     return json;
   }
 
+  public static WLCGUserInfoAdapter forUserInfo(UserInfo delegate, String[] resolvedGroups) {
+    return new WLCGUserInfoAdapter(delegate, resolvedGroups);
+  }
+
   public static WLCGUserInfoAdapter forUserInfo(UserInfo delegate) {
-    return new WLCGUserInfoAdapter(delegate);
+    return new WLCGUserInfoAdapter(delegate, null);
   }
 }

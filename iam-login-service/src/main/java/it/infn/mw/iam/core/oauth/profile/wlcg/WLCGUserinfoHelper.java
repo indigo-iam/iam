@@ -18,29 +18,67 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserInfoAdapter.forUserInfo;
 import static java.util.Objects.isNull;
 
+import java.text.ParseException;
+import java.util.Optional;
+
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.UserInfoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
 
 public class WLCGUserinfoHelper extends BaseUserinfoHelper {
 
+  public static final Logger LOG = LoggerFactory.getLogger(WLCGUserinfoHelper.class);
+
   public WLCGUserinfoHelper(IamProperties props, UserInfoService userInfoService) {
     super(props, userInfoService);
   }
 
+
+  private Optional<String[]> resolveGroupsFromToken(OAuth2Authentication authentication) {
+    OAuth2AuthenticationDetails details = (OAuth2AuthenticationDetails) authentication.getDetails();
+
+    if (isNull(details) || isNull(details.getTokenValue())) {
+      return Optional.empty();
+    }
+
+    try {
+      JWT accessToken = JWTParser.parse(details.getTokenValue());
+      String[] resolvedGroups = accessToken.getJWTClaimsSet().getStringArrayClaim("wlcg.groups");
+
+      return Optional.ofNullable(resolvedGroups);
+
+    } catch (ParseException e) {
+      LOG.error("Error parsing access token: {}", e.getMessage(), e);
+      return Optional.empty();
+    }
+  }
+
   @Override
   public UserInfo resolveUserInfo(OAuth2Authentication authentication) {
-    
+
     UserInfo ui = lookupUserinfo(authentication);
 
     if (isNull(ui)) {
       return null;
     }
-    
-    return forUserInfo(ui);
+
+    Optional<String[]> resolvedGroups = resolveGroupsFromToken(authentication);
+
+    if (resolvedGroups.isPresent()) {
+      return forUserInfo(ui, resolvedGroups.get());
+    } else {
+      return forUserInfo(ui);
+    }
+
   }
 
 }

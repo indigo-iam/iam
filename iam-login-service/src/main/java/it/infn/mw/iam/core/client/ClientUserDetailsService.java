@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2018
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package db.migration.h2;
+package it.infn.mw.iam.core.client;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-import it.infn.mw.iam.persistence.migrations.BaseJdbcTemplateFlywayMigration;
-import it.infn.mw.iam.persistence.migrations.RemoveOrphanTokens;
-
-public class V34_2___RemoveOrphanTokens extends BaseJdbcTemplateFlywayMigration {
-
-  @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
-
-    RemoveOrphanTokens task = new RemoveOrphanTokens();
-    task.migrate(jdbcTemplate);
-  }
-
+public interface ClientUserDetailsService extends UserDetailsService {
+  ClientDetailsEntityService getClientDetailsService();
 }

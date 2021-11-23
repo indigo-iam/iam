@@ -180,8 +180,6 @@ public class TestUtils {
       return req.when()
         .post("/token")
         .then()
-        .log()
-        .all(true)
         .statusCode(HttpStatus.OK.value())
         .extract()
         .path("access_token");

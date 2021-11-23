@@ -1,6 +1,7 @@
 version: '3.5'
 
 volumes:
+  logs:
   db_data:
   trust:
 
@@ -48,7 +49,7 @@ services:
 
     environment:
       TZ: Europe/Rome
-      IAM_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1044 -Dspring.profiles.active=mysql-test
+      IAM_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1044 -Dspring.profiles.active=mysql-test -debug
       IAM_JAR: /code/iam-login-service/target/iam-login-service.war
       IAM_HOST: iam.local.io
       IAM_BASE_URL: https://iam.local.io
@@ -85,8 +86,11 @@ services:
 
     volumes:
       - trust:/etc/grid-security/certificates
+      - logs:/var/log/iam
       - .:/code:ro
       - /dev/urandom:/dev/random
+      - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
+
         # - ./compose/metadata/iam.local.io.metadata.xml:/indigo-iam/iam.local.io.metadata.xml:ro
         # - ./compose/metadata/spid-idp.example.metadata.xml:/indigo-iam/spid-idp.example.metadata.xml:ro
         # - ./compose/custom-saml/application-saml.yml:/indigo-iam/config/application-saml.yml:ro

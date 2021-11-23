@@ -308,14 +308,32 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @Test
   public void testWlcgProfileClientCredentials() throws Exception {
 
-    mvc
+    String response = mvc
       .perform(post("/token")
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("storage.read:/a-path")))
-      .andExpect(jsonPath("$.scope", containsString("storage.write:/another-path")));
+      .andExpect(jsonPath("$.scope", containsString("storage.write:/another-path")))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    DefaultOAuth2AccessToken tokenResponseObject =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    JWT accessToken = JWTParser.parse(tokenResponseObject.getValue());
+
+    String scope = accessToken.getJWTClaimsSet().getStringClaim("scope");
+    assertThat(scope, containsString("storage.read:/a-path"));
+    assertThat(scope, containsString("storage.write:/another-path"));
+
+    assertThat(accessToken.getJWTClaimsSet().getStringClaim("client_id"),
+        is(CLIENT_CREDENTIALS_CLIENT_ID));
+
+    assertThat(accessToken.getJWTClaimsSet().getSubject(), is(CLIENT_CREDENTIALS_CLIENT_ID));
+
   }
 
   @Test

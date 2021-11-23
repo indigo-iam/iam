@@ -29,7 +29,6 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
-import org.mitre.oauth2.service.impl.DefaultClientUserDetailsService;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
@@ -72,7 +71,6 @@ import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
@@ -85,6 +83,8 @@ import org.springframework.web.servlet.AsyncHandlerInterceptor;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.core.client.ClientUserDetailsService;
+import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.oauth.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -258,9 +258,10 @@ public class MitreServicesConfig {
   }
 
   @Bean(name = "clientUserDetailsService")
-  public UserDetailsService defaultClientUserDetailsService() {
+  public ClientUserDetailsService defaultClientUserDetailsService(
+      ClientDetailsEntityService clientService) {
 
-    return new DefaultClientUserDetailsService();
+    return new IAMClientUserDetailsService(clientService);
   }
 
   @Bean

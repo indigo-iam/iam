@@ -1,0 +1,38 @@
+version: '3'
+
+volumes:
+  trustanchors:
+  cabundle:
+
+services:
+
+  trust:
+    image: indigoiam/trustanchors
+    volumes:
+      - trustanchors:/etc/grid-security/certificates
+      - cabundle:/etc/pki
+
+  iam:
+    image: indigoiam/nginx
+    dns_search: local.io
+    container_name: iam
+
+    environment:
+      TZ: Europe/Rome
+      NGINX_HOST: iam
+      NGINX_PORT: 443
+
+    ports:
+      - "443:443"
+
+    volumes:
+      - /dev/urandom:/dev/random
+      - ./assets/iam.conf:/etc/nginx/conf.d/default.conf:ro
+
+    networks:
+      default:
+        aliases:
+          - iam.local.io
+
+    extra_hosts:
+    - "host.docker.internal:host-gateway"

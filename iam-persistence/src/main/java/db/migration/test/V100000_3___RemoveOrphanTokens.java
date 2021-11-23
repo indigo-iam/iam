@@ -18,7 +18,7 @@ package db.migration.test;
 import org.flywaydb.core.api.migration.spring.SpringJdbcMigration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import db.migration.tasks.RemoveOrphanTokens;
+import it.infn.mw.iam.persistence.migrations.RemoveOrphanTokens;
 
 public class V100000_3___RemoveOrphanTokens implements SpringJdbcMigration {
 

@@ -287,7 +287,8 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>1.8.0</version>
+                  <!-- This ugly hack is to require that any java 8 VM is used to build IAM -->
+                  <version>[1.8,1.8.0-1000]</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
                   <version>3.3.0</version>

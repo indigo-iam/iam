@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Lists;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.config.login.LoginButtonProperties;
@@ -217,6 +219,12 @@ public class IamProperties {
     String keystoreLocation;
     String defaultKeyId = "rsa1";
 
+    String defaultJwsAlgorithm = JWSAlgorithm.RS256.getName();
+    String defaultJweAlgorithm = JWEAlgorithm.RSA_OAEP_256.getName();
+
+    String defaultJweDecryptKeyId = "rsa1";
+    String defaultJweEncryptKeyId = "rsa1";
+
     public String getKeystoreLocation() {
       return keystoreLocation;
     }
@@ -227,6 +235,42 @@ public class IamProperties {
 
     public String getDefaultKeyId() {
       return defaultKeyId;
+    }
+
+    public void setDefaultKeyId(String defaultKeyId) {
+      this.defaultKeyId = defaultKeyId;
+    }
+
+    public String getDefaultJwsAlgorithm() {
+      return defaultJwsAlgorithm;
+    }
+
+    public void setDefaultJwsAlgorithm(String defaultJwsAlgorithm) {
+      this.defaultJwsAlgorithm = defaultJwsAlgorithm;
+    }
+
+    public String getDefaultJweAlgorithm() {
+      return defaultJweAlgorithm;
+    }
+
+    public void setDefaultJweAlgorithm(String defaultJweAlgorithm) {
+      this.defaultJweAlgorithm = defaultJweAlgorithm;
+    }
+
+    public String getDefaultJweDecryptKeyId() {
+      return defaultJweDecryptKeyId;
+    }
+
+    public void setDefaultJweDecryptKeyId(String defaultJweDecryptKeyId) {
+      this.defaultJweDecryptKeyId = defaultJweDecryptKeyId;
+    }
+
+    public String getDefaultJweEncryptKeyId() {
+      return defaultJweEncryptKeyId;
+    }
+
+    public void setDefaultJweEncryptKeyId(String defaultJweEncryptKeyId) {
+      this.defaultJweEncryptKeyId = defaultJweEncryptKeyId;
     }
   }
 

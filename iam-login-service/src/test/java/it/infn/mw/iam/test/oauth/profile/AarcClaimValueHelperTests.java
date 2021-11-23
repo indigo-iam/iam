@@ -15,7 +15,9 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
+import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -23,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,10 +33,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -50,11 +53,15 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
   "iam.aarc-profile.urn-namespace=example:iam:test",
   // @formatter:on
 })
+@Transactional
 public class AarcClaimValueHelperTests {
 
 
   @Autowired
-  AarcClaimValueHelper helper;
+  private AarcClaimValueHelper helper;
+
+  @Autowired
+  private IamGroupService groupService;
 
   IamUserInfo userInfo = mock(IamUserInfo.class);
 
@@ -63,21 +70,7 @@ public class AarcClaimValueHelperTests {
     when(userInfo.getGroups()).thenReturn(Collections.emptySet());
   }
 
-  protected IamGroup buildGroup(String name) {
 
-    return buildGroup(name, null);
-  }
-
-  protected IamGroup buildGroup(String name, IamGroup parentGroup) {
-
-    IamGroup g = new IamGroup();
-
-    g.setUuid(UUID.randomUUID().toString());
-    g.setName(name);
-    g.setParentGroup(parentGroup);
-
-    return g;
-  }
 
   @Test
   public void testEmptyGroupsUrnEncode() {
@@ -93,7 +86,11 @@ public class AarcClaimValueHelperTests {
 
     String s = "urn:example:iam:test:group:test#example.org";
 
-    IamGroup g = buildGroup("test");
+    IamGroup g = new IamGroup();
+    g.setName("test");
+    groupService.createGroup(g);
+
+
     when(userInfo.getGroups()).thenReturn(Sets.newHashSet(g));
 
     Set<String> urns = helper.resolveGroups(userInfo);
@@ -106,15 +103,35 @@ public class AarcClaimValueHelperTests {
 
     String parentUrn = "urn:example:iam:test:group:parent#example.org";
     String childUrn = "urn:example:iam:test:group:parent:child#example.org";
+    String grandchildUrn = "urn:example:iam:test:group:parent:child:grandchild#example.org";
 
-    IamGroup parent = buildGroup("parent");
-    IamGroup child = buildGroup("child", parent);
-    when(userInfo.getGroups()).thenReturn(Sets.newHashSet(parent, child));
+    IamGroup parent = new IamGroup();
+    parent.setName("parent");
+    groupService.createGroup(parent);
+
+    IamGroup child = new IamGroup();
+    child.setName("parent/child");
+    child.setParentGroup(parent);
+    groupService.createGroup(child);
+
+    IamGroup grandChild = new IamGroup();
+    grandChild.setName("parent/child/grandchild");
+    grandChild.setParentGroup(child);
+    groupService.createGroup(grandChild);
+
+    when(userInfo.getGroups()).thenReturn(Sets.newHashSet(parent, child, grandChild));
 
     Set<String> urns = helper.resolveGroups(userInfo);
-    assertThat(urns, hasSize(2));
+    assertThat(urns, hasSize(3));
     assertThat(urns, hasItem(parentUrn));
     assertThat(urns, hasItem(childUrn));
+    assertThat(urns, hasItem(grandchildUrn));
   }
 
+  @Test
+  public void testEmptyGroupListEncode() {
+    when(userInfo.getGroups()).thenReturn(emptySet());
+    Set<String> urns = helper.resolveGroups(userInfo);
+    assertThat(urns, empty());
+  }
 }

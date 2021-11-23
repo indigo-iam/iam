@@ -41,10 +41,8 @@ public class IamJWTProfileUserinfoHelper extends BaseUserinfoHelper {
 
   @Override
   public UserInfo resolveUserInfo(OAuth2Authentication authentication) {
-    final String username = authentication.getName();
 
-    UserInfo ui = getUserInfoService().getByUsernameAndClientId(username,
-        authentication.getOAuth2Request().getClientId());
+    UserInfo ui = lookupUserinfo(authentication);
 
     if (isNull(ui)) {
       return null;

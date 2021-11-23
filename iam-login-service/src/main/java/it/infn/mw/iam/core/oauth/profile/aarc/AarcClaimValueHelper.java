@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -60,29 +59,13 @@ public class AarcClaimValueHelper {
   public Set<String> resolveGroups(IamUserInfo userInfo) {
 
     Set<String> encodedGroups = new HashSet<>();
-    userInfo
-      .getGroups()
-      .forEach(g -> encodedGroups.add(encodeGroup(g)));
+    userInfo.getGroups().forEach(g -> encodedGroups.add(encodeGroup(g)));
     return encodedGroups;
   }
 
   private String encodeGroup(IamGroup group) {
-
-    StringBuilder urn = new StringBuilder();
-
-    urn.append(String.format("urn:%s:group:", urnNamespace));
-
-    StringBuilder groupHierarchy = new StringBuilder(group.getName());
-    Optional<IamGroup> parent = Optional.ofNullable(group.getParentGroup());
-    while (parent.isPresent()) {
-      groupHierarchy.insert(0, parent.get().getName() + ":");
-      parent = Optional.ofNullable(parent.get().getParentGroup());
-    }
-    urn.append(groupHierarchy.toString());
-
-    urn.append(String.format("#%s", iamHost));
-
-    return urn.toString();
+    String encodedGroupName = group.getName().replaceAll("/", ":");
+    return String.format("urn:%s:group:%s#%s", urnNamespace, encodedGroupName, iamHost);
   }
 
 }
