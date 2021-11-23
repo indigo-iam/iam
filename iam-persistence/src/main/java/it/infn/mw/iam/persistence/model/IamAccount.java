@@ -96,7 +96,7 @@ public class IamAccount implements Serializable {
   private boolean mfaEnabled;
 
   @OneToOne(cascade = CascadeType.ALL, mappedBy = "account")
-  @JoinColumn(name = "iam_totp_mfa", referencedColumnName = "id", nullable = true)
+  @JoinColumn(name = "totp_mfa", referencedColumnName = "id", nullable = true)
   private IamTotpMfa totpMfa;
 
   @Temporal(TemporalType.TIMESTAMP)
