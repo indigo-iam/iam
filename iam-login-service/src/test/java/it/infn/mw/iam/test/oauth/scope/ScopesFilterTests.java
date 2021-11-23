@@ -37,10 +37,8 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.ValidatableResponse;
 
@@ -57,29 +55,29 @@ import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {IamLoginService.class})
 @WebIntegrationTest(randomPort = true)
-@Transactional
 public class ScopesFilterTests extends ScopePolicyTestUtils {
-  
+
   public static final String SESSION = "JSESSIONID";
   public static final String TEST_CLIENT_ID = "client";
   public static final String RESPONSE_TYPE_CODE = "code";
   public static final String EMAIL = "email";
   public static final String SCOPE = "openid email";
   public static final String LOCALHOST_URL_TEMPLATE = "http://localhost:%d";
-  public static final String TEST_CLIENT_REDIRECT_URI = "https://iam.local.io/iam-test-client/openid_connect_login";
-  
+  public static final String TEST_CLIENT_REDIRECT_URI =
+      "https://iam.local.io/iam-test-client/openid_connect_login";
+
   @Value("${local.server.port}")
   private Integer iamPort;
-  
+
   @Autowired
   IamScopePolicyRepository policyScopeRepo;
-  
+
   @Autowired
   IamAccountRepository accountRepo;
 
   @Autowired
   EntityManager em;
-  
+
   @Autowired
   ScopePolicyPDP pdp;
 
@@ -87,7 +85,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     return accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
   }
-  
+
   private String loginUrl;
   private String authorizeUrl;
 
@@ -102,26 +100,28 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
   }
-  
+
   @Test
-  public void testConsentPageReturnsFilteredScopes() throws JsonProcessingException, IOException, ParseException{
-    
+  public void testConsentPageReturnsFilteredScopes()
+      throws JsonProcessingException, IOException, ParseException {
+
     IamAccount testAccount = findTestAccount();
 
     IamScopePolicy up = initDenyScopePolicy();
-    
+
     up.linkAccount(testAccount);
     up.setScopes(Sets.newSet(EMAIL));
-    
-    policyScopeRepo.save(up);
+
+    up = policyScopeRepo.save(up);
     accountRepo.save(testAccount);
-    
-    List<IamScopePolicy> accountPolicies = policyScopeRepo.findByAccount(testAccount);
-    assertThat(accountPolicies, not(empty()));
-    
-    testAccount = findTestAccount();
-    assertThat(testAccount.getScopePolicies(),hasItem(up));
-    
+
+    try {
+      List<IamScopePolicy> accountPolicies = policyScopeRepo.findByAccount(testAccount);
+      assertThat(accountPolicies, not(empty()));
+
+      testAccount = findTestAccount();
+      assertThat(testAccount.getScopePolicies(), hasItem(up));
+
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -137,7 +137,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
       .log().all()
       .statusCode(HttpStatus.FOUND.value());
     // @formatter:on
-    
+
     // @formatter:off
     ValidatableResponse loginResponse = RestAssured.given()
       .cookie(authzResponse.extract().detailedCookie(SESSION))
@@ -169,11 +169,12 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
       .statusCode(HttpStatus.OK.value())
       .extract().body().asString();
     // @formatter:on
-    
-    assertThat(responseBody, not(containsString("scope_email")));
-    
 
-    
+      assertThat(responseBody, not(containsString("scope_email")));
+    } finally {
+      policyScopeRepo.delete(up);
+    }
+
   }
 
 }
