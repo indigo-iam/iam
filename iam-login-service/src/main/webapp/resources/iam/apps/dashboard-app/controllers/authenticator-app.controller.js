@@ -42,8 +42,8 @@
         code: ''
       };
 
-      if ($scope.userMfaForm) {
-        $scope.userMfaForm.$setPristine();
+      if ($scope.authenticatorAppForm) {
+        $scope.authenticatorAppForm.$setPristine();
       }
     }
 

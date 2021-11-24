@@ -410,6 +410,13 @@
       <artifactId>jaxb-runtime</artifactId>
     </dependency>
 
+    <!-- Secret, TOTP, QR code and recovery code generator for multi-factor authentication -->
+    <dependency>
+      <groupId>dev.samstevens.totp</groupId>
+      <artifactId>totp</artifactId>
+      <version>1.7.1</version>
+    </dependency>
+
   </dependencies>
 
   <build>

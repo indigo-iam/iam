@@ -16,7 +16,6 @@
 package it.infn.mw.iam.persistence.model;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,8 +29,6 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
 @Entity
 @Table(name = "iam_totp_mfa")
@@ -143,6 +140,10 @@ public class IamTotpMfa implements Serializable {
   public void setRecoveryCodes(final Set<IamTotpRecoveryCode> recoveryCodes) {
     this.recoveryCodes.clear();
     this.recoveryCodes.addAll(recoveryCodes);
+  }
+
+  public void regenerateRecoveryCodes() {
+    // TODO
   }
 
   @Override
