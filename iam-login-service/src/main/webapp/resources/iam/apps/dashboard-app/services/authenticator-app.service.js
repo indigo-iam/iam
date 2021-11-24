@@ -30,25 +30,27 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike){
 	
 	// TODO two functions are broadly similar. This could be simplified into the foundations for step-up authentication
 	function enableAuthenticatorApp(code){
+
+		return $http.get('/iam/authenticator-app/enabled');
 		
-		var data = $httpParamSerializerJQLike({
-				code: code
-		});
+		// var data = $httpParamSerializerJQLike({
+		// 		code: code
+		// });
 		
-		var config = {
-			headers : {
-				'Accept' : 'text/plain',
-				'Content-Type': 'application/x-www-form-urlencoded'
-			},
-			transformRequest: function(obj) {
-		        var str = [];
-		        for(var p in obj)
-		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-		        return str.join("&");
-		    }
-		};
+		// var config = {
+		// 	headers : {
+		// 		'Accept' : 'text/plain',
+		// 		'Content-Type': 'application/x-www-form-urlencoded'
+		// 	},
+		// 	transformRequest: function(obj) {
+		//         var str = [];
+		//         for(var p in obj)
+		//         str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		//         return str.join("&");
+		//     }
+		// }; 
 		
-		return $http.post('/iam/authenticator-app/enable', data, config);	
+		// return $http.post('/iam/authenticator-app/enable', data, config);
 	};
 	
 	function disableAuthenticatorApp(code){

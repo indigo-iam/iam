@@ -92,11 +92,8 @@ public class IamAccount implements Serializable {
   @JoinColumn(name = "user_info_id")
   private IamUserInfo userInfo;
 
-  @Column(name = "mfa_enabled", nullable = false)
-  private boolean mfaEnabled;
-
-  @OneToOne(cascade = CascadeType.ALL, mappedBy = "account")
-  @JoinColumn(name = "totp_mfa", referencedColumnName = "id", nullable = true)
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "totp_mfa_id", nullable = true)
   private IamTotpMfa totpMfa;
 
   @Temporal(TemporalType.TIMESTAMP)
@@ -250,14 +247,6 @@ public class IamAccount implements Serializable {
   public void setActive(final boolean active) {
 
     this.active = active;
-  }
-
-  public boolean isMfaEnabled() {
-    return mfaEnabled;
-  }
-
-  public void setMfaEnabled(final boolean mfaEnabled) {
-    this.mfaEnabled = mfaEnabled;
   }
 
   public IamTotpMfa getTotpMfa() {
