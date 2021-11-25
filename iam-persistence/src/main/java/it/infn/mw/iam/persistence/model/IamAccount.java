@@ -92,7 +92,7 @@ public class IamAccount implements Serializable {
   @JoinColumn(name = "user_info_id")
   private IamUserInfo userInfo;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "totp_mfa_id", nullable = true)
   private IamTotpMfa totpMfa;
 

@@ -17,15 +17,29 @@
   'use strict';
 
   angular.module('dashboardApp')
-      .controller('AuthenticatorAppController', AuthenticatorAppController);
+      .controller('EnableAuthenticatorAppController', EnableAuthenticatorAppController);
 
-  AuthenticatorAppController.$inject = [
-    '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
+  angular.module('dashboardApp')
+      .controller('DisableAuthenticatorAppController', DisableAuthenticatorAppController);
+
+  EnableAuthenticatorAppController.$inject = [
+    '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
   ];
 
-  function AuthenticatorAppController(
-      $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
+  DisableAuthenticatorAppController.$inject = [
+    '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
+  ];
+
+  function EnableAuthenticatorAppController(
+      $http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
     var authAppCtrl = this;
+
+    authAppCtrl.$onInit = function() {
+      AuthenticatorAppService.addMfaSecretToUser().then(function(response) {
+        authAppCtrl.secret = response.data.secret;
+        authAppCtrl.dataUri = response.data.dataUri;
+      });
+    }
 
     authAppCtrl.userToEdit = user;
     authAppCtrl.codeMinlength = 6;
@@ -63,6 +77,37 @@
             $scope.operationResult = Utils.buildErrorResult(error.data);
           });
     };
+  }
+
+  function DisableAuthenticatorAppController(
+      $http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
+    var authAppCtrl = this;
+
+    authAppCtrl.userToEdit = user;
+    authAppCtrl.codeMinlength = 6;
+
+    authAppCtrl.dismiss = dismiss;
+    authAppCtrl.reset = reset;
+
+    function reset() {
+      console.log('reset form');
+
+      authAppCtrl.enabled = true;
+
+      authAppCtrl.user = {
+        code: ''
+      };
+
+      if ($scope.authenticatorAppForm) {
+        $scope.authenticatorAppForm.$setPristine();
+      }
+    }
+
+    authAppCtrl.reset();
+
+    function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
+
+    authAppCtrl.message = '';
 
     authAppCtrl.submitDisable = function() {
       AuthenticatorAppService

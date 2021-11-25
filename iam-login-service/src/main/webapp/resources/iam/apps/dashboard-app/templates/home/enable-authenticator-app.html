@@ -24,9 +24,9 @@
   <div class="modal-body">
 
     <p>Scan the QR code through your authenticator app and input a TOTP to validate configuration.</p>
-    <img th:src="${dataUri}" />
+    <img ng-src="{{authAppCtrl.dataUri}}" />
     <p>Alternatively, enter this secret manually into the app.</p>
-    <p th:text="${secret}">...</p>
+    <p>{{authAppCtrl.secret}}</p>
 
     <div class="form-group">
       <div class="col-sm-3">

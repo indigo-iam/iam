@@ -30,3 +30,4 @@ travis/travis-mitre-build.out
 *.iml
 .idea
 iam-test-client/.factorypath
+iam-voms-aa/.factorypath

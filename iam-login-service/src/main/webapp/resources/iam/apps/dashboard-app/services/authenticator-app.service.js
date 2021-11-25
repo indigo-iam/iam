@@ -22,11 +22,16 @@ AuthenticatorAppService.$inject = ['$http', '$httpParamSerializerJQLike'];
 function AuthenticatorAppService($http, $httpParamSerializerJQLike){
 	
 	var service = {
+		addMfaSecretToUser : addMfaSecretToUser,
 		enableAuthenticatorApp : enableAuthenticatorApp,
 		disableAuthenticatorApp : disableAuthenticatorApp
 	};
 	
 	return service;
+
+	function addMfaSecretToUser() {
+		return $http.get('/iam/authenticator-app/add-secret');
+	}
 	
 	// TODO two functions are broadly similar. This could be simplified into the foundations for step-up authentication
 	function enableAuthenticatorApp(code){
