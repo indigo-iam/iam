@@ -38,7 +38,7 @@
     function enableAuthenticatorApp() {
       var modalInstance = $uibModal.open({
         templateUrl: '/resources/iam/apps/dashboard-app/templates/home/enable-authenticator-app.html',
-        controller: 'AuthenticatorAppController',
+        controller: 'EnableAuthenticatorAppController',
         controllerAs: 'authAppCtrl',
         resolve: {user: function() { return self.user; }}
       });
@@ -51,7 +51,7 @@
     function disableAuthenticatorApp() {
       var modalInstance = $uibModal.open({
         templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disable-authenticator-app.html',
-        controller: 'AuthenticatorAppController',
+        controller: 'DisableAuthenticatorAppController',
         controllerAs: 'authAppCtrl',
         resolve: {user: function() { return self.user; }}
       });

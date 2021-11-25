@@ -220,11 +220,19 @@ public interface IamAccountService {
   IamAccount addTotpMfaSecret(IamAccount account);
 
   /**
-   * Removes a multi-factor secret from an account
+   * Enable multi-factor on account with TOTP secret
    * 
    * @param account
    * @return the updated account
    */
-  IamAccount removeTotpMfaSecret(IamAccount account);
+  IamAccount enableTotpMfa(IamAccount account);
+
+  /**
+   * Disable multi-factor on account with TOTP secret
+   * 
+   * @param account
+   * @return the updated account
+   */
+  IamAccount disableTotpMfa(IamAccount account);
 
 }
