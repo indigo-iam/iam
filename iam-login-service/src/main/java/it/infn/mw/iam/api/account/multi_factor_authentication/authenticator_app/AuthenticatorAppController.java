@@ -114,6 +114,20 @@ public class AuthenticatorAppController {
     service.disableTotpMfa(account);
   }
 
+  @PreAuthorize("hasRole('USER')")
+  @RequestMapping(value = "/disabled", method = RequestMethod.GET,
+      produces = MediaType.TEXT_PLAIN_VALUE)
+  @ResponseBody
+  public void getdisableAuthenticatorApp() {
+    final String username = getUsernameFromSecurityContext();
+    IamAccount account = accountRepository.findByUsername(username)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+
+    // TODO checks to see if provided code valid
+
+    service.disableTotpMfa(account);
+  }
+
   private String getUsernameFromSecurityContext() {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

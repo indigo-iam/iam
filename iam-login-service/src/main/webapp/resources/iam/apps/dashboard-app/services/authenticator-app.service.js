@@ -60,23 +60,25 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike){
 	
 	function disableAuthenticatorApp(code){
 		
-		var data = $httpParamSerializerJQLike({
-				code: code
-		});
+		return $http.get('/iam/authenticator-app/disabled');
+
+		// var data = $httpParamSerializerJQLike({
+		// 		code: code
+		// });
 		
-		var config = {
-			headers : {
-				'Accept' : 'text/plain',
-				'Content-Type': 'application/x-www-form-urlencoded'
-			},
-			transformRequest: function(obj) {
-		        var str = [];
-		        for(var p in obj)
-		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-		        return str.join("&");
-		    }
-		};
+		// var config = {
+		// 	headers : {
+		// 		'Accept' : 'text/plain',
+		// 		'Content-Type': 'application/x-www-form-urlencoded'
+		// 	},
+		// 	transformRequest: function(obj) {
+		//         var str = [];
+		//         for(var p in obj)
+		//         str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+		//         return str.join("&");
+		//     }
+		// };
 		
-		return $http.post('/iam/authenticator-app/disable', data, config);	
+		// return $http.post('/iam/authenticator-app/disable', data, config);	
 	};
 }

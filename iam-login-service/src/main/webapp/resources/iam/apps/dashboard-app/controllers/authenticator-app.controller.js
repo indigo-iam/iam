@@ -23,15 +23,15 @@
       .controller('DisableAuthenticatorAppController', DisableAuthenticatorAppController);
 
   EnableAuthenticatorAppController.$inject = [
-    '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
+    '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
   ];
 
   DisableAuthenticatorAppController.$inject = [
-    '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
+    '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
   ];
 
   function EnableAuthenticatorAppController(
-      $http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
+      $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
     var authAppCtrl = this;
 
     authAppCtrl.$onInit = function() {
@@ -80,7 +80,7 @@
   }
 
   function DisableAuthenticatorAppController(
-      $http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
+      $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user) {
     var authAppCtrl = this;
 
     authAppCtrl.userToEdit = user;
@@ -120,21 +120,4 @@
           });
     };
   }
-
-  var compareTo = function() {
-    return {
-      require: 'ngModel',
-      scope: {otherModelValue: '=compareTo'},
-      link: function(scope, element, attributes, ngModel) {
-
-        ngModel.$validators.compareTo = function(modelValue) {
-          return modelValue == scope.otherModelValue;
-        };
-
-        scope.$watch('otherModelValue', function() { ngModel.$validate(); });
-      }
-    };
-  };
-
-  angular.module('dashboardApp').directive('compareTo', compareTo);
 })();
