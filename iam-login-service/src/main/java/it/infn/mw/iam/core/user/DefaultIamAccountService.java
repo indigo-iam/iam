@@ -683,8 +683,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public IamAccount enableTotpMfa(IamAccount account) {
-    if (isNull(account.getTotpMfa())) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    if (!isNull(account.getTotpMfa()) && account.getTotpMfa().isActive()) {
+      throw new MfaSecretAlreadyBoundException(
+          "A multi-factor secret is already assigned to this account");
     }
 
     IamTotpMfa totpMfa = account.getTotpMfa();
@@ -699,14 +700,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public IamAccount disableTotpMfa(IamAccount account) {
-    if (!isNull(account.getTotpMfa())) {
-      throw new MfaSecretAlreadyBoundException(
-          "A multi-factor secret is already assigned to this account");
+    if (isNull(account.getTotpMfa())) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
-    IamTotpMfa totpMfa = account.getTotpMfa();
-    totpMfa.setActive(false);
-    account.setTotpMfa(totpMfa);
+    account.setTotpMfa(null);
     account.touch();
 
     accountRepo.save(account);

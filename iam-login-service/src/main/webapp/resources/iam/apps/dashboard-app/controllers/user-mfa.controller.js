@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-  'use strict';
+'use strict';
 
-  angular.module('dashboardApp')
-      .controller('UserMfaController', UserMfaController);
+angular.module('dashboardApp')
+    .controller('UserMfaController', UserMfaController);
 
-  UserMfaController.$inject = [
-    '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal'
-  ];
+UserMfaController.$inject = [
+  '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster'
+];
 
-  function UserMfaController(
-      $scope, $state, $uibModalInstance, Utils, user, $uibModal) {
-    var userMfaCtrl = this;
+function UserMfaController(
+    $http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
+  var userMfaCtrl = this;
 
-    userMfaCtrl.$onInit = function() {
-      console.log('UserMfaController onInit');
-    };
+  userMfaCtrl.$onInit = function() {
+    console.log('UserMfaController onInit');
+    getMfaSettings();
+  };
 
     userMfaCtrl.userToEdit = user;
 
