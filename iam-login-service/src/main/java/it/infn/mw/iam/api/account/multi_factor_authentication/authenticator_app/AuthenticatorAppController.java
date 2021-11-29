@@ -26,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,8 +40,10 @@ import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -91,7 +94,12 @@ public class AuthenticatorAppController {
   @RequestMapping(value = "/enable", method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@Valid CodeDTO code) {
+  public void enableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
+    if (validationResult.hasErrors()) {
+      throw new BadCodeError(
+          ValidationErrorMessageHelper.buildValidationErrorMessage("Bad code", validationResult));
+    }
+
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
@@ -102,38 +110,15 @@ public class AuthenticatorAppController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/enabled", method = RequestMethod.GET,
+  @RequestMapping(value = "/disable", method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void getenableAuthenticatorApp() {
-    final String username = getUsernameFromSecurityContext();
-    IamAccount account = accountRepository.findByUsername(username)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+  public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
+    if (validationResult.hasErrors()) {
+      throw new BadCodeError(
+          ValidationErrorMessageHelper.buildValidationErrorMessage("Bad code", validationResult));
+    }
 
-    // TODO checks to see if provided code valid
-
-    service.enableTotpMfa(account);
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST, value = "/disable",
-      produces = MediaType.TEXT_PLAIN_VALUE)
-  @ResponseBody
-  public void disableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code) {
-    final String username = getUsernameFromSecurityContext();
-    IamAccount account = accountRepository.findByUsername(username)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(username));
-
-    // TODO checks to see if provided code valid
-
-    service.disableTotpMfa(account);
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/disabled", method = RequestMethod.GET,
-      produces = MediaType.TEXT_PLAIN_VALUE)
-  @ResponseBody
-  public void getdisableAuthenticatorApp() {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
