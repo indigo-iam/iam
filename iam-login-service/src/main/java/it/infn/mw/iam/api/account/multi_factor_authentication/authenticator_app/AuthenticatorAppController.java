@@ -35,19 +35,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import dev.samstevens.totp.code.CodeVerifier;
-import dev.samstevens.totp.code.DefaultCodeGenerator;
-import dev.samstevens.totp.code.DefaultCodeVerifier;
 import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
-import dev.samstevens.totp.qr.ZxingPngQrGenerator;
-import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.IncorrectCodeError;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.InvalidCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -60,12 +55,16 @@ public class AuthenticatorAppController {
 
   final IamAccountService service;
   final IamAccountRepository accountRepository;
+  private QrGenerator qrGenerator;
+  private CodeVerifier codeVerifier;
 
   @Autowired
   public AuthenticatorAppController(IamAccountService service,
-      IamAccountRepository accountRepository) {
+      IamAccountRepository accountRepository, QrGenerator qrGenerator, CodeVerifier codeVerifier) {
     this.service = service;
     this.accountRepository = accountRepository;
+    this.qrGenerator = qrGenerator;
+    this.codeVerifier = codeVerifier;
   }
 
   @PreAuthorize("hasRole('USER')")
@@ -104,7 +103,7 @@ public class AuthenticatorAppController {
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    if (!isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
+    if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
       throw new IncorrectCodeError("Incorrect code");
     }
 
@@ -124,7 +123,7 @@ public class AuthenticatorAppController {
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    if (!isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
+    if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
       throw new IncorrectCodeError("Incorrect code");
     }
 
@@ -155,9 +154,6 @@ public class AuthenticatorAppController {
 
     byte[] imageData;
 
-    // TODO autowire this
-    QrGenerator qrGenerator = new ZxingPngQrGenerator();
-
     try {
       imageData = qrGenerator.generate(data);
     } catch (QrGenerationException e) {
@@ -166,14 +162,6 @@ public class AuthenticatorAppController {
 
     String mimeType = qrGenerator.getImageMimeType();
     return getDataUriForImage(imageData, mimeType);
-  }
-
-  private boolean isValidCode(String secret, String codeToCheck) {
-    // TODO autowire this
-    CodeVerifier codeVerifier =
-        new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
-
-    return codeVerifier.isValidCode(secret, codeToCheck);
   }
 
   @ResponseStatus(code = HttpStatus.CONFLICT)
