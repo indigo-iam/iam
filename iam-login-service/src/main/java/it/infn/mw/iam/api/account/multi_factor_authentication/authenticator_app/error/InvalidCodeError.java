@@ -15,14 +15,14 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error;
 
-public class BadCodeError extends RuntimeException {
+public class InvalidCodeError extends RuntimeException {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  public BadCodeError(String message) {
+  public InvalidCodeError(String message) {
     super(message);
   }
 

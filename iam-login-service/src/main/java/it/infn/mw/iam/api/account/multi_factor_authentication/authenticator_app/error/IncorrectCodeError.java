@@ -13,25 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
+package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
+public class IncorrectCodeError extends RuntimeException {
 
-import org.hibernate.validator.constraints.Length;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
 
-public class CodeDTO {
-
-  @NotEmpty(message = "Code cannot be empty")
-  @Length(min = 6, max = 6, message = "Code must be six characters in length")
-  @Min(value = 0L, message = "Code must be a numerical value")
-  private String code;
-
-  public String getCode() {
-    return code;
+  public IncorrectCodeError(String message) {
+    super(message);
   }
 
-  public void setCode(final String code) {
-    this.code = code;
-  }
 }
