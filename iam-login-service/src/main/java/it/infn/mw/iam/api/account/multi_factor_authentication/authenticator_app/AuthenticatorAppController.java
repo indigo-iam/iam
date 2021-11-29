@@ -15,7 +15,8 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
-import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
+import static dev.samstevens.totp.util.Utils.getDataUriForImage;
+
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,32 +26,32 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.code.DefaultCodeGenerator;
+import dev.samstevens.totp.code.DefaultCodeVerifier;
 import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadCodeError;
+import dev.samstevens.totp.time.SystemTimeProvider;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.IncorrectCodeError;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.InvalidCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-
-import static dev.samstevens.totp.util.Utils.getDataUriForImage;
-
-import org.springframework.stereotype.Controller;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -84,7 +85,7 @@ public class AuthenticatorAppController {
           generateQRCodeFromSecret(account.getTotpMfa().getSecret(), account.getUsername());
       dto.setDataUri(dataUri);
     } catch (QrGenerationException e) {
-      // TODO Auto-generated catch block
+      // TODO QR code couldn't be generated. What should be done here?
     }
     return dto;
   }
@@ -96,15 +97,16 @@ public class AuthenticatorAppController {
   @ResponseBody
   public void enableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new BadCodeError(
-          ValidationErrorMessageHelper.buildValidationErrorMessage("Bad code", validationResult));
+      throw new InvalidCodeError("Invalid code format. Code must be six numeric characters");
     }
 
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    // TODO checks to see if provided code valid
+    if (!isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
+      throw new IncorrectCodeError("Incorrect code");
+    }
 
     service.enableTotpMfa(account);
   }
@@ -115,15 +117,16 @@ public class AuthenticatorAppController {
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new BadCodeError(
-          ValidationErrorMessageHelper.buildValidationErrorMessage("Bad code", validationResult));
+      throw new InvalidCodeError("Bad code");
     }
 
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    // TODO checks to see if provided code valid
+    if (!isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
+      throw new IncorrectCodeError("Incorrect code");
+    }
 
     service.disableTotpMfa(account);
   }
@@ -165,10 +168,32 @@ public class AuthenticatorAppController {
     return getDataUriForImage(imageData, mimeType);
   }
 
+  private boolean isValidCode(String secret, String codeToCheck) {
+    // TODO autowire this
+    CodeVerifier codeVerifier =
+        new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
+
+    return codeVerifier.isValidCode(secret, codeToCheck);
+  }
+
   @ResponseStatus(code = HttpStatus.CONFLICT)
   @ExceptionHandler(MfaSecretAlreadyBoundException.class)
   @ResponseBody
-  public ErrorDTO handlemfaSecretAlreadyBoundException(MfaSecretAlreadyBoundException e) {
+  public ErrorDTO handleMfaSecretAlreadyBoundException(MfaSecretAlreadyBoundException e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidCodeError.class)
+  @ResponseBody
+  public ErrorDTO handleInvalidCodeError(InvalidCodeError e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(IncorrectCodeError.class)
+  @ResponseBody
+  public ErrorDTO handleIncorrectCodeError(IncorrectCodeError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 }

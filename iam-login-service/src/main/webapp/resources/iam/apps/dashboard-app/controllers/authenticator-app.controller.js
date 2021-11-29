@@ -74,7 +74,7 @@
           .then(function() { return $uibModalInstance.close('Authenticator app enabled'); })
           .catch(function(error) {
             console.error(error);
-            $scope.operationResult = Utils.buildErrorResult(error.data);
+            $scope.operationResult = Utils.buildErrorResult(error.data.error);
           });
     };
   }
@@ -116,7 +116,7 @@
           .then(function() { return $uibModalInstance.close('Authenticator app disabled'); })
           .catch(function(error) {
             console.error(error);
-            $scope.operationResult = Utils.buildErrorResult(error.data);
+            $scope.operationResult = Utils.buildErrorResult(error.data.error);
           });
     };
   }
