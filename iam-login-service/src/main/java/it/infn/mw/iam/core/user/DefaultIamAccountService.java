@@ -683,9 +683,10 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public IamAccount enableTotpMfa(IamAccount account) {
-    if (!isNull(account.getTotpMfa()) && account.getTotpMfa().isActive()) {
-      throw new MfaSecretAlreadyBoundException(
-          "A multi-factor secret is already assigned to this account");
+    if (isNull(account.getTotpMfa())) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    } else if (!isNull(account.getTotpMfa()) && account.getTotpMfa().isActive()) {
+      throw new TotpMfaAlreadyEnabledException("TOTP MFA is already enabled on this account");
     }
 
     IamTotpMfa totpMfa = account.getTotpMfa();

@@ -15,11 +15,16 @@
  */
 package it.infn.mw.iam.test.service;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class IamAccountServiceTestSupport {
@@ -38,37 +43,62 @@ public class IamAccountServiceTestSupport {
   public static final String CICCIO_GIVEN_NAME = "Ciccio";
   public static final String CICCIO_FAMILY_NAME = "Paglia";
 
+  public static final String TOTP_MFA_UUID = "b3e7dd7f-a1ac-eda0-371d-b902a6c5cee2";
+  public static final String TOTP_MFA_USERNAME = "totp";
+  public static final String TOTP_MFA_EMAIL = "totp@example.org";
+  public static final String TOTP_MFA_GIVEN_NAME = "Totp";
+  public static final String TOTP_MFA_FAMILY_NAME = "Mfa";
+
   public static final String TEST_SAML_ID_IDP_ID = "idpId";
   public static final String TEST_SAML_ID_USER_ID = "userId";
   public static final String TEST_SAML_ID_ATTRIBUTE_ID = "attributeId";
 
   public static final String TEST_OIDC_ID_ISSUER = "oidcIssuer";
   public static final String TEST_OIDC_ID_SUBJECT = "oidcSubject";
-  
+
   public static final String TEST_SSH_KEY_VALUE_1 = "ssh-key-value-1";
   public static final String TEST_SSH_KEY_VALUE_2 = "ssh-key-value-2";
-  
+
   public static final String TEST_X509_CERTIFICATE_VALUE_1 = "x509-cert-value-1";
   public static final String TEST_X509_CERTIFICATE_SUBJECT_1 = "x509-cert-subject-1";
   public static final String TEST_X509_CERTIFICATE_ISSUER_1 = "x509-cert-issuer-1";
   public static final String TEST_X509_CERTIFICATE_LABEL_1 = "x509-cert-label-1";
-  
+
   public static final String TEST_X509_CERTIFICATE_VALUE_2 = "x509-cert-value-2";
   public static final String TEST_X509_CERTIFICATE_SUBJECT_2 = "x509-cert-subject-2";
   public static final String TEST_X509_CERTIFICATE_ISSUER_2 = "x509-cert-issuer-2";
   public static final String TEST_X509_CERTIFICATE_LABEL_2 = "x509-cert-label-2";
-  
-  
+
+  public static final String TOTP_MFA_SECRET = "secret";
+
+  public static final String TOTP_RECOVERY_CODE_STRING_1 = "code-1";
+  public static final String TOTP_RECOVERY_CODE_STRING_2 = "code-2";
+  public static final String TOTP_RECOVERY_CODE_STRING_3 = "code-3";
+  public static final String TOTP_RECOVERY_CODE_STRING_4 = "code-4";
+  public static final String TOTP_RECOVERY_CODE_STRING_5 = "code-5";
+  public static final String TOTP_RECOVERY_CODE_STRING_6 = "code-6";
+
+
   protected final IamAccount TEST_ACCOUNT;
   protected final IamAccount CICCIO_ACCOUNT;
+  protected final IamAccount TOTP_MFA_ACCOUNT;
   protected final IamAuthority ROLE_USER_AUTHORITY;
   protected final IamSamlId TEST_SAML_ID;
   protected final IamOidcId TEST_OIDC_ID;
-  
+
   protected final IamSshKey TEST_SSH_KEY_1;
   protected final IamSshKey TEST_SSH_KEY_2;
   protected final IamX509Certificate TEST_X509_CERTIFICATE_1;
   protected final IamX509Certificate TEST_X509_CERTIFICATE_2;
+
+  protected final IamTotpMfa TOTP_MFA;
+
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_1;
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_2;
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_3;
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_4;
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_5;
+  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_6;
 
   public IamAccountServiceTestSupport() {
     TEST_ACCOUNT = IamAccount.newAccount();
@@ -77,7 +107,7 @@ public class IamAccountServiceTestSupport {
     TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
     TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
     TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
-    
+
     ROLE_USER_AUTHORITY = new IamAuthority("ROLE_USER");
 
     CICCIO_ACCOUNT = IamAccount.newAccount();
@@ -89,31 +119,57 @@ public class IamAccountServiceTestSupport {
 
     TEST_SAML_ID =
         new IamSamlId(TEST_SAML_ID_IDP_ID, TEST_SAML_ID_ATTRIBUTE_ID, TEST_SAML_ID_USER_ID);
-    
-    TEST_OIDC_ID = 
-        new IamOidcId(TEST_OIDC_ID_ISSUER, TEST_OIDC_ID_SUBJECT);
-    
-    TEST_SSH_KEY_1 = 
-        new IamSshKey(TEST_SSH_KEY_VALUE_1);
 
-    TEST_SSH_KEY_2 = 
-        new IamSshKey(TEST_SSH_KEY_VALUE_2);
-    
-    TEST_X509_CERTIFICATE_1 =
-        new IamX509Certificate();
-    
+    TEST_OIDC_ID = new IamOidcId(TEST_OIDC_ID_ISSUER, TEST_OIDC_ID_SUBJECT);
+
+    TEST_SSH_KEY_1 = new IamSshKey(TEST_SSH_KEY_VALUE_1);
+
+    TEST_SSH_KEY_2 = new IamSshKey(TEST_SSH_KEY_VALUE_2);
+
+    TEST_X509_CERTIFICATE_1 = new IamX509Certificate();
+
     TEST_X509_CERTIFICATE_1.setLabel(TEST_X509_CERTIFICATE_LABEL_1);
     TEST_X509_CERTIFICATE_1.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_1);
     TEST_X509_CERTIFICATE_1.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_1);
     TEST_X509_CERTIFICATE_1.setCertificate(TEST_X509_CERTIFICATE_VALUE_1);
-    
-    TEST_X509_CERTIFICATE_2 =
-        new IamX509Certificate();
-    
+
+    TEST_X509_CERTIFICATE_2 = new IamX509Certificate();
+
     TEST_X509_CERTIFICATE_2.setLabel(TEST_X509_CERTIFICATE_LABEL_2);
     TEST_X509_CERTIFICATE_2.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_2);
     TEST_X509_CERTIFICATE_2.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_2);
     TEST_X509_CERTIFICATE_2.setCertificate(TEST_X509_CERTIFICATE_VALUE_2);
+
+    TOTP_MFA = new IamTotpMfa();
+
+    TOTP_MFA.setSecret(TOTP_MFA_SECRET);
+    TOTP_MFA.setActive(true);
+
+    TOTP_RECOVERY_CODE_1 = new IamTotpRecoveryCode(TOTP_MFA);
+    TOTP_RECOVERY_CODE_2 = new IamTotpRecoveryCode(TOTP_MFA);
+    TOTP_RECOVERY_CODE_3 = new IamTotpRecoveryCode(TOTP_MFA);
+    TOTP_RECOVERY_CODE_4 = new IamTotpRecoveryCode(TOTP_MFA);
+    TOTP_RECOVERY_CODE_5 = new IamTotpRecoveryCode(TOTP_MFA);
+    TOTP_RECOVERY_CODE_6 = new IamTotpRecoveryCode(TOTP_MFA);
+
+    TOTP_RECOVERY_CODE_1.setCode(TOTP_RECOVERY_CODE_STRING_1);
+    TOTP_RECOVERY_CODE_2.setCode(TOTP_RECOVERY_CODE_STRING_2);
+    TOTP_RECOVERY_CODE_3.setCode(TOTP_RECOVERY_CODE_STRING_3);
+    TOTP_RECOVERY_CODE_4.setCode(TOTP_RECOVERY_CODE_STRING_4);
+    TOTP_RECOVERY_CODE_5.setCode(TOTP_RECOVERY_CODE_STRING_5);
+    TOTP_RECOVERY_CODE_6.setCode(TOTP_RECOVERY_CODE_STRING_6);
+
+    TOTP_MFA
+      .setRecoveryCodes(new HashSet<>(Arrays.asList(TOTP_RECOVERY_CODE_1, TOTP_RECOVERY_CODE_2,
+          TOTP_RECOVERY_CODE_3, TOTP_RECOVERY_CODE_4, TOTP_RECOVERY_CODE_5, TOTP_RECOVERY_CODE_6)));
+
+    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
+    TOTP_MFA_ACCOUNT.setUuid(TOTP_MFA_UUID);
+    TOTP_MFA_ACCOUNT.setUsername(TOTP_MFA_USERNAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_MFA_EMAIL);
+    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_MFA_GIVEN_NAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_MFA_FAMILY_NAME);
+    TOTP_MFA_ACCOUNT.setTotpMfa(TOTP_MFA);
   }
 
   public IamAccount cloneAccount(IamAccount account) {
@@ -123,9 +179,10 @@ public class IamAccountServiceTestSupport {
     newAccount.getUserInfo().setEmail(account.getUserInfo().getEmail());
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
+    newAccount.setTotpMfa(account.getTotpMfa());
 
     return newAccount;
   }
- 
-  
+
+
 }
