@@ -104,7 +104,7 @@ public class AuthenticatorAppController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new IncorrectCodeError("Incorrect code");
+      throw new IncorrectCodeError("Incorrect code. Try again");
     }
 
     service.enableTotpMfa(account);
@@ -116,7 +116,7 @@ public class AuthenticatorAppController {
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new InvalidCodeError("Bad code");
+      throw new InvalidCodeError("Invalid code format. Code must be six numeric characters");
     }
 
     final String username = getUsernameFromSecurityContext();
@@ -124,7 +124,7 @@ public class AuthenticatorAppController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new IncorrectCodeError("Incorrect code");
+      throw new IncorrectCodeError("Incorrect code. Try again");
     }
 
     service.disableTotpMfa(account);

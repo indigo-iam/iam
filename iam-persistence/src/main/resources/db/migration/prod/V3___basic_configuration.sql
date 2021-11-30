@@ -15,8 +15,8 @@ INSERT INTO iam_authority(ID, AUTH) VALUES
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED) VALUES
 (1, 'Admin', 'User', 'admin@iam.test', true);
 
-INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, totp_mfa_id) VALUES
-(1, '73f16d93-2441-4a50-88ff-85360d78c6b5', 'admin', 'password', 1, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, null);
+INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active) VALUES
+(1, '73f16d93-2441-4a50-88ff-85360d78c6b5', 'admin', 'password', 1, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
 (1,1),
