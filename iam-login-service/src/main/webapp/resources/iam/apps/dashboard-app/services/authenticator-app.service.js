@@ -19,48 +19,48 @@ angular.module('dashboardApp').factory('AuthenticatorAppService', AuthenticatorA
 
 AuthenticatorAppService.$inject = ['$http', '$httpParamSerializerJQLike'];
 
-function AuthenticatorAppService($http, $httpParamSerializerJQLike){
-	
+function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
+
 	var service = {
-		addMfaSecretToUser : addMfaSecretToUser,
-		enableAuthenticatorApp : enableAuthenticatorApp,
-		disableAuthenticatorApp : disableAuthenticatorApp
+		addMfaSecretToUser: addMfaSecretToUser,
+		enableAuthenticatorApp: enableAuthenticatorApp,
+		disableAuthenticatorApp: disableAuthenticatorApp
 	};
-	
+
 	return service;
 
 	function addMfaSecretToUser() {
-		return $http.get('/iam/authenticator-app/add-secret');
+		return $http.put('/iam/authenticator-app/add-secret');
 	}
-	
+
 	// TODO two functions are broadly similar. This could be simplified into the foundations for step-up authentication
-	function enableAuthenticatorApp(code){
-		
-		var data = $httpParamSerializerJQLike({
-				code: code
-		});
-		
-		var config = {
-			headers : {
-				'Content-Type': 'application/x-www-form-urlencoded'
-			}
-		}; 
-		
-		return $http.post('/iam/authenticator-app/enable', data, config);
-	};
-	
-	function disableAuthenticatorApp(code){
+	function enableAuthenticatorApp(code) {
 
 		var data = $httpParamSerializerJQLike({
-				code: code
+			code: code
 		});
-		
+
 		var config = {
-			headers : {
+			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			}
 		};
-		
-		return $http.post('/iam/authenticator-app/disable', data, config);	
+
+		return $http.post('/iam/authenticator-app/enable', data, config);
+	};
+
+	function disableAuthenticatorApp(code) {
+
+		var data = $httpParamSerializerJQLike({
+			code: code
+		});
+
+		var config = {
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			}
+		};
+
+		return $http.post('/iam/authenticator-app/disable', data, config);
 	};
 }

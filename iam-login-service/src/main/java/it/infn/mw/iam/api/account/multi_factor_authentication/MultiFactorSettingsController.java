@@ -32,9 +32,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 @Controller
-@RequestMapping("iam/multi-factor-settings")
 public class MultiFactorSettingsController {
 
+  public static final String BASE_URL = "/iam/multi-factor-settings";
   final IamAccountRepository accountRepository;
 
   @Autowired
@@ -43,7 +43,7 @@ public class MultiFactorSettingsController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/get-settings", method = RequestMethod.GET,
+  @RequestMapping(value = BASE_URL, method = RequestMethod.GET,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public MultiFactorSettingsDTO getMultiFactorSettings() {
