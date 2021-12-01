@@ -129,7 +129,6 @@ public class IamApiSecurityConfig {
         .and()
           .authorizeRequests()
             .antMatchers("/iam/password-reset/**").permitAll()
-            .antMatchers(POST, "/iam/authenticator-app/**").permitAll()
             .antMatchers(POST, "/registration/create").permitAll()
             .antMatchers(GET, "/registration/insufficient-auth").permitAll()
             .antMatchers(GET, "/registration/username-available/**").permitAll()

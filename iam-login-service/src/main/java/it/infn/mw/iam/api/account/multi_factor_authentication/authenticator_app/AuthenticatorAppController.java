@@ -29,6 +29,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -50,8 +51,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 @Controller
-@RequestMapping("/iam/authenticator-app")
 public class AuthenticatorAppController {
+
+  public static final String BASE_URL = "/iam/authenticator-app";
+  public static final String ADD_SECRET_URL = BASE_URL + "/add-secret";
+  public static final String ENABLE_URL = BASE_URL + "/enable";
+  public static final String DISABLE_URL = BASE_URL + "/disable";
 
   final IamAccountService service;
   final IamAccountRepository accountRepository;
@@ -68,7 +73,7 @@ public class AuthenticatorAppController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/add-secret", method = RequestMethod.GET,
+  @RequestMapping(value = ADD_SECRET_URL, method = RequestMethod.PUT,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public SecretAndDataUriDTO addSecret() {
@@ -91,10 +96,11 @@ public class AuthenticatorAppController {
 
   // TODO switch to this post method from get request, post method not currently working
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/enable", method = RequestMethod.POST,
+  @RequestMapping(value = ENABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
+  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
+      BindingResult validationResult) {
     if (validationResult.hasErrors()) {
       throw new InvalidCodeError("Invalid code format. Code must be six numeric characters");
     }
@@ -111,7 +117,7 @@ public class AuthenticatorAppController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/disable", method = RequestMethod.POST,
+  @RequestMapping(value = DISABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
