@@ -663,6 +663,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     IamTotpMfa totpMfa = new IamTotpMfa(account);
+    totpMfa.setUuid(UUID.randomUUID().toString());
     totpMfa.setSecret(secretGenerator.generate());
 
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(6);

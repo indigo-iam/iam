@@ -94,7 +94,6 @@ public class AuthenticatorAppController {
     return dto;
   }
 
-  // TODO switch to this post method from get request, post method not currently working
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = ENABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
