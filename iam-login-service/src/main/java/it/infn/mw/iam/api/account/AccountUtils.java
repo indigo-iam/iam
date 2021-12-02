@@ -60,6 +60,7 @@ public class AccountUtils {
     return isAuthenticated(auth);
   }
 
+  // TODO check pre-authenticated status
   public boolean isAuthenticated(Authentication auth) {
     return !(isNull(auth) || auth instanceof AnonymousAuthenticationToken);
   }
@@ -70,7 +71,7 @@ public class AccountUtils {
     }
 
     Authentication userAuthn = authn;
-    
+
     if (authn instanceof OAuth2Authentication) {
       OAuth2Authentication oauth = (OAuth2Authentication) authn;
       if (oauth.getUserAuthentication() == null) {
@@ -84,13 +85,15 @@ public class AccountUtils {
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount() {
-    
+
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
- 
+
     return getAuthenticatedUserAccount(auth);
   }
-  
-  public Optional<IamAccount> getByAccountId(String accountId){
+
+  public Optional<IamAccount> getByAccountId(String accountId) {
     return accountRepo.findByUuid(accountId);
   }
+
+  // TODO potentially add checks for pre-authenticated status
 }
