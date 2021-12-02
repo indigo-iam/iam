@@ -40,9 +40,6 @@ public class IamTotpMfa implements Serializable {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, length = 36, unique = true)
-  private String uuid;
-
   @OneToOne()
   private IamAccount account;
 
@@ -83,14 +80,6 @@ public class IamTotpMfa implements Serializable {
 
   public void setId(Long id) {
     this.id = id;
-  }
-
-  public String getUuid() {
-    return uuid;
-  }
-
-  public void setUuid(final String uuid) {
-    this.uuid = uuid;
   }
 
   public IamAccount getAccount() {
@@ -179,10 +168,10 @@ public class IamTotpMfa implements Serializable {
     if (getClass() != obj.getClass())
       return false;
     IamTotpMfa other = (IamTotpMfa) obj;
-    if (uuid == null) {
-      if (other.uuid != null)
+    if (secret == null) {
+      if (other.secret != null)
         return false;
-    } else if (!uuid.equals(other.uuid))
+    } else if (!secret.equals(other.secret))
       return false;
     return true;
   }

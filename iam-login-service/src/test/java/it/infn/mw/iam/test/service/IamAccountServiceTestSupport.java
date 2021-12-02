@@ -43,11 +43,11 @@ public class IamAccountServiceTestSupport {
   public static final String CICCIO_GIVEN_NAME = "Ciccio";
   public static final String CICCIO_FAMILY_NAME = "Paglia";
 
-  public static final String TOTP_MFA_UUID = "b3e7dd7f-a1ac-eda0-371d-b902a6c5cee2";
-  public static final String TOTP_MFA_USERNAME = "totp";
-  public static final String TOTP_MFA_EMAIL = "totp@example.org";
-  public static final String TOTP_MFA_GIVEN_NAME = "Totp";
-  public static final String TOTP_MFA_FAMILY_NAME = "Mfa";
+  public static final String TOTP_MFA_ACCOUNT_UUID = "b3e7dd7f-a1ac-eda0-371d-b902a6c5cee2";
+  public static final String TOTP_MFA_ACCOUNT_USERNAME = "totp";
+  public static final String TOTP_MFA_ACCOUNT_EMAIL = "totp@example.org";
+  public static final String TOTP_MFA_ACCOUNT_GIVEN_NAME = "Totp";
+  public static final String TOTP_MFA_ACCOUNT_FAMILY_NAME = "Mfa";
 
   public static final String TEST_SAML_ID_IDP_ID = "idpId";
   public static final String TEST_SAML_ID_USER_ID = "userId";
@@ -164,11 +164,11 @@ public class IamAccountServiceTestSupport {
           TOTP_RECOVERY_CODE_3, TOTP_RECOVERY_CODE_4, TOTP_RECOVERY_CODE_5, TOTP_RECOVERY_CODE_6)));
 
     TOTP_MFA_ACCOUNT = IamAccount.newAccount();
-    TOTP_MFA_ACCOUNT.setUuid(TOTP_MFA_UUID);
-    TOTP_MFA_ACCOUNT.setUsername(TOTP_MFA_USERNAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_MFA_EMAIL);
-    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_MFA_GIVEN_NAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_MFA_FAMILY_NAME);
+    TOTP_MFA_ACCOUNT.setUuid(TOTP_MFA_ACCOUNT_UUID);
+    TOTP_MFA_ACCOUNT.setUsername(TOTP_MFA_ACCOUNT_USERNAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_MFA_ACCOUNT_EMAIL);
+    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_MFA_ACCOUNT_GIVEN_NAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_MFA_ACCOUNT_FAMILY_NAME);
     TOTP_MFA_ACCOUNT.setTotpMfa(TOTP_MFA);
   }
 
