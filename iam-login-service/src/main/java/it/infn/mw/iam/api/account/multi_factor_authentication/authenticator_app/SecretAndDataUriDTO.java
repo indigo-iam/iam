@@ -17,6 +17,9 @@ package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app
 
 import javax.validation.constraints.NotEmpty;
 
+/**
+ * DTO containing an MFA secret and QR code data URI
+ */
 public class SecretAndDataUriDTO {
 
   @NotEmpty(message = "Secret cannot be empty")
@@ -28,18 +31,36 @@ public class SecretAndDataUriDTO {
     this.secret = secret;
   }
 
+
+  /**
+   * @return the MFA secret
+   */
   public String getSecret() {
     return secret;
   }
 
+
+  /**
+   * @param secret the new secret
+   * @return nothing
+   */
   public void setSecret(final String secret) {
     this.secret = secret;
   }
 
+
+  /**
+   * @return the QR code data URI
+   */
   public String getDataUri() {
     return dataUri;
   }
 
+
+  /**
+   * @param dataUri the new QR code data URI
+   * @return nothing
+   */
   public void setDataUri(final String dataUri) {
     this.dataUri = dataUri;
   }

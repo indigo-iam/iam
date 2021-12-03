@@ -31,27 +31,55 @@ import dev.samstevens.totp.secret.SecretGenerator;
 
 // TODO add admin config options from properties file
 
+/**
+ * Beans for handling TOTP MFA functionality
+ */
 @Configuration
 public class IamTotpMfaConfig {
 
+
+  /**
+   * Responsible for generating new TOTP secrets
+   * 
+   * @return SecretGenerator
+   */
   @Bean
   @Qualifier("secretGenerator")
   public SecretGenerator secretGenerator() {
     return new DefaultSecretGenerator();
   }
 
+
+  /**
+   * Responsible for generating QR code data URI strings from given input parameters, e.g. TOTP
+   * secret, issuer, etc.
+   * 
+   * @return QrGenerator
+   */
   @Bean
   @Qualifier("qrGenerator")
   public QrGenerator qrGenerator() {
     return new ZxingPngQrGenerator();
   }
 
+
+  /**
+   * Generates a TOTP from an MFA secret and verifies a user-provided TOTP matches it
+   * 
+   * @return CodeVerifier
+   */
   @Bean
   @Qualifier("codeVerifier")
   public CodeVerifier codeVerifier() {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
+
+  /**
+   * Responsible for generating random recovery codes for backup authentication
+   * 
+   * @return RecoveryCodeGenerator
+   */
   @Bean
   @Qualifier("recoveryCodeGenerator")
   public RecoveryCodeGenerator recoveryCodeGenerator() {

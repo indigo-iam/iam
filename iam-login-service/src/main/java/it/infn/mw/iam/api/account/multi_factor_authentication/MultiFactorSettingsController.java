@@ -30,6 +30,9 @@ import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+/**
+ * Controller for retrieving all multi-factor settings for a user account
+ */
 @SuppressWarnings("deprecation")
 @Controller
 public class MultiFactorSettingsController {
@@ -42,6 +45,12 @@ public class MultiFactorSettingsController {
     this.accountRepository = accountRepository;
   }
 
+
+  /**
+   * Retrieve info about MFA settings and return them in a DTO
+   * 
+   * @return MultiFactorSettingsDTO the MFA settings for the account
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = BASE_URL, method = RequestMethod.GET,
       produces = MediaType.APPLICATION_JSON_VALUE)
@@ -59,6 +68,12 @@ public class MultiFactorSettingsController {
     return dto;
   }
 
+
+  /**
+   * Fetch and return the logged-in username from security context
+   * 
+   * @return String username
+   */
   private String getUsernameFromSecurityContext() {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

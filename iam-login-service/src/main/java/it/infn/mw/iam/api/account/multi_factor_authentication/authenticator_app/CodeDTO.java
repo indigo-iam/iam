@@ -20,6 +20,9 @@ import javax.validation.constraints.NotEmpty;
 
 import org.hibernate.validator.constraints.Length;
 
+/**
+ * DTO containing a TOTP for MFA secrets
+ */
 public class CodeDTO {
 
   @NotEmpty(message = "Code cannot be empty")
@@ -27,10 +30,19 @@ public class CodeDTO {
   @Min(value = 0L, message = "Code must be a numerical value")
   private String code;
 
+
+  /**
+   * @return the code
+   */
   public String getCode() {
     return code;
   }
 
+
+  /**
+   * @param code new code
+   * @return nothing
+   */
   public void setCode(final String code) {
     this.code = code;
   }

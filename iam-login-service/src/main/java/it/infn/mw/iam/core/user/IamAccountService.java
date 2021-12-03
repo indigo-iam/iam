@@ -211,26 +211,25 @@ public interface IamAccountService {
   IamAccount removeSshKey(IamAccount account, IamSshKey key);
 
   /**
-   * Adds a multi-factor secret to an account
+   * Adds a TOTP secret to an account
    * 
-   * @param account
-   * @param totpMfa
+   * @param account the account to add the secret to
    * @return the updated account
    */
   IamAccount addTotpMfaSecret(IamAccount account);
 
   /**
-   * Enable multi-factor on account with TOTP secret
+   * Enable TOTP MFA on account with TOTP secret
    * 
-   * @param account
+   * @param account the account to enable TOTP MFA on
    * @return the updated account
    */
   IamAccount enableTotpMfa(IamAccount account);
 
   /**
-   * Disable multi-factor on account with TOTP secret
+   * Disable TOTP MFA on account with TOTP secret
    * 
-   * @param account
+   * @param account the account to disable TOTP MFA on
    * @return the updated account
    */
   IamAccount disableTotpMfa(IamAccount account);
