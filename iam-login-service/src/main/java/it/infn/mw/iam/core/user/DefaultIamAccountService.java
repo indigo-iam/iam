@@ -655,6 +655,15 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   // TODO encrypt secret and recovery codes
   // TODO move this secret generation to its own class
+
+  /**
+   * Generates and attaches a TOTP MFA secret to a user account, along with a set of recovery codes
+   * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
+   * server-side TOTP verification
+   * 
+   * @param account the account to add the secret to
+   * @return the account with the new secret added to it
+   */
   @Override
   public IamAccount addTotpMfaSecret(IamAccount account) {
     if (!isNull(account.getTotpMfa()) && account.getTotpMfa().isActive()) {
@@ -662,9 +671,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
           "A multi-factor secret is already assigned to this account");
     }
 
+    // Generate secret
     IamTotpMfa totpMfa = new IamTotpMfa(account);
     totpMfa.setSecret(secretGenerator.generate());
 
+    // Generate recovery codes
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(6);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
     for (String code : recoveryCodeStrings) {
@@ -673,6 +684,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       recoveryCodes.add(recoveryCode);
     }
 
+    // Attach to account
     totpMfa.setRecoveryCodes(recoveryCodes);
     account.setTotpMfa(totpMfa);
     totpMfa.setAccount(account);
@@ -681,11 +693,19 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     return account;
   }
 
+
+  /**
+   * Enables TOTP MFA on a provided account. Relies on the account already having a non-active TOTP
+   * secret attached to it
+   * 
+   * @param account the account to enable TOTP MFA on
+   * @return the account with newly-enabled TOTP MFA
+   */
   @Override
   public IamAccount enableTotpMfa(IamAccount account) {
     if (isNull(account.getTotpMfa())) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
-    } else if (!isNull(account.getTotpMfa()) && account.getTotpMfa().isActive()) {
+    } else if (account.getTotpMfa().isActive()) {
       throw new TotpMfaAlreadyEnabledException("TOTP MFA is already enabled on this account");
     }
 
@@ -699,6 +719,15 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     return account;
   }
 
+
+  /**
+   * Disables TOTP MFA on a provided account. Relies on the account having an active TOTP secret
+   * attached to it. Disabling means to delete the secret entirely (if a user chooses to enable
+   * again, a new secret is generated anyway)
+   * 
+   * @param account the account to disable TOTP MFA on
+   * @return the account with newly-disabled TOTP MFA
+   */
   @Override
   public IamAccount disableTotpMfa(IamAccount account) {
     if (isNull(account.getTotpMfa())) {

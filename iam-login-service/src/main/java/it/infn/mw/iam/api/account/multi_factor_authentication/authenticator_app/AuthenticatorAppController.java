@@ -46,9 +46,15 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
+import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+/**
+ * Controller for customising user's authenticator app MFA settings Can enable or disable the
+ * feature through POST requests to the relevant endpoints
+ */
 @SuppressWarnings("deprecation")
 @Controller
 public class AuthenticatorAppController {
@@ -72,6 +78,13 @@ public class AuthenticatorAppController {
     this.codeVerifier = codeVerifier;
   }
 
+
+  /**
+   * Before we can enable authenticator app, we must first add a TOTP secret to the user's account
+   * The secret is not active until the user enables authenticator app at the /enable endpoint
+   * 
+   * @return DTO containing the plaintext TOTP secret and QR code URI for scanning
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = ADD_SECRET_URL, method = RequestMethod.PUT,
       produces = MediaType.APPLICATION_JSON_VALUE)
@@ -94,6 +107,15 @@ public class AuthenticatorAppController {
     return dto;
   }
 
+
+  /**
+   * Enable authenticator app MFA on account User sends a TOTP through POST which we verify before
+   * enabling
+   * 
+   * @param code the TOTP to verify
+   * @param validationResult result of validation checks on the code
+   * @return nothing
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = ENABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
@@ -115,6 +137,15 @@ public class AuthenticatorAppController {
     service.enableTotpMfa(account);
   }
 
+
+  /**
+   * Disable authenticator app MFA on account User sends a TOTP through POST which we verify before
+   * disabling
+   * 
+   * @param code the TOTP to verify
+   * @param validationResult result of validation checks on the code
+   * @return nothing
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = DISABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
@@ -135,6 +166,12 @@ public class AuthenticatorAppController {
     service.disableTotpMfa(account);
   }
 
+
+  /**
+   * Fetch and return the logged-in username from security context
+   * 
+   * @return String username
+   */
   private String getUsernameFromSecurityContext() {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -145,6 +182,16 @@ public class AuthenticatorAppController {
     return auth.getName();
   }
 
+
+  /**
+   * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
+   * details about the issuer, length of TOTP and period of expiry from application properties
+   * 
+   * @param secret the TOTP secret
+   * @param username the logged-in user (attaches a username to the secret in the authenticator app)
+   * @return the data URI to be used with an <img> tag
+   * @throws QrGenerationException
+   */
   private String generateQRCodeFromSecret(String secret, String username)
       throws QrGenerationException {
 
@@ -169,6 +216,26 @@ public class AuthenticatorAppController {
     return getDataUriForImage(imageData, mimeType);
   }
 
+
+  /**
+   * Exception handler for when an TOTP secret is unexpectedly missing
+   * 
+   * @param e MfaSecretNotFoundException
+   * @return DTO containing error details
+   */
+  @ResponseStatus(code = HttpStatus.CONFLICT)
+  @ExceptionHandler(MfaSecretNotFoundException.class)
+  @ResponseBody
+  public ErrorDTO handleMfaSecretNotFoundException(MfaSecretNotFoundException e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  /**
+   * Exception handler for when an TOTP secret is unexpectedly found
+   * 
+   * @param e MfaSecretAlreadyBoundException
+   * @return DTO containing error details
+   */
   @ResponseStatus(code = HttpStatus.CONFLICT)
   @ExceptionHandler(MfaSecretAlreadyBoundException.class)
   @ResponseBody
@@ -176,6 +243,26 @@ public class AuthenticatorAppController {
     return ErrorDTO.fromString(e.getMessage());
   }
 
+  /**
+   * Exception handler for when authenticator app MFA is unexpectedly enabled already
+   * 
+   * @param e TotpMfaAlreadyEnabledException
+   * @return DTO containing error details
+   */
+  @ResponseStatus(code = HttpStatus.CONFLICT)
+  @ExceptionHandler(TotpMfaAlreadyEnabledException.class)
+  @ResponseBody
+  public ErrorDTO handleTotpMfaAlreadyEnabledException(TotpMfaAlreadyEnabledException e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+
+  /**
+   * Exception handler for when a received TOTP is invalid in format
+   * 
+   * @param e InvalidCodeError
+   * @return DTO containing error details
+   */
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidCodeError.class)
   @ResponseBody
@@ -183,6 +270,13 @@ public class AuthenticatorAppController {
     return ErrorDTO.fromString(e.getMessage());
   }
 
+
+  /**
+   * Exception handler for when a received TOTP is incorrect compared to what the IAM has
+   * 
+   * @param e IncorrectCodeError
+   * @return DTO containing error details
+   */
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(IncorrectCodeError.class)
   @ResponseBody
