@@ -35,7 +35,6 @@ import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
@@ -56,8 +55,6 @@ public class MultiFactorSettingsTests {
 
   @Autowired
   private ScimUserProvisioning userService;
-  @Autowired
-  private IamAccountRepository accountRepository;
 
   @BeforeClass
   public static void init() {

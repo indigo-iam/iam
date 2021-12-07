@@ -43,14 +43,16 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.
 import it.infn.mw.iam.authn.multi_factor_authentication.error.AccountNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+//TODO when unauthenticated and navigating to other pages like /dashboard, we redirect to /login. But here we show up as unauthorized. Can we replicate the behaviour of /dashboard?
+
 @Controller
-public class Verify2faController {
+public class MfaVerifyController {
 
   private final AccountUtils accountUtils;
   private final CodeVerifier codeVerifier;
 
   @Autowired
-  public Verify2faController(AccountUtils accountUtils, CodeVerifier codeVerifier) {
+  public MfaVerifyController(AccountUtils accountUtils, CodeVerifier codeVerifier) {
     this.accountUtils = accountUtils;
     this.codeVerifier = codeVerifier;
   }
@@ -58,9 +60,11 @@ public class Verify2faController {
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @RequestMapping(method = RequestMethod.GET, path = "/iam/verify2fa")
   public String getVerify2faView() {
-    return "iam/verify2fa";
+    return "iam/verify-mfa";
   }
 
+  // TODO separate this into a different path. Currently spring complains about a lack of an
+  // authentication object in security context
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @RequestMapping(method = RequestMethod.POST, path = "/iam/verify2fa")
   public String verify2fa(@ModelAttribute @Valid CodeDTO code, BindingResult validationResult) {

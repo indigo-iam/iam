@@ -36,7 +36,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import dev.samstevens.totp.code.CodeVerifier;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppController;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -105,7 +105,7 @@ public class AuthenticatorAppTests {
       .log()
       .all(true)
       .when()
-      .put(AuthenticatorAppController.ADD_SECRET_URL)
+      .put(AuthenticatorAppSettingsController.ADD_SECRET_URL)
       .then()
       .log()
       .all(true);
@@ -117,7 +117,7 @@ public class AuthenticatorAppTests {
       .log()
       .all(true)
       .when()
-      .put(AuthenticatorAppController.ADD_SECRET_URL)
+      .put(AuthenticatorAppSettingsController.ADD_SECRET_URL)
       .then()
       .log()
       .all(true);
@@ -189,7 +189,7 @@ public class AuthenticatorAppTests {
 
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.OK.value());
   }
 
@@ -212,7 +212,7 @@ public class AuthenticatorAppTests {
 
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Incorrect code"));
   }
@@ -226,7 +226,7 @@ public class AuthenticatorAppTests {
 
     String code = "abcdef";
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -240,7 +240,7 @@ public class AuthenticatorAppTests {
 
     String code = "12345";
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -254,7 +254,7 @@ public class AuthenticatorAppTests {
 
     String code = "1234567";
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -268,7 +268,7 @@ public class AuthenticatorAppTests {
 
     String code = null;
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -282,7 +282,7 @@ public class AuthenticatorAppTests {
 
     String code = "";
 
-    doPost(accessToken, AuthenticatorAppController.ENABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -291,7 +291,8 @@ public class AuthenticatorAppTests {
   public void testEnableAuthenticatorAppFullAuthenticationRequired() {
     String code = "123456";
 
-    doPost(AuthenticatorAppController.ENABLE_URL, code).statusCode(HttpStatus.UNAUTHORIZED.value())
+    doPost(AuthenticatorAppSettingsController.ENABLE_URL, code)
+      .statusCode(HttpStatus.UNAUTHORIZED.value())
       .body("error", equalTo("unauthorized"))
       .body("error_description",
           equalTo("Full authentication is required to access this resource"));
@@ -316,7 +317,7 @@ public class AuthenticatorAppTests {
 
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.OK.value());
   }
 
@@ -339,7 +340,7 @@ public class AuthenticatorAppTests {
 
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Incorrect code"));
   }
@@ -353,7 +354,7 @@ public class AuthenticatorAppTests {
 
     String code = "abcdef";
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -367,7 +368,7 @@ public class AuthenticatorAppTests {
 
     String code = "12345";
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -381,7 +382,7 @@ public class AuthenticatorAppTests {
 
     String code = "1234567";
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -395,7 +396,7 @@ public class AuthenticatorAppTests {
 
     String code = null;
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -409,7 +410,7 @@ public class AuthenticatorAppTests {
 
     String code = "";
 
-    doPost(accessToken, AuthenticatorAppController.DISABLE_URL, code)
+    doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
       .body(containsString("Invalid code format"));
   }
@@ -418,7 +419,8 @@ public class AuthenticatorAppTests {
   public void testDisableAuthenticatorAppFullAuthenticationRequired() {
     String code = "123456";
 
-    doPost(AuthenticatorAppController.DISABLE_URL, code).statusCode(HttpStatus.UNAUTHORIZED.value())
+    doPost(AuthenticatorAppSettingsController.DISABLE_URL, code)
+      .statusCode(HttpStatus.UNAUTHORIZED.value())
       .body("error", equalTo("unauthorized"))
       .body("error_description",
           equalTo("Full authentication is required to access this resource"));
