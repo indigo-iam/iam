@@ -101,7 +101,7 @@
     text-align: center;
 }
 
-#login-error {
+#login-error #verify-error {
     margin: 0 auto;
     max-width: 400px;
 }
@@ -314,13 +314,13 @@ body.skin-blue {
     border-bottom: none;
 }
 
-.btn-login {
+.btn-login .btn-verify {
     background-color: white;
     border-color: #ddd;
     color: inherit;
 }
 
-.btn-login:hover {
+.btn-login:hover .btn-verify:hover {
     background-color: white;
 }
 
@@ -343,7 +343,7 @@ body.skin-blue {
     margin-top: 1em;
 }
 
-.signin-preamble {
+.signin-preamble .verify-preamble {
     margin-bottom: 1em;
     text-align: center;
 }

@@ -108,7 +108,6 @@ public class IamWebSecurityConfig {
     @Autowired
     private IamAccountRepository accountRepo;
 
-
     @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
 
@@ -194,6 +193,7 @@ public class IamWebSecurityConfig {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
+    // TODO refactor this
     public AuthenticationSuccessHandler successHandler() {
       AuthenticationSuccessHandler delegate =
           new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());

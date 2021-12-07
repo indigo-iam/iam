@@ -57,7 +57,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  */
 @SuppressWarnings("deprecation")
 @Controller
-public class AuthenticatorAppController {
+public class AuthenticatorAppSettingsController {
 
   public static final String BASE_URL = "/iam/authenticator-app";
   public static final String ADD_SECRET_URL = BASE_URL + "/add-secret";
@@ -70,7 +70,7 @@ public class AuthenticatorAppController {
   private CodeVerifier codeVerifier;
 
   @Autowired
-  public AuthenticatorAppController(IamAccountService service,
+  public AuthenticatorAppSettingsController(IamAccountService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator, CodeVerifier codeVerifier) {
     this.service = service;
     this.accountRepository = accountRepository;
