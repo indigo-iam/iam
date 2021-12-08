@@ -40,8 +40,7 @@ import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.IncorrectCodeError;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.InvalidCodeError;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -123,7 +122,7 @@ public class AuthenticatorAppSettingsController {
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new InvalidCodeError("Invalid code format. Code must be six numeric characters");
+      throw new BadMfaCodeError("Bad MFA code");
     }
 
     final String username = getUsernameFromSecurityContext();
@@ -131,7 +130,7 @@ public class AuthenticatorAppSettingsController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new IncorrectCodeError("Incorrect code. Try again");
+      throw new BadMfaCodeError("Bad MFA code");
     }
 
     service.enableTotpMfa(account);
@@ -152,7 +151,7 @@ public class AuthenticatorAppSettingsController {
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new InvalidCodeError("Invalid code format. Code must be six numeric characters");
+      throw new BadMfaCodeError("Bad MFA code");
     }
 
     final String username = getUsernameFromSecurityContext();
@@ -160,7 +159,7 @@ public class AuthenticatorAppSettingsController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new IncorrectCodeError("Incorrect code. Try again");
+      throw new BadMfaCodeError("Bad MFA code");
     }
 
     service.disableTotpMfa(account);
@@ -258,29 +257,15 @@ public class AuthenticatorAppSettingsController {
 
 
   /**
-   * Exception handler for when a received TOTP is invalid in format
+   * Exception handler for when a received TOTP is invalid
    * 
-   * @param e InvalidCodeError
+   * @param e BadCodeError
    * @return DTO containing error details
    */
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidCodeError.class)
+  @ExceptionHandler(BadMfaCodeError.class)
   @ResponseBody
-  public ErrorDTO handleInvalidCodeError(InvalidCodeError e) {
-    return ErrorDTO.fromString(e.getMessage());
-  }
-
-
-  /**
-   * Exception handler for when a received TOTP is incorrect compared to what the IAM has
-   * 
-   * @param e IncorrectCodeError
-   * @return DTO containing error details
-   */
-  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(IncorrectCodeError.class)
-  @ResponseBody
-  public ErrorDTO handleIncorrectCodeError(IncorrectCodeError e) {
+  public ErrorDTO handleBadCodeError(BadMfaCodeError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 }

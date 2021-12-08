@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error;
+package it.infn.mw.iam.authn.multi_factor_authentication.error;
 
-public class InvalidCodeError extends RuntimeException {
+import org.springframework.security.core.AuthenticationException;
 
-  /**
-   * 
-   */
+public class MultiFactorAuthenticationError extends AuthenticationException {
+
   private static final long serialVersionUID = 1L;
 
-  public InvalidCodeError(String message) {
-    super(message);
+  public MultiFactorAuthenticationError(String msg) {
+    super(msg);
   }
-
 }

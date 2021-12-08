@@ -82,7 +82,7 @@ public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSu
       // session.setAttribute(REQUESTING_SIGNATURE, true);
       response.sendRedirect(MFA_REDIRECTION_URL);
     } else {
-      continuewithDefaultSuccessHandler(request, response, authentication);
+      continueWithDefaultSuccessHandler(request, response, authentication);
     }
   }
 
@@ -99,7 +99,7 @@ public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSu
     return false;
   }
 
-  public void continuewithDefaultSuccessHandler(HttpServletRequest request,
+  public void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
     HttpSession session = request.getSession(false);
 
