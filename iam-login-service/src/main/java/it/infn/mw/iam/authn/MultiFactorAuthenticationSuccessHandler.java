@@ -16,6 +16,7 @@
 package it.infn.mw.iam.authn;
 
 import static it.infn.mw.iam.core.web.EnforceAupFilter.REQUESTING_SIGNATURE;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -43,7 +44,6 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-  public static final String MFA_REDIRECTION_URL = "/iam/verify2fa";
   private final AccountUtils accountUtils;
   private final AuthenticationSuccessHandler rootIsDashboardSuccessHandler;
   // private final String iamBaseUrl;
@@ -75,12 +75,12 @@ public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSu
     boolean isMfaEnabled = isMfaEnabled(authentication);
 
     if (response.isCommitted()) {
-      System.out.println(
-          "Response has already been committed. Unable to redirect to " + MFA_REDIRECTION_URL);
+      System.out
+        .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
       return;
     } else if (isMfaEnabled) {
       // session.setAttribute(REQUESTING_SIGNATURE, true);
-      response.sendRedirect(MFA_REDIRECTION_URL);
+      response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }

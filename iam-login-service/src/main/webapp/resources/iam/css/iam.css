@@ -161,6 +161,10 @@
     margin-top: 2em;
 }
 
+#verify-confirm-back-btn {
+    margin-top: 2em
+}
+
 .reset-password-form {
     margin: 0 auto;
     max-width: 400px;
