@@ -39,5 +39,11 @@
       </c:if>
     </div>
     <jsp:include page="verify-authenticator-app-form.jsp" />
+
+    <div id="verify-confirm-back-btn" class="row text-center">
+      <form action="/logout" method="post">
+        <button type="submit" class="btn btn-warning">Back to Login Page</button>
+      </form>
+    </div>
   </jsp:body>
 </t:page>

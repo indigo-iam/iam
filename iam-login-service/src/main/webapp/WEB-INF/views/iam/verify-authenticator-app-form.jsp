@@ -19,7 +19,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
-<form id="verify-form" action="/iam/verify2fa" method="post">
+<form id="verify-form" action="/iam/verify/authenticator-app" method="post">
   <div class="verify-preamble text-muted">For your security, please enter a code from your authenticator app</div>
   <div class="form-group">
     <div class="input-group">
