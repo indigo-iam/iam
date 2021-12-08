@@ -28,7 +28,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -46,7 +45,7 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
     IamAccount account = accountRepo.findByUsername(authentication.getName())
-      .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
+      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
     String password = authentication.getCredentials().toString();
     if (!passwordEncoder.matches(password, account.getPassword())) {
       throw new BadCredentialsException("Invalid login details");

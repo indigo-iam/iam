@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.multi_factor_authentication.error;
+package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error;
 
-public class AccountNotFoundException extends RuntimeException {
-
+public class BadMfaCodeError extends RuntimeException {
   /**
-   * 
-   */
+  * 
+  */
   private static final long serialVersionUID = 1L;
 
-  public AccountNotFoundException(String message) {
-    super(message);
+  public BadMfaCodeError(String msg) {
+    super(msg);
   }
-
 }

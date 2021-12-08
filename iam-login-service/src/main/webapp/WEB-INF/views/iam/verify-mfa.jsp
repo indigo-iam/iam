@@ -27,15 +27,14 @@
     </jsp:attribute>
   <jsp:body>
     <div id="verify-error">
-      <c:if test="${incorrectCodeError != null}">
-        <div class="alert alert-danger">Incorrect code. Try again</div>
-      </c:if>
       <c:if test="${ param.error != null }">
         <div class="alert alert-danger">
           <strong>
             <spring:message code="login.error" />
           </strong>
-          <div>${SPRING_SECURITY_LAST_EXCEPTION.message}</div>
+          <!-- TODO - change code to below div when fixing issue with reading exception message -->
+          <div>Bad code</div>
+          <!-- <div>${SPRING_SECURITY_LAST_EXCEPTION.message}</div> -->
         </div>
       </c:if>
     </div>
