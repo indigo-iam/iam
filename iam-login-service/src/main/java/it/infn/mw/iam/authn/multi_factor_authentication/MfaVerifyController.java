@@ -19,9 +19,16 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+
+import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 //TODO when unauthenticated and navigating to other pages like /dashboard, we redirect to /login. But here we show up as unauthorized. Can we replicate the behaviour of /dashboard?
 
@@ -34,13 +41,28 @@ public class MfaVerifyController {
   // ExternalAuthenticationHandlerSupport.saveAuthenticationErrorInSession() as a reference
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
+  final IamAccountRepository accountRepository;
 
   @Autowired
-  public MfaVerifyController() {}
+  public MfaVerifyController(IamAccountRepository accountRepository) {
+    this.accountRepository = accountRepository;
+  }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @RequestMapping(method = RequestMethod.GET, path = "")
-  public String getVerifyMfaView() {
+  public String getVerifyMfaView(Authentication authentication, ModelMap model) {
+    IamAccount account = accountRepository.findByUsername(authentication.getName())
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
+    MultiFactorSettingsDTO dto = populateMfaSettings(account);
+    model.addAttribute("factors", dto.toJson());
+
     return "iam/verify-mfa";
+  }
+
+  private MultiFactorSettingsDTO populateMfaSettings(IamAccount account) {
+    MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
+    dto.setAuthenticatorAppActive(account.getTotpMfa() != null && account.getTotpMfa().isActive());
+
+    return dto;
   }
 }

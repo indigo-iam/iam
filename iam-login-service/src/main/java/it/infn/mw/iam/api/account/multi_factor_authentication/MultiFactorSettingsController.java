@@ -37,7 +37,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Controller
 public class MultiFactorSettingsController {
 
-  public static final String BASE_URL = "/iam/multi-factor-settings";
+  public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
   final IamAccountRepository accountRepository;
 
   @Autowired
@@ -52,7 +52,7 @@ public class MultiFactorSettingsController {
    * @return MultiFactorSettingsDTO the MFA settings for the account
    */
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = BASE_URL, method = RequestMethod.GET,
+  @RequestMapping(value = MULTI_FACTOR_SETTINGS_URL, method = RequestMethod.GET,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public MultiFactorSettingsDTO getMultiFactorSettings() {
