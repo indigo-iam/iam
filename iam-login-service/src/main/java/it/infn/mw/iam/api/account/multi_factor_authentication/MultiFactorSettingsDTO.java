@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import javax.validation.constraints.NotEmpty;
 
+import com.nimbusds.jose.shaded.json.JSONObject;
+
 /**
  * DTO containing info about enabled factors of authentication
  */
@@ -48,5 +50,11 @@ public class MultiFactorSettingsDTO {
    */
   public void setAuthenticatorAppActive(final boolean authenticatorAppActive) {
     this.authenticatorAppActive = authenticatorAppActive;
+  }
+
+  public JSONObject toJson() {
+    JSONObject json = new JSONObject();
+    json.put("authenticatorAppActive", authenticatorAppActive);
+    return json;
   }
 }

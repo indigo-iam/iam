@@ -87,7 +87,7 @@ public class MultiFactorSettingsTests {
       .log()
       .all(true)
       .when()
-      .get(MultiFactorSettingsController.BASE_URL)
+      .get(MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_URL)
       .then()
       .log()
       .all(true);
@@ -99,7 +99,7 @@ public class MultiFactorSettingsTests {
       .log()
       .all(true)
       .when()
-      .get(MultiFactorSettingsController.BASE_URL)
+      .get(MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_URL)
       .then()
       .log()
       .all(true);
