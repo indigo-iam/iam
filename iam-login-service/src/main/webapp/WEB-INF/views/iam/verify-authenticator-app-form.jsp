@@ -15,23 +15,43 @@
     limitations under the License.
 
 --%>
-<%@ taglib prefix="authz" uri="http://www.springframework.org/security/tags"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-<%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
-<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
-<form id="verify-form" action="/iam/verify/authenticator-app" method="post">
-  <div class="verify-preamble text-muted">For your security, please enter a code from your authenticator app</div>
-  <div class="form-group">
-    <div class="input-group">
-      <span class="input-group-addon">
-        <i class="glyphicon glyphicon-lock"></i>
-      </span>
-      <input id="code" class="form-control" type="text" inputmode="numeric" placeholder="Code" autocomplete="off" spellcheck="false"
-        name="code" autofocus>
-    </div>
+<html>
+  <div>
+    <form class="verify-form" action="/iam/verify/authenticator-app/code" method="post">
+      <div class="verify-preamble text-muted">
+        For your security, please enter a code from your authenticator app
+      </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon">
+            <i class="glyphicon glyphicon-lock"></i>
+          </span>
+          <input id="code" class="form-control" type="text" inputmode="numeric" placeholder="Code" autocomplete="off" spellcheck="false"
+            name="code" autofocus>
+        </div>
+      </div>
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
+        <input id="verify-submit" type="submit" class="btn btn-primary btn-block"
+          value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
+      </div>
+    </form>
+    <form class="verify-form" action="/iam/verify/authenticator-app/recovery-code" method="post">
+      <div class="verify-preamble text-muted">
+        Lost access to your authenticator app? Enter a recovery code to regain access
+      </div>
+      <div class="form-group">
+        <div class="input-group">
+          <span class="input-group-addon">
+            <i class="glyphicon glyphicon-lock"></i>
+          </span>
+          <input id="recoveryCode" class="form-control" type="text" inputmode="numeric" placeholder="Recovery code" autocomplete="off" spellcheck="false"
+            name="recoveryCode" autofocus>
+        </div>
+      </div>
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
+        <input id="verify-submit" type="submit" class="btn btn-primary btn-block"
+          value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
+      </div>
+    </form>
   </div>
-    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
-    <input id="verify-submit" type="submit" class="btn btn-primary btn-block"
-      value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
-  </div>
-</form>
+</html>
