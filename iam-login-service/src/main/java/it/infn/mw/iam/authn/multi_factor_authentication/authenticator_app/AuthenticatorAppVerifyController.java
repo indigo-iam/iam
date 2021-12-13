@@ -154,7 +154,7 @@ public class AuthenticatorAppVerifyController {
 
     authenticationSuccessEvent(newAuth);
 
-    return "redirect:" + MFA_VERIFY_URL + "/authenticator-app/recovery-code/reset";
+    return "redirect:/iam/authenticator-app/recovery-code/reset";
   }
 
   private boolean isValidRecoveryCode(Set<IamTotpRecoveryCode> accountRecoveryCodes,
@@ -169,21 +169,33 @@ public class AuthenticatorAppVerifyController {
     return false;
   }
 
+  // TODO if the resetting of recovery codes after use is a requirement, we need to prevent the user
+  // from accessing IAM webpages after authenticating. This may require an additional ROLE for
+  // handling this. Should also try and tie this in with a generic page for resetting recovery codes
+  // for anyone who is logged in
+
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET,
-      path = MFA_VERIFY_URL + "/authenticator-app/recovery-code/reset")
-  public String getResetRecoveryCodesView() {
-    return "/iam/reset-recovery-codes-choice";
+  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/reset")
+  public String getResetRecoveryCodesResetView() {
+    return "/iam/authenticator-app/recovery-code/reset";
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST,
-      path = MFA_VERIFY_URL + "/authenticator-app/recovery-code/reset")
-  public String resetRecoveryCodes(ModelMap model) {
+  @RequestMapping(method = RequestMethod.POST, path = "/iam/authenticator-app/recovery-code/reset")
+  public String resetRecoveryCodes() {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
     account = service.addTotpMfaRecoveryCodes(account);
     service.saveAccount(account);
+
+    return "redirect:/iam/authenticator-app/recovery-code/view";
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/view")
+  public String viewRecoveryCodes(ModelMap model) {
+    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
 
     List<IamTotpRecoveryCode> recs = new ArrayList<>(account.getTotpMfa().getRecoveryCodes());
     String[] codes = new String[recs.size()];
@@ -193,6 +205,6 @@ public class AuthenticatorAppVerifyController {
     }
 
     model.addAttribute("recoveryCodes", codes);
-    return "redirect:" + MFA_VERIFY_URL + "/authenticator-app/recovery-code/view";
+    return "/iam/authenticator-app/recovery-code/view";
   }
 }

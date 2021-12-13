@@ -19,23 +19,25 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
-<t:page title="Reset recovery codes?">
-  <jsp:attribute name="footer">
+<t:page title="View recovery codes">
+    <jsp:attribute name="footer">
     <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
     <script type="text/javascript" src="/webjars/angularjs/angular-animate.js"></script>
     <script type="text/javascript" src="/webjars/angular-ui-bootstrap/ui-bootstrap-tpls.min.js"></script>
   </jsp:attribute>
   <jsp:body>
-    <form class="verify-form" action="/iam/verify/authenticator-app/recovery-code/reset" method="post">
-      <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
-      <input id="reset-submit" type="submit" class="btn btn-primary btn-block"
-        value="Reset" name="reset" class="form-control">
+    <form class="verify-form">
+      <div class="verify-preamble text-muted">
+        Here are your account recovery codes. It is important you write these down as they will help you get back into your account if you lose access to your authenticator app.
+      </div>
+      <c:forEach var="code" items="${ recoveryCodes }">
+        <p class="verify-preamble" title="${ code }">${ code }</p>
+      </c:forEach>
     </form>
-    <!-- The below action obviously would not work if needing to redirect elsewhere -->
-    <form class="verify-form" action="/dashboard" method="get">
-      <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
-      <input id="skip-submit" type="submit" class="btn btn-danger btn-block"
-        value="Skip" name="skip" class="form-control">
-    </form>
+    <div id="verify-confirm" class="row text-center">
+      <form action="/dashboard" method="get">
+        <button type="submit" class="btn btn-primary">Continue to dashboard</button>
+      </form>
+    </div>
   </jsp:body>
 </t:page>
