@@ -145,7 +145,7 @@
     margin-top: 2em;
 }
 
-#verify-confirm-back-btn {
+#verify-confirm {
     margin-top: 2em
 }
 
@@ -323,13 +323,13 @@ body.skin-blue {
     border-bottom: none;
 }
 
-.btn-login .btn-verify {
+.btn-login, .btn-verify {
     background-color: white;
     border-color: #ddd;
     color: inherit;
 }
 
-.btn-login:hover .btn-verify:hover {
+.btn-login:hover, .btn-verify:hover {
     background-color: white;
 }
 
@@ -352,7 +352,7 @@ body.skin-blue {
     margin-top: 1em;
 }
 
-.signin-preamble .verify-preamble {
+.signin-preamble, .verify-preamble {
     margin-bottom: 1em;
     text-align: center;
 }
