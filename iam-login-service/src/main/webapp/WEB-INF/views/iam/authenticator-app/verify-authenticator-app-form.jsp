@@ -53,5 +53,9 @@
           value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
       </div>
     </form>
+    <form class="verify-form text-center" action="/logout" method="post">
+      <button type="submit" class="btn btn-warning">Back to Login Page</button>
+    </form>
+    </div>
   </div>
 </html>

@@ -43,14 +43,8 @@
     <!-- Also, for the sake of convenience, detect that if only one additional factor is configured, automatically display that instead --> 
     <c:if test="${factors.authenticatorAppActive}">
       <div id="auth-app">
-        <jsp:include page="verify-authenticator-app-form.jsp" />
+        <jsp:include page="authenticator-app/verify-authenticator-app-form.jsp" />
       </div>
     </c:if>
-
-    <div id="verify-confirm-back-btn" class="row text-center">
-      <form action="/logout" method="post">
-        <button type="submit" class="btn btn-warning">Back to Login Page</button>
-      </form>
-    </div>
   </jsp:body>
 </t:page>
