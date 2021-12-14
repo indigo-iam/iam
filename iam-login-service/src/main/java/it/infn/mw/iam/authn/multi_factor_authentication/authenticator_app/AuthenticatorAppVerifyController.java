@@ -25,6 +25,8 @@ import java.util.Set;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,14 +39,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.CodeDTO;
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -182,18 +188,34 @@ public class AuthenticatorAppVerifyController {
 
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.POST, path = "/iam/authenticator-app/recovery-code/reset")
-  public String resetRecoveryCodes() {
-    IamAccount account = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
-    account = service.addTotpMfaRecoveryCodes(account);
-    service.saveAccount(account);
+  public String resetRecoveryCodesAndView() {
+    resetRecoveryCodes();
 
     return "redirect:/iam/authenticator-app/recovery-code/view";
   }
 
   @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.PUT, path = "/iam/authenticator-app/recovery-code/reset")
+  public ResponseEntity<String> resetRecoveryCodes() {
+    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
+    account = service.addTotpMfaRecoveryCodes(account);
+    service.saveAccount(account);
+
+    return ResponseEntity.ok().build();
+  }
+
+  @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/view")
   public String viewRecoveryCodes(ModelMap model) {
+    String[] codes = getRecoveryCodes();
+    model.addAttribute("recoveryCodes", codes);
+    return "/iam/authenticator-app/recovery-code/view";
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/get")
+  public @ResponseBody String[] getRecoveryCodes() {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
 
@@ -204,7 +226,13 @@ public class AuthenticatorAppVerifyController {
       codes[i] = recs.get(i).getCode();
     }
 
-    model.addAttribute("recoveryCodes", codes);
-    return "/iam/authenticator-app/recovery-code/view";
+    return codes;
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(MultiFactorAuthenticationError.class)
+  @ResponseBody
+  public ErrorDTO handleMultiFactorAuthenticationError(MultiFactorAuthenticationError e) {
+    return ErrorDTO.fromString(e.getMessage());
   }
 }
