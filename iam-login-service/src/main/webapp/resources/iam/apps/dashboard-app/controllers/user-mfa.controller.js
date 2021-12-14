@@ -16,17 +16,17 @@
 'use strict';
 
 angular.module('dashboardApp')
-    .controller('UserMfaController', UserMfaController);
+  .controller('UserMfaController', UserMfaController);
 
 UserMfaController.$inject = [
   '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster'
 ];
 
 function UserMfaController(
-    $http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
+  $http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
   var userMfaCtrl = this;
 
-  userMfaCtrl.$onInit = function() {
+  userMfaCtrl.$onInit = function () {
     console.log('UserMfaController onInit');
     getMfaSettings();
   };

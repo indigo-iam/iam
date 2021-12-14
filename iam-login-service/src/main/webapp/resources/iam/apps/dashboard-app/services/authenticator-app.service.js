@@ -24,7 +24,9 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 	var service = {
 		addMfaSecretToUser: addMfaSecretToUser,
 		enableAuthenticatorApp: enableAuthenticatorApp,
-		disableAuthenticatorApp: disableAuthenticatorApp
+		disableAuthenticatorApp: disableAuthenticatorApp,
+		viewRecoveryCodes: viewRecoveryCodes,
+		resetRecoveryCodes: resetRecoveryCodes
 	};
 
 	return service;
@@ -63,4 +65,14 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 
 		return $http.post('/iam/authenticator-app/disable', data, config);
 	};
+
+	function viewRecoveryCodes() {
+
+		return $http.get('/iam/authenticator-app/recovery-code/get');
+	}
+
+	function resetRecoveryCodes() {
+
+		return $http.put('/iam/authenticator-app/recovery-code/reset');
+	}
 }
