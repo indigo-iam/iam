@@ -51,7 +51,7 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
-public class AuthenticatorAppTests {
+public class AuthenticatorAppSettingsTests {
 
   @Value("${local.server.port}")
   private Integer iamPort;
@@ -214,7 +214,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Incorrect code"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -228,7 +228,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -242,7 +242,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -256,7 +256,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -270,7 +270,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -284,7 +284,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.ENABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -342,7 +342,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Incorrect code"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -356,7 +356,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -370,7 +370,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -384,7 +384,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -398,7 +398,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
@@ -412,7 +412,7 @@ public class AuthenticatorAppTests {
 
     doPost(accessToken, AuthenticatorAppSettingsController.DISABLE_URL, code)
       .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body(containsString("Invalid code format"));
+      .body(containsString("Bad MFA code"));
   }
 
   @Test
