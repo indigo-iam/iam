@@ -18,14 +18,19 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -64,5 +69,12 @@ public class MfaVerifyController {
     dto.setAuthenticatorAppActive(account.getTotpMfa() != null && account.getTotpMfa().isActive());
 
     return dto;
+  }
+
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(NoSuchAccountError.class)
+  @ResponseBody
+  public ErrorDTO handleNoSuchAccountError(NoSuchAccountError e) {
+    return ErrorDTO.fromString(e.getMessage());
   }
 }
