@@ -59,6 +59,10 @@ import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 @Controller
 public class AuthenticatorAppVerifyController {
 
+  public static final String VERIFY_CODE_URL = MFA_VERIFY_URL + "/authenticator-app/code";
+  public static final String VERIFY_RECOVERY_CODE_URL =
+      MFA_VERIFY_URL + "/authenticator-app/recovery-code";
+
   private final AccountUtils accountUtils;
   private final CodeVerifier codeVerifier;
   private final AuthenticationEventPublisher eventPublisher;
@@ -87,7 +91,7 @@ public class AuthenticatorAppVerifyController {
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
-  @RequestMapping(method = RequestMethod.POST, path = MFA_VERIFY_URL + "/authenticator-app/code")
+  @RequestMapping(method = RequestMethod.POST, path = VERIFY_CODE_URL)
   public String verifyCode(@ModelAttribute @Valid CodeDTO code, BindingResult validationResult,
       Authentication authentication, RedirectAttributes redirectAttributes) {
     if (validationResult.hasErrors()) {
@@ -123,8 +127,7 @@ public class AuthenticatorAppVerifyController {
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
-  @RequestMapping(method = RequestMethod.POST,
-      path = MFA_VERIFY_URL + "/authenticator-app/recovery-code")
+  @RequestMapping(method = RequestMethod.POST, path = VERIFY_RECOVERY_CODE_URL)
   public String verifyRecoveryCode(@ModelAttribute @Valid RecoveryCodeDTO recoveryCode,
       BindingResult validationResult, Authentication authentication,
       RedirectAttributes redirectAttributes) {
