@@ -148,15 +148,23 @@ public class MultiFactorTestSupport {
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
 
-    IamTotpMfa totpMfa = new IamTotpMfa();
-    Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
-    for (IamTotpRecoveryCode recoveryCode : account.getTotpMfa().getRecoveryCodes()) {
-      IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(totpMfa);
-      newCode.setCode(recoveryCode.getCode());
-      newCodes.add(newCode);
+    if (account.getTotpMfa() != null) {
+      IamTotpMfa totpMfa = new IamTotpMfa();
+      totpMfa.setSecret(account.getTotpMfa().getSecret());
+      totpMfa.setActive(account.getTotpMfa().isActive());
+
+      if (account.getTotpMfa().getRecoveryCodes() != null) {
+        Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
+        for (IamTotpRecoveryCode recoveryCode : account.getTotpMfa().getRecoveryCodes()) {
+          IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(totpMfa);
+          newCode.setCode(recoveryCode.getCode());
+          newCodes.add(newCode);
+        }
+        totpMfa.setRecoveryCodes(newCodes);
+      }
+
+      newAccount.setTotpMfa(totpMfa);
     }
-    totpMfa.setRecoveryCodes(newCodes);
-    newAccount.setTotpMfa(totpMfa);
 
     newAccount.touch();
 

@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -42,6 +43,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -60,9 +64,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
-
-import com.google.common.collect.Sets;
-
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -87,6 +88,7 @@ import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
@@ -1072,7 +1074,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     verify(secretGenerator, times(1)).generate();
     verify(recoveryCodeGenerator, times(1)).generateCodes(anyInt());
 
-    assertNotNull(account.getTotpMfa());
+    assertNotNull(account.getTotpMfa().getSecret());
+    assertFalse(account.getTotpMfa().isActive());
   }
 
   @Test(expected = MfaSecretAlreadyBoundException.class)
@@ -1084,6 +1087,34 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     } catch (MfaSecretAlreadyBoundException e) {
       assertThat(e.getMessage(),
           equalTo("A multi-factor secret is already assigned to this account"));
+      throw e;
+    }
+  }
+
+  @Test
+  public void testAddsMfaRecoveryCodesToAccount() {
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    Set<IamTotpRecoveryCode> originalCodes = new HashSet<>(account.getTotpMfa().getRecoveryCodes());
+
+    try {
+      account = accountService.addTotpMfaRecoveryCodes(account);
+    } catch (MfaSecretNotFoundException e) {
+      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
+      throw e;
+    }
+
+    Set<IamTotpRecoveryCode> newCodes = account.getTotpMfa().getRecoveryCodes();
+    assertThat(originalCodes.toArray(), not(equalTo(newCodes.toArray())));
+  }
+
+  @Test(expected = MfaSecretNotFoundException.class)
+  public void testAddsMfaRecoveryCode_whenNoMfaSecretAssignedFails() {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+
+    try {
+      accountService.addTotpMfaRecoveryCodes(account);
+    } catch (MfaSecretNotFoundException e) {
+      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
       throw e;
     }
   }

@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.service;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
@@ -77,6 +78,12 @@ public class IamAccountServiceTestSupport {
   public static final String TOTP_RECOVERY_CODE_STRING_4 = "code-4";
   public static final String TOTP_RECOVERY_CODE_STRING_5 = "code-5";
   public static final String TOTP_RECOVERY_CODE_STRING_6 = "code-6";
+  public static final String TOTP_RECOVERY_CODE_STRING_7 = "code-7";
+  public static final String TOTP_RECOVERY_CODE_STRING_8 = "code-8";
+  public static final String TOTP_RECOVERY_CODE_STRING_9 = "code-9";
+  public static final String TOTP_RECOVERY_CODE_STRING_10 = "code-10";
+  public static final String TOTP_RECOVERY_CODE_STRING_11 = "code-11";
+  public static final String TOTP_RECOVERY_CODE_STRING_12 = "code-12";
 
 
   protected final IamAccount TEST_ACCOUNT;
@@ -179,7 +186,24 @@ public class IamAccountServiceTestSupport {
     newAccount.getUserInfo().setEmail(account.getUserInfo().getEmail());
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
-    newAccount.setTotpMfa(account.getTotpMfa());
+
+    if (account.getTotpMfa() != null) {
+      IamTotpMfa totpMfa = new IamTotpMfa();
+      totpMfa.setSecret(account.getTotpMfa().getSecret());
+      totpMfa.setActive(account.getTotpMfa().isActive());
+
+      if (account.getTotpMfa().getRecoveryCodes() != null) {
+        Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
+        for (IamTotpRecoveryCode recoveryCode : account.getTotpMfa().getRecoveryCodes()) {
+          IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(totpMfa);
+          newCode.setCode(recoveryCode.getCode());
+          newCodes.add(newCode);
+        }
+        totpMfa.setRecoveryCodes(newCodes);
+      }
+
+      newAccount.setTotpMfa(totpMfa);
+    }
 
     return newAccount;
   }
