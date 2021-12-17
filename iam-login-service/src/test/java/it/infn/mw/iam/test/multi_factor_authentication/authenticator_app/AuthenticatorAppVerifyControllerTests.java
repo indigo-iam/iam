@@ -60,7 +60,6 @@ import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.AuthenticatorAppVerifyController;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
-import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
@@ -80,9 +79,6 @@ public class AuthenticatorAppVerifyControllerTests extends MultiFactorTestSuppor
 
   @MockBean
   private CodeVerifier codeVerifier;
-
-  @MockBean
-  private DefaultIamAccountService service;
 
   @MockBean
   private AuthenticationEventPublisher eventPublisher;
@@ -109,6 +105,7 @@ public class AuthenticatorAppVerifyControllerTests extends MultiFactorTestSuppor
   public void tearDown() {
     reset(accountUtils);
     reset(codeVerifier);
+    reset(eventPublisher);
   }
 
   @Test

@@ -26,7 +26,6 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,7 +36,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -52,7 +50,6 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.CodeDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
-import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 
@@ -66,7 +63,6 @@ public class AuthenticatorAppVerifyController {
   private final AccountUtils accountUtils;
   private final CodeVerifier codeVerifier;
   private final AuthenticationEventPublisher eventPublisher;
-  final IamAccountService service;
 
   // TODO - step up authentication page can't read SPRING_SECURITY_LAST_EXCEPTION.message to display
   // "Bad code" error. Fix this and use
@@ -74,11 +70,10 @@ public class AuthenticatorAppVerifyController {
 
   @Autowired
   public AuthenticatorAppVerifyController(AccountUtils accountUtils, CodeVerifier codeVerifier,
-      AuthenticationEventPublisher eventPublisher, IamAccountService service) {
+      AuthenticationEventPublisher eventPublisher) {
     this.accountUtils = accountUtils;
     this.codeVerifier = codeVerifier;
     this.eventPublisher = eventPublisher;
-    this.service = service;
   }
 
   private void authenticationSuccessEvent(Authentication authentication) {
@@ -166,6 +161,13 @@ public class AuthenticatorAppVerifyController {
     return "redirect:/iam/authenticator-app/recovery-code/reset";
   }
 
+  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(MultiFactorAuthenticationError.class)
+  @ResponseBody
+  public ErrorDTO handleMultiFactorAuthenticationError(MultiFactorAuthenticationError e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
   private boolean isValidRecoveryCode(Set<IamTotpRecoveryCode> accountRecoveryCodes,
       String inputRecoveryCode) {
     for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
@@ -176,66 +178,5 @@ public class AuthenticatorAppVerifyController {
     }
 
     return false;
-  }
-
-  // TODO if the resetting of recovery codes after use is a requirement, we need to prevent the user
-  // from accessing IAM webpages after authenticating. This may require an additional ROLE for
-  // handling this. Should also try and tie this in with a generic page for resetting recovery codes
-  // for anyone who is logged in
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/reset")
-  public String getResetRecoveryCodesResetView() {
-    return "/iam/authenticator-app/recovery-code/reset";
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST, path = "/iam/authenticator-app/recovery-code/reset")
-  public String resetRecoveryCodesAndView() {
-    resetRecoveryCodes();
-
-    return "redirect:/iam/authenticator-app/recovery-code/view";
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.PUT, path = "/iam/authenticator-app/recovery-code/reset")
-  public ResponseEntity<String> resetRecoveryCodes() {
-    IamAccount account = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
-    account = service.addTotpMfaRecoveryCodes(account);
-    service.saveAccount(account);
-
-    return ResponseEntity.ok().build();
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/view")
-  public String viewRecoveryCodes(ModelMap model) {
-    String[] codes = getRecoveryCodes();
-    model.addAttribute("recoveryCodes", codes);
-    return "/iam/authenticator-app/recovery-code/view";
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = "/iam/authenticator-app/recovery-code/get")
-  public @ResponseBody String[] getRecoveryCodes() {
-    IamAccount account = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
-
-    List<IamTotpRecoveryCode> recs = new ArrayList<>(account.getTotpMfa().getRecoveryCodes());
-    String[] codes = new String[recs.size()];
-
-    for (int i = 0; i < recs.size(); i++) {
-      codes[i] = recs.get(i).getCode();
-    }
-
-    return codes;
-  }
-
-  @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(MultiFactorAuthenticationError.class)
-  @ResponseBody
-  public ErrorDTO handleMultiFactorAuthenticationError(MultiFactorAuthenticationError e) {
-    return ErrorDTO.fromString(e.getMessage());
   }
 }
