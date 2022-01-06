@@ -29,7 +29,7 @@
     .controller('ResetRecoveryCodesController', ResetRecoveryCodesController);
 
   EnableAuthenticatorAppController.$inject = [
-    '$scope', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user'
+    '$scope', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user', '$uibModal'
   ];
 
   DisableAuthenticatorAppController.$inject = [
@@ -45,7 +45,7 @@
   ];
 
   function EnableAuthenticatorAppController(
-    $scope, $uibModalInstance, Utils, AuthenticatorAppService, user) {
+    $scope, $uibModalInstance, Utils, AuthenticatorAppService, user, $uibModal) {
     var authAppCtrl = this;
 
     authAppCtrl.user = {
@@ -65,6 +65,7 @@
 
     authAppCtrl.dismiss = dismiss;
     authAppCtrl.reset = reset;
+    authAppCtrl.viewRecoveryCodes = viewRecoveryCodes;
 
     function reset() {
       console.log('reset form');
@@ -82,6 +83,19 @@
 
     function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
 
+    function viewRecoveryCodes() {
+      var modalInstance = $uibModal.open({
+        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/view-recovery-codes.html',
+        controller: 'ViewRecoveryCodesController',
+        controllerAs: 'authAppCtrl',
+        resolve: { user: function () { return self.user; } }
+      });
+
+      modalInstance.result.then(function (msg) {
+        return $uibModalInstance.close(msg);
+      });
+    }
+
     authAppCtrl.message = '';
 
     authAppCtrl.submitEnable = function () {
@@ -91,7 +105,8 @@
           authAppCtrl.user.code)
         .then(function () {
           authAppCtrl.requestPending = false;
-          return $uibModalInstance.close('Authenticator app enabled');
+          authAppCtrl.viewRecoveryCodes();
+          $uibModalInstance.close('Authenticator app enabled');
         })
         .catch(function (error) {
           authAppCtrl.requestPending = false;
