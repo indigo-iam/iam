@@ -47,7 +47,11 @@
   function EnableAuthenticatorAppController(
     $scope, $uibModalInstance, Utils, AuthenticatorAppService, user) {
     var authAppCtrl = this;
-    authAppCtrl.disabled = false;
+
+    authAppCtrl.user = {
+      ...user,
+      code: ''
+    };
 
     authAppCtrl.$onInit = function () {
       AuthenticatorAppService.addMfaSecretToUser().then(function (response) {
@@ -56,8 +60,8 @@
       });
     }
 
-    authAppCtrl.userToEdit = user;
     authAppCtrl.codeMinlength = 6;
+    authAppCtrl.requestPending = false;
 
     authAppCtrl.dismiss = dismiss;
     authAppCtrl.reset = reset;
@@ -65,13 +69,13 @@
     function reset() {
       console.log('reset form');
 
-      authAppCtrl.user = {
-        code: ''
-      };
+      authAppCtrl.user.code = '';
 
       if ($scope.authenticatorAppForm) {
         $scope.authenticatorAppForm.$setPristine();
       }
+
+      authAppCtrl.requestPending = false;
     }
 
     authAppCtrl.reset();
@@ -81,16 +85,18 @@
     authAppCtrl.message = '';
 
     authAppCtrl.submitEnable = function () {
-      authAppCtrl.disabled = true;
+      authAppCtrl.requestPending = true;
       AuthenticatorAppService
         .enableAuthenticatorApp(
           authAppCtrl.user.code)
         .then(function () {
-          authAppCtrl.disabled = false;
+          authAppCtrl.requestPending = false;
           return $uibModalInstance.close('Authenticator app enabled');
         })
         .catch(function (error) {
+          authAppCtrl.requestPending = false;
           $scope.operationResult = Utils.buildErrorResult(error.data.error);
+          authAppCtrl.reset();
         });
     };
   }
@@ -98,10 +104,14 @@
   function DisableAuthenticatorAppController(
     $scope, $uibModalInstance, Utils, AuthenticatorAppService, user) {
     var authAppCtrl = this;
-    authAppCtrl.disabled = false;
 
-    authAppCtrl.userToEdit = user;
+    authAppCtrl.user = {
+      ...user,
+      code: ''
+    };
+
     authAppCtrl.codeMinlength = 6;
+    authAppCtrl.requestPending = false;
 
     authAppCtrl.dismiss = dismiss;
     authAppCtrl.reset = reset;
@@ -109,13 +119,13 @@
     function reset() {
       console.log('reset form');
 
-      authAppCtrl.user = {
-        code: ''
-      };
+      authAppCtrl.user.code = '';
 
       if ($scope.authenticatorAppForm) {
         $scope.authenticatorAppForm.$setPristine();
       }
+
+      authAppCtrl.requestPending = false;
     }
 
     authAppCtrl.reset();
@@ -125,16 +135,18 @@
     authAppCtrl.message = '';
 
     authAppCtrl.submitDisable = function () {
-      authAppCtrl.disabled = true;
+      authAppCtrl.requestPending = true;
       AuthenticatorAppService
         .disableAuthenticatorApp(
           authAppCtrl.user.code)
         .then(function () {
-          authAppCtrl.disabled = false;
+          authAppCtrl.requestPending = false;
           return $uibModalInstance.close('Authenticator app disabled');
         })
         .catch(function (error) {
+          authAppCtrl.requestPending = false;
           $scope.operationResult = Utils.buildErrorResult(error.data.error);
+          authAppCtrl.reset();
         });
     };
   }
@@ -186,18 +198,19 @@
     var authAppCtrl = this;
     authAppCtrl.dismiss = dismiss;
     authAppCtrl.resetRecoveryCodes = resetRecoveryCodes;
-    authAppCtrl.disabled = false;
+    authAppCtrl.requestPending = false;
 
     function dismiss() { return $uibModalInstance.dismiss('Back'); }
 
     function resetRecoveryCodes() {
-      authAppCtrl.disabled = true;
+      authAppCtrl.requestPending = true;
       AuthenticatorAppService.resetRecoveryCodes()
         .then(function () {
-          authAppCtrl.disabled = false;
+          authAppCtrl.requestPending = false;
           $uibModalInstance.close('Recovery codes updated');
         })
         .catch(function (error) {
+          authAppCtrl.requestPending = false;
           $scope.operationResult = Utils.buildErrorResult(error.data);
         });
     }
