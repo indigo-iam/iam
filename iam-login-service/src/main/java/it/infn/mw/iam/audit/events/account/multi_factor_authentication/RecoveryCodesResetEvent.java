@@ -24,14 +24,7 @@ public class RecoveryCodesResetEvent extends MultiFactorEvent {
   // TODO add this in
   // private static final long serialVersionUID = 3213253939764135733L;
 
-  private final IamAccount account;
-
   public RecoveryCodesResetEvent(Object source, IamAccount account) {
     super(source, account, String.format(TEMPLATE, account.getUsername()));
-    this.account = account;
-  }
-
-  public IamAccount getAccount() {
-    return account;
   }
 }
