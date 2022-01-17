@@ -17,7 +17,9 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -29,6 +31,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class MultiFactorAuthenticationProvider implements AuthenticationProvider {
@@ -55,8 +58,22 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
       List<GrantedAuthority> updatedAuthorities =
           new ArrayList<>(Arrays.asList(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED")));
 
-      return new UsernamePasswordAuthenticationToken(authentication.getPrincipal(),
-          authentication.getCredentials(), updatedAuthorities);
+      // Used multi-factor authentication, so add pwd and otp as methods of
+      // authentication. This ensures the amr flag is properly set in an id_token, if OIDC used. otp
+      // refers to one-time-password (this authentication provider is for authenticator apps, which
+      // use OTPs)
+      IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference();
+      IamAuthenticationMethodReference otp = new IamAuthenticationMethodReference();
+      pwd.setAccount(account);
+      pwd.setName("pwd");
+      otp.setAccount(account);
+      otp.setName("mfa");
+      Set<IamAuthenticationMethodReference> refs = new HashSet<>(Arrays.asList(pwd, otp));
+      account.setAuthenticationMethodReferences(refs);
+      accountRepo.save(account);
+
+      return new UsernamePasswordAuthenticationToken(account, authentication.getCredentials(),
+          updatedAuthorities);
     }
 
     return null;

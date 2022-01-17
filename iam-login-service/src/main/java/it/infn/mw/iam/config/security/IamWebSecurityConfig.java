@@ -124,7 +124,7 @@ public class IamWebSecurityConfig {
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new MultiFactorAuthenticationProvider(accountRepo, passwordEncoder));
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo));
       // @formatter:on
     }
 
