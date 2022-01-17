@@ -15,10 +15,14 @@
  */
 package it.infn.mw.iam.core;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -29,6 +33,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
@@ -41,11 +48,14 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
 
+  private final IamAccountRepository accountRepo;
+
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
+    this.accountRepo = accountRepo;
   }
 
   @Override
@@ -58,6 +68,16 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
             && userDetails.getAuthorities().stream().noneMatch(ADMIN_MATCHER))) {
       throw new DisabledException(DISABLED_AUTH_MESSAGE);
     }
-  }
 
+    // Used local authentication (username and password) only, so add pwd as method of
+    // authentication. This ensures the amr flag is properly set in an id_token, if OIDC used
+    IamAccount account = accountRepo.findByUsername(authentication.getName())
+      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+    IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference();
+    pwd.setAccount(account);
+    pwd.setName("pwd");
+    Set<IamAuthenticationMethodReference> refs = new HashSet<>(Arrays.asList(pwd));
+    account.setAuthenticationMethodReferences(refs);
+    accountRepo.save(account);
+  }
 }

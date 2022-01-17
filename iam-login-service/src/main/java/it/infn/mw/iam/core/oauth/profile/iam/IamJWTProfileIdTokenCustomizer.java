@@ -19,16 +19,17 @@ import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_
 
 import java.util.Set;
 
+import com.nimbusds.jwt.JWTClaimsSet.Builder;
+
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import com.nimbusds.jwt.JWTClaimsSet.Builder;
-
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -54,6 +55,12 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     IamUserInfo info = account.getUserInfo();
 
     Set<String> requiredClaims = scopeClaimConverter.getClaimsForScopeSet(request.getScope());
+
+    // Add the methods of authentication to the id_token
+    Set<IamAuthenticationMethodReference> refs = account.getAuthenticationMethodReferences();
+    String[] amr =
+        refs.stream().map(IamAuthenticationMethodReference::getName).toArray(String[]::new);
+    idClaims.claim("amr", amr);
 
     requiredClaims.stream()
       .filter(ADDITIONAL_CLAIMS::contains)
