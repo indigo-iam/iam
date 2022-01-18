@@ -18,12 +18,7 @@
 <!-- Current Active System Scopes Box -->
 <div class="box box-primary" id="policies-list">
     <div class="box-header with-border">
-        <div class="well well-small">
-            <button class="btn btn-small refresh-table"><i class="fa fa-refresh"></i> <span data-i18n="common.refresh">Refresh</span></button> 
-            <!-- <button class="btn btn-success" id="add-policy-btn" ng-click="$ctrl.openAddPolicyDialog()"><i --->
-            <button class="btn btn-success" id="add-policy-btn"><a ui-sref="add_policies" href="#!/scope_policies/add_policies"><i
-                class="fa fa-plus"></i> New Scope Policy</button>
-        </div>
+        <!-- add search bar ? -->
     </div>
     <div class="box-body with-border">
         <table id="policy-table" class="table table-hover table-striped">
@@ -87,7 +82,9 @@
         </br></br>
         <div class="well well-small">
             <button class="btn btn-small refresh-table" ng-click="$ctrl.loadAllPolicies()"><i class="fa fa-refresh"></i> Refresh</button> 
-            <button class="btn btn-success" id="add-policy-btn" ng-click="$ctrl.openAddPolicyDialog()"><i class="fa fa-plus"></i> New Scope Policy</button>
+            <a ui-sref="add_policies" href="#!/scope_policies/add_policies"><button class="btn btn-success" id="add-policy-btn"><i
+                class="fa fa-plus"></i> New Scope Policy</button></a>
         </div>
     </div>
 </div>
+
