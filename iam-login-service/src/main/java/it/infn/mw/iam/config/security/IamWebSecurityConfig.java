@@ -43,6 +43,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -54,6 +55,7 @@ import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.MultiFactorAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.authn.multi_factor_authentication.MfaAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
@@ -124,7 +126,7 @@ public class IamWebSecurityConfig {
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new MultiFactorAuthenticationProvider(accountRepo, passwordEncoder));
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder));
       // @formatter:on
     }
 
@@ -177,6 +179,7 @@ public class IamWebSecurityConfig {
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
         .and()
+          .addFilterAt(new MfaAuthenticationFilter(this.authenticationManager()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
         .logout()
           .logoutUrl("/logout")

@@ -154,9 +154,6 @@ public class IamAccount implements Serializable {
       name = "iam_account_labels", joinColumns = @JoinColumn(name = "account_id"))
   private Set<IamLabel> labels = new HashSet<>();
 
-  @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)
-  private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
-
   public IamAccount() {
     // empty constructor
   }
@@ -627,19 +624,5 @@ public class IamAccount implements Serializable {
 
   public void setEndTime(Date endTime) {
     this.endTime = endTime;
-  }
-
-  public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
-    return authenticationMethodReferences;
-  }
-
-  public void setAuthenticationMethodReferences(
-      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-    if (this.authenticationMethodReferences.isEmpty()) {
-      this.authenticationMethodReferences = authenticationMethodReferences;
-    } else {
-      this.authenticationMethodReferences.clear();
-      this.authenticationMethodReferences.addAll(authenticationMethodReferences);
-    }
   }
 }

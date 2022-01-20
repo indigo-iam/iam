@@ -24,12 +24,16 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.MfaAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -38,6 +42,8 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
   protected final ScopeClaimTranslationService scopeClaimConverter;
   protected final ClaimValueHelper claimValueHelper;
+
+  public static final Logger LOG = LoggerFactory.getLogger(IamJWTProfileIdTokenCustomizer.class);
 
   public IamJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
@@ -54,12 +60,18 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
     IamUserInfo info = account.getUserInfo();
 
+    MfaAuthenticationToken token =
+        (MfaAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+    LOG.error("With token, we have " + token.getAuthenticationMethodReferences());
+    Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
+
     Set<String> requiredClaims = scopeClaimConverter.getClaimsForScopeSet(request.getScope());
 
     // Add the methods of authentication to the id_token
-    Set<IamAuthenticationMethodReference> refs = account.getAuthenticationMethodReferences();
+    LOG.error("Over here with " + refs);
     String[] amr =
         refs.stream().map(IamAuthenticationMethodReference::getName).toArray(String[]::new);
+    LOG.error("amr is " + amr);
     idClaims.claim("amr", amr);
 
     requiredClaims.stream()

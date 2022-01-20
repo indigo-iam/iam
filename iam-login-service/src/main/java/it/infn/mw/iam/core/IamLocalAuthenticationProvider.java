@@ -15,31 +15,27 @@
  */
 package it.infn.mw.iam.core;
 
-import java.util.Arrays;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
-
-  public static final Logger LOG = LoggerFactory.getLogger(IamLocalAuthenticationProvider.class);
 
   public static final String DISABLED_AUTH_MESSAGE = "Local authentication is disabled";
 
@@ -48,14 +44,27 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
 
-  private final IamAccountRepository accountRepo;
-
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
-      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo) {
+      PasswordEncoder passwordEncoder) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
-    this.accountRepo = accountRepo;
+  }
+
+  @Override
+  public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    UsernamePasswordAuthenticationToken userpasstoken = new UsernamePasswordAuthenticationToken(
+        authentication.getPrincipal(), authentication.getCredentials());
+    authentication = super.authenticate(userpasstoken);
+
+    IamAuthenticationMethodReference pwd =
+        new IamAuthenticationMethodReference(PASSWORD.getValue());
+    Set<IamAuthenticationMethodReference> refs = new HashSet<>();
+    refs.add(pwd);
+
+    MfaAuthenticationToken token = new MfaAuthenticationToken(authentication.getPrincipal(),
+        authentication.getCredentials(), authentication.getAuthorities(), refs);
+    return token;
   }
 
   @Override
@@ -68,16 +77,10 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
             && userDetails.getAuthorities().stream().noneMatch(ADMIN_MATCHER))) {
       throw new DisabledException(DISABLED_AUTH_MESSAGE);
     }
+  }
 
-    // Used local authentication (username and password) only, so add pwd as method of
-    // authentication. This ensures the amr flag is properly set in an id_token, if OIDC used
-    IamAccount account = accountRepo.findByUsername(authentication.getName())
-      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
-    IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference();
-    pwd.setAccount(account);
-    pwd.setName("pwd");
-    Set<IamAuthenticationMethodReference> refs = new HashSet<>(Arrays.asList(pwd));
-    account.setAuthenticationMethodReferences(refs);
-    accountRepo.save(account);
+  @Override
+  public boolean supports(Class<?> authentication) {
+    return (MfaAuthenticationToken.class.isAssignableFrom(authentication));
   }
 }
