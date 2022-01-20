@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,7 +34,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class MultiFactorAuthenticationProvider implements AuthenticationProvider {
@@ -62,15 +64,11 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
       // authentication. This ensures the amr flag is properly set in an id_token, if OIDC used. otp
       // refers to one-time-password (this authentication provider is for authenticator apps, which
       // use OTPs)
-      IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference();
-      IamAuthenticationMethodReference otp = new IamAuthenticationMethodReference();
-      pwd.setAccount(account);
-      pwd.setName("pwd");
-      otp.setAccount(account);
-      otp.setName("mfa");
+      IamAuthenticationMethodReference pwd =
+          new IamAuthenticationMethodReference(PASSWORD.getValue());
+      IamAuthenticationMethodReference otp =
+          new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
       Set<IamAuthenticationMethodReference> refs = new HashSet<>(Arrays.asList(pwd, otp));
-      account.setAuthenticationMethodReferences(refs);
-      accountRepo.save(account);
 
       return new UsernamePasswordAuthenticationToken(account, authentication.getCredentials(),
           updatedAuthorities);
