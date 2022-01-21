@@ -24,12 +24,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import it.infn.mw.iam.core.MfaAuthenticationToken;
 
 public class FormClientCredentialsAuthenticationFilter
     extends AbstractAuthenticationProcessingFilter {
@@ -61,8 +62,7 @@ public class FormClientCredentialsAuthenticationFilter
       throw new InsufficientAuthenticationException("No client credentials found in request");
     }
 
-    UsernamePasswordAuthenticationToken authRequest =
-        new UsernamePasswordAuthenticationToken(clientId.trim(), clientSecret);
+    MfaAuthenticationToken authRequest = new MfaAuthenticationToken(clientId.trim(), clientSecret);
 
     return this.getAuthenticationManager().authenticate(authRequest);
   }

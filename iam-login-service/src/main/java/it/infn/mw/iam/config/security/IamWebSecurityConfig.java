@@ -179,7 +179,7 @@ public class IamWebSecurityConfig {
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
         .and()
-          .addFilterAt(new MfaAuthenticationFilter(this.authenticationManager()), UsernamePasswordAuthenticationFilter.class)
+          .addFilterAt(new MfaAuthenticationFilter(this.authenticationManager(), successHandler()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
         .logout()
           .logoutUrl("/logout")
