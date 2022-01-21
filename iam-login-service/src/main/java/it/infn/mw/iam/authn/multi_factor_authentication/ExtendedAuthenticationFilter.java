@@ -29,14 +29,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
-public class MfaAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class ExtendedAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-  public static final Logger LOG = LoggerFactory.getLogger(MfaAuthenticationFilter.class);
+  public static final Logger LOG = LoggerFactory.getLogger(ExtendedAuthenticationFilter.class);
 
   private boolean postOnly = true;
   private AuthenticationManager authenticationManager;
 
-  public MfaAuthenticationFilter(AuthenticationManager authenticationManager,
+  public ExtendedAuthenticationFilter(AuthenticationManager authenticationManager,
       AuthenticationSuccessHandler successHandler) {
     this.authenticationManager = authenticationManager;
     this.setAuthenticationSuccessHandler(successHandler);

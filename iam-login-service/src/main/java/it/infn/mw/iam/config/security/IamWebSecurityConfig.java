@@ -55,7 +55,7 @@ import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.MultiFactorAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
-import it.infn.mw.iam.authn.multi_factor_authentication.MfaAuthenticationFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
@@ -179,7 +179,7 @@ public class IamWebSecurityConfig {
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
         .and()
-          .addFilterAt(new MfaAuthenticationFilter(this.authenticationManager(), successHandler()), UsernamePasswordAuthenticationFilter.class)
+          .addFilterAt(new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
         .logout()
           .logoutUrl("/logout")
