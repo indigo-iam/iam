@@ -30,7 +30,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import it.infn.mw.iam.core.MfaAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 public class FormClientCredentialsAuthenticationFilter
     extends AbstractAuthenticationProcessingFilter {
@@ -62,7 +62,8 @@ public class FormClientCredentialsAuthenticationFilter
       throw new InsufficientAuthenticationException("No client credentials found in request");
     }
 
-    MfaAuthenticationToken authRequest = new MfaAuthenticationToken(clientId.trim(), clientSecret);
+    ExtendedAuthenticationToken authRequest =
+        new ExtendedAuthenticationToken(clientId.trim(), clientSecret);
 
     return this.getAuthenticationManager().authenticate(authRequest);
   }

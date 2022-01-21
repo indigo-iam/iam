@@ -31,7 +31,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import it.infn.mw.iam.core.MfaAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -78,8 +78,8 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
       refs.add(pwd);
       refs.add(otp);
 
-      MfaAuthenticationToken token = new MfaAuthenticationToken(authentication.getPrincipal(),
-          authentication.getCredentials(), currentAuthorities, refs);
+      ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(
+          authentication.getPrincipal(), authentication.getCredentials(), currentAuthorities, refs);
       token.setAuthenticated(false);
       return token;
     }
@@ -89,6 +89,6 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return authentication.equals(MfaAuthenticationToken.class);
+    return authentication.equals(ExtendedAuthenticationToken.class);
   }
 }

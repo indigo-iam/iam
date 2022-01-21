@@ -49,7 +49,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.CodeDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
-import it.infn.mw.iam.core.MfaAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 
@@ -107,7 +107,7 @@ public class AuthenticatorAppVerifyController {
     }
 
     SecurityContext sc = SecurityContextHolder.getContext();
-    MfaAuthenticationToken currentAuth = (MfaAuthenticationToken) sc.getAuthentication();
+    ExtendedAuthenticationToken currentAuth = (ExtendedAuthenticationToken) sc.getAuthentication();
 
     List<GrantedAuthority> currentAuthorities = new ArrayList<>();
     for (GrantedAuthority authority : authentication.getAuthorities()) {
@@ -120,8 +120,8 @@ public class AuthenticatorAppVerifyController {
       .forEach(authority -> currentAuthorities
         .add(new SimpleGrantedAuthority(authority.getAuthority())));
 
-    MfaAuthenticationToken newAuth =
-        new MfaAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
+    ExtendedAuthenticationToken newAuth =
+        new ExtendedAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
             currentAuthorities, currentAuth.getAuthenticationMethodReferences());
     newAuth.setAuthenticated(true);
     sc.setAuthentication(newAuth);
@@ -159,12 +159,12 @@ public class AuthenticatorAppVerifyController {
     }
 
     SecurityContext sc = SecurityContextHolder.getContext();
-    MfaAuthenticationToken currentAuth = (MfaAuthenticationToken) sc.getAuthentication();
+    ExtendedAuthenticationToken currentAuth = (ExtendedAuthenticationToken) sc.getAuthentication();
     List<GrantedAuthority> updatedAuthorities =
         new ArrayList<>(Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
 
-    MfaAuthenticationToken newAuth =
-        new MfaAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
+    ExtendedAuthenticationToken newAuth =
+        new ExtendedAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
             updatedAuthorities, currentAuth.getAuthenticationMethodReferences());
     sc.setAuthentication(newAuth);
 
