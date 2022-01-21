@@ -24,6 +24,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import it.infn.mw.iam.core.MfaAuthenticationToken;
@@ -35,8 +36,9 @@ public class MfaAuthenticationFilter extends UsernamePasswordAuthenticationFilte
   private boolean postOnly = true;
   private AuthenticationManager authenticationManager;
 
-  public MfaAuthenticationFilter(AuthenticationManager authenticationManager) {
+  public MfaAuthenticationFilter(AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler) {
     this.authenticationManager = authenticationManager;
+    this.setAuthenticationSuccessHandler(successHandler);
   }
 
   @Override

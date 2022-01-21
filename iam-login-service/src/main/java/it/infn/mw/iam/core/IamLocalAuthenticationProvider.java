@@ -53,9 +53,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    UsernamePasswordAuthenticationToken userpasstoken = new UsernamePasswordAuthenticationToken(
+    UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
         authentication.getPrincipal(), authentication.getCredentials());
-    authentication = super.authenticate(userpasstoken);
+    authentication = super.authenticate(userpassToken);
 
     IamAuthenticationMethodReference pwd =
         new IamAuthenticationMethodReference(PASSWORD.getValue());
@@ -64,6 +64,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     MfaAuthenticationToken token = new MfaAuthenticationToken(authentication.getPrincipal(),
         authentication.getCredentials(), authentication.getAuthorities(), refs);
+    token.setAuthenticated(true);
     return token;
   }
 

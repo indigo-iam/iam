@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -50,6 +49,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.CodeDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
+import it.infn.mw.iam.core.MfaAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 
@@ -107,11 +107,23 @@ public class AuthenticatorAppVerifyController {
     }
 
     SecurityContext sc = SecurityContextHolder.getContext();
-    List<GrantedAuthority> updatedAuthorities =
-        new ArrayList<>(Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
+    MfaAuthenticationToken currentAuth = (MfaAuthenticationToken) sc.getAuthentication();
 
-    Authentication newAuth = new UsernamePasswordAuthenticationToken(authentication.getPrincipal(),
-        authentication.getCredentials(), updatedAuthorities);
+    List<GrantedAuthority> currentAuthorities = new ArrayList<>();
+    for (GrantedAuthority authority : authentication.getAuthorities()) {
+      currentAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+    }
+    currentAuthorities.remove(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
+
+    account.getAuthorities()
+      .stream()
+      .forEach(authority -> currentAuthorities
+        .add(new SimpleGrantedAuthority(authority.getAuthority())));
+
+    MfaAuthenticationToken newAuth =
+        new MfaAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
+            currentAuthorities, currentAuth.getAuthenticationMethodReferences());
+    newAuth.setAuthenticated(true);
     sc.setAuthentication(newAuth);
 
     // TODO touch account, i.e. log the successful verification
@@ -147,11 +159,13 @@ public class AuthenticatorAppVerifyController {
     }
 
     SecurityContext sc = SecurityContextHolder.getContext();
+    MfaAuthenticationToken currentAuth = (MfaAuthenticationToken) sc.getAuthentication();
     List<GrantedAuthority> updatedAuthorities =
         new ArrayList<>(Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
 
-    Authentication newAuth = new UsernamePasswordAuthenticationToken(authentication.getPrincipal(),
-        authentication.getCredentials(), updatedAuthorities);
+    MfaAuthenticationToken newAuth =
+        new MfaAuthenticationToken(currentAuth.getPrincipal(), currentAuth.getCredentials(),
+            updatedAuthorities, currentAuth.getAuthenticationMethodReferences());
     sc.setAuthentication(newAuth);
 
     // TODO touch account, i.e. log the successful verification

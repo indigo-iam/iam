@@ -19,20 +19,19 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import it.infn.mw.iam.core.MfaAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -49,6 +48,10 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    if (authentication.isAuthenticated()) {
+      return authentication;
+    }
+
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
     String password = authentication.getCredentials().toString();
@@ -57,8 +60,11 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
     }
 
     if (account.getTotpMfa() != null && account.getTotpMfa().isActive()) {
-      List<GrantedAuthority> updatedAuthorities =
-          new ArrayList<>(Arrays.asList(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED")));
+      List<GrantedAuthority> currentAuthorities = new ArrayList<>();
+      for (GrantedAuthority authority : authentication.getAuthorities()) {
+        currentAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+      }
+      currentAuthorities.add(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
 
       // Used multi-factor authentication, so add pwd and otp as methods of
       // authentication. This ensures the amr flag is properly set in an id_token, if OIDC used. otp
@@ -68,10 +74,14 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
           new IamAuthenticationMethodReference(PASSWORD.getValue());
       IamAuthenticationMethodReference otp =
           new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
-      Set<IamAuthenticationMethodReference> refs = new HashSet<>(Arrays.asList(pwd, otp));
+      Set<IamAuthenticationMethodReference> refs = new HashSet<>();
+      refs.add(pwd);
+      refs.add(otp);
 
-      return new UsernamePasswordAuthenticationToken(account, authentication.getCredentials(),
-          updatedAuthorities);
+      MfaAuthenticationToken token = new MfaAuthenticationToken(authentication.getPrincipal(),
+          authentication.getCredentials(), currentAuthorities, refs);
+      token.setAuthenticated(false);
+      return token;
     }
 
     return null;
@@ -79,6 +89,6 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return authentication.equals(UsernamePasswordAuthenticationToken.class);
+    return authentication.equals(MfaAuthenticationToken.class);
   }
 }
