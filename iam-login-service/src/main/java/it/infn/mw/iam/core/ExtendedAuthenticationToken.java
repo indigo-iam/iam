@@ -24,26 +24,26 @@ import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 
-public class MfaAuthenticationToken extends AbstractAuthenticationToken {
+public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
   private final Object principal;
   private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
 
-  public MfaAuthenticationToken(Object principal, Object credentials) {
+  public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
     this.principal = principal;
     this.credentials = credentials;
   }
 
-  public MfaAuthenticationToken(Object principal, Object credentials,
+  public ExtendedAuthenticationToken(Object principal, Object credentials,
       Collection<? extends GrantedAuthority> authorities) {
     super(authorities);
     this.principal = principal;
     this.credentials = credentials;
   }
 
-  public MfaAuthenticationToken(Object principal, Object credentials,
+  public ExtendedAuthenticationToken(Object principal, Object credentials,
       Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
     super(null);
     this.principal = principal;
@@ -51,7 +51,7 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
-  public MfaAuthenticationToken(Object principal, Object credentials,
+  public ExtendedAuthenticationToken(Object principal, Object credentials,
       Collection<? extends GrantedAuthority> authorities,
       Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
     super(authorities);

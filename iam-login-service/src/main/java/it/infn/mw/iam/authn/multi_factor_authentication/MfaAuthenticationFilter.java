@@ -27,7 +27,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import it.infn.mw.iam.core.MfaAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 public class MfaAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
@@ -36,7 +36,8 @@ public class MfaAuthenticationFilter extends UsernamePasswordAuthenticationFilte
   private boolean postOnly = true;
   private AuthenticationManager authenticationManager;
 
-  public MfaAuthenticationFilter(AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler) {
+  public MfaAuthenticationFilter(AuthenticationManager authenticationManager,
+      AuthenticationSuccessHandler successHandler) {
     this.authenticationManager = authenticationManager;
     this.setAuthenticationSuccessHandler(successHandler);
   }
@@ -55,13 +56,13 @@ public class MfaAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     String password = obtainPassword(request);
     password = (password != null) ? password : "";
 
-    MfaAuthenticationToken authRequest = new MfaAuthenticationToken(username, password);
+    ExtendedAuthenticationToken authRequest = new ExtendedAuthenticationToken(username, password);
     // Allow subclasses to set the "details" property
     setDetails(request, authRequest);
     return this.authenticationManager.authenticate(authRequest);
   }
 
-  private void setDetails(HttpServletRequest request, MfaAuthenticationToken authRequest) {
+  private void setDetails(HttpServletRequest request, ExtendedAuthenticationToken authRequest) {
     authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
   }
 }

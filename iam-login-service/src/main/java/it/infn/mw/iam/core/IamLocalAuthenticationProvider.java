@@ -62,8 +62,9 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     refs.add(pwd);
 
-    MfaAuthenticationToken token = new MfaAuthenticationToken(authentication.getPrincipal(),
-        authentication.getCredentials(), authentication.getAuthorities(), refs);
+    ExtendedAuthenticationToken token =
+        new ExtendedAuthenticationToken(authentication.getPrincipal(),
+            authentication.getCredentials(), authentication.getAuthorities(), refs);
     token.setAuthenticated(true);
     return token;
   }
@@ -82,6 +83,6 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return (MfaAuthenticationToken.class.isAssignableFrom(authentication));
+    return (ExtendedAuthenticationToken.class.isAssignableFrom(authentication));
   }
 }

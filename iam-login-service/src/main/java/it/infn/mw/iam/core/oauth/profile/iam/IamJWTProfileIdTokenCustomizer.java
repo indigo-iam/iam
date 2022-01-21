@@ -31,7 +31,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.MfaAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -60,8 +60,8 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
     IamUserInfo info = account.getUserInfo();
 
-    MfaAuthenticationToken token =
-        (MfaAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+    ExtendedAuthenticationToken token =
+        (ExtendedAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
     LOG.error("With token, we have " + token.getAuthenticationMethodReferences());
     Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
 
