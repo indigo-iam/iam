@@ -142,10 +142,6 @@ public class IamTotpMfa implements Serializable {
     this.recoveryCodes.addAll(recoveryCodes);
   }
 
-  public void regenerateRecoveryCodes() {
-    // TODO
-  }
-
   @Override
   public String toString() {
     return "IamTotpMfa [active=" + active + ", id=" + id + ", secret=" + secret + "]";
