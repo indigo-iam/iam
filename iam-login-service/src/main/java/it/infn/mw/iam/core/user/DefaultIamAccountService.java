@@ -703,6 +703,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     // Attach to account
     totpMfa.setRecoveryCodes(recoveryCodes);
+    totpMfa.touch();
     return account;
   }
 
