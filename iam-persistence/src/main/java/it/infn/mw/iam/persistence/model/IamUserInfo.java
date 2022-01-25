@@ -52,13 +52,13 @@ public class IamUserInfo implements Serializable {
   @OneToOne(mappedBy = "userInfo")
   private IamAccount iamAccount;
 
-  @Column(name="givenname", nullable = false, length = 64)
+  @Column(name = "givenname", nullable = false, length = 64)
   private String givenName;
 
-  @Column(name="familyname", nullable = false, length = 64)
+  @Column(name = "familyname", nullable = false, length = 64)
   private String familyName;
 
-  @Column(name="middlename", length = 64)
+  @Column(name = "middlename", length = 64)
   private String middleName;
 
   private String nickname;
@@ -72,21 +72,21 @@ public class IamUserInfo implements Serializable {
   @Column(nullable = false, length = 128)
   private String email;
 
-  @Column(name="emailverified")
+  @Column(name = "emailverified")
   private Boolean emailVerified;
 
   private String gender;
   private String zoneinfo;
   private String locale;
-  
-  @Column(name="phonenumber")
+
+  @Column(name = "phonenumber")
   private String phoneNumber;
 
-  @Column(name="phonenumberverified")
+  @Column(name = "phonenumberverified")
   private Boolean phoneNumberVerified;
-  
-  @OneToOne(optional=true, cascade=CascadeType.ALL)
-  @JoinColumn(name="address_id")
+
+  @OneToOne(optional = true, cascade = CascadeType.ALL)
+  @JoinColumn(name = "address_id")
   private IamAddress address;
 
   private String birthdate;
@@ -205,9 +205,9 @@ public class IamUserInfo implements Serializable {
 
     return zoneinfo;
   }
-  
-  public Set<IamSamlId> getSamlInfo(){
-    
+
+  public Set<IamSamlId> getSamlInfo() {
+
     return iamAccount.getSamlIds();
   }
 
@@ -323,9 +323,9 @@ public class IamUserInfo implements Serializable {
 
     this.zoneinfo = zoneinfo;
   }
-  
+
   public void setSamlInfo(Set<IamSamlId> samlInfo) {
-    
+
   }
 
   public Set<IamGroup> getGroups() {
@@ -365,8 +365,7 @@ public class IamUserInfo implements Serializable {
 
       obj.addProperty("phone_number", this.getPhoneNumber());
       obj.addProperty("phone_number_verified", this.getPhoneNumberVerified());
-      //obj.addProperty("external_authn", this.getSamlInfo().toString());
-      
+
 
       if (this.getAddress() != null) {
 
@@ -391,18 +390,19 @@ public class IamUserInfo implements Serializable {
 
         obj.add("groups", groups);
       }
-      
-      if(getSamlInfo() != null) {
-       
+
+      if (getSamlInfo() != null) {
+
         JsonObject sub = new JsonObject();
         JsonArray samlinfo = new JsonArray();
-        
-        for(IamSamlId s : getSamlInfo()) {
-        
+
+        for (IamSamlId s : getSamlInfo()) {
+
           sub.add("idpId", new JsonPrimitive(s.getIdpId()));
           sub.add("attributeId", new JsonPrimitive(s.getAttributeId()));
           sub.add("userId", new JsonPrimitive(s.getUserId()));
         }
+        
         samlinfo.add(sub);
         obj.add("external_authn", samlinfo);
       }
@@ -426,13 +426,13 @@ public class IamUserInfo implements Serializable {
     }
 
   }
-  
-  
+
+
   public String getName() {
 
     return getFormatted(this.givenName, this.middleName, this.familyName);
   }
-  
+
   public void setName(String name) {
 
     // NO-OP
