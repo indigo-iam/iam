@@ -399,9 +399,6 @@ public class IamUserInfo implements Serializable {
         
         for(IamSamlId s : getSamlInfo()) {
         
-          //samlinfo.add(new JsonPrimitive(s.getIdpId()));  
-          //samlinfo.add(new JsonPrimitive(s.getAttributeId())); 
-          //samlinfo.add(new JsonPrimitive(s.getUserId()));
           sub.add("idpId", new JsonPrimitive(s.getIdpId()));
           sub.add("attributeId", new JsonPrimitive(s.getAttributeId()));
           sub.add("userId", new JsonPrimitive(s.getUserId()));
