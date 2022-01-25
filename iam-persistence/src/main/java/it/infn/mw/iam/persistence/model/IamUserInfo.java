@@ -205,6 +205,11 @@ public class IamUserInfo implements Serializable {
 
     return zoneinfo;
   }
+  
+  public Set<IamSamlId> getSamlInfo(){
+    
+    return iamAccount.getSamlIds();
+  }
 
 
   public void setAddress(IamAddress address) {
@@ -318,6 +323,10 @@ public class IamUserInfo implements Serializable {
 
     this.zoneinfo = zoneinfo;
   }
+  
+  public void setSamlInfo(Set<IamSamlId> samlInfo) {
+    
+  }
 
   public Set<IamGroup> getGroups() {
 
@@ -356,6 +365,8 @@ public class IamUserInfo implements Serializable {
 
       obj.addProperty("phone_number", this.getPhoneNumber());
       obj.addProperty("phone_number_verified", this.getPhoneNumberVerified());
+      //obj.addProperty("external_authn", this.getSamlInfo().toString());
+      
 
       if (this.getAddress() != null) {
 
@@ -379,6 +390,24 @@ public class IamUserInfo implements Serializable {
         }
 
         obj.add("groups", groups);
+      }
+      
+      if(getSamlInfo() != null) {
+       
+        JsonObject sub = new JsonObject();
+        JsonArray samlinfo = new JsonArray();
+        
+        for(IamSamlId s : getSamlInfo()) {
+        
+          //samlinfo.add(new JsonPrimitive(s.getIdpId()));  
+          //samlinfo.add(new JsonPrimitive(s.getAttributeId())); 
+          //samlinfo.add(new JsonPrimitive(s.getUserId()));
+          sub.add("idpId", new JsonPrimitive(s.getIdpId()));
+          sub.add("attributeId", new JsonPrimitive(s.getAttributeId()));
+          sub.add("userId", new JsonPrimitive(s.getUserId()));
+        }
+        samlinfo.add(sub);
+        obj.add("external_authn", samlinfo);
       }
 
       if (!isNull(getIamAccount().getSshKeys())) {
