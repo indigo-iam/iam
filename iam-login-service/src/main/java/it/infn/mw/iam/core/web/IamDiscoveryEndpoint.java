@@ -374,7 +374,8 @@ public class IamDiscoveryEndpoint {
         "address", 
         "organisation_name", 
         "groups",
-        "external_authn"));
+        "external_authn",
+        "eduperson_principal_name"));
     // @formatter:on
 
     m.put("service_documentation", baseUrl + ABOUT_URL);

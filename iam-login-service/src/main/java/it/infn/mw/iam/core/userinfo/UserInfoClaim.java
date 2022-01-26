@@ -41,6 +41,7 @@ public enum UserInfoClaim {
   GROUPS("groups"),
   WLCG_GROUPS("wlcg.groups"),
   EXTERNAL_AUTHN("external_authn"),
+  EDUPERSON_PRINCIPAL_NAME("eduperson_principal_name"),
   EDUPERSON_SCOPED_AFFILIATION("eduperson_scoped_affiliation"),
   EDUPERSON_ENTITLEMENT("eduperson_entitlement"),
   SSH_KEYS("ssh_keys");

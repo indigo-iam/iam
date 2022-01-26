@@ -25,13 +25,14 @@ import com.google.common.collect.ImmutableSet;
 
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @Component
 public class ClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS =
-      ImmutableSet.of("name", "email", "preferred_username", "organisation_name", "groups", "attr");
+      ImmutableSet.of("name", "email", "preferred_username", "organisation_name", "groups", "attr", "eduperson_principal_name");
 
   @Value("${iam.organisation.name}")
   String organisationName;
@@ -60,6 +61,9 @@ public class ClaimValueHelper {
 
       case "attr":
         return attrHelper.getAttributeMapFromUserInfo(info);
+        
+      case "eduperson_principal_name":
+        return info.getSamlInfo().stream().map(IamSamlId::getUserId).toArray(String[]::new);
 
       default:
         return null;

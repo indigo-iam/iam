@@ -205,9 +205,9 @@ public class IamUserInfo implements Serializable {
 
     return zoneinfo;
   }
-
+  
   public Set<IamSamlId> getSamlInfo() {
-
+    
     return iamAccount.getSamlIds();
   }
 
@@ -324,9 +324,6 @@ public class IamUserInfo implements Serializable {
     this.zoneinfo = zoneinfo;
   }
 
-  public void setSamlInfo(Set<IamSamlId> samlInfo) {
-
-  }
 
   public Set<IamGroup> getGroups() {
 
@@ -393,18 +390,13 @@ public class IamUserInfo implements Serializable {
 
       if (getSamlInfo() != null) {
 
-        JsonObject sub = new JsonObject();
         JsonArray samlinfo = new JsonArray();
-
+        
         for (IamSamlId s : getSamlInfo()) {
-
-          sub.add("idpId", new JsonPrimitive(s.getIdpId()));
-          sub.add("attributeId", new JsonPrimitive(s.getAttributeId()));
-          sub.add("userId", new JsonPrimitive(s.getUserId()));
+          samlinfo.add(new JsonPrimitive(s.getUserId()));
         }
         
-        samlinfo.add(sub);
-        obj.add("external_authn", samlinfo);
+        obj.add("eduperson_principal_name", samlinfo);
       }
 
       if (!isNull(getIamAccount().getSshKeys())) {
