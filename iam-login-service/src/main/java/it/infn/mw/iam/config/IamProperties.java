@@ -314,7 +314,7 @@ public class IamProperties {
   }
   public static class PrivacyPolicy {
     String url;
-    String text = "Privacy policy";
+    String text = "Info and Privacy policy";
 
     public String getUrl() {
       return url;

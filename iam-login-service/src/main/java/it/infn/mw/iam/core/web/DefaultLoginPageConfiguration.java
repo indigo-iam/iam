@@ -39,7 +39,7 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 @Component
 public class DefaultLoginPageConfiguration implements LoginPageConfiguration, EnvironmentAware {
 
-  public static final String DEFAULT_PRIVACY_POLICY_TEXT = "Privacy policy";
+  public static final String DEFAULT_PRIVACY_POLICY_TEXT = "Info and Privacy policy";
   public static final String DEFAULT_LOGIN_BUTTON_TEXT = "Sign in";
 
   private Environment env;

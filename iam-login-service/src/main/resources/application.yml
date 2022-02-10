@@ -83,7 +83,7 @@ iam:
   
   privacyPolicy:
     url: ${IAM_PRIVACY_POLICY_URL:}
-    text: ${IAM_PRIVACY_POLICY_TEXT:Privacy policy}
+    text: ${IAM_PRIVACY_POLICY_TEXT:Info and Privacy policy}
   
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
