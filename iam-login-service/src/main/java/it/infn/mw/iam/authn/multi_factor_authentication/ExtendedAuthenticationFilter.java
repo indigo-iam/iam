@@ -18,8 +18,6 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -29,9 +27,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
+/**
+ * This replaces the default {@code UsernamePasswordAuthenticationFilter}. It is used to store a new
+ * {@code ExtendedAuthenticationToken} into the security context instead of a
+ * {@code UsernamePasswordAuthenticationToken}.
+ * 
+ * <p>
+ * Ultimately, we want to store information about the methods of authentication used for every login
+ * attempt. This is useful for registered clients, who may wish to restrict access to certain users
+ * based on the type or quantity of authentication methods used. The authentication methods are
+ * passed to the OAuth2 authorization endpoint and stored in the id_token returned to the client.
+ */
 public class ExtendedAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-
-  public static final Logger LOG = LoggerFactory.getLogger(ExtendedAuthenticationFilter.class);
 
   private boolean postOnly = true;
   private AuthenticationManager authenticationManager;
