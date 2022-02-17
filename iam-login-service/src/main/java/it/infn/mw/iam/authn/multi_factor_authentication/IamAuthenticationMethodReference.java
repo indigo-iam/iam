@@ -17,8 +17,14 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 public class IamAuthenticationMethodReference {
 
+  public static final String AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING = "amr";
+
   public enum AuthenticationMethodReferenceValues {
-    PASSWORD("pwd"), ONE_TIME_PASSWORD("otp"), HARDWARE_KEY("hwk");
+    // Add additional values here if new authentication factors get added, e.g. HARDWARE_KEY("hwk")
+    // Consult here for standardised reference values -
+    // https://datatracker.ietf.org/doc/html/rfc8176
+
+    PASSWORD("pwd"), ONE_TIME_PASSWORD("otp");
 
     private final String value;
 

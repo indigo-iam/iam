@@ -147,12 +147,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    // These should come from the incoming request anyway
-    // Ideally will come in application/x-www-form-urlencoded format ?amr=pwd&amr=otp
-    // Adding in here for demo purposes at the moment
-    // Need to figure out how to add this to the request from the /authorize endpoint
-    requestParameters.put("amr", "pwd,otp");
-
     String grantType = requestParameters.get(OAuth2Utils.GRANT_TYPE);
 
     Set<String> scopes = OAuth2Utils.parseParameterList(requestParameters.get(OAuth2Utils.SCOPE));

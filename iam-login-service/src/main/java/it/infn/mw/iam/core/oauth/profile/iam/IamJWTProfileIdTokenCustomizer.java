@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.profile.iam;
 
 import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING;
 
 import java.util.Set;
 
