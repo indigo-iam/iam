@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
-import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
 
 import java.util.ArrayList;
@@ -72,11 +71,8 @@ public class MultiFactorAuthenticationProvider implements AuthenticationProvider
       // use OTPs)
       IamAuthenticationMethodReference pwd =
           new IamAuthenticationMethodReference(PASSWORD.getValue());
-      IamAuthenticationMethodReference otp =
-          new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
       Set<IamAuthenticationMethodReference> refs = new HashSet<>();
       refs.add(pwd);
-      refs.add(otp);
 
       ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(
           authentication.getPrincipal(), authentication.getCredentials(), currentAuthorities, refs);
