@@ -15,19 +15,34 @@
  */
 package it.infn.mw.iam.config;
 
+import java.util.Arrays;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
 import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
-import dev.samstevens.totp.time.SystemTimeProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
+import dev.samstevens.totp.time.SystemTimeProvider;
+import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
+import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorCodeCheckProvider;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 // TODO add admin config options from properties file
 
@@ -37,6 +52,17 @@ import dev.samstevens.totp.secret.SecretGenerator;
 @Configuration
 public class IamTotpMfaConfig {
 
+  @Value("${iam.baseUrl}")
+  private String iamBaseUrl;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
+
+  @Autowired
+  private AUPSignatureCheckService aupSignatureCheckService;
+
+  @Autowired
+  private AccountUtils accountUtils;
 
   /**
    * Responsible for generating new TOTP secrets
@@ -84,5 +110,36 @@ public class IamTotpMfaConfig {
   @Qualifier("recoveryCodeGenerator")
   public RecoveryCodeGenerator recoveryCodeGenerator() {
     return new RecoveryCodeGenerator();
+  }
+
+  @Bean(name = "MultiFactorVerificationFilter")
+  public MultiFactorVerificationFilter multiFactorVerificationFilter(
+      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
+      @Qualifier("MultiFactorVerificationSuccessHandler") AuthenticationSuccessHandler authenticationSuccessHandler) {
+
+    MultiFactorVerificationFilter filter = new MultiFactorVerificationFilter(authenticationManager);
+    filter.setAuthenticationSuccessHandler(authenticationSuccessHandler);
+
+    return filter;
+  }
+
+  @Bean(name = "MultiFactorVerificationAuthenticationManager")
+  public AuthenticationManager authenticationManager(
+      MultiFactorCodeCheckProvider codeCheckProvider) {
+    return new ProviderManager(Arrays.asList(codeCheckProvider));
+  }
+
+  @Bean(name = "MultiFactorVerificationSuccessHandler")
+  public AuthenticationSuccessHandler successHandler() {
+    AuthenticationSuccessHandler delegate =
+        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+
+    return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService, accountUtils,
+        accountRepo);
+  }
+
+  @Bean
+  public MultiFactorCodeCheckProvider codeCheckProvider(CodeVerifier codeVerifier) {
+    return new MultiFactorCodeCheckProvider(accountRepo, codeVerifier);
   }
 }

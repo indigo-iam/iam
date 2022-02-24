@@ -17,7 +17,7 @@
 --%>
 <html>
   <div>
-    <form class="verify-form" action="/iam/verify/authenticator-app/code" method="post">
+    <form class="verify-form" action="/iam/verify" method="post">
       <div class="verify-preamble text-muted">
         For your security, please enter a code from your authenticator app
       </div>
@@ -35,7 +35,7 @@
           value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
       </div>
     </form>
-    <form class="verify-form" action="/iam/verify/authenticator-app/recovery-code" method="post">
+    <form class="verify-form" action="/iam/verify" method="post">
       <div class="verify-preamble text-muted">
         Lost access to your authenticator app? Enter a recovery code to regain access
       </div>

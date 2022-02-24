@@ -29,6 +29,7 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private final Object principal;
   private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
+  private String code;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -60,6 +61,24 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
+  public ExtendedAuthenticationToken(Object principal, Object credentials,
+      Collection<? extends GrantedAuthority> authorities,
+      Set<IamAuthenticationMethodReference> authenticationMethodReferences, String code) {
+    super(authorities);
+    this.principal = principal;
+    this.credentials = credentials;
+    this.authenticationMethodReferences = authenticationMethodReferences;
+    this.code = code;
+  }
+
+  public ExtendedAuthenticationToken(ExtendedAuthenticationToken other) {
+    super(other.getAuthorities());
+    this.principal = other.getPrincipal();
+    this.credentials = other.getCredentials();
+    this.authenticationMethodReferences = other.getAuthenticationMethodReferences();
+    this.code = other.getCode();
+  }
+
   public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
     return authenticationMethodReferences;
   }
@@ -67,6 +86,14 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   public void setAuthenticationMethodReferences(
       Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
     this.authenticationMethodReferences = authenticationMethodReferences;
+  }
+
+  public String getCode() {
+    return code;
+  }
+
+  public void setCode(String code) {
+    this.code = code;
   }
 
   @Override

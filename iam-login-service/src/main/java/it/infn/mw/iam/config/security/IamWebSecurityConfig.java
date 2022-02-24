@@ -58,6 +58,7 @@ import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorAuthenticationProvider;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
@@ -182,7 +183,7 @@ public class IamWebSecurityConfig {
         .and()
           .addFilterAt(new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
-          .addFilterAfter(new ExtendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
+          .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
         .and().anonymous()
@@ -196,6 +197,11 @@ public class IamWebSecurityConfig {
     @Bean
     public OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler() {
       return new OAuth2WebSecurityExpressionHandler();
+    }
+
+    @Bean
+    public ExtendedHttpServletRequestFilter extendedHttpServletRequestFilter() {
+      return new ExtendedHttpServletRequestFilter();
     }
 
     // TODO refactor this
@@ -336,6 +342,37 @@ public class IamWebSecurityConfig {
     @Override
     public void configure(final WebSecurity builder) throws Exception {
       builder.debug(true);
+    }
+  }
+
+  @Configuration
+  @Order(102)
+  public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    @Qualifier("MultiFactorVerificationFilter")
+    private MultiFactorVerificationFilter multiFactorVerificationFilter;
+
+    @Bean
+    public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
+      LoginUrlAuthenticationEntryPoint entryPoint =
+          new LoginUrlAuthenticationEntryPoint("/iam/verify");
+      return entryPoint;
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher("/iam/verify**")
+        .authorizeRequests()
+        .anyRequest()
+        .hasRole("PRE_AUTHENTICATED")
+        .and()
+        .formLogin()
+        .and()
+        .exceptionHandling()
+        .authenticationEntryPoint(mfaAuthenticationEntryPoint())
+        .and()
+        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
     }
   }
 }
