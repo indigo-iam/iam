@@ -17,16 +17,20 @@ package it.infn.mw.iam.core;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,21 +38,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   public static final String DISABLED_AUTH_MESSAGE = "Local authentication is disabled";
 
   private final LocalAuthenticationAllowedUsers allowedUsers;
+  private final IamAccountRepository accountRepo;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
+    this.accountRepo = accountRepo;
   }
 
   @Override
@@ -62,16 +70,33 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
     Set<IamAuthenticationMethodReference> refs = new HashSet<>();
     refs.add(pwd);
 
-    ExtendedAuthenticationToken token =
-        new ExtendedAuthenticationToken(authentication.getPrincipal(),
-            authentication.getCredentials(), authentication.getAuthorities(), refs);
-    token.setAuthenticated(true);
+    IamAccount account = accountRepo.findByUsername(authentication.getName())
+      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
+
+    ExtendedAuthenticationToken token;
+
+    if (account.getTotpMfa() != null && account.getTotpMfa().isActive()) {
+      List<GrantedAuthority> currentAuthorities = new ArrayList<>();
+      for (GrantedAuthority authority : authentication.getAuthorities()) {
+        currentAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+      }
+      currentAuthorities.add(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
+
+      token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
+          authentication.getCredentials(), currentAuthorities, refs);
+      token.setAuthenticated(false);
+    } else {
+      token = new ExtendedAuthenticationToken(authentication.getPrincipal(),
+          authentication.getCredentials(), authentication.getAuthorities(), refs);
+      token.setAuthenticated(true);
+    }
+
     return token;
   }
 
   @Override
   protected void additionalAuthenticationChecks(UserDetails userDetails,
-      UsernamePasswordAuthenticationToken authentication) {
+      UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
 
     super.additionalAuthenticationChecks(userDetails, authentication);
     if (LocalAuthenticationAllowedUsers.NONE.equals(allowedUsers)

@@ -41,8 +41,10 @@ import org.springframework.security.data.repository.query.SecurityEvaluationCont
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
@@ -57,7 +59,6 @@ import it.infn.mw.iam.authn.MultiFactorAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
-import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorAuthenticationProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
@@ -127,8 +128,7 @@ public class IamWebSecurityConfig {
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new MultiFactorAuthenticationProvider(accountRepo, passwordEncoder));
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo));
       // @formatter:on
     }
 
@@ -175,13 +175,13 @@ public class IamWebSecurityConfig {
         .and()
           .formLogin()
             .loginPage("/login")
-            .failureUrl("/login?error=failure")
+            .failureUrl("/login?error=failure") // this line and line below it now may not be used. They act upon the UsernamePasswordAuthenticationFilter, which has been replaced
             .successHandler(successHandler())
         .and()
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
         .and()
-          .addFilterAt(new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler()), UsernamePasswordAuthenticationFilter.class)
+          .addFilterAt(new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler(), failureHandler()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
@@ -214,6 +214,10 @@ public class IamWebSecurityConfig {
 
       // return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService,
       // accountUtils, accountRepo);
+    }
+
+    public AuthenticationFailureHandler failureHandler() {
+      return new SimpleUrlAuthenticationFailureHandler("/login?error=failure");
     }
   }
 
@@ -368,6 +372,7 @@ public class IamWebSecurityConfig {
         .hasRole("PRE_AUTHENTICATED")
         .and()
         .formLogin()
+        .failureUrl("/iam/verify?error=failure")
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())
