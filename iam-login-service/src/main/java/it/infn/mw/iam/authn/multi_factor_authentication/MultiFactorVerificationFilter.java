@@ -16,12 +16,8 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import java.io.IOException;
-import java.util.Collection;
 
-import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -29,10 +25,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
@@ -41,61 +38,18 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   public static final String TOTP_MFA_CODE_KEY = "code";
   public static final String MULTI_FACTOR_VERIFIED = "MULTI_FACTOR_VERIFIED";
 
+  private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER =
+      new AntPathRequestMatcher("/iam/verify", "POST");
+
   private final boolean postOnly = true;
-  private AuthenticationManager authenticationManager;
 
-  private ExtendedAuthenticationToken token;
   private String codeParameter = TOTP_MFA_CODE_KEY;
-  private AuthenticationSuccessHandler authenticationSuccessHandler;
 
-  public MultiFactorVerificationFilter(AuthenticationManager authenticationManager) {
-    super("/iam/verify", authenticationManager);
-    this.authenticationManager = authenticationManager;
-  }
-
-  public void setAuthenticationSuccessHandler(
-      AuthenticationSuccessHandler authenticationSuccessHandler) {
-    this.authenticationSuccessHandler = authenticationSuccessHandler;
-  }
-
-  @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
-    Object multiFactorVerifiedAttribute = request.getAttribute(MULTI_FACTOR_VERIFIED);
-
-    if (multiFactorVerifiedAttribute == null) {
-      HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-      if (httpServletRequest.getMethod().equals("POST")
-          && httpServletRequest.getRequestURI().equals("/iam/verify")) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth instanceof ExtendedAuthenticationToken && isMfaEnabled(auth)) {
-          token = (ExtendedAuthenticationToken) auth;
-          HttpServletResponse httpServletResponse = (HttpServletResponse) response;
-
-          Authentication newAuth = attemptAuthentication(httpServletRequest, httpServletResponse);
-          SecurityContextHolder.getContext().setAuthentication(newAuth);
-
-          request.setAttribute(MULTI_FACTOR_VERIFIED, Boolean.TRUE);
-          authenticationSuccessHandler.onAuthenticationSuccess(httpServletRequest,
-              httpServletResponse, newAuth);
-        }
-      }
-    }
-
-    chain.doFilter(request, response);
-  }
-
-  private boolean isMfaEnabled(final Authentication authentication) {
-    final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-    for (final GrantedAuthority grantedAuthority : authorities) {
-      String authorityName = grantedAuthority.getAuthority();
-      if (authorityName.equals("ROLE_PRE_AUTHENTICATED")) {
-        return true;
-      }
-    }
-
-    return false;
+  public MultiFactorVerificationFilter(AuthenticationManager authenticationManager,
+      AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
+    super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+    setAuthenticationSuccessHandler(successHandler);
+    setAuthenticationFailureHandler(failureHandler);
   }
 
   @Override
@@ -106,17 +60,28 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
           "Authentication method not supported: " + request.getMethod());
     }
 
-    if (this.token == null) {
-      return null;
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !(auth instanceof ExtendedAuthenticationToken)) {
+      throw new AuthenticationServiceException("Bad authentication");
     }
 
     String code = request.getParameter(this.codeParameter);
     code = (code != null) ? code : "";
     code = code.trim();
 
-    ExtendedAuthenticationToken authRequest = new ExtendedAuthenticationToken(this.token);
+    ExtendedAuthenticationToken authRequest = (ExtendedAuthenticationToken) auth;
     authRequest.setCode(code);
 
-    return this.authenticationManager.authenticate(authRequest);
+    return this.getAuthenticationManager().authenticate(authRequest);
+  }
+
+  @Override
+  protected void unsuccessfulAuthentication(HttpServletRequest request,
+      HttpServletResponse response, AuthenticationException failed)
+      throws IOException, ServletException {
+    this.logger.trace("Failed to process authentication request", failed);
+    this.logger.trace("Handling authentication failure");
+    this.getRememberMeServices().loginFail(request, response);
+    this.getFailureHandler().onAuthenticationFailure(request, response, failed);
   }
 }

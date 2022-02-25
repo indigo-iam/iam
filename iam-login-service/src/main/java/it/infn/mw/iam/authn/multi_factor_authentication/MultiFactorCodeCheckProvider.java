@@ -31,7 +31,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class MultiFactorCodeCheckProvider implements AuthenticationProvider {
@@ -46,47 +45,39 @@ public class MultiFactorCodeCheckProvider implements AuthenticationProvider {
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    if (authentication.isAuthenticated()) {
-      return authentication;
-    }
-
     ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) authentication;
-    String code = token.getCode();
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    IamTotpMfa totpMfa = account.getTotpMfa();
+    String mfaSecret = account.getTotpMfa().getSecret();
+    String code = token.getCode();
 
-    if (code != null && totpMfa != null && totpMfa.isActive()) {
-      if (codeVerifier.isValidCode(totpMfa.getSecret(), code)) {
-        IamAuthenticationMethodReference otp =
-            new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
-        Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
-        refs.add(otp);
-        token.setAuthenticationMethodReferences(refs);
-        token.setAuthenticated(true);
-
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-          authorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
-        }
-        authorities.remove(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
-
-        account.getAuthorities()
-          .stream()
-          .forEach(
-              authority -> authorities.add(new SimpleGrantedAuthority(authority.getAuthority())));
-
-        ExtendedAuthenticationToken newToken = new ExtendedAuthenticationToken(token.getPrincipal(),
-            token.getCredentials(), authorities, token.getAuthenticationMethodReferences());
-        newToken.setAuthenticated(true);
-
-        return newToken;
-      }
+    if (!codeVerifier.isValidCode(mfaSecret, code)) {
+      throw new BadCredentialsException("Bad code");
     }
 
-    return null;
+    IamAuthenticationMethodReference otp =
+        new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
+    Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
+    refs.add(otp);
+    token.setAuthenticationMethodReferences(refs);
+
+    List<GrantedAuthority> authorities = new ArrayList<>();
+    for (GrantedAuthority authority : authentication.getAuthorities()) {
+      authorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+    }
+    authorities.remove(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
+
+    account.getAuthorities()
+      .stream()
+      .forEach(authority -> authorities.add(new SimpleGrantedAuthority(authority.getAuthority())));
+
+    ExtendedAuthenticationToken newToken = new ExtendedAuthenticationToken(token.getPrincipal(),
+        token.getCredentials(), authorities, token.getAuthenticationMethodReferences());
+    newToken.setAuthenticated(true);
+
+    return newToken;
   }
 
   @Override
