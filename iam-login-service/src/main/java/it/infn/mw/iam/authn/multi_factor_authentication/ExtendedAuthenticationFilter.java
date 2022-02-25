@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,8 +23,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
@@ -38,15 +41,26 @@ import it.infn.mw.iam.core.ExtendedAuthenticationToken;
  * based on the type or quantity of authentication methods used. The authentication methods are
  * passed to the OAuth2 authorization endpoint and stored in the id_token returned to the client.
  */
-public class ExtendedAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class ExtendedAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
+
+  public static final String SPRING_SECURITY_FORM_USERNAME_KEY = "username";
+
+  public static final String SPRING_SECURITY_FORM_PASSWORD_KEY = "password";
+
+  private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER =
+      new AntPathRequestMatcher("/login", "POST");
+
+  private String usernameParameter = SPRING_SECURITY_FORM_USERNAME_KEY;
+
+  private String passwordParameter = SPRING_SECURITY_FORM_PASSWORD_KEY;
 
   private boolean postOnly = true;
-  private AuthenticationManager authenticationManager;
 
   public ExtendedAuthenticationFilter(AuthenticationManager authenticationManager,
-      AuthenticationSuccessHandler successHandler) {
-    this.authenticationManager = authenticationManager;
-    this.setAuthenticationSuccessHandler(successHandler);
+      AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
+    super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+    setAuthenticationSuccessHandler(successHandler);
+    setAuthenticationFailureHandler(failureHandler);
   }
 
   @Override
@@ -66,10 +80,42 @@ public class ExtendedAuthenticationFilter extends UsernamePasswordAuthentication
     ExtendedAuthenticationToken authRequest = new ExtendedAuthenticationToken(username, password);
     // Allow subclasses to set the "details" property
     setDetails(request, authRequest);
-    return this.authenticationManager.authenticate(authRequest);
+    return this.getAuthenticationManager().authenticate(authRequest);
   }
 
   private void setDetails(HttpServletRequest request, ExtendedAuthenticationToken authRequest) {
     authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
+  }
+
+  /**
+   * Enables subclasses to override the composition of the password, such as by including additional
+   * values and a separator.
+   * <p>
+   * This might be used for example if a postcode/zipcode was required in addition to the password.
+   * A delimiter such as a pipe (|) should be used to separate the password and extended value(s).
+   * The <code>AuthenticationDao</code> will need to generate the expected password in a
+   * corresponding manner.
+   * </p>
+   * 
+   * @param request so that request attributes can be retrieved
+   * @return the password that will be presented in the <code>Authentication</code> request token to
+   *         the <code>AuthenticationManager</code>
+   */
+  @Nullable
+  protected String obtainPassword(HttpServletRequest request) {
+    return request.getParameter(this.passwordParameter);
+  }
+
+  /**
+   * Enables subclasses to override the composition of the username, such as by including additional
+   * values and a separator.
+   * 
+   * @param request so that request attributes can be retrieved
+   * @return the username that will be presented in the <code>Authentication</code> request token to
+   *         the <code>AuthenticationManager</code>
+   */
+  @Nullable
+  protected String obtainUsername(HttpServletRequest request) {
+    return request.getParameter(this.usernameParameter);
   }
 }
