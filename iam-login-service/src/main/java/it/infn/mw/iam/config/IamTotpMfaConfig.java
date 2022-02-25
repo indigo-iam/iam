@@ -24,7 +24,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import dev.samstevens.totp.code.CodeVerifier;
@@ -114,11 +116,10 @@ public class IamTotpMfaConfig {
 
   @Bean(name = "MultiFactorVerificationFilter")
   public MultiFactorVerificationFilter multiFactorVerificationFilter(
-      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager,
-      @Qualifier("MultiFactorVerificationSuccessHandler") AuthenticationSuccessHandler authenticationSuccessHandler) {
+      @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager) {
 
-    MultiFactorVerificationFilter filter = new MultiFactorVerificationFilter(authenticationManager);
-    filter.setAuthenticationSuccessHandler(authenticationSuccessHandler);
+    MultiFactorVerificationFilter filter = new MultiFactorVerificationFilter(authenticationManager,
+        successHandler(), failureHandler());
 
     return filter;
   }
@@ -129,13 +130,16 @@ public class IamTotpMfaConfig {
     return new ProviderManager(Arrays.asList(codeCheckProvider));
   }
 
-  @Bean(name = "MultiFactorVerificationSuccessHandler")
   public AuthenticationSuccessHandler successHandler() {
     AuthenticationSuccessHandler delegate =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
     return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService, accountUtils,
         accountRepo);
+  }
+
+  public AuthenticationFailureHandler failureHandler() {
+    return new SimpleUrlAuthenticationFailureHandler("/iam/verify?error=failure");
   }
 
   @Bean
