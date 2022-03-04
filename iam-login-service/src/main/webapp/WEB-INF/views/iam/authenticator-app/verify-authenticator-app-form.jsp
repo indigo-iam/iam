@@ -26,8 +26,8 @@
           <span class="input-group-addon">
             <i class="glyphicon glyphicon-lock"></i>
           </span>
-          <input id="code" class="form-control" type="text" inputmode="numeric" placeholder="Code" autocomplete="off" spellcheck="false"
-            name="code" autofocus>
+          <input id="totp" class="form-control" type="text" inputmode="numeric" placeholder="Code" autocomplete="off" spellcheck="false"
+            name="totp" autofocus>
         </div>
       </div>
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">

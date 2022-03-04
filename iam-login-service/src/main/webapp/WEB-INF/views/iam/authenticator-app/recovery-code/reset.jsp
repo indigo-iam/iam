@@ -34,8 +34,8 @@
       <input id="reset-submit" type="submit" class="btn btn-primary btn-block"
         value="Reset" name="reset" class="form-control">
     </form>
-    <!-- The below action obviously would not work if needing to redirect elsewhere -->
-    <form class="verify-form" action="/dashboard" method="get">
+
+    <form class="verify-form" action="/iam/authenticator-app/recovery-code/reset" method="post">
       <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
       <input id="skip-submit" type="submit" class="btn btn-danger btn-block"
         value="Skip" name="skip" class="form-control">

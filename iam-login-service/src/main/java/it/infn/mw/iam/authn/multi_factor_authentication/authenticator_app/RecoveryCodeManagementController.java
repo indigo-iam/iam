@@ -19,9 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -33,9 +31,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodesResetEvent;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
-import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.authn.multi_factor_authentication.error.NoMultiFactorSecretError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 
@@ -47,68 +44,42 @@ import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 @Controller
 public class RecoveryCodeManagementController {
 
-  public static final String AUTHENTICATOR_APP_URL = "/iam/authenticator-app";
-  public static final String RECOVERY_CODE_URL = AUTHENTICATOR_APP_URL + "/recovery-code";
-  public static final String RESET_URL = RECOVERY_CODE_URL + "/reset";
-  public static final String GET_URL = RECOVERY_CODE_URL + "/get";
-  public static final String VIEW_URL = RECOVERY_CODE_URL + "/view";
+  public static final String RECOVERY_CODE_RESET_URL = "/iam/authenticator-app/recovery-code/reset";
+  public static final String RECOVERY_CODE_VIEW_URL = "/iam/authenticator-app/recovery-code/view";
+  public static final String RECOVERY_CODE_GET_URL = "/iam/authenticator-app/recovery-code/get";
 
   private final AccountUtils accountUtils;
-  private final IamAccountService service;
-  private ApplicationEventPublisher eventPublisher;
 
   @Autowired
-  public RecoveryCodeManagementController(AccountUtils accountUtils, IamAccountService service,
-      ApplicationEventPublisher eventPublisher) {
+  public RecoveryCodeManagementController(AccountUtils accountUtils) {
     this.accountUtils = accountUtils;
-    this.service = service;
-    this.eventPublisher = eventPublisher;
-  }
-
-  private void recoveryCodesResetEvent(IamAccount account) {
-    eventPublisher.publishEvent(new RecoveryCodesResetEvent(this, account));
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = RESET_URL)
+  @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_RESET_URL)
   public String getResetRecoveryCodesResetView() {
-    return "/iam/authenticator-app/recovery-code/reset";
+    return RECOVERY_CODE_RESET_URL;
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST, path = RESET_URL)
-  public String resetRecoveryCodesAndView() {
-    resetRecoveryCodes();
-
-    return "redirect:/iam/authenticator-app/recovery-code/view";
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.PUT, path = RESET_URL)
-  public ResponseEntity<String> resetRecoveryCodes() {
-    IamAccount account = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
-    account = service.addTotpMfaRecoveryCodes(account);
-    account = service.saveAccount(account);
-
-    recoveryCodesResetEvent(account);
-
-    return ResponseEntity.ok().build();
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = VIEW_URL)
+  @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_VIEW_URL)
   public String viewRecoveryCodes(ModelMap model) {
     String[] codes = getRecoveryCodes();
+
     model.addAttribute("recoveryCodes", codes);
-    return "/iam/authenticator-app/recovery-code/view";
+    return RECOVERY_CODE_VIEW_URL;
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.GET, path = GET_URL)
+  @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_GET_URL)
   public @ResponseBody String[] getRecoveryCodes() {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
+
+    if (account.getTotpMfa() == null || !account.getTotpMfa().isActive()) {
+      throw new NoMultiFactorSecretError(
+          "No multi-factor secret is associated with account " + account.getUsername());
+    }
 
     List<IamTotpRecoveryCode> recs = new ArrayList<>(account.getTotpMfa().getRecoveryCodes());
     String[] codes = new String[recs.size()];
@@ -124,6 +95,13 @@ public class RecoveryCodeManagementController {
   @ExceptionHandler(MultiFactorAuthenticationError.class)
   @ResponseBody
   public ErrorDTO handleMultiFactorAuthenticationError(MultiFactorAuthenticationError e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoMultiFactorSecretError.class)
+  @ResponseBody
+  public ErrorDTO handleNoMultiFactorSecretError(NoMultiFactorSecretError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 }

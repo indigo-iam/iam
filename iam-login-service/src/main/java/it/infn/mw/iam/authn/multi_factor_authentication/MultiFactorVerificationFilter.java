@@ -16,6 +16,7 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import java.io.IOException;
+import java.nio.file.ProviderNotFoundException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -35,15 +36,18 @@ import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 public class MultiFactorVerificationFilter extends AbstractAuthenticationProcessingFilter {
 
-  public static final String TOTP_MFA_CODE_KEY = "code";
-  public static final String MULTI_FACTOR_VERIFIED = "MULTI_FACTOR_VERIFIED";
+  public static final String TOTP_MFA_CODE_KEY = "totp";
+  public static final String TOTP_RECOVERY_CODE_KEY = "recoveryCode";
+  public static final String TOTP_VERIFIED = "TOTP_VERIFIED";
+  public static final String RECOVERY_CODE_VERIFIED = "RECOVERY_CODE_VERIFIED";
 
   private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER =
       new AntPathRequestMatcher("/iam/verify", "POST");
 
   private final boolean postOnly = true;
 
-  private String codeParameter = TOTP_MFA_CODE_KEY;
+  private String totpParameter = TOTP_MFA_CODE_KEY;
+  private String recoveryCodeParameter = TOTP_RECOVERY_CODE_KEY;
 
   public MultiFactorVerificationFilter(AuthenticationManager authenticationManager,
       AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
@@ -65,14 +69,31 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       throw new AuthenticationServiceException("Bad authentication");
     }
 
-    String code = request.getParameter(this.codeParameter);
-    code = (code != null) ? code : "";
-    code = code.trim();
-
     ExtendedAuthenticationToken authRequest = (ExtendedAuthenticationToken) auth;
-    authRequest.setCode(code);
 
-    return this.getAuthenticationManager().authenticate(authRequest);
+    String totp = parseTotp(request);
+    String recoveryCode = parseRecoveryCode(request);
+
+    if (totp != null) {
+      authRequest.setTotp(totp);
+    } else if (recoveryCode != null) {
+      authRequest.setRecoveryCode(recoveryCode);
+    } else {
+      throw new ProviderNotFoundException("No valid totp code or recovery code was received");
+    }
+
+    Authentication newAuth = this.getAuthenticationManager().authenticate(authRequest);
+    if (newAuth == null) {
+      throw new ProviderNotFoundException("No valid totp code or recovery code was received");
+    }
+
+    if (authRequest.getTotp() != null) {
+      request.setAttribute(TOTP_VERIFIED, Boolean.TRUE);
+    } else if (authRequest.getRecoveryCode() != null) {
+      request.setAttribute(RECOVERY_CODE_VERIFIED, Boolean.TRUE);
+    }
+
+    return newAuth;
   }
 
   @Override
@@ -83,5 +104,15 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
     this.logger.trace("Handling authentication failure");
     this.getRememberMeServices().loginFail(request, response);
     this.getFailureHandler().onAuthenticationFailure(request, response, failed);
+  }
+
+  private String parseTotp(HttpServletRequest request) {
+    String totp = request.getParameter(this.totpParameter);
+    return totp != null ? totp.trim() : null;
+  }
+
+  private String parseRecoveryCode(HttpServletRequest request) {
+    String recoveryCode = request.getParameter(this.recoveryCodeParameter);
+    return recoveryCode != null ? recoveryCode.trim() : null;
   }
 }

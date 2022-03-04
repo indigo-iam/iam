@@ -35,8 +35,8 @@
       </c:forEach>
     </form>
     <div id="verify-confirm" class="row text-center">
-      <form action="/dashboard" method="get">
-        <button type="submit" class="btn btn-primary">Continue to dashboard</button>
+      <form action="/iam/authenticator-app/recovery-code/view" method="post">
+        <button type="submit" class="btn btn-primary">Continue</button>
       </form>
     </div>
   </jsp:body>
