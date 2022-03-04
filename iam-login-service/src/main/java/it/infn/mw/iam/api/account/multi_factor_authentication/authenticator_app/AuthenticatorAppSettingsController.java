@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app
 
 import static dev.samstevens.totp.util.Utils.getDataUriForImage;
 
+import java.util.Optional;
+
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,15 +42,17 @@ import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 /**
  * Controller for customising user's authenticator app MFA settings Can enable or disable the
@@ -63,16 +67,19 @@ public class AuthenticatorAppSettingsController {
   public static final String ENABLE_URL = BASE_URL + "/enable";
   public static final String DISABLE_URL = BASE_URL + "/disable";
 
-  final IamAccountService service;
+  final IamTotpMfaService service;
   final IamAccountRepository accountRepository;
+  final IamTotpMfaRepository totpMfaRepository;
   private QrGenerator qrGenerator;
   private CodeVerifier codeVerifier;
 
   @Autowired
-  public AuthenticatorAppSettingsController(IamAccountService service,
-      IamAccountRepository accountRepository, QrGenerator qrGenerator, CodeVerifier codeVerifier) {
+  public AuthenticatorAppSettingsController(IamTotpMfaService service,
+      IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
+      QrGenerator qrGenerator, CodeVerifier codeVerifier) {
     this.service = service;
     this.accountRepository = accountRepository;
+    this.totpMfaRepository = totpMfaRepository;
     this.qrGenerator = qrGenerator;
     this.codeVerifier = codeVerifier;
   }
@@ -93,16 +100,16 @@ public class AuthenticatorAppSettingsController {
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
-    account = service.addTotpMfaSecret(account);
+    IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
+    SecretAndDataUriDTO dto = new SecretAndDataUriDTO(totpMfa.getSecret());
 
-    SecretAndDataUriDTO dto = new SecretAndDataUriDTO(account.getTotpMfa().getSecret());
     try {
-      String dataUri =
-          generateQRCodeFromSecret(account.getTotpMfa().getSecret(), account.getUsername());
+      String dataUri = generateQRCodeFromSecret(totpMfa.getSecret(), account.getUsername());
       dto.setDataUri(dataUri);
     } catch (QrGenerationException e) {
-      // TODO QR code couldn't be generated. What should be done here?
+      throw new BadMfaCodeError("Could not generate QR code");
     }
+
     return dto;
   }
 
@@ -128,9 +135,14 @@ public class AuthenticatorAppSettingsController {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
-
-    if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new BadMfaCodeError("Bad MFA code");
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (totpMfaOptional.isPresent()) {
+      IamTotpMfa totpMfa = totpMfaOptional.get();
+      if (!codeVerifier.isValidCode(totpMfa.getSecret(), code.getCode())) {
+        throw new BadMfaCodeError("Bad MFA code");
+      }
+    } else {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
     service.enableTotpMfa(account);
@@ -157,9 +169,15 @@ public class AuthenticatorAppSettingsController {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
 
-    if (!codeVerifier.isValidCode(account.getTotpMfa().getSecret(), code.getCode())) {
-      throw new BadMfaCodeError("Bad MFA code");
+    if (totpMfaOptional.isPresent()) {
+      IamTotpMfa totpMfa = totpMfaOptional.get();
+      if (!codeVerifier.isValidCode(totpMfa.getSecret(), code.getCode())) {
+        throw new BadMfaCodeError("Bad MFA code");
+      }
+    } else {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
     service.disableTotpMfa(account);

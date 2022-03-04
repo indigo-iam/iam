@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
+package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,23 +26,27 @@ import org.springframework.stereotype.Service;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodesResetEvent;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Service
-public class DefaultRecoveryCodeResetService
-    implements RecoveryCodeResetService, ApplicationEventPublisherAware {
+public class DefaultIamTotpRecoveryCodeResetService
+    implements IamTotpRecoveryCodeResetService, ApplicationEventPublisherAware {
 
   private final IamAccountRepository accountRepository;
+  private final IamTotpMfaRepository totpMfaRepository;
   private final RecoveryCodeGenerator recoveryCodeGenerator;
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
-  public DefaultRecoveryCodeResetService(IamAccountRepository accountRepository,
-      RecoveryCodeGenerator recoveryCodeGenerator) {
+  public DefaultIamTotpRecoveryCodeResetService(IamAccountRepository accountRepository,
+      IamTotpMfaRepository totpMfaRepository, RecoveryCodeGenerator recoveryCodeGenerator) {
     this.accountRepository = accountRepository;
+    this.totpMfaRepository = totpMfaRepository;
     this.recoveryCodeGenerator = recoveryCodeGenerator;
   }
 
@@ -52,7 +57,12 @@ public class DefaultRecoveryCodeResetService
 
   @Override
   public void resetRecoveryCodes(IamAccount account) {
-    IamTotpMfa totpMfa = account.getTotpMfa();
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (!totpMfaOptional.isPresent()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    IamTotpMfa totpMfa = totpMfaOptional.get();
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(6);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
     for (String code : recoveryCodeStrings) {
@@ -66,6 +76,7 @@ public class DefaultRecoveryCodeResetService
     totpMfa.touch();
     account.touch();
     accountRepository.save(account);
+    totpMfaRepository.save(totpMfa);
     eventPublisher.publishEvent(new RecoveryCodesResetEvent(this, account));
   }
 

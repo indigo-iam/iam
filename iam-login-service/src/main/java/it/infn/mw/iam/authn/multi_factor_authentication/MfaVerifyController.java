@@ -17,6 +17,8 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,7 +35,9 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSetting
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 //TODO when unauthenticated and navigating to other pages like /dashboard, we redirect to /login. But here we show up as unauthorized. Can we replicate the behaviour of /dashboard?
 
@@ -47,10 +51,13 @@ public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
   final IamAccountRepository accountRepository;
+  final IamTotpMfaRepository totpMfaRepository;
 
   @Autowired
-  public MfaVerifyController(IamAccountRepository accountRepository) {
+  public MfaVerifyController(IamAccountRepository accountRepository,
+      IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
+    this.totpMfaRepository = totpMfaRepository;
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
@@ -66,7 +73,14 @@ public class MfaVerifyController {
 
   private MultiFactorSettingsDTO populateMfaSettings(IamAccount account) {
     MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
-    dto.setAuthenticatorAppActive(account.getTotpMfa() != null && account.getTotpMfa().isActive());
+
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (totpMfaOptional.isPresent()) {
+      IamTotpMfa totpMfa = totpMfaOptional.get();
+      dto.setAuthenticatorAppActive(totpMfa.isActive());
+    } else {
+      dto.setAuthenticatorAppActive(false);
+    }
 
     return dto;
   }

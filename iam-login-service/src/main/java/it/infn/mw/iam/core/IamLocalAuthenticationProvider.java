@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -39,7 +40,9 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.LocalAuthenticationAllowedUsers;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
@@ -47,16 +50,19 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   private final LocalAuthenticationAllowedUsers allowedUsers;
   private final IamAccountRepository accountRepo;
+  private final IamTotpMfaRepository totpMfaRepository;
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
-      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo) {
+      PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
+      IamTotpMfaRepository totpMfaRepository) {
     this.allowedUsers = properties.getLocalAuthn().getEnabledFor();
     setUserDetailsService(uds);
     setPasswordEncoder(passwordEncoder);
     this.accountRepo = accountRepo;
+    this.totpMfaRepository = totpMfaRepository;
   }
 
   @Override
@@ -75,7 +81,8 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
     ExtendedAuthenticationToken token;
 
-    if (account.getTotpMfa() != null && account.getTotpMfa().isActive()) {
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
       List<GrantedAuthority> currentAuthorities = new ArrayList<>();
       for (GrantedAuthority authority : authentication.getAuthorities()) {
         currentAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
+package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-public interface RecoveryCodeResetService {
+public interface IamTotpRecoveryCodeResetService {
 
   public void resetRecoveryCodes(IamAccount account);
 }

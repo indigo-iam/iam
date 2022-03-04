@@ -38,6 +38,7 @@ import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorRecoveryCodeCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
@@ -46,6 +47,7 @@ import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationS
 import it.infn.mw.iam.authn.multi_factor_authentication.ResetOrSkipRecoveryCodesFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ViewRecoveryCodesFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 // TODO add admin config options from properties file
 
@@ -62,7 +64,13 @@ public class IamTotpMfaConfig {
   private IamAccountRepository accountRepo;
 
   @Autowired
+  private IamTotpMfaRepository totpMfaRepository;
+
+  @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
+
+  @Autowired
+  private IamTotpRecoveryCodeResetService recoveryCodeResetService;
 
   @Autowired
   private AccountUtils accountUtils;
@@ -129,7 +137,7 @@ public class IamTotpMfaConfig {
   public ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter() {
 
     ResetOrSkipRecoveryCodesFilter filter = new ResetOrSkipRecoveryCodesFilter(accountUtils,
-        aupSignatureCheckService, accountRepo, iamBaseUrl);
+        aupSignatureCheckService, accountRepo, iamBaseUrl, recoveryCodeResetService);
 
     return filter;
   }
@@ -160,11 +168,11 @@ public class IamTotpMfaConfig {
 
   @Bean
   public MultiFactorTotpCheckProvider totpCheckProvider(CodeVerifier codeVerifier) {
-    return new MultiFactorTotpCheckProvider(accountRepo, codeVerifier);
+    return new MultiFactorTotpCheckProvider(accountRepo, totpMfaRepository, codeVerifier);
   }
 
   @Bean
   public MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider() {
-    return new MultiFactorRecoveryCodeCheckProvider(accountRepo);
+    return new MultiFactorRecoveryCodeCheckProvider(accountRepo, totpMfaRepository);
   }
 }

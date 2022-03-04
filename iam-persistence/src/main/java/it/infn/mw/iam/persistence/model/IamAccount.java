@@ -92,10 +92,6 @@ public class IamAccount implements Serializable {
   @JoinColumn(name = "user_info_id")
   private IamUserInfo userInfo;
 
-  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinColumn(name = "totp_mfa_id", nullable = true)
-  private IamTotpMfa totpMfa;
-
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "last_login_time", nullable = true)
   private Date lastLoginTime;
@@ -247,14 +243,6 @@ public class IamAccount implements Serializable {
   public void setActive(final boolean active) {
 
     this.active = active;
-  }
-
-  public IamTotpMfa getTotpMfa() {
-    return totpMfa;
-  }
-
-  public void setTotpMfa(final IamTotpMfa totpMfa) {
-    this.totpMfa = totpMfa;
   }
 
   public Set<IamSamlId> getSamlIds() {

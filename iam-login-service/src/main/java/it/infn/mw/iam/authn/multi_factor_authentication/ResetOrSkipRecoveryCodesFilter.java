@@ -27,7 +27,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,7 +36,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.RecoveryCodeResetService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.api.common.error.NoAuthenticatedUserError;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
@@ -59,17 +58,16 @@ public class ResetOrSkipRecoveryCodesFilter extends GenericFilterBean {
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
   private final String iamBaseUrl;
-
-  @Autowired
-  private RecoveryCodeResetService service;
+  private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
 
   public ResetOrSkipRecoveryCodesFilter(AccountUtils accountUtils,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
-      String iamBaseUrl) {
+      String iamBaseUrl, IamTotpRecoveryCodeResetService recoveryCodeResetService) {
     this.accountUtils = accountUtils;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
     this.iamBaseUrl = iamBaseUrl;
+    this.recoveryCodeResetService = recoveryCodeResetService;
   }
 
   @Override
@@ -91,7 +89,7 @@ public class ResetOrSkipRecoveryCodesFilter extends GenericFilterBean {
     if (reset != null) {
       IamAccount account =
           accountUtils.getAuthenticatedUserAccount().orElseThrow(NoAuthenticatedUserError::new);
-      service.resetRecoveryCodes(account);
+      recoveryCodeResetService.resetRecoveryCodes(account);
       response.sendRedirect(RECOVERY_CODE_VIEW_URL);
     } else if (skip != null) {
       chain.doFilter(request, response);
