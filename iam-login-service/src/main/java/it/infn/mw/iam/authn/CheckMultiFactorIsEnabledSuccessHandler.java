@@ -20,46 +20,33 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Date;
-import java.util.Optional;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-// import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
-import it.infn.mw.iam.core.util.IamAuthenticationLogger;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-@SuppressWarnings("deprecation")
-public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSuccessHandler {
 
   private final AccountUtils accountUtils;
-  private final AuthenticationSuccessHandler rootIsDashboardSuccessHandler;
-  // private final String iamBaseUrl;
-  // private final RequestCache requestCache;
-  // private final EnforceAupSignatureSuccessHandler enforceAupSignatureSuccessHandler;
+  private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
 
-  public MultiFactorAuthenticationSuccessHandler(AccountUtils accountUtils,
-      AuthenticationSuccessHandler delegate, AUPSignatureCheckService aupSignatureCheckService,
-      IamAccountRepository accountRepo) {
+  public CheckMultiFactorIsEnabledSuccessHandler(AccountUtils accountUtils, String iamBaseUrl,
+      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo) {
     this.accountUtils = accountUtils;
-    this.rootIsDashboardSuccessHandler = delegate;
-    // this.iamBaseUrl = iamBaseUrl;
-    // this.requestCache = requestCache;
-    // this.enforceAupSignatureSuccessHandler = enforceAupSignatureSuccessHandler;
+    this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
   }
@@ -68,6 +55,7 @@ public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSu
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
     handle(request, response, authentication);
+    clearAuthenticationAttributes(request);
   }
 
   protected void handle(HttpServletRequest request, HttpServletResponse response,
@@ -95,61 +83,25 @@ public class MultiFactorAuthenticationSuccessHandler implements AuthenticationSu
       }
     }
 
-    // throw new IllegalStateException();
     return false;
   }
 
-  public void continueWithDefaultSuccessHandler(HttpServletRequest request,
+  protected void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
+
+    AuthenticationSuccessHandler delegate =
+        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+
+    EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(delegate,
+        aupSignatureCheckService, accountUtils, accountRepo);
+    handler.onAuthenticationSuccess(request, response, auth);
+  }
+
+  protected void clearAuthenticationAttributes(HttpServletRequest request) {
     HttpSession session = request.getSession(false);
-
-    setAuthenticationTimestamp(request, auth);
-    touchLastLoginTimeForIamAccount(auth);
-
-    Optional<IamAccount> authenticatedAccount = lookupAuthenticatedUser(auth);
-
-    if (!authenticatedAccount.isPresent()
-        || !aupSignatureCheckService.needsAupSignature(authenticatedAccount.get())) {
-      rootIsDashboardSuccessHandler.onAuthenticationSuccess(request, response, auth);
-
-    } else {
-      session.setAttribute(REQUESTING_SIGNATURE, true);
-      response.sendRedirect("/iam/aup/sign");
+    if (session == null) {
+      return;
     }
-  }
-
-  protected void setAuthenticationTimestamp(HttpServletRequest request,
-      Authentication authentication) {
-
-    Date timestamp = new Date();
-    HttpSession session = request.getSession();
-    session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP, timestamp);
-    IamAuthenticationLogger.INSTANCE.logAuthenticationSuccess(authentication);
-  }
-
-  protected void touchLastLoginTimeForIamAccount(Authentication authentication) {
-
-    resolveUserAuthentication(authentication)
-      .ifPresent(a -> accountRepo.touchLastLoginTimeForUserWithUsername(a.getName()));
-  }
-
-  private Optional<Authentication> resolveUserAuthentication(Authentication auth) {
-    if (auth instanceof OAuth2Authentication) {
-      OAuth2Authentication oauth = (OAuth2Authentication) auth;
-      return Optional.ofNullable(oauth.getUserAuthentication());
-    }
-    return Optional.of(auth);
-  }
-
-  private Optional<IamAccount> lookupAuthenticatedUser(Authentication auth) {
-
-    Optional<Authentication> userAuth = resolveUserAuthentication(auth);
-
-    if (userAuth.isPresent()) {
-      return accountUtils.getAuthenticatedUserAccount(userAuth.get());
-    }
-
-    return Optional.empty();
-
+    session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
   }
 }

@@ -28,35 +28,43 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-public class MultiFactorCodeCheckProvider implements AuthenticationProvider {
+public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
-  private final CodeVerifier codeVerifier;
 
-  public MultiFactorCodeCheckProvider(IamAccountRepository accountRepo, CodeVerifier codeVerifier) {
+  public MultiFactorRecoveryCodeCheckProvider(IamAccountRepository accountRepo) {
     this.accountRepo = accountRepo;
-    this.codeVerifier = codeVerifier;
   }
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
     ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) authentication;
 
+    String recoveryCode = token.getRecoveryCode();
+    if (recoveryCode == null) {
+      return null;
+    }
+
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    String mfaSecret = account.getTotpMfa().getSecret();
-    String code = token.getCode();
-
-    if (!codeVerifier.isValidCode(mfaSecret, code)) {
-      throw new BadCredentialsException("Bad code");
+    Set<IamTotpRecoveryCode> accountRecoveryCodes = account.getTotpMfa().getRecoveryCodes();
+    for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
+      String recoveryCodeString = recoveryCodeObject.getCode();
+      if (recoveryCode.equals(recoveryCodeString)) {
+        return createSuccessfulAuthentication(token);
+      }
     }
 
+    throw new BadCredentialsException("Bad recovery code");
+  }
+
+  protected Authentication createSuccessfulAuthentication(ExtendedAuthenticationToken token) {
     IamAuthenticationMethodReference otp =
         new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
     Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
@@ -64,14 +72,14 @@ public class MultiFactorCodeCheckProvider implements AuthenticationProvider {
     token.setAuthenticationMethodReferences(refs);
 
     List<GrantedAuthority> authorities = new ArrayList<>();
-    for (GrantedAuthority authority : authentication.getAuthorities()) {
+    for (GrantedAuthority authority : token.getAuthorities()) {
       authorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
     }
     authorities.remove(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
 
-    account.getAuthorities()
-      .stream()
-      .forEach(authority -> authorities.add(new SimpleGrantedAuthority(authority.getAuthority())));
+    // account.getAuthorities()
+    // .stream()
+    // .forEach(authority -> authorities.add(new SimpleGrantedAuthority(authority.getAuthority())));
 
     ExtendedAuthenticationToken newToken = new ExtendedAuthenticationToken(token.getPrincipal(),
         token.getCredentials(), authorities, token.getAuthenticationMethodReferences());

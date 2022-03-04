@@ -27,7 +27,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
@@ -40,10 +39,12 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
-import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorCodeCheckProvider;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorRecoveryCodeCheckProvider;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
+import it.infn.mw.iam.authn.multi_factor_authentication.ResetOrSkipRecoveryCodesFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.ViewRecoveryCodesFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 // TODO add admin config options from properties file
@@ -124,18 +125,33 @@ public class IamTotpMfaConfig {
     return filter;
   }
 
+  @Bean(name = "ResetOrSkipRecoveryCodesFilter")
+  public ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter() {
+
+    ResetOrSkipRecoveryCodesFilter filter = new ResetOrSkipRecoveryCodesFilter(accountUtils,
+        aupSignatureCheckService, accountRepo, iamBaseUrl);
+
+    return filter;
+  }
+
+  @Bean(name = "ViewRecoveryCodesFilter")
+  public ViewRecoveryCodesFilter viewRecoveryCodesFilter() {
+
+    ViewRecoveryCodesFilter filter = new ViewRecoveryCodesFilter(accountUtils,
+        aupSignatureCheckService, accountRepo, iamBaseUrl);
+
+    return filter;
+  }
+
   @Bean(name = "MultiFactorVerificationAuthenticationManager")
-  public AuthenticationManager authenticationManager(
-      MultiFactorCodeCheckProvider codeCheckProvider) {
-    return new ProviderManager(Arrays.asList(codeCheckProvider));
+  public AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider,
+      MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider) {
+    return new ProviderManager(Arrays.asList(totpCheckProvider, recoveryCodeCheckProvider));
   }
 
   public AuthenticationSuccessHandler successHandler() {
-    AuthenticationSuccessHandler delegate =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
-
-    return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService, accountUtils,
-        accountRepo);
+    return new MultiFactorVerificationSuccessHandler(accountUtils, aupSignatureCheckService,
+        accountRepo, iamBaseUrl);
   }
 
   public AuthenticationFailureHandler failureHandler() {
@@ -143,7 +159,12 @@ public class IamTotpMfaConfig {
   }
 
   @Bean
-  public MultiFactorCodeCheckProvider codeCheckProvider(CodeVerifier codeVerifier) {
-    return new MultiFactorCodeCheckProvider(accountRepo, codeVerifier);
+  public MultiFactorTotpCheckProvider totpCheckProvider(CodeVerifier codeVerifier) {
+    return new MultiFactorTotpCheckProvider(accountRepo, codeVerifier);
+  }
+
+  @Bean
+  public MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider() {
+    return new MultiFactorRecoveryCodeCheckProvider(accountRepo);
   }
 }

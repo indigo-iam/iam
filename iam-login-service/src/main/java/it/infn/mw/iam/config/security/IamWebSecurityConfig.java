@@ -17,6 +17,8 @@ package it.infn.mw.iam.config.security;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
+import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
 
 import javax.servlet.RequestDispatcher;
 
@@ -47,7 +49,6 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -55,11 +56,12 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
-import it.infn.mw.iam.authn.MultiFactorAuthenticationSuccessHandler;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.ResetOrSkipRecoveryCodesFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.ViewRecoveryCodesFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
@@ -204,16 +206,9 @@ public class IamWebSecurityConfig {
       return new ExtendedHttpServletRequestFilter();
     }
 
-    // TODO refactor this
     public AuthenticationSuccessHandler successHandler() {
-      AuthenticationSuccessHandler delegate =
-          new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
-
-      return new MultiFactorAuthenticationSuccessHandler(accountUtils, delegate,
+      return new CheckMultiFactorIsEnabledSuccessHandler(accountUtils, iamBaseUrl,
           aupSignatureCheckService, accountRepo);
-
-      // return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService,
-      // accountUtils, accountRepo);
     }
 
     public AuthenticationFailureHandler failureHandler() {
@@ -357,6 +352,10 @@ public class IamWebSecurityConfig {
     @Qualifier("MultiFactorVerificationFilter")
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
+    @Autowired
+    @Qualifier("ResetOrSkipRecoveryCodesFilter")
+    private ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter;
+
     @Bean
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
       LoginUrlAuthenticationEntryPoint entryPoint =
@@ -378,6 +377,44 @@ public class IamWebSecurityConfig {
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())
         .and()
         .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+  }
+
+  @Configuration
+  @Order(103)
+  public static class RecoveryCodeConfigurationAdapter extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    @Qualifier("ResetOrSkipRecoveryCodesFilter")
+    private ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher(RECOVERY_CODE_RESET_URL + "**")
+        .authorizeRequests()
+        .anyRequest()
+        .hasRole("USER")
+        .and()
+        .addFilterAfter(resetOrSkipRecoveryCodesFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+  }
+
+  @Configuration
+  @Order(104)
+  public static class RecoveryCodeViewConfigurationAdapter extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    @Qualifier("ViewRecoveryCodesFilter")
+    private ViewRecoveryCodesFilter viewRecoveryCodesFilter;
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher(RECOVERY_CODE_VIEW_URL + "**")
+        .authorizeRequests()
+        .anyRequest()
+        .hasRole("USER")
+        .and()
+        .addFilterAfter(viewRecoveryCodesFilter, UsernamePasswordAuthenticationFilter.class);
     }
   }
 }

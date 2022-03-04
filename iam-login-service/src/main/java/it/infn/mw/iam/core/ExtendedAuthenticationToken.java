@@ -29,7 +29,8 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private final Object principal;
   private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
-  private String code;
+  private String totp;
+  private String recoveryCode;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -61,22 +62,13 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
-  public ExtendedAuthenticationToken(Object principal, Object credentials,
-      Collection<? extends GrantedAuthority> authorities,
-      Set<IamAuthenticationMethodReference> authenticationMethodReferences, String code) {
-    super(authorities);
-    this.principal = principal;
-    this.credentials = credentials;
-    this.authenticationMethodReferences = authenticationMethodReferences;
-    this.code = code;
-  }
-
   public ExtendedAuthenticationToken(ExtendedAuthenticationToken other) {
     super(other.getAuthorities());
     this.principal = other.getPrincipal();
     this.credentials = other.getCredentials();
     this.authenticationMethodReferences = other.getAuthenticationMethodReferences();
-    this.code = other.getCode();
+    this.totp = other.getTotp();
+    this.recoveryCode = other.getRecoveryCode();
   }
 
   public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
@@ -88,12 +80,20 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
-  public String getCode() {
-    return code;
+  public String getTotp() {
+    return totp;
   }
 
-  public void setCode(String code) {
-    this.code = code;
+  public void setTotp(String totp) {
+    this.totp = totp;
+  }
+
+  public String getRecoveryCode() {
+    return recoveryCode;
+  }
+
+  public void setRecoveryCode(String recoveryCode) {
+    this.recoveryCode = recoveryCode;
   }
 
   @Override
