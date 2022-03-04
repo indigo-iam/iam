@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -30,16 +31,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
+  private final IamTotpMfaRepository totpMfaRepository;
   private final CodeVerifier codeVerifier;
 
-  public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo, CodeVerifier codeVerifier) {
+  public MultiFactorTotpCheckProvider(IamAccountRepository accountRepo,
+      IamTotpMfaRepository totpMfaRepository, CodeVerifier codeVerifier) {
     this.accountRepo = accountRepo;
+    this.totpMfaRepository = totpMfaRepository;
     this.codeVerifier = codeVerifier;
   }
 
@@ -55,7 +62,17 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    String mfaSecret = account.getTotpMfa().getSecret();
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (!totpMfaOptional.isPresent()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    IamTotpMfa totpMfa = totpMfaOptional.get();
+    if (!totpMfa.isActive()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    String mfaSecret = totpMfa.getSecret();
 
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
       return createSuccessfulAuthentication(token);

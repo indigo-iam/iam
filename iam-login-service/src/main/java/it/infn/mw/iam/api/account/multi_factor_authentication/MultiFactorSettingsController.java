@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +30,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 /**
  * Controller for retrieving all multi-factor settings for a user account
@@ -39,10 +43,13 @@ public class MultiFactorSettingsController {
 
   public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
   final IamAccountRepository accountRepository;
+  final IamTotpMfaRepository totpMfaRepository;
 
   @Autowired
-  public MultiFactorSettingsController(IamAccountRepository accountRepository) {
+  public MultiFactorSettingsController(IamAccountRepository accountRepository,
+      IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
+    this.totpMfaRepository = totpMfaRepository;
   }
 
 
@@ -60,9 +67,15 @@ public class MultiFactorSettingsController {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
-
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
-    dto.setAuthenticatorAppActive(account.getTotpMfa() != null && account.getTotpMfa().isActive());
+    if (totpMfaOptional.isPresent()) {
+      IamTotpMfa totpMfa = totpMfaOptional.get();
+      dto.setAuthenticatorAppActive(totpMfa.isActive());
+    } else {
+      dto.setAuthenticatorAppActive(false);
+    }
+
     // add further factors if/when implemented
 
     return dto;

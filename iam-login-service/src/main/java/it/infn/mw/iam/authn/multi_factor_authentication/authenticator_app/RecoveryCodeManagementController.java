@@ -17,9 +17,11 @@ package it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -30,11 +32,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.NoMultiFactorSecretError;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 // TODO if the resetting of recovery codes after use is a requirement, we need to prevent the user
 // from accessing IAM webpages after authenticating. This may require an additional ROLE for
@@ -49,10 +55,16 @@ public class RecoveryCodeManagementController {
   public static final String RECOVERY_CODE_GET_URL = "/iam/authenticator-app/recovery-code/get";
 
   private final AccountUtils accountUtils;
+  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
 
   @Autowired
-  public RecoveryCodeManagementController(AccountUtils accountUtils) {
+  public RecoveryCodeManagementController(AccountUtils accountUtils,
+      IamTotpMfaRepository totpMfaRepository,
+      IamTotpRecoveryCodeResetService recoveryCodeResetService) {
     this.accountUtils = accountUtils;
+    this.totpMfaRepository = totpMfaRepository;
+    this.recoveryCodeResetService = recoveryCodeResetService;
   }
 
   @PreAuthorize("hasRole('USER')")
@@ -76,12 +88,17 @@ public class RecoveryCodeManagementController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
 
-    if (account.getTotpMfa() == null || !account.getTotpMfa().isActive()) {
-      throw new NoMultiFactorSecretError(
-          "No multi-factor secret is associated with account " + account.getUsername());
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (!totpMfaOptional.isPresent()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
-    List<IamTotpRecoveryCode> recs = new ArrayList<>(account.getTotpMfa().getRecoveryCodes());
+    IamTotpMfa totpMfa = totpMfaOptional.get();
+    if (!totpMfa.isActive()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    List<IamTotpRecoveryCode> recs = new ArrayList<>(totpMfa.getRecoveryCodes());
     String[] codes = new String[recs.size()];
 
     for (int i = 0; i < recs.size(); i++) {
@@ -89,6 +106,17 @@ public class RecoveryCodeManagementController {
     }
 
     return codes;
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.PUT, path = RECOVERY_CODE_RESET_URL)
+  public ResponseEntity<String> resetRecoveryCodes() {
+    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+      .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
+
+    recoveryCodeResetService.resetRecoveryCodes(account);
+
+    return ResponseEntity.ok().build();
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)

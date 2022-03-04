@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -29,16 +30,22 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
+  private final IamTotpMfaRepository totpMfaRepository;
 
-  public MultiFactorRecoveryCodeCheckProvider(IamAccountRepository accountRepo) {
+  public MultiFactorRecoveryCodeCheckProvider(IamAccountRepository accountRepo,
+      IamTotpMfaRepository totpMfaRepository) {
     this.accountRepo = accountRepo;
+    this.totpMfaRepository = totpMfaRepository;
   }
 
   @Override
@@ -53,7 +60,17 @@ public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvi
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    Set<IamTotpRecoveryCode> accountRecoveryCodes = account.getTotpMfa().getRecoveryCodes();
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (!totpMfaOptional.isPresent()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    IamTotpMfa totpMfa = totpMfaOptional.get();
+    if (!totpMfa.isActive()) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+
+    Set<IamTotpRecoveryCode> accountRecoveryCodes = totpMfa.getRecoveryCodes();
     for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
       String recoveryCodeString = recoveryCodeObject.getCode();
       if (recoveryCode.equals(recoveryCodeString)) {
