@@ -17,8 +17,6 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,8 +24,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import dev.samstevens.totp.code.CodeVerifier;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
@@ -37,6 +33,10 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
+/**
+ * Grants full authentication by verifying a provided MFA TOTP. Only comes into play in the step-up
+ * authentication flow.
+ */
 public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
@@ -74,6 +74,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
     String mfaSecret = totpMfa.getSecret();
 
+    // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
       return createSuccessfulAuthentication(token);
     }
@@ -88,14 +89,9 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     refs.add(otp);
     token.setAuthenticationMethodReferences(refs);
 
-    List<GrantedAuthority> authorities = new ArrayList<>();
-    for (GrantedAuthority authority : token.getAuthorities()) {
-      authorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
-    }
-    authorities.remove(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
-
     ExtendedAuthenticationToken newToken = new ExtendedAuthenticationToken(token.getPrincipal(),
-        token.getCredentials(), authorities, token.getAuthenticationMethodReferences());
+        token.getCredentials(), token.getFullyAuthenticatedAuthorities());
+    newToken.setAuthenticationMethodReferences(token.getAuthenticationMethodReferences());
     newToken.setAuthenticated(true);
 
     return newToken;

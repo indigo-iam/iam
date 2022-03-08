@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication;
 
+import static it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaService.RECOVERY_CODE_QUANTITY;
+
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -55,6 +57,11 @@ public class DefaultIamTotpRecoveryCodeResetService
     this.eventPublisher = applicationEventPublisher;
   }
 
+  /**
+   * Regenerates the recovery codes attached to a provided MFA-enabled IAM account
+   * 
+   * @param account - the account to regenerate codes on
+   */
   @Override
   public void resetRecoveryCodes(IamAccount account) {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
@@ -63,7 +70,7 @@ public class DefaultIamTotpRecoveryCodeResetService
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
-    String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(6);
+    String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
     for (String code : recoveryCodeStrings) {
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);

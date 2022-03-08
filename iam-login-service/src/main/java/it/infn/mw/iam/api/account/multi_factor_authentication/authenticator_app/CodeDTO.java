@@ -41,7 +41,6 @@ public class CodeDTO {
 
   /**
    * @param code new code
-   * @return nothing
    */
   public void setCode(final String code) {
     this.code = code;

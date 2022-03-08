@@ -44,6 +44,10 @@ import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+/**
+ * Filter for handling user response from page that asks user to reset recovery codes or skip this
+ * step. This is received through a POST request and then the request is redirected appropriately
+ */
 public class ResetOrSkipRecoveryCodesFilter extends GenericFilterBean {
 
   public static final String RESET_KEY = "reset";
@@ -87,11 +91,14 @@ public class ResetOrSkipRecoveryCodesFilter extends GenericFilterBean {
     String skip = request.getParameter(skipParameter);
 
     if (reset != null) {
+      // User chose to reset, retrieve authenticated account so we can reset its codes then redirect
+      // to the recovery code view page
       IamAccount account =
           accountUtils.getAuthenticatedUserAccount().orElseThrow(NoAuthenticatedUserError::new);
       recoveryCodeResetService.resetRecoveryCodes(account);
       response.sendRedirect(RECOVERY_CODE_VIEW_URL);
     } else if (skip != null) {
+      // User chose not to reset, continue with normal success handler
       chain.doFilter(request, response);
       Authentication auth = SecurityContextHolder.getContext().getAuthentication();
       continueWithDefaultSuccessHandler(request, response, auth);
@@ -101,7 +108,7 @@ public class ResetOrSkipRecoveryCodesFilter extends GenericFilterBean {
     }
   }
 
-  protected boolean requiresProcessing(HttpServletRequest request, HttpServletResponse response) {
+  private boolean requiresProcessing(HttpServletRequest request, HttpServletResponse response) {
     if (DEFAULT_ANT_PATH_REQUEST_MATCHER.matches(request)) {
       return true;
     }

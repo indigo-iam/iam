@@ -19,5 +19,10 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface IamTotpRecoveryCodeResetService {
 
+  /**
+   * Regenerates the recovery codes attached to a provided MFA-enabled IAM account
+   * 
+   * @param account - the account to regenerate codes on
+   */
   public void resetRecoveryCodes(IamAccount account);
 }

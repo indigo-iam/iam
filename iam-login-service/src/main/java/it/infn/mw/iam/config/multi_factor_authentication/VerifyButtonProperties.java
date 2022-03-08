@@ -20,6 +20,9 @@ import javax.validation.constraints.NotBlank;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+/**
+ * Verify button that appears on the MFA verification page
+ */
 @JsonInclude(Include.NON_EMPTY)
 public class VerifyButtonProperties {
   private String text;

@@ -34,6 +34,11 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
+/**
+ * Used in the MFA verification flow. Receives either a TOTP or recovery code and constructs the
+ * authentication request with this parameter. The request is passed to dedicated authentication
+ * providers which will create the full authentication or raise the appropriate exception
+ */
 public class MultiFactorVerificationFilter extends AbstractAuthenticationProcessingFilter {
 
   public static final String TOTP_MFA_CODE_KEY = "totp";
@@ -41,7 +46,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   public static final String TOTP_VERIFIED = "TOTP_VERIFIED";
   public static final String RECOVERY_CODE_VERIFIED = "RECOVERY_CODE_VERIFIED";
 
-  private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER =
+  public static final AntPathRequestMatcher DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER =
       new AntPathRequestMatcher("/iam/verify", "POST");
 
   private final boolean postOnly = true;
@@ -51,7 +56,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
   public MultiFactorVerificationFilter(AuthenticationManager authenticationManager,
       AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
-    super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+    super(DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER, authenticationManager);
     setAuthenticationSuccessHandler(successHandler);
     setAuthenticationFailureHandler(failureHandler);
   }
@@ -71,6 +76,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
     ExtendedAuthenticationToken authRequest = (ExtendedAuthenticationToken) auth;
 
+    // Parse TOTP and recovery code from request (only one should be set)
     String totp = parseTotp(request);
     String recoveryCode = parseRecoveryCode(request);
 
@@ -82,8 +88,8 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       throw new ProviderNotFoundException("No valid totp code or recovery code was received");
     }
 
-    Authentication newAuth = this.getAuthenticationManager().authenticate(authRequest);
-    if (newAuth == null) {
+    Authentication fullAuthentication = this.getAuthenticationManager().authenticate(authRequest);
+    if (fullAuthentication == null) {
       throw new ProviderNotFoundException("No valid totp code or recovery code was received");
     }
 
@@ -93,9 +99,13 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       request.setAttribute(RECOVERY_CODE_VERIFIED, Boolean.TRUE);
     }
 
-    return newAuth;
+    return fullAuthentication;
   }
 
+  /**
+   * Overriding default method because we don't want to invalidate authentication. Doing so would
+   * remove our PRE_AUTHENTICATED role, which would kick us out of the verification process
+   */
   @Override
   protected void unsuccessfulAuthentication(HttpServletRequest request,
       HttpServletResponse response, AuthenticationException failed)

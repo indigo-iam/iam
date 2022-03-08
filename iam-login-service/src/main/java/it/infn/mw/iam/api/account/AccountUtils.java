@@ -26,6 +26,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -54,15 +55,27 @@ public class AccountUtils {
     return auth.getAuthorities().contains(Authorities.ROLE_ADMIN);
   }
 
+  public boolean isPreAuthenticated(Authentication auth) {
+    if (auth == null || auth.getAuthorities() == null) {
+      return false;
+    }
+
+    return auth.getAuthorities().contains(Authorities.ROLE_PRE_AUTHENTICATED);
+  }
+
   public boolean isAuthenticated() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
     return isAuthenticated(auth);
   }
 
-  // TODO check pre-authenticated status
   public boolean isAuthenticated(Authentication auth) {
-    return !(isNull(auth) || auth instanceof AnonymousAuthenticationToken);
+    if (isNull(auth) || auth instanceof AnonymousAuthenticationToken) {
+      return false;
+    } else if (auth instanceof ExtendedAuthenticationToken && !auth.isAuthenticated()) {
+      return false;
+    }
+    return true;
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount(Authentication authn) {
@@ -94,6 +107,4 @@ public class AccountUtils {
   public Optional<IamAccount> getByAccountId(String accountId) {
     return accountRepo.findByUuid(accountId);
   }
-
-  // TODO potentially add checks for pre-authenticated status
 }

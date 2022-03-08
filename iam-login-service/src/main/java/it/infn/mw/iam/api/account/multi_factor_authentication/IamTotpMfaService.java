@@ -21,34 +21,39 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 public interface IamTotpMfaService {
 
   /**
-   * Adds a TOTP secret to an account
+   * Generates and attaches a TOTP MFA secret to a user account, along with a set of recovery codes
+   * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
+   * server-side TOTP verification during the user's enabling of MFA on their account
    * 
    * @param account the account to add the secret to
-   * @return the added secret
+   * @return the new TOTP secret
    */
   IamTotpMfa addTotpMfaSecret(IamAccount account);
 
   /**
-   * Adds recovery codes to a TOTP secret
+   * Adds a set of recovery codes to a given account's TOTP secret.
    * 
-   * @param account the account who's TOTP secret we will add recovery codes to
+   * @param account the account to add recovery codes to
    * @return the affected TOTP secret
    */
   IamTotpMfa addTotpMfaRecoveryCodes(IamAccount account);
 
   /**
-   * Enable TOTP MFA on account with TOTP secret
+   * Enables TOTP MFA on a provided account. Relies on the account already having a non-active TOTP
+   * secret attached to it
    * 
    * @param account the account to enable TOTP MFA on
-   * @return the enabled secret
+   * @return the newly-enabled TOTP secret
    */
   IamTotpMfa enableTotpMfa(IamAccount account);
 
   /**
-   * Disable TOTP MFA on account with TOTP secret
+   * Disables TOTP MFA on a provided account. Relies on the account having an active TOTP secret
+   * attached to it. Disabling means to delete the secret entirely (if a user chooses to enable
+   * again, a new secret is generated anyway)
    * 
    * @param account the account to disable TOTP MFA on
-   * @return the disabled secret
+   * @return the newly-disabled TOTP MFA
    */
   IamTotpMfa disableTotpMfa(IamAccount account);
 }

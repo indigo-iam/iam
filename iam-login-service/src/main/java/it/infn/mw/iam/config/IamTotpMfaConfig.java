@@ -151,6 +151,13 @@ public class IamTotpMfaConfig {
     return filter;
   }
 
+  /**
+   * Authentication manager for the MFA verification process
+   * 
+   * @param totpCheckProvider checks a provided TOTP
+   * @param recoveryCodeCheckProvider checks a provided recovery code
+   * @return a new provider manager
+   */
   @Bean(name = "MultiFactorVerificationAuthenticationManager")
   public AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider,
       MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider) {
@@ -162,6 +169,12 @@ public class IamTotpMfaConfig {
         accountRepo, iamBaseUrl);
   }
 
+  /**
+   * If we can't verify the user in step-up authentication, redirect back to the /verify endpoint
+   * with an error param
+   * 
+   * @return failure handler to redirect to /verify endpoint
+   */
   public AuthenticationFailureHandler failureHandler() {
     return new SimpleUrlAuthenticationFailureHandler("/iam/verify?error=failure");
   }

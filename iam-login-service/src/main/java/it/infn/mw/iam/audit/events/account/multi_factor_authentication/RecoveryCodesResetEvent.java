@@ -21,8 +21,7 @@ public class RecoveryCodesResetEvent extends MultiFactorEvent {
 
   public static final String TEMPLATE = "MFA recovery codes reset on account '%s'";
 
-  // TODO add this in
-  // private static final long serialVersionUID = 3213253939764135733L;
+  private static final long serialVersionUID = 1L;
 
   public RecoveryCodesResetEvent(Object source, IamAccount account) {
     super(source, account, String.format(TEMPLATE, account.getUsername()));

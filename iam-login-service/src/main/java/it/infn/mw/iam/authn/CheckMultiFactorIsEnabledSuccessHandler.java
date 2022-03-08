@@ -36,6 +36,13 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+import it.infn.mw.iam.authn.util.Authorities;
+
+/**
+ * Success handler for the normal login flow. This determines if MFA is enabled on an account and,
+ * if so, redirects the user to a verification page. Otherwise, the default success handler is
+ * called
+ */
 public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSuccessHandler {
 
   private final AccountUtils accountUtils;
@@ -60,25 +67,32 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
 
   protected void handle(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
-    boolean isMfaEnabled = isMfaEnabled(authentication);
+    boolean isPreAuthenticated = isPreAuthenticated(authentication);
 
     if (response.isCommitted()) {
       System.out
         .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
       return;
-    } else if (isMfaEnabled) {
-      // session.setAttribute(REQUESTING_SIGNATURE, true);
+    } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }
   }
 
-  protected boolean isMfaEnabled(final Authentication authentication) {
+  /**
+   * If the user account is MFA enabled, the authentication provider would have assigned a role of
+   * PRE_AUTHENTICATED at this stage. This function verifies that to determine if we need
+   * redirecting to the verification page
+   * 
+   * @param authentication the user authentication
+   * @return true if PRE_AUTHENTICATED
+   */
+  protected boolean isPreAuthenticated(final Authentication authentication) {
     final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
     for (final GrantedAuthority grantedAuthority : authorities) {
       String authorityName = grantedAuthority.getAuthority();
-      if (authorityName.equals("ROLE_PRE_AUTHENTICATED")) {
+      if (authorityName.equals(Authorities.ROLE_PRE_AUTHENTICATED.getAuthority())) {
         return true;
       }
     }
@@ -86,6 +100,15 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
     return false;
   }
 
+  /**
+   * This calls the normal success handler if the user does not have MFA enabled.
+   * 
+   * @param request
+   * @param response
+   * @param auth the user authentication
+   * @throws IOException
+   * @throws ServletException
+   */
   protected void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 

@@ -46,7 +46,6 @@ public class MultiFactorSettingsDTO {
 
   /**
    * @param authenticatorAppActive new status of authenticator app
-   * @return nothing
    */
   public void setAuthenticatorAppActive(final boolean authenticatorAppActive) {
     this.authenticatorAppActive = authenticatorAppActive;

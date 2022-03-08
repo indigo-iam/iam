@@ -23,6 +23,9 @@ import it.infn.mw.iam.config.IamProperties.Logo;
 
 import com.google.common.base.Strings;
 
+/**
+ * Config for the Verify button that appears at the /iam/verify MFA endpoint
+ */
 @Component
 public class DefaultMultiFactorVerificationPageConfiguration
     implements MultiFactorVerificationPageConfiguration {

@@ -16,9 +16,7 @@
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error;
 
 public class BadMfaCodeError extends RuntimeException {
-  /**
-  * 
-  */
+
   private static final long serialVersionUID = 1L;
 
   public BadMfaCodeError(String msg) {

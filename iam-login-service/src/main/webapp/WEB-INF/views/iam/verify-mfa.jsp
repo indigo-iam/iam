@@ -32,15 +32,13 @@
           <strong>
             <spring:message code="login.error" />
           </strong>
-          <!-- TODO - change code to below div when fixing issue with reading exception message -->
-          <div>Bad code</div>
-          <!-- <div>${SPRING_SECURITY_LAST_EXCEPTION.message}</div> -->
+          <div>${SPRING_SECURITY_LAST_EXCEPTION.message}</div>
         </div>
       </c:if>
     </div>
 
-    <!-- Can be extended later on so that, instead of displaying each factor one after the other, display buttons which, when pressed, open up that factor -->
-    <!-- Also, for the sake of convenience, detect that if only one additional factor is configured, automatically display that instead --> 
+    <!-- Displays additional factors of authentication one after the other. For example, if hardwareKeyActive, show that form. As there is only one available right now, only that one is displayed. -->
+    <!-- If additional factors are implemented, we could improve this so that, instead of displaying each factor one after the other, display buttons which, when pressed, open up that factor -->
     <c:if test="${factors.authenticatorAppActive}">
       <div id="auth-app">
         <jsp:include page="authenticator-app/verify-authenticator-app-form.jsp" />

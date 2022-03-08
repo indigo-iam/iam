@@ -41,13 +41,14 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 //TODO when unauthenticated and navigating to other pages like /dashboard, we redirect to /login. But here we show up as unauthorized. Can we replicate the behaviour of /dashboard?
 
+/**
+ * Presents the step-up authentication page for verifying identity after successful username +
+ * password authentication. Only accessible if the user is pre-authenticated, i.e. has authenticated
+ * with username + password but not fully authenticated yet
+ */
 @Controller
 @RequestMapping(MFA_VERIFY_URL)
 public class MfaVerifyController {
-
-  // TODO - step up authentication page can't read SPRING_SECURITY_LAST_EXCEPTION.message to display
-  // "Bad code" error. Fix this and use
-  // ExternalAuthenticationHandlerSupport.saveAuthenticationErrorInSession() as a reference
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
   final IamAccountRepository accountRepository;
@@ -71,6 +72,12 @@ public class MfaVerifyController {
     return "iam/verify-mfa";
   }
 
+  /**
+   * Populates a DTO containing info on which additional factors of authentication are active
+   * 
+   * @param account the MFA-enabled account
+   * @return DTO with populated settings
+   */
   private MultiFactorSettingsDTO populateMfaSettings(IamAccount account) {
     MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
 
