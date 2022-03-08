@@ -42,8 +42,8 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public class MultiFactorSettingsController {
 
   public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
-  final IamAccountRepository accountRepository;
-  final IamTotpMfaRepository totpMfaRepository;
+  private final IamAccountRepository accountRepository;
+  private final IamTotpMfaRepository totpMfaRepository;
 
   @Autowired
   public MultiFactorSettingsController(IamAccountRepository accountRepository,

@@ -78,8 +78,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @EnableWebSecurity
 public class IamWebSecurityConfig {
 
-
-
   @Bean
   public SecurityEvaluationContextExtension contextExtension() {
     return new SecurityEvaluationContextExtension();
@@ -177,14 +175,18 @@ public class IamWebSecurityConfig {
         .and()
           .formLogin()
             .loginPage("/login")
-            .failureUrl("/login?error=failure") // this line and line below it now may not be used. They act upon the UsernamePasswordAuthenticationFilter, which has been replaced
+            .failureUrl("/login?error=failure")
             .successHandler(successHandler())
         .and()
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
         .and()
-          .addFilterAt(new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler(), failureHandler()), UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+
+          // Need to replace the UsernamePasswordAuthenticationFilter because we are now making use of the ExtendedAuthenticationToken globally
+          .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+          // Applied in the OAuth2 login flow
           .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
@@ -201,7 +203,11 @@ public class IamWebSecurityConfig {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
-    @Bean
+    public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
+      return new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler(),
+          failureHandler());
+    }
+
     public ExtendedHttpServletRequestFilter extendedHttpServletRequestFilter() {
       return new ExtendedHttpServletRequestFilter();
     }
@@ -344,6 +350,10 @@ public class IamWebSecurityConfig {
     }
   }
 
+  /**
+   * Configure the login flow for the step-up authentication. This takes place at the /iam/verify
+   * endpoint
+   */
   @Configuration
   @Order(102)
   public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
@@ -356,7 +366,6 @@ public class IamWebSecurityConfig {
     @Qualifier("ResetOrSkipRecoveryCodesFilter")
     private ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter;
 
-    @Bean
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
       LoginUrlAuthenticationEntryPoint entryPoint =
           new LoginUrlAuthenticationEntryPoint("/iam/verify");
@@ -380,6 +389,10 @@ public class IamWebSecurityConfig {
     }
   }
 
+  /**
+   * Configure the endpoint where users choose to either reset their recovery codes or continue with
+   * authentication process. Only used when a user provides a recovery code as verification
+   */
   @Configuration
   @Order(103)
   public static class RecoveryCodeConfigurationAdapter extends WebSecurityConfigurerAdapter {
@@ -399,6 +412,10 @@ public class IamWebSecurityConfig {
     }
   }
 
+  /**
+   * Configure the endpoint for viewing recovery codes during the auth flow, following a recovery
+   * code reset
+   */
   @Configuration
   @Order(104)
   public static class RecoveryCodeViewConfigurationAdapter extends WebSecurityConfigurerAdapter {

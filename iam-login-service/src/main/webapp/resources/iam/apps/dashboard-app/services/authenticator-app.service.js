@@ -35,7 +35,6 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 		return $http.put('/iam/authenticator-app/add-secret');
 	}
 
-	// TODO two functions are broadly similar. This could be simplified into the foundations for step-up authentication
 	function enableAuthenticatorApp(code) {
 
 		var data = $httpParamSerializerJQLike({

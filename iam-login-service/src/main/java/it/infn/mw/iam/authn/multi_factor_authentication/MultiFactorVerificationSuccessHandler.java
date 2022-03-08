@@ -16,18 +16,20 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
-import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.TOTP_VERIFIED;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.RECOVERY_CODE_VERIFIED;
+import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
 
 import java.io.IOException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-// import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -36,6 +38,10 @@ import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+/**
+ * Determines if a recovery code was used to authenticate. If so, we need to redirect to the page
+ * that asks if the user wants to reset their recovery codes or skip this step to continue onwards.
+ */
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
 
   private final AccountUtils accountUtils;
@@ -56,15 +62,17 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
     handle(request, response, authentication);
+    clearAuthenticationAttributes(request);
   }
 
-  protected void handle(HttpServletRequest request, HttpServletResponse response,
+  private void handle(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
     if (response.isCommitted()) {
       System.out
         .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
       return;
     } else {
+      // If a recovery code was used, RECOVERY_CODE_VERIFIED attribute will exist in the request
       Object recoveryCodeVerifiedAttribute = request.getAttribute(RECOVERY_CODE_VERIFIED);
       if (recoveryCodeVerifiedAttribute != null
           && (boolean) recoveryCodeVerifiedAttribute == Boolean.TRUE) {
@@ -75,7 +83,7 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     }
   }
 
-  public void continueWithDefaultSuccessHandler(HttpServletRequest request,
+  private void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =
@@ -84,6 +92,16 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     EnforceAupSignatureSuccessHandler handler = new EnforceAupSignatureSuccessHandler(delegate,
         aupSignatureCheckService, accountUtils, accountRepo);
     handler.onAuthenticationSuccess(request, response, auth);
+  }
+
+  protected void clearAuthenticationAttributes(HttpServletRequest request) {
+    HttpSession session = request.getSession(false);
+    if (session == null) {
+      return;
+    }
+    session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
+    request.removeAttribute(TOTP_VERIFIED);
+    request.removeAttribute(RECOVERY_CODE_VERIFIED);
   }
 }
 

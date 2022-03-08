@@ -42,7 +42,6 @@ public class SecretAndDataUriDTO {
 
   /**
    * @param secret the new secret
-   * @return nothing
    */
   public void setSecret(final String secret) {
     this.secret = secret;
@@ -59,7 +58,6 @@ public class SecretAndDataUriDTO {
 
   /**
    * @param dataUri the new QR code data URI
-   * @return nothing
    */
   public void setDataUri(final String dataUri) {
     this.dataUri = dataUri;

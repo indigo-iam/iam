@@ -42,11 +42,11 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-// TODO if the resetting of recovery codes after use is a requirement, we need to prevent the user
-// from accessing IAM webpages after authenticating. This may require an additional ROLE for
-// handling this. Should also try and tie this in with a generic page for resetting recovery codes
-// for anyone who is logged in
-
+/**
+ * Provides webpages related to recovery codes. Most of this appears if the user chooses to use a
+ * recovery code in the MFA login flow. Also partially used in the multi-factor settings menu on the
+ * dashboard.
+ */
 @Controller
 public class RecoveryCodeManagementController {
 
@@ -67,12 +67,21 @@ public class RecoveryCodeManagementController {
     this.recoveryCodeResetService = recoveryCodeResetService;
   }
 
+  /**
+   * @return page for asking if the user wishes to reset their recovery codes or skip this step
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_RESET_URL)
   public String getResetRecoveryCodesResetView() {
     return RECOVERY_CODE_RESET_URL;
   }
 
+  /**
+   * Calls method to fetch account MFA recovery codes to display on returned page
+   * 
+   * @param model to add recovery codes array to
+   * @return page for viewing account MFA recovery codes post-reset
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_VIEW_URL)
   public String viewRecoveryCodes(ModelMap model) {
@@ -82,6 +91,12 @@ public class RecoveryCodeManagementController {
     return RECOVERY_CODE_VIEW_URL;
   }
 
+  /**
+   * Populates and returns the array of recovery codes attached to the authenticated user account
+   * Also called in the MFA settings menu for display
+   * 
+   * @return the array of recovery codes
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_GET_URL)
   public @ResponseBody String[] getRecoveryCodes() {
@@ -108,6 +123,12 @@ public class RecoveryCodeManagementController {
     return codes;
   }
 
+  /**
+   * Request to reset the recovery codes on the authenticated account. TODO may wish to protect this
+   * endpoint a bit more to prevent this being done outside of the regular flow
+   * 
+   * @return 200 response upon success
+   */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.PUT, path = RECOVERY_CODE_RESET_URL)
   public ResponseEntity<String> resetRecoveryCodes() {

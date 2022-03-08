@@ -24,6 +24,26 @@ import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 
+/**
+ * <p>
+ * An extended auth token that functions the same as a {@code UsernamePasswordAuthenticationToken}
+ * but with some additional fields detailing more information about the methods of authentication
+ * used.
+ * 
+ * <p>
+ * The additional information includes:
+ * 
+ * <ul>
+ * <li>{@code Set<AuthenticationMethodReferences} - details the methods of authentication used to
+ * login. This is for providing the {@code amr} claim in an OAuth2 id_token provided to a
+ * client</li>
+ * <li>{@code String totp} - if authenticating with a TOTP, this field is set</li>
+ * <li>{@code String recoveryCode} - if authenticating with a recovery code, this field is set</li>
+ * <li>{@code fullyAuthenticatedAuthorities} - the authorities the user will be granted if full
+ * authentication takes place. If an MFA user has only authenticated with a username and password so
+ * far, they will only officially have an authority of PRE_AUTHENTICATED
+ * </ul>
+ */
 public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
   private final Object principal;
@@ -31,6 +51,7 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
   private String recoveryCode;
+  private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -45,22 +66,22 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.credentials = credentials;
   }
 
-  public ExtendedAuthenticationToken(Object principal, Object credentials,
-      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-    super(null);
-    this.principal = principal;
-    this.credentials = credentials;
-    this.authenticationMethodReferences = authenticationMethodReferences;
-  }
+  // public ExtendedAuthenticationToken(Object principal, Object credentials,
+  // Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
+  // super(null);
+  // this.principal = principal;
+  // this.credentials = credentials;
+  // this.authenticationMethodReferences = authenticationMethodReferences;
+  // }
 
-  public ExtendedAuthenticationToken(Object principal, Object credentials,
-      Collection<? extends GrantedAuthority> authorities,
-      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-    super(authorities);
-    this.principal = principal;
-    this.credentials = credentials;
-    this.authenticationMethodReferences = authenticationMethodReferences;
-  }
+  // public ExtendedAuthenticationToken(Object principal, Object credentials,
+  // Collection<? extends GrantedAuthority> authorities,
+  // Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
+  // super(authorities);
+  // this.principal = principal;
+  // this.credentials = credentials;
+  // this.authenticationMethodReferences = authenticationMethodReferences;
+  // }
 
   public ExtendedAuthenticationToken(ExtendedAuthenticationToken other) {
     super(other.getAuthorities());
@@ -69,6 +90,16 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.authenticationMethodReferences = other.getAuthenticationMethodReferences();
     this.totp = other.getTotp();
     this.recoveryCode = other.getRecoveryCode();
+    this.fullyAuthenticatedAuthorities = other.getFullyAuthenticatedAuthorities();
+  }
+
+  public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
+    return fullyAuthenticatedAuthorities;
+  }
+
+  public void setFullyAuthenticatedAuthorities(
+      Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
+    this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
   }
 
   public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
@@ -116,6 +147,8 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     sb.append("Details=").append(getDetails()).append(", ");
     sb.append("Granted Authorities=").append(this.getAuthorities()).append(", ");
     sb.append("Authentication Method References=").append(this.getAuthenticationMethodReferences());
+    sb.append("TOTP=").append(this.getTotp());
+    sb.append("Recovery code=").append(this.getRecoveryCode());
     sb.append("]");
     return sb.toString();
   }

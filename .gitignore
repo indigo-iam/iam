@@ -29,4 +29,3 @@ travis/travis-mitre-build.out
 
 *.iml
 .idea
-**/.factorypath

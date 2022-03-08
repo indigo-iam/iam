@@ -40,6 +40,10 @@ import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+/**
+ * Filter for handling user response from page to view recovery codes post-authentication and
+ * post-reset. Only response is to continue with the normal success handler.
+ */
 public class ViewRecoveryCodesFilter extends GenericFilterBean {
 
   private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER =
@@ -76,7 +80,7 @@ public class ViewRecoveryCodesFilter extends GenericFilterBean {
     continueWithDefaultSuccessHandler(request, response, auth);
   }
 
-  protected boolean requiresProcessing(HttpServletRequest request, HttpServletResponse response) {
+  private boolean requiresProcessing(HttpServletRequest request, HttpServletResponse response) {
     if (DEFAULT_ANT_PATH_REQUEST_MATCHER.matches(request)) {
       return true;
     }
@@ -87,7 +91,7 @@ public class ViewRecoveryCodesFilter extends GenericFilterBean {
     return false;
   }
 
-  protected void continueWithDefaultSuccessHandler(HttpServletRequest request,
+  private void continueWithDefaultSuccessHandler(HttpServletRequest request,
       HttpServletResponse response, Authentication auth) throws IOException, ServletException {
 
     AuthenticationSuccessHandler delegate =

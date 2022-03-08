@@ -40,6 +40,8 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 @Service
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
 
+  public static final int RECOVERY_CODE_QUANTITY = 6;
+
   private final IamAccountService iamAccountService;
   private final IamTotpMfaRepository totpMfaRepository;
   private final SecretGenerator secretGenerator;
@@ -73,7 +75,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   /**
    * Generates and attaches a TOTP MFA secret to a user account, along with a set of recovery codes
    * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
-   * server-side TOTP verification
+   * server-side TOTP verification during the user's enabling of MFA on their account
    * 
    * @param account the account to add the secret to
    * @return the new TOTP secret
@@ -171,7 +173,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
   private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) {
-    String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(6);
+    String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
     for (String code : recoveryCodeStrings) {
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
