@@ -56,4 +56,22 @@ public interface IamTotpMfaService {
    * @return the newly-disabled TOTP MFA
    */
   IamTotpMfa disableTotpMfa(IamAccount account);
+
+  /**
+   * Verifies a provided TOTP against an account multi-factor secret
+   * 
+   * @param account the account whose secret we will check against
+   * @param totp the TOTP to validate
+   * @return true if valid, false otherwise
+   */
+  boolean verifyTotp(IamAccount account, String totp);
+
+  /**
+   * Verifies a provided recovery code against an account
+   * 
+   * @param account the account we will check against
+   * @param recoveryCode the recovery code to validate
+   * @return true if valid, false otherwise
+   */
+  boolean verifyRecoveryCode(IamAccount account, String recoveryCode);
 }

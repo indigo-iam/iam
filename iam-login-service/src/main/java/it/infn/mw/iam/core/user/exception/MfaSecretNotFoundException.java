@@ -15,7 +15,9 @@
  */
 package it.infn.mw.iam.core.user.exception;
 
-public class MfaSecretNotFoundException extends IamAccountException {
+import org.springframework.security.core.AuthenticationException;
+
+public class MfaSecretNotFoundException extends AuthenticationException {
 
   private static final long serialVersionUID = 1L;
 

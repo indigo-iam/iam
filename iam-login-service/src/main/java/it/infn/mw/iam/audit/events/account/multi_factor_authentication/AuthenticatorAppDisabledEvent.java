@@ -16,6 +16,7 @@
 package it.infn.mw.iam.audit.events.account.multi_factor_authentication;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
 public class AuthenticatorAppDisabledEvent extends MultiFactorEvent {
 
@@ -23,7 +24,7 @@ public class AuthenticatorAppDisabledEvent extends MultiFactorEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public AuthenticatorAppDisabledEvent(Object source, IamAccount account) {
-    super(source, account, String.format(TEMPLATE, account.getUsername()));
+  public AuthenticatorAppDisabledEvent(Object source, IamAccount account, IamTotpMfa totpMfa) {
+    super(source, account, totpMfa, String.format(TEMPLATE, account.getUsername()));
   }
 }

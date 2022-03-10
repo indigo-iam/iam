@@ -24,11 +24,16 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 
 public class MultiFactorTestSupport {
-  public static final String TEST_USERNAME = "test-pre-authenticated-user";
-  public static final String TEST_UUID = "ceb173b4-28e3-43ad-aaf7-15d3730e2b90";
+  public static final String TEST_USERNAME = "test-user";
+  public static final String TEST_UUID = "a23deabf-88a7-47af-84b5-1d535a1b267c";
   public static final String TEST_EMAIL = "test@example.org";
   public static final String TEST_GIVEN_NAME = "Test";
   public static final String TEST_FAMILY_NAME = "User";
+  public static final String TOTP_USERNAME = "test-mfa-user";
+  public static final String TOTP_UUID = "ceb173b4-28e3-43ad-aaf7-15d3730e2b90";
+  public static final String TOTP_EMAIL = "test-mfa@example.org";
+  public static final String TOTP_GIVEN_NAME = "Test";
+  public static final String TOTP_FAMILY_NAME = "Mfa";
   public static final String TOTP_MFA_SECRET = "secret";
   public static final String TOTP_RECOVERY_CODE_STRING_1 = "code-1";
   public static final String TOTP_RECOVERY_CODE_STRING_2 = "code-2";
@@ -44,6 +49,7 @@ public class MultiFactorTestSupport {
   public static final String TOTP_RECOVERY_CODE_STRING_12 = "code-12";
 
   protected final IamAccount TEST_ACCOUNT;
+  protected final IamAccount TOTP_MFA_ACCOUNT;
   protected final IamTotpMfa TOTP_MFA;
   protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_1;
   protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_2;
@@ -62,9 +68,29 @@ public class MultiFactorTestSupport {
   protected final Set<IamTotpRecoveryCode> RECOVERY_CODE_SET_SECOND;
 
   public MultiFactorTestSupport() {
+    TEST_ACCOUNT = IamAccount.newAccount();
+    TEST_ACCOUNT.setUsername(TEST_USERNAME);
+    TEST_ACCOUNT.setUuid(TEST_UUID);
+    TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
+    TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
+    TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
+
+    TEST_ACCOUNT.touch();
+
+    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
+    TOTP_MFA_ACCOUNT.setUsername(TOTP_USERNAME);
+    TOTP_MFA_ACCOUNT.setUuid(TOTP_UUID);
+    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_EMAIL);
+    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
+
+    TOTP_MFA_ACCOUNT.touch();
+
     TOTP_MFA = new IamTotpMfa();
+    TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
     TOTP_MFA.setSecret(TOTP_MFA_SECRET);
     TOTP_MFA.setActive(true);
+    TOTP_MFA.touch();
 
     TOTP_RECOVERY_CODE_1 = new IamTotpRecoveryCode(TOTP_MFA);
     TOTP_RECOVERY_CODE_2 = new IamTotpRecoveryCode(TOTP_MFA);
@@ -100,20 +126,31 @@ public class MultiFactorTestSupport {
             TOTP_RECOVERY_CODE_10, TOTP_RECOVERY_CODE_11, TOTP_RECOVERY_CODE_12));
 
     TOTP_MFA.setRecoveryCodes(RECOVERY_CODE_SET_FIRST);
-    TEST_ACCOUNT = IamAccount.newAccount();
+  }
+
+  protected void resetTestAccount() {
     TEST_ACCOUNT.setUsername(TEST_USERNAME);
     TEST_ACCOUNT.setUuid(TEST_UUID);
     TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
     TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
     TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
-    TEST_ACCOUNT.setTotpMfa(TOTP_MFA);
 
     TEST_ACCOUNT.touch();
   }
 
-  protected void resetTestAccount() {
+  protected void resetTotpAccount() {
+    TOTP_MFA_ACCOUNT.setUsername(TOTP_USERNAME);
+    TOTP_MFA_ACCOUNT.setUuid(TOTP_UUID);
+    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_EMAIL);
+    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
+
+    TOTP_MFA_ACCOUNT.touch();
+
+    TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
     TOTP_MFA.setSecret(TOTP_MFA_SECRET);
     TOTP_MFA.setActive(true);
+    TOTP_MFA.touch();
 
     TOTP_RECOVERY_CODE_1.setCode(TOTP_RECOVERY_CODE_STRING_1);
     TOTP_RECOVERY_CODE_2.setCode(TOTP_RECOVERY_CODE_STRING_2);
@@ -129,15 +166,6 @@ public class MultiFactorTestSupport {
     TOTP_RECOVERY_CODE_12.setCode(TOTP_RECOVERY_CODE_STRING_12);
 
     TOTP_MFA.setRecoveryCodes(RECOVERY_CODE_SET_FIRST);
-
-    TEST_ACCOUNT.setUsername(TEST_USERNAME);
-    TEST_ACCOUNT.setUuid(TEST_UUID);
-    TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
-    TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
-    TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
-    TEST_ACCOUNT.setTotpMfa(TOTP_MFA);
-
-    TEST_ACCOUNT.touch();
   }
 
   protected IamAccount cloneAccount(IamAccount account) {
@@ -148,26 +176,27 @@ public class MultiFactorTestSupport {
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
 
-    if (account.getTotpMfa() != null) {
-      IamTotpMfa totpMfa = new IamTotpMfa();
-      totpMfa.setSecret(account.getTotpMfa().getSecret());
-      totpMfa.setActive(account.getTotpMfa().isActive());
-
-      if (account.getTotpMfa().getRecoveryCodes() != null) {
-        Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
-        for (IamTotpRecoveryCode recoveryCode : account.getTotpMfa().getRecoveryCodes()) {
-          IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(totpMfa);
-          newCode.setCode(recoveryCode.getCode());
-          newCodes.add(newCode);
-        }
-        totpMfa.setRecoveryCodes(newCodes);
-      }
-
-      newAccount.setTotpMfa(totpMfa);
-    }
-
     newAccount.touch();
 
     return newAccount;
+  }
+
+  protected IamTotpMfa cloneTotpMfa(IamTotpMfa totpMfa) {
+    IamTotpMfa newTotpMfa = new IamTotpMfa();
+    newTotpMfa.setAccount(totpMfa.getAccount());
+    newTotpMfa.setSecret(totpMfa.getSecret());
+    newTotpMfa.setActive(totpMfa.isActive());
+
+    Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
+    for (IamTotpRecoveryCode recoveryCode : totpMfa.getRecoveryCodes()) {
+      IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(newTotpMfa);
+      newCode.setCode(recoveryCode.getCode());
+      newCodes.add(newCode);
+    }
+    newTotpMfa.setRecoveryCodes(newCodes);
+
+    newTotpMfa.touch();
+
+    return newTotpMfa;
   }
 }

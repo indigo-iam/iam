@@ -17,7 +17,6 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -25,13 +24,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 /**
  * Grants full authentication by verifying a provided MFA recovery code. Only comes into play in the
@@ -40,12 +37,12 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvider {
 
   private final IamAccountRepository accountRepo;
-  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaService totpMfaService;
 
   public MultiFactorRecoveryCodeCheckProvider(IamAccountRepository accountRepo,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaService totpMfaService) {
     this.accountRepo = accountRepo;
-    this.totpMfaRepository = totpMfaRepository;
+    this.totpMfaService = totpMfaService;
   }
 
   @Override
@@ -60,26 +57,19 @@ public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvi
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    if (!totpMfaOptional.isPresent()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    boolean valid = false;
+
+    try {
+      valid = totpMfaService.verifyRecoveryCode(account, recoveryCode);
+    } catch (MfaSecretNotFoundException e) {
+      throw e;
     }
 
-    IamTotpMfa totpMfa = totpMfaOptional.get();
-    if (!totpMfa.isActive()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    if (!valid) {
+      throw new BadCredentialsException("Bad recovery code");
     }
 
-    // Check for a matching recovery code
-    Set<IamTotpRecoveryCode> accountRecoveryCodes = totpMfa.getRecoveryCodes();
-    for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
-      String recoveryCodeString = recoveryCodeObject.getCode();
-      if (recoveryCode.equals(recoveryCodeString)) {
-        return createSuccessfulAuthentication(token);
-      }
-    }
-
-    throw new BadCredentialsException("Bad recovery code");
+    return createSuccessfulAuthentication(token);
   }
 
   protected Authentication createSuccessfulAuthentication(ExtendedAuthenticationToken token) {

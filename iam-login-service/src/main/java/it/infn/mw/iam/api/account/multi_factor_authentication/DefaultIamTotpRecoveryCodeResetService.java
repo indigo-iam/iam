@@ -52,6 +52,10 @@ public class DefaultIamTotpRecoveryCodeResetService
     this.recoveryCodeGenerator = recoveryCodeGenerator;
   }
 
+  private void recoveryCodesResetEvent(IamAccount account, IamTotpMfa totpMfa) {
+    eventPublisher.publishEvent(new RecoveryCodesResetEvent(this, account, totpMfa));
+  }
+
   @Override
   public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
     this.eventPublisher = applicationEventPublisher;
@@ -63,7 +67,7 @@ public class DefaultIamTotpRecoveryCodeResetService
    * @param account - the account to regenerate codes on
    */
   @Override
-  public void resetRecoveryCodes(IamAccount account) {
+  public IamAccount resetRecoveryCodes(IamAccount account) {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
@@ -84,7 +88,9 @@ public class DefaultIamTotpRecoveryCodeResetService
     account.touch();
     accountRepository.save(account);
     totpMfaRepository.save(totpMfa);
-    eventPublisher.publishEvent(new RecoveryCodesResetEvent(this, account));
+    recoveryCodesResetEvent(account, totpMfa);
+
+    return account;
   }
 
 }

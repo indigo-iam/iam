@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication;
+package it.infn.mw.iam.audit.events.account.multi_factor_authentication;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
-public interface IamTotpRecoveryCodeResetService {
+public class TotpVerifiedEvent extends MultiFactorEvent {
 
-  /**
-   * Regenerates the recovery codes attached to a provided MFA-enabled IAM account
-   * 
-   * @param account - the account to regenerate codes on
-   */
-  public IamAccount resetRecoveryCodes(IamAccount account);
+  public static final String TEMPLATE = "MFA TOTP verified for account '%s'";
+
+  private static final long serialVersionUID = 1L;
+
+  public TotpVerifiedEvent(Object source, IamAccount account, IamTotpMfa totpMfa) {
+    super(source, account, totpMfa, String.format(TEMPLATE, account.getUsername()));
+  }
 }

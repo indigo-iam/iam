@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.util.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.PASSWORD;
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.ONE_TIME_PASSWORD;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,23 +29,25 @@ import org.springframework.security.test.context.support.WithSecurityContextFact
 
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
-import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
+import it.infn.mw.iam.test.util.WithMockMfaUser;
 
-public class WithMockPreAuthenticatedUserSecurityContextFactory
-    implements WithSecurityContextFactory<WithMockPreAuthenticatedUser> {
+public class WithMockMfaUserSecurityContextFactory
+    implements WithSecurityContextFactory<WithMockMfaUser> {
 
   @Override
-  public SecurityContext createSecurityContext(WithMockPreAuthenticatedUser annotation) {
+  public SecurityContext createSecurityContext(WithMockMfaUser annotation) {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
 
     IamAuthenticationMethodReference pwd =
         new IamAuthenticationMethodReference(PASSWORD.getValue());
+    IamAuthenticationMethodReference otp =
+        new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
     Set<IamAuthenticationMethodReference> refs =
-        new HashSet<IamAuthenticationMethodReference>(Arrays.asList(pwd));
+        new HashSet<IamAuthenticationMethodReference>(Arrays.asList(pwd, otp));
 
     ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(annotation.username(), "",
         AuthorityUtils.createAuthorityList(annotation.authorities()));
-    token.setAuthenticated(false);
+    token.setAuthenticated(true);
     token.setAuthenticationMethodReferences(refs);
     context.setAuthentication(token);
     return context;
