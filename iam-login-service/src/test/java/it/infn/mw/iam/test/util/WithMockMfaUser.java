@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.account.multi_factor_authentication;
+package it.infn.mw.iam.test.util;
 
-import it.infn.mw.iam.persistence.model.IamAccount;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public interface IamTotpRecoveryCodeResetService {
+import org.springframework.security.test.context.support.WithSecurityContext;
 
-  /**
-   * Regenerates the recovery codes attached to a provided MFA-enabled IAM account
-   * 
-   * @param account - the account to regenerate codes on
-   */
-  public IamAccount resetRecoveryCodes(IamAccount account);
+import it.infn.mw.iam.test.util.multi_factor_authentication.WithMockMfaUserSecurityContextFactory;
+
+@Retention(RetentionPolicy.RUNTIME)
+@WithSecurityContext(factory = WithMockMfaUserSecurityContextFactory.class)
+public @interface WithMockMfaUser {
+
+  String username() default "test-mfa-user";
+
+  String[] authorities() default {"ROLE_USER"};
 }

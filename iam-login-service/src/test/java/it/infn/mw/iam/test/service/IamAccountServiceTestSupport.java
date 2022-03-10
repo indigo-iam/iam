@@ -15,17 +15,11 @@
  */
 package it.infn.mw.iam.test.service;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class IamAccountServiceTestSupport {
@@ -43,12 +37,6 @@ public class IamAccountServiceTestSupport {
   public static final String CICCIO_EMAIL = "ciccio@example.org";
   public static final String CICCIO_GIVEN_NAME = "Ciccio";
   public static final String CICCIO_FAMILY_NAME = "Paglia";
-
-  public static final String TOTP_MFA_ACCOUNT_UUID = "b3e7dd7f-a1ac-eda0-371d-b902a6c5cee2";
-  public static final String TOTP_MFA_ACCOUNT_USERNAME = "totp";
-  public static final String TOTP_MFA_ACCOUNT_EMAIL = "totp@example.org";
-  public static final String TOTP_MFA_ACCOUNT_GIVEN_NAME = "Totp";
-  public static final String TOTP_MFA_ACCOUNT_FAMILY_NAME = "Mfa";
 
   public static final String TEST_SAML_ID_IDP_ID = "idpId";
   public static final String TEST_SAML_ID_USER_ID = "userId";
@@ -70,25 +58,9 @@ public class IamAccountServiceTestSupport {
   public static final String TEST_X509_CERTIFICATE_ISSUER_2 = "x509-cert-issuer-2";
   public static final String TEST_X509_CERTIFICATE_LABEL_2 = "x509-cert-label-2";
 
-  public static final String TOTP_MFA_SECRET = "secret";
-
-  public static final String TOTP_RECOVERY_CODE_STRING_1 = "code-1";
-  public static final String TOTP_RECOVERY_CODE_STRING_2 = "code-2";
-  public static final String TOTP_RECOVERY_CODE_STRING_3 = "code-3";
-  public static final String TOTP_RECOVERY_CODE_STRING_4 = "code-4";
-  public static final String TOTP_RECOVERY_CODE_STRING_5 = "code-5";
-  public static final String TOTP_RECOVERY_CODE_STRING_6 = "code-6";
-  public static final String TOTP_RECOVERY_CODE_STRING_7 = "code-7";
-  public static final String TOTP_RECOVERY_CODE_STRING_8 = "code-8";
-  public static final String TOTP_RECOVERY_CODE_STRING_9 = "code-9";
-  public static final String TOTP_RECOVERY_CODE_STRING_10 = "code-10";
-  public static final String TOTP_RECOVERY_CODE_STRING_11 = "code-11";
-  public static final String TOTP_RECOVERY_CODE_STRING_12 = "code-12";
-
 
   protected final IamAccount TEST_ACCOUNT;
   protected final IamAccount CICCIO_ACCOUNT;
-  protected final IamAccount TOTP_MFA_ACCOUNT;
   protected final IamAuthority ROLE_USER_AUTHORITY;
   protected final IamSamlId TEST_SAML_ID;
   protected final IamOidcId TEST_OIDC_ID;
@@ -97,15 +69,6 @@ public class IamAccountServiceTestSupport {
   protected final IamSshKey TEST_SSH_KEY_2;
   protected final IamX509Certificate TEST_X509_CERTIFICATE_1;
   protected final IamX509Certificate TEST_X509_CERTIFICATE_2;
-
-  protected final IamTotpMfa TOTP_MFA;
-
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_1;
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_2;
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_3;
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_4;
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_5;
-  protected final IamTotpRecoveryCode TOTP_RECOVERY_CODE_6;
 
   public IamAccountServiceTestSupport() {
     TEST_ACCOUNT = IamAccount.newAccount();
@@ -146,37 +109,6 @@ public class IamAccountServiceTestSupport {
     TEST_X509_CERTIFICATE_2.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_2);
     TEST_X509_CERTIFICATE_2.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_2);
     TEST_X509_CERTIFICATE_2.setCertificate(TEST_X509_CERTIFICATE_VALUE_2);
-
-    TOTP_MFA = new IamTotpMfa();
-
-    TOTP_MFA.setSecret(TOTP_MFA_SECRET);
-    TOTP_MFA.setActive(true);
-
-    TOTP_RECOVERY_CODE_1 = new IamTotpRecoveryCode(TOTP_MFA);
-    TOTP_RECOVERY_CODE_2 = new IamTotpRecoveryCode(TOTP_MFA);
-    TOTP_RECOVERY_CODE_3 = new IamTotpRecoveryCode(TOTP_MFA);
-    TOTP_RECOVERY_CODE_4 = new IamTotpRecoveryCode(TOTP_MFA);
-    TOTP_RECOVERY_CODE_5 = new IamTotpRecoveryCode(TOTP_MFA);
-    TOTP_RECOVERY_CODE_6 = new IamTotpRecoveryCode(TOTP_MFA);
-
-    TOTP_RECOVERY_CODE_1.setCode(TOTP_RECOVERY_CODE_STRING_1);
-    TOTP_RECOVERY_CODE_2.setCode(TOTP_RECOVERY_CODE_STRING_2);
-    TOTP_RECOVERY_CODE_3.setCode(TOTP_RECOVERY_CODE_STRING_3);
-    TOTP_RECOVERY_CODE_4.setCode(TOTP_RECOVERY_CODE_STRING_4);
-    TOTP_RECOVERY_CODE_5.setCode(TOTP_RECOVERY_CODE_STRING_5);
-    TOTP_RECOVERY_CODE_6.setCode(TOTP_RECOVERY_CODE_STRING_6);
-
-    TOTP_MFA
-      .setRecoveryCodes(new HashSet<>(Arrays.asList(TOTP_RECOVERY_CODE_1, TOTP_RECOVERY_CODE_2,
-          TOTP_RECOVERY_CODE_3, TOTP_RECOVERY_CODE_4, TOTP_RECOVERY_CODE_5, TOTP_RECOVERY_CODE_6)));
-
-    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
-    TOTP_MFA_ACCOUNT.setUuid(TOTP_MFA_ACCOUNT_UUID);
-    TOTP_MFA_ACCOUNT.setUsername(TOTP_MFA_ACCOUNT_USERNAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_MFA_ACCOUNT_EMAIL);
-    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_MFA_ACCOUNT_GIVEN_NAME);
-    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_MFA_ACCOUNT_FAMILY_NAME);
-    TOTP_MFA_ACCOUNT.setTotpMfa(TOTP_MFA);
   }
 
   public IamAccount cloneAccount(IamAccount account) {
@@ -187,26 +119,8 @@ public class IamAccountServiceTestSupport {
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
 
-    if (account.getTotpMfa() != null) {
-      IamTotpMfa totpMfa = new IamTotpMfa();
-      totpMfa.setSecret(account.getTotpMfa().getSecret());
-      totpMfa.setActive(account.getTotpMfa().isActive());
-
-      if (account.getTotpMfa().getRecoveryCodes() != null) {
-        Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
-        for (IamTotpRecoveryCode recoveryCode : account.getTotpMfa().getRecoveryCodes()) {
-          IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(totpMfa);
-          newCode.setCode(recoveryCode.getCode());
-          newCodes.add(newCode);
-        }
-        totpMfa.setRecoveryCodes(newCodes);
-      }
-
-      newAccount.setTotpMfa(totpMfa);
-    }
+    newAccount.touch();
 
     return newAccount;
   }
-
-
 }

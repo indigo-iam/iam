@@ -23,12 +23,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -43,7 +41,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import com.google.common.collect.Sets;
 
@@ -62,8 +59,6 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
-import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -76,9 +71,6 @@ import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
-import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
-import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
-import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -87,8 +79,6 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
@@ -1064,128 +1054,5 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
-  }
-
-  @Test
-  public void testAssignsTotpMfaToAccount() {
-    IamAccount account = cloneAccount(TEST_ACCOUNT);
-    accountService.addTotpMfaSecret(account);
-    verify(accountRepo, times(1)).save(TEST_ACCOUNT);
-    verify(secretGenerator, times(1)).generate();
-    verify(recoveryCodeGenerator, times(1)).generateCodes(anyInt());
-
-    assertNotNull(account.getTotpMfa().getSecret());
-    assertFalse(account.getTotpMfa().isActive());
-  }
-
-  @Test(expected = MfaSecretAlreadyBoundException.class)
-  public void testAddMfaSecret_whenMfaSecretAssignedFails() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    try {
-      accountService.addTotpMfaSecret(account);
-    } catch (MfaSecretAlreadyBoundException e) {
-      assertThat(e.getMessage(),
-          equalTo("A multi-factor secret is already assigned to this account"));
-      throw e;
-    }
-  }
-
-  @Test
-  public void testAddsMfaRecoveryCodesToAccount() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-    Set<IamTotpRecoveryCode> originalCodes = new HashSet<>(account.getTotpMfa().getRecoveryCodes());
-
-    try {
-      account = accountService.addTotpMfaRecoveryCodes(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
-
-    Set<IamTotpRecoveryCode> newCodes = account.getTotpMfa().getRecoveryCodes();
-    assertThat(originalCodes.toArray(), not(equalTo(newCodes.toArray())));
-  }
-
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testAddsMfaRecoveryCode_whenNoMfaSecretAssignedFails() {
-    IamAccount account = cloneAccount(TEST_ACCOUNT);
-
-    try {
-      accountService.addTotpMfaRecoveryCodes(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
-  }
-
-  @Test
-  public void testEnablesTotpMfa() {
-    IamAccount account = cloneAccount(TEST_ACCOUNT);
-    IamTotpMfa totpMfa = new IamTotpMfa(account);
-    totpMfa.setSecret("secret");
-    totpMfa.setActive(false);
-    account.setTotpMfa(totpMfa);
-
-    accountService.enableTotpMfa(account);
-    verify(accountRepo, times(1)).save(TEST_ACCOUNT);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
-
-    ApplicationEvent event = eventCaptor.getValue();
-    assertThat(event, instanceOf(AuthenticatorAppEnabledEvent.class));
-
-    AuthenticatorAppEnabledEvent e = (AuthenticatorAppEnabledEvent) event;
-    assertTrue(e.getAccount().getTotpMfa().isActive());
-  }
-
-  @Test(expected = TotpMfaAlreadyEnabledException.class)
-  public void testEnableTotpMfa_whenTotpMfaEnabledFails() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    try {
-      accountService.enableTotpMfa(account);
-    } catch (TotpMfaAlreadyEnabledException e) {
-      assertThat(e.getMessage(), equalTo("TOTP MFA is already enabled on this account"));
-      throw e;
-    }
-  }
-
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testEnablesTotpMfa_whenNoMfaSecretAssignedFails() {
-    IamAccount account = cloneAccount(TEST_ACCOUNT);
-
-    try {
-      accountService.enableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
-  }
-
-  @Test
-  public void testDisablesTotpMfa() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    accountService.disableTotpMfa(account);
-    verify(accountRepo, times(1)).save(TOTP_MFA_ACCOUNT);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
-
-    ApplicationEvent event = eventCaptor.getValue();
-    assertThat(event, instanceOf(AuthenticatorAppDisabledEvent.class));
-
-    AuthenticatorAppDisabledEvent e = (AuthenticatorAppDisabledEvent) event;
-    assertThat(e.getAccount().getTotpMfa(), nullValue());
-  }
-
-  @Test(expected = MfaSecretNotFoundException.class)
-  public void testDisablesTotpMfa_whenNoMfaSecretAssignedFails() {
-    IamAccount account = cloneAccount(TEST_ACCOUNT);
-
-    try {
-      accountService.disableTotpMfa(account);
-    } catch (MfaSecretNotFoundException e) {
-      assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
-      throw e;
-    }
   }
 }

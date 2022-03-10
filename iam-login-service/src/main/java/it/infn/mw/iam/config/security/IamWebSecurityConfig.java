@@ -19,6 +19,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import javax.servlet.RequestDispatcher;
 
@@ -368,19 +369,19 @@ public class IamWebSecurityConfig {
 
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
       LoginUrlAuthenticationEntryPoint entryPoint =
-          new LoginUrlAuthenticationEntryPoint("/iam/verify");
+          new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
       return entryPoint;
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-      http.antMatcher("/iam/verify**")
+      http.antMatcher(MFA_VERIFY_URL + "**")
         .authorizeRequests()
         .anyRequest()
         .hasRole("PRE_AUTHENTICATED")
         .and()
         .formLogin()
-        .failureUrl("/iam/verify?error=failure")
+        .failureUrl(MFA_VERIFY_URL + "?error=failure")
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())

@@ -26,7 +26,7 @@ import it.infn.mw.iam.test.util.multi_factor_authentication.WithMockPreAuthentic
 @WithSecurityContext(factory = WithMockPreAuthenticatedUserSecurityContextFactory.class)
 public @interface WithMockPreAuthenticatedUser {
 
-  String username() default "test-pre-authenticated-user";
+  String username() default "test-mfa-user";
 
   String[] authorities() default {"ROLE_PRE_AUTHENTICATED"};
 }

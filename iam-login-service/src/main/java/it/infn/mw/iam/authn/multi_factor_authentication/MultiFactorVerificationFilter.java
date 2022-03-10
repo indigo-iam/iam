@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+
 import java.io.IOException;
 import java.nio.file.ProviderNotFoundException;
 
@@ -47,7 +49,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   public static final String RECOVERY_CODE_VERIFIED = "RECOVERY_CODE_VERIFIED";
 
   public static final AntPathRequestMatcher DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER =
-      new AntPathRequestMatcher("/iam/verify", "POST");
+      new AntPathRequestMatcher(MFA_VERIFY_URL, "POST");
 
   private final boolean postOnly = true;
 
