@@ -23,26 +23,26 @@ import org.hibernate.validator.constraints.Length;
 /**
  * DTO containing a TOTP for MFA secrets
  */
-public class TotpDTO {
+public class CodeDTO {
 
-  @NotEmpty(message = "Totp cannot be empty")
-  @Length(min = 6, max = 6, message = "Totp must be six characters in length")
-  @Min(value = 0L, message = "Totp must be a numerical value")
-  private String totp;
+  @NotEmpty(message = "Code cannot be empty")
+  @Length(min = 6, max = 6, message = "Code must be six characters in length")
+  @Min(value = 0L, message = "Code must be a numerical value")
+  private String code;
 
 
   /**
    * @return the code
    */
   public String getCode() {
-    return totp;
+    return code;
   }
 
 
   /**
-   * @param totp new code
+   * @param code new code
    */
-  public void setTotp(final String totp) {
-    this.totp = totp;
+  public void setCode(final String code) {
+    this.code = code;
   }
 }

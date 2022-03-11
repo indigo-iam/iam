@@ -97,9 +97,13 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   @Override
   public IamTotpMfa addTotpMfaSecret(IamAccount account) {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-      throw new MfaSecretAlreadyBoundException(
-          "A multi-factor secret is already assigned to this account");
+    if (totpMfaOptional.isPresent()) {
+      if (totpMfaOptional.get().isActive()) {
+        throw new MfaSecretAlreadyBoundException(
+            "A multi-factor secret is already assigned to this account");
+      }
+
+      totpMfaRepository.delete(totpMfaOptional.get());
     }
 
     // Generate secret
@@ -201,10 +205,6 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
-    if (!totpMfa.isActive()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
-    }
-
     String mfaSecret = totpMfa.getSecret();
 
     // Verify provided TOTP

@@ -117,7 +117,7 @@ public class AuthenticatorAppSettingsController {
   @RequestMapping(value = ENABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@ModelAttribute @Valid TotpDTO code,
+  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError("Bad code");
@@ -155,7 +155,7 @@ public class AuthenticatorAppSettingsController {
   @RequestMapping(value = DISABLE_URL, method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void disableAuthenticatorApp(@Valid TotpDTO code, BindingResult validationResult) {
+  public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError("Bad code");
     }
