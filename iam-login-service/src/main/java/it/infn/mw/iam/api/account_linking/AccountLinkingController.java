@@ -129,6 +129,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
 
     checkAccountLinkingEnabled(redirectAttributes);
     HttpSession session = request.getSession();
+    principal = getAccountLinkingSavedAuthentication(session);
 
     if (principal == null) {
       principal = getAccountLinkingSavedAuthentication(session);

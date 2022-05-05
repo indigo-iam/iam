@@ -79,6 +79,14 @@ spring:
   freemarker:
     template-loader-path: ${IAM_CUSTOM_TEMPLATE_LOCATION:classpath:/email-templates}
 
+  main:
+    allow-circular-references: true
+    
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: ${IAM_JWK_CACHE_LIFETIME:21600}
 iam:
   
   host: ${IAM_HOST:localhost}

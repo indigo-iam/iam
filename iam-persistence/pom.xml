@@ -23,7 +23,7 @@
   <parent>
     <groupId>it.infn.mw</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.0.beta.20220428</version>
+    <version>1.8.0.beta.20220422</version>
   </parent>
   <artifactId>iam-persistence</artifactId>
   <packaging>jar</packaging>
@@ -79,6 +79,7 @@
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
+      <version>7.15.0</version>
     </dependency>
 
     <dependency>

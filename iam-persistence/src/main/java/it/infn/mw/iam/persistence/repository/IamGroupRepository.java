@@ -45,6 +45,7 @@ public interface IamGroupRepository extends PagingAndSortingRepository<IamGroup,
 
   List<IamGroup> findByNameIgnoreCaseContaining(String name);
 
+  @Query("select g from IamGroup g where g.uuid not in :uuids")
   List<IamGroup> findByUuidNotIn(Set<String> uuids);
 
   Page<IamGroup> findByNameIgnoreCaseContainingOrUuidIgnoreCaseContaining(

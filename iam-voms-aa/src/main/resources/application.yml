@@ -25,7 +25,8 @@ spring:
     table: schema_version
   
   main:
-    banner-mode: "off" 
+    banner-mode: "off"
+    allow-circular-references: true
   
   jpa:
     open-in-view: false

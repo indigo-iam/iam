@@ -17,7 +17,7 @@ package it.infn.mw.iam.test.api.account.password;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import java.util.Optional;
 import java.util.UUID;
