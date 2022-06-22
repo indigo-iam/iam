@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,12 @@
 package it.infn.mw.iam.api.common;
 
 import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.Objects;
+
 import javax.annotation.Generated;
+
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -28,7 +33,7 @@ public class OffsetPageable implements Pageable {
 
   public OffsetPageable(int count) {
 
-    this(0, count, null);
+    this(0, count, Sort.unsorted());
   }
 
   public OffsetPageable(int count, Sort sort) {
@@ -48,7 +53,14 @@ public class OffsetPageable implements Pageable {
 
     this.offset = offset;
     this.count = count;
-    this.sort = sort;
+
+    if (Objects.isNull(sort)) {
+      this.sort = Sort.unsorted();
+    } else {
+      this.sort = sort;
+    }
+
+
   }
 
   @Override
@@ -64,7 +76,7 @@ public class OffsetPageable implements Pageable {
   }
 
   @Override
-  public int getOffset() {
+  public long getOffset() {
 
     return offset;
   }
@@ -133,9 +145,16 @@ public class OffsetPageable implements Pageable {
   }
 
   @Override
+  public Pageable withPage(int pageNumber) {
+    throw new NotImplementedException();
+  }
+
+  @Override
   public String toString() {
 
     return "OffsetPageable [offset=" + offset + ", count=" + count + "]";
   }
+
+
 
 }

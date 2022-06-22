@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -235,7 +235,7 @@ public class DefaultRegistrationRequestService
             () -> new IllegalStateException("No request found with status: " + status.name()));
 
     } else {
-      Sort srt = new Sort(Sort.Direction.ASC, "creationTime");
+      Sort srt = Sort.by(Sort.Direction.ASC, "creationTime");
       Iterable<IamRegistrationRequest> iter = requestRepository.findAll(srt);
       for (IamRegistrationRequest elem : iter) {
         result.add(elem);

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,17 +16,22 @@
 
 -->
 <div class="modal-header">
-    <h3 class="modal-title">Add new child group to <strong>{{$ctrl.parent.displayName}}</strong></h3>
+    <h3 class="modal-title">Add new subgroup to <strong>{{$ctrl.parent.displayName}}</strong></h3>
 </div>
 <div class="modal-body">
     <form name="newSubgroup">
         <div class="form-group">
             <label class="control-label">Name</label>
-            <div ng-class="{'has-error': newSubgroup.name.$dirty && newSubgroup.name.$invalid, 'has-success': newSubgroup.name.$dirty && newSubgroup.name.$valid}">
+            <div
+                ng-class="{'has-error': newSubgroup.name.$dirty && newSubgroup.name.$invalid, 'has-success': newSubgroup.name.$dirty && newSubgroup.name.$valid}">
                 <div>
-                    <input id="name" name="name" class="form-control" type="text" required ng-maxlength="50" placeholder="Insert group name ..." ng-model="$ctrl.subgroup.displayName">
-                    <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': newSubgroup.name.$dirty && newSubgroup.name.$invalid, 'glyphicon-ok': newSubgroup.name.$dirty && newSubgroup.name.$valid}" style="right: 15px; top: 40px"></span>
-                    <span class="help-block" ng-show="newSubgroup.name.$dirty && newSubgroup.name.$error.maxlength">Group
+                    <input id="name" name="name" class="form-control" type="text" required ng-maxlength="50"
+                        placeholder="Insert group name ..." ng-model="$ctrl.subgroup.displayName">
+                    <span class="glyphicon form-control-feedback"
+                        ng-class="{'glyphicon-remove': newSubgroup.name.$dirty && newSubgroup.name.$invalid, 'glyphicon-ok': newSubgroup.name.$dirty && newSubgroup.name.$valid}"
+                        style="right: 15px; top: 40px"></span>
+                    <span class="help-block"
+                        ng-show="newSubgroup.name.$dirty && newSubgroup.name.$error.maxlength">Group
                         name length must not exceed 50 characters</span>
                 </div>
             </div>
@@ -40,6 +45,9 @@
 
 </div>
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.subgroup.displayName || !$ctrl.enabled" ng-click="$ctrl.addSubGroup()">Create child group</button>
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm"
+    ng-disabled="!$ctrl.subgroup.displayName || !$ctrl.enabled"
+    ng-click="$ctrl.addSubGroup()">Create
+        subgroup</button>
     <button class="btn btn-warning" type="button" id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
 </div>

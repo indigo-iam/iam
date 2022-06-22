@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.tokens.service;
 
 import java.util.List;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
@@ -40,7 +41,7 @@ public abstract class AbstractTokenService<T> implements TokenService<T> {
     
     ListResponseDTO.Builder<T> builder = ListResponseDTO.builder();
     builder.itemsPerPage(resources.size());
-    builder.startIndex(op.getOffset() + 1);
+    builder.startIndex((int) op.getOffset() + 1);
     builder.resources(resources);
     builder.totalResults(totalElements);
     return builder.build();

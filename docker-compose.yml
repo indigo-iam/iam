@@ -7,20 +7,13 @@ volumes:
 
 services:
 
-  db_data:
-    image: busybox
-    volumes:
-      - db_data:/var/lib/mysql
-    command: /bin/true
-
   db:
     image: ${DB_IMAGE}
-    volumes:
-      - db_data:/var/lib/mysql
+      #volumes:
+      # - db_data:/var/lib/mysql
 
     # The setting below enables custom configuration
     # that turns on the MySQL query log
-    # volumes:
     #   - ./compose/mariadb:/etc/mysql/conf.d
     
     environment:
@@ -35,11 +28,14 @@ services:
 
   trust:
     image: indigoiam/trustanchors
-    # build:
-    #  context: ./docker/trust-anchors
     command: /bin/true
     volumes:
       - trust:/etc/grid-security/certificates
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
 
   iam-be:
     container_name: iam-be
@@ -54,7 +50,7 @@ services:
       IAM_HOST: iam.local.io
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
-      IAM_USE_FORWARDED_HEADERS: "true"
+      IAM_FORWARD_HEADERS_STRATEGY: native
       IAM_NOTIFICATION_DISABLE: "true"
 
       IAM_DB_HOST: db
@@ -89,8 +85,7 @@ services:
       - logs:/var/log/iam
       - .:/code:ro
       - /dev/urandom:/dev/random
-      - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
-
+        # - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
         # - ./compose/metadata/iam.local.io.metadata.xml:/indigo-iam/iam.local.io.metadata.xml:ro
         # - ./compose/metadata/spid-idp.example.metadata.xml:/indigo-iam/spid-idp.example.metadata.xml:ro
         # - ./compose/custom-saml/application-saml.yml:/indigo-iam/config/application-saml.yml:ro
@@ -107,11 +102,10 @@ services:
       TZ: Europe/Rome
       IAM_CLIENT_PORT: 8080
       IAM_CLIENT_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1045
-      IAM_CLIENT_ID: client
-      IAM_CLIENT_SECRET: secret
       IAM_CLIENT_ISSUER: https://iam.local.io/
       IAM_CLIENT_REDIRECT_URIS: https://iam.local.io/iam-test-client/openid_connect_login
-      IAM_CLIENT_USE_FORWARD_HEADERS: "true"
+      IAM_FORWARD_HEADERS_STRATEGY: native
+      IAM_CLIENT_TLS_USE_GRID_TRUST_ANCHORS: "true"
       #IAM_CLIENT_EXT_AUTHN_HINT: saml:exampleIdp
       IAM_CLIENT_JAR: /code/iam-test-client/target/iam-test-client.jar
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package it.infn.mw.iam.test.ext_authn.saml;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -95,9 +95,9 @@ public class ResolverTests {
     IamSamlId resolvedId = resolver.resolveSamlUserIdentifier(cred).getResolvedId().orElseThrow(
         () -> new AssertionError("Could not resolve nameid SAML ID"));
 
-    Assert.assertThat(resolvedId.getUserId(), Matchers.equalTo("nameid"));
-    Assert.assertThat(resolvedId.getIdpId(), Matchers.equalTo("entityId"));
-    Assert.assertThat(resolvedId.getAttributeId(), Matchers.equalTo("format"));
+    assertThat(resolvedId.getUserId(), Matchers.equalTo("nameid"));
+    assertThat(resolvedId.getIdpId(), Matchers.equalTo("entityId"));
+    assertThat(resolvedId.getAttributeId(), Matchers.equalTo("format"));
   }
 
   @Test
@@ -172,7 +172,7 @@ public class ResolverTests {
     assertThat(resolvedId.getUserId(), equalTo("test@test.org"));
     assertThat(resolvedId.getAttributeId(), equalTo(Saml2Attribute.MAIL.getAttributeName()));
 
-    Assert.assertThat(resolvedId.getIdpId(), equalTo("entityId"));
+    assertThat(resolvedId.getIdpId(), equalTo("entityId"));
   }
 
   @Test

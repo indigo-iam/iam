@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@
     <div class="user-panel">
         <a class="pull-left image" ui-sref="home">
             <!-- if user picture is defined -->
-            <img class="medium-profile-user-img img-circle hoverZoomLink" ng-src="{{$root.loggedUser.me.photos[0].value}}" ng-show="$root.loggedUser.me.photos" alt="User profile picture" />
+            <img class="medium-profile-user-img img-circle hoverZoomLink"
+                ng-src="{{$root.loggedUser.me.photos[0].value}}" ng-show="$root.loggedUser.me.photos"
+                alt="User profile picture" />
             <!-- if user picture is not defined -->
-            <img class="medium-profile-user-img img-circle hoverZoomLink" src="resources/iam/img/default-avatar.png" ng-show="!$root.loggedUser.me.photos" alt="User profile picture" />
+            <img class="medium-profile-user-img img-circle hoverZoomLink" src="resources/iam/img/default-avatar.png"
+                ng-show="!$root.loggedUser.me.photos" alt="User profile picture" />
         </a>
         <div class="pull-left info">
             <p>
@@ -33,13 +36,20 @@
     </div>
 
     <ul class="sidebar-menu" name="sidebar-menu">
-        <li class="header">Organization Management</li>
+
+        <li class="header">Account Management</li>
         <li>
             <a id="nav-home" ui-sref="home" ui-sref-opts="{reload: true}">
                 <i class="fa fa-home"></i>
                 <span>Home</span>
             </a>
         </li>
+
+        <li class="header" ng-show="$root.isRegistrationEnabled &&
+        ($root.loggedUser.isAdmin || $root.loggedUser.isGroupManager)">
+            Organization Management
+        </li>
+
         <li ng-if="$root.loggedUser.isAdmin">
             <a id="nav-users" ui-sref="users" ui-sref-opts="{reload: true}">
                 <i class="fa fa-user"></i>
@@ -61,8 +71,29 @@
                 <i class="fa fa-sign-in"></i>
                 <span>Requests</span>
                 <span class="badge pull-right-container" ng-show="$root.pendingRequestsCount() > 0">
-                  {{$root.pendingRequestsCount()}}
+                    {{$root.pendingRequestsCount()}}
                 </span>
+            </a>
+        </li>
+
+        <li ng-show="$root.loggedUser.isAdmin">
+            <a id="nav-aup" ui-sref="aup" ui-sref-opts="{reload: true}">
+                <i class="fa fa-file-text-o"></i>
+                <span>AUP</span>
+            </a>
+        </li>
+
+        <li ng-show="$root.loggedUser.isAdmin">
+            <a id="nav-clients" ui-sref="clients" ui-sref-opts="{reload:true}">
+                <i class="fa fa-rocket"></i>
+                <span>Clients</span>
+            </a>
+        </li>
+
+        <li ng-if="!$root.loggedUser.isAdmin">
+            <a id="nav-my-clients" ui-sref="myClients" ui-sref-opts="{reload: true}">
+                <i class="fa fa-rocket"></i>
+                <span>My clients</span>
             </a>
         </li>
 
@@ -70,7 +101,8 @@
             <a id="nav-tokens" ui-sref="tokens" ui-sref-opts="{reload: true}">
                 <i class="fa fa-key"></i>
                 <span>Tokens</span>
-                <span class="pull-right-container badge" ng-show="($root.accessTokensCount + $root.refreshTokensCount) > 0">
+                <span class="pull-right-container badge"
+                    ng-show="($root.accessTokensCount + $root.refreshTokensCount) > 0">
                     {{$root.accessTokensCount + $root.refreshTokensCount}}
                 </span>
             </a>
@@ -100,6 +132,7 @@
                 <span>MitreID Dashboard</span>
             </a>
         </li>
+
     </ul>
 
     <div class="version-info">

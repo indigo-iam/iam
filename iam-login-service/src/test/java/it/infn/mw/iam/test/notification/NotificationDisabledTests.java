@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 package it.infn.mw.iam.test.notification;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.UnsupportedEncodingException;
@@ -30,15 +28,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -47,13 +42,14 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, NotificationTestConfig.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"notification.disable=true"})
 public class NotificationDisabledTests {
 
@@ -72,23 +68,17 @@ public class NotificationDisabledTests {
   ObjectMapper mapper;
 
   @Autowired
-  private WebApplicationContext context;
-
-  @Autowired
   private IamAccountRepository accountRepository;
   
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
   private MockMvc mvc;
 
   @Before
   public void setUp() throws InterruptedException {
     mockOAuth2Filter.cleanupSecurityContext();
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .apply(springSecurity())
-      .alwaysDo(log())
-      .build();
     notificationDelivery.clearDeliveredNotifications();
   }
 
@@ -97,7 +87,6 @@ public class NotificationDisabledTests {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
-
 
 
   @Test

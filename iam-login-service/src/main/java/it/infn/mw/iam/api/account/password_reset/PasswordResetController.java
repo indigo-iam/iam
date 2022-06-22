@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,8 +43,22 @@ public class PasswordResetController {
   public static final String BASE_RESOURCE = "/iam/password-reset";
   public static final String BASE_TOKEN_URL = BASE_RESOURCE + "/token";
 
+  private static final String EMAIL_FIELD = "email";
+  private static final String EMAIL_VALIDATION_ERROR_MSG = "invalid email address";
+
   @Autowired
   private PasswordResetService service;
+
+  private String nullSafeValidationErrorMessage(BindingResult validationResult) {
+    
+    FieldError result = validationResult.getFieldError(EMAIL_FIELD);
+    if (result == null) {
+      return EMAIL_VALIDATION_ERROR_MSG;
+    } else {
+      return result.getDefaultMessage();
+    }
+  }
+
 
   @RequestMapping(value = "/token", method = RequestMethod.POST,
       produces = MediaType.TEXT_PLAIN_VALUE)
@@ -52,11 +67,11 @@ public class PasswordResetController {
 
     if (validationResult.hasErrors()) {
       throw new InvalidEmailAddressError(
-          "validation error: " + validationResult.getFieldError("email").getDefaultMessage());
+          String.format("validation error: %s", nullSafeValidationErrorMessage(validationResult)));
     }
 
     service.createPasswordResetToken(emailDTO.getEmail());
-    return;
+
   }
 
   @RequestMapping(value = "/token/{token}", method = RequestMethod.HEAD)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
-
-import org.hibernate.validator.constraints.Email;
 
 public class EmailDTO {
 

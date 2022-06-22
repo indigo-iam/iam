@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
  */
 package it.infn.mw.iam.test.api.tokens;
 
+import static java.util.Collections.singletonList;
+
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
 import com.google.common.collect.Lists;
 
 public class MultiValueMapBuilder {
@@ -28,38 +31,43 @@ public class MultiValueMapBuilder {
     return new MultiValueMapBuilder();
   }
 
-  MultiValueMapBuilder count(long count) {
+  public MultiValueMapBuilder count(long count) {
 
     params.put("count", Lists.newArrayList(String.valueOf(count)));
     return this;
   }
 
-  MultiValueMapBuilder startIndex(long startIndex) {
+  public MultiValueMapBuilder startIndex(long startIndex) {
 
     params.put("startIndex", Lists.newArrayList(String.valueOf(startIndex)));
     return this;
   }
 
-  MultiValueMapBuilder userId(String userId) {
+  public MultiValueMapBuilder userId(String userId) {
 
     params.put("userId", Lists.newArrayList(userId));
     return this;
   }
 
-  MultiValueMapBuilder clientId(String clientId) {
+  public MultiValueMapBuilder clientId(String clientId) {
 
     params.put("clientId", Lists.newArrayList(clientId));
     return this;
   }
 
-  MultiValueMapBuilder attributes(String value) {
+  public MultiValueMapBuilder attributes(String value) {
 
     params.put("attributes", Lists.newArrayList(value));
     return this;
   }
 
-  MultiValueMap<String, String> build() {
+  public MultiValueMapBuilder singleStringParam(String paramName, String paramValue) {
+    params.put(paramName, singletonList(paramValue));
+    return this;
+  }
 
+
+  public MultiValueMap<String, String> build() {
     return params;
   }
 }

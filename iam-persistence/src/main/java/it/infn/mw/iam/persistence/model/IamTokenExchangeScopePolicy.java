@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import javax.persistence.Column;
@@ -24,7 +25,9 @@ import javax.persistence.Enumerated;
 
 
 @Embeddable
-public class IamTokenExchangeScopePolicy {
+public class IamTokenExchangeScopePolicy implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "rule", nullable = false, length = 6)

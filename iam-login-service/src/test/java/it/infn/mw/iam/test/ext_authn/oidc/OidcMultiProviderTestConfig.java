@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.RegisteredClient;
@@ -44,6 +43,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
@@ -133,7 +133,7 @@ public class OidcMultiProviderTestConfig {
       throws NoSuchAlgorithmException, InvalidKeySpecException {
 
     JWTSigningAndValidationService signatureValidator =
-        new DefaultJWTSigningAndValidationService(mockOidcProviderKeyStore());
+        new IamJWTSigningService(mockOidcProviderKeyStore());
 
     JWKSetCacheService mockCacheService = Mockito.mock(JWKSetCacheService.class);
     Mockito.when(mockCacheService.getValidator(TEST_OIDC_01_JWKS_URI))

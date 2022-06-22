@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -24,44 +24,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Set;
 
-import org.springframework.transaction.annotation.Transactional;
-
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@WebAppConfiguration
-@Transactional
+
+@SuppressWarnings("deprecation")
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class RevocationEndpointTests extends EndpointsTestUtils {
 
-  public static final String REVOKE_ENDPOINT = "/revoke";
+  private static final String REVOKE_ENDPOINT = "/revoke";
 
-  public static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";
-  public static final String PASSWORD_GRANT_CLIENT_SECRET = "secret";
-
-  @Autowired
-  IamTokenService iamTokenService;
+  private static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";
+  private static final String PASSWORD_GRANT_CLIENT_SECRET = "secret";
 
   @Autowired
-  IamAccountRepository accountRepo;
-
-  @Before
-  public void setup() throws Exception {
-    buildMockMvc();
-  }
-  
+  private IamTokenService iamTokenService;
   
   @Test
   public void testRevocationEnpointRequiresClientAuth() throws Exception {

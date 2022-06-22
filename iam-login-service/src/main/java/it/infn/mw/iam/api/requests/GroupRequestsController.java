@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package it.infn.mw.iam.api.requests;
 
 import javax.validation.Valid;
 
-import org.hibernate.validator.constraints.NotEmpty;
+import javax.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -61,7 +61,7 @@ public class GroupRequestsController {
       @RequestParam(required = false) String status, @RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex) {
 
-    final Sort sort = new Sort("account.username", "group.name","creationTime");
+    final Sort sort = Sort.by("account.username", "group.name", "creationTime");
     
     OffsetPageable pageRequest =
         PagingUtils.buildPageRequest(count, startIndex, GROUP_REQUEST_MAX_PAGE_SIZE, sort);

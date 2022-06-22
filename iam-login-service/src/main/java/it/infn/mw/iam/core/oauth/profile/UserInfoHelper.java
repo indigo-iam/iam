@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth.profile;
 import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+@SuppressWarnings("deprecation")
 public interface UserInfoHelper {
   
   UserInfo resolveUserInfo(OAuth2Authentication authentication);

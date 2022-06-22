@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -87,7 +86,7 @@ public class RootIsDashboardSuccessHandlerTests {
 
     when(savedRequest.getRedirectUrl()).thenReturn(BASE_URL);
     when(req.getContextPath()).thenReturn("");
-    when(res.encodeRedirectURL(Matchers.anyString())).then(returnsFirstArg());
+    when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
     RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
 
@@ -111,7 +110,7 @@ public class RootIsDashboardSuccessHandlerTests {
 
     when(savedRequest.getRedirectUrl()).thenReturn(BASE_URL + "/");
     when(req.getContextPath()).thenReturn("");
-    when(res.encodeRedirectURL(Matchers.anyString())).then(returnsFirstArg());
+    when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
     RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
 
@@ -134,7 +133,7 @@ public class RootIsDashboardSuccessHandlerTests {
 
     when(savedRequest.getRedirectUrl()).thenReturn(SOME_OTHER_URL);
     when(req.getContextPath()).thenReturn("");
-    when(res.encodeRedirectURL(Matchers.anyString())).then(returnsFirstArg());
+    when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
     RootIsDashboardSuccessHandler handler = new RootIsDashboardSuccessHandler(BASE_URL, cache);
 
@@ -152,7 +151,7 @@ public class RootIsDashboardSuccessHandlerTests {
     HttpServletResponse res = Mockito.mock(HttpServletResponse.class);
 
     when(req.getContextPath()).thenReturn("");
-    when(res.encodeRedirectURL(Matchers.anyString())).then(returnsFirstArg());
+    when(res.encodeRedirectURL(Mockito.anyString())).then(returnsFirstArg());
 
     Authentication auth = Mockito.mock(Authentication.class);
 

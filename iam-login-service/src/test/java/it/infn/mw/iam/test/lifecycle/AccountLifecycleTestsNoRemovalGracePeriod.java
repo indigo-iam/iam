@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package it.infn.mw.iam.test.lifecycle;
 import static it.infn.mw.iam.test.api.TestSupport.EXPECTED_ACCOUNT_NOT_FOUND;
 import static it.infn.mw.iam.test.api.TestSupport.TEST_USER_UUID;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.time.Clock;
 import java.time.ZoneId;
@@ -29,35 +29,26 @@ import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.lifecycle.AccountLifecycleTests.TestConfig;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, TestConfig.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
         "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=0"})
 public class AccountLifecycleTestsNoRemovalGracePeriod implements LifecycleTestSupport {
 
-  @Configuration
+  @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary

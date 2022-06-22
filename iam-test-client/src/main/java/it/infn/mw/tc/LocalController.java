@@ -1,11 +1,9 @@
 package it.infn.mw.tc;
 
-import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.ErrorController;
+import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Controller;
@@ -17,29 +15,29 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class LocalController implements ErrorController {
 
   @Autowired
-  IamClientConfig clientConfig;
+  IamClientApplicationProperties properties;
 
   @Autowired
   ClientHttpRequestFactory requestFactory;
 
   @ModelAttribute("iamIssuer")
   public String iamIssuer() {
-    return clientConfig.getIssuer();
+    return properties.getIssuer();
   }
 
   @ModelAttribute("scopes")
   public String requestScopes() {
-    return clientConfig.getScope().stream().collect(Collectors.joining(" "));
+    return properties.getClient().getScope();
   }
 
   @ModelAttribute("organizationName")
   public String organizationName() {
-    return clientConfig.getOrganizationName();
+    return properties.getOrganizationName();
   }
 
   @ModelAttribute("hidesTokens")
   public Boolean hidesTokens() {
-    return clientConfig.isHideTokens();
+    return properties.isHideTokens();
   }
 
   @RequestMapping("/")
@@ -59,11 +57,5 @@ public class LocalController implements ErrorController {
     }
 
     return "index";
-  }
-
-  @Override
-  public String getErrorPath() {
-
-    return "/error";
   }
 }

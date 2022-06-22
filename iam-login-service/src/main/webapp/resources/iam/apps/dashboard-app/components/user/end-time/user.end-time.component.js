@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,13 @@
             return AccountLifecycleService.setAccountEndTime(self.user.id, self.endTime).then(successHandler);
         };
 
-        self.endTime = self.indigoUser().endTime;
+
+        if (self.indigoUser() != undefined) {
+            self.endTime = self.indigoUser().endTime;
+        }
+        else {
+            self.endTime = undefined;
+        }
     }
 
     function UserEndTimeController(toaster, AccountLifecycleService, $uibModal, $filter) {

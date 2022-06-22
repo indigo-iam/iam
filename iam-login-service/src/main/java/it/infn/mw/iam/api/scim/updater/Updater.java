@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,16 @@ public interface Updater {
    * @return the updater type (see {@link UpdaterType})
    */
   UpdaterType getType();
+
+  /**
+   * Adds some logic before the update, in case update is done
+   */
+  void beforeUpdate();
+
+  /**
+   * Adds some logic after the update, in case update is done
+   */
+  void afterUpdate();
 
   void publishUpdateEvent(Object source, ApplicationEventPublisher publisher);
 }

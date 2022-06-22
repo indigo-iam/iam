@@ -17,18 +17,19 @@ package db.migration.mysql;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import it.infn.mw.iam.persistence.migrations.BaseJdbcTemplateFlywayMigration;
+import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 import it.infn.mw.iam.persistence.migrations.CreateGroupManagerAuthorities;
 
-public class V23___CreateGroupManagerAuthorities extends BaseJdbcTemplateFlywayMigration {
+public class V23___CreateGroupManagerAuthorities extends BaseFlywayJavaMigrationAdapter {
 
   public static final Logger LOG =
       LoggerFactory.getLogger(V23___CreateGroupManagerAuthorities.class);
 
   @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
     CreateGroupManagerAuthorities task = new CreateGroupManagerAuthorities();
     task.migrate(jdbcTemplate);
   }

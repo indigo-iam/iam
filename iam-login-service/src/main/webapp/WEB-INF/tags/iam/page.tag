@@ -65,6 +65,7 @@
         background-size: ${loginPageConfiguration.logo.dimension}px;
         background-image: url('${loginPageConfiguration.logo.url}');
         background-repeat: no-repeat;
+        background-position: center;
     }
   </style>
 

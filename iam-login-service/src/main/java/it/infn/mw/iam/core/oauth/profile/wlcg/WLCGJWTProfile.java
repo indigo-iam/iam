@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 public class WLCGJWTProfile implements JWTProfile, RequestValidator {
 
   public static final String PROFILE_VERSION = "1.0";

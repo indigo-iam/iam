@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ package it.infn.mw.iam.test.registration.cern;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -32,14 +33,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,12 +51,14 @@ import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ErrorDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CernHrDbApiClientTests.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CernHrDbApiClientTests.TestConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"cern.hr-api.username=" + CernTestSupport.HR_API_USERNAME,
     "cern.hr-api.password=" + CernTestSupport.HR_API_PASSWORD,
     "cern.hr-api.url=" + CernTestSupport.HR_API_URL,
@@ -63,22 +66,25 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @ActiveProfiles({"h2-test", "cern"})
 public class CernHrDbApiClientTests extends CernTestSupport {
 
-  @Bean
-  @Primary
-  public RestTemplateFactory mockRestTemplateFactory() {
-    return new MockRestTemplateFactory();
+  @TestConfiguration
+  public static class TestConfig {
+    @Bean
+    @Primary
+    public RestTemplateFactory mockRestTemplateFactory() {
+      return new MockRestTemplateFactory();
+    }
   }
 
   @Autowired
-  RestTemplateFactory rtf;
+  private RestTemplateFactory rtf;
 
   @Autowired
-  ObjectMapper mapper;
+  private ObjectMapper mapper;
 
-  MockRestTemplateFactory mockRtf;
+  private MockRestTemplateFactory mockRtf;
 
   @Autowired
-  CernHrDBApiService hrDbService;
+  private CernHrDBApiService hrDbService;
 
   @Before
   public void setup() {
@@ -94,7 +100,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .expect(requestTo(apiValidationUrl))
       .andExpect(method(GET))
       .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(OK).contentType(APPLICATION_JSON_UTF8).body("true"));
+      .andRespond(withStatus(OK).contentType(APPLICATION_JSON).body("true"));
 
     assertThat(hrDbService.hasValidExperimentParticipation(personId), is(true));
   }
@@ -107,7 +113,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .expect(requestTo(apiValidationUrl))
       .andExpect(method(GET))
       .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(OK).contentType(APPLICATION_JSON_UTF8).body("false"));
+      .andRespond(withStatus(OK).contentType(APPLICATION_JSON).body("false"));
 
     assertThat(hrDbService.hasValidExperimentParticipation(personId), is(false));
   }
@@ -137,7 +143,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .expect(requestTo(voPersonUrl))
       .andExpect(method(GET))
       .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(OK).contentType(APPLICATION_JSON_UTF8)
+      .andRespond(withStatus(OK).contentType(APPLICATION_JSON)
         .body(mapper.writeValueAsString(mockHrUser(personId))));
 
     VOPersonDTO user = hrDbService.getHrDbPersonRecord(personId);
@@ -153,13 +159,13 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .expect(requestTo(voPersonUrl))
       .andExpect(method(GET))
       .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(NOT_FOUND).contentType(APPLICATION_JSON_UTF8)
+      .andRespond(withStatus(NOT_FOUND).contentType(APPLICATION_JSON)
         .body(mapper.writeValueAsString(ErrorDTO.newError("NOT_FOUND", "User not found"))));
 
     try {
       hrDbService.getHrDbPersonRecord(personId);
     } catch (CernHrDbApiError e) {
-      assertThat(e.getMessage(), is("HR db api error: 404 Not Found"));
+      assertThat(e.getMessage(), startsWith("HR db api error: 404 Not Found"));
       throw e;
     }
   }

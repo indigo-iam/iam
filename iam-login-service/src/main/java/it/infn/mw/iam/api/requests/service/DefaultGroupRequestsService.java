@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.ImmutableTable;
@@ -133,7 +132,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   public void deleteGroupRequest(String requestId) {
     IamGroupRequest request = groupRequestUtils.getGroupRequest(requestId);
 
-    groupRequestRepository.delete(request.getId());
+    groupRequestRepository.deleteById(request.getId());
     eventPublisher.publishEvent(new GroupRequestDeletedEvent(this, request));
   }
 
@@ -144,7 +143,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     IamAccount account = request.getAccount();
     IamGroup group = request.getGroup();
 
-    account = accountService.addToGroup(account, group);
+    accountService.addToGroup(account, group);
 
     request = updateGroupRequestStatus(request, APPROVED);
     notificationFactory.createGroupMembershipApprovedMessage(request);
@@ -239,7 +238,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       Optional<String> groupNameFilter, Optional<String> statusFilter, Set<String> managedGroups,
       OffsetPageable pageRequest) {
 
-    Specifications<IamGroupRequest> spec = Specifications.where(baseSpec());
+    Specification<IamGroupRequest> spec = baseSpec();
 
     if (!managedGroups.isEmpty()) {
       spec = spec.and(forGroupIds(managedGroups));

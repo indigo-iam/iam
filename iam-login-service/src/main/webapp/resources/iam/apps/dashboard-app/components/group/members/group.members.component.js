@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
     'use strict';
 
     function GroupMembersController($rootScope, $filter, scimFactory, $uibModal, ModalService, toaster, GroupService) {
@@ -31,45 +31,48 @@
 
         self.loadMembers(self.currentPage);
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             console.log('GroupMembersController onInit');
         };
 
-        function handleSuccess(data){
+        function handleSuccess(data) {
             self.members = data.Resources;
             self.totalResults = data.totalResults;
             self.loadingModal.close();
         }
 
-        function handleError(res){
-            console.error('Error loading members: ',res);
+        function handleError(res) {
+            console.error('Error loading members: ', res);
             let error = res.statusText;
 
             if (res.data) {
-                error =  res.data.error;
+                error = res.data.error;
             }
-            
+
             toaster.pop({
                 type: 'error',
                 body: `${error}`
             });
         }
 
-        function loadMembers(page){
-            self.currentPage = page;
-            self.currentOffset = (page - 1) * self.itemsPerPage + 1;
+        function loadMembers() {
+            self.currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
 
             self.loadingModal = $uibModal.open({
                 animation: false,
                 templateUrl: '/resources/iam/apps/dashboard-app/templates/loading-modal.html'
             });
-            
-            self.loadingModal.opened.then(function(){
-                GroupService.getGroupMembers(self.group.id, self.currentOffset, self.itemsPerPage ).then(handleSuccess, handleError);
+
+            self.loadingModal.opened.then(function () {
+                GroupService.getGroupMembers(self.group.id, self.currentOffset, self.itemsPerPage).then(handleSuccess, handleError);
+            });
+
+            self.loadingModal.result.catch(res => {
+                return res;
             });
 
         }
-        
+
 
         function deleteMember(member) {
 
@@ -81,18 +84,18 @@
             };
 
             ModalService.showModal({}, modalOptions).then(
-                function() {
+                function () {
                     scimFactory.removeMemberFromGroup(self.group.id, member.value, member.$ref,
-                            member.display)
-                        .then(function(response) {
-                            self.loadGroup().then(function(group) {
+                        member.display)
+                        .then(function (response) {
+                            self.loadGroup().then(function (group) {
                                 loadMembers(self.currentPage);
                                 toaster.pop({
                                     type: 'success',
                                     body: `Member ${member.display} has been removed successfully`
                                 });
                             });
-                        }, function(error) {
+                        }, function (error) {
                             toaster.pop({
                                 type: 'error',
                                 body: `${error.data.detail}`

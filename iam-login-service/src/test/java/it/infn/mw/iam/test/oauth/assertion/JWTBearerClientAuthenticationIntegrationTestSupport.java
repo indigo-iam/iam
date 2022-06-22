@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
@@ -36,6 +35,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.util.JWKKeystoreLoader;
 
@@ -78,11 +78,9 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
 
     JWKKeystoreLoader keystoreLoader = new JWKKeystoreLoader(loader);
 
-    DefaultJWTSigningAndValidationService svc = new DefaultJWTSigningAndValidationService(
-        keystoreLoader.loadKeystoreFromLocation(TEST_KEYSTORE_LOCATION));
-
-    svc.setDefaultSignerKeyId("rsa1");
-    svc.setDefaultSigningAlgorithmName(JWSAlgorithm.RS256.getName());
+    JWTSigningAndValidationService svc =
+        new IamJWTSigningService(keystoreLoader.loadKeystoreFromLocation(TEST_KEYSTORE_LOCATION),
+            "rsa1", JWSAlgorithm.RS256.getName());
 
     return svc;
   }

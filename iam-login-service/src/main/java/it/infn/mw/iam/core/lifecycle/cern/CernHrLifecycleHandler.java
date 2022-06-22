@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     Optional<IamLabel> skipEmailSyncLabel =
         account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_SKIP_EMAIL_SYNCH);
 
-    if (skipEmailSyncLabel.isPresent()) {
+    if (skipEmailSyncLabel.isPresent() && LOG.isInfoEnabled()) {
       LOG.info(
           "Skipping email synchronization for account '{} ({})' as requested by the label '{}'",
           account.getUsername(), account.getUuid(), skipEmailSyncLabel.get().qualifiedName());
@@ -221,7 +221,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public void handleAccount(IamAccount account) {
     LOG.debug("Handling account: {}", account);
     Instant checkTime = clock.instant();
-    account.getLabels().add(buildTimestampLabel(checkTime));
+    accountService.setLabel(account, buildTimestampLabel(checkTime));
     Optional<IamLabel> cernPersonId = getPersonIdLabel(account);
     if (!cernPersonId.isPresent()) {
       addErrorMessage(account,
@@ -247,7 +247,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   @Override
   public void run() {
 
-    Pageable pageRequest = new PageRequest(0, cernProperties.getTask().getPageSize());
+    Pageable pageRequest = PageRequest.of(0, cernProperties.getTask().getPageSize());
 
     while (true) {
       Page<IamAccount> accountsPage = accountRepo.findByLabelPrefixAndName(LABEL_CERN_PREFIX,

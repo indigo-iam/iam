@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 (function () {
     'use strict';
 
     angular.module('dashboardApp', [
         'ui.router', 'ui.bootstrap', 'ui.bootstrap.tpls', 'ui.select', 'ngCookies',
-        'ngSanitize', 'relativeDate', 'ngResource', 'toaster'
+        'ngSanitize', 'relativeDate', 'ngResource', 'toaster', 'ngclipboard'
     ]);
 
+    // angular.module('dashboardApp').run(function ($rootScope, $templateCache) {
+    //     $rootScope.$on('$viewContentLoaded', function () {
+    //         if ($templateCache) {
+    //             $templateCache.removeAll();
+    //         }
+    //     });
+    // });
 
     angular.module('dashboardApp')
         .run(function (
@@ -121,10 +127,10 @@
                 $rootScope.closeOfflineDialog();
                 $state.transitionTo(
                     $state.current, $stateParams, {
-                        reload: true,
-                        inherit: false,
-                        notify: true
-                    });
+                    reload: true,
+                    inherit: false,
+                    notify: true
+                });
             };
 
             $rootScope.pendingRegistrationRequests = function (val) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
     'use strict';
 
     function AddSubGroupController($scope, $rootScope, $uibModalInstance, Utils, scimFactory, group) {
@@ -26,7 +26,7 @@
         self.cancel = cancel;
 
         self.subgroup = {};
-        
+
         function resetGroup() {
             self.subgroup.displayName = "";
             self.enabled = true;
@@ -47,11 +47,11 @@
                 }
             };
 
-            scimFactory.createGroup(self.subgroup).then(function(response) {
+            scimFactory.createGroup(self.subgroup).then(function (response) {
                 $rootScope.loggedUser.totGroups = $rootScope.loggedUser.totGroups + 1;
                 $uibModalInstance.close(response.data);
                 self.enabled = true;
-            }, function(error) {
+            }, function (error) {
                 console.error('Error creating group', error);
                 $scope.operationResult = Utils.buildErrorOperationResult(error);
                 self.enabled = true;
@@ -66,51 +66,54 @@
     function SubgroupsController($rootScope, $filter, scimFactory, $uibModal, ModalService, toaster, GroupService) {
 
         var self = this;
-
         self.subgroups = [];
         self.openAddSubgroupDialog = openAddSubgroupDialog;
         self.deleteGroup = deleteGroup;
 
         self.loadSubgroups = loadSubgroups;
-        self.currentPage = 1;
-        self.itemsPerPage = 10;
-        self.totalResults = 0;
 
-        loadSubgroups(self.currentPage);
-        
-        function handleSuccess(data){
+        self.$onInit = function () {
+            self.currentPage = 1;
+            self.itemsPerPage = 10;
+            self.totalResults = 0;
+            loadSubgroups(self.currentPage);
+        };
+
+        function handleSuccess(data) {
             self.subgroups = data.Resources;
             self.totalResults = data.totalResults;
             self.loadingModal.close();
         }
 
-        function handleError(res){
-            console.error('Error loading subgroups: ',res);
+        function handleError(res) {
+            console.error('Error loading subgroups: ', res);
             let error = res.statusText;
 
             if (res.data) {
-                error =  res.data.error;
+                error = res.data.error;
             }
-            
+
             toaster.pop({
                 type: 'error',
                 body: `${error}`
             });
         }
 
-        function loadSubgroups(page) {
-            self.currentPage = page;
-            self.currentOffset = (page - 1) * self.itemsPerPage + 1;
+        function loadSubgroups() {
+            self.currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
 
             self.loadingModal = $uibModal.open({
                 animation: false,
                 templateUrl: '/resources/iam/apps/dashboard-app/templates/loading-modal.html'
             });
-            
-            self.loadingModal.opened.then(function(){
-                GroupService.getSubgroups(self.group.id, self.currentOffset, self.itemsPerPage ).then(handleSuccess, handleError);
+
+            self.loadingModal.opened.then(function () {
+                GroupService.getSubgroups(self.group.id, self.currentOffset, self.itemsPerPage).then(handleSuccess, handleError);
             });
-            
+
+            self.loadingModal.result.catch(res => {
+                return res;
+            });
         }
 
 
@@ -119,10 +122,10 @@
                 templateUrl: '/resources/iam/apps/dashboard-app/components/group/subgroups/add-subgroup.dialog.html',
                 controller: AddSubGroupController,
                 controllerAs: '$ctrl',
-                resolve: { group: function() { return self.group; } }
+                resolve: { group: function () { return self.group; } }
             });
-            modalInstance.result.then(function(createdGroup) {
-                self.loadGroup().then(function(g) {
+            modalInstance.result.then(function (createdGroup) {
+                self.loadGroup().then(function (g) {
                     self.group = g;
                     loadSubgroups(self.currentPage);
                     toaster.pop({
@@ -130,7 +133,7 @@
                         body: `Group '${createdGroup.displayName}' CREATED successfully`
                     });
                 });
-            }, function() {
+            }, function () {
                 console.info('Modal dismissed at: ', new Date());
             });
         }
@@ -145,10 +148,10 @@
             };
 
             ModalService.showModal({}, modalOptions).then(
-                function() {
+                function () {
                     scimFactory.deleteGroup(member.value)
-                        .then(function(response) {
-                            self.loadGroup().then(function(res) {
+                        .then(function (response) {
+                            self.loadGroup().then(function (res) {
                                 self.group = res;
                                 loadSubgroups(self.currentPage);
                                 $rootScope.groupsCount = $rootScope.groupsCount - 1;
@@ -157,7 +160,7 @@
                                     body: `Group '${member.display}' DELETED successfully`
                                 });
                             });
-                        }, function(error) {
+                        }, function (error) {
                             toaster.pop({
                                 type: 'error',
                                 body: `${error.data.detail}`
@@ -171,7 +174,7 @@
         templateUrl: '/resources/iam/apps/dashboard-app/components/group/subgroups/group.subgroups.component.html',
         bindings: { group: '<', loadGroup: '&', voAdmin: '<', groupManager: '<' },
         controller: [
-            '$rootScope', '$filter', 'scimFactory', '$uibModal', 'ModalService', 'toaster','GroupService', SubgroupsController
+            '$rootScope', '$filter', 'scimFactory', '$uibModal', 'ModalService', 'toaster', 'GroupService', SubgroupsController
         ]
     });
 })();

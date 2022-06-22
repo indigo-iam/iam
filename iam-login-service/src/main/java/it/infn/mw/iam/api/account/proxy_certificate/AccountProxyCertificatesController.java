@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import eu.emi.security.authn.x509.proxy.ProxyUtils;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account_linking.AccountLinkingService;
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.proxy.InvalidProxyRequestError;
 import it.infn.mw.iam.api.proxy.ProxyCertificateDTO;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;

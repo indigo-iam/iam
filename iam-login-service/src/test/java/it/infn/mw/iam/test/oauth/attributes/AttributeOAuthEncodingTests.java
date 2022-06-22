@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package it.infn.mw.iam.test.oauth.attributes;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.function.Supplier;
 
@@ -27,28 +27,22 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_authn_info=true"})
 public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
 
@@ -72,7 +66,6 @@ public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
 
   @Before
   public void setup() {
-    buildMockMvc();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -108,6 +101,6 @@ public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
 
     JWT token = JWTParser.parse(tg.getAccessTokenValue());
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr"), notNullValue());
-    assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr").getAsString("test"), is("test"));
+    assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr").get("test"), is("test"));
   }
 }

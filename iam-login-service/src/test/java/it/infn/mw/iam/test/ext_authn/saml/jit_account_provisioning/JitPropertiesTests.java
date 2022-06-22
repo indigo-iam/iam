@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
 
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.in;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
@@ -55,9 +57,9 @@ public class JitPropertiesTests {
     assertTrue(trustedIdps.isPresent());
     
     assertThat(trustedIdps.get(), hasSize(3));
-    assertThat("idp1", isIn(trustedIdps.get()));
-    assertThat("idp2", isIn(trustedIdps.get()));
-    assertThat("idp3", isIn(trustedIdps.get()));
+    assertThat("idp1", is(in(trustedIdps.get())));
+    assertThat("idp2", is(in(trustedIdps.get())));
+    assertThat("idp3", is(in(trustedIdps.get())));
   }
   
   

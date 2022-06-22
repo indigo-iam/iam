@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,20 @@ import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.D
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,10 +46,12 @@ import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.util.WithMockOIDCUser;
 import it.infn.mw.iam.test.util.WithMockSAMLUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@WebAppConfiguration
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class ExternalAuthenticationRegistrationTests {
 
   @Autowired
@@ -63,17 +61,10 @@ public class ExternalAuthenticationRegistrationTests {
   private IamAccountRepository accountRepository;
 
   @Autowired
-  private WebApplicationContext context;
-
-  @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
   private MockMvc mvc;
-
-  @Before
-  public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-  }
 
   @Test
   @WithMockOIDCUser
@@ -90,7 +81,7 @@ public class ExternalAuthenticationRegistrationTests {
     request.setNotes("Some short notes...");
 
     byte[] requestBytes = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON_UTF8)
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -104,7 +95,7 @@ public class ExternalAuthenticationRegistrationTests {
 
     mvc
       .perform(post("/registration/approve/{uuid}", request.getUuid())
-            .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
+        .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
       .andExpect(status().isOk());
 
     IamAccount account = accountRepository.findByUsername("test-oidc-subject").get();
@@ -112,7 +103,7 @@ public class ExternalAuthenticationRegistrationTests {
     assertNotNull(account);
 
     assertThat(account.getOidcIds().size(), equalTo(1));
-    
+
     IamOidcId id = new IamOidcId("test-oidc-issuer", "test-oidc-user");
     assertThat(account.getOidcIds(), hasItem(id));
     assertThat(account.getOidcIds(), hasItem(id));
@@ -135,7 +126,7 @@ public class ExternalAuthenticationRegistrationTests {
     request.setNotes("Some short notes...");
 
     byte[] requestBytes = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON_UTF8)
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
       .andReturn()
@@ -149,7 +140,7 @@ public class ExternalAuthenticationRegistrationTests {
 
     mvc
       .perform(post("/registration/approve/{uuid}", request.getUuid())
-            .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
+        .with(SecurityMockMvcRequestPostProcessors.user("admin").roles("ADMIN", "USER")))
       .andExpect(status().isOk());
 
     IamAccount account = accountRepository.findByUsername("test-saml-user").get();
@@ -157,7 +148,7 @@ public class ExternalAuthenticationRegistrationTests {
     assertNotNull(account);
 
     assertThat(account.getSamlIds().size(), equalTo(1));
-    
+
     IamSamlId firstSamlId = account.getSamlIds().iterator().next();
     assertThat(firstSamlId.getIdpId(), equalTo(DEFAULT_IDP_ID));
     assertThat(firstSamlId.getUserId(), equalTo("test-saml-user"));

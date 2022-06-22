@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class IamScopePolicySerializer extends JsonSerializer<IamScopePolicy>{
     if (isNull(value.getGroup())) {
       gen.writeNullField("group");
     } else {
-      gen.writeObjectFieldStart("grop");
+      gen.writeObjectFieldStart("group");
       gen.writeStringField("uuid", value.getGroup().getUuid());
       gen.writeStringField("name", value.getGroup().getName());
       gen.writeEndObject();

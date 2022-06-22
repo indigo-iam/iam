@@ -19,10 +19,10 @@ import com.google.common.base.Strings;
 
 public class IamAuthRequestOptionsService implements AuthRequestOptionsService {
 
-  IamClientConfig properties;
+  IamClientApplicationProperties properties;
 
 
-  public IamAuthRequestOptionsService(IamClientConfig properties) {
+  public IamAuthRequestOptionsService(IamClientApplicationProperties properties) {
     this.properties = properties;
   }
 

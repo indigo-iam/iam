@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
   public static final Logger LOG = LoggerFactory.getLogger(TokenExchangeTokenGranter.class);
@@ -160,7 +161,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
 
       if (account.isPresent() && signatureCheckService.needsAupSignature(account.get())) {
         throw new InvalidGrantException(
-            format("User '%s' needs to sign AUP for this organization " + "in order to proceed.",
+            format("User %s needs to sign AUP for this organization " + "in order to proceed.",
                 account.get().getUsername()));
       }
 

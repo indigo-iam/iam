@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
     'use strict';
 
     function RemoveGroupManagerController($scope, $uibModalInstance, AccountGroupManagerService, Utils, group, account) {
@@ -38,14 +38,14 @@
             self.enabled = true;
         }
 
-        self.removeGroupManager = function() {
+        self.removeGroupManager = function () {
             self.enabled = false;
             AccountGroupManagerService.
-            removeManagedGroupFromAccount(self.account.id, self.group.id).then(
-                handleSuccess, handleError);
+                removeManagedGroupFromAccount(self.account.id, self.group.id).then(
+                    handleSuccess, handleError);
         };
 
-        self.cancel = function() {
+        self.cancel = function () {
             $uibModalInstance.dismiss("cancel");
         };
     }
@@ -73,27 +73,27 @@
             self.enabled = true;
         }
 
-        self.cancel = function() {
+        self.cancel = function () {
             $uibModalInstance.dismiss("cancel");
         };
 
 
-        self.addGroupManager = function() {
+        self.addGroupManager = function () {
             self.enabled = false;
             AccountGroupManagerService.addManagedGroupToAccount(self.gm.id, self.group.id).then(
                 handleSuccess, handleError);
         };
 
-        self.lookupUser = function(val) {
-            return UsersService.getUsersFilteredBy(0, 100, val).then(function(res) {
+        self.lookupUser = function (val) {
+            return UsersService.getUsersFilteredBy(0, 100, val).then(function (res) {
                 return res.data.Resources;
-            }).catch(function(res) {
+            }).catch(function (res) {
                 console.log(res);
                 return [];
             });
         };
 
-        self.userSelected = function(user) {
+        self.userSelected = function (user) {
             self.gm = user;
             self.enabled = true;
         };
@@ -107,7 +107,7 @@
         self.privileged = false;
         self.managers = [];
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             console.log('GroupManagersController onInit');
             self.privileged = self.groupManager || self.voAdmin;
             loadGroupManagers();
@@ -115,10 +115,10 @@
 
         function loadGroupManagers() {
             if (self.privileged) {
-                AccountGroupManagerService.getGroupManagers(self.group.id).then(function(managers) {
+                AccountGroupManagerService.getGroupManagers(self.group.id).then(function (managers) {
                     self.managers = managers;
                     self.loaded = true;
-                }).catch(function(res) {
+                }).catch(function (res) {
                     toaster.pop({
                         type: 'error',
                         body: res.statusText
@@ -128,21 +128,21 @@
                 self.loaded = true;
             }
         }
-        self.removeGroupManager = function(account) {
+        self.removeGroupManager = function (account) {
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/group/managers/remove-group-manager.dialog.html',
                 controller: RemoveGroupManagerController,
                 controllerAs: '$ctrl',
                 resolve: {
-                    group: function() { return self.group; },
-                    account: function() {
+                    group: function () { return self.group; },
+                    account: function () {
                         return account;
                     }
                 }
             });
 
-            modalInstance.result.then(function(user) {
-                self.loadGroup().then(function(group) {
+            modalInstance.result.then(function (user) {
+                self.loadGroup().then(function (group) {
                     loadGroupManagers();
                     toaster.pop({
                         type: 'success',
@@ -152,17 +152,17 @@
             });
         };
 
-        self.addGroupManager = function() {
+        self.addGroupManager = function () {
 
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/group/managers/add-group-manager.dialog.html',
                 controller: AddGroupManagerController,
                 controllerAs: '$ctrl',
-                resolve: { group: function() { return self.group; } }
+                resolve: { group: function () { return self.group; } }
             });
 
-            modalInstance.result.then(function(user) {
-                self.loadGroup().then(function(group) {
+            modalInstance.result.then(function (user) {
+                self.loadGroup().then(function (group) {
                     loadGroupManagers();
                     toaster.pop({
                         type: 'success',

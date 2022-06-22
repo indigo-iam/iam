@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,20 @@ import it.infn.mw.iam.api.scope_policy.ScopePolicyDTO;
 
 public class ScopePolicyValidator implements ConstraintValidator<ScopePolicy, ScopePolicyDTO> {
 
+  private static final String INVALID_SCOPE_LENGTH_MSG =
+      "{it.infn.mw.iam.api.scope_policy.validation.ScopePolicyValidator.invalidScopeLength.message}";
+
+  private static final String NULL_SCOPE_MSG =
+      "{it.infn.mw.iam.api.scope_policy.validation.ScopePolicyValidator.nullScope.message}";
+
   private static final String EMPTY_SCOPE_MSG =
       "{it.infn.mw.iam.api.scope_policy.validation.ScopePolicyValidator.emptyScope.message}";
-  
+
   private static final String NULL_MATCHING_POLICY_MSG =
       "{it.infn.mw.iam.api.scope_policy.validation.ScopePolicyValidator.nullMatchingPolicy.message}";
+
+  private static final int SCOPE_MIN_LENGTH = 1;
+  private static final int SCOPE_MAX_LENGTH = 255;
 
   public ScopePolicyValidator() {
     // empty
@@ -42,13 +51,14 @@ public class ScopePolicyValidator implements ConstraintValidator<ScopePolicy, Sc
   }
 
   private boolean isValidMatchingPolicy(ScopePolicyDTO value, ConstraintValidatorContext context) {
-    
-    if (isNull(value.getMatchingPolicy())){
+
+    if (isNull(value.getMatchingPolicy())) {
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate(NULL_MATCHING_POLICY_MSG).addConstraintViolation();
+      context.buildConstraintViolationWithTemplate(NULL_MATCHING_POLICY_MSG)
+        .addConstraintViolation();
       return false;
     }
-    
+
     if ((value.getMatchingPolicy().equals(PATH.name())
         || value.getMatchingPolicy().equals(REGEXP.name()))
         && (isNull(value.getScopes()) || value.getScopes().isEmpty())) {
@@ -61,10 +71,37 @@ public class ScopePolicyValidator implements ConstraintValidator<ScopePolicy, Sc
     return true;
   }
 
+
+  private boolean hasValidScopes(ScopePolicyDTO value, ConstraintValidatorContext context) {
+
+    if (isNull(value.getScopes()) || value.getScopes().isEmpty()) {
+      return true;
+    }
+
+    for (String s : value.getScopes()) {
+      if (isNull(s)) {
+        context.disableDefaultConstraintViolation();
+        context.buildConstraintViolationWithTemplate(NULL_SCOPE_MSG).addConstraintViolation();
+        return false;
+      }
+
+      final int scopeLength = s.length();
+      if (scopeLength < SCOPE_MIN_LENGTH || scopeLength > SCOPE_MAX_LENGTH) {
+        context.disableDefaultConstraintViolation();
+        context.buildConstraintViolationWithTemplate(INVALID_SCOPE_LENGTH_MSG)
+          .addConstraintViolation();
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   @Override
   public boolean isValid(ScopePolicyDTO value, ConstraintValidatorContext context) {
-    boolean nullChecks = !(value == null || (value.getAccount() != null && value.getGroup() != null));
-    return nullChecks && isValidMatchingPolicy(value, context);
+    boolean nullChecks =
+        !(value == null || (value.getAccount() != null && value.getGroup() != null));
+    return nullChecks && isValidMatchingPolicy(value, context) && hasValidScopes(value, context);
   }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,22 +27,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 
 @Component
 public class ScimRestUtilsMvc extends RestUtils {
 
   @Autowired
-  public ScimRestUtilsMvc(WebApplicationContext context, ObjectMapper mapper) {
-    super(context, mapper);
+  public ScimRestUtilsMvc(MockMvc mvc, ObjectMapper mapper) {
+    super(mvc, mapper);
   }
 
   public ScimUser postUser(ScimUser user) throws Exception {
@@ -55,6 +55,8 @@ public class ScimRestUtilsMvc extends RestUtils {
 
     return doPost(getUsersLocation(), user, SCIM_CONTENT_TYPE, expectedStatus);
   }
+
+
 
   public ScimUser getUser(String uuid) throws Exception {
 

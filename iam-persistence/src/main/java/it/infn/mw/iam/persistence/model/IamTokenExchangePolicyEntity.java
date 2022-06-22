@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -62,20 +61,16 @@ public class IamTokenExchangePolicyEntity implements Serializable {
   private PolicyRule rule;
 
   @Embedded
-  @AttributeOverrides({
-      @AttributeOverride(name = "type",
-          column = @Column(name = "origin_m_type", nullable = false, length = 8)),
-      @AttributeOverride(name = "matchParam",
-          column = @Column(name = "origin_m_param", length = 256))})
+  @AttributeOverride(name = "type",
+      column = @Column(name = "origin_m_type", nullable = false, length = 8))
+  @AttributeOverride(name = "matchParam", column = @Column(name = "origin_m_param", length = 256))
   private IamClientMatchingPolicy originClient;
 
 
   @Embedded
-  @AttributeOverrides({
-      @AttributeOverride(name = "type",
-          column = @Column(name = "dest_m_type", nullable = false, length = 8)),
-      @AttributeOverride(name = "matchParam",
-          column = @Column(name = "dest_m_param", length = 256))})
+  @AttributeOverride(name = "type",
+      column = @Column(name = "dest_m_type", nullable = false, length = 8))
+  @AttributeOverride(name = "matchParam", column = @Column(name = "dest_m_param", length = 256))
   private IamClientMatchingPolicy destinationClient;
 
 

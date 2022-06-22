@@ -1,15 +1,16 @@
-FROM openjdk:8
+FROM eclipse-temurin:17 as builder
+RUN mkdir /app
+WORKDIR /app
+COPY iam-test-client.jar /app/
+RUN java -Djarmode=layertools -jar iam-test-client.jar extract
 
+FROM eclipse-temurin:17
 RUN mkdir /app
 WORKDIR /app
 
-COPY iam-test-client.jar /app/
-CMD java -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap $IAM_CLIENT_JAVA_OPTS -jar iam-test-client.jar
+COPY --from=builder app/dependencies/ ./
+COPY --from=builder app/spring-boot-loader/ ./
+COPY --from=builder app/snapshot-dependencies/ ./
+COPY --from=builder app/application/ ./
 
-# Embed TINI since compose v3 syntax do not support the init
-# option to run docker --init
-#
-ENV TINI_VERSION v0.18.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT ["/tini", "--"]
+CMD java ${IAM_CLIENT_JAVA_OPTS} org.springframework.boot.loader.JarLauncher

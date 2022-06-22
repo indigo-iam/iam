@@ -15,15 +15,16 @@
  */
 package db.migration.test;
 
-import org.flywaydb.core.api.migration.spring.SpringJdbcMigration;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import db.migration.tasks.RemoveOrphanTokens;
+import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
+import it.infn.mw.iam.persistence.migrations.RemoveOrphanTokens;
 
-public class V100000_3___RemoveOrphanTokens implements SpringJdbcMigration {
+public class V100000_3___RemoveOrphanTokens extends BaseFlywayJavaMigrationAdapter {
 
   @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
     RemoveOrphanTokens task = new RemoveOrphanTokens();
     task.migrate(jdbcTemplate);

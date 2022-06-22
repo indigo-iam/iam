@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,11 @@ import static it.infn.mw.iam.rcauth.DefaultRcAuthRequestService.RCAUTH_CTXT_SESS
 import static it.infn.mw.iam.rcauth.RCAuthController.CALLBACK_PATH;
 import static it.infn.mw.iam.rcauth.RCAuthController.GETCERT_PATH;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 import static org.springframework.http.MediaType.TEXT_PLAIN;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -44,7 +43,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
@@ -52,13 +53,9 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -68,49 +65,49 @@ import com.nimbusds.jose.JOSEException;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.rcauth.RCAuthExchangeContext;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.IdTokenBuilder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, RCAuthTestSupport.class, RCAuthIntegrationTests.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, RCAuthTestConfig.class,
+        RCAuthIntegrationTests.TestConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
     properties = {"rcauth.enabled=true", "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
         "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
         "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
-  @Bean
-  @Primary
-  public RestTemplateFactory mockRestTemplateFactory() {
-    return new MockRestTemplateFactory();
+
+  @TestConfiguration
+  public static class TestConfig {
+    @Bean
+    @Primary
+    public RestTemplateFactory mockRestTemplateFactory() {
+      return new MockRestTemplateFactory();
+    }
   }
 
   @Autowired
-  private WebApplicationContext context;
+  private RestTemplateFactory rtf;
 
   @Autowired
-  IamProperties iamProperties;
+  private ObjectMapper mapper;
+
+  private MockRestTemplateFactory mockRtf;
 
   @Autowired
-  RestTemplateFactory rtf;
-
-  @Autowired
-  ObjectMapper mapper;
-
-  MockRestTemplateFactory mockRtf;
-
   private MockMvc mvc;
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
   }
@@ -188,10 +185,10 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
 
     RCAuthExchangeContext context =
         ((RCAuthExchangeContext) session.getAttribute(RCAUTH_CTXT_SESSION_KEY));
-    
+
     prepareTokenResponse(NONCE);
     prepareCertificateResponse();
-    
+
     mvc
       .perform(get(CALLBACK_PATH).session(session)
         .param("code", CODE_VALUE)
@@ -217,7 +214,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
     mockRtf.getMockServer()
       .expect(requestTo(TOKEN_URI))
       .andExpect(method(HttpMethod.POST))
-      .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+      .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
       .andRespond(withSuccess(mapper.writeValueAsString(tr), MediaType.APPLICATION_JSON));
   }
 
@@ -225,7 +222,7 @@ public class RCAuthIntegrationTests extends RCAuthTestSupport {
     mockRtf.getMockServer()
       .expect(requestTo(GET_CERT_URI))
       .andExpect(method(HttpMethod.POST))
-      .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+      .andExpect(content().contentType(APPLICATION_FORM_URLENCODED_UTF8_VALUE))
       .andRespond(withSuccess(TEST_0_CERT_STRING, TEXT_PLAIN));
   }
 

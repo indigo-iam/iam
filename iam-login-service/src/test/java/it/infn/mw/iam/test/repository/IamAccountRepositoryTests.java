@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,35 +15,30 @@
  */
 package it.infn.mw.iam.test.repository;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import javax.persistence.EntityManager;
-
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
+
+@RunWith(SpringRunner.class)
+@IamNoMvcTest
 public class IamAccountRepositoryTests {
 
   static final IamSamlId TEST_USER_ID = new IamSamlId("https://idptestbed/idp/shibboleth",
       Saml2Attribute.EPUID.getAttributeName(), "78901@idptestbed");
 
   @Autowired
-  IamAccountRepository repo;
-
-  @Autowired
-  EntityManager em;
+  private IamAccountRepository repo;
 
   @Test
   public void testSamlIdResolutionWorksAsExpected() {
@@ -51,7 +46,7 @@ public class IamAccountRepositoryTests {
     IamAccount testUserAccount = repo.findBySamlId(TEST_USER_ID)
       .orElseThrow(() -> new AssertionError("Could not lookup test user by SAML id"));
 
-    Assert.assertThat(testUserAccount.getUsername(), equalTo("test"));
+    assertThat(testUserAccount.getUsername(), equalTo("test"));
   }
 
 }

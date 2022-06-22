@@ -1,0 +1,71 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<section class="content-header" ng-cloak>
+    <h1>
+        <i class="fa fa-rocket"></i>&nbsp;&nbsp; <span ng-if="!$ctrl.newClient">{{$ctrl.clientVal.client_name}}</span>
+        <span ng-if="$ctrl.newClient">Create a new client</span>
+    </h1>
+    <ol class="breadcrumb hidden-xs" ng-if="!$ctrl.newClient">
+        <li><a ui-sref="myClients" ui-sref-opts="{reload:true}"><i class="fa fa-rocket"></i> My Clients</a> &gt;
+            {{$ctrl.clientVal.client_name}}</li>
+    </ol>
+</section>
+
+<section class="content" ng-cloak>
+    <div class="row">
+        <section class="col-xs-12" ng-cloak>
+            <form name="clientForm" novalidate>
+                <uib-tabset active="$ctrl.activeTab" class="nav-tabs-custom">
+                    <uib-tab index="1">
+                        <uib-tab-heading>Main</uib-tab-heading>
+                        <clientsettings client="$ctrl.clientVal" new-client="$ctrl.newClient"></clientsettings>
+                    </uib-tab>
+                    <uib-tab index="2">
+                        <uib-tab-heading>Credentials</uib-tab-heading>
+                        <clientauth client="$ctrl.clientVal" new-client="$ctrl.newClient" limited="true"></clientauth>
+                    </uib-tab>
+                    <uib-tab index="3">
+                        <uib-tab-heading>Scopes</uib-tab-heading>
+                        <scopelist client="$ctrl.clientVal" system-scopes="$ctrl.systemScopes" limited="true" />
+                    </uib-tab>
+
+                    <uib-tab index="4">
+                        <uib-tab-heading>Grant types</uib-tab-heading>
+                        <granttypelist client="$ctrl.clientVal" limited="true" />
+                    </uib-tab>
+                    <uib-tab index="6">
+                        <uib-tab-heading>Crypto</uib-tab-heading>
+                        <clientcryptosettings client="$ctrl.clientVal"></clientcryptosettings>
+                    </uib-tab>
+                    <uib-tab index="7">
+                        <uib-tab-heading>Other info</uib-tab-heading>
+                        <othersettings client="$ctrl.clientVal"></othersettings>
+                    </uib-tab>
+
+                </uib-tabset>
+            </form>
+            <div class="form-group">
+                <button class="btn btn-success" ng-click="$ctrl.saveClient()">Save client</button>
+                <button class="btn btn-danger" ng-click="$ctrl.deleteClient()" ng-if="!$ctrl.newClient">Delete
+                    client</button>
+                <button class="btn btn-default" ng-click="$ctrl.resetVal()" ng-if="!$ctrl.newClient">Reset</button>
+                <button class="btn btn-default" ng-click="$ctrl.cancel()">Cancel</button>
+            </div>
+        </section>
+    </div>
+</section>

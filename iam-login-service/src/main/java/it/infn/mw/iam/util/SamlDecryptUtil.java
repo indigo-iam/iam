@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -63,6 +64,8 @@ public class SamlDecryptUtil {
     InputSource is = new InputSource(reader);
 
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+    factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     factory.setNamespaceAware(true);
     DocumentBuilder documentBuilder = null;
     documentBuilder = factory.newDocumentBuilder();
@@ -101,7 +104,10 @@ public class SamlDecryptUtil {
 
       Element element = marshall(xmlObject);
 
-      Transformer tr = TransformerFactory.newInstance().newTransformer();
+      TransformerFactory trfactory = TransformerFactory.newInstance();
+      trfactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+      trfactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+      Transformer tr = trfactory.newTransformer();
       tr.setOutputProperty(OutputKeys.INDENT, "yes");
       tr.setOutputProperty(OutputKeys.METHOD, "xml");
       tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", String.valueOf(4));

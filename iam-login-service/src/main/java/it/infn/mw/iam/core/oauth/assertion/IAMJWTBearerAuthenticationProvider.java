@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,13 +56,15 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
   private static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
 
-  private final int CLOCK_SKEW_IN_SECONDS = 300;
+  private static final int CLOCK_SKEW_IN_SECONDS = 300;
+
+  private static final String INVALID_SIGNATURE_ALGO = "Invalid signature algorithm: %s";
 
   private final Clock clock;
   private final ClientDetailsEntityService clientService;
   private final ClientKeyCacheService validators;
 
-  private final String TOKEN_ENDPOINT;
+  private final String tokenEndpoint;
 
   public IAMJWTBearerAuthenticationProvider(Clock clock, IamProperties iamProperties,
       ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
@@ -72,11 +74,15 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     this.validators = validators;
 
     if (iamProperties.getIssuer().endsWith("/")) {
-      TOKEN_ENDPOINT = iamProperties.getIssuer() + "token";
+      tokenEndpoint = iamProperties.getIssuer() + "token";
     } else {
-      TOKEN_ENDPOINT = iamProperties.getIssuer() + "/token";
+      tokenEndpoint = iamProperties.getIssuer() + "/token";
     }
 
+  }
+
+  private String invalidSignatureAlgorithm(JWSAlgorithm alg) {
+    return String.format(INVALID_SIGNATURE_ALGO, alg.getName());
   }
 
   private void clientAuthMethodChecks(ClientDetailsEntity client, SignedJWT jws) {
@@ -94,17 +100,16 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
 
     if (client.getTokenEndpointAuthSigningAlg() != null
         && !client.getTokenEndpointAuthSigningAlg().equals(alg)) {
-      invalidBearerAssertion("Invalid signature algorithm: " + alg.getName());
+      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
 
     if (client.getTokenEndpointAuthMethod().equals(AuthMethod.PRIVATE_KEY)) {
       if (!JWSAlgorithm.Family.SIGNATURE.contains(alg)) {
-        invalidBearerAssertion("Invalid signature algorithm: " + alg.getName());
+        invalidBearerAssertion(invalidSignatureAlgorithm(alg));
       }
-    } else if (client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_JWT)) {
-      if (!JWSAlgorithm.Family.HMAC_SHA.contains(alg)) {
-        invalidBearerAssertion("Invalid signature algorithm: " + alg.getName());
-      }
+    } else if (client.getTokenEndpointAuthMethod().equals(AuthMethod.SECRET_JWT)
+        && !JWSAlgorithm.Family.HMAC_SHA.contains(alg)) {
+      invalidBearerAssertion(invalidSignatureAlgorithm(alg));
     }
   }
 
@@ -165,7 +170,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     if (isNull(jwtClaims.getAudience())) {
       invalidBearerAssertion("assertion audience is null");
     } else {
-      if (!jwtClaims.getAudience().contains(TOKEN_ENDPOINT)) {
+      if (!jwtClaims.getAudience().contains(tokenEndpoint)) {
         invalidBearerAssertion("invalid audience");
       }
     }

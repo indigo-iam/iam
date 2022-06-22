@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -94,9 +94,10 @@ public class OidcConfiguration {
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
   @Bean
-  public FilterRegistrationBean disabledAutomaticOidcFilterRegistration(OidcClientFilter f) {
+  public FilterRegistrationBean<OidcClientFilter> disabledAutomaticOidcFilterRegistration(
+      OidcClientFilter f) {
 
-    FilterRegistrationBean b = new FilterRegistrationBean(f);
+    FilterRegistrationBean<OidcClientFilter> b = new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }

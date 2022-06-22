@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,20 +35,20 @@ public interface IamOAuthAccessTokenRepository
   Optional<OAuth2AccessTokenEntity> findByTokenValue(@Param("tokenValue") JWT tokenValue);
 
   @Query("select t from OAuth2AccessTokenEntity t where t.authenticationHolder.userAuth.name = :userId "
-    + "and (t.expiration is NULL or t.expiration > :timestamp)")
+    + "and (t.expiration is NOT NULL and t.expiration > :timestamp)")
   List<OAuth2AccessTokenEntity> findValidAccessTokensForUser(
     @Param("userId") String userId, @Param("timestamp") Date timestamp);
 
   @Query("select t from OAuth2AccessTokenEntity t "
     + "where (t.authenticationHolder.userAuth.name = :userId) "
-    + "and (t.expiration is NULL or t.expiration > :timestamp) order by t.expiration")
+    + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
   Page<OAuth2AccessTokenEntity> findValidAccessTokensForUser(
     @Param("userId") String userId, @Param("timestamp") Date timestamp,
     Pageable op);
 
   @Query("select t from OAuth2AccessTokenEntity t "
     + "where (t.authenticationHolder.clientId = :clientId) "
-    + "and (t.expiration is NULL or t.expiration > :timestamp) order by t.expiration")
+    + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
   Page<OAuth2AccessTokenEntity> findValidAccessTokensForClient(
     @Param("clientId") String clientId, @Param("timestamp") Date timestamp,
     Pageable op);
@@ -56,7 +56,7 @@ public interface IamOAuthAccessTokenRepository
   @Query("select t from OAuth2AccessTokenEntity t "
     + "where (t.authenticationHolder.userAuth.name = :userId) "
     + "and (t.authenticationHolder.clientId = :clientId) "
-    + "and (t.expiration is NULL or t.expiration > :timestamp) order by t.expiration")
+    + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
   Page<OAuth2AccessTokenEntity> findValidAccessTokensForUserAndClient(
 
     @Param("userId") String userId, @Param("clientId") String clientId,
@@ -65,28 +65,28 @@ public interface IamOAuthAccessTokenRepository
 
   @Query("select distinct t from OAuth2AccessTokenEntity t "
     + "where (t.authenticationHolder.scope not in ('registration-token', 'resource-token')) "
-    + "and (t.expiration is NULL or t.expiration > :timestamp) order by t.expiration ")
+    + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration ")
   Page<OAuth2AccessTokenEntity> findAllValidAccessTokens(
     @Param("timestamp") Date timestamp, Pageable op);
 
   @Query("select count(t) from OAuth2AccessTokenEntity t "
-    + "where (t.expiration is NULL or t.expiration > :timestamp)")
+    + "where (t.expiration is NOT NULL and t.expiration > :timestamp)")
   long countValidAccessTokens(@Param("timestamp") Date timestamp);
 
   @Query("select count(t) from OAuth2AccessTokenEntity t "
-    + "where (t.expiration is NULL or t.expiration > :timestamp) "
+    + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.userAuth.name = :userId)")
   long countValidAccessTokensForUser(@Param("userId") String userId,
     @Param("timestamp") Date timestamp);
 
   @Query("select count(t) from OAuth2AccessTokenEntity t "
-    + "where (t.expiration is NULL or t.expiration > :timestamp) "
+    + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.clientId = :clientId)")
   long countValidAccessTokensForClient(@Param("clientId") String clientId,
     @Param("timestamp") Date timestamp);
 
   @Query("select count(t) from OAuth2AccessTokenEntity t "
-    + "where (t.expiration is NULL or t.expiration > :timestamp) "
+    + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.userAuth.name = :userId) "
     + "and (t.authenticationHolder.clientId = :clientId)")
   long countValidAccessTokensForUserAndClient(@Param("userId") String userId,

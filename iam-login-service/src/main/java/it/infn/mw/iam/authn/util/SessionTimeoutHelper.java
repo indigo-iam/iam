@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class SessionTimeoutHelper {
   final long timeoutInSecs;
 
   @Autowired
-  public SessionTimeoutHelper(Clock clock, @Value("${server.session.timeout}")long timeoutInSecs) {
+  public SessionTimeoutHelper(Clock clock, @Value("${spring.session.timeout}") long timeoutInSecs) {
     this.clock = clock;
     this.timeoutInSecs = timeoutInSecs;
   }

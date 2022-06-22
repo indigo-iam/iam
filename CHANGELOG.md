@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.2 (2021-12-03)
+
+This release provides a single dependency change for the IAM login service
+application.
+
+### Added
+
+Upgrade flyway to version 4.2.0. This is needed to enable a smooth transition to the flyway version that will come with IAM v1.8.0 (which moves to Spring boot 2.5.x) (#443)
+
 ## 1.7.1 (2021-09-13)
 
 This release provides changes and bug fixes to the IAM test client application.

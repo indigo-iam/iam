@@ -1,0 +1,100 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form">
+    <div class="form-group">
+        <div class="form-group">
+            <label for="at_timeout">Access token timeout (seconds)</label>
+            <input id="at_timeout" class="form-control" type="text"
+                ng-model="$ctrl.client.access_token_validity_seconds" placeholder="3600"
+                ng-disabled="$ctrl.client.access_token_validity_seconds <= 0">
+        </div>
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.client.access_token_validity_seconds" ng-true-value="0"
+                    ng-false-value="3600">
+                Access tokens do not expire
+            </label>
+        </div>
+
+    </div>
+    <div class="form-group">
+        <label for="id_timeout">ID token timeout (seconds)</label>
+
+        <input id="id_timeout" class="form-control" type="text" ng-model="$ctrl.client.id_token_validity_seconds"
+            placeholder="600" ng-required ng-min="30">
+    </div>
+    <div class="form-group">
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.client.require_auth_time">
+                Always require authentication time in ID tokens
+            </label>
+        </div>
+    </div>
+    <hr>
+    <div class="form-group">
+        <label>Refresh token settings</label>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.canIssueRefreshTokens" ng-change="$ctrl.toggleOfflineAccess()">
+                Refresh tokens are issued for this client
+            </label>
+        </div>
+        <p class="help-block">
+            This will setup the offline_access scope and refresh_token grant
+            type for this client, if not already set.
+        </p>
+    </div>
+
+    <div class="form-group">
+        <label for="rt_timeout">Refresh token timeout (seconds)</label>
+
+        <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
+            placeholder="259200" ng-required ng-min="30" ng-disabled="$ctrl.client.refresh_token_validity_seconds <= 0">
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.client.refresh_token_validity_seconds" ng-true-value="0"
+                    ng-false-value="259200">
+                Refresh tokens do not expire
+            </label>
+        </div>
+
+    </div>
+    <div class="form-group">
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.client.clear_access_tokens_on_refresh">
+                Clear access tokens on refresh
+            </label>
+        </div>
+    </div>
+    <hr>
+    <div class="form-group">
+        <label for="rt_timeout">Device code timeout (seconds)</label>
+
+        <input id="dc_timeout" class="form-control" type="text" ng-model="$ctrl.client.device_code_validity_seconds"
+            placeholder="600" ng-disabled="!$ctrl.hasDeviceCodeGrantType">
+        <p class="help-block" ng-hide="$ctrl.hasDeviceCodeGrantType">
+            The control is disabled as the client is not authorized for the
+            device code grant type.
+        </p>
+
+    </div>
+</div>

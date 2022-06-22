@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package it.infn.mw.iam.test.scim.updater;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.time.Instant;
 import java.util.Date;
@@ -31,16 +31,13 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
@@ -49,24 +46,19 @@ import it.infn.mw.iam.api.scim.updater.builders.Removers;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
 import it.infn.mw.iam.api.scim.updater.util.CollectionHelpers;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
-import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
+import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamNoMvcTest
 public class AccountUpdatersTests extends X509TestSupport {
 
   public static final String OLD = "old";
@@ -100,20 +92,19 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   @Autowired
-  IamAccountRepository accountRepo;
+  private IamAccountRepository accountRepo;
 
   @Autowired
-  IamAccountService accountService;
+  private IamAccountService accountService;
 
   @Autowired
-  IamGroupService groupService;
+  private OAuth2TokenEntityService tokenService;
 
   @Autowired
-  PasswordEncoder encoder;
+  private PasswordEncoder encoder;
 
-  IamAccount account;
-  IamAccount other;
-  IamGroup group;
+  private IamAccount account;
+  private IamAccount other;
 
   private IamAccount newAccount(String username) {
     IamAccount account = new IamAccount();
@@ -128,16 +119,8 @@ public class AccountUpdatersTests extends X509TestSupport {
     return accountService.createAccount(account);
   }
 
-  private IamGroup newGroup(String name) {
-    IamGroup group = new IamGroup();
-    group.setUuid(UUID.randomUUID().toString());
-    group.setName(name);
-
-    return groupService.createGroup(group);
-  }
-
   private Adders accountAdders() {
-    return AccountUpdaters.adders(accountRepo, accountService, encoder, account);
+    return AccountUpdaters.adders(accountRepo, accountService, encoder, account, tokenService);
   }
 
   private Removers accountRemovers() {
@@ -145,15 +128,13 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account);
+    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account, tokenService);
   }
 
   @Before
   public void before() {
     account = newAccount("account");
     other = newAccount("other");
-    group = newGroup("group");
-
   }
 
   @Test
@@ -370,8 +351,6 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(account.getOidcIds(), hasSize(0));
 
   }
-
-
 
   @Test
   public void testOidcIdRemoverNoUpdateWithEmptyList2() {

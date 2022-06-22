@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordTokenGranter {
 
   private AUPSignatureCheckService signatureCheckService;
@@ -59,7 +60,7 @@ public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordT
 
     if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
       throw new InvalidGrantException(
-          format("User '%s' needs to sign AUP for this organization in order to proceed.",
+          format("User %s needs to sign AUP for this organization in order to proceed.",
               user.get().getUsername()));
     }
 

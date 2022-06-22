@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  */
 package it.infn.mw.iam.test.ext_authn.x509;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
@@ -65,7 +64,7 @@ public class X509CredentialExtractorTests extends X509TestSupport {
     try {
       extractor.extractX509Credential(request);
     } catch (IllegalArgumentException e) {
-      Assert.assertThat(e.getMessage(), containsString("Required header not found"));
+      assertThat(e.getMessage(), containsString("Required header not found"));
       throw e;
     }
   }

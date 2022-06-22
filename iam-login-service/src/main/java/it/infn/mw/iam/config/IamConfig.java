@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
-import org.springframework.boot.context.embedded.ServletRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -76,7 +76,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
-import it.infn.mw.iam.core.web.EnforceAupFilter;
+import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -89,6 +89,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 
+@SuppressWarnings("deprecation")
 @Configuration
 public class IamConfig {
   public static final Logger LOG = LoggerFactory.getLogger(IamConfig.class);
@@ -238,10 +239,11 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean aupSignatureCheckFilter(AUPSignatureCheckService service,
+  FilterRegistrationBean<EnforceAupFilter> aupSignatureCheckFilter(AUPSignatureCheckService service,
       AccountUtils utils, IamAupRepository repo) {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
-    FilterRegistrationBean frb = new FilterRegistrationBean(aupFilter);
+    FilterRegistrationBean<EnforceAupFilter> frb =
+        new FilterRegistrationBean<>(aupFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
@@ -256,8 +258,9 @@ public class IamConfig {
 
   @Bean
   @Profile("dev")
-  ServletRegistrationBean h2Console() {
+  ServletRegistrationBean<WebServlet> h2Console() {
     WebServlet h2Servlet = new WebServlet();
-    return new ServletRegistrationBean(h2Servlet, "/h2-console/*");
+    return new ServletRegistrationBean<>(h2Servlet, "/h2-console/*");
   }
+
 }

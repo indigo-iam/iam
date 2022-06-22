@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class Removers extends AccountBuilderSupport {
 
   public Removers(IamAccountRepository repo, IamAccountService accountService, IamAccount account) {
     super(repo, accountService, account);
-    unlinkSshKeys = (keys) -> {
+    unlinkSshKeys = keys -> {
       for (IamSshKey k : keys) {
         if (!isNull(k)) {
           accountService.removeSshKey(account, k);

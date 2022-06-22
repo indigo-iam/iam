@@ -1,6 +1,6 @@
 <%--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@
     <input id="login-submit" type="submit" class="btn btn-primary btn-block"
       value="${loginPageConfiguration.loginButtonText}" name="submit" class="form-control">
   </div>
+  <c:if test="${loginPageConfiguration.registrationEnabled}">
+    <div id="forgot-password" ng-controller="ForgotPasswordModalController">
+      <a class="btn btn-link btn-block" ng-click="open()">Forgot your password?</a>
+    </div>
+  </c:if>
 </form>
-<c:if test="${loginPageConfiguration.registrationEnabled}">
-  <div id="forgot-password" ng-controller="ForgotPasswordModalController">
-    <a class="btn btn-link btn-block" ng-click="open()">Forgot your password?</a>
-  </div>
-</c:if>

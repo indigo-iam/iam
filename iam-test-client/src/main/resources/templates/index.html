@@ -141,15 +141,15 @@
           self.sub = response.data.sub;
           self.issuer = response.data.issuer;
           
-          self.access_token_claims = $.parseJSON(response.data.accessTokenClaims);
+          self.access_token_claims = JSON.parse(response.data.accessTokenClaims);
           
           self.access_token_jwt = response.data.accessToken;
           
-          self.id_token_claims = $.parseJSON(response.data.idTokenClaims);
+          self.id_token_claims = JSON.parse(response.data.idTokenClaims);
           
           self.id_token_jwt = response.data.idToken;
           
-          self.user_info = $.parseJSON(response.data.userInfo);
+          self.user_info = JSON.parse(response.data.userInfo);
 
           if (response.data.refreshToken) {
             self.has_refresh_token = true;

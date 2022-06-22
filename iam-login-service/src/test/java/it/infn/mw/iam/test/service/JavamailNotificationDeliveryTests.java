@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,15 @@ package it.infn.mw.iam.test.service;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-
-import java.util.Date;
-import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +36,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -88,7 +85,7 @@ public class JavamailNotificationDeliveryTests {
   public void setup() {
 
     when(properties.getMailFrom()).thenReturn(IAM_MAIL_FROM);
-    when(properties.getAdminAddress()).thenReturn(IAM_ADMIN_ADDRESS);
+    // when(properties.getAdminAddress()).thenReturn(IAM_ADMIN_ADDRESS);
   }
 
 
@@ -97,26 +94,22 @@ public class JavamailNotificationDeliveryTests {
     when(notificationRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING)).thenReturn(emptyList());
 
     delivery.sendPendingNotifications();
-    verifyZeroInteractions(mailSender);
-
+    verifyNoInteractions(mailSender);
   }
 
   @Test
   public void testMessageIsDelivered() {
 
-    String randomUuid = UUID.randomUUID().toString();
-    Date currentTime = new Date();
+    
     IamEmailNotification notification = mock(IamEmailNotification.class);
     IamNotificationReceiver receiver = mock(IamNotificationReceiver.class);
 
-    when(receiver.getIamEmailNotification()).thenReturn(notification);
+    // when(receiver.getIamEmailNotification()).thenReturn(notification);
     when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
 
     when(notification.getBody()).thenReturn("Body");
     when(notification.getSubject()).thenReturn("Subject");
-    when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
-    when(notification.getCreationTime()).thenReturn(currentTime);
-    when(notification.getUuid()).thenReturn(randomUuid);
+    // when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
 
 
     when(notification.getReceivers()).thenReturn(asList(receiver));
@@ -140,19 +133,17 @@ public class JavamailNotificationDeliveryTests {
 
   @Test
   public void testDeliveryErrorIsPropagated() {
-    String randomUuid = UUID.randomUUID().toString();
-    Date currentTime = new Date();
     IamEmailNotification notification = Mockito.mock(IamEmailNotification.class);
     IamNotificationReceiver receiver = Mockito.mock(IamNotificationReceiver.class);
 
-    when(receiver.getIamEmailNotification()).thenReturn(notification);
-    when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
+    // when(receiver.getIamEmailNotification()).thenReturn(notification);
+    // when(receiver.getEmailAddress()).thenReturn(TEST_0_EMAIL);
 
     when(notification.getBody()).thenReturn("Body");
     when(notification.getSubject()).thenReturn("Subject");
-    when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
-    when(notification.getCreationTime()).thenReturn(currentTime);
-    when(notification.getUuid()).thenReturn(randomUuid);
+    // when(notification.getDeliveryStatus()).thenReturn(IamDeliveryStatus.PENDING);
+    // when(notification.getCreationTime()).thenReturn(currentTime);
+    // when(notification.getUuid()).thenReturn(randomUuid);
 
     doThrow(new MailSendException("Error sending email")).when(mailSender)
       .send(Mockito.any(SimpleMailMessage.class));

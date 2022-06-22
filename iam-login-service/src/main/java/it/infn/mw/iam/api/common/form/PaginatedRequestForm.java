@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import javax.validation.constraints.Min;
 public class PaginatedRequestForm {
 
   @Min(value = 0, message = "must be >=0")
-  private Integer count;
+  private Integer count = 10;
 
   @Min(value = 1, message = "must be >=1")
-  private Integer startIndex;
+  private Integer startIndex = 1;
 
   public Integer getCount() {
     return count;

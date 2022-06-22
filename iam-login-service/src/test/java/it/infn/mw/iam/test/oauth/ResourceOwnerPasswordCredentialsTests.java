@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,15 +31,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -56,20 +50,19 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@WebAppConfiguration
-@Transactional
+
+@SuppressWarnings("deprecation")
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class ResourceOwnerPasswordCredentialsTests {
 
   private static final String GRANT_TYPE = "password";
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
   private static final String SCOPE = "openid profile";
-
-  @Autowired
-  private WebApplicationContext context;
 
   @Autowired
   private ObjectMapper mapper;
@@ -92,27 +85,13 @@ public class ResourceOwnerPasswordCredentialsTests {
   @Autowired
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
 
+  @Autowired
   private MockMvc mvc;
 
   @Before
   public void setup() throws Exception {
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .apply(springSecurity())
-      .alwaysDo(log())
-      .build();
-
     accessTokenRepo.deleteAll();
     refreshTokenRepo.deleteAll();
-  }
-
-  @Test
-  public void testDiscoveryEndpoint() throws Exception {
-
-    // @formatter:off
-    mvc.perform(get("/.well-known/openid-configuration"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.issuer", equalTo("http://localhost:8080/")));
-    // @formatter:on
   }
 
   @Test
@@ -160,7 +139,7 @@ public class ResourceOwnerPasswordCredentialsTests {
         .param("scope", SCOPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_grant"))
-      .andExpect(jsonPath("$.error_description").value("User 'test' needs to sign AUP for this organization in order to proceed."));
+      .andExpect(jsonPath("$.error_description").value("User test needs to sign AUP for this organization in order to proceed."));
     // @formatter:on
   }
 

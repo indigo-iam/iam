@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import java.util.concurrent.TimeUnit;
 
 import javax.validation.Valid;
 
-import org.hibernate.validator.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 import org.opensaml.saml2.core.NameIDType;
 import org.opensaml.xml.signature.SignatureConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 import com.google.common.collect.Lists;
 
@@ -33,8 +34,10 @@ import it.infn.mw.iam.config.login.LoginButtonProperties;
 import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties.AttributeMappingProperties;
 
 @ConfigurationProperties(prefix = "saml")
+@Validated
 public class IamSamlProperties {
   
+  @Validated
   public static class IssuerValidationProperties {
     
     @NotBlank

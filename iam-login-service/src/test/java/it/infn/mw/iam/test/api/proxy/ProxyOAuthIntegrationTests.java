@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,20 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Date;
-import java.time.Clock;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -52,21 +43,19 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.TokenResponse;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyOAuthIntegrationTests.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, RCAuthTestSupport.class, ProxyCertificateClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
     "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
     "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
     "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 public class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
-
-  @Autowired
-  private WebApplicationContext context;
 
   @Autowired
   IamProperties iamProperties;
@@ -77,19 +66,8 @@ public class ProxyOAuthIntegrationTests extends ProxyCertificateTestSupport {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
   private MockMvc mvc;
-
-  @Bean
-  @Primary
-  public Clock clock() {
-    return clock;
-  }
-
-  @Before
-  public void setup() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
 
   private void linkProxyToTestAccount() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test")

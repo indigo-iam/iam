@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -635,3 +635,52 @@ body.skin-blue {
 .add-group-form{
     
 }
+
+.btn-deny {
+    background-color: #b94a48;
+    border-color: #8b0000;
+    color: #fff;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.btn-deny:active,
+.btn-deny:focus,
+.btn-deny:hover {
+  background-color: #8b0000;
+  color: #fff;
+}
+
+.list {
+    width: 250px;
+    margin: auto;
+    text-align: left;
+  }
+  
+.more-info {
+   width: 370px;
+   margin: 0 auto;
+   overflow-y: auto;
+   padding: 19px;
+   text-align: left;
+   font-size: 13px;
+   background-color: #f5f5f5;
+   border: 1px solid lightgrey;
+   border-top-left-radius: 5px;
+   border-top-right-radius: 5px;
+   border-bottom-left-radius: 5px;
+   border-bottom-right-radius: 5px;
+}
+
+.scopes-box {
+    width: 370px;
+    margin: 0 auto;
+    padding: 19px;
+    text-align: left;
+    background-color: #ffffff;
+    border: 1px solid lightgrey;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+

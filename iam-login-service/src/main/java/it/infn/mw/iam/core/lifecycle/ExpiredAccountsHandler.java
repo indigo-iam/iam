@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,9 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class ExpiredAccountsHandler implements Runnable {
 
   public enum AccountLifecycleStatus {
-    OK, PENDING_SUSPENSION, PENDING_REMOVAL
+    OK,
+    PENDING_SUSPENSION,
+    PENDING_REMOVAL
   }
 
   public static final String LIFECYCLE_TIMESTAMP_LABEL = "lifecycle.timestamp";
@@ -155,7 +157,7 @@ public class ExpiredAccountsHandler implements Runnable {
     checkTime = clock.instant();
     Date now = Date.from(checkTime);
 
-    Pageable pageRequest = new PageRequest(0, PAGE_SIZE, new Sort(Direction.ASC, "endTime"));
+    Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
 
     while (true) {
       Page<IamAccount> expiredAccountsPage =
@@ -163,7 +165,7 @@ public class ExpiredAccountsHandler implements Runnable {
       LOG.debug("expiredAccountsPage: {}", expiredAccountsPage);
 
       if (expiredAccountsPage.hasContent()) {
-        
+
         for (IamAccount expiredAccount : expiredAccountsPage.getContent()) {
           handleExpiredAccount(expiredAccount);
         }
@@ -176,7 +178,7 @@ public class ExpiredAccountsHandler implements Runnable {
       pageRequest = expiredAccountsPage.nextPageable();
     }
 
-    // Removals must be handled separately, otherwise pagination breaks 
+    // Removals must be handled separately, otherwise pagination breaks
     for (IamAccount a : accountsScheduledForRemoval) {
       removeAccount(a);
     }

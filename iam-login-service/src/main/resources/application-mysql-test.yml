@@ -1,5 +1,5 @@
 #
-# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,33 +15,25 @@
 #
 
 spring:
-  profiles:
-    include: mysql,registration,saml
+  main:
+    allow-bean-definition-overriding: true
+    banner-mode: off
+    
   datasource:
-    dataSourceClassName: com.mysql.jdbc.jdbc2.optional.MysqlDataSource
+    
     url: jdbc:mysql://${IAM_DB_HOST:dev.local.io}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=${IAM_DB_USE_SSL:false}
     username: ${IAM_DB_USERNAME:iam}
     password: ${IAM_DB_PASSWORD:pwd}
-    max-active: 5
-    min-idle: 1
-    max-idle:  1
-    initial-size: 2
-    test-while-idle: true
-    test-on-borrow: true
-    validation-query: SELECT 1
-    time-between-eviction-runs-millis: 5000
-    min-evictable-idle-time-millis: 5000
+    
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-test-query: SELECT 1
      
+  flyway:
+    locations:
+      - classpath:db/migration/mysql
+      - classpath:db/migration/test
+
 notification:
   disable: true
-
- 
-flyway:
-  locations:
-    - classpath:db/migration/mysql
-    - classpath:db/migration/test
-
-management:
-  health:
-    mail:
-      enabled: false

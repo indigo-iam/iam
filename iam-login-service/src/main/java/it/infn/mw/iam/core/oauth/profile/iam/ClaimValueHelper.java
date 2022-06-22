@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableSet;
-
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -31,7 +29,7 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 public class ClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS =
-      ImmutableSet.of("name", "email", "preferred_username", "organisation_name", "groups", "attr");
+      Set.of("name", "email", "preferred_username", "organisation_name", "groups", "attr");
 
   @Value("${iam.organisation.name}")
   String organisationName;

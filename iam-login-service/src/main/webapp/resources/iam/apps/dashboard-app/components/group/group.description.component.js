@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
     'use strict';
 
     angular
-        .module ('dashboardApp')
-        .component ('groupDescription', groupDescription());
+        .module('dashboardApp')
+        .component('groupDescription', groupDescription());
 
     function SetDescription($uibModalInstance, GroupsService, toaster, group) {
         var self = this;
@@ -33,7 +33,7 @@
             $uibModalInstance.dismiss("cancel");
         }
 
-        function submit(){
+        function submit() {
             self.enabled = false;
 
             var g = {
@@ -41,11 +41,11 @@
                 description: self.description
             };
 
-            var handleSuccess = function(res){
+            var handleSuccess = function (res) {
                 $uibModalInstance.close(res);
             };
 
-            var handleError = function(res) {
+            var handleError = function (res) {
                 toaster.pop({
                     type: 'error',
                     body: res.error
@@ -59,36 +59,36 @@
 
     GroupDescriptionController.$inject = ['Utils', '$uibModal', 'toaster'];
 
-    function GroupDescriptionController(Utils, $uibModal, toaster){
+    function GroupDescriptionController(Utils, $uibModal, toaster) {
         var self = this;
 
         self.$onInit = $onInit;
         self.groupDescription = groupDescription;
         self.changeDescription = changeDescription;
 
-        function $onInit(){
+        function $onInit() {
             self.voAdmin = Utils.isAdmin();
 
         }
 
-        function groupDescription(){
-            if (self.group["urn:indigo-dc:scim:schemas:IndigoGroup"]){
+        function groupDescription() {
+            if (self.group["urn:indigo-dc:scim:schemas:IndigoGroup"]) {
                 return self.group["urn:indigo-dc:scim:schemas:IndigoGroup"].description;
             }
 
             return undefined;
         }
 
-        function changeDescription(){
-            
+        function changeDescription() {
+
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/group/set-group-description.dialog.html',
                 controller: SetDescription,
                 controllerAs: '$ctrl',
-                resolve: { group: function() { return self.group; } }
+                resolve: { group: function () { return self.group; } }
             });
 
-            var handleSuccess = function(res){
+            var handleSuccess = function (res) {
                 self.group["urn:indigo-dc:scim:schemas:IndigoGroup"].description = res.data.description;
                 toaster.pop({
                     type: 'success',
@@ -97,10 +97,10 @@
                 return res;
             };
 
-            var handleError = function(res) {
+            var handleError = function (res) {
 
             };
-            
+
             modalInstance.result.then(handleSuccess, handleError);
         }
     }
@@ -108,10 +108,10 @@
     function groupDescription() {
         return {
             templateUrl: "/resources/iam/apps/dashboard-app/components/group/group.description.component.html",
-            bindings: { group: '<' },
+            bindings: { group: '=' },
             controller: GroupDescriptionController,
             controllerAs: '$ctrl'
         };
     }
 
-} ());
+}());

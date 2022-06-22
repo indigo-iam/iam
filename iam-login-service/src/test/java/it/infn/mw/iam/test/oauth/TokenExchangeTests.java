@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -24,32 +25,27 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -57,13 +53,14 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import net.minidev.json.JSONObject;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@WebAppConfiguration
-@Transactional
+
+@SuppressWarnings("deprecation")
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class TokenExchangeTests extends EndpointsTestUtils {
 
   private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
@@ -75,20 +72,10 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   private static final String TOKEN_ENDPOINT = "/token";
 
   @Autowired
-  private WebApplicationContext context;
-
-  @Autowired
   private ObjectMapper mapper;
 
   @Autowired
   private IamAupRepository aupRepo;
-
-  @Before
-  public void setup() throws Exception {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
-
 
   @Test
   public void testImpersonationFlowWithAudience() throws Exception {
@@ -203,7 +190,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_grant")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("User 'test' needs to sign AUP for this organization in order to proceed.")));
+          equalTo("User test needs to sign AUP for this organization in order to proceed.")));
   }
 
   @Test
@@ -354,11 +341,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     
-    JSONObject actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
+    Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
     
     assertThat(actClaim, notNullValue());
-    assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
-    assertThat(actClaim.getAsString("act"), nullValue());
+    assertThat(actClaim.get("sub"), is("token-exchange-actor"));
+    assertThat(actClaim.get("act"), nullValue());
 
     String refreshToken = responseToken.getRefreshToken().getValue();
 
@@ -383,8 +370,8 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
     
     assertThat(actClaim, notNullValue());
-    assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
-    assertThat(actClaim.getAsString("act"), nullValue());
+    assertThat(actClaim.get("sub"), is("token-exchange-actor"));
+    assertThat(actClaim.get("act"), nullValue());
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
@@ -588,11 +575,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     
-    JSONObject actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
+    Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
     
     assertThat(actClaim, notNullValue());
-    assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
-    assertThat(actClaim.getAsString("act"), nullValue());
+    assertThat(actClaim.get("sub"), is("token-exchange-actor"));
+    assertThat(actClaim.get("act"), nullValue());
 
     String refreshToken = responseToken.getRefreshToken().getValue();
 
@@ -617,8 +604,8 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
     
     assertThat(actClaim, notNullValue());
-    assertThat(actClaim.getAsString("sub"), is("token-exchange-actor"));
-    assertThat(actClaim.getAsString("act"), nullValue());
+    assertThat(actClaim.get("sub"), is("token-exchange-actor"));
+    assertThat(actClaim.get("act"), nullValue());
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
@@ -654,7 +641,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
     
     assertThat(actClaim, notNullValue());
-    assertThat(actClaim.getAsString("sub"), is("token-lookup-client"));
+    assertThat(actClaim.get("sub"), is("token-lookup-client"));
     
     JSONObject innerActClaim = (JSONObject) actClaim.get("act");
     assertThat(innerActClaim.getAsString("sub"), is("token-exchange-actor"));

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class RegistrationRequestDto {
   private Date lastUpdateTime;
   @Size(max = 32, message = "username cannot be longer than 32 chars")
   @Pattern(regexp = USERNAME_REGEXP,
-          message = "invalid username (does not match with regexp for UNIX usernames: '" + USERNAME_REGEXP + "')")
+      message = "invalid username (the provided username is not a valid UNIX username)")
   private String username;
   private String password;
   private String givenname;

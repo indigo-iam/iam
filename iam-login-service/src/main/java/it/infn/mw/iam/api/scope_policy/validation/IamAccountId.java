@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.scope_policy.validation;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -26,10 +27,11 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({FIELD, METHOD})
+@Target({FIELD, METHOD, PARAMETER})
 @Constraint(validatedBy=IamAccountIdValidator.class)
 public @interface IamAccountId {
   String message() default "Invalid IAM account uuid";
+  boolean nullable() default false;
   Class<?>[] groups() default {};
   Class<? extends Payload>[] payload() default {};
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package it.infn.mw.iam.config;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -25,6 +25,7 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 
+@SuppressWarnings("deprecation")
 @Configuration
 @Order(9) // This is important! Do not remove
 public class ResourceServerConfig {
@@ -36,10 +37,11 @@ public class ResourceServerConfig {
   private OAuth2TokenEntityService tokenService;
 
   @Bean
-  public FilterRegistrationBean disabledAutomaticFilterRegistration(
+  public FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> disabledAutomaticFilterRegistration(
       final OAuth2AuthenticationProcessingFilter f) {
 
-    FilterRegistrationBean b = new FilterRegistrationBean(f);
+    FilterRegistrationBean<OAuth2AuthenticationProcessingFilter> b =
+        new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }

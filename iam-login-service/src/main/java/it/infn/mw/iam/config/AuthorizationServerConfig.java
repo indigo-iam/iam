@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
@@ -60,6 +61,7 @@ import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
 
+@SuppressWarnings("deprecation")
 @Configuration
 @EnableAuthorizationServer
 public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
@@ -103,7 +105,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   private TokenExchangePdp tokenExchangePdp;
 
   @Bean
-  WebResponseExceptionTranslator webResponseExceptionTranslator() {
+  WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
 
     return new DefaultWebResponseExceptionTranslator();
   }

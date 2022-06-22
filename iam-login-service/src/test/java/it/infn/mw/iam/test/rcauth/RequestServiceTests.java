@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import static it.infn.mw.iam.rcauth.DefaultRcAuthRequestService.STATE_PARAM;
 import static it.infn.mw.iam.rcauth.RCAuthController.CALLBACK_PATH;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +49,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -176,7 +176,7 @@ public class RequestServiceTests extends RCAuthTestSupport {
   @Test(expected = RCAuthError.class)
   public void testHandleCodeResponseContextNotFound() throws UnsupportedEncodingException {
 
-    when(authzResponse.getState()).thenReturn("76321");
+    // when(authzResponse.getState()).thenReturn("76321");
 
     try {
       service.handleAuthorizationCodeResponse(session, authzResponse);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static java.util.Collections.emptyList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +32,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -78,8 +78,8 @@ public class ScopePolicyAuditTests extends ScopePolicyTestUtils {
     converter = new DefaultScopePolicyConverter(new DefaultScimResourceLocationProvider(),
         accountRepo, groupRepo);
 
-    when(scopePolicyRepo.findDefaultPolicies()).thenReturn(emptyList());
-    when(scopePolicyRepo.findEquivalentPolicies(Mockito.anyObject()))
+    // when(scopePolicyRepo.findDefaultPolicies()).thenReturn(emptyList());
+    when(scopePolicyRepo.findEquivalentPolicies(Mockito.any()))
       .thenReturn(emptyList());
     
     when(scopePolicyRepo.save(Mockito.any(IamScopePolicy.class))).thenAnswer(returnsFirstArg());

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableSet;
-
 import it.infn.mw.iam.authn.common.Conjunction;
 import it.infn.mw.iam.authn.common.Disjunction;
 import it.infn.mw.iam.authn.common.Fail;
@@ -46,7 +44,7 @@ public class DefaultValidatorConfigParser implements ValidatorConfigParser {
   public static final String CLAIM_NAME_PARAM = "claimName";
   public static final String REGEXP_PARAM = "regexp";
 
-  private static final Set<String> KIND = ImmutableSet.of("or", "and", "not", "hasAttr",
+  private static final Set<String> KIND = Set.of("or", "and", "not", "hasAttr",
       "attrValueMatches", "hasClaim", "claimValueMatches", "true", "false");
 
   @SuppressWarnings({"unchecked", "rawtypes"})

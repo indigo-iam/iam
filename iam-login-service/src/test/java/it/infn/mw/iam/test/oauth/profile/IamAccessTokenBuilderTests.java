@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -33,7 +33,7 @@ import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -44,6 +44,7 @@ import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
+@SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
 public class IamAccessTokenBuilderTests {
 
@@ -83,9 +84,9 @@ public class IamAccessTokenBuilderTests {
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");
-    when(authentication.getName()).thenReturn("auth-name");
+    // when(authentication.getName()).thenReturn("auth-name");
     when(authentication.getOAuth2Request()).thenReturn(oauth2Request);
-    when(authentication.isClientOnly()).thenReturn(false);
+    // when(authentication.isClientOnly()).thenReturn(false);
     when(userInfo.getSub()).thenReturn("userinfo-sub");
     when(oauth2Request.getGrantType()).thenReturn(TOKEN_EXCHANGE_GRANT_TYPE);
   }

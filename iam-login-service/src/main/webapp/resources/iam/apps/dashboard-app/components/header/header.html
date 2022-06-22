@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,10 +31,11 @@
         <ul class="nav navbar-nav">
             <!-- Notifications: style can be found in dropdown.less -->
             <li class="dropdown notifications-menu" uib-dropdown ng-show="$root.loggedUser.isAdmin && $root.isRegistrationEnabled">
-                <a href="" class="dropdown-toggle" uib-dropdown-toggle> <i class="fa fa-bell-o"></i> <span class="label label-warning" ng-show="$root.loggedUser.pendingRequests.length">{{$root.loggedUser.pendingRequests.length}}</span>
+                <a href="" class="dropdown-toggle" uib-dropdown-toggle> <i class="fa fa-bell-o"></i> <span class="label label-warning" ng-show="$root.pendingRequestsCount()">{{$root.pendingRequestsCount()}}</span>
                 </a>
                 <ul class="dropdown-menu">
-                    <li class="header">You have {{$root.loggedUser.pendingRequests.length}} notifications</li>
+                    <li class="header" ng-if="$root.pendingRequestsCount() > 1 || $root.pendingRequestsCount() == 0">You have {{$root.pendingRequestsCount()}} notifications</li>
+                    <li class="header" ng-if="$root.pendingRequestsCount() == 1">You have {{$root.pendingRequestsCount()}} notification</li>
                     <li>
                         <ul class="menu">
                             <li ng-repeat="req in $root.loggedUser.pendingRequests | orderBy:creationTime:true ">

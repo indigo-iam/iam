@@ -1,0 +1,108 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form">
+    <div class="form-group">
+        <label for="token_endpoint_auth">Token
+            endpoint authentication method</label>
+        <div class="radio">
+            <label>
+                <input type="radio" name="token-endpoint-auth-radios" id="client_secret_basic"
+                    value="client_secret_basic" ng-model="$ctrl.client.token_endpoint_auth_method">
+                Client secret over HTTP basic authentication
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="token-endpoint-auth-radios" id="client_secret_post" value="client_secret_post"
+                    ng-model="$ctrl.client.token_endpoint_auth_method">
+                Client secret over HTTP POST authentication
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="token-endpoint-auth-radios" id="client_secret_jwt" value="client_secret_jwt"
+                    ng-model="$ctrl.client.token_endpoint_auth_method">
+                Client secret with symmetrically
+                signed JWT assertion
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="token-endpoint-auth-radios" id="private_key_jwt" value="private_key_jwt"
+                    ng-model="$ctrl.client.token_endpoint_auth_method">
+                Asymmetrically signed JWT assertion
+            </label>
+        </div>
+        <div class="radio">
+            <label>
+                <input type="radio" name="token-endpoint-auth-radios" id="none" value="none"
+                    ng-model="$ctrl.client.token_endpoint_auth_method">
+                No authentication
+            </label>
+        </div>
+    </div>
+    <hr>
+    <clientsecret client="$ctrl.client" new-client="$ctrl.newClient" limited="{{$ctrl.limited}}"></clientsecret>
+    <hr>
+    <div class="form-group">
+        <label>Public key set</label>
+        <p class="help-block">
+            The JSON Web Keyset for this client.
+            Used for client authentication and token
+            encryption. Keys can be provided by
+            reference or by value.
+        </p>
+    </div>
+    <div class="form-group">
+        <div class="form-inline">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="jwk-opt" id="jwks_uri" value="uri" ng-model="$ctrl.jwkOpt" ng-change="$ctrl.updateJwk()">
+                    By URI
+                </label>
+            </div>
+            <div class="radio">
+                <label>
+                    <input type="radio" name="jwk-opt" id="jwks_jwk" value="jwk" ng-model="$ctrl.jwkOpt" ng-change="$ctrl.updateJwk()">
+                    By value
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group" ng-show="$ctrl.jwkOpt ==
+        'uri'">
+            <label for="jwk">JSON Web Keyset URI</label>
+            <input id="input_jwks_uri" class="form-control" type="text" ng-model="$ctrl.client.jwks_uri"
+                placeholder="https://app.example.org/jwk">
+            <p class="help-block">
+                URL that points to the public JSON Web
+                Keyset for this client
+            </p>
+        </div>
+        <div class="form-group" ng-show="$ctrl.jwkOpt ==
+        'jwk'">
+            <label for="jwk">JSON Web Keyset value</label>
+
+            <textarea name="jwk" id="jwk" class="form-control" rows="3" ng-model="$ctrl.client.jwk" placeholder='{ "keys": [ ] }'></textarea>
+            <p class="help-block">
+                The JSON Web Keyset for this client
+            </p>
+        </div>
+    </div>
+</div>

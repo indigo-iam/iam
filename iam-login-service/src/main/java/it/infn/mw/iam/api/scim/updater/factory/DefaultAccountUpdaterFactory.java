@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.common.collect.Lists;
@@ -62,6 +63,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   final IamAccountRepository repo;
   final IamAccountService accountService;
+  final OAuth2TokenEntityService tokenService;
 
   final OidcIdConverter oidcIdConverter;
   final SamlIdConverter samlIdConverter;
@@ -69,11 +71,12 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final X509CertificateConverter x509CertificateConverter;
 
   public DefaultAccountUpdaterFactory(PasswordEncoder encoder, IamAccountRepository repo,
-      IamAccountService accountService,
+      IamAccountService accountService, OAuth2TokenEntityService tokenService,
       OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
       SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter) {
 
     this.accountService = accountService;
+    this.tokenService = tokenService;
     this.encoder = encoder;
     this.repo = repo;
     this.oidcIdConverter = oidcIdConverter;
@@ -120,7 +123,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareAdders(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account);
+    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService);
 
     if (user.hasName()) {
 
@@ -188,7 +191,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareReplacers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account);
+    Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account, tokenService);
 
     if (user.hasName()) {
       addUpdater(updaters, Objects::nonNull, user.getName()::getGivenName, replace::givenName);

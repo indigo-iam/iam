@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,8 +138,7 @@ public class IdTokenBuilder {
       idClaims.claim(k, v);
     });
 
-    JWSHeader header = new JWSHeader(signingAlgo, null, null, null, null, null, null, null, null,
-	null, keyId, null, null);
+    JWSHeader header = new JWSHeader.Builder(signingAlgo).keyID(keyId).build();
 
     idToken = new SignedJWT(header, idClaims.build());
 

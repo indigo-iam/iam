@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,21 +22,16 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.transaction.annotation.Transactional;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -44,17 +39,16 @@ import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
-
-  private List<ScimUser> testUsers = new ArrayList<ScimUser>();
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -62,11 +56,9 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-
   @Before
   public void setup() throws Exception {
-
-    testUsers = createTestUsers();
+    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @After
@@ -78,7 +70,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveOidcId() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addOidcId(user.getIndigoUser().getOidcIds().get(0)).build();
@@ -93,8 +85,9 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveAnotherUserOidcId() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
-    ScimUser user2 = testUsers.get(1);
+
+    ScimUser user1 = createLennonTestUser();
+    ScimUser user2 = createLincolnTestUser();
 
     ScimUser updates =
         ScimUser.builder().addOidcId(user2.getIndigoUser().getOidcIds().get(0)).build();
@@ -111,7 +104,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveNotFoundOidcId() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates = ScimUser.builder()
       .addOidcId(ScimOidcId.builder().issuer("fake_issuer").subject("fake_subject").build())
@@ -127,7 +120,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveX509Certificate() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates = ScimUser.builder()
       .addX509Certificate(user.getIndigoUser().getCertificates().get(0))
@@ -143,8 +136,8 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveAnotherUserX509Certificate() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
-    ScimUser user2 = testUsers.get(1);
+    ScimUser user1 = createLennonTestUser();
+    ScimUser user2 = createLincolnTestUser();
 
     ScimUser updates = ScimUser.builder()
       .addX509Certificate(user2.getIndigoUser().getCertificates().get(0))
@@ -160,7 +153,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveNotFoundX509Certificate() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
+    ScimUser user1 = createLennonTestUser();
 
     ScimUser updates = ScimUser.builder()
       .addX509Certificate(user1.getIndigoUser().getCertificates().get(0))
@@ -173,7 +166,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveSshKey() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSshKey(user.getIndigoUser().getSshKeys().get(0)).build();
@@ -188,8 +181,8 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveAnotherUserSshKey() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
-    ScimUser user2 = testUsers.get(1);
+    ScimUser user1 = createLennonTestUser();
+    ScimUser user2 = createLincolnTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSshKey(user2.getIndigoUser().getSshKeys().get(0)).build();
@@ -204,7 +197,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveNotFoundSshKey() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
+    ScimUser user1 = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSshKey(user1.getIndigoUser().getSshKeys().get(0)).build();
@@ -216,7 +209,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveSamlId() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSamlId(user.getIndigoUser().getSamlIds().get(0)).build();
@@ -231,8 +224,8 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveAnotherUserSamlId() throws Exception {
 
-    ScimUser user1 = testUsers.get(0);
-    ScimUser user2 = testUsers.get(1);
+    ScimUser user1 = createLennonTestUser();
+    ScimUser user2 = createLincolnTestUser();
 
     ScimUser updates =
         ScimUser.builder().addSamlId(user2.getIndigoUser().getSamlIds().get(0)).build();
@@ -252,7 +245,7 @@ public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
   @Test
   public void testPatchRemoveNotFoundSamlId() throws Exception {
 
-    ScimUser user = testUsers.get(0);
+    ScimUser user = createLennonTestUser();
 
     ScimUser updates = ScimUser.builder().buildSamlId("fake_idpid", "fake_userid").build();
 

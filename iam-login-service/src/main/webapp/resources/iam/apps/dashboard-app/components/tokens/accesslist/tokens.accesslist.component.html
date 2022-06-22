@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
             <div class="col-md-5">
 
                 <ui-select id="atok_client_search_btn" ng-model="$ctrl.clientSelected" theme="bootstrap" sortable="true" close-on-select="true" input-id="atok_client_search" style="width: 100%;" on-select="$ctrl.searchTokens(1)">
-                    <ui-select-match allow-clear="true" placeholder="Filter tokens by client...">{{$ctrl.clientSelected.clientId}}</ui-select-match>
-                    <ui-select-choices repeat="client in $ctrl.clients | filter: {clientId: $select.search}">
-                        <div ng-bind-html="client.clientId | highlight: $select.search"></div>
-                        <small> {{ client.clientName }} </small>
+                    <ui-select-match allow-clear="true" placeholder="Filter tokens by client...">{{$ctrl.clientSelected.client_name}}</ui-select-match>
+                    <ui-select-choices repeat="client in $ctrl.clients | filter: {client_name: $select.search}">
+                        <div ng-bind-html="client.client_name | highlight: $select.search"></div>
+                        <small> {{ client.client_id }} </small>
                     </ui-select-choices>
                     <ui-select-no-choice> No results found </ui-select-no-choice>
                 </ui-select>
@@ -57,11 +57,6 @@
         </div>
         <div class="table-responsive" ng-if="$ctrl.tokens.length">
 
-            <div class="text-center">
-                <ul id="atoken_pagination_top" uib-pagination ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="5" boundary-links="true" ng-change="$ctrl.searchTokens($ctrl.currentPage)">
-                </ul>
-            </div>
-
             <table class="table no-margin table-striped" id="access_token_list">
                 <thead>
                     <tr>
@@ -80,7 +75,9 @@
                             <h5>{{$index + $ctrl.currentOffset}}</h5>
                         </td>
                         <td class="align-middle">
-                            <h5><a ui-sref="client({id: token.client.id})">{{token.client.clientId}}</a></h5>
+                            <a ui-sref="client({id: token.client.clientId})">{{token.client.clientName}}</a>
+                            <br/>
+                            <small>{{token.client.clientId}}</small>
                         </td>
                         <td class="align-middle" ng-if="token.user != null">
                             <a ui-sref="user({id: token.user.id})">{{token.user.userName}}</a>
@@ -108,8 +105,8 @@
                 </tbody>
             </table>
 
-            <div class="text-center">
-                <ul id="atoken_pagination_bottom" uib-pagination ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="5" boundary-links="true" ng-change="$ctrl.searchTokens($ctrl.currentPage)">
+            <div>
+                <ul id="atoken_pagination_bottom" uib-pagination ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="5" rotate="true" boundary-link-numbers="true" direction-links="false" ng-change="$ctrl.searchTokens($ctrl.currentPage)">
                 </ul>
             </div>
         </div>

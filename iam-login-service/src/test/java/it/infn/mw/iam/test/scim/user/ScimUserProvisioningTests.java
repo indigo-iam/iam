@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,37 @@
 package it.infn.mw.iam.test.scim.user;
 
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
+import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithUUID;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
@@ -51,21 +56,33 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
-  
+
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
-  
+
+  @Autowired
+  private MockMvc mvc;
+
+  @Autowired
+  private ObjectMapper mapper;
+
+  @Before
+  public void setup() throws Exception {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
   @After
   public void teardown() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -89,7 +106,11 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
     String randomUuid = getRandomUUid();
     ScimUser user = ScimUtils.buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
 
-    scimUtils.putUser(randomUuid, user, HttpStatus.NOT_FOUND)
+    mvc
+      .perform(put(ScimUtils.getUsersLocation() + "/" + randomUuid)
+        .content(mapper.writeValueAsBytes(user))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.status", equalTo("404")))
       .andExpect(jsonPath("$.detail", equalTo("No user mapped to id '" + randomUuid + "'")));
   }
@@ -144,9 +165,12 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
     ScimUser user = buildUser("", "test@email.test", "Paul", "McCartney");
 
-    scimUtils.postUser(user, HttpStatus.BAD_REQUEST)
+    mvc
+      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
-      .andExpect(jsonPath("$.detail", containsString("scimUser.userName : may not be empty")));
+      .andExpect(jsonPath("$.detail", containsString("scimUser.userName : must not be blank")));
   }
 
   @Test
@@ -155,9 +179,12 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
     ScimUser user = ScimUser.builder("paul").buildName("Paul", "McCartney").build();
 
-    scimUtils.postUser(user, HttpStatus.BAD_REQUEST)
+    mvc
+      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
-      .andExpect(jsonPath("$.detail", containsString("scimUser.emails : may not be empty")));
+      .andExpect(jsonPath("$.detail", containsString("scimUser.emails : must not be empty")));
   }
 
   @Test
@@ -166,10 +193,13 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
     ScimUser user = buildUser("paul", "this_is_not_an_email", "Paul", "McCartney");
 
-    scimUtils.postUser(user, HttpStatus.BAD_REQUEST)
+
+    mvc
+      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status", equalTo("400")))
-      .andExpect(jsonPath("$.detail",
-          containsString("Please provide a valid email address")));
+      .andExpect(jsonPath("$.detail", containsString("Please provide a valid email address")));
   }
 
   @Test
@@ -204,8 +234,12 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
     ScimUser userWithUpdates = ScimUser.builder("j.lennon").id(user.getId()).active(true).build();
 
-    scimUtils.putUser(user.getId(), userWithUpdates, BAD_REQUEST)
-      .andExpect(jsonPath("$.detail", containsString("scimUser.emails : may not be empty")));
+    mvc
+      .perform(put(ScimUtils.getUsersLocation() + "/" + user.getId())
+        .content(mapper.writeValueAsBytes(userWithUpdates))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.detail", containsString("scimUser.emails : must not be empty")));
   }
 
   @Test
@@ -231,19 +265,34 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
         mccartney.getUserName(), mccartney.getEmails().get(0).getValue(),
         mccartney.getName().getGivenName(), mccartney.getName().getFamilyName());
 
-    scimUtils.putUser(lennonCreationResult.getId(), lennonWantsToBeMcCartney, CONFLICT)
+
+    mvc
+      .perform(put(ScimUtils.getUsersLocation() + "/" + lennonCreationResult.getId())
+        .content(mapper.writeValueAsBytes(lennonWantsToBeMcCartney))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail",
           containsString("username paul_mccartney already assigned to another user")));
+
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testUniqueUsernameCreationCheck() throws Exception {
 
-    ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser user1 = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser user2 = buildUser("john_lennon", "another_lennon@email.test", "John", "Lennon");
 
-    scimUtils.postUser(user);
-    scimUtils.postUser(user, HttpStatus.CONFLICT);
+    scimUtils.postUser(user1);
+
+    mvc
+      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user2))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isConflict())
+      .andExpect(jsonPath("$.detail",
+          containsString("A user with username 'john_lennon' already exists")));
+
+
   }
 
   @Test
@@ -255,10 +304,13 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
     user0 = scimUtils.postUser(user0);
 
-    //@formatter:off
-    scimUtils.postUser(user1, HttpStatus.CONFLICT)
-      .andExpect(jsonPath("$.detail", containsString("A user linked with email 'same_email@test.org' already exists")));
-    //@formatter:on
+    mvc
+      .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user1))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isConflict())
+      .andExpect(jsonPath("$.detail",
+          containsString("A user linked with email 'same_email@test.org' already exists")));
+
   }
 
   @Test
@@ -274,7 +326,14 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
     ScimUser updatedUser0 =
         buildUserWithUUID(user0.getId(), "user0", "user1@test.org", "Test", "User 0");
 
-    scimUtils.putUser(user0.getId(), updatedUser0, CONFLICT).andExpect(jsonPath("$.detail",
-        containsString("email user1@test.org already assigned to another user")));
+    mvc
+      .perform(put(ScimUtils.getUsersLocation() + "/" + user0.getId())
+        .content(mapper.writeValueAsBytes(updatedUser0))
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isConflict())
+      .andExpect(jsonPath("$.detail",
+          containsString("email user1@test.org already assigned to another user")));
+
+
   }
 }

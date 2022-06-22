@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,16 @@ package it.infn.mw.iam.test.repository;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Date;
 import java.util.Optional;
 
-import javax.persistence.EntityManager;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -40,23 +35,21 @@ import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureNotFoundError;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
+import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamNoMvcTest
 public class IamAupSignatureRepositoryTests extends AupTestSupport {
 
   @Autowired
-  EntityManager em;
+  private IamAupRepository aupRepo;
 
   @Autowired
-  IamAupRepository aupRepo;
+  private IamAccountRepository accountRepo;
 
   @Autowired
-  IamAccountRepository accountRepo;
-
-  @Autowired
-  IamAupSignatureRepository repo;
+  private IamAupSignatureRepository repo;
 
 
   IamAccount findTestAccount() {

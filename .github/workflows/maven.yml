@@ -4,6 +4,10 @@ on: [push, pull_request]
 
 jobs:
   build:
+    strategy:
+      matrix:
+        java-version: [17]
+
     runs-on: ubuntu-latest
 
     steps:
@@ -11,48 +15,73 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+
+    - name: Set up JDK ${{matrix.java-version}}
+      uses: actions/setup-java@v2
       with:
-        java-version: 1.8
-    - name: Cache Maven packages
-      uses: actions/cache@v1
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+        distribution: temurin
+        cache: maven
+        java-version: ${{matrix.java-version}}
+
     - name: License check
       run: mvn -B license:check
 
-    - name: Build & deploy
-      run: mvn -U -B --settings .github/.m2/settings.xml package deploy
-      env:
-        NEXUS_USERNAME: ${{secrets.NEXUS_USERNAME}}
-        NEXUS_PASSWORD: ${{secrets.NEXUS_PASSWORD}}
+    - name: Build, test, package
+      run: mvn -U -B clean package install
 
-    - name: Copy artifact to docker dir
+    - name: Copy artifacts to docker dir
       run: |
         cp iam-login-service/target/iam-login-service.war iam-login-service/docker
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
+
+    - name: Generate buildpacks
+      run: mvn -DskipTests -U -B spring-boot:build-image
+
+    - name: Docker login
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Publish buildpacks on Dockerhub
+      if: startsWith(github.ref, 'refs/tags/')
+      env: 
+        DEBUG: y
+      run: ./utils/tag-push-images.sh  ${GITHUB_REF#refs/tags/}
+
+    - name: Docker metainformation for iam-login-service
+      id: ls-meta
+      uses: docker/metadata-action@v3
+      with:
+        images: indigoiam/iam-login-service
+        tags: |
+          type=sha
+          type=ref,event=tag
+
+    - name: Docker metainformation for iam-test-client
+      id: tc-meta
+      uses: docker/metadata-action@v3
+      with:
+        images: indigoiam/iam-test-client
+        tags: |
+          type=sha
+          type=ref,event=tag
+
     - name: Build & push iam-login-service docker image
-      uses: docker/build-push-action@v1
+      uses: docker/build-push-action@v2
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        repository: indigoiam/iam-login-service
-        tag_with_ref: true
-        tag_with_sha: true
-        dockerfile: iam-login-service/docker/Dockerfile.prod
-        path: iam-login-service/docker
+        tags: ${{ steps.ls-meta.outputs.tags }}
+        labels: ${{ steps.ls-meta.outputs.labels }}
+        context: iam-login-service/docker/
+        file: iam-login-service/docker/Dockerfile.prod
         push: ${{ startsWith(github.ref, 'refs/tags/') }}
+
     - name: Build & push iam-test-client docker image
-      uses: docker/build-push-action@v1
+      uses: docker/build-push-action@v2
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        repository: indigoiam/iam-test-client
-        tag_with_ref: true
-        tag_with_sha: true
-        dockerfile: iam-test-client/docker/Dockerfile.prod
-        path: iam-test-client/docker
+        tags: ${{ steps.tc-meta.outputs.tags }}
+        labels: ${{ steps.tc-meta.outputs.labels }}
+        context: iam-test-client/docker/
+        file: iam-test-client/docker/Dockerfile.prod
         push: ${{ startsWith(github.ref, 'refs/tags/') }}

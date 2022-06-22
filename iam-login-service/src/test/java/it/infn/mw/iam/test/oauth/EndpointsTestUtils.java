@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,17 @@
 package it.infn.mw.iam.test.oauth;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@SuppressWarnings("deprecation")
 public class EndpointsTestUtils {
 
   private static final String DEFAULT_USERNAME = "test";
@@ -38,19 +35,11 @@ public class EndpointsTestUtils {
   private static final String DEFAULT_CLIENT_SECRET = "secret";
   private static final String DEFAULT_SCOPE = "";
 
-
   @Autowired
   protected ObjectMapper mapper;
 
   @Autowired
-  protected WebApplicationContext context;
-
   protected MockMvc mvc;
-
-  protected void buildMockMvc() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
 
   public AccessTokenGetter buildAccessTokenGetter() {
     return new AccessTokenGetter().grantType("password")

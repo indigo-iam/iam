@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.authn;
 
-import static it.infn.mw.iam.core.web.EnforceAupFilter.REQUESTING_SIGNATURE;
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 
 import java.io.IOException;
 import java.util.Date;
@@ -37,6 +37,7 @@ import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessHandler {
 
   private final AuthenticationSuccessHandler delegate;

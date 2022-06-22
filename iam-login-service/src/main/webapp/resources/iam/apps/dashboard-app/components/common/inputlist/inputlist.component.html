@@ -1,0 +1,44 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form-group">
+    <label for="{{ $ctrl.id }}">{{ $ctrl.label }}</label>
+    <span class="help-block" ng-if="$ctrl.msg">
+        <span class="text-danger">{{ $ctrl.msg }}</span>
+    </span>
+    <div class="input-group">
+        <input id="{{ $ctrl.id }}" type="text" class="form-control" placeholder="{{ $ctrl.placeholder }}"
+            ng-model="$ctrl.val">
+        <div class="input-group-btn">
+            <a class="btn btn-default" ng-click="$ctrl.addElement()"><i class="fa fa-plus"></i></a>
+        </div>
+    </div>
+    <span class="help-block" ng-if="$ctrl.helptext">
+        {{ $ctrl.helptext }}
+    </span>
+</div>
+<ul ng-if="$ctrl.model.length > 0" class="list-unstyled">
+    <li ng-repeat=" item in $ctrl.model track by $index" class="static-form-control">
+        <a class="btn btn-default btn-xs" ng-click="$ctrl.removeElement(item)"><i class="fa
+        fa-times" uib-tooltip="remove item"></i></a> <span>{{ item }}</span>
+
+    </li>
+</ul>
+
+<p class="form-control-static" ng-if="$ctrl.model.length == 0">
+    {{ $ctrl.emptylisttext }}
+</p>

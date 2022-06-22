@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 
+@SuppressWarnings("deprecation")
 public class WithMockOAuth2SecurityContextFactory
     implements WithSecurityContextFactory<WithMockOAuthUser> {
 

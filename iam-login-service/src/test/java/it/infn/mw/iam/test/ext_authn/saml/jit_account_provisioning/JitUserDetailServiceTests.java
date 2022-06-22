@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,22 +21,21 @@ import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T1_GIVEN_NAME;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T1_MAIL;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T1_SN;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
@@ -80,22 +79,22 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Before
   public void setup() {
-    when(accountRepo.findBySamlId(anyObject())).thenReturn(Optional.empty());
-    when(accountRepo.findBySamlId(anyString(), anyString(), anyString()))
-      .thenReturn(Optional.empty());
+    when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
+    // when(accountRepo.findBySamlId(anyString(), anyString(), anyString()))
+    // .thenReturn(Optional.empty());
 
-    when(accountService.createAccount(anyObject())).thenAnswer(invocation -> {
+    when(accountService.createAccount(any())).thenAnswer(invocation -> {
       IamAccount account = (IamAccount) invocation.getArguments()[0];
       account.setPassword("password");
       return account;
     });
 
-    when(resolver.resolveSamlUserIdentifier(anyObject()))
+    when(resolver.resolveSamlUserIdentifier(any()))
       .thenReturn(SamlUserIdentifierResolutionResult.resolutionFailure("No suitable user id found"));
 
     AttributeMappingProperties defaultMappingProps = new AttributeMappingProperties();
     
-    when(mpResolver.resolveMappingProperties(anyString())).thenReturn(defaultMappingProps);
+    when(mpResolver.resolveMappingProperties(Mockito.any())).thenReturn(defaultMappingProps);
     
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.empty(), mpResolver);
@@ -106,7 +105,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
     try {
       userDetailsService.loadUserBySAML(null);
     } catch (NullPointerException e) {
-      Assert.assertThat(e.getMessage(), equalTo("null saml credential"));
+      assertThat(e.getMessage(), equalTo("null saml credential"));
       throw e;
     }
   }
@@ -201,10 +200,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
     when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
     when(cred.getRemoteEntityID()).thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
-    when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
-    when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
-      .thenReturn(T1_GIVEN_NAME);
-    when(cred.getAttributeAsString(Saml2Attribute.SN.getAttributeName())).thenReturn(T1_SN);
+
     try {
       userDetailsService.loadUserBySAML(cred);
     } catch (UsernameNotFoundException e) {

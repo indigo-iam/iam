@@ -112,7 +112,7 @@ public class IamUserInfoFetcher extends UserInfoFetcher {
 
         if (!Strings.isNullOrEmpty(userInfoString)) {
 
-          JsonObject userInfoJson = new JsonParser().parse(userInfoString).getAsJsonObject();
+          JsonObject userInfoJson = JsonParser.parseString(userInfoString).getAsJsonObject();
 
           UserInfo userInfo = fromJson(userInfoJson);
 

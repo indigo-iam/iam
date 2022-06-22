@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.util.Set;
@@ -29,7 +29,7 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
@@ -40,6 +40,7 @@ import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.core.userinfo.DefaultOAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
+@SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
 public class OAuth2AuthenticationScopeResolverTests {
 

@@ -1,0 +1,73 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<section class="content-header" ng-cloak>
+    <h1>
+        <i class="fa fa-rocket"></i>&nbsp;&nbsp; My clients
+    </h1>
+</section>
+<section class="content" ng-cloak>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="box box-primary" id="my-clients-list">
+                <div class="box-body">
+                    <div class="form-group">
+                        <div class="btn-group">
+                            <button class="btn btn-success" ui-sref="myNewClient"><i class="fa
+                        fa-plus"> </i> New client</button>
+                            <button class="btn btn-default" ng-click="$ctrl.redeemClient()">Redeem
+                                client</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <p ng-if="$ctrl.clients.totalResults == 0" class="static-form-control">
+                            No clients found.
+                        </p>
+
+                        <p class="text-center" ng-if="$ctrl.clients.totalResults > 0">
+                            Showing clients
+                            {{$ctrl.clients.startIndex}}-{{$ctrl.clients.startIndex+$ctrl.clients.itemsPerPage-1}}
+                            of {{$ctrl.clients.totalResults}}
+                        </p>
+
+                        <div class="row iam-div-row" ng-repeat="client
+                        in $ctrl.clients.Resources">
+                            <div class="iam-detail col-xs-8 col-sm-8">
+                                <a ui-sref="myClient({id:
+                                client.client_id})">{{client.client_name}}</a>
+                                <div class="text-muted">{{client.client_id}}</div>
+                            </div>
+                            <div class="iam-actions col-xs-4 col-sm-4 text-right">
+                                <button class="btn btn-danger btn-xs" ng-click="$ctrl.deleteClient(client)">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div ng-if="$ctrl.clients.totalResults > 0">
+                            <ul id="myclients_pagination" uib-pagination ng-model="$ctrl.currentPage"
+                                items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="3"
+                                boundary-link-numbers="true" ng-change="$ctrl.onChangePage()" direction-links="false"
+                                rotate="true">
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

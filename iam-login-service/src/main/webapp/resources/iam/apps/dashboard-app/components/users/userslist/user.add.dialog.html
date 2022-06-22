@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@
         ng-class="{'has-error': userCreationForm.username.$dirty && userCreationForm.username.$invalid, 'has-success': userCreationForm.username.$dirty && userCreationForm.username.$valid}">
         <div class="col-sm-10">
           <input class="form-control" id="username" name="username" type="text" ng-model="$ctrl.user.username"
-            placeholder="Username" required ng-minlength="1" ng-maxlength="128" iam-username-available-validator
+            placeholder="Username" required ng-minlength="2" ng-maxlength="128" iam-username-available-validator
             ng-model-options="{ debounce : { 'default' : 500 } }" />
           <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-remove': userCreationForm.username.$dirty && userCreationForm.username.$invalid, 'glyphicon-ok': userCreationForm.username.$dirty && userCreationForm.username.$valid}"
@@ -108,7 +108,7 @@
           <span class="help-block"
             ng-show="userCreationForm.username.$dirty && userCreationForm.username.$error.minlength">
             Minimum
-            length required is 1 </span>
+            length required is 2 </span>
           <span class="help-block"
             ng-show="userCreationForm.username.$dirty && userCreationForm.username.$error.maxlength">
             Maximum

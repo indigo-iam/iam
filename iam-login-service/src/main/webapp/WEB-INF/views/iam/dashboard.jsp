@@ -1,6 +1,6 @@
 <%--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
                         </script>
   <div class="wrapper">
     <toaster-container
-      toaster-options="{'close-button': true, 'time-out':{ 'toast-error': 5000, 'toast-success': 5000, 'toast-warning': 5000 }, 'position-class': 'toast-top-center'}">
+      toaster-options="{'close-button': true, 'time-out':{ 'toast-error': 0, 'toast-success': 10000, 'toast-warning': 10000 }, 'position-class': 'toast-top-center'}">
     </toaster-container>
     <header class="main-header" ng-cloak></header>
     <aside class="main-sidebar" ng-cloak>
@@ -59,12 +59,14 @@
   <script type="text/javascript" src="<c:url value='/webjars/angular-ui-router/angular-ui-router.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angular-ui-select/select.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angular-sanitize/angular-sanitize.min.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/angular-ui-bootstrap/ui-bootstrap-tpls.min.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/bootstrap/bootstrap.min.js'/>"></script>
+  <script type="text/javascript" src="<c:url value='/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js'/>"></script>
+  
   <script type="text/javascript" src="${resourcesPrefix}/iam/js/datepicker/bootstrap-datepicker.min.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/js/adminLTE.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/js/toaster/toaster.min.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/js/clipboardjs/clipboard.min.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/js/ngclipboard/ngclipboard.min.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/js/directive/angular-relative-date.min.js"></script>
   
@@ -80,8 +82,10 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/factory/gatewayerror.interceptor.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/factory/sessionexpired.interceptor.js"></script>
   
-  
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/filters/start-from.filter.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/filters/pretty-limit-to.filter.js"></script>
+  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/http-utils.service.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scim-factory.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/modal.service.js"></script>
@@ -94,6 +98,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/account-linking.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/tokens.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/clients.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/client-registration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/clipboard.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/aup.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/account-group-manager.service.js"></script>
@@ -107,6 +112,10 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/policies.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/proxycert.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/find.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/system-scope.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/openid-configuration.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
+  
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
@@ -114,6 +123,7 @@
 
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/header/header.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/result.component.js"></script>
+  
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/sidebar/sidebar.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/requests.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/registration/requests.registration.component.js"></script>
@@ -138,7 +148,12 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/labels/user.labels.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/attributes/user.attributes.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/end-time/user.end-time.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/myclients/myclients.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/myclients/myclient/myclient.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/myclients/redeemclient/redeemclient.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/user.component.js"></script>
+  
+   
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/users/userslist/users.userslist.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/users/users.component.js"></script>
@@ -161,16 +176,30 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/members/group.members.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/group.managers.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/labels/group.labels.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group-membership/adder/group-membership.adder.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.description.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/subgroups/group.subgroups.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/members/group.members.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/group.managers.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/labels/group.labels.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/groupinfo/groupinfo.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policies.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policieslist/policies.policieslist.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/add_policies.component.js"></script>
-
-
+  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group-membership/adder/group-membership.adder.component.js"></script>
+  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/clients.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/clientslist/clientslist.component.js"></script>
+  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/client.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/scopelist/scopelist.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientsettings/clientsettings.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientauth/clientauth.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/granttypelist/granttypelist.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientsecret/clientsecret.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/tokensettings/tokensettings.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/cryptosettings/cryptosettings.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/othersettings/othersettings.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientowners/clientowners.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/confirmclientremoval/confirmclientremoval.component.js"></script>
+  
+  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/inputlist/inputlist.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/finduserdialog/finduserdialog.component.js"></script>
+  
 </body>

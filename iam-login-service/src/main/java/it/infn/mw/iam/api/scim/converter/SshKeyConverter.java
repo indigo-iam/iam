@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package it.infn.mw.iam.api.scim.converter;
+
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -36,8 +38,7 @@ public class SshKeyConverter implements Converter<ScimSshKey, IamSshKey> {
     if (scim.getValue() != null) {
       sshKey.setFingerprint(RSAPublicKeyUtils.getSHA256Fingerprint(scim.getValue()));
     }
-
-    sshKey.setPrimary(scim.isPrimary() != null ? scim.isPrimary() : false);
+    sshKey.setPrimary(Optional.ofNullable(scim.isPrimary()).orElse(Boolean.FALSE));
     sshKey.setAccount(null);
 
     return sshKey;

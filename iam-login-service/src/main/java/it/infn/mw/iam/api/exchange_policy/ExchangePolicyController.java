@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,9 +45,7 @@ public class ExchangePolicyController {
 
   private static final int UNPAGED_PAGE_SIZE = 1000;
 
-  // Unfortunately the version of spring data used by IAM does not still support
-  // unpaged, so we mock an upaged request with a limit of UNPAGED_PAGE_SIZE results per page.
-  private static final PageRequest UNPAGED = new PageRequest(0, UNPAGED_PAGE_SIZE);
+  private static final Pageable UNPAGED = Pageable.unpaged();
 
   private static final String UNPAGED_ERROR_MSG = String.format(
       "More than %d exchange policies found, but only the first %d will be returned. it's time to properly implement pagination",

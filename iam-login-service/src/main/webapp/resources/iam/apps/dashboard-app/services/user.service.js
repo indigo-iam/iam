@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
 
     function getMe() {
         return $q.all([getMeAndAuthorities(),
-            AupService.getAupSignature()
+        AupService.getAupSignature()
         ]).then(
             function (result) {
                 var user = result[0];
@@ -50,13 +50,9 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
 
                 return user;
             }).catch(function (error) {
-            console.error('Error loading authenticated user information: ', error);
-            return $q.reject(error);
-        });
-    }
-
-    function getUserByUsername(username) {
-
+                console.error('Error loading authenticated user information: ', error);
+                return $q.reject(error);
+            });
     }
 
     function getUser(userId) {

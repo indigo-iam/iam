@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,16 @@ package it.infn.mw.iam.persistence.migrations;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
-public class CreateGroupManagerAuthorities extends BaseJdbcTemplateFlywayMigration {
+public class CreateGroupManagerAuthorities implements SpringJdbcFlywayMigration {
 
   public static final Logger LOG = LoggerFactory.getLogger(CreateGroupManagerAuthorities.class);
 
   @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
     SqlRowSet rowSet = jdbcTemplate.queryForRowSet("SELECT id,uuid,name from iam_group");
 
     while (rowSet.next()) {

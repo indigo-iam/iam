@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
 
     Long membersCount = groupRepo.countGroupMembersByGroupUuid(g.getUuid());
 
-    if (membersCount > 0L || g.getChildrenGroups().size() > 0) {
+    if (membersCount > 0L || !g.getChildrenGroups().isEmpty()) {
       throw new InvalidGroupOperationError("Group is not empty");
     }
 
@@ -258,6 +258,8 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
     g.getLabels().remove(l);
     g.getLabels().add(l);
     
+    touchGroup(g);
+
     groupRepo.save(g);
     
     labelSetEvent(g, l);
@@ -269,6 +271,7 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
     g.getLabels().remove(l);
     
     labelRemovedEvent(g, l);
+    touchGroup(g);
     groupRepo.save(g);
     return g;
   }
@@ -276,6 +279,13 @@ public class DefaultIamGroupService implements IamGroupService, ApplicationEvent
   @Override
   public Page<IamGroup> findSubgroups(IamGroup group, Pageable page) {
     return groupRepo.findSubgroups(group, page);
+  }
+
+  @Override
+  public IamGroup setDescription(IamGroup g, String description) {
+    g.setDescription(description);
+    touchGroup(g);
+    return groupRepo.save(g);
   }
 
 }

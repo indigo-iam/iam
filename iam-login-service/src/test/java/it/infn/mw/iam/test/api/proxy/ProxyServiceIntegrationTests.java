@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ package it.infn.mw.iam.test.api.proxy;
 import static it.infn.mw.iam.api.proxy.ProxyCertificatesApiController.PROXY_API_PATH;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Date;
-import java.time.Clock;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
@@ -33,17 +30,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties;
@@ -55,21 +47,19 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, RCAuthTestSupport.class,
-    CoreControllerTestSupport.class, ProxyServiceIntegrationTests.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, RCAuthTestSupport.class,
+    CoreControllerTestSupport.class, ProxyCertificateClockConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
     "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
     "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
     "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
 public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
-
-  @Autowired
-  private WebApplicationContext context;
 
   @Autowired
   IamProperties iamProperties;
@@ -80,19 +70,12 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   @Autowired
   private IamAccountRepository accountRepo;
 
-
+  @Autowired
   private MockMvc mvc;
-
-  @Bean
-  @Primary
-  public Clock clock() {
-    return clock;
-  }
 
   @Before
   public void setup() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
+    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @After
@@ -131,7 +114,8 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"})
   @Test
   public void proxyApiRequiresProxyGenScope() throws Exception {
-    mvc.perform(post(PROXY_API_PATH))
+
+    mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error").value("insufficient_scope"));
   }
@@ -140,7 +124,7 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
       scopes = {"proxy:generate"})
   @Test
   public void proxyApiRequiresRegisteredProxy() throws Exception {
-    mvc.perform(post(PROXY_API_PATH))
+    mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isPreconditionFailed())
       .andExpect(jsonPath("$.error", startsWith("No proxy found")));
   }
@@ -151,7 +135,7 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   public void proxyRequestIsValidated() throws Exception {
     linkProxyToTestAccount();
 
-    mvc.perform(post(PROXY_API_PATH).param("lifetimeSecs", "60"))
+    mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS).param("lifetimeSecs", "60"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", startsWith("invalid lifetime")));
   }
@@ -163,7 +147,7 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
     String longIssuerString = RandomStringUtils.random(129);
 
-    mvc.perform(post(PROXY_API_PATH).param("issuer", longIssuerString))
+    mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS).param("issuer", longIssuerString))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", startsWith("invalid issuer")));
   }
@@ -174,7 +158,7 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
   public void proxyGenerationWorks() throws Exception {
     linkProxyToTestAccount();
 
-    mvc.perform(post(PROXY_API_PATH))
+    mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.not_after").exists())
       .andExpect(jsonPath("$.subject").exists())

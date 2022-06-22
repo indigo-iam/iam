@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
@@ -49,6 +49,7 @@ import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
+@SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
 public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
@@ -70,14 +71,16 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @InjectMocks
   DefaultTokenExchangePdp pdp;
 
+
   private TokenRequest buildTokenRequest() {
     return new TokenRequest(emptyMap(), "destination", Collections.emptySet(), TOKEN_EXCHANGE_GRANT_TYPE);
   }
 
+
   @Before
   public void before() {
     when(originClient.getClientId()).thenReturn(ORIGIN_CLIENT_ID);
-    when(destinationClient.getClientId()).thenReturn(DESTINATION_CLIENT_ID);
+    // when(destinationClient.getClientId()).thenReturn(DESTINATION_CLIENT_ID);
     
     when(originClient.getScope()).thenReturn(ORIGIN_CLIENT_SCOPES);
     when(destinationClient.getScope()).thenReturn(DESTINATION_CLIENT_SCOPES);

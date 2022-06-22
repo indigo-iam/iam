@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 @FunctionalInterface
+@SuppressWarnings("deprecation")
 public interface JWTAccessTokenBuilder {
 
   JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token, OAuth2Authentication authentication,

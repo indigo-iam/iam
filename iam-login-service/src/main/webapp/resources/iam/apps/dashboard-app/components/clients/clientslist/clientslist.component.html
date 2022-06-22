@@ -1,0 +1,149 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="box box-primary" id="clients-list">
+
+    <div class="box-body">
+        <div class="row">
+            <div class="form-group col-xs-4 col-md-2">
+                <select id="searchType" class="selectpicker form-control" ng-model="$ctrl.searchType"
+                    ng-change="$ctrl.onChangePage()">
+                    <option value="name">Match name or
+                        ID</option>
+                    <option value="contacts">Match contacts</option>
+                    <option value="scope">Match scopes</option>
+                    <option value="grantType">Match grant types</option>
+                    <option value="redirectUri">Match redirect URIs</option>
+                </select>
+            </div>
+
+            <div class="form-group col-xs-8 col-md-10">
+                <div class="input-group">
+                    <input placeholder=" Search clients..." ng-model="$ctrl.searchFilter" class="form-control"
+                        ng-change="$ctrl.searchClients()" ng-model-options="{debounce:
+                        250}" />
+
+                    <div class="input-group-btn">
+                        <button type="button" class="btn btn-default" ng-click="$ctrl.resetFilter()">Reset
+                            filter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.searchOnlyDRClients" ng-change="$ctrl.onChangePage()">
+                Limit search to dynamically registered clients
+            </label>
+        </div>
+        <hr>
+        <div class="form">
+            <div class="form-group">
+                <button ui-sref="newClient" class="btn btn-success
+                btn-sm" uib-tooltip="Create new client"><i class="fa
+                fa-plus"></i> New client</button>
+            </div>
+        </div>
+        <div ng-if="$ctrl.clients.totalResults == 0">No clients
+            found</div>
+
+        <div ng-if="$ctrl.clients.Resources.length">
+
+            <p class="text-center">
+                Showing clients
+                {{$ctrl.clients.startIndex}}-{{$ctrl.clients.startIndex+$ctrl.clients.itemsPerPage-1}}
+                of {{$ctrl.clients.totalResults}} matching your search
+            </p>
+
+
+            <div class="table-responsive">
+                <table class="table no-margin table-hover" id="clients-list-table">
+                    <thead>
+                        <tr>
+                            <th>Client name & id</th>
+                            <th>Created</th>
+                            <th>Dyn. registered</th>
+                            <th>Information</th>
+                            <th><span class="pull-right">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="c in $ctrl.clients.Resources">
+                            <td class="col-xs-2">
+                                <!-- Client -->
+                                <div>
+                                    <a ui-sref="client({id: c.client_id})">
+                                        {{c.client_name}}
+                                    </a>
+                                </div>
+                                <div class="text-muted">{{c.client_id}}</div>
+                            </td>
+                            <td class="col-xs-1">
+                                <!-- Created -->
+                                <div ng-if="c.created_at">
+                                    {{c.created_at | relativeDate}}
+                                </div>
+                                <div ng-if="!c.created_at" class="text-muted">
+                                    N/A
+                                </div>
+                            </td>
+                            <td class="col-xs-1">
+                                <!-- Dynamically registered -->
+                                {{ c.dynamically_registered }}
+                            </td>
+                            <td class="col-xs-4">
+                                <!-- Information -->
+                                <!-- Redirect URIs -->
+                                <dl ng-if="c.redirect_uris &&
+                            c.redirect_uris.length > 0">
+                                    <dt>Redirect URIs</dt>
+                                    <dd ng-repeat="ru in
+                                c.redirect_uris">{{ru}}</dd>
+                                </dl>
+                                <!-- Scopes -->
+                                <dl ng-if="c.scope">
+                                    <dt>Scopes</dt>
+                                    <dd>
+                                        <span class="label-default label" style="margin-left: 2px;"
+                                            ng-repeat="s in $ctrl.splitScopes(c.scope, 8)">{{s}}</span>
+                                    </dd>
+                                </dl>
+                            </td>
+                            <td>
+                                <div class="form-group pull-right">
+                                    <!-- Actions -->
+                                    <button class="btn btn-default btn-xs" uib-tooltip="Edit client
+                                '{{c.client_name}}'" ui-sref="client({id: c.client_id})"><i class="fa
+                            fa-pencil"></i></button>
+                                    <button class="btn btn-danger btn-xs" uib-tooltip="Delete client
+                                    '{{c.client_name}}'" ng-click="$ctrl.deleteClient(c)"><i class="fa
+                                fa-times"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div><!-- table responsive-->
+            <div>
+                <ul uib-pagination ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage"
+                    total-items="$ctrl.totalResults" max-size="6" boundary-link-numbers="true" direction-links="false"
+                    ng-change="$ctrl.onChangePage()" rotate="true">
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

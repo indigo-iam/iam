@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import static it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFil
 import static it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter.SIRTFI_ATTRIBUTE_VALUE;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.opensaml.saml2.core.Attribute.URI_REFERENCE;
@@ -36,7 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.opensaml.saml2.common.Extensions;
 import org.opensaml.saml2.core.Attribute;
 import org.opensaml.saml2.metadata.EntitiesDescriptor;
@@ -111,7 +111,7 @@ public class AttributeMetadataFilterTests {
 
   @Before
   public void setup() {
-    when(entityDescriptor1.getEntityID()).thenReturn("1");
+    // when(entityDescriptor1.getEntityID()).thenReturn("1");
     when(entityDescriptor2.getEntityID()).thenReturn("2");
     when(entityDescriptor3.getEntityID()).thenReturn("3");
     when(entityDescriptor4.getEntityID()).thenReturn("4");

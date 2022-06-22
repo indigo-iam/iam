@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.mitre.openid.connect.config.ServerConfiguration;
 import org.mitre.openid.connect.model.PendingOIDCAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.LinkedMultiValueMap;
@@ -55,6 +56,7 @@ import com.nimbusds.jwt.SignedJWT;
  * providers that use EUGridPMA certificates.
  *
  */
+@SuppressWarnings("deprecation")
 public class OidcClientFilter extends OIDCAuthenticationFilter {
 
   public static class OidcProviderConfiguration {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@
         self.deleteLabel = deleteLabel;
 
         self.$onInit = function () {
-            console.log('GroupLabelsController onInit');
-            console.log('GroupLabelsController self.labels: ', self.labels);
+            console.log('GroupLabelsController.self', self);
         };
 
         function isAdmin() {
@@ -67,20 +66,20 @@
                         body: 'Label deleted'
                     });
                 }).catch(
-                function (res) {
-                    $state.reload();
-                    if (res.data) {
-                        toaster.pop({
-                            type: 'error',
-                            body: res.data.error
-                        });
-                    } else {
-                        toaster.pop({
-                            type: 'error',
-                            body: 'Error deleting label'
-                        });
-                    }
-                });
+                    function (res) {
+                        $state.reload();
+                        if (res.data) {
+                            toaster.pop({
+                                type: 'error',
+                                body: res.data.error
+                            });
+                        } else {
+                            toaster.pop({
+                                type: 'error',
+                                body: 'Error deleting label'
+                            });
+                        }
+                    });
         }
 
         function setLabel() {

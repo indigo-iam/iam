@@ -1,5 +1,5 @@
 #
-# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,30 +14,58 @@
 # limitations under the License.
 #
 
-security:
-  filter-order: 1
-
 server:
+  servlet:
+    session:
+      timeout: ${IAM_SESSION_TIMEOUT_SECS:1800}
+        
+  error:
+    path: /error
+    
   port: ${IAM_PORT:8080}
+  
   tomcat:
     accesslog:
       enabled: ${IAM_TOMCAT_ACCESS_LOG_ENABLED:false}
       directory: ${IAM_TOMCAT_ACCESS_LOG_DIRECTORY:/tmp}
       pattern: "%{X-Forwarded-For}i %l %u %t \"%r\" %s %b"
 
-  use-forward-headers: ${IAM_USE_FORWARDED_HEADERS:false}
+  forward-headers-strategy: ${IAM_FORWARD_HEADERS_STRATEGY:none}
+  
+spring:
+  redis:
+    
+    host: ${IAM_SPRING_REDIS_HOST:localhost}
+    port: ${IAM_SPRING_REDIS_PORT:6379}
+    password: ${IAM_SPRING_REDIS_PASSWORD:}
+    
+  application:
+    name: INDIGO IAM
   
   session:
     timeout: ${IAM_SESSION_TIMEOUT_SECS:1800}
-
-spring: 
+    store-type: ${IAM_SPRING_SESSION_STORE_TYPE:none}
+    redis:
+      flush-mode: on-save
+      namespace: iam:session
+     
+  security:
+    filter:
+      order: 1
+       
   profiles:
-    active: h2-test
-  application:
-    name: INDIGO IAM
+    default: h2-test
+    group:
+     "h2-test": "h2,saml,registration"
+     "h2-test-redis": "h2,saml,registration,redis-test"
+     "mysql-test": "mysql,saml,registration"
+     "mysql-test-tc": "mysql-test-tc,saml,registration"
+     "mysql-test-tc-redis": "mysql-test-tc,saml,registration,redis-test"
+     "prod": "mysql,flyway-repair"
     
   jpa:
     generate-ddl: true
+    open-in-view: false
 
   mail:
     host: ${IAM_MAIL_HOST:localhost}
@@ -45,13 +73,22 @@ spring:
     username: ${IAM_MAIL_USERNAME:}
     password: ${IAM_MAIL_PASSWORD:}
 
-  velocity:
-    enabled: false
-
+  flyway:
+    table: schema_version
+    
   freemarker:
-    template-loader-path: ${IAM_CUSTOM_TEMPLATE_LOCATION:classpath:templates/}
+    template-loader-path: ${IAM_CUSTOM_TEMPLATE_LOCATION:classpath:/email-templates}
 
+  main:
+    allow-circular-references: true
+    
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: ${IAM_JWK_CACHE_LIFETIME:21600}
 iam:
+  
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
@@ -95,9 +132,9 @@ iam:
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
 
-  superuser:
-    username: ${IAM_SUPERUSER_USERNAME:superuser}
-    password: ${IAM_SUPERUSER_PASSWORD:superpassword}
+  actuator-user:
+    username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}
+    password: ${IAM_ACTUATOR_USER_PASSWORD:actuator-password}
   
   local-resources:
     enable: ${IAM_LOCAL_RESOURCES_ENABLE:false}
@@ -130,6 +167,14 @@ iam:
    
   aarc-profile:
     urn-namespace: ${IAM_AARC_PROFILE_URN_NAMESPACE:example:iam}
+    
+  external-connectivity-probe:
+    enabled: ${IAM_HEALTH_EXTERNAL_CONNECTIVITY_PROBE_ENABLED:false}
+    endpoint: ${IAM_HEALTH_EXTERNAL_CONNECTIVITY_PROBE_ENDPOINT:https://www.google.it}
+    timeout-in-secs: ${IAM_HEALTH_EXTERNAL_CONNECTIVITY_PROBE_TIMEOUT_IN_SECS:10}
+    
+  account-linking:
+    enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
@@ -156,31 +201,36 @@ task:
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
 
-health:
-  externalServiceProbe:
-    enabled: ${IAM_HEALTH_EXTERNAL_SERVICE_PROBE_ENABLED:true}
-    endpoint: ${IAM_HEALTH_EXTERNAL_SERVICE_PROBE_ENDPOINT:http://www.google.it}
-    timeout: ${IAM_HEALTH_EXTERNAL_SERVICE_PROBE_TIMEOUT:5000}
-    path: /health/external
-  mailProbe:
-    enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:true}
-    path: /health/mail
-    
-accountLinking:
-  disable: ${IAM_ACCOUNT_LINKING_DISABLE:false}
-
-clientRegistration:
+client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
-  
-endpoints:
-  enabled: false
-  info:
-    enabled: true
-  health:
-    enabled: true
-  metrics:
-    enabled: true
+  enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
 
+management:
+  health:
+      redis:
+        enabled: ${IAM_HEALTH_REDIS_PROBE_ENABLED:false} 
+      mail:
+        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:false} 
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include:
+        - info
+        - health
+  endpoint:
+    info:
+      enabled: true
+    health: 
+      show-components: always 
+      enabled: true
+      show-details: when-authorized
+      roles:
+      - ACTUATOR
+      
+    metrics:
+      enabled: true
+    
 rcauth:
   enabled: ${IAM_RCAUTH_ENABLED:false}
   label: ${IAM_RCAUTH_LABEL:RCAuth.eu online CA}

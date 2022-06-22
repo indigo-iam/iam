@@ -10,8 +10,9 @@ build-prod-image.sh script.
 
 The script behaviour is configured via the following environment variables:
 
-- `IAM_LOGIN_SERVICE_WAR`: (mandatory) this env variable points to the
-  iam-login-service war file as produced by the maven build.
+- `IAM_LOGIN_SERVICE_WAR`: this env variable points to the iam-login-service
+  war file as produced by the maven build. When not set, the script will look
+  for the war in the well-known location.
 
 - `IAM_LOGIN_SERVICE_IMAGE`: sets the docker image name used by the docker
   build command. Default: indigoiam/iam-login-service

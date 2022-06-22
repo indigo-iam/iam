@@ -1,0 +1,58 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form">
+    <div class="form-group">
+        <label>System scopes</label>
+
+        <!-- system scopes -->
+        <div ng-repeat="scope in
+        $ctrl.ss | orderBy:'value' ">
+            <div class="form-grup">
+                <div class="checkbox">
+                    <label uib-tooltip="{{ scope.description }}" tooltip-append-to-body="true">
+                        <input type="checkbox" ng-model="$ctrl.scopeMap[scope.value]"
+                            ng-change="$ctrl.toggleSystemScope(scope.value)"
+                            ng-disabled="$ctrl.isRestrictedSystemScope(scope)">
+                        {{ scope.value }}
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <label>Custom scopes</label>
+        <div ng-repeat="customScope in $ctrl.customScopes()">
+            <div class="form-grup">
+                <div class="checkbox" ng-click="$ctrl.removeCustomScope(customScope)">
+                    <label>
+                        <input type="checkbox" checked>
+                        {{ customScope }}
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Add custom scope..."
+                    ng-model="$ctrl.customScopeValue">
+                <div class="input-group-btn">
+                    <a class="btn btn-default" ng-click="$ctrl.addCustomScope()"><i class="fa fa-plus"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

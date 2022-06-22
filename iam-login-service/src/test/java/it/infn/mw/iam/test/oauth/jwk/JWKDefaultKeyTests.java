@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 package it.infn.mw.iam.test.oauth.jwk;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.CombinableMatcher.either;
-import static org.junit.Assert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,34 +27,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.text.ParseException;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwk.default-key-id=iam1",
     "iam.jwk.keystore-location=classpath:/jwk/iam-keys.jwks"})
 public class JWKDefaultKeyTests extends EndpointsTestUtils implements JWKTestSupport {
-
-  @Before
-  public void setup() {
-    buildMockMvc();
-  }
 
   private String getAccessTokenForUser() throws Exception {
 
@@ -79,7 +69,7 @@ public class JWKDefaultKeyTests extends EndpointsTestUtils implements JWKTestSup
 
     mvc.perform(get(JWK_ENDPOINT))
       .andExpect(status().isOk())
-      .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+      .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.keys", hasSize(2)))
       .andExpect(jsonPath("$.keys[0].kid", either(is("iam1")).or(is("iam2"))))
       .andExpect(jsonPath("$.keys[1].kid", either(is("iam1")).or(is("iam2"))));

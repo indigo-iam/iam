@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -40,7 +41,7 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 
 public class ExternalAuthenticationHandlerSupport implements AccountLinkingConstants {
 
-  public static final String ACCCOUNT_LINKING_BASE_RESOURCE = "/iam/account-linking";
+  public static final String ACCOUNT_LINKING_BASE_RESOURCE = "/iam/account-linking";
 
   public static final String ACCOUNT_LINKING_SESSION_KEY =
       ExternalAuthenticationHandlerSupport.class.getName() + ".LINKING";
@@ -127,7 +128,7 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
 
   protected void saveAccountLinkingError(Exception ex, RedirectAttributes attributes) {
 
-    attributes.addFlashAttribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY, ex.getMessage());
+    attributes.addFlashAttribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY, StringEscapeUtils.escapeHtml(ex.getMessage()));
   }
 
   protected void clearAccountLinkingError(HttpSession session) {
@@ -143,7 +144,7 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
   protected void setupAccountLinkingSessionKey(HttpSession session,
       ExternalAuthenticationType type) {
     session.setAttribute(ACCOUNT_LINKING_SESSION_KEY,
-        String.format("%s/%s", ACCCOUNT_LINKING_BASE_RESOURCE, type.name()));
+        String.format("%s/%s", ACCOUNT_LINKING_BASE_RESOURCE, type.name()));
   }
 
   protected void saveAuthenticationInSession(HttpSession session, Authentication authn) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Optional;
@@ -27,16 +27,15 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -51,14 +50,14 @@ import it.infn.mw.iam.authn.common.Fail;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcExternalAuthenticationTestsSupport;
 import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
+import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, OidcTestConfig.class, OidcValidatorIntegrationTests.Config.class})
-@WebIntegrationTest(randomPort = true)
-@Transactional
+@RunWith(SpringRunner.class)
+@IamRandomPortIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
+    OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
   
   @Configuration

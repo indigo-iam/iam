@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.common.base.Strings;
@@ -65,8 +66,8 @@ public class Adders extends Replacers {
   final Consumer<Collection<IamSshKey>> linkSshKeys;
 
   public Adders(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account) {
-    super(repo, accountService, encoder, account);
+      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService) {
+    super(repo, accountService, encoder, account, tokenService);
 
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
     findBySamlId = repo::findBySamlId;
@@ -78,7 +79,7 @@ public class Adders extends Replacers {
     sshKeyAddChecks = buildSshKeyAddChecks();
     x509CertificateAddChecks = buildX509CertificateAddChecks();
 
-    linkSshKeys = (keys) -> {
+    linkSshKeys = keys -> {
       for (IamSshKey k : keys) {
         if (!isNull(k)) {
           accountService.addSshKey(account, k);

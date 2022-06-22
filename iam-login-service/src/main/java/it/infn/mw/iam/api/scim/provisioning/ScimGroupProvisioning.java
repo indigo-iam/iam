@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +46,7 @@ import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
+import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -57,19 +56,18 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 @Service
 @Transactional
 public class ScimGroupProvisioning
-    implements ScimProvisioning<ScimGroup, List<ScimMemberRef>>, ApplicationEventPublisherAware {
+    implements ScimProvisioning<ScimGroup, List<ScimMemberRef>> {
 
   private static final int GROUP_NAME_MAX_LENGTH = 50;
   private static final int GROUP_FULLNAME_MAX_LENGTH = 512;
 
   private final IamGroupService groupService;
   private final IamAccountService accountService;
-  private final Clock clock;
 
   private final GroupConverter converter;
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
-  private ApplicationEventPublisher eventPublisher;
+
   private final ScimResourceLocationProvider locationProvider;
 
   @Autowired
@@ -79,7 +77,6 @@ public class ScimGroupProvisioning
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
-    this.clock = clock;
 
     this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService);
     this.locationProvider = locationProvider;
@@ -160,7 +157,7 @@ public class ScimGroupProvisioning
   private void executePatchOperation(IamGroup group, ScimPatchOperation<List<ScimMemberRef>> op) {
 
     patchOperationSanityChecks(op);
-    groupUpdaterFactory.getUpdatersForPatchOperation(group, op).forEach(u -> u.update());
+    groupUpdaterFactory.getUpdatersForPatchOperation(group, op).forEach(Updater::update);
 
   }
 
@@ -254,9 +251,6 @@ public class ScimGroupProvisioning
     return converter.dtoFromEntity(newGroup);
   }
 
-  public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
-    this.eventPublisher = publisher;
-  }
 
   @Override
   public void update(String id, List<ScimPatchOperation<List<ScimMemberRef>>> operations) {

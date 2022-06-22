@@ -1,0 +1,41 @@
+name: Sonar analysis
+
+on: 
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        java-version: [17]
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK ${{matrix.java-version}}
+      uses: actions/setup-java@v2
+      with:
+        distribution: temurin
+        cache: maven
+        java-version: ${{matrix.java-version}}
+
+    - name: Sonar analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: mvn -B -U install sonar:sonar 
+            -Dsonar.projectKey=indigo-iam_iam 
+            -Dsonar.organization=indigo-iam 
+            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.pullrequest.key=${{ github.event.number }}
+            -Dsonar.pullrequest.branch=${{ github.HEAD_REF }}
+            -Dsonar.pullrequest.base=${{ github.BASE_REF }}
+            -Dsonar.pullrequest.github.repository=${{ github.repository }}
+            -Dsonar.scm.provider=git
+            -Dsonar.host.url=https://sonarcloud.io

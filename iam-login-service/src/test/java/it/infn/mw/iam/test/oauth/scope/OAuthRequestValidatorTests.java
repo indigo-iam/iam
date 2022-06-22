@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 
+@SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
 public class OAuthRequestValidatorTests {
 
@@ -57,7 +58,7 @@ public class OAuthRequestValidatorTests {
   public void setup() {
 
     when(client.getClientId()).thenReturn("exampleClient");
-    when(client.getScope()).thenReturn(newHashSet("openid", "profile"));
+    // when(client.getScope()).thenReturn(newHashSet("openid", "profile"));
     authzRequest.setScope(Sets.newHashSet("openid"));
     when(registry.findMatchersForClient(client))
       .thenReturn(newHashSet(stringEqualsMatcher("openid"), stringEqualsMatcher("profile")));

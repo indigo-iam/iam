@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package it.infn.mw.iam.test.api.proxy;
 import static java.util.Optional.empty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +41,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.google.common.collect.Sets;
 
@@ -49,7 +49,7 @@ import eu.emi.security.authn.x509.proxy.ProxyCertificate;
 import eu.emi.security.authn.x509.proxy.ProxyCertificateOptions;
 import eu.emi.security.authn.x509.proxy.ProxyGenerator;
 import eu.emi.security.authn.x509.proxy.ProxyType;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.proxy.DefaultProxyCertificateService;
 import it.infn.mw.iam.api.proxy.ProxyCertificateDTO;
 import it.infn.mw.iam.api.proxy.ProxyCertificateProperties;
@@ -101,7 +101,7 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
     proxyService = new DefaultProxyCertificateService(clock, accountRepo, properties, proxyHelper);
     when(principal.getName()).thenReturn(TEST_USER_USERNAME);
     when(account.getUsername()).thenReturn(TEST_USER_USERNAME);
-    when(properties.getKeySize()).thenReturn(DEFAULT_KEY_SIZE);
+    // when(properties.getKeySize()).thenReturn(DEFAULT_KEY_SIZE);
     when(properties.getMaxLifetimeSeconds()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS);
     when(request.getLifetimeSecs()).thenReturn(null);
   }
@@ -133,12 +133,7 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
     when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
 
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, AN_HOUR_AGO);
-
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
     when(proxyCert.getExpirationTime()).thenReturn(Date.from(AN_HOUR_AGO));
-    when(proxyCert.getChain()).thenReturn(pemProxy);
-
 
     when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
@@ -234,16 +229,8 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
 
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
     when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-    when(request.getLifetimeSecs()).thenReturn(DEFAULT_PROXY_LIFETIME_SECONDS * 2);
+
     when(request.getIssuer()).thenReturn("CN=A custom issuer");
-
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
-    when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
-    when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
-
-    when(proxyCert.getChain()).thenReturn(pemProxy);
-
-
     when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));
 
@@ -257,12 +244,8 @@ public class ProxyServiceTests extends ProxyCertificateTestSupport {
 
     IamX509Certificate mockedTest0Cert = spy(TEST_0_IAM_X509_CERT);
     when(mockedTest0Cert.getProxy()).thenReturn(proxyCert);
-
-    String pemProxy = generateTest0Proxy(A_WEEK_AGO, ONE_YEAR_FROM_NOW);
     when(proxyCert.getExpirationTime()).thenReturn(Date.from(ONE_YEAR_FROM_NOW));
     when(proxyCert.getCertificate()).thenReturn(mockedTest0Cert);
-
-    when(proxyCert.getChain()).thenReturn(pemProxy);
 
     when(account.getX509Certificates()).thenReturn(Sets.newHashSet(mockedTest0Cert));
     when(accountRepo.findByUsername(TEST_USER_USERNAME)).thenReturn(Optional.of(account));

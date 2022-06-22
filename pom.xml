@@ -2,80 +2,115 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+
+    <!-- Update this in sync with the spring-boot version below -->
+    <version>2.6.6</version>
+    <relativePath /> <!-- lookup parent from repository -->
+  </parent>
 
   <groupId>it.infn.mw</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.8.0-SNAPSHOT</version>
+  <version>1.8.0</version>
   <packaging>pom</packaging>
-  <name>INDIGO Identity and Access Manager (IAM)</name>
+  <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
 
   <properties>
+    <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
+    
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <java.version>1.8</java.version>
+    <java.version>17</java.version>
+
+    <testcontainers.version>1.16.2</testcontainers.version>
+
+    <mitreid.version>1.3.5.cnaf-spring-update-080122</mitreid.version>
+    <spring-security-oauth2.version>2.5.1.RELEASE</spring-security-oauth2.version>
+
     <voms.version>3.3.2</voms.version>
-    <jvm.test.args>-Xmx2500m</jvm.test.args>
-    <eclipselink.version>2.5.2</eclipselink.version>
-    <mitreid.version>1.3.5.cnaf.20210803</mitreid.version>
-    <spring-security-saml.version>1.0.1.RELEASE</spring-security-saml.version>
+    <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
-    <spring-boot.version>1.3.8.RELEASE</spring-boot.version>
+    <!-- Update this in sync with the parent project version -->
+    <spring-boot.version>2.5.6</spring-boot.version>
 
-    <webjars-locator-core.version>0.32</webjars-locator-core.version>
     <angularjs.version>1.6.1</angularjs.version>
-    <angular-ui-bootstrap.version>2.5.0</angular-ui-bootstrap.version>
+    <angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
     <angular-ui-router.version>1.0.20</angular-ui-router.version>
     <angular-ui-select.version>0.19.8</angular-ui-select.version>
     <angular-sanitize.version>1.3.11</angular-sanitize.version>
     <font-awesome.version>4.7.0</font-awesome.version>
-
     <jquery.version>2.1.1</jquery.version>
     <bootstrap.version>3.3.7</bootstrap.version>
     <jquery-ui.version>1.12.0</jquery-ui.version>
-    <rest-assured.version>2.9.0</rest-assured.version>
+
+    <rest-assured.version>4.4.0</rest-assured.version>
     <json-path.version>2.2.0</json-path.version>
 
-    <flyway-test.version>4.0</flyway-test.version>
-    <validator-collection.version>2.2.0</validator-collection.version>
-
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
-    <jacoco-plugin.version>0.8.3</jacoco-plugin.version>
+    <jacoco-plugin.version>0.8.7</jacoco-plugin.version>
+    <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
 
-    <maven-enforcer-plugin.version>3.0.0-M2</maven-enforcer-plugin.version>
+
     <jsr250-api.version>1.0</jsr250-api.version>
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
+
     <resource.delimiter>@</resource.delimiter>
+
+    <jvm.test.args>-Xmx2500m</jvm.test.args>
     <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*</sonar.coverage.exclusions>
   </properties>
 
   <modules>
     <module>iam-common</module>
     <module>iam-persistence</module>
+    <module>iam-voms-aa</module>
     <module>iam-login-service</module>
     <module>iam-test-client</module>
-    <module>iam-test-protected-resource</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
 
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>webjars-locator-core</artifactId>
-        <version>${webjars-locator-core.version}</version>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>test</scope>
       </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>mysql</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>mariadb</artifactId>
+        <version>${testcontainers.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.security.oauth</groupId>
+        <artifactId>spring-security-oauth2</artifactId>
+        <version>${spring-security-oauth2.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.webjars</groupId>
         <artifactId>angularjs</artifactId>
@@ -83,7 +118,7 @@
       </dependency>
 
       <dependency>
-        <groupId>org.webjars</groupId>
+        <groupId>org.webjars.npm</groupId>
         <artifactId>angular-ui-bootstrap</artifactId>
         <version>${angular-ui-bootstrap.version}</version>
       </dependency>
@@ -161,13 +196,9 @@
         <version>${mitreid.version}</version>
       </dependency>
 
+    
+
       <!-- SAML -->
-      <dependency>
-        <groupId>org.opensaml</groupId>
-        <artifactId>opensaml</artifactId>
-        <!-- Keep it to 2.6.4. Moving to 2.6.6 breaks metadata fetching -->
-        <version>2.6.4</version>
-      </dependency>
 
       <dependency>
         <groupId>org.bouncycastle</groupId>
@@ -188,7 +219,7 @@
       </dependency>
 
       <dependency>
-        <groupId>com.jayway.restassured</groupId>
+        <groupId>io.rest-assured</groupId>
         <artifactId>rest-assured</artifactId>
         <version>${rest-assured.version}</version>
       </dependency>
@@ -197,34 +228,15 @@
         <groupId>org.springframework.security.extensions</groupId>
         <artifactId>spring-security-saml2-core</artifactId>
         <version>${spring-security-saml.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.opensaml</groupId>
-            <artifactId>opensaml</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
-      <dependency>
-        <groupId>org.flywaydb.flyway-test-extensions</groupId>
-        <artifactId>flyway-spring-test</artifactId>
-        <version>${flyway-test.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>cz.jirutka.validator</groupId>
-        <artifactId>validator-collection</artifactId>
-        <version>${validator-collection.version}</version>
-      </dependency>
-      
       <!-- JSR APIs (for Java 11 compatibility) -->
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>jsr250-api</artifactId>
         <version>${jsr250-api.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
@@ -235,6 +247,12 @@
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
         <version>${jaxb-runtime.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>7.15.0</version>
       </dependency>
 
     </dependencies>
@@ -261,14 +279,9 @@
           <version>${license-maven-plugin.version}</version>
         </plugin>
         <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${spring-boot.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <version>${jib-maven-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -277,7 +290,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>${maven-enforcer-plugin.version}</version>
         <executions>
           <execution>
             <id>enforce-maven</id>
@@ -287,10 +299,10 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>1.8.0</version>
+                  <version>17</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>3.3.0</version>
+                  <version>3.6.0</version>
                 </requireMavenVersion>
               </rules>
             </configuration>
@@ -300,8 +312,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.2.1</version>
-
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -323,21 +333,10 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-          <encoding>UTF-8</encoding>
-        </configuration>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
-        <version>2.5</version>
         <configuration>
           <failOnMissingWebXml>false</failOnMissingWebXml>
           <archive>
@@ -370,23 +369,8 @@
       </plugin>
 
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.5</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.1.11</version>
         <executions>
           <execution>
             <goals>
@@ -395,7 +379,8 @@
           </execution>
         </executions>
         <configuration>
-          <verbose>true</verbose>
+          <verbose>false</verbose>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
           <dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>

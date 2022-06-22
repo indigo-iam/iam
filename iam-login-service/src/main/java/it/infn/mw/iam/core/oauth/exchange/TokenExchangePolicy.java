@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.model.IamTokenExchangeScopePolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
 
+@SuppressWarnings("deprecation")
 public class TokenExchangePolicy {
   private final Long id;
 

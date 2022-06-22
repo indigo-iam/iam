@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 public class TimestamperSuccessHandler implements AuthenticationSuccessHandler {
 
   public static final Logger LOG = getLogger(TimestamperSuccessHandler.class);

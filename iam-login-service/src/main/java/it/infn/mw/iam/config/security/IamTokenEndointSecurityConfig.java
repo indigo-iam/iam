@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static org.springframework.http.HttpMethod.OPTIONS;
 import java.time.Clock;
 
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,26 +32,24 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
 
+@SuppressWarnings("deprecation")
 @Configuration
 @Order(-1)
 public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter {
 
   public static final String TOKEN_ENDPOINT = "/token";
-
-  @Autowired
-  private CorsFilter corsFilter;
 
   @Autowired
   private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
@@ -72,19 +69,22 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.userDetailsService(userDetailsService);
+
+    auth.userDetailsService(userDetailsService)
+      .passwordEncoder(NoOpPasswordEncoder.getInstance());
   }
 
   @Bean
   public ClientCredentialsTokenEndpointFilter ccFilter() throws Exception {
     ClientCredentialsTokenEndpointFilter filter =
         new ClientCredentialsTokenEndpointFilter(TOKEN_ENDPOINT);
+    filter.setAllowOnlyPost(true);
     filter.setAuthenticationManager(authenticationManager());
     return filter;
   }
 
   @Bean
-  public JWTBearerClientAssertionTokenEndpointFilter jwtBearerFilter() throws Exception {
+  public JWTBearerClientAssertionTokenEndpointFilter jwtBearerFilter() {
 
     JWTBearerClientAssertionTokenEndpointFilter filter =
         new JWTBearerClientAssertionTokenEndpointFilter(new AntPathRequestMatcher(TOKEN_ENDPOINT));
@@ -113,14 +113,15 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
             .antMatchers(TOKEN_ENDPOINT).authenticated()
             .and()
             .addFilterBefore(jwtBearerFilter(), AbstractPreAuthenticatedProcessingFilter.class)
-            .addFilterBefore(ccFilter(), BasicAuthenticationFilter.class)   
-        .addFilterBefore(corsFilter, SecurityContextPersistenceFilter.class)
+            .addFilterAfter(ccFilter(), BasicAuthenticationFilter.class)
         .exceptionHandling()
             .authenticationEntryPoint(authenticationEntryPoint)
             .accessDeniedHandler(new OAuth2AccessDeniedHandler())
             .and()
         .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        .and()
+          .cors()
         .and()
           .csrf()
             .disable();

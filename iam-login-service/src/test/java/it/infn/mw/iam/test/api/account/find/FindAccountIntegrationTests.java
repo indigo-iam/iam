@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.emptyIterable;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.function.Supplier;
@@ -37,16 +35,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -55,14 +47,13 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @WithMockUser(username = "admin", roles = "ADMIN")
 public class FindAccountIntegrationTests extends TestSupport {
 
@@ -79,8 +70,6 @@ public class FindAccountIntegrationTests extends TestSupport {
   private IamAccountService accountService;
 
   @Autowired
-  private WebApplicationContext context;
-
   private MockMvc mvc;
 
   @Autowired
@@ -88,9 +77,6 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Before
   public void setup() {
-
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -270,6 +256,8 @@ public class FindAccountIntegrationTests extends TestSupport {
 
     // Cleanup all group memberships and groups
     accountRepo.deleteAllAccountGroupMemberships();
+
+
     groupRepo.deleteAll();
 
     // Create group hierarchy
@@ -289,9 +277,11 @@ public class FindAccountIntegrationTests extends TestSupport {
 
     sibling = groupService.createGroup(sibling);
 
+    final long allUserCount = accountRepo.count();
+
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, rootGroup.getUuid()).param("count", "10"))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults", is(253)));
+      .andExpect(jsonPath("$.totalResults", is((int) allUserCount)));
 
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, rootGroup.getUuid()).param("filter", "admin"))
       .andExpect(OK)

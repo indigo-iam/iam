@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,7 +30,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.codec.Base64;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -59,7 +58,7 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
   OIDCAuthenticationFilter oidcFilter;
 
   @Autowired
-  IamClientConfig clientConfig;
+  IamClientApplicationProperties properties;
 
   @Autowired
   ClientHttpRequestFactory requestFactory;
@@ -140,7 +139,7 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
       auth.setIssuer(token.getIssuer());
       auth.setSub(token.getSub());
 
-      if (!clientConfig.isHideTokens()) {
+      if (!properties.isHideTokens()) {
         auth.setAccessToken(token.getAccessTokenValue());
         auth.setIdToken(token.getIdToken().getParsedString());
         auth.setRefreshToken(token.getRefreshTokenValue());
@@ -149,10 +148,9 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
       try {
         auth.setAccessTokenClaims(JWTParser.parse(token.getAccessTokenValue())
           .getJWTClaimsSet()
-          .toJSONObject()
           .toString());
 
-        auth.setIdTokenClaims(token.getIdToken().getJWTClaimsSet().toJSONObject().toString());
+        auth.setIdTokenClaims(token.getIdToken().getJWTClaimsSet().toString());
       } catch (ParseException e) {
         LOG.error(e.getMessage(), e);
       }
@@ -184,9 +182,10 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
     String accessToken = token.getAccessTokenValue();
 
     String plainCreds =
-        String.format("%s:%s", clientConfig.getClientId(), clientConfig.getClientSecret());
+        String.format("%s:%s", properties.getClient().getClientId(),
+            properties.getClient().getClientSecret());
 
-    String base64Creds = new String(Base64.encode(plainCreds.getBytes()));
+    String base64Creds = new String(java.util.Base64.getEncoder().encode(plainCreds.getBytes()));
 
     HttpHeaders headers = new HttpHeaders();
     headers.add("Authorization", "Basic " + base64Creds);
@@ -195,10 +194,10 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
     MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();
     body.add("token", accessToken);
 
-    HttpEntity<?> request = new HttpEntity<Object>(body, headers);
+    HttpEntity<?> request = new HttpEntity<>(body, headers);
 
     RestTemplate rt = new RestTemplate(requestFactory);
-    String iamIntrospectUrl = clientConfig.getIssuer() + "/introspect";
+    String iamIntrospectUrl = properties.getIssuer() + "/introspect";
     ResponseEntity<String> response =
         rt.exchange(iamIntrospectUrl, HttpMethod.POST, request, String.class);
 

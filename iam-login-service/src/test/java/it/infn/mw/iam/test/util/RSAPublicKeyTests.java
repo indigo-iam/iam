@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,21 @@ package it.infn.mw.iam.test.util;
 
 import static it.infn.mw.iam.test.SshKeyUtils.sshKeys;
 import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.junit.Test;
 
-import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
 public class RSAPublicKeyTests {
 
-  @Test
-  public void testMD5Fingerprint() {
-
-    String fp = RSAPublicKeyUtils.getMD5Fingerprint(sshKeys.get(0).key);
-    assertThat(fp, equalTo(sshKeys.get(0).fingerprintMD5));
-    fp = RSAPublicKeyUtils.getMD5Fingerprint(sshKeys.get(1).key);
-    assertThat(fp, equalTo(sshKeys.get(1).fingerprintMD5));
-  }
-
-  @Test
-  public void testFormattedMD5Fingerprint() {
-
-    String fp = RSAPublicKeyUtils.getFormattedMD5Fingerprint(sshKeys.get(0).key);
-    assertThat(fp, equalTo(sshKeys.get(0).fingerprintMD5Formatted));
-    fp = RSAPublicKeyUtils.getFormattedMD5Fingerprint(sshKeys.get(1).key);
-    assertThat(fp, equalTo(sshKeys.get(1).fingerprintMD5Formatted));
-  }
 
   @Test
   public void testSHA256Fingerprint() {
@@ -60,39 +42,25 @@ public class RSAPublicKeyTests {
     assertThat(fp, equalTo(sshKeys.get(1).fingerprintSHA256));
   }
 
-  @Test
-  public void testMD5FingerprintInvalidKeyError() {
 
-    try {
-      RSAPublicKeyUtils.getMD5Fingerprint("This is not an encoded base64 key");
-      fail("InvalidSshKeyException expected");
-    } catch (InvalidSshKeyException e) {
-    }
-  }
-
-  @Test
-  public void testFormattedMD5FingerprintInvalidKeyError() {
-
-    try {
-      RSAPublicKeyUtils.getFormattedMD5Fingerprint("This is not an encoded base64 key");
-      fail("InvalidSshKeyException expected");
-    } catch (InvalidSshKeyException e) {
-    }
-  }
 
   @Test
   public void testSHA26FingerprintIsAccepted() throws NoSuchAlgorithmException {
 
     final String test = "test";
-    final String testEncoded = "dGVzdA==";
-    final String fingerprint = Hex.encodeHexString(
-        MessageDigest.getInstance(MessageDigestAlgorithms.MD5).digest(test.getBytes()));
+    final String testBase64Encoded = Base64.getEncoder().encodeToString(test.getBytes());
+    final String sha256fingerprint = Base64.getEncoder()
+      .encodeToString(
+          MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256)
+            .digest(test.getBytes()));
 
 
-    RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s comment", testEncoded))
-      .equals(fingerprint);
+    assertThat(
+        RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s comment", testBase64Encoded)),
+        is(sha256fingerprint));
 
-    RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s", testEncoded)).equals(fingerprint);
+    assertThat(RSAPublicKeyUtils.getSHA256Fingerprint(format("preamble %s", testBase64Encoded)),
+        is(sha256fingerprint));
 
   }
 }

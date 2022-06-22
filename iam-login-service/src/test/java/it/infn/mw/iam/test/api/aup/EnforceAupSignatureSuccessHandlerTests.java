@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -41,10 +41,11 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
-import it.infn.mw.iam.core.web.EnforceAupFilter;
+import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
 public class EnforceAupSignatureSuccessHandlerTests {
 
@@ -91,7 +92,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
   
   @Test
   public void userIsRedirectedToSignAupPageWhenNeeded() throws IOException, ServletException {
-    when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
+    // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
     when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(true);
    
@@ -104,7 +105,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
 
   @Test
   public void delegateIsCalledIfNoSignatureIsNeeded()throws IOException, ServletException {
-    when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
+    // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
     when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false); 
     
@@ -121,7 +122,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
     when(oauth.getName()).thenReturn("oauth-client-for-test");
     when(oauth.getUserAuthentication()).thenReturn(auth);
     
-    when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
+    // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
     when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false);
     
@@ -136,10 +137,10 @@ public class EnforceAupSignatureSuccessHandlerTests {
     OAuth2Authentication oauth = Mockito.mock(OAuth2Authentication.class);
     when(oauth.getName()).thenReturn("oauth-client-for-test");
     when(oauth.getUserAuthentication()).thenReturn(null);
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false); 
+    // when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false);
     
-    when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.empty());
-    when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.empty());
+    // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.empty());
+    // when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.empty());
     
     handler.onAuthenticationSuccess(request, response, oauth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());

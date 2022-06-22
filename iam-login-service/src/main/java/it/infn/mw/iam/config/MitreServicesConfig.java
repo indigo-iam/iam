@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
-import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
@@ -63,14 +62,12 @@ import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.mitre.openid.connect.web.ServerConfigInterceptor;
-import org.mitre.openid.connect.web.UserInfoInterceptor;
 import org.mitre.uma.service.ResourceSetService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
@@ -78,14 +75,13 @@ import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
-import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
-import it.infn.mw.iam.core.oauth.IamJWKSetCacheService;
+import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
@@ -93,7 +89,9 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidato
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
+import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 
+@SuppressWarnings("deprecation")
 @Configuration
 public class MitreServicesConfig {
 
@@ -179,7 +177,6 @@ public class MitreServicesConfig {
   @Bean
   @Qualifier("iamClientDetailsEntityService")
   ClientDetailsEntityService clientDetailsEntityService() {
-
     return new DefaultOAuth2ClientDetailsEntityService();
   }
 
@@ -191,21 +188,23 @@ public class MitreServicesConfig {
 
 
   @Bean(name = "mitreUserInfoInterceptor")
-  public AsyncHandlerInterceptor userInfoInterceptor() {
+  public IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {
 
-    return new UserInfoInterceptor();
+    return new IamUserInfoInterceptor(service);
   }
 
   @Bean(name = "mitreServerConfigInterceptor")
-  public AsyncHandlerInterceptor serverConfigInterceptor() {
+  public ServerConfigInterceptor serverConfigInterceptor() {
 
     return new ServerConfigInterceptor();
   }
 
   @Bean
-  public FilterRegistrationBean disabledMitreFilterRegistration(AuthorizationRequestFilter f) {
+  public FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
+      AuthorizationRequestFilter f) {
 
-    FilterRegistrationBean b = new FilterRegistrationBean(f);
+    FilterRegistrationBean<AuthorizationRequestFilter> b =
+        new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }
@@ -226,21 +225,6 @@ public class MitreServicesConfig {
   public Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
 
     return new Http403ForbiddenEntryPoint();
-  }
-
-  @Bean
-  public FilterRegistrationBean disabledCorsFilterRegistration(CorsFilter c) {
-
-    FilterRegistrationBean b = new FilterRegistrationBean(c);
-    b.setEnabled(false);
-    return b;
-  }
-
-  @Primary
-  @Bean
-  public CorsFilter corsFilter() {
-
-    return new CorsFilter();
   }
 
   @Bean
@@ -276,19 +260,19 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  MITREidDataService_1_0 mitreDataService1_0() {
+  MITREidDataService_1_0 mitreDataService10() {
 
     return new MITREidDataService_1_0();
   }
 
   @Bean
-  MITREidDataService_1_1 mitreDataService1_1() {
+  MITREidDataService_1_1 mitreDataService11() {
 
     return new MITREidDataService_1_1();
   }
 
   @Bean
-  MITREidDataService_1_2 mitreDataService1_2() {
+  MITREidDataService_1_2 mitreDataService12() {
 
     return new MITREidDataService_1_2();
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
     'use strict';
 
     function GroupsController($scope, $rootScope, $uibModal, $q, toaster, GroupsService, GroupRequestsService) {
@@ -22,12 +22,12 @@
 
         self.groupRequests = [];
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.loadData();
         };
 
-        self.loadFirstPageOfGroups = function() {
-            return GroupsService.getGroupsSortBy(1, 10, "name", "asc").then(function(r) {
+        self.loadFirstPageOfGroups = function () {
+            return GroupsService.getGroupsSortBy(1, 10, "name", "asc").then(function (r) {
                 self.groupsFirstResponse = r.data;
                 $rootScope.groupsCount = r.data.totalResults;
                 console.debug('groupsFirstResponse', self.groupsFirstResponse);
@@ -35,45 +35,50 @@
             });
         };
 
-        self.openLoadingModal = function() {
+        self.openLoadingModal = function () {
             $rootScope.pageLoadingProgress = 0;
             self.modal = $uibModal.open({
                 animation: false,
                 templateUrl: '/resources/iam/apps/dashboard-app/templates/loading-modal.html'
             });
+            self.modal.result.catch(res => {
+                if (res !== 'Cancel') {
+                    return $q.reject(res);
+                }
+            });
             return self.modal.opened;
         };
 
-        self.closeLoadingModal = function() {
+        self.closeLoadingModal = function () {
             $rootScope.pageLoadingProgress = 100;
             self.modal.dismiss('Cancel');
         };
 
-        self.handleError = function(error) {
+        self.handleError = function (error) {
             console.error(error);
             toaster.pop({ type: 'error', body: error });
         };
 
 
         function loadGroupRequests() {
-            return GroupRequestsService.getAllPendingGroupRequestsForAuthenticatedUser().then(function(r) {
+            return GroupRequestsService.getAllPendingGroupRequestsForAuthenticatedUser().then(function (r) {
                 self.groupRequests = r;
                 return r.data;
-            }).catch(function(r) {
+            }).catch(function (r) {
                 $q.reject(r);
             });
         }
 
-        self.loadData = function() {
+        self.loadData = function () {
 
             return self.openLoadingModal()
-                .then(function() {
+                .then(function () {
                     var promises = [];
                     promises.push(self.loadFirstPageOfGroups());
                     promises.push(loadGroupRequests());
                     return $q.all(promises);
                 })
-                .then(function(response) {
+                .then(function (response) {
                     self.closeLoadingModal();
                     self.loaded = true;
                 })

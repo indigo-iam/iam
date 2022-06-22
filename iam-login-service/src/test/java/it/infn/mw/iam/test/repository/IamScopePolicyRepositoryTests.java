@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,18 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
-
-import javax.persistence.EntityManager;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -44,26 +39,24 @@ import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
+import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamNoMvcTest
 public class IamScopePolicyRepositoryTests extends ScopePolicyTestUtils {
 
   @Autowired
-  EntityManager em;
+  private IamScopePolicyRepository policyRepo;
 
   @Autowired
-  IamScopePolicyRepository policyRepo;
+  private IamGroupRepository groupRepo;
 
   @Autowired
-  IamGroupRepository groupRepo;
+  private IamAccountRepository accountRepo;
 
   @Autowired
-  IamAccountRepository accountRepo;
-
-  @Autowired
-  IamGroupService groupService;
+  private IamGroupService groupService;
 
   @Before
   public void cleanupPolicies() {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @Component
 public class AccountUtils {
-  
   IamAccountRepository accountRepo;
 
   @Autowired
@@ -39,6 +40,21 @@ public class AccountUtils {
     this.accountRepo = accountRepo;
   }
 
+  public boolean isRegisteredUser(Authentication auth) {
+    if (auth == null || auth.getAuthorities() == null) {
+      return false;
+    }
+
+    return auth.getAuthorities().contains(Authorities.ROLE_USER);
+  }
+
+  public boolean isAdmin(Authentication auth) {
+    if (auth == null || auth.getAuthorities() == null) {
+      return false;
+    }
+
+    return auth.getAuthorities().contains(Authorities.ROLE_ADMIN);
+  }
 
   public boolean isAuthenticated() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

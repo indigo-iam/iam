@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,15 +24,19 @@
     <h3 class="modal-title">Grant group manager privileges for group <strong>{{$ctrl.group.displayName}}</strong></h3>
 </div>
 <div class="modal-body">
-    <operationresult/>
+    <operationresult />
     <form name="add-gm">
         <div ng-if="$ctrl.gm != null">
             Grant group manager privileges to user {{$ctrl.gm.name.formatted}} ?
         </div>
         <div class="form-group" ng-if="$ctrl.gm == null">
             <label class="control-label">User name</label>
-            <input id="add-gm-name" name="name" type="text" required placeholder="Search user by name (type at least 2 chars)..." autocomplete="off" ng-model="$ctrl.user" ty uib-typeahead="name as result.name.formatted for result in $ctrl.lookupUser($viewValue)"
-                typeahead-min-length="2" typeahead-loading="searchingUsers" typeahead-no-results="noResults" typeahead-on-select="$ctrl.userSelected($item, $model)" typeahead-template-url="result-template.html" class="form-control">
+            <input id="add-gm-name" name="name" type="text" required
+                placeholder="Search user by name (type at least 2 chars)..." autocomplete="off" ng-model="$ctrl.user"
+                uib-typeahead="name as result.name.formatted for result in $ctrl.lookupUser($viewValue)"
+                typeahead-min-length="2" typeahead-loading="searchingUsers" typeahead-no-results="noResults"
+                typeahead-on-select="$ctrl.userSelected($item, $model)" typeahead-template-url="result-template.html"
+                class="form-control">
             <div ng-show="searchingUsers" class="text-muted" style="text-align: right; padding:10px;">
                 <i class="fa fa-refresh"></i>
             </div>
@@ -48,6 +52,7 @@
     </form>
 </div>
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.gm || !$ctrl.enabled" ng-click="$ctrl.addGroupManager()">Add group manager</button>
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.gm || !$ctrl.enabled"
+        ng-click="$ctrl.addGroupManager()">Add group manager</button>
     <button class="btn btn-warning" type="button" id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
 </div>

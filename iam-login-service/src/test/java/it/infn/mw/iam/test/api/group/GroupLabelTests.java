@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.List;
@@ -39,32 +37,25 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @WithMockUser(username = "admin", roles = "ADMIN")
 public class GroupLabelTests extends TestSupport {
 
@@ -77,23 +68,16 @@ public class GroupLabelTests extends TestSupport {
   private IamGroupRepository repo;
 
   @Autowired
-  private WebApplicationContext context;
-
-  @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
   private MockMvc mvc;
 
   @Before
   public void setup() {
-
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .apply(springSecurity())
-      .alwaysDo(log())
-      .build();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -113,7 +97,7 @@ public class GroupLabelTests extends TestSupport {
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(UNAUTHORIZED);
 
@@ -128,7 +112,7 @@ public class GroupLabelTests extends TestSupport {
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(FORBIDDEN);
 
@@ -162,7 +146,7 @@ public class GroupLabelTests extends TestSupport {
   public void setLabelWorks() throws Exception {
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(OK);
 
@@ -177,7 +161,7 @@ public class GroupLabelTests extends TestSupport {
     LabelDTO label = LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(label)))
       .andExpect(OK);
 
@@ -196,12 +180,12 @@ public class GroupLabelTests extends TestSupport {
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(OK);
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(unqualified)))
       .andExpect(OK);
 
@@ -247,7 +231,7 @@ public class GroupLabelTests extends TestSupport {
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
 
     mvc
-      .perform(put(RESOURCE, RANDOM_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, RANDOM_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(NOT_FOUND)
       .andExpect(GROUP_NOT_FOUND_ERROR_MESSAGE);
@@ -270,12 +254,12 @@ public class GroupLabelTests extends TestSupport {
 
     for (LabelDTO l : labels) {
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(OK);
 
       mvc
-        .perform(put(RESOURCE, TEST_002_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+        .perform(put(RESOURCE, TEST_002_GROUP_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(OK);
     }
@@ -322,7 +306,7 @@ public class GroupLabelTests extends TestSupport {
     for (String p : SOME_INVALID_PREFIXES) {
       LabelDTO l = LabelDTO.builder().prefix(p).value(LABEL_VALUE).name(LABEL_NAME).build();
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(l)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_PREFIX_ERROR_MESSAGE);
@@ -331,7 +315,7 @@ public class GroupLabelTests extends TestSupport {
     LabelDTO noNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(noNameLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_REQUIRED_ERROR_MESSAGE);
@@ -341,7 +325,7 @@ public class GroupLabelTests extends TestSupport {
     for (String in : SOME_INVALID_NAMES) {
       LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(in).build();
       mvc
-        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidNameLabel)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_NAME_ERROR_MESSAGE);
@@ -351,7 +335,7 @@ public class GroupLabelTests extends TestSupport {
         LabelDTO.builder().prefix(LABEL_PREFIX).name(randomAlphabetic(65)).build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longNameLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_TOO_LONG_ERROR_MESSAGE);
@@ -364,7 +348,7 @@ public class GroupLabelTests extends TestSupport {
       .build();
 
     mvc
-      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON_UTF8)
+      .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longValueLabel)))
       .andExpect(BAD_REQUEST)
       .andExpect(VALUE_TOO_LONG_ERROR_MESSAGE);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
  */
 package it.infn.mw.iam.test.repository;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.persistence.EntityManager;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Test;
@@ -31,21 +29,20 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@Transactional
+
+@SuppressWarnings("deprecation")
+@RunWith(SpringRunner.class)
+@IamNoMvcTest
 public class IamTokenRepositoryTests {
 
   public static final String TEST_347_USER = "test_347";
@@ -57,19 +54,16 @@ public class IamTokenRepositoryTests {
   public static final String[] SCOPES = {"openid", "profile", "offline_access"};
 
   @Autowired
-  IamOAuthAccessTokenRepository accessTokenRepo;
+  private IamOAuthAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
-  ClientDetailsEntityService clientDetailsService;
+  private ClientDetailsEntityService clientDetailsService;
 
   @Autowired
-  DefaultOAuth2ProviderTokenService tokenService;
-
-  @Autowired
-  EntityManager em;
+  private DefaultOAuth2ProviderTokenService tokenService;
 
   private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username) {
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -87,7 +88,7 @@ public class ScimUserProvisioning
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
-  public ScimUserProvisioning(IamAccountService accountService,
+  public ScimUserProvisioning(IamAccountService accountService, OAuth2TokenEntityService tokenService,
       IamAccountRepository accountRepository, PasswordEncoder passwordEncoder,
       UserConverter userConverter, OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
       SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter) {
@@ -96,7 +97,7 @@ public class ScimUserProvisioning
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
-        accountService, oidcIdConverter, samlIdConverter, sshKeyConverter,
+        accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
         x509CertificateConverter);
   }
 

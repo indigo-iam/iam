@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,59 @@ public class ScimUserTestSupport {
       Lists.newArrayList("http://iosicongallery.com/img/512/angry-birds-2-2016.png",
           "https://fallofthewall25.com/img/default-user.jpg");
 
+  protected ScimUser createLincolnTestUser() {
+    ScimUser lincoln = ScimUser.builder("abraham_lincoln")
+      .buildEmail("lincoln@email.test")
+      .buildName("Abraham", "Lincoln")
+      .addOidcId(ScimOidcId.builder()
+        .issuer(OidcIdUtils.oidcIds.get(1).issuer)
+        .subject(OidcIdUtils.oidcIds.get(1).subject)
+        .build())
+      .addSshKey(ScimSshKey.builder()
+        .value(SshKeyUtils.sshKeys.get(1).key)
+        .fingerprint(SshKeyUtils.sshKeys.get(1).fingerprintSHA256)
+        .primary(true)
+        .build())
+      .addSamlId(ScimSamlId.builder()
+        .idpId(SamlIdUtils.samlIds.get(1).idpId)
+        .userId(SamlIdUtils.samlIds.get(1).userId)
+        .build())
+      .addX509Certificate(ScimX509Certificate.builder()
+        .display(X509Utils.x509Certs.get(1).display)
+        .pemEncodedCertificate(X509Utils.x509Certs.get(1).certificate)
+        .primary(true)
+        .build())
+      .build();
+
+    return provider.create(lincoln);
+  }
+  protected ScimUser createLennonTestUser() {
+    ScimUser lennon = ScimUser.builder("john_lennon")
+      .buildEmail("lennon@email.test")
+      .buildName("John", "Lennon")
+      .buildPhoto(PICTURES.get(0))
+      .addOidcId(ScimOidcId.builder()
+        .issuer(OidcIdUtils.oidcIds.get(0).issuer)
+        .subject(OidcIdUtils.oidcIds.get(0).subject)
+        .build())
+      .addSshKey(ScimSshKey.builder()
+        .value(SshKeyUtils.sshKeys.get(0).key)
+        .fingerprint(SshKeyUtils.sshKeys.get(0).fingerprintSHA256)
+        .primary(true)
+        .build())
+      .addSamlId(ScimSamlId.builder()
+        .idpId(SamlIdUtils.samlIds.get(0).idpId)
+        .userId(SamlIdUtils.samlIds.get(0).userId)
+        .build())
+      .addX509Certificate(ScimX509Certificate.builder()
+        .display(X509Utils.x509Certs.get(0).display)
+        .pemEncodedCertificate(X509Utils.x509Certs.get(0).certificate)
+        .primary(true)
+        .build())
+      .build();
+
+    return provider.create(lennon);
+  }
 
   protected List<ScimUser> createTestUsers() {
     List<ScimUser> testUsers = new ArrayList<ScimUser>();

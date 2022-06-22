@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,17 @@ public class ClientRef {
 
   private Long id;
   private String clientId;
+  private String clientName;
   private Set<String> contacts;
   private String ref = null;
 
   @JsonCreator
-  public ClientRef(@JsonProperty("id") Long id, @JsonProperty("clientId") String clientId,
+  public ClientRef(@JsonProperty("id") Long id, @JsonProperty("clientId") String clientId, @JsonProperty("clientName") String clientName,
       @JsonProperty("contacts") Set<String> contacts, @JsonProperty("$ref") String ref) {
 
     this.id = id;
     this.clientId = clientId;
+    this.clientName = clientName;
     this.contacts = contacts;
     this.ref = ref;
   }
@@ -43,6 +45,7 @@ public class ClientRef {
 
     this.id = builder.id;
     this.clientId = builder.clientId;
+    this.clientName = builder.clientName;
     this.contacts = builder.contacts;
     this.ref = builder.ref;
   }
@@ -57,6 +60,12 @@ public class ClientRef {
   public String getClientId() {
 
     return clientId;
+  }
+  
+  @JsonProperty("clientName")
+  public String getClientName() {
+
+    return clientName;
   }
 
   @JsonProperty("contacts")
@@ -74,7 +83,7 @@ public class ClientRef {
   @Override
   public String toString() {
 
-    return "Client [id=" + id + ", clientId=" + clientId + ", contacts=" + contacts
+    return "Client [id=" + id + ", clientId=" + clientId + ", clientName=" + clientName + ", contacts=" + contacts
         + ", ref=" + ref + "]";
   }
 
@@ -87,6 +96,7 @@ public class ClientRef {
 
     private Long id;
     private String clientId;
+    private String clientName;
     private Set<String> contacts;
     private String ref;
 
@@ -97,6 +107,11 @@ public class ClientRef {
 
     public Builder clientId(String clientId) {
       this.clientId = clientId;
+      return this;
+    }
+    
+    public Builder clientName(String clientName) {
+      this.clientName = clientName;
       return this;
     }
 

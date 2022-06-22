@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,27 +116,21 @@
 
     var self = this;
 
-    // pagination controls
-    self.currentPage = 1;
-    self.currentOffset = 1;
-    self.itemsPerPage = 10;
-    self.totalResults = self.total;
-    self.sortByValue = "name";
-    self.sortDirection = "asc";
-
     self.$onInit = function () {
-      console.debug("init UsersListController", self.tokens, self.currentPage, self.currentOffset, self.totalResults);
+      console.debug("UsersListController.self", self);
+      // pagination controls
+      self.currentPage = 1;
+      self.currentOffset = 1;
+      self.itemsPerPage = 10;
+      self.totalResults = self.total;
+      self.sortByValue = "name";
+      self.sortDirection = "asc";
     };
 
     $scope.$on('refreshUsersList', function (e) {
       console.debug("received refreshUsersList event");
-      self.searchUsers(1);
+      self.searchUsers();
     });
-
-    self.copyToClipboard = function (toCopy) {
-      clipboardService.copyToClipboard(toCopy);
-      toaster.pop({ type: 'success', body: 'User uuid copied to clipboard!' });
-    };
 
     self.updateUsersCount = function (responseValue) {
       if (self.filter) {
@@ -153,15 +147,12 @@
       self.searchUsers(1);
     };
 
-    self.searchUsers = function (page) {
+    self.searchUsers = function () {
 
-      console.debug("page = ", page);
       $rootScope.pageLoadingProgress = 0;
       self.loaded = false;
-
       self.users = [];
-      self.currentPage = page;
-      self.currentOffset = (page - 1) * self.itemsPerPage + 1;
+      self.currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
 
       var handleResponse = function (response) {
         self.totalResults = response.data.totalResults;
@@ -185,22 +176,26 @@
       });
 
       self.loadingModal.opened.then(function () {
-        self.getUsersList(self.currentOffset, self.itemsPerPage, self.filter, self.sortByValue, self.sortDirection).then(handleResponse, handleError);
+        return self.getUsersList(self.currentOffset, self.itemsPerPage, self.filter, self.sortByValue, self.sortDirection).then(handleResponse, handleError);
       });
-    }
+
+      self.loadingModal.result.catch(res => {
+        //do nothing, this is triggered by the modal dismiss
+      });
+    };
 
     self.getUsersList = function (startIndex, count, filter, sortByValue, sortDirection) {
       if (filter === undefined) {
         return UsersService.getUsersSortedBy(startIndex, count, sortByValue, sortDirection);
       }
       return UsersService.getUsersFilteredAndSortedBy(startIndex, count, filter, sortByValue, sortDirection);
-    }
+    };
 
     self.sortBy = function (sortByValue, sortDirection) {
       self.sortByValue = sortByValue;
       self.sortDirection = sortDirection;
-      self.searchUsers(self.currentPage);
-    }
+      self.searchUsers();
+    };
 
     self.handleDeleteSuccess = function (user) {
       self.enabled = true;
@@ -214,7 +209,7 @@
           self.currentPage--;
         }
       }
-      self.searchUsers(self.currentPage);
+      self.searchUsers();
     };
 
     self.openDeleteUserDialog = function (user) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,55 +15,41 @@
  */
 package it.infn.mw.iam.test.registration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.api.TestSupport;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 public class RegistrationUsernameTests extends TestSupport {
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Autowired
-    WebApplicationContext context;
+    private MockOAuth2Filter oauth2Filter;
 
     @Autowired
-    MockOAuth2Filter oauth2Filter;
-
-    @Autowired
-    IamAccountRepository repo;
-
     private MockMvc mvc;
 
     @Before
     public void setup() {
         oauth2Filter.cleanupSecurityContext();
-        mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
     }
 
     @After

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,33 @@
 package it.infn.mw.iam.test.oauth.exchange;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.exchange_policy.ClientMatchingPolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangePolicyDTO;
-import it.infn.mw.iam.api.exchange_policy.TokenExchangePolicyService;
 import it.infn.mw.iam.api.exchange_policy.ExchangeScopePolicyDTO;
+import it.infn.mw.iam.api.exchange_policy.TokenExchangePolicyService;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = IamLoginService.class)
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @DirtiesContext
-@WebAppConfiguration
 public class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
 
   private static final String TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
@@ -57,19 +52,8 @@ public class TokenExchangeWithPdpIntegrationTests extends EndpointsTestUtils {
   private static final String TEST_USER_USERNAME = "test";
   private static final String TEST_USER_PASSWORD = "password";
 
-
-  @Autowired
-  private WebApplicationContext context;
-
   @Autowired
   private TokenExchangePolicyService service;
-
-  @Before
-  public void setup() throws Exception {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
-
 
   @Test
   public void testTokenExchangeBlockedWithNoPolicy() throws Exception {

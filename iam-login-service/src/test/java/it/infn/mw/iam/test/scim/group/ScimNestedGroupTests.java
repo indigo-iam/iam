@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,13 @@ package it.infn.mw.iam.test.scim.group;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_GROUP_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,53 +33,41 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
-public class ScimNestedGroupTests {
 
-  @Autowired
-  private WebApplicationContext context;
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+public class ScimNestedGroupTests {
 
   @Autowired
   private ObjectMapper objectMapper;
 
   @Autowired
   private ScimResourceLocationProvider scimResourceLocationProvider;
-  
+
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
   private MockMvc mvc;
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .apply(springSecurity())
-      .alwaysDo(log())
-      .build();
+    mockOAuth2Filter.cleanupSecurityContext();
   }
-  
+
   @After
   public void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -120,7 +104,7 @@ public class ScimNestedGroupTests {
         .contentType(SCIM_CONTENT_TYPE)
         .content(objectMapper.writeValueAsString(ScimGroup.builder("mammals").indigoGroup(scimFakeParentGroup).build())))
       .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.status", equalTo(NOT_FOUND.toString())))
+      .andExpect(jsonPath("$.status", equalTo("404")))
       .andExpect(jsonPath("$.detail", equalTo(format("Parent group '%s' not found", uuid))));
     // @formatter:on
   }
@@ -134,7 +118,7 @@ public class ScimNestedGroupTests {
     // @formatter:off
     mvc.perform(delete(animals.getMeta().getLocation()))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.status", equalTo(BAD_REQUEST.toString())))
+      .andExpect(jsonPath("$.status", equalTo("400")))
       .andExpect(jsonPath("$.detail", equalTo("Group is not empty")));
     // @formatter:on
   }

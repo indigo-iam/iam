@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,9 @@
  */
 package it.infn.mw.iam.test.rcauth;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-
 import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
-import org.mitre.openid.connect.client.service.ServerConfigurationService;
-import org.mitre.openid.connect.config.ServerConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 
 import com.nimbusds.jose.JWSAlgorithm;
 
@@ -69,36 +57,16 @@ public class RCAuthTestSupport extends X509TestSupport {
   public static final String IAM_ENTITY_ID = "iam-entity-id";
   public static final String CODE_VALUE = "diablocode";
 
+
+  public static final String APPLICATION_FORM_URLENCODED_UTF8_VALUE =
+      MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8";
+
+  public static final MediaType APPLICATION_FORM_URLENCODED_UTF8 =
+      MediaType.valueOf(APPLICATION_FORM_URLENCODED_UTF8_VALUE);
   protected JWKSetKeyStore rcAuthKeyStore = rcAuthKeyStore();
   protected JWSAlgorithm jwsAlgo = JWSAlgorithm.RS256;
 
   protected IdTokenBuilder tokenBuilder = new IdTokenBuilder(rcAuthKeyStore, jwsAlgo);
-
-  @Bean
-  @Primary
-  public ServerConfigurationService serverConfigService() {
-
-    ServerConfigurationService scs = mock(ServerConfigurationService.class);
-    ServerConfiguration sc = mock(ServerConfiguration.class);
-    when(sc.getAuthorizationEndpointUri()).thenReturn(AUTHORIZATION_URI);
-    when(sc.getTokenEndpointUri()).thenReturn(TOKEN_URI);
-    when(sc.getJwksUri()).thenReturn(JWK_URI);
-
-    when(scs.getServerConfiguration(RCAuthTestSupport.ISSUER)).thenReturn(sc);
-    return scs;
-  }
-
-  @Bean
-  @Primary
-  public JWKSetCacheService mockjwkSetCacheService() throws NoSuchAlgorithmException, InvalidKeySpecException {
-
-    JWTSigningAndValidationService signatureValidator = new DefaultJWTSigningAndValidationService(rcAuthKeyStore());
-
-    JWKSetCacheService mockCacheService = mock(JWKSetCacheService.class);
-    when(mockCacheService.getValidator(JWK_URI)).thenReturn(signatureValidator);
-
-    return mockCacheService;
-  }
 
   public JWKSetKeyStore rcAuthKeyStore() {
     JWKSetKeyStore ks = new JWKSetKeyStore();

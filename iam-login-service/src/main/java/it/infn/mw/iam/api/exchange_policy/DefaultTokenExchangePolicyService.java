@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,8 +59,7 @@ public class DefaultTokenExchangePolicyService implements TokenExchangePolicySer
 
   @Override
   public void deleteTokenExchangePolicyById(Long id) {
-    IamTokenExchangePolicyEntity policy =
-        Optional.ofNullable(repo.findOne(id)).orElseThrow(notFoundError(id));
+    IamTokenExchangePolicyEntity policy = repo.findById(id).orElseThrow(notFoundError(id));
 
     repo.delete(policy);
 
@@ -69,7 +68,7 @@ public class DefaultTokenExchangePolicyService implements TokenExchangePolicySer
 
   @Override
   public Optional<ExchangePolicyDTO> getTokenExchangePolicyById(Long id) {
-    return Optional.ofNullable(repo.findOne(id)).map(converter::dtoFromEntity);
+    return repo.findById(id).map(converter::dtoFromEntity);
   }
 
   @Override

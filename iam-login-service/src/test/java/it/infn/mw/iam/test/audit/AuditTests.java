@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,18 @@
  */
 package it.infn.mw.iam.test.audit;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
-
-import org.springframework.transaction.annotation.Transactional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.ConfigAttribute;
@@ -40,8 +39,7 @@ import org.springframework.security.authentication.event.InteractiveAuthenticati
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.audit.IamAuditEventLogger;
@@ -49,11 +47,11 @@ import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.auth.IamAuthenticationFailureEvent;
 import it.infn.mw.iam.audit.events.auth.IamAuthenticationSuccessEvent;
 import it.infn.mw.iam.audit.events.auth.IamAuthorizationFailureEvent;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class AuditTests {
 
   @Autowired
@@ -73,7 +71,8 @@ public class AuditTests {
 
     IamAuditApplicationEvent ev = logger.getLastEvent();
 
-    assertNotNull(ev);
+    assertThat(ev, notNullValue());
+
     assertThat(ev, is(instanceOf(IamAuthenticationFailureEvent.class)));
 
   }
@@ -88,7 +87,8 @@ public class AuditTests {
 
     IamAuditApplicationEvent ev = logger.getLastEvent();
 
-    assertNotNull(ev);
+    assertThat(ev, notNullValue());
+
     assertThat(ev, is(instanceOf(IamAuthenticationSuccessEvent.class)));
 
   }
@@ -105,7 +105,7 @@ public class AuditTests {
 
     IamAuditApplicationEvent ev = logger.getLastEvent();
 
-    assertNotNull(ev);
+    assertThat(ev, notNullValue());
     assertThat(ev, is(instanceOf(IamAuthorizationFailureEvent.class)));
   }
 }

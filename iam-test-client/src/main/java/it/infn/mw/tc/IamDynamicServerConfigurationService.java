@@ -64,7 +64,6 @@ public class IamDynamicServerConfigurationService extends DynamicServerConfigura
     private static final Logger logger = LoggerFactory.getLogger(Fetcher.class);
 
     private ClientHttpRequestFactory factory;
-    private JsonParser parser = new JsonParser();
 
     public Fetcher(ClientHttpRequestFactory factory) {
       this.factory = factory;
@@ -84,7 +83,8 @@ public class IamDynamicServerConfigurationService extends DynamicServerConfigura
       // fetch the value
       String jsonString = restTemplate.getForObject(url, String.class);
 
-      JsonElement parsed = parser.parse(jsonString);
+      JsonElement parsed = JsonParser.parseString(jsonString);
+
       if (parsed.isJsonObject()) {
 
         JsonObject o = parsed.getAsJsonObject();

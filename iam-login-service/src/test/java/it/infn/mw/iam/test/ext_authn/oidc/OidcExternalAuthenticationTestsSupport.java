@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI;
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_TOKEN_ENDPOINT_URI;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -45,6 +45,7 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.oidc.CodeRequestHolder;
 import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
@@ -135,7 +136,7 @@ public class OidcExternalAuthenticationTestsSupport {
     String nonce = locationUri.getQueryParams().get("nonce").get(0);
 
     requestHeaders.add("Cookie", sessionCookie);
-    requestHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    requestHeaders.setContentType(RCAuthTestSupport.APPLICATION_FORM_URLENCODED_UTF8);
 
 
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -155,7 +156,7 @@ public class OidcExternalAuthenticationTestsSupport {
     tf.getMockServer()
       .expect(requestTo(TEST_OIDC_TOKEN_ENDPOINT_URI))
       .andExpect(method(HttpMethod.POST))
-      .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+      .andExpect(content().contentType(RCAuthTestSupport.APPLICATION_FORM_URLENCODED_UTF8))
       .andRespond(MockRestResponseCreators.withSuccess(tokenResponse, MediaType.APPLICATION_JSON));
   }
 
@@ -164,7 +165,7 @@ public class OidcExternalAuthenticationTestsSupport {
     tf.getMockServer()
       .expect(requestTo(TEST_OIDC_TOKEN_ENDPOINT_URI))
       .andExpect(method(HttpMethod.POST))
-      .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+      .andExpect(content().contentType(RCAuthTestSupport.APPLICATION_FORM_URLENCODED_UTF8))
       .andRespond(MockRestResponseCreators.withBadRequest()
         .contentType(MediaType.APPLICATION_JSON)
         .body(errorResponse));

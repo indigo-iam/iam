@@ -1,0 +1,80 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form">
+    <div class="form-group" ng-if="!$ctrl.newClient">
+        <label for="createdAt">Created</label>
+        <p class="form-control-static" ng-if="$ctrl.client.created_at">{{$ctrl.client.created_at | relativeDate}}</p>
+        <p class="help-block" ng-if="!$ctrl.client.created_at">Unknown</p>
+    </div>
+    <div class="form-group" ng-class="{'has-error':
+    clientForm.clientName.$dirty && clientForm.clientName.$invalid}">
+        <label for="clientName">Client name</label>
+        <input id="clientName" name="clientName" class="form-control" type="text" ng-model="$ctrl.client.client_name"
+            ng-required="required">
+        <span class="help-block">
+            Human readable client name
+        </span>
+        <span class="help-block" ng-show="clientForm.clientName.$dirty
+        && clientForm.clientName.$error.required">
+            This is a required field
+        </span>
+    </div>
+    <div class="form-group">
+        <label for="client_id">Client id</label>
+        <p class="help-block" ng-if="$ctrl.newClient">
+            The ID will be generated when the client is saved.
+        </p>
+        <p class="form-control-static" ng-if="!$ctrl.newClient">
+            {{$ctrl.client.client_id}}
+        </p>
+    </div>
+    <div class="form-group">
+        <label for="client_description">Client
+            description</label>
+
+        <textarea name="clientDescription" id="client_description" class="form-control" rows="3"
+            ng-model="$ctrl.client.client_description" placeholder="Client description..."></textarea>
+        <span class="help-block">
+            Human readable client description
+        </span>
+    </div>
+    <div class="form-group" ng-if="!$ctrl.newClient">
+        <label for="dynReg">Dynamically registered</label>
+        <p id="dynReg" class="form-control-static">{{$ctrl.client.dynamically_registered}}</p>
+        <p class="help-block">
+            True if the client registered via the OpenID Connect dynamic
+            registration endpoint, false otherwise.
+        </p>
+    </div>
+    <div class="form-group" ng-if="$ctrl.client.dynamically_registered">
+        <label for="dynRegUri">Registration client URI</label>
+        <p id="dynRegUri" class="form-control-static">{{$ctrl.client.registration_client_uri}}</p>
+    </div>
+    <hr>
+    <inputlist id="redirectUri" model="$ctrl.client.redirect_uris" placeholder="https://app.example.org/cb"
+        label="Redirect URIs" helptext="List of Redirect URIs for this
+    client" emptylisttext="No Redirect URIs defined for
+    this client" validator="$ctrl.validRedirectURI()">
+    </inputlist>
+    <hr>
+    <inputlist id="contacts" model="$ctrl.client.contacts" placeholder="administrator@example.org" label="Contacts"
+        helptext="List of email
+    address contacts for administrators of this
+    client" emptylisttext="No contacts defined for this client"></inputlist>
+    <hr>
+</div>

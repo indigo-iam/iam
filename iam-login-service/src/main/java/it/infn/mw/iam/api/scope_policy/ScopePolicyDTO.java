@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,12 @@ import javax.validation.Valid;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
-import org.hibernate.validator.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import cz.jirutka.validator.collection.constraints.EachSize;
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 import it.infn.mw.iam.api.scope_policy.validation.ScopePolicy;
 
@@ -63,8 +62,6 @@ public class ScopePolicyDTO {
   @Valid
   private GroupRefDTO group;
 
-  @EachSize(min = 1, max = 255,
-      message = "Invalid scope policy: scope length must be >= 1 and < 255 characters")
   private Set<String> scopes;
 
   public ScopePolicyDTO() {}

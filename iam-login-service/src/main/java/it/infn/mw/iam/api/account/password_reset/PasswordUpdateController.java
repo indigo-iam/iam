@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordError;
 import it.infn.mw.iam.api.account.password_reset.error.UserNotActiveOrNotVerified;
 import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 
+@SuppressWarnings("deprecation")
 @RestController
 @Transactional
 public class PasswordUpdateController {

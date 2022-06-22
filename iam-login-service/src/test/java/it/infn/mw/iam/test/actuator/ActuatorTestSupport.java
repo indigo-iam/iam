@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 package it.infn.mw.iam.test.actuator;
 
-import static com.google.common.collect.Sets.newHashSet;
-
-import java.util.Set;
-
 public class ActuatorTestSupport {
 
   static final String ADMIN_USERNAME = "admin";
   static final String ADMIN_ROLE = "ADMIN";
+
+  static final String ACTUATOR_ROLE = "ACTUATOR";
 
   static final String USER_USERNAME = "test";
   static final String USER_ROLE = "USER";
@@ -30,9 +28,8 @@ public class ActuatorTestSupport {
   static final String STATUS_UP = "UP";
   static final String STATUS_DOWN = "DOWN";
 
-  static final Set<String> SENSITIVE_ENDPOINTS = newHashSet("/metrics");
+  static final String HEALTH_ENDPOINT = "/actuator/health";
 
-  static final Set<String> PRIVILEGED_ENDPOINTS = newHashSet("/configprops", "/env",
-      "/mappings", "/flyway", "/autoconfig", "/beans", "/dump", "/trace");
+  static final String INFO_ENDPOINT = "/actuator/info";
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ public class GroupMembershipManagement {
     this.account = account;
     this.accountService = accountService;
 
-    groupAdder = (group) -> this.accountService.addToGroup(this.account, group);
-    groupRemover = (group) -> this.accountService.removeFromGroup(this.account, group);
+    groupAdder = group -> this.accountService.addToGroup(this.account, group);
+    groupRemover = group -> this.accountService.removeFromGroup(this.account, group);
 
-    accountIsMember = (group) -> {
+    accountIsMember = group -> {
       for (IamAccountGroupMembership m : this.account.getGroups()) {
         if (m.getGroup().equals(group)) {
           return true;

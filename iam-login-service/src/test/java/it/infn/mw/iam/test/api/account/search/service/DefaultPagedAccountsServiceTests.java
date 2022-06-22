@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,38 @@ package it.infn.mw.iam.test.api.account.search.service;
 
 import static it.infn.mw.iam.api.account.search.AccountSearchController.getSortByEmail;
 import static it.infn.mw.iam.api.account.search.AccountSearchController.getSortByName;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
+
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.common.PagedResourceService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class})
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
 
-  public final int ITEMS_PER_PAGE = 10;
-  public final long TOTAL_TEST_ACCOUNTS = 253L;
-  private final int LAST_PAGE_NUMBER = (int) Math.ceil(TOTAL_TEST_ACCOUNTS / ITEMS_PER_PAGE);
-  private final int LAST_PAGE_SIZE = (int) (long) TOTAL_TEST_ACCOUNTS % ITEMS_PER_PAGE;
-  private final int LAST_PAGE_OFFSET = (int) (long) Math.floorDiv(TOTAL_TEST_ACCOUNTS, ITEMS_PER_PAGE) * ITEMS_PER_PAGE;
+  public static final int ITEMS_PER_PAGE = 10;
+  public static final long TOTAL_TEST_ACCOUNTS = 254L;
+  private static final int LAST_PAGE_NUMBER = (int) Math.ceil(TOTAL_TEST_ACCOUNTS / ITEMS_PER_PAGE);
+  private static final int LAST_PAGE_SIZE = (int) (long) TOTAL_TEST_ACCOUNTS % ITEMS_PER_PAGE;
+  private static final int LAST_PAGE_OFFSET =
+      (int) (long) Math.floorDiv(TOTAL_TEST_ACCOUNTS, ITEMS_PER_PAGE) * ITEMS_PER_PAGE;
 
   @Autowired
   private PagedResourceService<IamAccount> accountService;
@@ -135,7 +139,8 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   @Test
   public void testGetLastPageSortByNameAsc() {
 
-    OffsetPageable op = new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
+    OffsetPageable op =
+        new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.ASC));
     Page<IamAccount> page = accountService.getPage(op);
     assertSortIsByNameAsc(page.getContent());
   }
@@ -144,7 +149,8 @@ public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
   @Test
   public void testGetLastPageSortByNameDesc() {
 
-    OffsetPageable op = new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
+    OffsetPageable op =
+        new OffsetPageable(LAST_PAGE_OFFSET, ITEMS_PER_PAGE, getSortByName(Sort.Direction.DESC));
     Page<IamAccount> page = accountService.getPage(op);
     assertSortIsByNameDesc(page.getContent());
   }

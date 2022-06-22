@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 package it.infn.mw.iam.test.scim.group;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,24 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
@@ -59,18 +50,14 @@ import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimUtils;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
-public class ScimGroupManagerTests {
 
-  @Autowired
-  private WebApplicationContext context;
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+public class ScimGroupManagerTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
@@ -92,14 +79,11 @@ public class ScimGroupManagerTests {
   private static final String TEST_001_GROUP_ID = "c617d586-54e6-411d-8e38-649677980001";
   private static final String TEST_002_GROUP_ID = "c617d586-54e6-411d-8e38-649677980002";
 
+  @Autowired
   private MockMvc mvc;
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .apply(springSecurity())
-      .alwaysDo(log())
-      .build();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -149,7 +133,7 @@ public class ScimGroupManagerTests {
 
     String authority = String.format("ROLE_GM:%s", createdGroup.getId());
 
-    Assert.assertThat(authoritiesRepo.findByAuthority(authority).isPresent(), is(true));
+    assertThat(authoritiesRepo.findByAuthority(authority).isPresent(), is(true));
   }
 
   @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,14 +47,13 @@
 
     var self = this;
 
-    // pagination controls
-    self.currentPage = 1;
-    self.currentOffset = 1;
-    self.itemsPerPage = 10;
-    self.totalResults = self.total;
-
     self.$onInit = function() {
       console.debug("init AccessTokensListController", self.tokens, self.currentPage, self.currentOffset, self.totalResults);
+      // pagination controls
+      self.currentPage = 1;
+      self.currentOffset = 1;
+      self.itemsPerPage = 10;
+      self.totalResults = self.total;
     };
 
     $scope.$on('refreshAccessTokensList', function(e) {
@@ -115,10 +114,10 @@
 
     self.getAccessTokenList = function(startIndex, count) {
       if (self.clientSelected && self.userSelected) {
-        return TokensService.getAccessTokensFilteredByUserAndClient(startIndex, count, self.userSelected.userName, self.clientSelected.clientId);
+        return TokensService.getAccessTokensFilteredByUserAndClient(startIndex, count, self.userSelected.userName, self.clientSelected.client_id);
       } 
       if (self.clientSelected) {
-        return TokensService.getAccessTokensFilteredByClient(startIndex, count, self.clientSelected.clientId);
+        return TokensService.getAccessTokensFilteredByClient(startIndex, count, self.clientSelected.client_id);
       } 
       if (self.userSelected) {
         return TokensService.getAccessTokensFilteredByUser(startIndex, count, self.userSelected.userName);

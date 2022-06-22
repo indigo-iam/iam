@@ -15,15 +15,16 @@
  */
 package db.migration.mysql;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import db.migration.tasks.RemoveOrphanTokens;
-import it.infn.mw.iam.persistence.migrations.BaseJdbcTemplateFlywayMigration;
+import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
+import it.infn.mw.iam.persistence.migrations.RemoveOrphanTokens;
 
-public class V34_2___RemoveOrphanTokens extends BaseJdbcTemplateFlywayMigration {
+public class V34_2___RemoveOrphanTokens extends BaseFlywayJavaMigrationAdapter {
 
   @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
     RemoveOrphanTokens task = new RemoveOrphanTokens();
     task.migrate(jdbcTemplate);

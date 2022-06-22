@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,10 +35,19 @@ import org.springframework.orm.jpa.vendor.AbstractJpaVendorAdapter;
 import org.springframework.orm.jpa.vendor.EclipseLinkJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.jta.JtaTransactionManager;
 
 @Configuration
 @EnableTransactionManagement
 public class JpaConfig extends JpaBaseConfiguration {
+
+  public static final String ECLIPSELINK_LOGGING_LEVEL = "eclipselink.logging.level";
+  public static final String ECLIPSELINK_LOGGING_LEVEL_SQL = "eclipselink.logging.level.sql";
+
+  protected JpaConfig(DataSource dataSource, JpaProperties properties,
+      ObjectProvider<JtaTransactionManager> jtaTransactionManager) {
+    super(dataSource, properties, jtaTransactionManager);
+  }
 
   @Autowired
   DataSource dataSource;
@@ -53,18 +64,18 @@ public class JpaConfig extends JpaBaseConfiguration {
     Map<String, Object> map = new HashMap<>();
 
     map.put("eclipselink.weaving", "false");
-    map.put("eclipselink.logging.level", "WARNING");
-    map.put("eclipselink.logging.level.sql", "OFF");
+    map.put(ECLIPSELINK_LOGGING_LEVEL, "WARNING");
+    map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "OFF");
     map.put("eclipselink.cache.shared.default", "false");
 
     if (System.getProperty("iam.show_sql") != null) {
-      map.put("eclipselink.logging.level", "FINE");
-      map.put("eclipselink.logging.level.sql", "FINE");
+      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
+      map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "FINE");
       map.put("eclipselink.logging.parameters", "true");
     }
 
     if (System.getProperty("iam.generate-ddl-sql-script") != null) {
-      map.put("eclipselink.logging.level", "FINE");
+      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
       map.put("eclipselink.ddl-generation.output-mode", "sql-script");
       map.put("eclipselink.ddl-generation", "create-tables");
       map.put("eclipselink.create-ddl-jdbc-file-name", "ddl.sql");

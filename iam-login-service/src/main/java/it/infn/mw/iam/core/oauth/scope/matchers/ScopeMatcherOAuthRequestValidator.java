@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
+@SuppressWarnings("deprecation")
 public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator {
 
   public static final int DEFAULT_CACHE_SIZE = 10;
@@ -68,4 +69,7 @@ public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator
     validateScope(tokenRequest.getScope(), client);
   }
 
+  public void invalidateScope(ClientDetails client) {
+    scopeMatchersCache.invalidate(client);
+  }
 }

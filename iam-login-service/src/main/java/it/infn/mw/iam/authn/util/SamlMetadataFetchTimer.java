@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,14 +42,17 @@ public class SamlMetadataFetchTimer extends Timer implements DisposableBean {
     return delegate.equals(obj);
   }
 
+  @Override
   public void schedule(TimerTask task, long delay) {
     delegate.schedule(task, delay);
   }
 
+  @Override
   public void schedule(TimerTask task, Date time) {
     delegate.schedule(task, time);
   }
 
+  @Override
   public void schedule(TimerTask task, long delay, long period) {
     delegate.schedule(task, delay, period);
   }
@@ -58,22 +61,27 @@ public class SamlMetadataFetchTimer extends Timer implements DisposableBean {
     return delegate.toString();
   }
 
+  @Override
   public void schedule(TimerTask task, Date firstTime, long period) {
     delegate.schedule(task, firstTime, period);
   }
 
+  @Override
   public void scheduleAtFixedRate(TimerTask task, long delay, long period) {
     delegate.scheduleAtFixedRate(task, delay, period);
   }
 
+  @Override
   public void scheduleAtFixedRate(TimerTask task, Date firstTime, long period) {
     delegate.scheduleAtFixedRate(task, firstTime, period);
   }
 
+  @Override
   public void cancel() {
     delegate.cancel();
   }
 
+  @Override
   public int purge() {
     return delegate.purge();
   }
@@ -82,6 +90,7 @@ public class SamlMetadataFetchTimer extends Timer implements DisposableBean {
   @Override
   public void destroy() throws Exception {
     LOG.debug("in destroy");
+    delegate.purge();
     delegate.cancel();
   }
 

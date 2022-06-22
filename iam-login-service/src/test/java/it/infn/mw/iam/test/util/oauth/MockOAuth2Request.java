@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.google.common.collect.Sets;
 
+@SuppressWarnings("deprecation")
 public class MockOAuth2Request extends OAuth2Request {
 
   private static final long serialVersionUID = -8547059375050883345L;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.persistence.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import javax.annotation.Generated;
@@ -24,7 +25,10 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
 @Embeddable
-public class IamClientMatchingPolicy {
+public class IamClientMatchingPolicy implements Serializable {
+
+  private static final long serialVersionUID = 1L;
+
 
   public enum ClientMatchingPolicyType {
     ANY,
@@ -38,11 +42,6 @@ public class IamClientMatchingPolicy {
 
   @Column(name = "m_param", nullable = true, length = 256)
   String matchParam;
-
-
-  public IamClientMatchingPolicy() {
-
-  }
 
 
   @Override

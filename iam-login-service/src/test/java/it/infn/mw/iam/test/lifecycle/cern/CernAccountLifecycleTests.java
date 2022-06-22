@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_TI
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Action.DISABLE_ACCOUNT;
 import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -40,9 +40,9 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -50,9 +50,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
@@ -65,13 +63,13 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.lifecycle.cern.CernAccountLifecycleTests.TestConfig;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, TestConfig.class})
-@WebAppConfiguration
-@Transactional
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    CernAccountLifecycleTests.TestConfig.class})
 @TestPropertySource(properties = {
     // @formatter:off
         "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
@@ -82,7 +80,7 @@ import it.infn.mw.iam.test.lifecycle.cern.CernAccountLifecycleTests.TestConfig;
 @ActiveProfiles(value = {"h2-test", "cern"})
 public class CernAccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
 
-  @Configuration
+  @TestConfiguration
   public static class TestConfig {
     @Bean
     @Primary
@@ -390,7 +388,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   public void testPaginationWorks() {
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
 
-    Pageable pageRequest = new PageRequest(0, 10, Direction.ASC, "username");
+    Pageable pageRequest = PageRequest.of(0, 10, Direction.ASC, "username");
     Page<IamAccount> accountPage = repo.findAll(pageRequest);
 
     for (IamAccount account : accountPage.getContent()) {

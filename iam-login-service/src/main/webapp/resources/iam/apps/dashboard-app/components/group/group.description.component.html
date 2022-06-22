@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 -->
 <div ng-if="$ctrl.voAdmin" ng-click="$ctrl.changeDescription()">
-    <div ng-if="$ctrl.groupDescription()" class="group-description">
+    <div ng-if="$ctrl.groupDescription()" class="static-form-control">
         {{$ctrl.groupDescription()}}
     </div>
-    <div ng-if="!$ctrl.groupDescription()" class="group-description missing">
+    <div ng-if="!$ctrl.groupDescription()" class="static-form-control">
         No description
     </div>
 </div>
 <div ng-if="!$ctrl.voAdmin">
-    <div ng-if="$ctrl.groupDescription()" class="group-description">
+    <div ng-if="$ctrl.groupDescription()" class="static-form-control">
         {{$ctrl.groupDescription()}}
     </div>
-    <div ng-if="!$ctrl.groupDescription()" class="group-description missing">
+    <div ng-if="!$ctrl.groupDescription()" class="static-form-control">
         No description
     </div>
 </div>

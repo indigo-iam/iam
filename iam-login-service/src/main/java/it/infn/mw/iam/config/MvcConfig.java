@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,40 +30,41 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.CacheControl;
-import org.springframework.web.servlet.AsyncHandlerInterceptor;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewResolverRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.resource.VersionResourceResolver;
 import org.springframework.web.servlet.view.BeanNameViewResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
+import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 import it.infn.mw.iam.core.util.PoliteJsonMessageSource;
+import it.infn.mw.iam.core.web.util.IamViewInfoInterceptor;
 
 @Configuration
-// @EnableConfigurationProperties({IamProperties.class})
-public class MvcConfig extends WebMvcConfigurerAdapter {
+public class MvcConfig implements WebMvcConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(MvcConfig.class);
 
   @Autowired
   @Qualifier("mitreUserInfoInterceptor")
-  AsyncHandlerInterceptor userInfoInterceptor;
+  IamUserInfoInterceptor userInfoInterceptor;
 
   @Autowired
   @Qualifier("mitreServerConfigInterceptor")
-  AsyncHandlerInterceptor serverConfigInterceptor;
+  ServerConfigInterceptor serverConfigInterceptor;
 
   @Autowired
-  AsyncHandlerInterceptor iamViewInfoInterceptor;
+  IamViewInfoInterceptor iamViewInfoInterceptor;
 
   @Autowired
   IamProperties iamProperties;
@@ -72,6 +75,8 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
   @Value("${git.commit.id.abbrev}")
   String gitCommit;
 
+  @Autowired
+  Environment env;
 
   @Override
   public void addInterceptors(final InterceptorRegistry registry) {
@@ -84,14 +89,19 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
-
-    registry.addResourceHandler("/resources/**")
+    
+    if (Stream.of(env.getActiveProfiles()).anyMatch(p -> p.equals("h2-test"))) {
+      registry.addResourceHandler("/resources/**")
+        .addResourceLocations("/resources/")
+        .setCacheControl(CacheControl.noCache());
+    } else {
+      registry.addResourceHandler("/resources/**")
       .addResourceLocations("/resources/")
       .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS))
       .resourceChain(false)
       .addResolver(
-          new VersionResourceResolver().addFixedVersionStrategy(gitCommit, "/**"));
-
+            new VersionResourceResolver().addFixedVersionStrategy(gitCommit, "/**"));
+    }
 
     if (iamProperties.getLocalResources().isEnable()) {
       if (isNullOrEmpty(iamProperties.getLocalResources().getLocation())) {

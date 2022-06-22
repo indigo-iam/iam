@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package it.infn.mw.iam.rcauth;
 import static it.infn.mw.iam.rcauth.RCAuthController.CALLBACK_PATH;
 import static java.util.Objects.isNull;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -141,7 +141,7 @@ public class DefaultRCAuthTokenRequestor implements RCAuthTokenRequestor {
     
     // ugly hack needed to workaround buggy oauth myproxy implementation
     // that does not set the content type for the token response
-    rt.getInterceptors().add(new AddContentTypeInterceptor(APPLICATION_JSON_UTF8_VALUE));
+    rt.getInterceptors().add(new AddContentTypeInterceptor(APPLICATION_JSON_VALUE));
 
     try {
 

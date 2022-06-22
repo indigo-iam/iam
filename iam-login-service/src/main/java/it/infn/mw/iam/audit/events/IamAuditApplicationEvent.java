@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ public abstract class IamAuditApplicationEvent extends ApplicationEvent {
     AUTHORIZATION,
     SCOPE_POLICY,
     AUP,
-    MEMBERSHIP
+    MEMBERSHIP,
+    CLIENT
   }
 
   private static final long serialVersionUID = -6276169409979227109L;

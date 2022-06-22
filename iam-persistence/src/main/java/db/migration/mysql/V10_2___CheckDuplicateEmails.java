@@ -20,17 +20,18 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
-import it.infn.mw.iam.persistence.migrations.BaseJdbcTemplateFlywayMigration;
+import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 
-public class V10_2___CheckDuplicateEmails extends BaseJdbcTemplateFlywayMigration {
+public class V10_2___CheckDuplicateEmails extends BaseFlywayJavaMigrationAdapter {
 
   public static final Logger LOG = LoggerFactory.getLogger(V10_2___CheckDuplicateEmails.class);
 
   @Override
-  public void migrate(JdbcTemplate jdbcTemplate) throws Exception {
+  public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
     SqlRowSet rowSet = jdbcTemplate
       .queryForRowSet("SELECT email from iam_user_info group by email having count(email) > 1");

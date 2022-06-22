@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -28,8 +29,8 @@ public class AccountUpdaters {
   
   public static Adders adders(IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder,
-      IamAccount account) {
-    return new Adders(repo, accountService, encoder, account);
+      IamAccount account, OAuth2TokenEntityService tokenService) {
+    return new Adders(repo, accountService, encoder, account, tokenService);
   }
 
   public static Removers removers(IamAccountRepository repo, IamAccountService accountService,
@@ -39,8 +40,8 @@ public class AccountUpdaters {
 
   public static Replacers replacers(IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder,
-      IamAccount account) {
-    return new Replacers(repo, accountService, encoder, account);
+      IamAccount account, OAuth2TokenEntityService tokenService) {
+    return new Replacers(repo, accountService, encoder, account, tokenService);
   }
   
 

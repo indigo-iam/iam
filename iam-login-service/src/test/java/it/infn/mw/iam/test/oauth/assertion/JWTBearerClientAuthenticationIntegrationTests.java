@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,10 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -39,20 +35,12 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
-public class JWTBearerClientAuthenticationIntegrationTests extends JWTBearerClientAuthenticationIntegrationTestSupport {
-
-
-  @Before
-  public void setup() throws Exception {
-    buildMockMvc();
-  }
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+public class JWTBearerClientAuthenticationIntegrationTests
+    extends JWTBearerClientAuthenticationIntegrationTestSupport {
 
   @Test
   public void testSymmetricJwtAuth() throws Exception {
@@ -74,14 +62,14 @@ public class JWTBearerClientAuthenticationIntegrationTests extends JWTBearerClie
 
     JWTSigningAndValidationService signer = loadSignerService();
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(CLIENT_ID_PRIVATE_KEY_JWT)
-        .issuer(CLIENT_ID_PRIVATE_KEY_JWT)
-        .expirationTime(Date.from(Instant.now().plusSeconds(600)))
-        .audience(singletonList(TOKEN_ENDPOINT_AUDIENCE))
-        .jwtID(UUID.randomUUID().toString())
-        .build();
-    
+      .issuer(CLIENT_ID_PRIVATE_KEY_JWT)
+      .expirationTime(Date.from(Instant.now().plusSeconds(600)))
+      .audience(singletonList(TOKEN_ENDPOINT_AUDIENCE))
+      .jwtID(UUID.randomUUID().toString())
+      .build();
+
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("rsa1").build();
-    
+
     SignedJWT jwt = new SignedJWT(header, claimsSet);
     signer.signJwt(jwt);
     String serializedToken = jwt.serialize();

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.springframework.security.oauth2.provider.ClientDetails;
 
+@SuppressWarnings("deprecation")
 public interface ScopeMatcherRegistry {
   Set<ScopeMatcher> findMatchersForClient(ClientDetails client);
   ScopeMatcher findMatcherForScope(String scope);

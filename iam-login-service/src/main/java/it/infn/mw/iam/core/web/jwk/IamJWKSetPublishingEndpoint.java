@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,23 @@ package it.infn.mw.iam.core.web.jwk;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+
+import it.infn.mw.iam.core.jwk.IamJWTSigningService;
 
 @RestController
 public class IamJWKSetPublishingEndpoint implements InitializingBean {
@@ -36,12 +43,15 @@ public class IamJWKSetPublishingEndpoint implements InitializingBean {
   private String jsonKeys;
 
   @Autowired
-  private JWTSigningAndValidationService jwtService;
+  private IamJWTSigningService jwtService;
+  
+  @Value("${spring.web.resources.cache.cachecontrol.max-age}")
+  private int maxAge;
 
-  @RequestMapping(value = "/" + URL, produces = MediaType.APPLICATION_JSON_VALUE)
-  public String getJwk() {
-
-    return jsonKeys;
+  @GetMapping(value = "/" + URL, produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
+  public ResponseEntity<String> getJwk() {
+    return ResponseEntity.ok().cacheControl(CacheControl.maxAge(maxAge, TimeUnit.SECONDS).noTransform().mustRevalidate()).body(jsonKeys);
   }
 
   /**
@@ -54,7 +64,7 @@ public class IamJWKSetPublishingEndpoint implements InitializingBean {
   /**
    * @param jwtService the jwtService to set
    */
-  public void setJwtService(JWTSigningAndValidationService jwtService) {
+  public void setJwtService(IamJWTSigningService jwtService) {
     this.jwtService = jwtService;
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.util.MultiValueMap;
+
 import eu.emi.security.authn.x509.proxy.ProxyCertificate;
 import eu.emi.security.authn.x509.proxy.ProxyCertificateOptions;
 import eu.emi.security.authn.x509.proxy.ProxyGenerator;
 import eu.emi.security.authn.x509.proxy.ProxyType;
 import it.infn.mw.iam.rcauth.x509.DefaultProxyHelperService;
 import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
+import it.infn.mw.iam.test.api.tokens.MultiValueMapBuilder;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
 public class ProxyCertificateTestSupport extends X509TestSupport {
-  
+
   public static final String TEST_USER_USERNAME = "test";
 
   public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
@@ -54,7 +57,14 @@ public class ProxyCertificateTestSupport extends X509TestSupport {
   protected Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   ProxyHelperService proxyHelper = new DefaultProxyHelperService(clock);
-  
+
+
+  protected static final MultiValueMap<String, String> CLIENT_AUTH_PARAMS =
+      MultiValueMapBuilder.builder()
+        .singleStringParam("client_id", "password-grant")
+        .singleStringParam("client_secret", "secret")
+        .build();
+
   protected String generateTest0Proxy(Instant notBefore, Instant notAfter)
       throws InvalidKeyException, CertificateParsingException, SignatureException,
       NoSuchAlgorithmException, IOException {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package it.infn.mw.iam.test.ext_authn.saml.validator;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
 import static it.infn.mw.iam.authn.saml.validator.check.SamlHasAttributeCheck.hasAttribute;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
@@ -32,27 +32,42 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Response;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.saml.SAMLCredential;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.common.ValidatorError;
 import it.infn.mw.iam.authn.common.ValidatorResolver;
 import it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport;
-import it.infn.mw.iam.test.ext_authn.saml.SamlTestConfig;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.saml.SamlUtils;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, SamlTestConfig.class, SamlValidatorIntegrationTests.class})
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class, SamlValidatorIntegrationTests.TestConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @WebAppConfiguration
 public class SamlValidatorIntegrationTests extends SamlAuthenticationTestSupport {
+
+  @TestConfiguration
+  public static class TestConfig {
+
+    @Bean
+    @Primary
+    ValidatorResolver<SAMLCredential> validatorResolver() {
+      return r -> Optional.of(hasAttribute("1.2.3.4"));
+    }
+
+  }
 
   @Test
   public void testValidatorFailure() throws Throwable {
@@ -82,9 +97,5 @@ public class SamlValidatorIntegrationTests extends SamlAuthenticationTestSupport
         .getSession();
   }
 
-  @Bean
-  @Primary
-  ValidatorResolver<SAMLCredential> validatorResolver(){
-    return r -> Optional.of(hasAttribute("1.2.3.4"));
-  }
+
 }

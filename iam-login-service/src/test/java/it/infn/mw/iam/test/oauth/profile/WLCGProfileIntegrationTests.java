@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,20 +20,18 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,7 +43,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -55,35 +52,29 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.test.context.junit4.SpringRunner;
 
+import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
-import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
-import net.minidev.json.JSONObject;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+
+
+@SuppressWarnings("deprecation")
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
     "iam.jwt-profile.default-profile=wlcg",
@@ -131,24 +122,17 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   private static final String ALL_AUDIENCES_VALUE = "https://wlcg.cern.ch/jwt/v1/any";
 
   @Autowired
-  private WebApplicationContext context;
+  private IamAccountRepository repo;
 
   @Autowired
-  IamProperties iamProperties;
+  private IamAccountService accountService;
 
   @Autowired
-  IamAccountRepository repo;
-
-  @Autowired
-  IamAccountService accountService;
-
-  @Autowired
-  MockOAuth2Filter oauth2Filter;
+  private MockOAuth2Filter oauth2Filter;
 
   @Before
   public void setup() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
+    oauth2Filter.cleanupSecurityContext();
   }
 
   @After
@@ -191,7 +175,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithAnonymousUser
   public void testWlcgProfile() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
@@ -205,7 +188,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithAnonymousUser
   public void testWlcgProfileIdToken() throws Exception {
 
     String idTokenString = (String) new AccessTokenGetter().grantType("password")
@@ -234,7 +216,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithAnonymousUser
   public void testWlcgProfileAudience() throws Exception {
 
 
@@ -279,7 +260,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithAnonymousUser
   public void testWlcgProfileGroups() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups"));
 
@@ -292,7 +272,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithAnonymousUser
   public void testWlcgProfileGroupRequest() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups:/Analysis"));
 
@@ -395,7 +374,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(SUBJECT_CLIENT_ID));
 
-    assertThat(exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act").getAsString("sub"),
+    assertThat(exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act").get("sub"),
         is(ACTOR_CLIENT_ID));
 
     String atScopes = exchangedToken.getJWTClaimsSet().getStringClaim("scope");
@@ -511,7 +490,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(USER_SUBJECT));
 
-    assertThat(exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act").getAsString("sub"),
+    assertThat(exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act").get("sub"),
         is(ACTOR_CLIENT_ID));
 
     // Check that token can be introspected properly
@@ -546,7 +525,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     JWT exchangedToken2 = JWTParser.parse(tokenResponseObject2.getValue());
     assertThat(exchangedToken2.getJWTClaimsSet().getSubject(), is(USER_SUBJECT));
 
-    assertThat(exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").getAsString("sub"),
+    assertThat(exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("sub"),
         is(ACTOR_CLIENT_ID));
 
 
@@ -782,7 +761,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
           .getJWTClaimsSet();
 
     assertThat(claims.getJSONObjectClaim("attr"), notNullValue());
-    assertThat(claims.getJSONObjectClaim("attr").getAsString("test"), is("test"));
+    assertThat(claims.getJSONObjectClaim("attr").get("test"), is("test"));
   }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package it.infn.mw.iam.audit.utils;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
@@ -28,7 +27,7 @@ public class IamAttributeSerializer extends JsonSerializer<IamAttribute> {
 
   @Override
   public void serialize(IamAttribute value, JsonGenerator gen, SerializerProvider serializers)
-      throws IOException, JsonProcessingException {
+      throws IOException {
 
     gen.writeStartObject();
     gen.writeStringField("name", value.getName());

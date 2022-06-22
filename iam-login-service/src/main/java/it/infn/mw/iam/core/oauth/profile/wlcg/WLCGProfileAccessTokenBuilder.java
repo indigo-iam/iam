@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
+@SuppressWarnings("deprecation")
 public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public static final String WLCG_VER_CLAIM = "wlcg.ver";
@@ -73,15 +74,15 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       if (!groupNames.isEmpty()) {
         builder.claim(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groupNames);
       }
+
+      if (token.getScope().contains(ATTR_SCOPE)) {
+        builder.claim(ATTR_SCOPE, attributeHelper
+          .getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
+      }
     }
 
     if (!hasAudienceRequest(authentication) && !hasRefreshTokenAudienceRequest(authentication)) {
       builder.audience(ALL_AUDIENCES_VALUE);
-    }
-
-    if (token.getScope().contains(ATTR_SCOPE)) {
-      builder.claim(ATTR_SCOPE,
-          attributeHelper.getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
     }
 
     return builder.build();

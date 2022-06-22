@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package it.infn.mw.iam.api.scim.model;
 
 public interface ScimConstants {
 
-  final String SCIM_CONTENT_TYPE = "application/scim+json";
+  final String SCIM_CONTENT_TYPE = "application/scim+json;charset=UTF-8";
   final String INDIGO_USER_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoUser";
   final String INDIGO_GROUP_SCHEMA = "urn:indigo-dc:scim:schemas:IndigoGroup";
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import static it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher.
 import static it.infn.mw.iam.core.oauth.scope.matchers.StructuredPathScopeMatcher.structuredPathMatcher;
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.SECRET_BASIC;
 import static org.mockito.Mockito.when;
 
@@ -39,7 +39,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.google.common.collect.Sets;
 
@@ -80,8 +80,8 @@ public class DynClientScopeValidationTests {
 
     when(scopeService.getRestricted()).thenReturn(emptySet());
 
-    when(registry.findMatcherForScope("openid")).thenReturn(stringEqualsMatcher("openid"));
-    when(registry.findMatcherForScope("profile")).thenReturn(stringEqualsMatcher("profile"));
+    // when(registry.findMatcherForScope("openid")).thenReturn(stringEqualsMatcher("openid"));
+    // when(registry.findMatcherForScope("profile")).thenReturn(stringEqualsMatcher("profile"));
     when(registry.findMatcherForScope("restricted")).thenReturn(stringEqualsMatcher("restricted"));
 
     when(clientService.generateClientSecret(Mockito.any())).thenAnswer(i -> i.getArguments()[0]);
@@ -115,7 +115,8 @@ public class DynClientScopeValidationTests {
     when(scopeService.getRestricted()).thenReturn(newHashSet(new SystemScope("read:/")));
     
     when(registry.findMatcherForScope("read:/")).thenReturn(structuredPathMatcher("read", "/"));
-    when(registry.findMatcherForScope("read:/sub/path")).thenReturn(structuredPathMatcher("read", "/"));
+    // when(registry.findMatcherForScope("read:/sub/path")).thenReturn(structuredPathMatcher("read",
+    // "/"));
     
 
     client = clientValidationService.validateClient(client);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 
+@SuppressWarnings("deprecation")
 @Service("authenticationHolderEntityService")
 @Primary
 public class IamAuthenticationHolderEntityService implements AuthenticationHolderEntityService {

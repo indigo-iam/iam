@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@
                     <input class="form-control" id="name" name="name" placeholder="First name" required type="text"
                         ng-minlength="3" ng-maxlength="64" ng-model="$ctrl.eUser.name" ng-pattern="$ctrl.pattern"
                         ng-disabled="!$ctrl.isAdmin() && !$ctrl.isUserEditableField('NAME')" />
+                    <span class="glyphicon form-control-feedback"
+                        ng-class="{'glyphicon-remove': userUpdateForm.name.$dirty && userUpdateForm.name.$invalid, 'glyphicon-ok': userUpdateForm.name.$dirty && userUpdateForm.name.$valid}"
+                        style="right: 15px"></span>
                     <span class="help-block"
                         ng-show="userUpdateForm.name.$dirty && userUpdateForm.name.$error.required"> This is a required
                         field </span>
@@ -108,7 +111,7 @@
                 <div class="col-sm-10">
                     <input class="form-control" id="username" name="username"
                         ng-disabled="$root.loggedUser.info.sub == $ctrl.id" type="text" ng-model="$ctrl.eUser.username"
-                        placeholder="Username" required ng-minlength="1" ng-maxlength="128"
+                        placeholder="Username" required ng-minlength="2" ng-maxlength="128"
                         iam-username-available-validator ng-pattern="$ctrl.pattern" />
                     <span class="glyphicon form-control-feedback"
                         ng-class="{'glyphicon-remove': userUpdateForm.username.$invalid && userUpdateForm.username.$dirty, 'glyphicon-ok': userUpdateForm.username.$valid && userUpdateForm.username.$dirty }"
@@ -118,7 +121,7 @@
                         This is a required field</span>
                     <span class="help-block"
                         ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.minlength"> Minimum
-                        length required is 1 </span>
+                        length required is 2 </span>
                     <span class="help-block"
                         ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.maxlength"> Maximum
                         length required is 128 </span>
@@ -149,7 +152,7 @@
                         ng-show="userUpdateForm.picture.$dirty && userUpdateForm.picture.$error.url"> This field is not
                         a valid URL </span>
                     <span class="help-block"
-                        ng-show="userUpdateForm.username.$dirty && userUpdateForm.username.$error.isImage"> This field
+                        ng-show="userUpdateForm.picture.$dirty && userUpdateForm.picture.$error.isImage"> This field
                         is not a valid image </span>
                 </div>
                 <div class="col-sm-12">
@@ -171,4 +174,5 @@
         <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel"
             ng-click="$ctrl.dismiss()">Cancel</button>
     </div>
+    
 </form>

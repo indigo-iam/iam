@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#/requests", baseUrl));
+    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
     model.put("notes", request.getNotes());
 
@@ -192,7 +192,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(USERNAME_FIELD, groupRequest.getAccount().getUsername());
     model.put(GROUPNAME_FIELD, groupName);
     model.put("notes", groupRequest.getNotes());
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#/requests", baseUrl));
+    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("New membership request for group %s", groupName);

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
 import org.mitre.oauth2.repository.impl.JpaAuthenticationHolderRepository;
 import org.mitre.oauth2.repository.impl.JpaAuthorizationCodeRepository;
 import org.mitre.oauth2.repository.impl.JpaDeviceCodeRepository;
-import org.mitre.oauth2.repository.impl.JpaOAuth2ClientRepository;
 import org.mitre.oauth2.repository.impl.JpaOAuth2TokenRepository;
 import org.mitre.oauth2.repository.impl.JpaSystemScopeRepository;
 import org.mitre.openid.connect.repository.ApprovedSiteRepository;
@@ -41,6 +40,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import it.infn.mw.iam.persistence.repository.IamUserinfoRepository;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamOAuth2ClientRepositoryAdapter;
 
 @Configuration
 public class MitreRepositoryConfig {
@@ -70,9 +72,9 @@ public class MitreRepositoryConfig {
   }
 
   @Bean
-  OAuth2ClientRepository defaultOAuth2ClientRepository() {
-
-    return new JpaOAuth2ClientRepository();
+  OAuth2ClientRepository defaultOAuth2ClientRepository(IamClientRepository clientRepo,
+      IamAccountClientRepository accountClientRepo) {
+    return new IamOAuth2ClientRepositoryAdapter(clientRepo, accountClientRepo);
   }
 
   @Bean

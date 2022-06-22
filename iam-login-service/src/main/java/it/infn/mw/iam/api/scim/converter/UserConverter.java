@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,13 +236,12 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     for (LabelDescriptor ld : properties.getIncludeLabels()) {
-      entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName()).ifPresent(el -> {
-        indigoUserBuilder.addLabel(ScimLabel.builder()
+      entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
+        .ifPresent(el -> indigoUserBuilder.addLabel(ScimLabel.builder()
           .withPrefix(el.getPrefix())
           .withName(el.getName())
           .withVaule(el.getValue())
-          .build());
-      });
+          .build()));
     }
 
     indigoUserBuilder.endTime(entity.getEndTime());

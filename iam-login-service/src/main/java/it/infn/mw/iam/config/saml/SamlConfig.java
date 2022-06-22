@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,8 @@ import org.opensaml.xml.parse.StaticBasicParserPool;
 import org.opensaml.xml.signature.SignatureConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -101,6 +103,7 @@ import org.springframework.security.saml.processor.SAMLProcessorImpl;
 import org.springframework.security.saml.trust.httpclient.TLSProtocolConfigurer;
 import org.springframework.security.saml.trust.httpclient.TLSProtocolSocketFactory;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
+import org.springframework.security.saml.util.VelocityFactory;
 import org.springframework.security.saml.websso.ArtifactResolutionProfile;
 import org.springframework.security.saml.websso.ArtifactResolutionProfileImpl;
 import org.springframework.security.saml.websso.SingleLogoutProfile;
@@ -119,6 +122,7 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -140,7 +144,6 @@ import it.infn.mw.iam.authn.saml.IamExtendedMetadataDelegate;
 import it.infn.mw.iam.authn.saml.IamSamlAuthenticationProvider;
 import it.infn.mw.iam.authn.saml.JustInTimeProvisioningSAMLUserDetailsService;
 import it.infn.mw.iam.authn.saml.MappingPropertiesResolver;
-import it.infn.mw.iam.authn.saml.MetadataLookupService;
 import it.infn.mw.iam.authn.saml.SamlExceptionMessageHelper;
 import it.infn.mw.iam.authn.saml.profile.DefaultSSOProfileOptionsResolver;
 import it.infn.mw.iam.authn.saml.profile.IamSSOProfile;
@@ -166,48 +169,43 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Profile("saml")
 @EnableConfigurationProperties({IamSamlProperties.class,
     IamSamlJITAccountProvisioningProperties.class, ServerProperties.class})
-public class SamlConfig extends WebSecurityConfigurerAdapter implements SchedulingConfigurer {
+public class SamlConfig extends WebSecurityConfigurerAdapter
+    implements SchedulingConfigurer, InitializingBean, DisposableBean {
 
   public static final Logger LOG = LoggerFactory.getLogger(SamlConfig.class);
 
   @Autowired
-  ResourceLoader resourceLoader;
+  private ResourceLoader resourceLoader;
 
   @Autowired
-  SessionTimeoutHelper sessionTimeoutHelper;
+  private SessionTimeoutHelper sessionTimeoutHelper;
 
   @Autowired
-  SamlUserIdentifierResolver resolver;
+  private SamlUserIdentifierResolver resolver;
 
   @Autowired
-  MappingPropertiesResolver mappingResolver;
+  private MappingPropertiesResolver mappingResolver;
 
   @Autowired
-  AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator;
+  private AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator;
 
   @Autowired
-  IamAccountRepository repo;
+  private IamAccountRepository repo;
 
   @Autowired
-  IamAccountService accountService;
+  private IamAccountService accountService;
 
   @Autowired
-  IamProperties iamProperties;
+  private IamProperties iamProperties;
 
   @Autowired
-  IamSamlProperties samlProperties;
+  private IamSamlProperties samlProperties;
 
   @Autowired
-  IamSamlJITAccountProvisioningProperties jitProperties;
+  private IamSamlJITAccountProvisioningProperties jitProperties;
 
   @Autowired
-  InactiveAccountAuthenticationHander inactiveAccountHandler;
-
-  @Autowired
-  MetadataLookupService metadataLookupService;
-
-  @Autowired
-  VelocityEngine velocityEngine;
+  private InactiveAccountAuthenticationHander inactiveAccountHandler;
 
   @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
@@ -216,22 +214,33 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   private AccountUtils accountUtils;
 
   @Autowired
-  SSOProfileOptionsResolver optionsResolver;
+  private SSOProfileOptionsResolver optionsResolver;
 
   @Autowired
-  IamSSOProfileOptions defaultOptions;
+  private IamSSOProfileOptions defaultOptions;
+
+  @Autowired
+  private HttpFirewall firewall;
+
+  private MultiThreadedHttpConnectionManager connectionManager;
 
   @ConfigurationProperties(prefix = "server")
   public static class ServerProperties {
 
-    private boolean useForwardHeaders;
+    private String forwardHeadersStrategy;
 
-    public boolean isUseForwardHeaders() {
-      return useForwardHeaders;
+
+    public String getForwardHeadersStrategy() {
+      return forwardHeadersStrategy;
     }
 
-    public void setUseForwardHeaders(boolean useForwardHeaders) {
-      this.useForwardHeaders = useForwardHeaders;
+    public void setForwardHeadersStrategy(String forwardHeadersStrategy) {
+      this.forwardHeadersStrategy = forwardHeadersStrategy;
+    }
+
+    public boolean isUseForwardHeaders() {
+      return "native".equals(forwardHeadersStrategy.toLowerCase())
+          || "framework".equals(forwardHeadersStrategy.toLowerCase());
     }
   }
 
@@ -329,7 +338,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   public Timer samlMetadataFetchTimer() {
     return new SamlMetadataFetchTimer();
   }
-  
+
   @Bean
   public SAMLEntryPoint samlEntryPoint() {
     IamSamlEntryPoint ep = new IamSamlEntryPoint(optionsResolver);
@@ -367,8 +376,14 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   }
 
   // Bindings, encoders and decoders used for creating and parsing messages
-  @Bean
   public MultiThreadedHttpConnectionManager multiThreadedHttpConnectionManager() {
+
+    LOG.info("Initializing SAML connection manager");
+    LOG.info("SAML connection manager connection timeout: {} secs",
+        samlProperties.getHttpClientConnectionTimeoutSecs());
+
+    LOG.info("SAML connection manager socket timeout: {} secs",
+        samlProperties.getHttpClientSocketTimeoutSecs());
 
     MultiThreadedHttpConnectionManager manager = new MultiThreadedHttpConnectionManager();
 
@@ -385,7 +400,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
 
   @Bean
   public HttpClient httpClient() {
-    return new HttpClient(multiThreadedHttpConnectionManager());
+    return new HttpClient(connectionManager);
   }
 
   @Bean
@@ -588,6 +603,11 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
     HttpClient httpClient = httpClient();
 
     for (IamSamlIdpMetadataProperties p : samlProperties.getIdpMetadata()) {
+
+      if (Strings.isNullOrEmpty(p.getMetadataUrl())) {
+        throw new IllegalStateException("Null or empty metadata url");
+      }
+
       String trimmedMedataUrl = p.getMetadataUrl().trim();
 
       if (trimmedMedataUrl.startsWith("classpath:")) {
@@ -797,7 +817,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   }
 
   @Bean
-  public HTTPPostBinding httpPostBinding() {
+  public HTTPPostBinding httpPostBinding(VelocityEngine velocityEngine) {
 
     return new HTTPPostBinding(parserPool(), velocityEngine);
   }
@@ -821,17 +841,21 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   }
 
   @Bean
-  public SAMLProcessor processor() {
+  public SAMLProcessor processor(VelocityEngine velocityEngine) {
 
     Collection<SAMLBinding> bindings = new ArrayList<>();
     bindings.add(httpRedirectDeflateBinding());
-    bindings.add(httpPostBinding());
+    bindings.add(httpPostBinding(velocityEngine));
     bindings.add(artifactBinding(parserPool(), velocityEngine));
     bindings.add(httpSOAP11Binding());
     bindings.add(httpPAOS11Binding());
     return new SAMLProcessorImpl(bindings);
   }
 
+  @Bean
+  public VelocityEngine velocityEngine() {
+    return VelocityFactory.getEngine();
+  }
 
   @Bean
   public FilterChainProxy samlFilter() throws Exception {
@@ -850,7 +874,10 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
     chains.add(new DefaultSecurityFilterChain(new AntPathRequestMatcher("/saml/SingleLogout/**"),
         samlLogoutProcessingFilter()));
 
-    return new FilterChainProxy(chains);
+    FilterChainProxy fcp = new FilterChainProxy(chains);
+    fcp.setFirewall(firewall);
+
+    return fcp;
   }
 
   @Override
@@ -900,6 +927,18 @@ public class SamlConfig extends WebSecurityConfigurerAdapter implements Scheduli
   @Override
   public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
     scheduleProvisionedAccountsCleanup(taskRegistrar);
+  }
+
+  @Override
+  public void destroy() throws Exception {
+    LOG.info("Shutting down SAML connection manager");
+    connectionManager.shutdown();
+    LOG.info("Shutted down SAML connection manager");
+  }
+
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    connectionManager = multiThreadedHttpConnectionManager();
   }
 
 }

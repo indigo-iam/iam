@@ -1,0 +1,60 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="form">
+    <div class="form-group">
+        <label for="homepage">Home page</label>
+        <input id="homepage" name="homepage" class="form-control" type="url" ng-model="$ctrl.client.client_uri"
+            placeholder="https://app.example.org">
+        <p class="help-block">
+            URL for the client's home page,
+            which will be displayed to the user in
+            the consent page
+        </p>
+    </div>
+    <div class="form-group">
+        <label for="logo">Logo</label>
+        <input id="logo" name="logo" class="form-control" type="url" ng-model="$ctrl.client.logo_uri"
+            placeholder="https://app.example.org/logo.png">
+        <p class="help-block">
+            URL that points to a logo image,
+            will be displayed to the user in the consent
+            page
+        </p>
+    </div>
+    <div class="form-group">
+        <label for="tos_uri">Terms of service</label>
+        <input id="tos_uri" name="tos_uri" class="form-control" type="url" ng-model="$ctrl.client.tos_uri"
+            placeholder="https://app.example.org/tos.html">
+        <p class="help-block">
+            URL that points to the Terms of
+            Service for this client,
+            will be displayed to the user in the consent
+            page
+        </p>
+    </div>
+    <div class="form-group">
+        <label for="policy_uri">Policy statement</label>
+        <input id="policy_uri" name="policy_uri" class="form-control" type="url" ng-model="$ctrl.client.policy_uri"
+            placeholder="https://app.example.org/policy.html">
+        <p class="help-block">
+            URL that points to the Policy statement for this client,
+            will be displayed to the user in the consent
+            page
+        </p>
+    </div>
+</div>

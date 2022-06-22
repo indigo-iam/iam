@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,9 +121,9 @@ public class IamX509PreauthenticationProcessingFilter
     request.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
     
     if (x509AuthenticationRequested(request)) {
-      super.successfulAuthentication(request, response, authentication);
       
       try {
+        super.successfulAuthentication(request, response, authentication);
         successHandler.onAuthenticationSuccess(request, response, authentication);
         
       } catch (IOException | ServletException e) {

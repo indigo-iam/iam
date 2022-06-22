@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,18 +87,15 @@ public class AccountSearchController extends AbstractSearchController<ScimUser, 
   }
 
   public static Sort getSortByName(Sort.Direction direction) {
-
-    return new Sort(new Order(direction, "userInfo.givenName").ignoreCase(),
+    return Sort.by(new Order(direction, "userInfo.givenName").ignoreCase(),
         new Order(direction, "userInfo.familyName").ignoreCase());
   }
 
   public static Sort getSortByCreationTime(Sort.Direction direction) {
-
-    return new Sort(new Order(direction, "creationTime").ignoreCase());
+    return Sort.by(new Order(direction, "creationTime").ignoreCase());
   }
 
   public static Sort getSortByEmail(Sort.Direction direction) {
-
-    return new Sort(new Order(direction, "userInfo.email").ignoreCase());
+    return Sort.by(new Order(direction, "userInfo.email").ignoreCase());
   }
 }

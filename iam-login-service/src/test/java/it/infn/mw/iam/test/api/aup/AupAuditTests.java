@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,13 @@
 package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Date;
@@ -36,21 +34,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.audit.events.aup.AupCreatedEvent;
@@ -59,22 +51,17 @@ import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.aup.AupUpdatedEvent;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
 @WithAnonymousUser
 public class AupAuditTests extends AupTestSupport {
 
   private final String UPDATED_AUP_URL = "http://updated-aup.org/";
-
-  @Autowired
-  private WebApplicationContext context;
 
   @Autowired
   private ObjectMapper mapper;
@@ -94,16 +81,13 @@ public class AupAuditTests extends AupTestSupport {
   @Autowired
   private ApplicationEventPublisher eventPublisher;
 
-  private ArgumentCaptor<ApplicationEvent> eventCaptor;
-
+  @Autowired
   private MockMvc mvc;
+
+  private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
   @Before
   public void setup() {
-    mvc = MockMvcBuilders.webAppContextSetup(context)
-      .alwaysDo(log())
-      .apply(springSecurity())
-      .build();
     mockOAuth2Filter.cleanupSecurityContext();
     eventCaptor = ArgumentCaptor.forClass(ApplicationEvent.class);
     reset(eventPublisher);

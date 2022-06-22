@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
 
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -35,7 +35,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import it.infn.mw.iam.authn.saml.CleanInactiveProvisionedAccounts;
 import it.infn.mw.iam.core.time.TimeProvider;
@@ -131,7 +131,7 @@ public class JitUserCleanupTests {
 
     IamAccount anAccount = IamAccount.newAccount();
 
-    when(accountService.deleteInactiveProvisionedUsersSinceTime(anyObject()))
+    when(accountService.deleteInactiveProvisionedUsersSinceTime(any()))
       .thenReturn(asList(anAccount));
     
     cleanupTask.run();

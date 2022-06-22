@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -27,25 +28,29 @@ public abstract class AccountBuilderSupport {
   protected final IamAccountService accountService;
   protected final PasswordEncoder encoder;
   protected final IamAccount account;
+  protected final OAuth2TokenEntityService tokenService;
+
+  public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
+      OAuth2TokenEntityService tokenService, PasswordEncoder encoder, IamAccount account) {
+    this.repo = repo;
+    this.encoder = encoder;
+    this.accountService = accountService;
+    this.tokenService = tokenService;
+    this.account = account;
+  }
 
   public AccountBuilderSupport(IamAccountRepository repo, IamAccount account) {
-    this(repo, null, null, account);
+    this(repo, null, null, null, account);
   }
 
   public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder, IamAccount account) {
-    this.repo = repo;
-    this.encoder = encoder;
-    this.accountService = accountService;
-    this.account = account;
+    this(repo, accountService, null, encoder, account);
   }
 
   public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
       IamAccount account) {
-    this.repo = repo;
-    this.encoder = null;
-    this.accountService = accountService;
-    this.account = account;
+    this(repo, accountService, null, null, account);
   }
 
 }

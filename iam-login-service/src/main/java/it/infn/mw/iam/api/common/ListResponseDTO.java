@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.google.common.collect.Lists;
 
 @JsonInclude(Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonView(value = {ClientViews.Full.class, ClientViews.Limited.class,
+    ClientViews.ClientManagement.class, ClientViews.DynamicRegistration.class})
 public class ListResponseDTO<T> {
 
   private final Long totalResults;
@@ -85,10 +88,17 @@ public class ListResponseDTO<T> {
     private Integer startIndex;
     private List<T> resources = Collections.emptyList();
 
+    public <S> Builder<T> fromZeroIndexedPage(Page<S> page, Pageable op) {
+      this.totalResults = page.getTotalElements();
+      this.itemsPerPage = page.getNumberOfElements();
+      this.startIndex = (int) op.getOffset();
+      return this;
+    }
+
     public <S> Builder<T> fromPage(Page<S> page, Pageable op) {
       this.totalResults = page.getTotalElements();
       this.itemsPerPage = page.getNumberOfElements();
-      this.startIndex = op.getOffset() + 1;
+      this.startIndex = (int) op.getOffset() + 1;
       return this;
     }
 
@@ -109,6 +119,14 @@ public class ListResponseDTO<T> {
 
     public Builder<T> resources(List<T> resources) {
       this.resources = resources;
+      return this;
+    }
+
+    public Builder<T> zeroIndexedSingleResource(T element) {
+      this.resources = Lists.newArrayList(element);
+      this.totalResults = 1L;
+      this.itemsPerPage = 10;
+      this.startIndex = 0;
       return this;
     }
 

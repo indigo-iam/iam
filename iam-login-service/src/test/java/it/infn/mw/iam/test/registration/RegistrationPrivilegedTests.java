@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,12 @@ import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.REJECTED;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,37 +37,28 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.RegistrationRequestService;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-@WebAppConfiguration
-@Transactional
-public class RegistrationPrivilegedTests {
 
-  @Autowired
-  private WebApplicationContext context;
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+public class RegistrationPrivilegedTests {
 
   @Autowired
   private PersistentUUIDTokenGenerator generator;
@@ -80,13 +69,29 @@ public class RegistrationPrivilegedTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
   private MockMvc mvc;
 
   @Autowired
   private RegistrationRequestService registrationService;
 
   @Autowired
+  private IamRegistrationRequestRepository requestRepo;
+
+  @Autowired
   private IamAccountRepository repo;
+
+  @Before
+  public void setup() {
+    requestRepo.deleteAll();
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @After
+  public void teardown() {
+    requestRepo.deleteAll();
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
   private Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
@@ -136,16 +141,7 @@ public class RegistrationPrivilegedTests {
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
 
-  @Before
-  public void setup() {
-    mvc =
-        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
-  }
 
-  @After
-  public void teardown() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
 
   @Test
   @WithMockOAuthUser(clientId = "registration-client", scopes = {"registration:read"})

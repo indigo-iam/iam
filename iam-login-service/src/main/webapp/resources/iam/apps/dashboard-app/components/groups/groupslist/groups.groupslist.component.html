@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
             </div>
         </div>
     </div>
-    <div class="box-body">
+    <div class="box-body" ngcloak>
 
         <div class="text-center" ng-if="$ctrl.filter">
             <p>Found <span id="groups_filtered"><strong>{{$ctrl.totalResults}}</strong></span> groups matching filter
@@ -79,10 +79,10 @@
                         <!-- actions -->
                         <td class="text-right">
                             <button id="add_subgroup_{{group.id}}" title="Add Subgroup" class="btn btn-success btn-xs"
-                                ng-click="$ctrl.openAddSubgroupDialog(group)" ng-show="$ctrl.voAdmin">
+                                ng-click="$ctrl.openAddSubgroupDialog(group)" ng-show="$ctrl.isVoAdmin()">
                                 <i class="fa fa-plus"></i>
                             </button>
-                            <button ng-if="!group.members" ng-show="$ctrl.voAdmin" title="Delete group"
+                            <button ng-if="!group.members" ng-show="$ctrl.isVoAdmin()" title="Delete group"
                                 id="delete_group_{{group.id}}" class="btn btn-danger btn-xs"
                                 ng-click="$ctrl.openDeleteGroupDialog(group)">
                                 <i class="fa fa-times"></i>
@@ -92,16 +92,15 @@
                 </tbody>
             </table>
 
-            <div class="text-center">
+            <div>
                 <ul id="groups_pagination_bottom" uib-pagination ng-model="$ctrl.currentPage"
-                    items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="3"
-                    boundary-links="true" ng-change="$ctrl.searchGroups($ctrl.currentPage)" previous-text="&lsaquo;"
-                    next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" rotate="true">
+                    items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="3" rotate="true"
+                    boundary-link-numbers="true" direction-links="false" ng-change="$ctrl.searchGroups()">
                 </ul>
             </div>
         </div>
     </div>
-    <div class="box-footer" ng-if="$ctrl.voAdmin">
+    <div class="box-footer" ng-if="$ctrl.isVoAdmin()">
         <button class="btn btn-success" ng-click="$ctrl.openAddParentGroupDialog()"><i class="fa fa-plus"></i> Add Root
             Group</button>
     </div>

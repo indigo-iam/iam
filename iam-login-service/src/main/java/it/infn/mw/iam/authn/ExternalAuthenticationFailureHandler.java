@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package it.infn.mw.iam.authn;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 import javax.servlet.ServletException;
@@ -45,11 +44,7 @@ public class ExternalAuthenticationFailureHandler extends ExternalAuthentication
   private String buildRedirectURL(AuthenticationException exception) {
     String errorMessage = helper.buildErrorMessage(exception);
 
-    try {
-      errorMessage = UriUtils.encode(errorMessage, StandardCharsets.UTF_8.toString());
-    } catch (UnsupportedEncodingException uex) {
-      LOG.error(uex.getMessage(), uex);
-    }
+    errorMessage = UriUtils.encode(errorMessage, StandardCharsets.UTF_8.toString());
 
     return UriComponentsBuilder.fromPath("/login")
       .queryParam("error", "true")

@@ -1,0 +1,46 @@
+#
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+server:
+  address: 0.0.0.0
+  port: 8080
+  forward-headers-strategy: native
+
+spring:
+  main:
+    banner-mode: "off" 
+  
+  jpa:
+    open-in-view: false
+
+  datasource:
+    url: jdbc:mysql://${IAM_DB_HOST:dev.local.io}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=false&serverTimezone=UTC
+    username: ${IAM_DB_USERNAME:iam}
+    password: ${IAM_DB_PASSWORD:pwd}
+  
+  flyway:
+    enabled: false
+      
+voms:
+  tls:
+    certificate-path: ${VOMS_TLS_CERTIFICATE_PATH:/etc/grid-security/voms/hostcert.pem}
+    private-key-path: ${VOMS_TLS_PRIVATE_KEY_PATH:/etc/grid-security/voms/hostkey.pem}
+    trust-anchors-dir: ${VOMS_TLS_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
+    trust-anchors-refresh-interval-secs: ${VOMS_TLS_TRUST_ANCHORS_REFRESH_INTERVAL_SECS:14400}
+  aa:
+    host: voms.local.io
+    port: ${server.port}
+    vo-name: indigo-dc

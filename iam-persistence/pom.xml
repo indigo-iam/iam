@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>it.infn.mw</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.8.0</version>
   </parent>
   <artifactId>iam-persistence</artifactId>
   <packaging>jar</packaging>
@@ -32,10 +32,16 @@
   <description>The INDIGO IAM persistence classes</description>
 
   <properties>
-    <hibernate.version></hibernate.version>
+    <spring-boot.build-image.skip>true</spring-boot.build-image.skip>
   </properties>
 
   <dependencies>
+
+    <!-- Mitre Entity classes -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -54,21 +60,19 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hibernate</groupId>
+      <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>29.0-jre</version>
+      <version>31.0.1-jre</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <!-- We need this recent version for a reason I can't remember -->
-      <version>2.8.5</version>
     </dependency>
 
     <!-- DB -->
@@ -102,12 +106,19 @@
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
     </dependency>
-    
+
   </dependencies>
 
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>

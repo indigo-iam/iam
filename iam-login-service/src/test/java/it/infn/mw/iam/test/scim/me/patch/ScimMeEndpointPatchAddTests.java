@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,18 @@ package it.infn.mw.iam.test.scim.me.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.add;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -41,13 +41,15 @@ import it.infn.mw.iam.test.X509Utils;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class})
-@WebAppConfiguration
+
+@RunWith(SpringRunner.class)
+@IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"})
-@Transactional
 public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
   final static String TEST_USERNAME = "test_103";
@@ -108,7 +110,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     assertThat(userAfter.getName().getGivenName(), equalTo(updates.getName().getGivenName()));
     assertThat(userAfter.getName().getFamilyName(), equalTo(updates.getName().getFamilyName()));
-    assertThat(userAfter.getPhotos(), hasSize(equalTo(1)));
+    assertThat(userAfter.getPhotos(), hasSize(1));
     assertThat(userAfter.getPhotos().get(0), equalTo(TESTUSER_NEWPHOTO));
     assertThat(userAfter.getEmails().get(0), equalTo(TESTUSER_NEWEMAIL));
   }
@@ -121,6 +123,8 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     ScimUser updates = ScimUser.builder().password(NEW_PASSWORD).build();
 
     scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
   }
 
   @Test
@@ -132,6 +136,8 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     ScimUser updates = ScimUser.builder().addOidcId(NEW_TESTUSER_OIDCID).build();
 
     scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
   }
 
   @Test
@@ -142,6 +148,9 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     ScimUser updates = ScimUser.builder().addSamlId(TESTUSER_SAMLID).build();
 
     scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+    
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
   }
 
   @Test
@@ -154,7 +163,13 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     scimUtils.patchMe(add, updates, HttpStatus.NO_CONTENT);
 
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
+
     scimUtils.patchMe(remove, updates, HttpStatus.NO_CONTENT);
+
+    userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
   }
 
   @Test
@@ -168,5 +183,8 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     ScimUser updates = ScimUser.builder().addX509Certificate(NEW_X509_CERT).build();
 
     scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
   }
 }

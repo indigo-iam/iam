@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ public interface IamGroupService {
   IamGroup addLabel(IamGroup g, IamLabel l);
   
   IamGroup deleteLabel(IamGroup g, IamLabel l);
+
+  IamGroup setDescription(IamGroup g, String description);
 
   void touchGroup(IamGroup g);
 

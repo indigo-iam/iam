@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
     'use strict';
 
 
@@ -25,14 +25,14 @@
         self.enabled = true;
         self.error = undefined;
 
-        self.doDelete = function(group) {
+        self.doDelete = function (group) {
             self.error = undefined;
             self.enabled = false;
-            scimFactory.deleteGroup(group.id).then(function(response) {
+            scimFactory.deleteGroup(group.id).then(function (response) {
                 $uibModalInstance.close(group);
                 $rootScope.groupsCount--;
                 self.enabled = true;
-            }).catch(function(error) {
+            }).catch(function (error) {
                 console.error(error);
                 self.enabled = true;
                 self.cancel();
@@ -43,7 +43,7 @@
             });
         };
 
-        self.cancel = function() {
+        self.cancel = function () {
             $uibModalInstance.dismiss('Dismissed');
         };
     }
@@ -53,29 +53,29 @@
 
         self.group = {};
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.enabled = true;
             self.resetGroup();
         };
 
-        self.resetGroup = function() {
+        self.resetGroup = function () {
             self.group.displayName = "";
             self.group.schemas = [];
             self.group.schemas[0] = "urn:ietf:params:scim:schemas:core:2.0:Group";
             self.group.schemas[1] = "urn:indigo-dc:scim:schemas:IndigoGroup";
         };
 
-        self.addGroup = function() {
+        self.addGroup = function () {
 
             self.enabled = false;
 
             console.debug(self.group);
 
-            scimFactory.createGroup(self.group).then(function(response) {
+            scimFactory.createGroup(self.group).then(function (response) {
                 $rootScope.groupsCount++;
                 $uibModalInstance.close(response.data);
                 self.enabled = true;
-            }, function(error) {
+            }, function (error) {
                 console.error(error);
                 self.enabled = true;
                 self.cancel();
@@ -86,7 +86,7 @@
             });
         };
 
-        self.cancel = function() {
+        self.cancel = function () {
             $uibModalInstance.dismiss("cancel");
         };
     }
@@ -97,12 +97,12 @@
         self.parent = parent;
         self.group = {};
 
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.enabled = true;
             self.resetGroup();
         };
 
-        self.resetGroup = function() {
+        self.resetGroup = function () {
             self.group.displayName = "";
             self.group.schemas = [];
             self.group.schemas[0] = "urn:ietf:params:scim:schemas:core:2.0:Group";
@@ -117,25 +117,25 @@
             $scope.operationResult = undefined;
         };
 
-        self.addGroup = function() {
+        self.addGroup = function () {
 
             self.enabled = false;
             $scope.operationResult = undefined;
 
             console.debug(self.group);
 
-            scimFactory.createGroup(self.group).then(function(response) {
+            scimFactory.createGroup(self.group).then(function (response) {
                 $rootScope.groupsCount++;
                 $uibModalInstance.close(response.data);
                 self.enabled = true;
-            }, function(error) {
+            }, function (error) {
                 console.error('Error creating group', error);
                 $scope.operationResult = Utils.buildErrorOperationResult(error);
                 self.enabled = true;
             });
         };
 
-        self.cancel = function() {
+        self.cancel = function () {
             $uibModalInstance.dismiss("cancel");
         };
     }
@@ -146,33 +146,26 @@
         var self = this;
 
         self.labelName = labelName;
+        self.isVoAdmin = isVoAdmin;
 
-        // pagination controls
-        self.currentPage = 1;
-        self.currentOffset = 1;
-        self.itemsPerPage = 10;
-        self.totalResults = self.total;
-        self.sortByValue = "name";
-        self.sortDirection = "asc";
-        self.voAdmin = false;
-        self.loaded = false;
-
-        self.$onInit = function() {
+        self.$onInit = function () {
             self.loadInProgress = false;
-            self.voAdmin = Utils.isAdmin();
+            self.currentPage = 1;
+            self.currentOffset = 1;
+            self.itemsPerPage = 10;
+            self.totalResults = self.total;
+            self.sortByValue = "name";
+            self.sortDirection = "asc";
+            self.voAdmin = false;
+            self.loaded = false;
         };
 
-        $scope.$on('refreshGroupsList', function(e) {
+        $scope.$on('refreshGroupsList', function (e) {
             console.debug("received refreshGroupsList event");
-            self.searchGroups(1);
+            self.searchGroups();
         });
 
-        self.copyToClipboard = function(toCopy) {
-            clipboardService.copyToClipboard(toCopy);
-            toaster.pop({ type: 'success', body: 'User uuid copied to clipboard!' });
-        };
-
-        self.updateGroupsCount = function(responseValue) {
+        self.updateGroupsCount = function (responseValue) {
             if (self.filter) {
                 if (responseValue > $rootScope.groupsCount) {
                     $rootScope.groupsCount = responseValue;
@@ -182,8 +175,11 @@
             }
         };
 
-        
-        function labelName(label){
+        function isVoAdmin() {
+            return Utils.isAdmin();
+        }
+
+        function labelName(label) {
             if (label.prefix) {
                 return label.prefix + "/" + label.name;
             }
@@ -191,37 +187,36 @@
             return label.name;
         }
 
-        self.resetFilter = function() {
+        self.resetFilter = function () {
             self.filter = undefined;
             self.searchGroups(1);
         };
 
-        self.searchGroups = function(page) {
+        self.searchGroups = function () {
 
             $uibModalStack.dismissAll('closing');
 
-            console.debug("page = ", page);
             $rootScope.pageLoadingProgress = 0;
 
             self.groups = [];
-            self.currentPage = page;
-            self.currentOffset = (page - 1) * self.itemsPerPage + 1;
 
-            var handleResponse = function(response) {
+            self.currentOffset = (self.currentPage - 1) * self.itemsPerPage + 1;
+
+            var handleResponse = function (response) {
                 self.totalResults = response.data.totalResults;
-                angular.forEach(response.data.Resources, function(group) {
+                angular.forEach(response.data.Resources, function (group) {
                     self.groups.push(group);
                 });
                 $rootScope.pageLoadingProgress = 100;
                 self.updateGroupsCount(response.data.totalResults);
                 self.loaded = true;
-                GroupRequestsService.getAllPendingGroupRequestsForAuthenticatedUser().then(function(res) {
+                GroupRequestsService.getAllPendingGroupRequestsForAuthenticatedUser().then(function (res) {
                     self.groupRequests = res;
                     self.loadingModal.dismiss("Cancel");
                 });
             };
 
-            var handleError = function(error) {
+            var handleError = function (error) {
                 self.loadingModal.dismiss("Error");
                 toaster.pop({ type: 'error', body: error });
             };
@@ -231,25 +226,31 @@
                 templateUrl: '/resources/iam/apps/dashboard-app/templates/loading-modal.html'
             });
 
-            self.loadingModal.opened.then(function() {
+            self.loadingModal.opened.then(function () {
                 self.getGroupsList(self.currentOffset, self.itemsPerPage, self.filter, self.sortByValue, self.sortDirection).then(handleResponse, handleError);
+            });
+
+            self.loadingModal.result.catch(res => {
+                if (res !== 'Cancel') {
+                    return $q.reject(res);
+                }
             });
         };
 
-        self.getGroupsList = function(startIndex, count, filter, sortByValue, sortDirection) {
+        self.getGroupsList = function (startIndex, count, filter, sortByValue, sortDirection) {
             if (filter === undefined) {
                 return GroupsService.getGroupsSortBy(startIndex, count, sortByValue, sortDirection);
             }
             return GroupsService.getGroupsFilteredAndSortBy(startIndex, count, filter, sortByValue, sortDirection);
         };
 
-        self.sortBy = function(sortByValue, sortDirection) {
+        self.sortBy = function (sortByValue, sortDirection) {
             self.sortByValue = sortByValue;
             self.sortDirection = sortDirection;
             self.searchGroups(self.currentPage);
         };
 
-        self.handleAddParentGroupSuccess = function(group) {
+        self.handleAddParentGroupSuccess = function (group) {
             toaster.pop({
                 type: 'success',
                 body: 'New Parent Group Added'
@@ -258,7 +259,7 @@
             self.searchGroups(self.currentPage);
         };
 
-        self.openAddParentGroupDialog = function() {
+        self.openAddParentGroupDialog = function () {
 
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/groups/groupslist/group.add.dialog.html',
@@ -269,7 +270,7 @@
             modalInstance.result.then(self.handleAddParentGroupSuccess);
         };
 
-        self.handleAddSubgroupSuccess = function(group) {
+        self.handleAddSubgroupSuccess = function (group) {
             toaster.pop({
                 type: 'success',
                 body: 'New group ' + group.displayName + ' added as subgroup of ' + group["urn:indigo-dc:scim:schemas:IndigoGroup"].parentGroup.display
@@ -278,7 +279,7 @@
             self.searchGroups(self.currentPage);
         };
 
-        self.openAddSubgroupDialog = function(group) {
+        self.openAddSubgroupDialog = function (group) {
 
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/groups/groupslist/subgroup.add.dialog.html',
@@ -292,7 +293,7 @@
             modalInstance.result.then(self.handleAddSubgroupSuccess);
         };
 
-        self.handleDeleteSuccess = function(group) {
+        self.handleDeleteSuccess = function (group) {
             self.enabled = true;
             toaster.pop({
                 type: 'success',
@@ -304,10 +305,10 @@
                     self.currentPage--;
                 }
             }
-            self.searchGroups(self.currentPage);
+            self.searchGroups();
         };
 
-        self.openDeleteGroupDialog = function(group) {
+        self.openDeleteGroupDialog = function (group) {
 
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/groups/groupslist/group.delete.dialog.html',
@@ -326,17 +327,17 @@
         .module('dashboardApp')
         .component(
             'groupslist', {
-                require: {
-                    $parent: '^groups'
-                },
-                bindings: {
-                    groups: '<',
-                    total: '<',
-                    groupRequests: '<'
-                },
-                templateUrl: '/resources/iam/apps/dashboard-app/components/groups/groupslist/groups.groupslist.component.html',
-                controller: ['$filter', '$q', '$scope', '$rootScope', '$uibModal', '$uibModalStack', 'ModalService',
-                    'GroupsService', 'Utils', 'clipboardService', 'toaster', 'GroupRequestsService', GroupsListController
-                ]
-            });
+            require: {
+                $parent: '^groups'
+            },
+            bindings: {
+                groups: '<',
+                total: '<',
+                groupRequests: '<'
+            },
+            templateUrl: '/resources/iam/apps/dashboard-app/components/groups/groupslist/groups.groupslist.component.html',
+            controller: ['$filter', '$q', '$scope', '$rootScope', '$uibModal', '$uibModalStack', 'ModalService',
+                'GroupsService', 'Utils', 'clipboardService', 'toaster', 'GroupRequestsService', GroupsListController
+            ]
+        });
 })();

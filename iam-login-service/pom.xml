@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>it.infn.mw</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.8.0</version>
   </parent>
 
   <artifactId>iam-login-service</artifactId>
@@ -33,7 +33,9 @@
   <description>The INDIGO IAM login service</description>
 
   <properties>
-    <eclipselink.version>2.5.2</eclipselink.version>
+    <test-clock.version>1.0.2</test-clock.version>
+    <eclipselink.version>2.7.9</eclipselink.version>
+    <javax.persistence.version>2.2.1</javax.persistence.version>
 
     <!-- Sonar Jacoco massaging -->
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
@@ -53,6 +55,39 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-data-redis</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    
+
     <!-- Web Jars -->
     <dependency>
       <groupId>org.webjars</groupId>
@@ -60,7 +95,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>angular-ui-bootstrap</artifactId>
     </dependency>
 
@@ -98,10 +133,10 @@
       <groupId>org.webjars</groupId>
       <artifactId>font-awesome</artifactId>
     </dependency>
-
+    
     <dependency>
       <groupId>org.webjars</groupId>
-      <artifactId>webjars-locator</artifactId>
+      <artifactId>webjars-locator-core</artifactId>
     </dependency>
 
     <dependency>
@@ -111,7 +146,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hibernate</groupId>
+      <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
     </dependency>
 
@@ -136,7 +171,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.jayway.restassured</groupId>
+      <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
@@ -150,9 +185,14 @@
     <dependency>
       <groupId>org.eclipse.persistence</groupId>
       <artifactId>javax.persistence</artifactId>
-      <version>2.1.0</version>
+      <version>${javax.persistence.version}</version>
     </dependency>
     
+    <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>9.21</version>
+    </dependency>
 
     <!-- OAuth 2 dependencies -->
     <dependency>
@@ -167,19 +207,10 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-jwt</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.bouncycastle</groupId>
-          <artifactId>bcpkix-jdk15on</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-devtools</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
     </dependency>
 
     <!-- JSP dependencies -->
@@ -213,19 +244,8 @@
 
     <!-- DB -->
     <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.flywaydb.flyway-test-extensions</groupId>
-      <artifactId>flyway-spring-test</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -252,11 +272,6 @@
 
     <!-- SAML -->
     <dependency>
-      <groupId>org.opensaml</groupId>
-      <artifactId>opensaml</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
     </dependency>
@@ -269,11 +284,49 @@
     <dependency>
       <groupId>org.springframework.security.extensions</groupId>
       <artifactId>spring-security-saml2-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>xml-apis</groupId>
+          <artifactId>xml-apis</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mysql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mariadb</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>com.mercateo</groupId>
+      <artifactId>test-clock</artifactId>
+      <version>${test-clock.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -300,18 +353,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.velocity</groupId>
-      <artifactId>velocity</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-freemarker</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>cz.jirutka.validator</groupId>
-      <artifactId>validator-collection</artifactId>
     </dependency>
 
     <dependency>
@@ -407,17 +450,32 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
           <mainClass>it.infn.mw.iam.IamLoginService</mainClass>
+          <image>
+            <name>indigoiam/iam-login-service-bp:${iam.image.tag}</name>
+            <env>
+              <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
+            </env>
+          </image>
         </configuration>
+
         <executions>
           <execution>
             <goals>
-              <goal>repackage</goal>
+              <goal>build-info</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
     </plugins>
-    
+
     <pluginManagement>
       <plugins>
         <plugin>

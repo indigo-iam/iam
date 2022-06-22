@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.google.common.base.Joiner;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 
+@SuppressWarnings("deprecation")
 public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);

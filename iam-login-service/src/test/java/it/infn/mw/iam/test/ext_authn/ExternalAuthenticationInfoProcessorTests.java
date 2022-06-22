@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.ext_authn;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.mockito.Mockito.mock;
@@ -22,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.authn.DefaultExternalAuthenticationInfoProcessor;
 
+@SuppressWarnings("deprecation")
 public class ExternalAuthenticationInfoProcessorTests {
 
   @Test
@@ -41,7 +42,7 @@ public class ExternalAuthenticationInfoProcessorTests {
     DefaultExternalAuthenticationInfoProcessor processor =
         new DefaultExternalAuthenticationInfoProcessor();
 
-    Assert.assertThat(processor.process(oAuth).entrySet(), empty());
+    assertThat(processor.process(oAuth).entrySet(), empty());
   }
 
   @Test
@@ -59,7 +60,7 @@ public class ExternalAuthenticationInfoProcessorTests {
     DefaultExternalAuthenticationInfoProcessor processor =
         new DefaultExternalAuthenticationInfoProcessor();
 
-    Assert.assertThat(processor.process(oAuth), hasEntry("key", "val"));
+    assertThat(processor.process(oAuth), hasEntry("key", "val"));
   }
 
   @Test
@@ -76,6 +77,6 @@ public class ExternalAuthenticationInfoProcessorTests {
     DefaultExternalAuthenticationInfoProcessor processor =
         new DefaultExternalAuthenticationInfoProcessor();
 
-    Assert.assertThat(processor.process(oAuth).entrySet(), empty());
+    assertThat(processor.process(oAuth).entrySet(), empty());
   }
 }

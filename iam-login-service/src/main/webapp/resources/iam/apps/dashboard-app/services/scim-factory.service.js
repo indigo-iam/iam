@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2019
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,10 +176,10 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 				'Accept': 'application/scim+json',
 				'Content-Type': 'application/scim+json'
 			}
-		}
+		};
 
 		return $http.post(urlUsers, user, config);
-	};
+	}
 
 	function deleteGroup(groupId) {
 
@@ -187,7 +187,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlGroups + '/' + groupId;
 
 		return $http.delete(url);
-	};
+	}
 
 	function deleteUser(userId) {
 
@@ -195,7 +195,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlUsers + '/' + userId;
 
 		return $http.delete(url);
-	};
+	}
 
 	function addUserToGroup(groupId, scimUser) {
 
@@ -224,7 +224,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlGroups + '/' + groupId;
 
 		return $http.patch(url, data, config);
-	};
+	}
 
 	function removeUserFromGroup(groupId, userId, userLocation, userDisplayName) {
 
@@ -250,7 +250,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlGroups + '/' + groupId;
 
 		return $http.patch(url, data, config);
-	};
+	}
 
 	function removeMemberFromGroup(groupId, memberId, memberLocation, memberDisplayName) {
 
@@ -276,33 +276,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlGroups + '/' + groupId;
 
 		return $http.patch(url, data, config);
-	};
-
-	function removeMemberFromGroup(groupId, memberId, memberLocation, memberDisplayName) {
-
-		console.info("Patch groupId, remove member", groupId, memberId, memberLocation);
-
-		var config = {
-			headers: {
-				'Content-Type': 'application/scim+json'
-			}
-		};
-		var data = {
-			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-			operations: [{
-				op: "remove",
-				path: "members",
-				value: [{
-					display: memberDisplayName,
-					value: memberId,
-					$ref: memberLocation
-				}]
-			}]
-		};
-		var url = urlGroups + '/' + groupId;
-
-		return $http.patch(url, data, config);
-	};
+	}
 
 	function addOpenIDAccount(userId, account) {
 
@@ -398,7 +372,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 				}
 			}]
 		};
-		
+
 		return $http.patch(urlMe, data, config);
 	}
 
@@ -419,7 +393,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 				}
 			}]
 		};
-		
+
 		return $http.patch(urlMe, data, config);
 	}
 
@@ -441,11 +415,11 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 				}
 			}]
 		};
-		
+
 		var url = urlUsers + '/' + userId;
 
 		return $http.patch(url, data, config);
-	};
+	}
 
 	function addX509Certificate(userId, certificate) {
 
