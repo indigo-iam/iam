@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -63,7 +64,6 @@ public class ScimGroupProvisioning
 
   private final IamGroupService groupService;
   private final IamAccountService accountService;
-
   private final GroupConverter converter;
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
@@ -72,13 +72,13 @@ public class ScimGroupProvisioning
 
   @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
-      GroupConverter converter, ScimResourceLocationProvider locationProvider, Clock clock) {
+      GroupRequestsService groupRequestsService, GroupConverter converter, ScimResourceLocationProvider locationProvider, Clock clock) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
-    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService, groupRequestsService);
     this.locationProvider = locationProvider;
   }
 
@@ -158,6 +158,7 @@ public class ScimGroupProvisioning
 
     patchOperationSanityChecks(op);
     groupUpdaterFactory.getUpdatersForPatchOperation(group, op).forEach(Updater::update);
+    groupUpdaterFactory.deleteGroupRequestAfterPatchOperation(group, op);
 
   }
 
@@ -258,6 +259,7 @@ public class ScimGroupProvisioning
     IamGroup iamGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
 
     operations.forEach(op -> executePatchOperation(iamGroup, op));
+
   }
 
 
