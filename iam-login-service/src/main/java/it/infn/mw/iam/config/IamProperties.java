@@ -506,20 +506,6 @@ public class IamProperties {
     }
   }
 
-  public static class AarcProfileProperties {
-
-    private String urnNamespace = "example:iam";
-
-    public String getUrnNamespace() {
-      return urnNamespace;
-    }
-
-    public void setUrnNamespace(String urnNamespace) {
-      this.urnNamespace = urnNamespace;
-    }
-
-  }
-
   private String host;
 
   private String issuer;
@@ -557,8 +543,6 @@ public class IamProperties {
   private RegistrationProperties registration = new RegistrationProperties();
 
   private UserProfileProperties userProfile = new UserProfileProperties();
-
-  private AarcProfileProperties aarcProfile = new AarcProfileProperties();
 
   private LocalAuthenticationProperties localAuthn = new LocalAuthenticationProperties();
 
@@ -724,14 +708,6 @@ public class IamProperties {
 
   public void setUserProfile(UserProfileProperties userProfile) {
     this.userProfile = userProfile;
-  }
-
-  public AarcProfileProperties getAarcProfile() {
-    return aarcProfile;
-  }
-
-  public void setAarcProfile(AarcProfileProperties aarcProfile) {
-    this.aarcProfile = aarcProfile;
   }
 
   public LocalAuthenticationProperties getLocalAuthn() {
