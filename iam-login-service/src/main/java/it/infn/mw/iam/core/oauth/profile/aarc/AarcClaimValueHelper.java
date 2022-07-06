@@ -42,7 +42,7 @@ public class AarcClaimValueHelper {
   @Value("${iam.aarc-profile.urn-subnamespaces}")
   String urnSubnamespaces;
 
-  final String URN_AFFILIATION = "member";
+  static final String URN_AFFILIATION = "member";
 
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
 

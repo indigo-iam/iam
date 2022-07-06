@@ -71,8 +71,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   private static final String URN_GROUP_ANALYSIS = "urn:geant:iam.example:group:Analysis";
   private static final String URN_GROUP_PRODUCTION = "urn:geant:iam.example:group:Production";
 
-  private static final String ASSURANCE = "https://refeds.org/assurance/IAP/low";
-  private static final String ASSURANCE_VALUE = "https://refeds.org/assurance";
+  private static final String ASSURANCE = "https://refeds.org/assurance";
+  private static final String ASSURANCE_VALUE = "https://refeds.org/assurance/IAP/low";
 
   protected static final Set<String> BASE_SCOPES = Sets.newHashSet("openid", "profile");
   protected static final Set<String> EDUPERSON_AFFILIATION_SCOPE =
