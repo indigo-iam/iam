@@ -170,6 +170,7 @@ iam:
    
   aarc-profile:
     urn-namespace: ${IAM_AARC_PROFILE_URN_NAMESPACE:iam.example}
+    urn-delegated-namespace: ${IAM_AARC_PROFILE_URN_DELEGATED_NAMESPACE:iam.example}
     urn-nid: ${IAM_AARC_PROFILE_URN_NID:geant}
     urn-subnamespaces: ${IAM_AARC_PROFILE_URN_SUBNAMESPACES:}
     

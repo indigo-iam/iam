@@ -36,6 +36,9 @@ public class AarcClaimValueHelper {
   @Value("${iam.aarc-profile.urn-namespace}")
   String urnNamespace;
 
+  @Value("${iam.aarc-profile.urn-delegated-namespace}")
+  String urnDelegatedNamespace;
+
   @Value("${iam.aarc-profile.urn-nid}")
   String urnNid;
 
@@ -75,7 +78,7 @@ public class AarcClaimValueHelper {
     if (!Strings.isNullOrEmpty(urnSubnamespaces)) {
       encodedSubnamespace = String.format(":%s", String.join(":", urnSubnamespaces.trim().split(" ")));
     }
-    return String.format("urn:%s:%s%s:group:%s", urnNid, urnNamespace, encodedSubnamespace, encodedGroupName);
+    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace, encodedGroupName);
   }
 
   public Set<String> resolveLOA() {

@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
   // @formatter:off
-  "iam.aarc-profile.urn-namespace=projectescape.eu",
+  "iam.aarc-profile.urn-delegated-namespace=projectescape.eu",
   "iam.aarc-profile.urn-subnamespaces=sub mission",
   // @formatter:on
 })
