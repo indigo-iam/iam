@@ -169,7 +169,7 @@ iam:
     - surname
    
   aarc-profile:
-    urn-namespace: ${IAM_AARC_PROFILE_URN_NAMESPACE:iam.example}
+    affiliation-scope: ${IAM_AARC_PROFILE_AFFILIATION_SCOPE:iam.example}
     urn-delegated-namespace: ${IAM_AARC_PROFILE_URN_DELEGATED_NAMESPACE:iam.example}
     urn-nid: ${IAM_AARC_PROFILE_URN_NID:geant}
     urn-subnamespaces: ${IAM_AARC_PROFILE_URN_SUBNAMESPACES:}

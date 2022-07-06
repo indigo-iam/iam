@@ -33,8 +33,8 @@ public class AarcClaimValueHelper {
   public static final Set<String> ADDITIONAL_CLAIMS =
       Set.of("eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
 
-  @Value("${iam.aarc-profile.urn-namespace}")
-  String urnNamespace;
+  @Value("${iam.aarc-profile.affiliation-scope}")
+  String affiliationScope;
 
   @Value("${iam.aarc-profile.urn-delegated-namespace}")
   String urnDelegatedNamespace;
@@ -45,14 +45,14 @@ public class AarcClaimValueHelper {
   @Value("${iam.aarc-profile.urn-subnamespaces}")
   String urnSubnamespaces;
 
-  static final String URN_AFFILIATION = "member";
+  static final String DEFAULT_AFFILIATION_TYPE = "member";
 
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
 
     switch (claim) {
 
       case "eduperson_scoped_affiliation":
-        return String.format("%s@%s", URN_AFFILIATION, urnNamespace);
+        return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
 
       case "eduperson_entitlement":
         return resolveGroups(info);
