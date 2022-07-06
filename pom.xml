@@ -167,7 +167,7 @@
         <groupId>org.opensaml</groupId>
         <artifactId>opensaml</artifactId>
         <!-- Keep it to 2.6.4. Moving to 2.6.6 breaks metadata fetching -->
-        <version>2.6.4</version>
+        <version>2.6.5</version>
       </dependency>
 
       <dependency>
