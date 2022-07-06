@@ -80,7 +80,7 @@ public class AarcClaimValueHelper {
 
   public Set<String> resolveLOA() {
 
-    return Sets.newHashSet("https://refeds.org/assurance/IAP/low");
+    return Sets.newHashSet("https://refeds.org/assurance", "https://refeds.org/assurance/IAP/low");
   }
 
 }
