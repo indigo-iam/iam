@@ -86,7 +86,7 @@ public class GroupRequestsTestUtils {
     return saveGroupRequest(username, groupName, REJECTED);
   }
 
-  private GroupRequestDto saveGroupRequest(String username, String groupName,
+  protected GroupRequestDto saveGroupRequest(String username, String groupName,
       IamGroupRequestStatus status) {
 
     IamGroupRequest iamGroupRequest = new IamGroupRequest();
