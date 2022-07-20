@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.api.requests;
 
-import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -130,7 +129,7 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void deleteGroupRequestAsAnonymous() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
@@ -154,9 +153,9 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void deletePendingGroupRequestAsUserWithBothRoles() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
@@ -167,20 +166,33 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   public void deleteGRIfAccountAddedToGroup() throws Exception {
 
-    saveGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME, PENDING);
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
 
-    assertThat(groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(), is(false));
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
 
-    IamAccount account =
-        accountRepo.findByUsername(TEST_100_USERNAME).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
 
-    IamGroup group =
-        groupRepo.findByName(TEST_001_GROUPNAME).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
+    IamAccount account = accountRepo.findByUsername(TEST_100_USERNAME)
+      .orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    mvc.perform(post("/iam/account/" + account.getUuid() + "/groups/" + group.getUuid())).andExpect(status().isCreated());
+    IamGroup group = groupRepo.findByName(TEST_001_GROUPNAME)
+      .orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    assertThat(groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(), is(true));
+    mvc.perform(post("/iam/account/" + account.getUuid() + "/groups/" + group.getUuid()))
+      .andExpect(status().isCreated());
 
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(true));
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
   }
 
 }
