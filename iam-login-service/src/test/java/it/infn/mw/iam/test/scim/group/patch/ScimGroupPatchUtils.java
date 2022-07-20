@@ -39,9 +39,10 @@ import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimResource;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.TestUtils;
+import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 import it.infn.mw.iam.test.scim.ScimUtils;
 
-public class ScimGroupPatchUtils {
+public class ScimGroupPatchUtils extends GroupRequestsTestUtils {
 
   public static final String GROUP_URI = ScimUtils.getGroupsLocation();
   public static final String USER_URI = ScimUtils.getUsersLocation();

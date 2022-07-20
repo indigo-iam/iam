@@ -16,6 +16,8 @@
 package it.infn.mw.iam.test.scim.group.patch;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,9 +36,16 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import it.infn.mw.iam.api.scim.converter.GroupConverter;
+import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.model.ScimGroupPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
@@ -49,8 +59,27 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
+  private IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  private IamGroupRepository iamGroupRepo;
+
+  @Autowired
+  private UserConverter userConverter;
+
+  @Autowired
+  private GroupConverter groupConverter;
+
+  @Autowired
+  private IamGroupRequestRepository groupRequestRepo;
+
   private ScimGroup engineers;
   private ScimUser lennon, lincoln;
+
+  private Supplier<AssertionError> assertionError(String message) {
+    return () -> new AssertionError(message);
+  }
 
   @Before
   public void setup() throws Exception {
@@ -84,6 +113,53 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
     //@formatter:on
 
     assertIsGroupMember(lennon, engineers);
+  }
+
+  @Test
+  public void testGroupPatchAddMemberAndDeleteGMR() throws Exception {
+
+    List<ScimUser> members = new ArrayList<ScimUser>();
+    IamAccount account =
+        iamAccountRepo.findByUsername(TEST_100_USERNAME).orElseThrow(assertionError("Not found"));
+    ScimUser scimUser = userConverter.dtoFromEntity(account);
+    IamAccount account2 =
+        iamAccountRepo.findByUsername(TEST_101_USERNAME).orElseThrow(assertionError("Not found"));
+    ScimUser scimUser2 = userConverter.dtoFromEntity(account2);
+    members.add(scimUser);
+
+    IamGroup group =
+        iamGroupRepo.findByName(TEST_001_GROUPNAME).orElseThrow(assertionError("Not found"));
+    ScimGroup scimGroup = groupConverter.dtoFromEntity(group);
+
+    savePendingGroupRequest(scimUser.getUserName(), scimGroup.getDisplayName());
+    savePendingGroupRequest(scimUser2.getUserName(), scimGroup.getDisplayName());
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
+
+    ScimGroupPatchRequest patchReq = getPatchAddUsersRequest(members);
+
+    //@formatter:off
+    mvc.perform(patch(scimGroup.getMeta().getLocation())
+        .contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(patchReq)))
+      .andExpect(status().isNoContent());
+    //@formatter:on
+
+    assertIsGroupMember(scimUser, scimGroup);
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(true));
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
   }
 
   @Test
