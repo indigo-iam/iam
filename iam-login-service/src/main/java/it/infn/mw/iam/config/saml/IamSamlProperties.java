@@ -212,7 +212,7 @@ public class IamSamlProperties {
   private int maxAuthenticationAgeSec;
 
   private long metadataRefreshPeriodSec = TimeUnit.HOURS.toSeconds(12);
-  
+
   private String idpEntityIdWhilelist;
 
   private List<IamSamlIdpMetadataProperties> idpMetadata;
@@ -220,28 +220,28 @@ public class IamSamlProperties {
   @Valid
   private List<IamSamlLoginShortcut> loginShortcuts;
 
+  @Valid
   private LoginButtonProperties wayfLoginButton;
 
   private HostnameVerificationMode hostnameVerificationMode = HostnameVerificationMode.DEFAULT;
-  
+
   private SSONameIDType nameidPolicy = SSONameIDType.TRANSIENT;
 
   private LocalMetadata localMetadata = new LocalMetadata();
-  
+
   private SignatureProperties signature = new SignatureProperties();
-  
+
   private List<ProfileProperties> customProfile = Lists.newArrayList();
- 
+
   private List<RegistrationMappingProperties> customMapping = Lists.newArrayList();
-  
+
   private ValidatorProperties defaultValidator;
-  
+
   private List<IssuerValidationProperties> validators = Lists.newArrayList();
-  
+
   private long httpClientConnectionTimeoutSecs = 5;
   private long httpClientSocketTimeoutSecs = 5;
-  
-  
+
   public List<IamSamlIdpMetadataProperties> getIdpMetadata() {
     return idpMetadata;
   }

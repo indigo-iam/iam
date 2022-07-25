@@ -22,6 +22,8 @@ import org.hibernate.validator.constraints.URL;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import it.infn.mw.iam.config.validator.LoginButtonImageUrl;
+
 @JsonInclude(Include.NON_EMPTY)
 
 public class LoginButtonImage {
@@ -32,7 +34,7 @@ public class LoginButtonImage {
     LARGE;
   }
 
-  @URL
+  @LoginButtonImageUrl
   private String url;
 
   private Size size = SMALL;
