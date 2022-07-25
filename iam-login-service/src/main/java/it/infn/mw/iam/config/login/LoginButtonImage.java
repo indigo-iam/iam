@@ -17,8 +17,6 @@ package it.infn.mw.iam.config.login;
 
 import static it.infn.mw.iam.config.login.LoginButtonImage.Size.SMALL;
 
-import org.hibernate.validator.constraints.URL;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 

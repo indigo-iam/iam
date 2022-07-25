@@ -38,7 +38,7 @@ public class LoginButtonImageUrlValidator
     } catch (MalformedURLException e) {
       if (getClass().getResourceAsStream(value) != null) {
         return true;
-      };
+      }
       HibernateConstraintValidatorContext hibernateContext = context.unwrap(
           HibernateConstraintValidatorContext.class );
       hibernateContext.disableDefaultConstraintViolation();

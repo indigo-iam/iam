@@ -53,6 +53,14 @@ public class LoginButtonImageValidatorTests {
   }
 
   @Test
+  public void nullImageUrl() {
+    LoginButtonImage image = new LoginButtonImage();
+    image.setUrl(null);
+    Set<ConstraintViolation<LoginButtonImage>> violations =  validator.validate(image);
+    assertTrue(violations.isEmpty());
+  }
+
+  @Test
   public void validUrl() {
     LoginButtonImage image = new LoginButtonImage();
     image.setUrl("https://example.org/test.png");
