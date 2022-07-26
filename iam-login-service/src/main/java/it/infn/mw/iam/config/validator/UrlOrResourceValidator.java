@@ -23,8 +23,8 @@ import javax.validation.ConstraintValidatorContext;
 
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext;
 
-public class LoginButtonImageUrlValidator
-    implements ConstraintValidator<LoginButtonImageUrl, String> {
+public class UrlOrResourceValidator
+    implements ConstraintValidator<UrlOrResource, String> {
 
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {

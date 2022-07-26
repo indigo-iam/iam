@@ -25,10 +25,10 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Documented
-@Constraint(validatedBy = LoginButtonImageUrlValidator.class)
+@Constraint(validatedBy = UrlOrResourceValidator.class)
 @Target( { ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface LoginButtonImageUrl {
+public @interface UrlOrResource {
     String message() default "Invalid URL";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
