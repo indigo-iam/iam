@@ -506,6 +506,19 @@ public class IamProperties {
     }
   }
 
+  public static class ClientsProperties {
+
+    private boolean resetRestrictedScopesOnUpdate = true;
+
+    public boolean isResetRestrictedScopesOnUpdate() {
+      return resetRestrictedScopesOnUpdate;
+    }
+
+    public void setResetRestrictedScopesOnUpdate(boolean resetRestrictedScopesOnUpdate) {
+      this.resetRestrictedScopesOnUpdate = resetRestrictedScopesOnUpdate;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -557,6 +570,8 @@ public class IamProperties {
       new ExternalConnectivityProbeProperties();
 
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
+
+  private ClientsProperties clients = new ClientsProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -758,6 +773,14 @@ public class IamProperties {
 
   public void setAccountLinking(AccountLinkingProperties accountLinking) {
     this.accountLinking = accountLinking;
+  }
+
+  public ClientsProperties getClients() {
+    return clients;
+  }
+
+  public void setClients(ClientsProperties clients) {
+    this.clients = clients;
   }
 
 }

@@ -32,6 +32,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.audit.events.client.ClientCreatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
@@ -56,16 +58,22 @@ public class DefaultClientService implements ClientService {
 
   private OAuth2TokenEntityService tokenService;
 
+  private IamProperties props;
+
+  private IamSystemScopeService systemScopeService;
+
   @Autowired
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
       IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher,
-      OAuth2RequestValidator requestValidator, OAuth2TokenEntityService tokenService) {
+      OAuth2RequestValidator requestValidator, OAuth2TokenEntityService tokenService,
+      IamProperties props, IamSystemScopeService systemScopeService) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
     this.eventPublisher = eventPublisher;
     this.requestValidator = requestValidator;
     this.tokenService = tokenService;
+    this.props = props;
   }
 
   @Override
@@ -106,9 +114,19 @@ public class DefaultClientService implements ClientService {
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     ((ScopeMatcherOAuthRequestValidator) requestValidator).invalidateScope(client);
+    if (props.getClients().isResetRestrictedScopesOnUpdate()) {
+      resetRestrictedScopes(client);
+    }
     return clientRepo.save(client);
   }
 
+
+  private void resetRestrictedScopes(ClientDetailsEntity client) {
+
+    systemScopeService.getRestricted().forEach(restricted -> {
+      client.getScope().remove(restricted.getValue());
+    });
+  }
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
