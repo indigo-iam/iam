@@ -251,3 +251,15 @@ proxycert:
   enabled: ${IAM_PROXYCERT_ENABLED:true}
   key-size: ${IAM_PROXYCERT_KEY_SIZE:2048}
   max-lifetime-seconds: ${IAM_PROXYCERT_MAX_LIFETIME_SECONDS:43200}
+
+lifecycle:
+  account:
+    account-lifetime-days: ${IAM_LIFECYCLE_ACCOUNT_LIFETIME_DAYS:0}  ## 0 means unbounded validity
+    read-only-end-time: ${IAM_LIFECYCLE_ACCOUNT_READ_ONLY_END_TIME:false}  ## When true, the end time cannot be changed from IAM APIs and dashboard
+    expired-account-policy:
+      suspension-grace-period-days: ${IAM_LIFECYCLE_ACCOUNT_SUSPENSION_GRACE_PERIOD_DAYS:7} ## Accounts will be suspended after 7 days since expiration
+      remove-expired-accounts: ${IAM_LIFECYCLE_REMOVE_EXPIRED_ACCOUNTS:true} ## When false, expired accounts are not removed
+      removal-grace-period-days: ${IAM_LIFECYCLE_ACCOUNT_REMOVAL_GRACE_PERIOD_DAYS:30} ## Accounts will be removed after 30 days since expiration (if remove-expired-accounts is true)
+    expired-accounts-task:
+      cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}  ## spring cron schedule for the lifecycle task (default setting is every 5 mins)
+      enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true} ## To disable automatic account expiration set this to false
