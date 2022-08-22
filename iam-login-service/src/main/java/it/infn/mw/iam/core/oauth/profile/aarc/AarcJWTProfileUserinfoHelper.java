@@ -50,8 +50,9 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
     IamUserInfo iamUserInfo = ((UserInfoAdapter) ui).getUserinfo();
 
     AarcDecoratedUserInfo aui = AarcDecoratedUserInfo.forUser(ui);
-    aui.setScopedAffiliation(getProperties().getOrganisation().getName());
+    aui.setScopedAffiliation(claimValueHelper.getClaimValueFromUserInfo("eduperson_scoped_affiliation", iamUserInfo).toString());
     aui.setEntitlements(claimValueHelper.resolveGroups(iamUserInfo));
+    aui.setAssurance(claimValueHelper.resolveLOA());
 
     return aui;
   }

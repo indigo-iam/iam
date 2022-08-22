@@ -43,6 +43,7 @@ public enum UserInfoClaim {
   EXTERNAL_AUTHN("external_authn"),
   EDUPERSON_SCOPED_AFFILIATION("eduperson_scoped_affiliation"),
   EDUPERSON_ENTITLEMENT("eduperson_entitlement"),
+  EDUPERSON_ASSURANCE("eduperson_assurance"),
   SSH_KEYS("ssh_keys");
 
   private UserInfoClaim(String claimName) {

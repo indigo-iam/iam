@@ -17,10 +17,10 @@ package it.infn.mw.iam.config.login;
 
 import static it.infn.mw.iam.config.login.LoginButtonImage.Size.SMALL;
 
-import org.hibernate.validator.constraints.URL;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import it.infn.mw.iam.config.validator.UrlOrResource;
 
 @JsonInclude(Include.NON_EMPTY)
 
@@ -32,7 +32,7 @@ public class LoginButtonImage {
     LARGE;
   }
 
-  @URL
+  @UrlOrResource
   private String url;
 
   private Size size = SMALL;

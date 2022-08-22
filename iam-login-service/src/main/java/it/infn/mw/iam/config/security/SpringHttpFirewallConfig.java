@@ -30,6 +30,7 @@ public class SpringHttpFirewallConfig {
 
     StrictHttpFirewall httpFirewall = new StrictHttpFirewall();
     httpFirewall.setAllowedHeaderValues(Predicates.alwaysTrue());
+    httpFirewall.setAllowUrlEncodedDoubleSlash(true);
 
     return httpFirewall;
   }

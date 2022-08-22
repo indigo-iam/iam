@@ -21,6 +21,9 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
+
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
@@ -28,26 +31,34 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 public class AarcClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS =
-      Set.of("eduperson_scoped_affiliation", "eduperson_entitlement");
+      Set.of("eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
 
-  @Value("${iam.host}")
-  String iamHost;
+  @Value("${iam.aarc-profile.affiliation-scope}")
+  String affiliationScope;
 
-  @Value("${iam.organisation.name}")
-  String organisationName;
+  @Value("${iam.aarc-profile.urn-delegated-namespace}")
+  String urnDelegatedNamespace;
 
-  @Value("${iam.aarc-profile.urn-namespace}")
-  String urnNamespace;
+  @Value("${iam.aarc-profile.urn-nid}")
+  String urnNid;
+
+  @Value("${iam.aarc-profile.urn-subnamespaces}")
+  String urnSubnamespaces;
+
+  static final String DEFAULT_AFFILIATION_TYPE = "member";
 
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
 
     switch (claim) {
 
       case "eduperson_scoped_affiliation":
-        return organisationName;
+        return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
 
       case "eduperson_entitlement":
         return resolveGroups(info);
+
+      case "eduperson_assurance":
+        return resolveLOA();
 
       default:
         return null;
@@ -63,7 +74,16 @@ public class AarcClaimValueHelper {
 
   private String encodeGroup(IamGroup group) {
     String encodedGroupName = group.getName().replaceAll("/", ":");
-    return String.format("urn:%s:group:%s#%s", urnNamespace, encodedGroupName, iamHost);
+    String encodedSubnamespace = "";
+    if (!Strings.isNullOrEmpty(urnSubnamespaces)) {
+      encodedSubnamespace = String.format(":%s", String.join(":", urnSubnamespaces.trim().split(" ")));
+    }
+    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace, encodedGroupName);
+  }
+
+  public Set<String> resolveLOA() {
+
+    return Sets.newHashSet("https://refeds.org/assurance", "https://refeds.org/assurance/IAP/low");
   }
 
 }

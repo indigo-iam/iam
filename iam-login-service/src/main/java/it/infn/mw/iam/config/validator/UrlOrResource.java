@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.userinfo;
+package it.infn.mw.iam.config.validator;
 
-import java.util.Set;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.mitre.openid.connect.model.UserInfo;
+import javax.validation.Constraint;
+import javax.validation.Payload;
 
-public interface AarcUserInfo extends UserInfo {
-
-  String getScopedAffiliation();
-  void setScopedAffiliation(String scopedAffiliation);
-
-  Set<String> getEntitlements();
-  void setEntitlements(Set<String> entitlements);
-
-  Set<String> getAssurance();
-  void setAssurance(Set<String> assurance);
+@Documented
+@Constraint(validatedBy = UrlOrResourceValidator.class)
+@Target( { ElementType.METHOD, ElementType.FIELD })
+@Retention(RetentionPolicy.RUNTIME)
+public @interface UrlOrResource {
+    String message() default "Invalid URL";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
 }

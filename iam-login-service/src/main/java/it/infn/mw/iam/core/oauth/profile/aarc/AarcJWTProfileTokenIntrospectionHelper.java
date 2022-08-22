@@ -72,6 +72,11 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
         result.put(EDUPERSON_ENTITLEMENT,
             claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ENTITLEMENT, iamUserInfo));
       }
+
+      if (scopes.contains(EDUPERSON_ASSURANCE)) {
+        result.put(EDUPERSON_ASSURANCE,
+            claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ASSURANCE, iamUserInfo));
+      }
     }
 
     return result;

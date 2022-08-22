@@ -29,9 +29,11 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
 
   public static final String EDUPERSON_SCOPED_AFFILIATION_CLAIM = "eduperson_scoped_affiliation";
   public static final String EDUPERSON_ENTITLEMENT_CLAIM = "eduperson_entitlement";
+  public static final String EDUPERSON_ASSURANCE_CLAIM = "eduperson_assurance";
 
   private String scopedAffiliation;
   private Set<String> entitlements;
+  private Set<String> assurance;
 
   public AarcDecoratedUserInfo(UserInfo delegate) {
     super(delegate);
@@ -44,10 +46,14 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
     json.remove("groups");
     json.remove("organisation_name");
 
-    json.add(EDUPERSON_SCOPED_AFFILIATION_CLAIM, new JsonPrimitive(scopedAffiliation));
+    json.add(EDUPERSON_SCOPED_AFFILIATION_CLAIM, new JsonPrimitive(getScopedAffiliation()));
+
+    JsonArray values = new JsonArray();
+    getAssurance().forEach(value -> values.add(new JsonPrimitive(value)));
+    json.add(EDUPERSON_ASSURANCE_CLAIM, values);
 
     JsonArray urns = new JsonArray();
-    entitlements.forEach(urn -> urns.add(new JsonPrimitive(urn)));
+    getEntitlements().forEach(urn -> urns.add(new JsonPrimitive(urn)));
     json.add(EDUPERSON_ENTITLEMENT_CLAIM, urns);
 
     return json;
@@ -73,7 +79,18 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
     this.entitlements = entitlements;
   }
 
+  @Override
+  public Set<String> getAssurance() {
+    return assurance;
+  }
+
+  @Override
+  public void setAssurance(Set<String> assurance) {
+    this.assurance = assurance;
+  }
+
   public static AarcDecoratedUserInfo forUser(UserInfo u) {
     return new AarcDecoratedUserInfo(u);
   }
+
 }
