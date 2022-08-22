@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -32,21 +31,16 @@ import it.infn.mw.iam.api.scim.updater.builders.GroupMembershipManagement;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
-import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 public class DefaultGroupMembershipUpdaterFactory
     implements AccountUpdaterFactory<IamGroup, List<ScimMemberRef>> {
 
   final IamAccountService accountService;
-  final GroupRequestsService groupRequestsService;
 
 
-  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService,
-      GroupRequestsService groupRequestsService) {
+  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService) {
 
     this.accountService = accountService;
-    this.groupRequestsService = groupRequestsService;
-
   }
 
   @Override
@@ -69,20 +63,6 @@ public class DefaultGroupMembershipUpdaterFactory
     }
 
     return updaters;
-  }
-
-  public void deleteGroupRequestAfterPatchOperation(IamGroup group,
-      ScimPatchOperation<List<ScimMemberRef>> op) {
-
-    final List<IamAccount> members = memberRefToAccountConverter(op.getValue());
-
-    for (IamGroupRequest r : group.getGroupRequests()) {
-      for (IamAccount m : members) {
-        if (m.getUuid().equals(r.getAccount().getUuid())) {
-          groupRequestsService.deleteGroupRequest(r.getUuid());
-        }
-      }
-    }
   }
 
   private void prepareAdders(List<AccountUpdater> updaters, List<IamAccount> membersToAdd,
