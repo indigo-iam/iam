@@ -51,12 +51,12 @@ import org.springframework.security.oauth2.provider.code.AuthorizationCodeTokenG
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
-import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
+import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
@@ -100,7 +100,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
   @Autowired
   private AUPSignatureCheckService signatureCheckService;
-  
+
   @Autowired
   private TokenExchangePdp tokenExchangePdp;
 
@@ -142,8 +142,13 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     resourceOwnerPasswordCredentialGranter.setAccountUtils(accountUtils);
     resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
 
-    TokenExchangeTokenGranter tokenExchangeGranter = new TokenExchangeTokenGranter(tokenServices,
-        clientDetailsService, requestFactory);
+    IamRefreshTokenGranter refreshTokenGranter =
+        new IamRefreshTokenGranter(tokenServices, clientDetailsService, requestFactory);
+    refreshTokenGranter.setAccountUtils(accountUtils);
+    refreshTokenGranter.setSignatureCheckService(signatureCheckService);
+
+    TokenExchangeTokenGranter tokenExchangeGranter =
+        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory);
 
     tokenExchangeGranter.setAccountUtils(accountUtils);
     tokenExchangeGranter.setSignatureCheckService(signatureCheckService);
@@ -153,7 +158,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
         new AuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
             clientDetailsService, requestFactory),
         new ImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        new RefreshTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        refreshTokenGranter,
         new ClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
         resourceOwnerPasswordCredentialGranter,
         new JWTAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory),
@@ -182,16 +187,16 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   public void configure(final ClientDetailsServiceConfigurer clients) throws Exception {
 
     clients.withClientDetails(clientDetailsService);
-  
+
   }
 
   @Override
   public void configure(final AuthorizationServerSecurityConfigurer security) throws Exception {
 
     security.allowFormAuthenticationForClients();
-    
+
 
   }
 
-  
+
 }
