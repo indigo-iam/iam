@@ -35,30 +35,32 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 public class IamRefreshTokenGranter extends RefreshTokenGranter {
-  
+
   private final OAuth2TokenEntityService tokenServices;
   private AUPSignatureCheckService signatureCheckService;
   private AccountUtils accountUtils;
 
-  public IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices, ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
-      super(tokenServices, clientDetailsService, requestFactory);
-      this.tokenServices = tokenServices;
+  public IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices,
+      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
+    super(tokenServices, clientDetailsService, requestFactory);
+    this.tokenServices = tokenServices;
   }
 
   @Override
   protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
-      String refreshTokenValue = tokenRequest.getRequestParameters().get("refresh_token");
-      OAuth2RefreshTokenEntity refreshToken = tokenServices.getRefreshToken(refreshTokenValue);
+    String refreshTokenValue = tokenRequest.getRequestParameters().get("refresh_token");
+    OAuth2RefreshTokenEntity refreshToken = tokenServices.getRefreshToken(refreshTokenValue);
 
-      Optional<IamAccount> user = accountUtils.getAuthenticatedUserAccount(refreshToken.getAuthenticationHolder().getUserAuth());
-      
-      if(user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
-        throw new InvalidGrantException(
-            format("User %s needs to sign AUP for this organization in order to proceed.",
-                user.get().getUsername()));
-      }
+    Optional<IamAccount> user = accountUtils
+      .getAuthenticatedUserAccount(refreshToken.getAuthenticationHolder().getUserAuth());
 
-      return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
+    if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
+      throw new InvalidGrantException(
+          format("User %s needs to sign AUP for this organization in order to proceed.",
+              user.get().getUsername()));
+    }
+
+    return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
   }
 
   public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
