@@ -45,12 +45,6 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
       this.tokenServices = tokenServices;
   }
 
-  protected IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices, ClientDetailsService clientDetailsService,
-          OAuth2RequestFactory requestFactory, String grantType) {
-      super(tokenServices, clientDetailsService, requestFactory, grantType);
-      this.tokenServices = tokenServices;
-  }
-
   @Override
   protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) {
       String refreshTokenValue = tokenRequest.getRequestParameters().get("refresh_token");
@@ -66,17 +60,9 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
       return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
   }
-  
-  public AUPSignatureCheckService getSignatureCheckService() {
-    return signatureCheckService;
-  }
 
   public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
     this.signatureCheckService = signatureCheckService;
-  }
-
-  public AccountUtils getAccountUtils() {
-    return accountUtils;
   }
 
   public void setAccountUtils(AccountUtils accountUtils) {
