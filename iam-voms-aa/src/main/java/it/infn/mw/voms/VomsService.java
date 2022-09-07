@@ -21,7 +21,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@ComponentScan({"it.infn.mw.iam.authn.x509","it.infn.mw.voms", "it.infn.mw.iam.persistence"})
+@ComponentScan({"it.infn.mw.iam.authn.x509", "it.infn.mw.iam.service.aup", "it.infn.mw.voms", "it.infn.mw.iam.persistence"})
 @EnableJpaRepositories("it.infn.mw.iam.persistence")
 @EntityScan(basePackages= {"it.infn.mw.iam.persistence"})
 @SpringBootApplication

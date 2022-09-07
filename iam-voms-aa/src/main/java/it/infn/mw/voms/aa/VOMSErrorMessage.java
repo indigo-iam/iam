@@ -100,4 +100,11 @@ public class VOMSErrorMessage {
     m.setMessage(message);
     return m;
   }
+
+  public static VOMSErrorMessage faildToSignAup(String username) {
+    VOMSErrorMessage m = new VOMSErrorMessage(VOMSError.FailedToSignAup);
+    m.setMessage(format(
+        "User %s needs to sign AUP for this organization in order to proceed.", username));
+    return m;
+  }
 }

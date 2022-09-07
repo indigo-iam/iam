@@ -43,7 +43,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.voms.properties.VomsProperties;
 
 @RunWith(SpringRunner.class)
@@ -58,6 +60,8 @@ public class VomsAcTests extends TestSupport {
   @Autowired
   VomsProperties properties;
 
+  @Autowired
+  private IamAupRepository aupRepo;
 
   @Test
   public void unauthenticatedRequestGetsUnauthenticatedClientError() throws Exception {
@@ -142,6 +146,39 @@ public class VomsAcTests extends TestSupport {
     VOMSAttribute attrs = getAttributeCertificate(response);
     assertThat(attrs.getFQANs(), hasItem("/test"));
     assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+
+  }
+
+  @Test
+  public void userWithExpiredAUPDoesNotGetsAnAc() throws Exception {
+
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+
+    addAccountToGroup(testAccount, rootGroup);
+
+    IamAup aup = new IamAup();
+
+    aup.setCreationTime(new Date());
+    aup.setLastUpdateTime(new Date());
+    aup.setName("default-aup");
+    aup.setUrl("http://default-aup.org/");
+    aup.setDescription("AUP description");
+    aup.setSignatureValidityInDays(0L);
+
+    aupRepo.save(aup);
+
+    byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(true));
+
+    assertThat(response.errorMessages()[0].getMessage(),
+        containsString("User test needs to sign AUP for this organization in order to proceed."));
   }
 
 
