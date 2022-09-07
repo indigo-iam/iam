@@ -18,13 +18,14 @@ package it.infn.mw.voms.aa;
 public enum VOMSError {
 
   NoSuchUser(1001, 403, "No such user."),
-  NoSuchAttribute(1007, 400, "Cannot issue a user requested attribtue."),
-  SuspendedUser(1004, 403, "The user is supended."),
+  NoSuchAttribute(1007, 400, "Cannot issue a user requested attribute."),
+  SuspendedUser(1004, 403, "The user is suspended."),
   SuspendedCertificate(1001, 403, "The user certificate is suspended."),
   BadRequest(1006, 400, "Bad request."),
   InternalError(1006, 500, "Internal server error."),
   EndpointDisabled(1006, 500, "VOMS endpoint is currently not enabled."),
-  UnauthenticatedClient(1006, 400, "Client is not authenticated.");
+  UnauthenticatedClient(1006, 400, "Client is not authenticated."),
+  FailedToSignAup(1004, 403, "The user needs to sign the AUP");
 
   private VOMSError(int legacyCode, int httpStatus, String message) {
 

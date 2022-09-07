@@ -16,6 +16,7 @@
 package it.infn.mw.voms.api;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +29,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
 import it.infn.mw.voms.aa.AttributeAuthority;
 import it.infn.mw.voms.aa.RequestContextFactory;
 import it.infn.mw.voms.aa.VOMSErrorMessage;
@@ -47,14 +51,19 @@ public class VOMSController extends VOMSControllerSupport {
   private final AttributeAuthority aa;
   private final ACGenerator acGenerator;
   private final VOMSResponseBuilder responseBuilder;
+  private final IamAccountRepository accountRepo;
+  private final DefaultAupSignatureCheckService signatureCheckService;
 
   @Autowired
   public VOMSController(AttributeAuthority aa, VomsProperties props, ACGenerator acGenerator,
-      VOMSResponseBuilder responseBuilder) {
+      VOMSResponseBuilder responseBuilder, IamAccountRepository accountRepo,
+      DefaultAupSignatureCheckService signatureCheckService) {
     this.aa = aa;
     this.vomsProperties = props;
     this.acGenerator = acGenerator;
     this.responseBuilder = responseBuilder;
+    this.accountRepo = accountRepo;
+    this.signatureCheckService = signatureCheckService;
   }
 
   protected VOMSRequestContext initVomsRequestContext(IamX509AuthenticationCredential cred,
@@ -97,6 +106,13 @@ public class VOMSController extends VOMSControllerSupport {
 
     VOMSRequestContext context = initVomsRequestContext(cred, request, userAgent);
 
+    Optional<IamAccount> user = accountRepo.findByCertificateSubject(cred.getSubject());
+
+    if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
+      VOMSErrorMessage em = VOMSErrorMessage.faildToSignAup(user.get().getUsername());
+      return responseBuilder.createErrorResponse(em);
+    }
+
     if (!aa.getAttributes(context)) {
 
       VOMSErrorMessage em = context.getResponse().getErrorMessages().get(0);
@@ -106,7 +122,6 @@ public class VOMSController extends VOMSControllerSupport {
       } else {
         return responseBuilder.createErrorResponse(em);
       }
-
     } else {
       byte[] acBytes = acGenerator.generateVOMSAC(context);
       return responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
