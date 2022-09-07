@@ -179,6 +179,17 @@ public class VomsAcTests extends TestSupport {
 
     assertThat(response.errorMessages()[0].getMessage(),
         containsString("User test needs to sign AUP for this organization in order to proceed."));
+
+    aupRepo.delete(aup);
+
+    byte[] xmlResponse2 = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsByteArray();
+
+      VOMSResponse response2 = parser.parse(new ByteArrayInputStream(xmlResponse2));
+      assertThat(response2.hasErrors(), is(false));
   }
 
 
