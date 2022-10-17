@@ -16,7 +16,6 @@
 package it.infn.mw.voms.api;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,7 +50,6 @@ public class VOMSController extends VOMSControllerSupport {
   private final AttributeAuthority aa;
   private final ACGenerator acGenerator;
   private final VOMSResponseBuilder responseBuilder;
-  private final IamAccountRepository accountRepo;
   private final DefaultAupSignatureCheckService signatureCheckService;
 
   @Autowired
@@ -62,7 +60,6 @@ public class VOMSController extends VOMSControllerSupport {
     this.vomsProperties = props;
     this.acGenerator = acGenerator;
     this.responseBuilder = responseBuilder;
-    this.accountRepo = accountRepo;
     this.signatureCheckService = signatureCheckService;
   }
 
@@ -106,13 +103,6 @@ public class VOMSController extends VOMSControllerSupport {
 
     VOMSRequestContext context = initVomsRequestContext(cred, request, userAgent);
 
-    Optional<IamAccount> user = accountRepo.findByCertificateSubject(cred.getSubject());
-
-    if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
-      VOMSErrorMessage em = VOMSErrorMessage.faildToSignAup(user.get().getUsername());
-      return responseBuilder.createErrorResponse(em);
-    }
-
     if (!aa.getAttributes(context)) {
 
       VOMSErrorMessage em = context.getResponse().getErrorMessages().get(0);
@@ -123,6 +113,11 @@ public class VOMSController extends VOMSControllerSupport {
         return responseBuilder.createErrorResponse(em);
       }
     } else {
+      IamAccount user = context.getIamAccount();
+      if (signatureCheckService.needsAupSignature(user)) {
+        VOMSErrorMessage em = VOMSErrorMessage.faildToSignAup(user.getUsername());
+        return responseBuilder.createErrorResponse(em);
+      }
       byte[] acBytes = acGenerator.generateVOMSAC(context);
       return responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
     }

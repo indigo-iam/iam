@@ -109,7 +109,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void supendedUserDoesNotGetsAnAc() throws Exception {
+  public void supendedUserDoesNotGetAnAc() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     testAccount.setActive(false);
@@ -150,7 +150,7 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
-  public void userWithExpiredAUPDoesNotGetsAnAc() throws Exception {
+  public void userWithExpiredAUPDoesNotGetAc() throws Exception {
 
     IamAccount testAccount = setupTestUser();
     IamGroup rootGroup = createVomsRootGroup();
