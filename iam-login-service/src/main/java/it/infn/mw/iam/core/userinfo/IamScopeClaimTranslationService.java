@@ -18,7 +18,7 @@ package it.infn.mw.iam.core.userinfo;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ADDRESS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ATTR;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.BIRTHDATE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ENTITLEMENT;
+import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ENTITLEMENTS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_SCOPED_AFFILIATION;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ASSURANCE;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EMAIL;
@@ -91,7 +91,7 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
     mapScopeToClaim(PHONE_SCOPE, PHONE_CLAIMS);
     mapScopeToClaim(ADDRESS_SCOPE, ADDRESS);
     mapScopeToClaim(EDUPERSON_SCOPED_AFFILIATION_SCOPE, EDUPERSON_SCOPED_AFFILIATION);
-    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, EDUPERSON_ENTITLEMENT);
+    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, ENTITLEMENTS);
     mapScopeToClaim(EDUPERSON_ASSURANCE_SCOPE, EDUPERSON_ASSURANCE);
     mapScopeToClaim(ATTR_SCOPE, ATTR);
     mapScopeToClaim(SSH_KEYS_SCOPE, SSH_KEYS);

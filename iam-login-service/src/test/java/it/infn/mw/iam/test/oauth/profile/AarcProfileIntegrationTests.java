@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 import static java.lang.String.join;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -125,7 +125,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
 
     List<String> groups = Lists
-      .newArrayList(token.getJWTClaimsSet().getStringArrayClaim(EDUPERSON_ENTITLEMENT_CLAIM));
+      .newArrayList(token.getJWTClaimsSet().getStringArrayClaim(ENTITLEMENTS_CLAIM));
     assertThat(groups, hasSize(2));
     assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
     assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
@@ -137,7 +137,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     Set<String> scopes = Sets.newHashSet("openid", "profile", "eduperson_scoped_affiliation");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
 
@@ -152,7 +152,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
 
@@ -177,7 +177,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         equalTo("member@iam.example"));
 
     List<String> groups = Lists
-      .newArrayList(token.getJWTClaimsSet().getStringArrayClaim(EDUPERSON_ENTITLEMENT_CLAIM));
+      .newArrayList(token.getJWTClaimsSet().getStringArrayClaim(ENTITLEMENTS_CLAIM));
     assertThat(groups, hasSize(2));
     assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
     assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
@@ -197,8 +197,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.name", equalTo("Test User")))
@@ -222,7 +222,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM).doesNotExist())
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM).doesNotExist())
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM).doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM).doesNotExist())
       .andExpect(jsonPath("$.name", equalTo("Test User")))
       .andExpect(jsonPath("$.given_name", equalTo("Test")))
@@ -244,8 +244,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.name", equalTo("Test User")))
@@ -266,8 +266,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.name", equalTo("Test User")))

@@ -42,7 +42,7 @@ public enum UserInfoClaim {
   WLCG_GROUPS("wlcg.groups"),
   EXTERNAL_AUTHN("external_authn"),
   EDUPERSON_SCOPED_AFFILIATION("eduperson_scoped_affiliation"),
-  EDUPERSON_ENTITLEMENT("eduperson_entitlement"),
+  ENTITLEMENTS("entitlements"),
   EDUPERSON_ASSURANCE("eduperson_assurance"),
   SSH_KEYS("ssh_keys");
 

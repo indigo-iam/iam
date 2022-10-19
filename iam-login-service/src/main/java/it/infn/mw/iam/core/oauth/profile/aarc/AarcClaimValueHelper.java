@@ -31,7 +31,7 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 public class AarcClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS =
-      Set.of("eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
+      Set.of("eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
 
   @Value("${iam.aarc-profile.affiliation-scope}")
   String affiliationScope;
@@ -54,7 +54,7 @@ public class AarcClaimValueHelper {
       case "eduperson_scoped_affiliation":
         return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
 
-      case "eduperson_entitlement":
+      case "entitlements":
         return resolveGroups(info);
 
       case "eduperson_assurance":
