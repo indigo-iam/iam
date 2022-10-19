@@ -28,7 +28,7 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
   private static final long serialVersionUID = 1L;
 
   public static final String EDUPERSON_SCOPED_AFFILIATION_CLAIM = "eduperson_scoped_affiliation";
-  public static final String EDUPERSON_ENTITLEMENT_CLAIM = "eduperson_entitlement";
+  public static final String ENTITLEMENTS_CLAIM = "entitlements";
   public static final String EDUPERSON_ASSURANCE_CLAIM = "eduperson_assurance";
 
   private String scopedAffiliation;
@@ -54,7 +54,7 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
 
     JsonArray urns = new JsonArray();
     getEntitlements().forEach(urn -> urns.add(new JsonPrimitive(urn)));
-    json.add(EDUPERSON_ENTITLEMENT_CLAIM, urns);
+    json.add(ENTITLEMENTS_CLAIM, urns);
 
     return json;
   }
