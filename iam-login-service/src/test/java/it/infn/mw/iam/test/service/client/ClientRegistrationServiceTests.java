@@ -860,13 +860,13 @@ public class ClientRegistrationServiceTests {
 
     response = service.retrieveClient(response.getClientId(), userAuth);
     assertThat(response.getScope(), hasItems("scim:read", "storage.read:/example"));
-    response.getScope().add("eduperson_entitlement");
+    response.getScope().add("entitlements");
     response.getContacts().add("test@example.org");
     RegisteredClientDTO updateResponse =
         service.updateClient(response.getClientId(), response, userAuth);
 
     assertThat(updateResponse.getScope(),
-        hasItems("scim:read", "storage.read:/example", "eduperson_entitlement"));
+        hasItems("scim:read", "storage.read:/example", "entitlements"));
   }
 
 
