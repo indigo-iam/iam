@@ -77,8 +77,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   protected static final Set<String> BASE_SCOPES = Sets.newHashSet("openid", "profile");
   protected static final Set<String> EDUPERSON_AFFILIATION_SCOPE =
       Sets.newHashSet("openid", "profile", "email", "eduperson_scoped_affiliation");
-  protected static final Set<String> EDUPERSON_ENTITLEMENT_SCOPE =
-      Sets.newHashSet("openid", "profile", "eduperson_entitlement");
+  protected static final Set<String> ENTITLEMENTS_SCOPE =
+      Sets.newHashSet("openid", "profile", "entitlements");
   protected static final Set<String> EDUPERSON_ASSURANCE_SCOPE =
       Sets.newHashSet("openid", "profile", "eduperson_assurance");
   protected static final Set<String> EDUPERSON_SCOPES = Sets.newHashSet("openid", "profile",
@@ -117,7 +117,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   @Test
   public void testEdupersonEntitlementScope() throws Exception {
 
-    Set<String> scopes = Sets.newHashSet("openid", "profile", "eduperson_entitlement");
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "entitlements");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM), nullValue());
@@ -167,7 +167,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   public void testEdupersonScopedAffiliationAndEntitlementScopes() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "eduperson_scoped_affiliation",
-        "eduperson_entitlement");
+        "entitlements");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
@@ -187,7 +187,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   public void testAarcProfileIntrospect() throws Exception {
 
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
-        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
+        "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     // @formatter:off
@@ -234,7 +234,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
-      scopes = {"openid profile eduperson_scoped_affiliation eduperson_entitlement eduperson_assurance"})
+      scopes = {"openid profile eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfo() throws Exception {
 
     // @formatter:off
@@ -256,7 +256,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Test
   @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
-      scopes = {"openid profile email eduperson_scoped_affiliation eduperson_entitlement eduperson_assurance"})
+      scopes = {"openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfoWithEmail() throws Exception {
 
     // @formatter:off
