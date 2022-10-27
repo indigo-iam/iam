@@ -51,6 +51,7 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
   public static final String ORGANISATION_NAME = "organisation_name";
   public static final String ISSUER = "iss";
   public static final String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
+  public static final String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
   public static final String ENTITLEMENTS = "entitlements";
   public static final String EDUPERSON_ASSURANCE = "eduperson_assurance";
 

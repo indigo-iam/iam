@@ -16,10 +16,12 @@
 package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 import static java.lang.String.join;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -121,6 +123,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION_CLAIM), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("email"), nullValue());
 
@@ -129,6 +132,16 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(groups, hasSize(2));
     assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
     assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
+
+    Set<String> scopes2 = Sets.newHashSet("openid", "profile", "entitlements", "eduperson_entitlement");
+    JWT token2 = JWTParser.parse(getAccessTokenForUser(scopes2));
+    assertThat(token2.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), notNullValue());
+    assertThat(token2.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), notNullValue());
+
+    Set<String> scopes3 = Sets.newHashSet("openid", "profile", "eduperson_entitlement");
+    JWT token3 = JWTParser.parse(getAccessTokenForUser(scopes3));
+    assertThat(token3.getJWTClaimsSet().getClaim(ENTITLEMENTS_CLAIM), notNullValue());
+    assertThat(token3.getJWTClaimsSet().getClaim(EDUPERSON_ENTITLEMENT_CLAIM), notNullValue());
   }
 
   @Test
