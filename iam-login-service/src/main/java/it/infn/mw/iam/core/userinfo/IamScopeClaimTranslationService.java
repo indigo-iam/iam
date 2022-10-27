@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ADDRESS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ATTR;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.BIRTHDATE;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ENTITLEMENTS;
+import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ENTITLEMENT;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_SCOPED_AFFILIATION;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ASSURANCE;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EMAIL;
@@ -69,6 +70,7 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
   public static final String PHONE_SCOPE = "phone";
   public static final String ADDRESS_SCOPE = "address";
   public static final String EDUPERSON_SCOPED_AFFILIATION_SCOPE = "eduperson_scoped_affiliation";
+  public static final String EDUPERSON_ENTITLEMENT_SCOPE = "eduperson_entitlement";
   public static final String ENTITLEMENTS_SCOPE = "entitlements";
   public static final String EDUPERSON_ASSURANCE_SCOPE = "eduperson_assurance";
   public static final String ATTR_SCOPE = "attr";
@@ -92,6 +94,8 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
     mapScopeToClaim(ADDRESS_SCOPE, ADDRESS);
     mapScopeToClaim(EDUPERSON_SCOPED_AFFILIATION_SCOPE, EDUPERSON_SCOPED_AFFILIATION);
     mapScopeToClaim(ENTITLEMENTS_SCOPE, ENTITLEMENTS);
+    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, EDUPERSON_ENTITLEMENT);
+    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, ENTITLEMENTS);
     mapScopeToClaim(EDUPERSON_ASSURANCE_SCOPE, EDUPERSON_ASSURANCE);
     mapScopeToClaim(ATTR_SCOPE, ATTR);
     mapScopeToClaim(SSH_KEYS_SCOPE, SSH_KEYS);

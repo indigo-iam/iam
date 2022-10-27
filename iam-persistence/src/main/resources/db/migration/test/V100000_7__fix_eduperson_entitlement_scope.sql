@@ -1,3 +1,2 @@
-UPDATE client_scope 
-  set scope = 'entitlements'
-  where scope = 'eduperson_entitlement';
+INSERT INTO client_scope (owner_id, scope) VALUES
+  (5, 'entitlements');
