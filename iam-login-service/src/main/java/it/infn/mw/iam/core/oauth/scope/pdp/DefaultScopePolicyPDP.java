@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import static java.lang.String.format;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.stereotype.Component;
 
 import com.google.common.cache.Cache;
@@ -44,6 +46,7 @@ import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 
+@SuppressWarnings("deprecation")
 @Component
 public class DefaultScopePolicyPDP implements ScopePolicyPDP {
 
@@ -119,8 +122,8 @@ public class DefaultScopePolicyPDP implements ScopePolicyPDP {
             if (m.matches(scope)) {
               foundMatch = true;
             }
-          } catch (ExecutionException e) {
-            throw new IllegalArgumentException(e.getMessage());
+          } catch (Exception e) {
+            throw new InvalidScopeException(format("Misspelled %s scope in the scope policies", ps));
           }
         }
         return foundMatch;
