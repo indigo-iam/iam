@@ -17,17 +17,26 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 
 
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Iterator;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.common.collect.Sets;
 
@@ -55,10 +64,24 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   @Autowired
   ScopePolicyPDP pdp;
 
+  @Autowired
+  private MockMvc mvc;
+
+  @Autowired
+  SystemScopeService scopeService;
+
 
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
+  }
+
+  @Before
+  public void setup() throws Exception {
+    SystemScope storageReadScope = new SystemScope("storage.read:/");
+    storageReadScope.setRestricted(true);
+
+    scopeService.save(storageReadScope);
   }
 
   @Test
@@ -272,6 +295,30 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     assertThat(filteredScopes, hasSize(5));
     assertThat(filteredScopes, hasItems("openid", "profile", "write", "read:/", "read:/sub/path"));
+  }
+
+  @Test
+  public void testMisspelledScopeInScopePolicy() throws Exception {
+
+    findTestAccount();
+    IamScopePolicy up = initPermitScopePolicy();
+
+    up.getScopes().add("storage.read/");
+    up.setMatchingPolicy(PATH);
+
+    policyScopeRepo.save(up);
+
+    mvc
+    .perform(
+        post("/token").with(httpBasic("password-grant", "secret"))
+          .param("grant_type", "password")
+          .param("username", "test")
+          .param("password", "password")
+          .param("scope", "openid storage.read:/"))
+    .andExpect(status().isBadRequest())
+    .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
+    .andExpect(jsonPath("$.error_description", equalTo("Misspelled storage.read/ scope in the scope policy")));
+
   }
 
 }

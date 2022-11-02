@@ -123,7 +123,7 @@ public class DefaultScopePolicyPDP implements ScopePolicyPDP {
               foundMatch = true;
             }
           } catch (Exception e) {
-            throw new InvalidScopeException(format("Misspelled %s scope in the scope policies", ps));
+            throw new InvalidScopeException(format("Misspelled %s scope in the scope policy", ps));
           }
         }
         return foundMatch;
