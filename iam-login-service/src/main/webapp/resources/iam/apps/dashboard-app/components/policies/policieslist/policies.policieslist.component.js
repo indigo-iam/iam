@@ -45,7 +45,67 @@
         };
       }
 
-    function AddPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, toaster, scimFactory, PoliciesService) {
+    function AddPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, toaster, PoliciesService) {
+        var self = this;
+
+        self.$onInit = function () {
+          self.enabled = true;
+          self.reset();
+        }
+
+        self.reset = function () {
+          self.policy = {
+            id: '',
+            description: null,
+            rule: '',
+            matchingPolicy: '',
+            account: null,
+            group: null,
+            scopes: '',
+          };
+          if ($scope.policyCreationForm) {
+            $scope.policyCreationForm.$setPristine();
+          }
+          self.enabled = true;
+        }
+
+        self.submit = function () {
+
+          console.log("Policy info to add ", self.policy);
+          self.enabled = false;
+
+          var newPolicy = {}
+
+          newPolicy.id = self.policy.id;
+          newPolicy.description = self.policy.description;
+          newPolicy.rule = self.policy.rule;
+          newPolicy.matchingPolicy = self.policy.matchingPolicy;
+          newPolicy.account = self.policy.account;
+          newPolicy.group = self.policy.group;
+          newPolicy.scopes = self.policy.scopes.split(',');
+
+          console.info("Adding policy ... ", newPolicy);
+
+          PoliciesService.addPolicy(newPolicy).then(
+            function(response) {
+                console.info("Policy Created", response.data);
+                $uibModalInstance.close(response.data);
+                self.enabled = true;
+              },
+            function (error) {
+              console.error('Error creating policy', error);
+              self.error = error;
+              self.enabled = true;
+              toaster.pop({ type: 'error', body: error.data.error_description});
+            });
+        }
+
+        self.cancel = function () {
+          $uibModalInstance.dismiss("cancel");
+        }
+      }
+
+/*    function AddPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, toaster, scimFactory, PoliciesService) {
         var self = this;
 		var USERS_CHUNCK_SIZE = 100;
     
@@ -117,7 +177,7 @@
             });
     	}
 
-      }
+      }*/
 
       function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
         var self = this;
@@ -298,7 +358,7 @@
       self.openAddPolicyDialog = function () {
   
         var modalInstance = $uibModal.open({
-          templateUrl: '/resources/iam/apps/dashboard-app/components/policies/policieslist/addeditpolicy/policy.add.edit.component.html',
+          templateUrl: '/resources/iam/apps/dashboard-app/components/policies/policieslist/policy.add.dialog.html',
           controller: AddPolicyController,
           controllerAs: '$ctrl'
         });
@@ -367,6 +427,6 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/policies/policieslist/policies.policieslist.component.html',
         controller: ['$q', '$scope', '$rootScope', '$uibModal', 'ModalService',
-          'PoliciesService', 'toaster', "scimFactory", PoliciesListController]
+          'PoliciesService', 'toaster', "scimFactory", 'GroupsService', 'GroupRequestsService', PoliciesListController]
       });
 })();

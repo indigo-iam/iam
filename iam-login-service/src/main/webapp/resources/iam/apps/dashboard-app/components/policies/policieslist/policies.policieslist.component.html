@@ -82,8 +82,9 @@
         </br></br>
         <div class="well well-small">
             <button class="btn btn-small refresh-table" ng-click="$ctrl.loadAllPolicies()"><i class="fa fa-refresh"></i> Refresh</button> 
-            <a ui-sref="add_policies" href="#!/scope_policies/add_policies"><button class="btn btn-success" id="add-policy-btn"><i
-                class="fa fa-plus"></i> New Scope Policy</button></a>
+            <button class="btn btn-success" id="add-policy-btn" ng-click="$ctrl.openAddPolicyDialog()"><i class="fa fa-plus"></i> New Scope Policy</button>
+            <!-- <a ui-sref="add_policies" href="#!/scope_policies/add_policies"><button class="btn btn-success" id="add-policy-btn"><i
+                class="fa fa-plus"></i> New Scope Policy</button></a> -->
         </div>
     </div>
 </div>

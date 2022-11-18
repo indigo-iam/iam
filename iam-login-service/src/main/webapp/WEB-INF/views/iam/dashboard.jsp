@@ -179,7 +179,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/groupinfo/groupinfo.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policies.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/policieslist/policies.policieslist.component.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/add_policies.component.js"></script>
+<%--   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/add_policies.component.js"></script> --%>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group-membership/adder/group-membership.adder.component.js"></script>
   
