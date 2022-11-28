@@ -39,7 +39,7 @@ public class CorsConfig {
         "/userinfo", 
         "/revoke/**", 
         "/jwk",
-        "/devicode"
+        "/devicecode"
     };
     //@formatter:on
 
