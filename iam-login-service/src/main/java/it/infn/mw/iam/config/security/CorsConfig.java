@@ -21,8 +21,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import com.google.common.collect.ImmutableList;
-
 @Configuration
 public class CorsConfig {
 
@@ -48,7 +46,7 @@ public class CorsConfig {
 
     CorsConfiguration corsConfig = new CorsConfiguration();
     corsConfig.setAllowedMethods(
-        ImmutableList.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        java.util.List.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     corsConfig.applyPermitDefaultValues();
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
