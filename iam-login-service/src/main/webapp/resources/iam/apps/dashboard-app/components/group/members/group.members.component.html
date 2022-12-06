@@ -16,24 +16,34 @@
 
 -->
 <div class="box box-solid no-padding no-shadow no-border">
-    <div class="box-body">
-        <div ng-show="!$ctrl.members.length">This group is currently empty</div>
+	<div class="box-body">
+		<div ng-show="!$ctrl.members.length">This group is currently
+			empty</div>
 
-        <div class="row iam-div-row" ng-repeat="member in $ctrl.members | orderBy:'display' ">
-            <div class="iam-detail col-xs-8 col-sm-8">
-                <a ui-sref="user({id: member.value})">{{member.display}}</a>
-            </div>
-            <div class="iam-actions col-xs-4 col-sm-4 text-right">
-                <button class="btn btn-danger btn-xs" ng-click="$ctrl.deleteMember(member)">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div ng-if="$ctrl.totalResults > 0">
-            <ul id="members_pagination" uib-pagination ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage"
-                total-items="$ctrl.totalResults" max-size="3" boundary-link-numbers="true"
-                ng-change="$ctrl.loadMembers()" direction-links="false" rotate="true">
-            </ul>
-        </div>
-    </div>
+		<div class="row iam-div-row"
+			ng-repeat="member in $ctrl.members | orderBy:'display' ">
+			<div ng-if="$root.loggedUser.isGroupManager"
+				style="pointer-events: none;" class="iam-detail col-xs-8 col-sm-8">
+				<a ui-sref="user({id: member.value})">{{member.display}}</a>
+			</div>
+			<div ng-if="$root.loggedUser.isAdmin"
+				class="iam-detail col-xs-8 col-sm-8">
+				<a ui-sref="user({id: member.value})">{{member.display}}</a>
+			</div>
+			<div class="iam-actions col-xs-4 col-sm-4 text-right">
+				<button class="btn btn-danger btn-xs"
+					ng-click="$ctrl.deleteMember(member)">
+					<i class="fa fa-times"></i>
+				</button>
+			</div>
+		</div>
+		<div ng-if="$ctrl.totalResults > 0">
+			<ul id="members_pagination" uib-pagination
+				ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage"
+				total-items="$ctrl.totalResults" max-size="3"
+				boundary-link-numbers="true" ng-change="$ctrl.loadMembers()"
+				direction-links="false" rotate="true">
+			</ul>
+		</div>
+	</div>
 </div>

@@ -16,26 +16,34 @@
 
 -->
 <div class="box box-solid no-padding no-shadow no-border">
-    <!-- Privileged content -->
-    <div class="box-body" ng-show="$ctrl.loaded && $ctrl.privileged">
-        <div ng-if="!$ctrl.managers.length">This group does not have group managers</div>
-        <div class="row iam-tab-row" ng-repeat="manager in $ctrl.managers | orderBy:'name.formatted' ">
-            <div class="iam-detail col-xs-8 col-sm-8">
-                <a ui-sref="user({id: manager.id})">{{manager.name.formatted}}</a>
-            </div>
-            <div class="iam-actions col-xs-4 col-sm-4 text-right">
-                <div class="btn-group">
-                    <button class="btn btn-xs btn-danger" ng-click="$ctrl.removeGroupManager(manager)" ng-show="$ctrl.voAdmin">
-                        <i class="fa fa-times"></i>
-                      </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="box-footer" ng-show="$ctrl.loaded && $ctrl.voAdmin">
-        <button class="btn btn-success" ng-click="$ctrl.addGroupManager()">
-            <i class="fa fa-plus"></i> Assign group manager
-        </button>
-    </div>
-    <!-- End of privileged content -->
+	<!-- Privileged content -->
+	<div class="box-body" ng-show="$ctrl.loaded && $ctrl.privileged">
+		<div ng-if="!$ctrl.managers.length">This group does not have
+			group managers</div>
+		<div class="row iam-tab-row"
+			ng-repeat="manager in $ctrl.managers | orderBy:'name.formatted' ">
+			<div ng-if="$ctrl.groupManager" style="pointer-events: none;"
+				class="iam-detail col-xs-8 col-sm-8">
+				<a ui-sref="user({id: manager.id})">{{manager.name.formatted}}</a>
+			</div>
+			<div ng-if="$ctrl.voAdmin" class="iam-detail col-xs-8 col-sm-8">
+				<a ui-sref="user({id: manager.id})">{{manager.name.formatted}}</a>
+			</div>
+			<div class="iam-actions col-xs-4 col-sm-4 text-right">
+				<div class="btn-group">
+					<button class="btn btn-xs btn-danger"
+						ng-click="$ctrl.removeGroupManager(manager)"
+						ng-show="$ctrl.voAdmin">
+						<i class="fa fa-times"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="box-footer" ng-show="$ctrl.loaded && $ctrl.voAdmin">
+		<button class="btn btn-success" ng-click="$ctrl.addGroupManager()">
+			<i class="fa fa-plus"></i> Assign group manager
+		</button>
+	</div>
+	<!-- End of privileged content -->
 </div>

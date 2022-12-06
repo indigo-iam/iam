@@ -42,6 +42,6 @@
     </div>
     <hr>
     <button class="btn btn-primary" uib-tooltip="Optional groups are
-    returned only on explicit request" ng-click="$ctrl.makeOptional()" ng-if="!$ctrl.isOptionalGroup">Make optional
+    returned only on explicit request" ng-show="$root.loggedUser.isAdmin" ng-click="$ctrl.makeOptional()" ng-if="!$ctrl.isOptionalGroup">Make optional
         group</button>
 </div>
