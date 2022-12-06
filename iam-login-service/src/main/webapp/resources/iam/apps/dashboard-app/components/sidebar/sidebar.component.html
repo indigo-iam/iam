@@ -66,6 +66,14 @@
             </a>
         </li>
 
+        <li>
+            <a id="nav-groups" ui-sref="managedGroups" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isGroupManager">
+                <i class="fa fa-users"></i>
+                <span>My groups</span>
+                <span class="badge pull-right" ng-show="$root.groupsCount>0">{{$root.groupsCount}}</span>
+            </a>
+        </li>
+
         <li ng-show="$root.isRegistrationEnabled && ($root.loggedUser.isAdmin || $root.loggedUser.isGroupManager)">
             <a id="nav-requests" ui-sref="requests" ui-sref-opts="{reload: true}">
                 <i class="fa fa-sign-in"></i>

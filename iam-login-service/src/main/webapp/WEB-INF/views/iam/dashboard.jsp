@@ -174,6 +174,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/subgroups/group.subgroups.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/members/group.members.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/group.managers.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/managers/mygroups/mygroups.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/labels/group.labels.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/groupinfo/groupinfo.component.js"></script>
   

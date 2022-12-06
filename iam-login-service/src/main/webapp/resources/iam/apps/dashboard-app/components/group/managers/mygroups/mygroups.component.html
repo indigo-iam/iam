@@ -1,0 +1,89 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<!-- Content Header (Page header) -->
+<div ng-if="$ctrl.loaded">
+	<section class="content-header" ng-cloak>
+		<h1>
+			<i class="fa fa-user"></i>&nbsp;&nbsp;My groups
+		</h1>
+		<ol class="breadcrumb hidden-xs">
+			<li><a><i class="fa fa-user"></i> My groups</a></li>
+		</ol>
+	</section>
+
+
+	<section class="content" ng-cloak>
+		<!-- Main content -->
+		<div class="row" ng-cloak>
+			<div class="col-xs-12">
+
+				<div class="box box-primary" id="mygroups-list">
+
+					<div class="box-body" ngcloak>
+
+						<div class="table-responsive">
+
+							<table class="table no-margin table-striped" id="groupslist">
+								<thead>
+									<tr>
+										<th class="text-left">Name</th>
+										<th class="text-right">Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr ng-repeat="group in $ctrl.results">
+										<!-- name -->
+										<td class="col-md-6">
+											<div>
+												<a ui-sref="group({id:
+                        group.id})">{{group.name}}</a>
+											</div>
+											<div class="group-description">{{group.description}}</div>
+										</td>
+										<!-- actions -->
+										<td class="text-right">
+											<button ng-if="!group.members"
+												ng-show="$ctrl.isGroupManager()" title="Delete group"
+												id="delete_group_{{group.id}}" class="btn btn-danger btn-xs"
+												ng-click="$ctrl.openDeleteGroupDialog(group)">
+												<i class="fa fa-times"></i>
+											</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+
+							<div>
+								<ul id="groups_pagination_bottom" uib-pagination
+									ng-model="$ctrl.currentPage"
+									items-per-page="$ctrl.itemsPerPage"
+									total-items="$ctrl.totalResults" max-size="3" rotate="true"
+									boundary-link-numbers="true" direction-links="false"
+									ng-change="$ctrl.searchGroups()">
+								</ul>
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+	</section>
+
+</div>
