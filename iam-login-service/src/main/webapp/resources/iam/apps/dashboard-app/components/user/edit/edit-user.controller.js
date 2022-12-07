@@ -163,7 +163,7 @@
         $scope.userUpdateForm.surname.$invalid ||
         ($scope.userUpdateForm.email.$invalid && $scope.userUpdateForm.email.$dirty) ||
         ($scope.userUpdateForm.username.$invalid && $scope.userUpdateForm.username.$dirty) ||
-        $scope.userUpdateForm.picture.$invalid;
+        ($scope.userUpdateForm.picture.$invalid && $scope.userUpdateForm.picture.$dirty);
     }
   }
 })();

@@ -108,14 +108,6 @@
             </a>
         </li>
 
-        <li ng-show="$root.loggedUser.isAdmin">
-            <a id="nav-aup" ui-sref="aup" ui-sref-opts="{reload: true}">
-                <i class="fa fa-file-text-o"></i>
-                <span>AUP</span>
-            </a>
-        </li>
-        
-
         <li>
             <a id="nav-policies" ui-sref="policies" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isAdmin">
                 <i class="fa fa-balance-scale"></i>
@@ -124,8 +116,16 @@
             </a>
         </li>
 
+        <li>
+            <a id="nav-scopes" ui-sref="scopes" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isAdmin">
+                <i class="fa fa-id-badge"></i>
+                <span>Scopes</span>
+                <span class="badge pull-right" ng-show="$root.scopesCount>0">{{$root.scopesCount}}</span>
+            </a>
+        </li>
 
         <li class="header">Client management</li>
+
         <li>
             <a href="/">
                 <i class="fa fa-dashboard"></i>

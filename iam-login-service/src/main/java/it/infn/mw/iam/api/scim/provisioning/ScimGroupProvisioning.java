@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -52,19 +53,19 @@ import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 @Service
 @Transactional
-public class ScimGroupProvisioning
-    implements ScimProvisioning<ScimGroup, List<ScimMemberRef>> {
+public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<ScimMemberRef>> {
 
   private static final int GROUP_NAME_MAX_LENGTH = 50;
   private static final int GROUP_FULLNAME_MAX_LENGTH = 512;
 
   private final IamGroupService groupService;
   private final IamAccountService accountService;
-
   private final GroupConverter converter;
+  private final GroupRequestsService groupRequestsService;
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
@@ -72,12 +73,14 @@ public class ScimGroupProvisioning
 
   @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
-      GroupConverter converter, ScimResourceLocationProvider locationProvider, Clock clock) {
+      GroupRequestsService groupRequestsService, GroupConverter converter,
+      ScimResourceLocationProvider locationProvider, Clock clock) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
+    this.groupRequestsService = groupRequestsService;
     this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService);
     this.locationProvider = locationProvider;
   }
@@ -159,9 +162,14 @@ public class ScimGroupProvisioning
     patchOperationSanityChecks(op);
     groupUpdaterFactory.getUpdatersForPatchOperation(group, op).forEach(Updater::update);
 
+    for (IamGroupRequest r : group.getGroupRequests()) {
+      for (ScimMemberRef m : op.getValue()) {
+        if (m.getValue().equals(r.getAccount().getUuid())) {
+          groupRequestsService.deleteGroupRequest(r.getUuid());
+        }
+      }
+    }
   }
-
-
 
   private void fullNameSanityChecks(String displayName) {
     if (displayName.length() > GROUP_FULLNAME_MAX_LENGTH) {
@@ -258,6 +266,7 @@ public class ScimGroupProvisioning
     IamGroup iamGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
 
     operations.forEach(op -> executePatchOperation(iamGroup, op));
+
   }
 
 
@@ -286,8 +295,7 @@ public class ScimGroupProvisioning
     return results.build();
   }
 
-  public ScimListResponse<ScimMemberRef> listGroupMembers(String id,
-      ScimPageRequest pageRequest) {
+  public ScimListResponse<ScimMemberRef> listGroupMembers(String id, ScimPageRequest pageRequest) {
 
     IamGroup iamGroup = groupService.findByUuid(id).orElseThrow(noGroupMappedToId(id));
 

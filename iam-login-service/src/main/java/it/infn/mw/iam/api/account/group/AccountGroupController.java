@@ -33,22 +33,26 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.group.error.NoSuchGroupError;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 @RestController
 public class AccountGroupController {
 
   private final IamAccountService accountService;
   private final IamGroupService groupService;
+  private final GroupRequestsService groupRequestsService;
 
   @Autowired
-  public AccountGroupController(IamAccountService accountService, IamGroupService groupService) {
+  public AccountGroupController(IamAccountService accountService, IamGroupService groupService, GroupRequestsService groupRequestsService) {
     this.accountService = accountService;
     this.groupService = groupService;
+    this.groupRequestsService = groupRequestsService;
   }
 
   @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = POST)
@@ -61,6 +65,12 @@ public class AccountGroupController {
         accountService.findByUuid(accountUuid).orElseThrow(noSuchAccount(accountUuid));
 
     accountService.addToGroup(account, group);
+
+    for (IamGroupRequest r : group.getGroupRequests()) {
+      if (accountUuid.equals(r.getAccount().getUuid())) {
+        groupRequestsService.deleteGroupRequest(r.getUuid());
+      }
+    }
   }
 
   @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = DELETE)

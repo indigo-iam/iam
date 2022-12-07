@@ -118,9 +118,13 @@ public class MvcConfig implements WebMvcConfigurer {
   @Override
   public void addViewControllers(final ViewControllerRegistry registry) {
     registry.addViewController("/login").setViewName("login");
+    /* Added within IAM v1.8.0 for a backward compatibility. To be deleted on next releases */
     registry.addViewController("/health").setViewName("forward:/actuator/health");
+    registry.addViewController("/health/").setViewName("forward:/actuator/health");
     registry.addViewController("/health/external").setViewName("forward:/actuator/health/externalConnectivity");
+    registry.addViewController("/health/external/").setViewName("forward:/actuator/health/externalConnectivity");
     registry.addViewController("/health/mail").setViewName("forward:/actuator/health/mail");
+    registry.addViewController("/health/mail/").setViewName("forward:/actuator/health/mail");
   }
 
   @Override

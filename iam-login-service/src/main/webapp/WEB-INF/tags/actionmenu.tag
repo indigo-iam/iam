@@ -7,7 +7,7 @@
 	<li><a href="dashboard#!/clients" data-toggle="collapse" data-target=".nav-collapse"><spring:message code="sidebar.administrative.manage_clients"/></a></li>
 	<li><a href="manage/#admin/whitelists" data-toggle="collapse" data-target=".nav-collapse"><spring:message code="sidebar.administrative.whitelisted_clients"/></a></li>
 	<li><a href="manage/#admin/blacklist" data-toggle="collapse" data-target=".nav-collapse"><spring:message code="sidebar.administrative.blacklisted_clients"/></a></li>
-	<li><a href="manage/#admin/scope" data-toggle="collapse" data-target=".nav-collapse"><spring:message code="sidebar.administrative.system_scopes"/></a></li>
+	<li><a href="dashboard#!/scopes" data-toggle="collapse" data-target=".nav-collapse"><spring:message code="sidebar.administrative.system_scopes"/></a></li>
 	<li><a href="/dashboard" data-toggle="collapse" data-target=".nav-collapse">IAM Dashboard</a></li>
 	<li class="divider"></li>
 </security:authorize>

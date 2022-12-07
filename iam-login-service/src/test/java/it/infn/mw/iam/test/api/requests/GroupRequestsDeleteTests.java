@@ -15,10 +15,14 @@
  */
 package it.infn.mw.iam.test.api.requests;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +35,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -41,9 +50,24 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
 
   private final static String DELETE_URL = "/iam/group_requests/{uuid}";
+  private static final String EXPECTED_USER_NOT_FOUND = "expected user not found";
+  private static final String EXPECTED_GROUP_NOT_FOUND = "expected group not found";
+
+  @Autowired
+  private IamAccountRepository accountRepo;
+
+  @Autowired
+  private IamGroupRepository groupRepo;
+
+  @Autowired
+  private IamGroupRequestRepository groupRequestRepo;
 
   @Autowired
   private MockMvc mvc;
+
+  private Supplier<AssertionError> assertionError(String message) {
+    return () -> new AssertionError(message);
+  }
 
   @Test
   @WithMockUser(roles = {"ADMIN"})
@@ -105,7 +129,7 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void deleteGroupRequestAsAnonymous() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
@@ -129,13 +153,46 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void deletePendingGroupRequestAsUserWithBothRoles() throws Exception {
-    
+
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
     // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void deleteGRIfAccountAddedToGroup() throws Exception {
+
+    savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
+
+    IamAccount account = accountRepo.findByUsername(TEST_100_USERNAME)
+      .orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    IamGroup group = groupRepo.findByName(TEST_001_GROUPNAME)
+      .orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
+
+    mvc.perform(post("/iam/account/" + account.getUuid() + "/groups/" + group.getUuid()))
+      .andExpect(status().isCreated());
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_100_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(true));
+
+    assertThat(
+        groupRequestRepo.findByUsernameAndGroup(TEST_101_USERNAME, TEST_001_GROUPNAME).isEmpty(),
+        is(false));
   }
 
 }

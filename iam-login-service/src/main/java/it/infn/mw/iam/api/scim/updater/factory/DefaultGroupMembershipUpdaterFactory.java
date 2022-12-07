@@ -37,6 +37,7 @@ public class DefaultGroupMembershipUpdaterFactory
 
   final IamAccountService accountService;
 
+
   public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService) {
 
     this.accountService = accountService;
@@ -70,6 +71,7 @@ public class DefaultGroupMembershipUpdaterFactory
     for (IamAccount memberToAdd : membersToAdd) {
       GroupMembershipManagement mgmt = new GroupMembershipManagement(memberToAdd, accountService);
       updaters.add(mgmt.addToGroup(group));
+
     }
   }
 

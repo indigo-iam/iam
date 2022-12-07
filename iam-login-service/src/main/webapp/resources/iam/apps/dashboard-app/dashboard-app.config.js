@@ -100,7 +100,7 @@ angular
                             }
                         }
                     })
-				.state(
+				        .state(
                     'add_policies', {
                         url: '/scope_policies/add_policies',
                         views: {
@@ -109,7 +109,7 @@ angular
                             }
                         }
                     })
-				.state(
+				        .state(
                     'edit_policies', {
                         url: '/scope_policies/edit_policies/:id',
                         views: {
@@ -118,6 +118,18 @@ angular
                             }
                         }
                     })                
+                .state(
+                    'scopes', {
+                        url: '/scopes',
+                        resolve: {
+                            scopes: loadScopes
+                        },
+                        views: {
+                            content: {
+                                component: 'scopes'
+                            }
+                        }
+                    })
                 .state(
                     'requests', {
                     url: '/requests',
@@ -272,12 +284,16 @@ angular
                 return PoliciesService.getAllPolicies();
             }
 
-			function addPolicy(PoliciesService) {
+			      function addPolicy(PoliciesService) {
                 return PoliciesService.getAllPolicies();
             }
 
-			function editPolicy(PoliciesService) {
+			      function editPolicy(PoliciesService) {
                 return PoliciesService.getAllPolicies();
+            }
+                
+            function loadScopes(ScopesService) {
+                return ScopesService.getAllScopes();
             }
 
             function loadGroupLabels(LabelsService, $stateParams) {

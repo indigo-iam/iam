@@ -1,7 +1,4 @@
 #!/usr/bin/env groovy
-@Library('sd')_
-
-def kubeLabel = getKubeLabel()
 
 def maybeArchiveJUnitReports(){
   def hasJunitReports = fileExists 'iam-login-service/target/surefire-reports'
@@ -21,7 +18,7 @@ def maybeArchiveJUnitReportsWithJacoco(){
 
 pipeline {
 
-  agent any
+  agent { label 'java17' }
 
   options {
     ansiColor('xterm')
@@ -52,15 +49,6 @@ pipeline {
   stages {
 
     stage('build, test, package'){
-      agent {
-        kubernetes {
-          label "${kubeLabel}"
-          cloud 'Kube mwdevel'
-          defaultContainer 'runner'
-          inheritFrom 'iam-template-java17'
-        }
-      }
-
       stages {
 
         stage('checkout') {

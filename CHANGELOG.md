@@ -1,13 +1,54 @@
 # Changelog
 
+## 1.8.0 (2022-09-08)
+
+This release introduces several new supported features and
+fixes several bugs for the IAM login service.
+
+### Added
+
+* Spring boot migration to version 2.6.6
+* Upgrade flyway to version 7.15.0
+* New clients management page for administrators on IAM dashboard
+* New clients registration page for users on IAM dashboard
+* Support for JWT-based client-authN
+* New Cache-Control to `/jwk` endpoint
+* Support for AARC G021 guideline
+* Support for AARC G025 guideline
+* Persistence layer migrations for MFA support
+* Group labels in user home page
+* New consent page
+
+### Fixed
+
+* Fix group names according to AARC G002
+* Fix update button bug
+* Fix tokens page failure following a username update
+* Fix tokens page failure due to a client deletion
+* Fix pagination in tokens component in IAM dashboard
+* Fix scope caching on client update
+* Fix validation for user's image URL
+* Fix support for JWK configuration
+* Fix missing `wlcg.groups` in userinfo response
+
+### Changed
+
+* `IAM_USE_FORWARDED_HEADERS` configuration variable has been deprecated due to the Spring update and replaced by `IAM_FORWARD_HEADERS_STRATEGY`. It can be set to ```native``` or ```none```. The same for the Test Client application, where `IAM_CLIENT_USE_FORWARDED_HEADERS` becomes `IAM_CLIENT_FORWARD_HEADERS_STRATEGY`
+* The `/health` endpoint has been moved to `/actuator/health`. It is still duplicated in the former endpoint, but well be removed in future releases
+
+### Deprecated
+
+* Manage Clients MitreID page for administartors
+* Self-service Client Registration MitreID page for users
+
 ## 1.7.2 (2021-12-03)
 
 This release provides a single dependency change for the IAM login service
 application.
 
-### Added
+### Added
 
-Upgrade flyway to version 4.2.0. This is needed to enable a smooth transition to the flyway version that will come with IAM v1.8.0 (which moves to Spring boot 2.5.x) (#443)
+* Upgrade flyway to version 4.2.0. This is needed to enable a smooth transition to the flyway version that will come with IAM v1.8.0 (which moves to Spring boot 2.5.x) (#443)
 
 ## 1.7.1 (2021-09-13)
 

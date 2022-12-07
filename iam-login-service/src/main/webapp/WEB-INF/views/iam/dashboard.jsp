@@ -115,6 +115,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/system-scope.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/openid-configuration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scopes.service.js"></script>
   
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
@@ -182,7 +183,10 @@
 <%--   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/policies/add_policies.component.js"></script> --%>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group-membership/adder/group-membership.adder.component.js"></script>
-  
+
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/scopes/scopes.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/scopes/scopeslist/scopes.scopeslist.component.js"></script>
+
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/clients.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/clientslist/clientslist.component.js"></script>
   
@@ -201,5 +205,5 @@
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/inputlist/inputlist.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/finduserdialog/finduserdialog.component.js"></script>
-  
+
 </body>
