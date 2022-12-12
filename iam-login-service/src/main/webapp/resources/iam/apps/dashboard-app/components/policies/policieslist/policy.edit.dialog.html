@@ -63,26 +63,24 @@
       </div>
 
     <div class="control-group" id="rule">
-      <div class="controls">
-        <label class="checkboxDefaultPolicy col-sm-2"></span>Rule</span>
+      <div class="control">
+        <label class="checkboxDefaultPolicy"></span>Rule</span>&nbsp;&nbsp;
           <input type="radio" ng-model="$ctrl.policy.rule" value="PERMIT" name="rule_value" checked="checked"><label> PERMIT</label>
           &nbsp;&nbsp;
           <input type="radio" ng-model="$ctrl.policy.rule" value="DENY" name="rule_value"><label> DENY</label>
         </label>
-        <small>Rule help description</small>
       </div>
     </div>
 
     <div class="control-group" id="matchingPolicy">
-      <div class="controls">
-        <label class="checkboxRestricted col-sm-2"></span>Matching Policy</span>
+      <div class="control">
+        <label class="checkboxRestricted"></span>Matching Policy</span>&nbsp;&nbsp;
           <input type="radio" ng-model="$ctrl.policy.matchingPolicy" value="EQ" name="matchingPolicy_value" checked="checked"><label> EQ</label>
           &nbsp;&nbsp;
           <input type="radio" ng-model="$ctrl.policy.matchingPolicy" alue="REGEXP" name="matchingPolicy_value"><label> REGEXP</label>
           &nbsp;&nbsp;
           <input type="radio" ng-model="$ctrl.policy.matchingPolicy" value="PATH" name="matchingPolicy_value"><label> PATH</label>
         </label>
-        <small>Matching policies help description</small>
       </div>
     </div>
 
