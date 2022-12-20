@@ -92,7 +92,10 @@ angular
                     'policies', {
                         url: '/scope_policies',
                         resolve: {
-                            policies: loadPolicies
+                            policies: loadPolicies,
+                            scopes: loadScopes,
+                            groups: loadGroups,
+                            account: loadUsers
                         },
                         views: {
                             content: {
@@ -100,24 +103,6 @@ angular
                             }
                         }
                     })
-				        .state(
-                    'add_policies', {
-                        url: '/scope_policies/add_policies',
-                        views: {
-                            content: {
-                                component: 'add_policies'
-                            }
-                        }
-                    })
-				        .state(
-                    'edit_policies', {
-                        url: '/scope_policies/edit_policies/:id',
-                        views: {
-                            content: {
-                                component: 'edit_policies'
-                            }
-                        }
-                    })                
                 .state(
                     'scopes', {
                         url: '/scopes',
@@ -239,8 +224,17 @@ angular
                 return UserService.getUser($stateParams.id);
             }
 
+            function loadUsers(UsersService, $stateParams) {
+                return UsersService.getUsers($stateParams.id, $stateParams.count);
+            }
+
             function loadGroup(GroupService, $stateParams) {
                 return GroupService.getGroup($stateParams.id);
+
+            }
+
+            function loadGroups(GroupsService) {
+                return GroupsService.getAllGroups();
 
             }
 
@@ -281,14 +275,6 @@ angular
             }
 
             function loadPolicies(PoliciesService) {
-                return PoliciesService.getAllPolicies();
-            }
-
-			      function addPolicy(PoliciesService) {
-                return PoliciesService.getAllPolicies();
-            }
-
-			      function editPolicy(PoliciesService) {
                 return PoliciesService.getAllPolicies();
             }
                 

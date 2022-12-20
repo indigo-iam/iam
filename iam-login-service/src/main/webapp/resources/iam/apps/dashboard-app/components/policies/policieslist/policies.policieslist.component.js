@@ -60,7 +60,7 @@
             rule: '',
             matchingPolicy: '',
             account: null,
-            group: null,
+            groups: self.groups,
             scopes: '',
           };
           if ($scope.policyCreationForm) {
@@ -74,14 +74,14 @@
           console.log("Policy info to add ", self.policy);
           self.enabled = false;
 
-          var newPolicy = {}
+          var newPolicy = {};
 
           newPolicy.id = self.policy.id;
           newPolicy.description = self.policy.description;
           newPolicy.rule = self.policy.rule;
           newPolicy.matchingPolicy = self.policy.matchingPolicy;
           newPolicy.account = self.policy.account;
-          newPolicy.group = self.policy.group;
+          newPolicy.groups = self.policy.groups;
           newPolicy.scopes = self.policy.scopes.split(',');
 
           console.info("Adding policy ... ", newPolicy);
@@ -105,96 +105,24 @@
         }
       }
 
-/*    function AddPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, toaster, scimFactory, PoliciesService) {
-        var self = this;
-		var USERS_CHUNCK_SIZE = 100;
-    
-        self.$onInit = function () {
-          self.enabled = true;
-          self.reset();
-        }
-    
-        self.reset = function () {
-          self.policy = {
-            id: '',
-            description: null,
-            rule: '',
-            matchingPolicy: '',
-            account: null,
-            group: null,
-            scopes: [],
-          };
-          if ($scope.policyCreationForm) {
-            $scope.policyCreationForm.$setPristine();
-          }
-          self.enabled = true;
-        }
-
-        self.submit = function () {
-    
-          console.log("Policy info to add ", self.policy);
-          self.enabled = false;
-
-          var newPolicy = {}
-
-          newPolicy.id = self.policy.id;
-          newPolicy.description = self.policy.description;
-          newPolicy.rule = self.policy.rule;
-          newPolicy.matchingPolicy = self.policy.matchingPolicy;
-          newPolicy.account = self.policy.account;
-          newPolicy.group = self.policy.group;
-          newPolicy.scopes = self.policy.scopes.split(',');
-
-          console.info("Adding policy ... ", newPolicy);
-
-          PoliciesService.addPolicy(newPolicy).then(
-            function(response) {
-                console.info("Policy Created", response.data);
-                $uibModalInstance.close(response.data);
-                self.enabled = true;
-              },
-            function (error) {
-              console.error('Error creating policy', error);
-              self.error = error;
-              self.enabled = true;
-              toaster.pop({ type: 'error', body: error.data.error_description});
-            });
-        }
-    
-        self.cancel = function () {
-          $uibModalInstance.dismiss("cancel");
-        }
-
-		self.loadUsers = function() {
-        return scimFactory.getAllUsers(USERS_CHUNCK_SIZE)
-            .then(function(data) {
-                console.log('all users received');
-                self.users = data;
-            },
-            function(error) {
-                console.log('error while loading users', error);
-                toaster.pop({ type: 'error', body: error });
-            });
-    	}
-
-      }*/
-
       function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
+
         var self = this;
 
-        self.policy = policy
+        self.policy = policy;
+
         self.$onInit = function () {
           self.enabled = true;
         }
 
         self.updatePolicy = function (policy) {
           
-          self.policy = policy
+          self.policy = policy;
     
           console.log("Policy info to add ", self.policy);
           self.enabled = false;
 
-          var editedPolicy = {}
+          var editedPolicy = {};
           
           editedPolicy.id = self.policy.id;
           editedPolicy.description = self.policy.description;
@@ -352,7 +280,7 @@
           body: 'Policy ' + policy.id + ' successfully added'
         });
         $rootScope.policiesCount++;
-		self.loadData(self.curPage);
+		    self.loadData(self.curPage);
       };
   
       self.openAddPolicyDialog = function () {
