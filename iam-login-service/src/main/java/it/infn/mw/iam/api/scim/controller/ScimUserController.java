@@ -98,7 +98,6 @@ public class ScimUserController extends ScimControllerSupport{
     return wrapper;
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('ADMIN')")
   @RequestMapping(value = "/{id}", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {

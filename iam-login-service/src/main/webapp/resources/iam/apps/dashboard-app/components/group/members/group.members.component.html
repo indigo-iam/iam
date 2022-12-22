@@ -22,11 +22,7 @@
 
 		<div class="row iam-div-row"
 			ng-repeat="member in $ctrl.members | orderBy:'display' ">
-			<div ng-if="$root.loggedUser.isGroupManager"
-				style="pointer-events: none;" class="iam-detail col-xs-8 col-sm-8">
-				<a ui-sref="user({id: member.value})">{{member.display}}</a>
-			</div>
-			<div ng-if="$root.loggedUser.isAdmin"
+			<div ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isGroupManager"
 				class="iam-detail col-xs-8 col-sm-8">
 				<a ui-sref="user({id: member.value})">{{member.display}}</a>
 			</div>

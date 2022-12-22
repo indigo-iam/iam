@@ -72,7 +72,6 @@ public class AccountAttributesController {
   }
 
   @RequestMapping(value = "/iam/account/{id}/attributes", method=RequestMethod.GET)
-  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id)")
   public List<AttributeDTO> getAttributes(@PathVariable String id) {
 
     IamAccount account =

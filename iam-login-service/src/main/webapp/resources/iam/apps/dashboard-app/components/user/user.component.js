@@ -34,6 +34,10 @@
             return Utils.isAdmin();
         };
 
+        self.isGroupManager = function () {
+            return Utils.isGroupManager();
+        };
+
         self.userIsVoAdmin = function () {
             return Utils.userIsVoAdmin(self.user);
         };

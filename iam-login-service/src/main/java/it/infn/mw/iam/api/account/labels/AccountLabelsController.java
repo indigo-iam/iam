@@ -49,7 +49,6 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping(AccountLabelsController.RESOURCE)
 public class AccountLabelsController {
 
@@ -76,7 +75,6 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = GET)
-  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id)")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));
@@ -89,6 +87,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = PUT)
+  @PreAuthorize("hasRole('ADMIN')")
   public void setLabel(@PathVariable String id, @RequestBody @Validated LabelDTO label,
       BindingResult validationResult) {
     handleValidationError(validationResult);
@@ -98,6 +97,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = DELETE)
+  @PreAuthorize("hasRole('ADMIN')")
   @ResponseStatus(NO_CONTENT)
   public void deleteLabel(@PathVariable String id, @Validated LabelDTO label,
       BindingResult validationResult) {

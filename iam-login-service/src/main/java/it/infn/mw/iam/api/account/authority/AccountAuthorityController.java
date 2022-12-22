@@ -75,7 +75,6 @@ public class AccountAuthorityController {
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountByName(authn.getName())));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.GET)
   @ResponseBody
   public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable("id") String id) {
