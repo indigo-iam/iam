@@ -97,6 +97,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.GET)
+  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#accountId) or #iam.isAGroupManager()")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
