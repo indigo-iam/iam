@@ -49,7 +49,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
@@ -63,6 +62,7 @@ import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 @Configuration

@@ -44,10 +44,10 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 public class TokenExchangeTokenGranter extends AbstractTokenGranter {

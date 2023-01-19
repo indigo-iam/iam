@@ -55,7 +55,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -75,6 +74,7 @@ import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @Configuration
 public class OidcConfiguration {

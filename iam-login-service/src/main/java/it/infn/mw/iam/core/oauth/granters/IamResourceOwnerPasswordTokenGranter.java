@@ -30,8 +30,8 @@ import org.springframework.security.oauth2.provider.password.ResourceOwnerPasswo
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordTokenGranter {

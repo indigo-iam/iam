@@ -15,15 +15,10 @@
  */
 package it.infn.mw.iam.service.aup;
 
-import org.springframework.stereotype.Component;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
-@Component
-public class SystemTimeProvider implements TimeProvider {
+@FunctionalInterface
+public interface AUPSignatureCheckService {
 
-  @Override
-  public long currentTimeMillis() {
-
-    return System.currentTimeMillis();
-  }
-
+  boolean needsAupSignature(IamAccount account);
 }

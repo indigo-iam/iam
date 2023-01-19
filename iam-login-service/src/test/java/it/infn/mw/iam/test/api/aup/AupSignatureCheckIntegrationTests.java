@@ -38,12 +38,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.aup.DefaultAupSignatureCheckService;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;

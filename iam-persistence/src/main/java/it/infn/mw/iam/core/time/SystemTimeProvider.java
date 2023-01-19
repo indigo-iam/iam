@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.aup;
+package it.infn.mw.iam.core.time;
 
-import it.infn.mw.iam.persistence.model.IamAccount;
+import org.springframework.stereotype.Component;
 
-@FunctionalInterface
-public interface AUPSignatureCheckService {
+/**
+ * 
+ * A {@link TimeProvider} implementation that leverages {@link System#currentTimeMillis()} to return
+ * the time.
+ *
+ */
+@Component
+public class SystemTimeProvider implements TimeProvider {
 
-  boolean needsAupSignature(IamAccount account);
+  @Override
+  public long currentTimeMillis() {
+
+    return System.currentTimeMillis();
+  }
+
 }
