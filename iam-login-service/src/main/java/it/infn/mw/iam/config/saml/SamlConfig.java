@@ -129,7 +129,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
@@ -163,6 +162,7 @@ import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.time.SystemTimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @Configuration
 @Order(value = Ordered.LOWEST_PRECEDENCE)

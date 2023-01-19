@@ -26,13 +26,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 
 @Service
-public class DefaultAupSignatureCheckService {
+public class DefaultAupSignatureCheckService implements AUPSignatureCheckService {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultAupSignatureCheckService.class);
 
@@ -48,7 +49,7 @@ public class DefaultAupSignatureCheckService {
     this.timeProvider = timeProvider;
   }
 
-
+  @Override
   public boolean needsAupSignature(IamAccount account) {
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
