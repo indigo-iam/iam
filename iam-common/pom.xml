@@ -33,4 +33,11 @@
     </pluginManagement>
   </build>
 
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>iam-persistence</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 </project>
