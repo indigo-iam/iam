@@ -63,7 +63,7 @@
     <resource.delimiter>@</resource.delimiter>
 
     <jvm.test.args>-Xmx2500m</jvm.test.args>
-    <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*</sonar.coverage.exclusions>
+    <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*,iam-common/**</sonar.coverage.exclusions>
   </properties>
 
   <modules>
