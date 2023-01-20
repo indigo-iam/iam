@@ -46,7 +46,7 @@
                     console.error(response);
                     toaster.pop({
                         type: 'warning',
-                        body: 'No sufficient privileges!'
+                        body: 'Insufficient privileges'
                     });
                 } else {
                     console.error(response);
