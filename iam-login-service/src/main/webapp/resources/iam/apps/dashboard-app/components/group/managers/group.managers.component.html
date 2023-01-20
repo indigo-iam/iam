@@ -22,7 +22,7 @@
 			group managers</div>
 		<div class="row iam-tab-row"
 			ng-repeat="manager in $ctrl.managers | orderBy:'name.formatted' ">
-			<div ng-if="$ctrl.groupManager" style="pointer-events: none;"
+			<div ng-if="$ctrl.groupManager"
 				class="iam-detail col-xs-8 col-sm-8">
 				<a ui-sref="user({id: manager.id})">{{manager.name.formatted}}</a>
 			</div>

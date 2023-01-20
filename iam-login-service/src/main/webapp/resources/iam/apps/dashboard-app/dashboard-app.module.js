@@ -41,6 +41,13 @@
                         type: 'error',
                         body: response.statusText
                     });
+                }
+                else if(response.detail.data.error == 'insufficient_scope' || response.detail.data.error == 'access_denied') {
+                    console.error(response);
+                    toaster.pop({
+                        type: 'warning',
+                        body: 'No sufficient privileges!'
+                    });
                 } else {
                     console.error(response);
                     toaster.pop({
