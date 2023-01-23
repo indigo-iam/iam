@@ -84,7 +84,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   protected static final Set<String> EDUPERSON_ASSURANCE_SCOPE =
       Sets.newHashSet("openid", "profile", "eduperson_assurance");
   protected static final Set<String> EDUPERSON_SCOPES = Sets.newHashSet("openid", "profile",
-      "eduperson_scoped_affiliation", "eduperson_scoped_affiliation", "eduperson_assurance");
+      "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
 
 
   @Autowired
@@ -210,6 +210,34 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")))
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
+    // @formatter:on
+
+  }
+
+  @Test
+  public void testAarcProfileIntrospectWithOldScope() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
+        "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
+    JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
+
+    // @formatter:off
+    mvc.perform(post("/introspect")
+        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .param("token", token.getParsedString()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
