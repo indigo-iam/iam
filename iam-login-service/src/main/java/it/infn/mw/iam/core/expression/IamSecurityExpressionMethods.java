@@ -117,4 +117,12 @@ public class IamSecurityExpressionMethods {
     } else
       return false;
   }
+
+  public boolean isRequestWithoutToken() {
+
+    if (!(authentication instanceof OAuth2Authentication)) {
+      return true;
+    }
+    return false;
+  }
 }

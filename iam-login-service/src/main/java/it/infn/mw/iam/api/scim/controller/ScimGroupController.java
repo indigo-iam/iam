@@ -81,7 +81,7 @@ public class ScimGroupController extends ScimControllerSupport {
     return groupProvisioningService.getById(id);
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('ADMIN')")
+  @PreAuthorize("#oauth2.hasScope('scim:read') or (#iam.isRequestWithoutToken and hasRole('ADMIN'))")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listGroups(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
