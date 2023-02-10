@@ -120,9 +120,6 @@ public class IamSecurityExpressionMethods {
 
   public boolean isRequestWithoutToken() {
 
-    if (!(authentication instanceof OAuth2Authentication)) {
-      return true;
-    }
-    return false;
+    return !(authentication instanceof OAuth2Authentication);
   }
 }
