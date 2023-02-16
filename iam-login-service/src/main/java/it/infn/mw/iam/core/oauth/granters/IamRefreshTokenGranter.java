@@ -55,7 +55,7 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
     Optional<IamAccount> user = accountUtils
       .getAuthenticatedUserAccount(refreshToken.getAuthenticationHolder().getUserAuth());
 
-    if (!user.get().isActive()) {
+    if (user.isPresent() && !user.get().isActive()) {
       throw new DisabledException(format("User %s is not active.", user.get().getUsername()));
     }
 
