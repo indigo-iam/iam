@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -53,6 +54,10 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
     Optional<IamAccount> user = accountUtils
       .getAuthenticatedUserAccount(refreshToken.getAuthenticationHolder().getUserAuth());
+
+    if (!user.get().isActive()) {
+      throw new DisabledException(format("User %s is not active.", user.get().getUsername()));
+    }
 
     if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
       throw new InvalidGrantException(

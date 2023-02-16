@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -53,6 +54,9 @@ public class RefreshTokenGranterTests {
 
   @Autowired
   private IamAupRepository aupRepo;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
 
   @Autowired
   private MockMvc mvc;
@@ -110,6 +114,44 @@ public class RefreshTokenGranterTests {
         .param("grant_type", "refresh_token")
         .param("refresh_token", refreshToken))
       .andExpect(status().isOk());
+    // @formatter:on
+
+  }
+
+  @Test
+  public void testRefreshFlowNotAllowedIfUserIsSuspended() throws Exception {
+
+    String clientId = "password-grant";
+    String clientSecret = "secret";
+
+    // @formatter:off
+    String response = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "password")
+        .param("username", USERNAME)
+        .param("password", PASSWORD)
+        .param("scope", SCOPE))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+
+    DefaultOAuth2AccessToken tokenResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    String refreshToken = tokenResponse.getRefreshToken().toString();
+
+    accountRepo.findByUsername("test").get().setActive(false);
+
+    // @formatter:off
+    mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "refresh_token")
+        .param("refresh_token", refreshToken))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error").value("unauthorized"))
+      .andExpect(jsonPath("$.error_description").value("User test is not active."));
     // @formatter:on
 
   }
