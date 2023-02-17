@@ -154,6 +154,7 @@ public class RefreshTokenGranterTests {
       .andExpect(jsonPath("$.error_description").value("User test is not active."));
     // @formatter:on
 
+    accountRepo.findByUsername("test").get().setActive(true);
   }
 
 }
