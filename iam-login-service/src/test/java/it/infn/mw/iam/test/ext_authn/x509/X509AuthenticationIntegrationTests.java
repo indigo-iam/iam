@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.fail;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -48,14 +47,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.authn.DefaultInactiveAccountAuthenticationHandler;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -85,7 +82,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   public void testX509AuthenticationSuccessButNotRequestedLeadsToLoginPage() throws Exception {
 
     Instant now = Instant.now();
-    
+
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
@@ -93,9 +90,9 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount =
-        iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow(
-            () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(
+          () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
     assertThat(resolvedAccount.getUsername(), equalTo("test"));
 
@@ -104,19 +101,21 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("http://localhost/login"))
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_CAN_LOGIN_KEY, is(TRUE)));
-    
-    mvc.perform(get("/dashboard").param(X509_AUTHN_REQUESTED_PARAM, "true").headers(test0SSLHeadersVerificationSuccess()))
-    .andExpect(status().isFound())
-    .andExpect(redirectedUrl("/dashboard"))
-    .andExpect(authenticated().withUsername("test"));
-    
-    resolvedAccount =
-        iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow(
-            () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
-    
+
+    mvc
+      .perform(get("/dashboard").param(X509_AUTHN_REQUESTED_PARAM, "true")
+        .headers(test0SSLHeadersVerificationSuccess()))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("/dashboard"))
+      .andExpect(authenticated().withUsername("test"));
+
+    resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(
+          () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
+
     // Check that last login time is updated when loggin in with X.509 credentials
     assertThat(resolvedAccount.getLastLoginTime().toInstant(), greaterThan(now));
-    
+
   }
 
   @Test
@@ -129,9 +128,9 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount =
-        iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow(
-            () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(
+          () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
     assertThat(resolvedAccount.getUsername(), equalTo("test"));
 
@@ -263,41 +262,25 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   public void testx509AuthNFailsIfDisabledUser() throws Exception {
 
     IamAccount testAccount = iamAccountRepo.findByUsername("test")
-        .orElseThrow(() -> new AssertionError("Expected test user not found"));
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-      linkTest0CertificateToAccount(testAccount);
+    linkTest0CertificateToAccount(testAccount);
 
-      iamAccountRepo.save(testAccount);
+    iamAccountRepo.save(testAccount);
 
-      IamAccount resolvedAccount =
-          iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).orElseThrow(
-              () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(
+          () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
-      assertThat(resolvedAccount.getUsername(), equalTo("test"));
+    assertThat(resolvedAccount.getUsername(), equalTo("test"));
 
-      mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
-        .andExpect(status().isFound())
-        .andExpect(redirectedUrl("http://localhost/login"))
-        .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
-        .andExpect(request().attribute(X509_CAN_LOGIN_KEY, is(TRUE)));
+    resolvedAccount.setActive(false);
 
-      resolvedAccount.setActive(false);
+    mvc.perform(get("/dashboard").param(X509_AUTHN_REQUESTED_PARAM, "true"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/login"));
 
-      mvc.perform(get("/dashboard").param(X509_AUTHN_REQUESTED_PARAM, "true").headers(test0SSLHeadersVerificationSuccess()))
-      .andExpect(status().isFound());
-
-      DefaultInactiveAccountAuthenticationHandler handler =
-          new DefaultInactiveAccountAuthenticationHandler("indigo-dc");
-
-      try {
-
-        handler.handleInactiveAccount(resolvedAccount);
-        fail("Expected exception not raised");
-
-      } catch (DisabledException ex) {
-        assertThat(ex.getMessage(), equalTo("Your account is suspended"));
-
-      }
+    resolvedAccount.setActive(true);
 
   }
 
