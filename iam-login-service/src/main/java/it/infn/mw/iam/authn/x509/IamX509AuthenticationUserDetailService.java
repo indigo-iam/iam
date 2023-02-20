@@ -47,15 +47,18 @@ public class IamX509AuthenticationUserDetailService
   }
 
   protected UserDetails buildUserFromIamAccount(IamAccount account) {
+
+    inactiveAccountHandler.handleInactiveAccount(account);
+
     return AuthenticationUtils.userFromIamAccount(account);
   }
 
   @Override
   public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token)
       throws UsernameNotFoundException {
-    
+
     String principal = (String) token.getPrincipal();
-    
+
     LOG.debug("Loading IAM account for X.509 principal '{}'", principal);
 
     IamAccount account = accountRepository.findByCertificateSubject(principal).orElseThrow(() -> {
@@ -63,7 +66,7 @@ public class IamX509AuthenticationUserDetailService
       LOG.debug(msg);
       return new UsernameNotFoundException(msg);
     });
-    
+
     LOG.debug("Found IAM account {} linked to principal '{}'", account, principal);
 
     return buildUserFromIamAccount(account);
