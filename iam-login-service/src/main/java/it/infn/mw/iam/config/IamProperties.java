@@ -227,8 +227,6 @@ public class IamProperties {
 
     Map<String, RegistrationFieldProperties> fields;
 
-    String usernameRegExp;
-
     public boolean isShowRegistrationButtonInLoginPage() {
       return showRegistrationButtonInLoginPage;
     }
@@ -275,14 +273,6 @@ public class IamProperties {
 
     public void setFields(Map<String, RegistrationFieldProperties> fields) {
       this.fields = fields;
-    }
-
-    public String getUsernameRegExp() {
-      return usernameRegExp;
-    }
-
-    public void setUsernameRegExp(String usernameRegExp) {
-      this.usernameRegExp = usernameRegExp;
     }
   }
 
