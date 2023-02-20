@@ -31,7 +31,6 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.http.HttpStatus;
@@ -69,6 +68,7 @@ import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -90,18 +90,18 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   private final EnumSet<UpdaterType> enabledUpdaters;
 
-  @Autowired
   public ScimMeController(IamAccountRepository accountRepository, IamAccountService accountService,
       OAuth2TokenEntityService tokenService, UserConverter userConverter,
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
-      X509CertificateConverter x509CertificateConverter, IamProperties properties) {
+      X509CertificateConverter x509CertificateConverter, IamProperties properties,
+      UsernameValidator usernameValidator) {
 
     this.iamAccountRepository = accountRepository;
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter);
+        x509CertificateConverter, usernameValidator);
 
     enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
 

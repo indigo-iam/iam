@@ -18,28 +18,24 @@ package it.infn.mw.iam.registration;
 import java.util.Date;
 import java.util.List;
 
+import javax.validation.constraints.Size;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.infn.mw.iam.api.common.LabelDTO;
-
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import it.infn.mw.iam.registration.validation.UsernameRegExp;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class RegistrationRequestDto {
-
-  // Regular expression from https://unix.stackexchange.com/a/435120
-  public static final String USERNAME_REGEXP = "^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\\$)$";
 
   private String uuid;
   private Date creationTime;
   private String status;
   private Date lastUpdateTime;
   @Size(max = 32, message = "username cannot be longer than 32 chars")
-  @Pattern(regexp = USERNAME_REGEXP,
-      message = "invalid username (the provided username is not a valid UNIX username)")
+  @UsernameRegExp
   private String username;
   private String password;
   private String givenname;

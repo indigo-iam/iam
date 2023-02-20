@@ -56,6 +56,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAccount, ScimUser> {
 
@@ -65,6 +66,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final IamAccountService accountService;
   final OAuth2TokenEntityService tokenService;
 
+  final UsernameValidator usernameValidator;
+
   final OidcIdConverter oidcIdConverter;
   final SamlIdConverter samlIdConverter;
   final SshKeyConverter sshKeyConverter;
@@ -73,7 +76,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   public DefaultAccountUpdaterFactory(PasswordEncoder encoder, IamAccountRepository repo,
       IamAccountService accountService, OAuth2TokenEntityService tokenService,
       OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
-      SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter) {
+      SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter,
+      UsernameValidator usernameValidator) {
 
     this.accountService = accountService;
     this.tokenService = tokenService;
@@ -83,6 +87,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     this.samlIdConverter = samlIdConverter;
     this.sshKeyConverter = sshKeyConverter;
     this.x509CertificateConverter = x509CertificateConverter;
+    this.usernameValidator = usernameValidator;
   }
 
   private ScimCollectionConverter<IamSshKey, ScimSshKey> sshKeyConverter(ScimUser user) {
@@ -123,7 +128,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareAdders(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService);
+    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService, usernameValidator);
 
     if (user.hasName()) {
 
@@ -191,7 +196,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareReplacers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account, tokenService);
+    Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account,
+        tokenService, usernameValidator);
 
     if (user.hasName()) {
       addUpdater(updaters, Objects::nonNull, user.getName()::getGivenName, replace::givenName);

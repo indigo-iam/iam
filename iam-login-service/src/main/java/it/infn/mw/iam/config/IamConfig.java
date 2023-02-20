@@ -87,6 +87,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -234,7 +235,7 @@ public class IamConfig {
   }
 
   @Bean
-  public PasswordEncoder passwordEncoder() {
+  PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
 
@@ -261,6 +262,11 @@ public class IamConfig {
   ServletRegistrationBean<WebServlet> h2Console() {
     WebServlet h2Servlet = new WebServlet();
     return new ServletRegistrationBean<>(h2Servlet, "/h2-console/*");
+  }
+
+  @Bean
+  UsernameValidator usernameRegExpValidator() {
+    return new UsernameValidator();
   }
 
 }

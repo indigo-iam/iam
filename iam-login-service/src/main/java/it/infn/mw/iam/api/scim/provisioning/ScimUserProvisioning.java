@@ -37,7 +37,6 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -68,6 +67,7 @@ import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @Service
 public class ScimUserProvisioning
@@ -87,18 +87,19 @@ public class ScimUserProvisioning
 
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
-  public ScimUserProvisioning(IamAccountService accountService, OAuth2TokenEntityService tokenService,
-      IamAccountRepository accountRepository, PasswordEncoder passwordEncoder,
-      UserConverter userConverter, OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
-      SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter) {
+  public ScimUserProvisioning(IamAccountService accountService,
+      OAuth2TokenEntityService tokenService, IamAccountRepository accountRepository,
+      PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
+      SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
+      X509CertificateConverter x509CertificateConverter,
+      UsernameValidator usernameValidator) {
 
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter);
+        x509CertificateConverter, usernameValidator);
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {

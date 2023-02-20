@@ -49,6 +49,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Adders extends Replacers {
 
@@ -66,8 +67,9 @@ public class Adders extends Replacers {
   final Consumer<Collection<IamSshKey>> linkSshKeys;
 
   public Adders(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService) {
-    super(repo, accountService, encoder, account, tokenService);
+      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
+      UsernameValidator usernameValidator) {
+    super(repo, accountService, encoder, account, tokenService, usernameValidator);
 
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
     findBySamlId = repo::findBySamlId;

@@ -42,6 +42,7 @@ import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.api.tokens.MultiValueMapBuilder;
 import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
@@ -62,6 +63,9 @@ public class UsernameUpdaterTests extends TestTokensUtils {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
+
+  @Autowired
+  private UsernameValidator usernameValidator;
 
   @Before
   public void setup() {
@@ -91,7 +95,7 @@ public class UsernameUpdaterTests extends TestTokensUtils {
 
   private Replacers accountReplacers() {
     return AccountUpdaters.replacers(accountRepository, accountService, encoder, account,
-        tokenService);
+        tokenService, usernameValidator);
   }
 
   @Test

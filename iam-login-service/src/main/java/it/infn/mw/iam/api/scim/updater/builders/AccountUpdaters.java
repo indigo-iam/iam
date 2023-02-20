@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class AccountUpdaters {
 
@@ -29,8 +30,9 @@ public class AccountUpdaters {
   
   public static Adders adders(IamAccountRepository repo, IamAccountService accountService,
       PasswordEncoder encoder,
-      IamAccount account, OAuth2TokenEntityService tokenService) {
-    return new Adders(repo, accountService, encoder, account, tokenService);
+      IamAccount account, OAuth2TokenEntityService tokenService,
+      UsernameValidator usernameValidator) {
+    return new Adders(repo, accountService, encoder, account, tokenService, usernameValidator);
   }
 
   public static Removers removers(IamAccountRepository repo, IamAccountService accountService,
@@ -39,10 +41,9 @@ public class AccountUpdaters {
   }
 
   public static Replacers replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder,
-      IamAccount account, OAuth2TokenEntityService tokenService) {
-    return new Replacers(repo, accountService, encoder, account, tokenService);
+      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
+      UsernameValidator usernameValidator) {
+    return new Replacers(repo, accountService, encoder, account, tokenService, usernameValidator);
   }
-  
 
 }

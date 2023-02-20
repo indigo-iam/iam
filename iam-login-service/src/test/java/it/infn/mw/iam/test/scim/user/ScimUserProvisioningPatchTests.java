@@ -115,19 +115,16 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
 
     scimUtils.patchUser(lennon.getId(), add, lennon_updates);
 
-    ScimUser updatedUser = scimUtils.getUser(lennon.getId());
-    assertThat(updatedUser.getId(), equalTo(lennon.getId()));
-    assertThat(updatedUser.getUserName(), equalTo(lennon_updates.getUserName()));
-    assertThat(updatedUser.getDisplayName(), equalTo(lennon_updates.getUserName()));
-    assertThat(updatedUser.getName().getGivenName(),
-        equalTo(lennon_updates.getName().getGivenName()));
-    assertThat(updatedUser.getName().getMiddleName(),
-        equalTo(lennon_updates.getName().getMiddleName()));
-    assertThat(updatedUser.getName().getFamilyName(),
-        equalTo(lennon_updates.getName().getFamilyName()));
-    assertThat(updatedUser.getActive(), equalTo(lennon_updates.getActive()));
-    assertThat(updatedUser.getEmails(), hasSize(equalTo(1)));
-    assertThat(updatedUser.getEmails().get(0).getValue(),
+    ScimUser u = scimUtils.getUser(lennon.getId());
+    assertThat(u.getId(), equalTo(lennon.getId()));
+    assertThat(u.getUserName(), equalTo(lennon_updates.getUserName()));
+    assertThat(u.getDisplayName(), equalTo(lennon_updates.getUserName()));
+    assertThat(u.getName().getGivenName(), equalTo(lennon_updates.getName().getGivenName()));
+    assertThat(u.getName().getMiddleName(), equalTo(lennon_updates.getName().getMiddleName()));
+    assertThat(u.getName().getFamilyName(), equalTo(lennon_updates.getName().getFamilyName()));
+    assertThat(u.getActive(), equalTo(lennon_updates.getActive()));
+    assertThat(u.getEmails(), hasSize(equalTo(1)));
+    assertThat(u.getEmails().get(0).getValue(),
         equalTo(lennon_updates.getEmails().get(0).getValue()));
 
   }

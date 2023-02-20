@@ -83,6 +83,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -124,11 +125,13 @@ public class DefaultAccountUpdaterFactoryTests {
 
   DefaultAccountUpdaterFactory factory;
 
+  UsernameValidator usernameValidator = new UsernameValidator();
+
   @Before
   public void init() {
 
     factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, tokenService,
-        oidcConverter, samlConverter, sshKeyConverter, x509Converter);
+        oidcConverter, samlConverter, sshKeyConverter, x509Converter, usernameValidator);
   }
 
   @Test

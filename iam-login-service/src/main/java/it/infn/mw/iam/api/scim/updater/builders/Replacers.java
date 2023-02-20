@@ -46,6 +46,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Replacers extends AccountBuilderSupport {
 
@@ -59,9 +60,10 @@ public class Replacers extends AccountBuilderSupport {
   final AccountFinder<String> findByUsername;
 
   public Replacers(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService) {
+      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
+      UsernameValidator usernameValidator) {
 
-    super(repo, accountService, tokenService, encoder, account);
+    super(repo, accountService, tokenService, encoder, usernameValidator, account);
     findByEmail = repo::findByEmail;
     findByUsername = repo::findByUsername;
     encodedPasswordSetter = t -> account.setPassword(encoder.encode(t));
@@ -90,7 +92,9 @@ public class Replacers extends AccountBuilderSupport {
 
     Predicate<String> usernameNotOwned = e -> !account.getUsername().equals(e);
 
-    return usernameNotBound.and(usernameNotOwned);
+    Predicate<String> usernameNotUnix = e -> usernameValidator.isValid(e, null);
+
+    return usernameNotBound.and(usernameNotOwned).and(usernameNotUnix);
   }
 
   public AccountUpdater givenName(String givenName) {

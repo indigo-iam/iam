@@ -53,6 +53,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
@@ -103,6 +104,9 @@ public class AccountUpdatersTests extends X509TestSupport {
   @Autowired
   private PasswordEncoder encoder;
 
+  @Autowired
+  private UsernameValidator usernameValidator;
+
   private IamAccount account;
   private IamAccount other;
 
@@ -120,7 +124,8 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Adders accountAdders() {
-    return AccountUpdaters.adders(accountRepo, accountService, encoder, account, tokenService);
+    return AccountUpdaters.adders(accountRepo, accountService, encoder, account, tokenService,
+        usernameValidator);
   }
 
   private Removers accountRemovers() {
@@ -128,7 +133,8 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account, tokenService);
+    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account, tokenService,
+        usernameValidator);
   }
 
   @Before
