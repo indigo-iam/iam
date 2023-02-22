@@ -47,9 +47,9 @@
                         <div class="row iam-div-row" ng-repeat="client
                         in $ctrl.clients.Resources">
                             <div class="iam-detail col-xs-8 col-sm-8">
+                                <div class="text-muted">{{client.client_name}}</div>
                                 <a ui-sref="myClient({id:
-                                client.client_id})">{{client.client_name}}</a>
-                                <div class="text-muted">{{client.client_id}}</div>
+                                client.client_id})">{{client.client_id}}</a>
                             </div>
                             <div class="iam-actions col-xs-4 col-sm-4 text-right">
                                 <button class="btn btn-danger btn-xs" ng-click="$ctrl.deleteClient(client)">
