@@ -81,7 +81,7 @@ public class RegisteredClientDTO {
   private String clientSecret;
 
   @Size(min = 4, max = 256,
-      groups = {OnDynamicClientRegistration.class, OnClientCreation.class, OnClientUpdate.class},
+      groups = {OnDynamicClientRegistration.class, OnClientCreation.class, OnClientUpdate.class, OnDynamicClientUpdate.class},
       message = "Invalid length: must be between 4 and 256 characters")
   @NotBlank(groups = {OnDynamicClientRegistration.class, OnClientCreation.class},
       message = "should not be blank")

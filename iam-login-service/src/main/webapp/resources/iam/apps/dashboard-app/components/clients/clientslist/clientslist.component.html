@@ -85,12 +85,12 @@
                         <tr ng-repeat="c in $ctrl.clients.Resources">
                             <td class="col-xs-2">
                                 <!-- Client -->
-                                <div class="text-muted">{{c.client_name}}</div>
                                 <div>
                                     <a ui-sref="client({id: c.client_id})">
-                                        {{c.client_id}}
+                                        {{c.client_name}}
                                     </a>
                                 </div>
+                                <div class="text-muted">{{c.client_id}}</div>
                             </td>
                             <td class="col-xs-1">
                                 <!-- Created -->
