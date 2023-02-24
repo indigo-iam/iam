@@ -26,10 +26,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope("prototype")
-public class UsernameValidator implements ConstraintValidator<UsernameRegExp, String>{
+public class UsernameValidator implements ConstraintValidator<UsernameRegExp, String> {
 
-  //Regular expression from https://unix.stackexchange.com/a/435120
-  public final static String DEFAULT_REG_EXP = "^[a-z_]([a-z0-9_@.-]{0,31}|[a-z0-9_@.-]{0,30}\\$)$";
+  // Regular expression from https://unix.stackexchange.com/a/435120
+  public static final String DEFAULT_REG_EXP = "^[a-z_]([a-z0-9_@.-]{0,31}|[a-z0-9_@.-]{0,30}\\$)$";
 
   Pattern pattern;
 
