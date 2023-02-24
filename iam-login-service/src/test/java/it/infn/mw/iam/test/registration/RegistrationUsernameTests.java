@@ -38,62 +38,67 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 public class RegistrationUsernameTests extends TestSupport {
-    @Autowired
-    private ObjectMapper objectMapper;
 
-    @Autowired
-    private MockOAuth2Filter oauth2Filter;
+  @Autowired
+  private ObjectMapper objectMapper;
 
-    @Autowired
-    private MockMvc mvc;
+  @Autowired
+  private MockOAuth2Filter oauth2Filter;
 
-    @Before
-    public void setup() {
-        oauth2Filter.cleanupSecurityContext();
+  @Autowired
+  private MockMvc mvc;
+
+  @Before
+  public void setup() {
+    oauth2Filter.cleanupSecurityContext();
+  }
+
+  @After
+  public void teardown() {
+    oauth2Filter.cleanupSecurityContext();
+  }
+
+  private RegistrationRequestDto createRegistrationRequest(String username) {
+
+    String email = username + "@example.org";
+    RegistrationRequestDto request = new RegistrationRequestDto();
+    request.setGivenname("Test");
+    request.setFamilyname("User");
+    request.setEmail(email);
+    request.setUsername(username);
+    request.setNotes("Some short notes...");
+    request.setPassword("password");
+
+    return request;
+  }
+
+  @Test
+  public void validUsernames() throws Exception {
+    final String[] validUsernames = {"bob", "b", "test$", "root", "test1234", "test_", "_test",
+        "username@example.com", "username@domain"};
+
+    for (String u : validUsernames) {
+      RegistrationRequestDto r = createRegistrationRequest(u);
+      mvc
+        .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+          .content(objectMapper.writeValueAsString(r)))
+        .andExpect(status().isOk());
     }
 
-    @After
-    public void teardown() {
-        oauth2Filter.cleanupSecurityContext();
+  }
+
+  @Test
+  public void invalidUsernames() throws Exception {
+    final String[] invalidUsernames = {"£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
+
+    for (String u : invalidUsernames) {
+      RegistrationRequestDto r = createRegistrationRequest(u);
+      mvc
+        .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+          .content(objectMapper.writeValueAsString(r)))
+        .andExpect(status().isBadRequest());
     }
-
-    private RegistrationRequestDto createRegistrationRequest(String username) {
-
-        String email = username + "@example.org";
-        RegistrationRequestDto request = new RegistrationRequestDto();
-        request.setGivenname("Test");
-        request.setFamilyname("User");
-        request.setEmail(email);
-        request.setUsername(username);
-        request.setNotes("Some short notes...");
-        request.setPassword("password");
-
-        return request;
-    }
-
-    @Test
-    public void validUsernames() throws Exception {
-        final String[] validUsernames = {"bob", "b", "test$", "root", "test1234", "test_", "_test"};
-
-        for (String u : validUsernames) {
-            RegistrationRequestDto r = createRegistrationRequest(u);
-            mvc.perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(r))).andExpect(status().isOk());
-        }
-
-    }
-
-    @Test
-    public void nonUnixUsernames() throws Exception {
-        final String[] nonUnixUsernames = {"£$%^&*(", ".,", "-test", "1test", "test$$", "username@example.com", "username@domain",
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
-
-        for (String u : nonUnixUsernames) {
-            RegistrationRequestDto r = createRegistrationRequest(u);
-            mvc.perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(r))).andExpect(status().isBadRequest());
-        }
-    }
-
+  }
 
 }

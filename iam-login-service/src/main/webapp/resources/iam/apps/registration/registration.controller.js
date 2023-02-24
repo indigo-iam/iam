@@ -103,10 +103,6 @@ function RegistrationController(
     }
   }
 
-  function clearDomain(username) {
-    return username.split("@").shift();
-  }
-
   function populateValue(info, name) {
     if (typeof $scope.config.fields != 'undefined' && typeof $scope.config.fields[name] != 'undefined' && typeof $scope.config.fields[name].externalAuthAttribute != 'undefined'){
       return lookupAuthInfo(info, $scope.config.fields[name].externalAuthAttribute);
@@ -120,7 +116,7 @@ function RegistrationController(
       $scope.request = {
         givenname: populateValue(info, 'name'),
         familyname: populateValue(info, 'surname'),
-        username: clearDomain(populateValue(info, 'username')),
+        username: populateValue(info, 'username'),
         email: populateValue(info, 'email'),
         notes: '',
       };
