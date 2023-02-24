@@ -16,58 +16,71 @@
 
 -->
 <section class="content-header" ng-cloak>
-    <h1>
-        <i class="fa fa-rocket"></i>&nbsp;&nbsp; My clients
-    </h1>
+	<h1>
+		<i class="fa fa-rocket"></i>&nbsp;&nbsp; My clients
+	</h1>
 </section>
 <section class="content" ng-cloak>
-    <div class="row">
-        <div class="col-xs-12">
-            <div class="box box-primary" id="my-clients-list">
-                <div class="box-body">
-                    <div class="form-group">
-                        <div class="btn-group">
-                            <button class="btn btn-success" ui-sref="myNewClient"><i class="fa
-                        fa-plus"> </i> New client</button>
-                            <button class="btn btn-default" ng-click="$ctrl.redeemClient()">Redeem
-                                client</button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <p ng-if="$ctrl.clients.totalResults == 0" class="static-form-control">
-                            No clients found.
-                        </p>
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="box box-primary" id="my-clients-list">
+				<div class="box-body">
+					<div class="form-group">
+						<div class="btn-group">
+							<button class="btn btn-success" ui-sref="myNewClient">
+								<i class="fa
+                        fa-plus"> </i> New client
+							</button>
+							<button class="btn btn-default" ng-click="$ctrl.redeemClient()">Redeem
+								client</button>
+						</div>
+					</div>
+					<div class="form-group">
+						<p ng-if="$ctrl.clients.totalResults == 0"
+							class="static-form-control">No clients found.</p>
 
-                        <p class="text-center" ng-if="$ctrl.clients.totalResults > 0">
-                            Showing clients
-                            {{$ctrl.clients.startIndex}}-{{$ctrl.clients.startIndex+$ctrl.clients.itemsPerPage-1}}
-                            of {{$ctrl.clients.totalResults}}
-                        </p>
+						<p class="text-center" ng-if="$ctrl.clients.totalResults > 0">
+							Showing clients
+							{{$ctrl.clients.startIndex}}-{{$ctrl.clients.startIndex+$ctrl.clients.itemsPerPage-1}}
+							of {{$ctrl.clients.totalResults}}</p>
 
-                        <div class="row iam-div-row" ng-repeat="client
+						<div class="row iam-div-row"
+							ng-repeat="client
                         in $ctrl.clients.Resources">
-                            <div class="iam-detail col-xs-8 col-sm-8">
-                                <a ui-sref="myClient({id:
+							<div class="iam-detail col-xs-8 col-sm-8">
+								<a
+									ui-sref="myClient({id:
                                 client.client_id})">{{client.client_name}}</a>
-                                <div class="text-muted">{{client.client_id}}</div>
-                            </div>
-                            <div class="iam-actions col-xs-4 col-sm-4 text-right">
-                                <button class="btn btn-danger btn-xs" ng-click="$ctrl.deleteClient(client)">
-                                    <i class="fa fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div ng-if="$ctrl.clients.totalResults > 0">
-                            <ul id="myclients_pagination" uib-pagination ng-model="$ctrl.currentPage"
-                                items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="3"
-                                boundary-link-numbers="true" ng-change="$ctrl.onChangePage()" direction-links="false"
-                                rotate="true">
-                            </ul>
-                        </div>
-                    </div>
+								<div class="text-muted">{{client.client_id}}</div>
+							</div>
+							<div class="iam-actions col-xs-4 col-sm-4 text-right">
+								<button class="btn btn-default btn-xs"
+									uib-tooltip="Edit client
+                                '{{client.client_name}}'"
+									ui-sref="myClient({id: client.client_id})">
+									<i class="fa
+                            fa-pencil"></i>
+								</button>
+								<button class="btn btn-danger btn-xs"
+									uib-tooltip="Delete client
+                                '{{client.client_name}}'"
+									ng-click="$ctrl.deleteClient(client)">
+									<i class="fa fa-times"></i>
+								</button>
+							</div>
+						</div>
+						<div ng-if="$ctrl.clients.totalResults > 0">
+							<ul id="myclients_pagination" uib-pagination
+								ng-model="$ctrl.currentPage" items-per-page="$ctrl.itemsPerPage"
+								total-items="$ctrl.totalResults" max-size="3"
+								boundary-link-numbers="true" ng-change="$ctrl.onChangePage()"
+								direction-links="false" rotate="true">
+							</ul>
+						</div>
+					</div>
 
-                </div>
-            </div>
-        </div>
-    </div>
+				</div>
+			</div>
+		</div>
+	</div>
 </section>
