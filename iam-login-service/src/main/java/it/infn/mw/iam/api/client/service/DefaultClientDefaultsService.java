@@ -77,11 +77,6 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setRefreshTokenValiditySeconds(rtSecs);
     }
 
-    if (client.getGrantTypes().contains(IMPLICIT.getGrantType()) || client.getGrantTypes()
-      .contains(AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType())) {
-      client.setRefreshTokenValiditySeconds(0);
-    }
-
     client.setAllowIntrospection(true);
 
     if (isNull(client.getContacts())) {
