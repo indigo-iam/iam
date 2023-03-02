@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.api.client.service;
 
-import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.IMPLICIT;
 import static java.util.Objects.isNull;
 
 import java.math.BigInteger;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 
