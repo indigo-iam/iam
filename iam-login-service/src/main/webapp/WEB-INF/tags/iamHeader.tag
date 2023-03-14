@@ -88,6 +88,10 @@ function getOrganisationName() {
  return '${iamOrganisationName}'; 
 }
 
+function getAccessTokenValiditySeconds() {
+		return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
+}
+
 function getOidcEnabled() {
   return ${loginPageConfiguration.oidcEnabled};
 }
