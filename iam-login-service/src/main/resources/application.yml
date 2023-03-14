@@ -213,6 +213,9 @@ task:
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
+  client-defaults:
+    default-access-token-validity-seconds: ${DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
+
 
 management:
   health:
