@@ -199,6 +199,8 @@ public class IamOAuthConfirmationController {
 
     model.put("scopes", sortedScopes);
 
+    authRequest.setScope(scopeService.toStrings(sortedScopes));
+
     // get the userinfo claims for each scope
     UserInfo user = userInfoService.getByUsername(authUser.getName());
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
