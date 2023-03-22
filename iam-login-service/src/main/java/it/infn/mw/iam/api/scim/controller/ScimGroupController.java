@@ -73,7 +73,7 @@ public class ScimGroupController extends ScimControllerSupport {
   @Autowired
   ScimGroupProvisioning groupProvisioningService;
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#oauth2.hasScope('scim:read') or ((hasRole('ADMIN') or #iam.isGroupManager(#id)) and #iam.isRequestWithoutToken)")
   @RequestMapping(value = "/{id}", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimGroup getGroup(@PathVariable final String id) {
@@ -104,7 +104,7 @@ public class ScimGroupController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('ADMIN')")
+  @PreAuthorize("#oauth2.hasScope('scim:write') or (#iam.isRequestWithoutToken and hasRole('ADMIN'))")
   @RequestMapping(method = RequestMethod.POST, consumes = ScimConstants.SCIM_CONTENT_TYPE,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.CREATED)
@@ -115,7 +115,7 @@ public class ScimGroupController extends ScimControllerSupport {
     return groupProvisioningService.create(group);
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('ADMIN')")
+  @PreAuthorize("#oauth2.hasScope('scim:write') or (#iam.isRequestWithoutToken and hasRole('ADMIN'))")
   @RequestMapping(value = "/{id}", method = RequestMethod.PUT,
       consumes = ScimConstants.SCIM_CONTENT_TYPE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.OK)
@@ -128,7 +128,7 @@ public class ScimGroupController extends ScimControllerSupport {
 
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#oauth2.hasScope('scim:write') or ((hasRole('ADMIN') or #iam.isGroupManager(#id)) and #iam.isRequestWithoutToken)")
   @RequestMapping(value = "/{id}", method = RequestMethod.PATCH,
       consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -141,7 +141,7 @@ public class ScimGroupController extends ScimControllerSupport {
     groupProvisioningService.update(id, groupPatchRequest.getOperations());
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#oauth2.hasScope('scim:write') or ((hasRole('ADMIN') or #iam.isGroupManager(#id)) and #iam.isRequestWithoutToken)")
   @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteGroup(@PathVariable final String id) {
@@ -150,7 +150,7 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#oauth2.hasScope('scim:read') or ((hasRole('ADMIN') or #iam.isGroupManager(#id)) and #iam.isRequestWithoutToken)")
   @RequestMapping(value = "/{id}/members", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listMembers(@PathVariable final String id,
@@ -161,7 +161,7 @@ public class ScimGroupController extends ScimControllerSupport {
         buildPageRequest(count, startIndex, SCIM_MEMBERS_MAX_PAGE_SIZE));
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#oauth2.hasScope('scim:read') or ((hasRole('ADMIN') or #iam.isGroupManager(#id)) and #iam.isRequestWithoutToken)")
   @RequestMapping(value = "/{id}/subgroups", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listSubgroups(@PathVariable final String id,
