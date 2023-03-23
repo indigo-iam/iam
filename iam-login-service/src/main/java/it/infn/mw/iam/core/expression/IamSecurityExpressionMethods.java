@@ -63,15 +63,17 @@ public class IamSecurityExpressionMethods {
   }
 
   public boolean isAGroupManager() {
-    return authentication.getAuthorities()
+    boolean gm = authentication.getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().startsWith("ROLE_GM:"));
+    return (gm && isRequestWithoutToken());
   }
 
   public boolean isGroupManager(String groupUuid) {
-    return authentication.getAuthorities()
+    boolean group_manager = authentication.getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().equals("ROLE_GM:" + groupUuid));
+    return (group_manager && isRequestWithoutToken());
   }
 
   public boolean isUser(String userUuid) {
@@ -122,4 +124,21 @@ public class IamSecurityExpressionMethods {
 
     return !(authentication instanceof OAuth2Authentication);
   }
+
+  public boolean isAdmin() {
+
+    boolean admin = authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+    return (admin && isRequestWithoutToken());
+  }
+
+  public boolean isAdminOrGM() {
+    return (isAdmin() || isAGroupManager());
+  }
+
+  public boolean isAdminOrGMOfGroup(String gid) {
+    return (isAdmin() || isGroupManager(gid));
+  }
+
 }
