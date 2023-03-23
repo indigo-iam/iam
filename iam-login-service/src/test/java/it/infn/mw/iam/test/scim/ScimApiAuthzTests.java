@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.scim.group;
+package it.infn.mw.iam.test.scim;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -27,14 +27,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-public class ScimGroupAuthzTests {
+public class ScimApiAuthzTests {
 
   @Autowired
   private MockMvc mvc;
@@ -43,6 +41,7 @@ public class ScimGroupAuthzTests {
   private final static String USER_URI = ScimUtils.getUsersLocation();
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
   public void testGroupsListRequest() throws Exception {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
@@ -53,7 +52,30 @@ public class ScimGroupAuthzTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
   public void testUsersListRequest() throws Exception {
+
+    mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
+  public void testGroupsListRequestForGM() throws Exception {
+
+    mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
+  public void testUsersListRequestForGM() throws Exception {
 
     mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
