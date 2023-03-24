@@ -37,6 +37,8 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 @SuppressWarnings("deprecation")
 public class IamSecurityExpressionMethods {
 
+  private static final String ROLE_GM = "ROLE_GM:";
+
   private final Authentication authentication;
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
@@ -65,21 +67,21 @@ public class IamSecurityExpressionMethods {
   public boolean isAGroupManager() {
     boolean gm = authentication.getAuthorities()
       .stream()
-      .anyMatch(a -> a.getAuthority().startsWith("ROLE_GM:"));
+      .anyMatch(a -> a.getAuthority().startsWith(ROLE_GM));
     return (gm && isRequestWithoutToken());
   }
 
   public boolean isGroupManager(String groupUuid) {
     boolean groupManager = authentication.getAuthorities()
       .stream()
-      .anyMatch(a -> a.getAuthority().equals("ROLE_GM:" + groupUuid));
+      .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
     return (groupManager && isRequestWithoutToken());
   }
 
   public boolean isGroupManager() {
     return authentication.getAuthorities()
       .stream()
-      .anyMatch(a -> a.getAuthority().startsWith("ROLE_GM:"));
+      .anyMatch(a -> a.getAuthority().startsWith(ROLE_GM));
   }
 
   public boolean isUser(String userUuid) {
