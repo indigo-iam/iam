@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.scim;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,9 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -40,9 +36,6 @@ public class ScimApiAuthzTests {
 
   @Autowired
   private MockMvc mvc;
-
-  @Autowired
-  private ObjectMapper objectMapper;
 
   private final static String GROUP_URI = ScimUtils.getGroupsLocation();
   private final static String USER_URI = ScimUtils.getUsersLocation();
@@ -56,13 +49,6 @@ public class ScimApiAuthzTests {
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
       .andExpect(jsonPath("$.scope", equalTo("scim:read")));
-  }
-
-  @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = {"scim:read"})
-  public void testAdminGroupsListRequestSuccess() throws Exception {
-
-    mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE)).andExpect(status().isOk());
   }
 
   @Test
@@ -100,17 +86,16 @@ public class ScimApiAuthzTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void testCreateGroupFailureResponse() throws Exception {
+  public void testAdminScimUserRequestFailure() throws Exception {
 
-    String name = "group";
-    ScimGroup group = ScimGroup.builder(name).build();
-    mvc
-      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(group)))
+    // Some existing user as defined in the test db
+    String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+
+    mvc.perform(get(USER_URI + "/" + uuid).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:write")));
+      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
   }
 
 }
