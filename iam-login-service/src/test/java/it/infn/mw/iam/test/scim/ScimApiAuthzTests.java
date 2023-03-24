@@ -98,4 +98,18 @@ public class ScimApiAuthzTests {
       .andExpect(jsonPath("$.scope", equalTo("scim:read")));
   }
 
+  @Test
+  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
+  public void testGMScimUserRequestFailure() throws Exception {
+
+    // Some existing user as defined in the test db
+    String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+
+    mvc.perform(get(USER_URI + "/" + uuid).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+  }
+
 }
