@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -99,17 +100,10 @@ public class ScimApiAuthzTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "gm", authorities = {"ROLE_GM:"})
-  public void testGMScimUserRequestFailure() throws Exception {
+  @WithMockUser(username = "admin", roles = {"ADMIN"})
+  public void testAdminGroupsListRequestSuccess() throws Exception {
 
-    // Some existing user as defined in the test db
-    String uuid = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
-
-    mvc.perform(get(USER_URI + "/" + uuid).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+    mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE)).andExpect(status().isOk());
   }
 
 }
