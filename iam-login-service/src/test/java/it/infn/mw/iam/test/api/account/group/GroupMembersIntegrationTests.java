@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.account.group;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,6 +44,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -172,6 +174,47 @@ public class GroupMembersIntegrationTests {
     IamAccountGroupMembership m =
         IamAccountGroupMembership.forAccountAndGroup(null, account, group);
     assertThat(account.getGroups().contains(m), is(true));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ADMIN"}, scopes = {"account:write"})
+  public void adminWithCorrectScopeCanAddGroupMember() throws Exception {
+    IamAccount account =
+        accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    IamGroup group =
+        groupRepo.findByName("Test-001").orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
+
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
+      .andExpect(status().isCreated());
+
+    account =
+        accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    assertThat(
+        groupRepo.findGroupByMemberAccountUuidAndGroupUuid(account.getUuid(), group.getUuid())
+          .isPresent(),
+        is(true));
+
+    IamAccountGroupMembership m =
+        IamAccountGroupMembership.forAccountAndGroup(null, account, group);
+    assertThat(account.getGroups().contains(m), is(true));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ADMIN"})
+  public void adminWithoutScopeCannotAddGroupMember() throws Exception {
+    IamAccount account =
+        accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    IamGroup group =
+        groupRepo.findByName("Test-001").orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
+
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
+      .andExpect(status().isForbidden())
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("account:write")));
   }
 
   @Test

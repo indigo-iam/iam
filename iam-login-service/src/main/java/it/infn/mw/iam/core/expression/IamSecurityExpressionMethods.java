@@ -76,6 +76,12 @@ public class IamSecurityExpressionMethods {
     return (groupManager && isRequestWithoutToken());
   }
 
+  public boolean isGroupManager() {
+    return authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().startsWith("ROLE_GM:"));
+  }
+
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     return account.isPresent() && account.get().getUuid().equals(userUuid);

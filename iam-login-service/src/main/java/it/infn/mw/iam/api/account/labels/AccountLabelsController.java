@@ -76,7 +76,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = GET)
-  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id) or #iam.isAGroupManager()")
+  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id) or #iam.isGroupManager()")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));

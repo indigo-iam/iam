@@ -38,7 +38,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @Transactional
-@PreAuthorize("hasRole('ADMIN') or #oauth2.hasScope('scim:read') or #iam.isAGroupManager()")
+@PreAuthorize("hasRole('ADMIN') or #oauth2.hasScope('scim:read') or #iam.isGroupManager()")
 @RequestMapping(AccountSearchController.ACCOUNT_SEARCH_ENDPOINT)
 public class AccountSearchController extends AbstractSearchController<ScimUser, IamAccount> {
 
