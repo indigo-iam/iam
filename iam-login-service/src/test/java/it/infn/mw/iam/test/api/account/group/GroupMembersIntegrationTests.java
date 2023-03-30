@@ -177,7 +177,7 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ADMIN"}, scopes = {"account:write"})
+  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"}, scopes = {"account:write"})
   public void adminWithCorrectScopeCanAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -202,7 +202,7 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ADMIN"})
+  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"})
   public void adminWithoutScopeCannotAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));

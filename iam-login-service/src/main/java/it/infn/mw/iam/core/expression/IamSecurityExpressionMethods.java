@@ -84,6 +84,12 @@ public class IamSecurityExpressionMethods {
       .anyMatch(a -> a.getAuthority().startsWith(ROLE_GM));
   }
 
+  public boolean isGMOfGroup(String groupUuid) {
+    return authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
+  }
+
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     return account.isPresent() && account.get().getUuid().equals(userUuid);
