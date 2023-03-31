@@ -39,6 +39,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -114,6 +115,33 @@ public class AccountLifecycleApiTests extends TestSupport {
     
     assertThat(account.getEndTime(), is(newEndTime));
   }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void setEndTimeWorksForAdminUserWithScope() throws Exception {
+    Date newEndTime = new Date();
+    AccountLifecycleDTO dto = new AccountLifecycleDTO();
+    dto.setEndTime(newEndTime);
+
+    mvc
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+        .contentType(APPLICATION_JSON))
+      .andExpect(OK);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void setEndTimeDoesNotWork() throws Exception {
+    Date newEndTime = new Date();
+    AccountLifecycleDTO dto = new AccountLifecycleDTO();
+    dto.setEndTime(newEndTime);
+
+    mvc
+      .perform(put(END_TIME_RESOURCE, TEST_100_USER_UUID).content(mapper.writeValueAsString(dto))
+        .contentType(APPLICATION_JSON))
+      .andExpect(FORBIDDEN);
+  }
+
 
 
 
