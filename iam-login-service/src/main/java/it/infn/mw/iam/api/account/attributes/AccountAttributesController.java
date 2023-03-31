@@ -85,7 +85,7 @@ public class AccountAttributesController {
   }
 
   @RequestMapping(value = "/iam/account/{id}/attributes", method= PUT)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute,
       final BindingResult validationResult) {
 
@@ -99,7 +99,7 @@ public class AccountAttributesController {
   }
   
   @RequestMapping(value = "/iam/account/{id}/attributes", method= DELETE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @ResponseStatus(value = NO_CONTENT)
   public void deleteAttribute(@PathVariable String id, @Validated AttributeDTO attribute,
       final BindingResult validationResult) {

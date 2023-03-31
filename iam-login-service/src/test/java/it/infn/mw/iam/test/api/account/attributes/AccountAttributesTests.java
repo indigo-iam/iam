@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.api.account.attributes;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -52,6 +53,7 @@ import it.infn.mw.iam.api.common.AttributeDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -227,6 +229,69 @@ public class AccountAttributesTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void setAttributeDoesNotWork() throws Exception {
+
+    IamAccount testAccount =
+        repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    final String UUID = testAccount.getUuid();
+
+    AttributeDTO attr = new AttributeDTO();
+
+    attr.setName(ATTR_NAME);
+    attr.setValue(ATTR_VALUE);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(attr)))
+      .andExpect(FORBIDDEN)
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("account:write")));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void setAttributeWorksWithCorrectScope() throws Exception {
+
+    IamAccount testAccount =
+        repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    final String UUID = testAccount.getUuid();
+
+    AttributeDTO attr = new AttributeDTO();
+
+    attr.setName(ATTR_NAME);
+    attr.setValue(ATTR_VALUE);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(attr)))
+      .andExpect(OK);
+
+    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$").isArray())
+      .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
+      .andExpect(jsonPath("$[0].value", is(ATTR_VALUE)));
+
+    attr.setValue(null);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(attr)))
+      .andExpect(OK);
+
+    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$").isArray())
+      .andExpect(jsonPath("$", hasSize(1)))
+      .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
+      .andExpect(jsonPath("$[0].value", nullValue()));
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void deleteAttributeWorks() throws Exception {
     IamAccount testAccount =
@@ -250,6 +315,28 @@ public class AccountAttributesTests {
     // A delete succeeds even if the attribute isn't there
     mvc.perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).param("name", ATTR_NAME))
       .andExpect(NO_CONTENT);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void deleteAttributeDoesNotWork() throws Exception {
+    IamAccount testAccount =
+        repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    final String UUID = testAccount.getUuid();
+
+    AttributeDTO attr = new AttributeDTO();
+
+    attr.setName(ATTR_NAME);
+    attr.setValue(ATTR_VALUE);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(attr)))
+      .andExpect(FORBIDDEN)
+      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
+      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
+      .andExpect(jsonPath("$.scope", equalTo("account:write")));
   }
 
   @Test
