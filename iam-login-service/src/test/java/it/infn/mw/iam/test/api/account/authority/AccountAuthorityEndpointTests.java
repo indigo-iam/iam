@@ -30,23 +30,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class AccountAuthorityEndpointTests {
 
   private static final String TEST_100 = "test_100";
@@ -65,6 +65,19 @@ public class AccountAuthorityEndpointTests {
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
+
+  @Before
+  public void setup() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @After
+  public void cleanupOAuthUser() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
   private void addUserAuthority(String userId, String authority) {
     iamAuthoritiesRepo.findByAuthority(authority)
@@ -248,6 +261,51 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void AddAuthorityWorkWithCorrectScope() throws Exception {
+
+    String authority = ROLE_ADMIN;
+
+    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.authorities", contains(ROLE_USER)));
+
+    mvc
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .andDo(print())
+      .andExpect(status().isOk());
+
+    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.authorities", hasSize(2)))
+      .andExpect(jsonPath("$.authorities", containsInAnyOrder(ROLE_USER, ROLE_ADMIN)));
+
+    // remove
+    removeUserAuthority(TEST_100_UUID, ROLE_ADMIN);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void AddAuthorityDoesNotWork() throws Exception {
+
+    String authority = ROLE_ADMIN;
+
+    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.authorities", contains(ROLE_USER)));
+
+    mvc
+      .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .andDo(print())
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void DeleteAuthorityWorks() throws Exception {
 
@@ -267,6 +325,41 @@ public class AccountAuthorityEndpointTests {
 
     // Readd authority
     addUserAuthority(TEST_100_UUID, ROLE_USER);
+
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void DeleteAuthorityWorkWithCorrectScope() throws Exception {
+
+    String authority = "ROLE_USER";
+
+    mvc
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .andDo(print())
+      .andExpect(status().isOk());
+
+    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.authorities", empty()));
+
+    // Readd authority
+    addUserAuthority(TEST_100_UUID, ROLE_USER);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void DeleteAuthorityDoesNotWork() throws Exception {
+
+    String authority = "ROLE_USER";
+
+    mvc
+      .perform(delete("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE))
+      .andDo(print())
+      .andExpect(status().isForbidden());
 
   }
 

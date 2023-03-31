@@ -83,7 +83,7 @@ public class AccountAuthorityController {
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountById(id)));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.POST)
   public void addAuthorityToAccount(@PathVariable("id") String id, @Valid AuthorityDTO authority,
       BindingResult validationResult) {
@@ -96,7 +96,7 @@ public class AccountAuthorityController {
 
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.DELETE)
   public void removeAuthorityFromAccount(@PathVariable("id") String id,
       @Valid AuthorityDTO authority, BindingResult validationResult) {
