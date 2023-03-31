@@ -49,6 +49,7 @@ import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -168,6 +169,38 @@ public class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void setAndDeleteLabelWorksWithScope() throws Exception {
+
+    mvc
+      .perform(put(RESOURCE, TEST_100_USER_UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(TEST_LABEL)))
+      .andExpect(OK);
+
+    mvc.perform(get(RESOURCE, TEST_100_USER_UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$").isArray())
+      .andExpect(jsonPath("$[0].prefix", is(TEST_LABEL.getPrefix())))
+      .andExpect(jsonPath("$[0].name", is(TEST_LABEL.getName())))
+      .andExpect(jsonPath("$[0].value", is(TEST_LABEL.getValue())));
+
+    mvc
+    .perform(delete(RESOURCE, TEST_100_USER_UUID).param("name", TEST_LABEL.getName())
+      .param("prefix", TEST_LABEL.getPrefix()))
+    .andExpect(NO_CONTENT);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void setLabelDoesNotWork() throws Exception {
+
+    mvc
+      .perform(put(RESOURCE, TEST_100_USER_UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(TEST_LABEL)))
+      .andExpect(FORBIDDEN);
+  }
+
+  @Test
   public void deleteLabelWorks() throws Exception {
 
     LabelDTO unqualified = LabelDTO.builder().name(LABEL_NAME).build();
@@ -215,6 +248,16 @@ public class AccountLabelsTests extends TestSupport {
       .andExpect(OK)
       .andExpect(jsonPath("$").isArray())
       .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void deleteLabelDoesNotWork() throws Exception {
+
+    mvc
+      .perform(put(RESOURCE, TEST_100_USER_UUID).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(TEST_LABEL)))
+      .andExpect(FORBIDDEN);
   }
 
   @Test

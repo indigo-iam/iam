@@ -49,7 +49,6 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping(AccountLabelsController.RESOURCE)
 public class AccountLabelsController {
 
@@ -89,6 +88,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = PUT)
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   public void setLabel(@PathVariable String id, @RequestBody @Validated LabelDTO label,
       BindingResult validationResult) {
     handleValidationError(validationResult);
@@ -98,6 +98,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = DELETE)
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @ResponseStatus(NO_CONTENT)
   public void deleteLabel(@PathVariable String id, @Validated LabelDTO label,
       BindingResult validationResult) {
