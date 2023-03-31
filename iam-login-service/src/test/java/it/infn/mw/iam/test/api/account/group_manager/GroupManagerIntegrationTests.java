@@ -46,6 +46,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -228,6 +229,30 @@ public class GroupManagerIntegrationTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void addGroupManagerWorksForAdminWithScope() throws Exception {
+    IamAccount testUser = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    mvc
+      .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
+          TEST_001_GROUP_ID))
+      .andExpect(status().isCreated());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void addGroupManagerDoesNotWork() throws Exception {
+    IamAccount testUser = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    mvc
+      .perform(post("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
+          TEST_001_GROUP_ID))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void addGroupManagerRequiresValidUserAndGroupIds() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
@@ -276,6 +301,46 @@ public class GroupManagerIntegrationTests {
       .andExpect(jsonPath("$.managedGroups").isEmpty())
       .andExpect(jsonPath("$.unmanagedGroups").isNotEmpty())
       .andExpect(jsonPath("$.unmanagedGroups").value(hasSize(allGroups.size())));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  public void removeGroupManagerWorksForAdminUserWithScope() throws Exception {
+    IamAccount testUser = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+
+    IamAuthority auth = authoritiesRepo.findByAuthority("ROLE_GM:" + TEST_001_GROUP_ID)
+      .orElseThrow(() -> new AssertionError("Expected group manager authority not found"));
+
+    testUser.getAuthorities().add(auth);
+
+    accountRepo.save(testUser);
+
+    mvc
+      .perform(delete("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
+          TEST_001_GROUP_ID))
+      .andExpect(status().isNoContent());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN")
+  public void removeGroupManagerDoesNotWork() throws Exception {
+    IamAccount testUser = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+
+    IamAuthority auth = authoritiesRepo.findByAuthority("ROLE_GM:" + TEST_001_GROUP_ID)
+      .orElseThrow(() -> new AssertionError("Expected group manager authority not found"));
+
+    testUser.getAuthorities().add(auth);
+
+    accountRepo.save(testUser);
+
+    mvc
+      .perform(delete("/iam/account/{uuid}/managed-groups/{groupUuid}", testUser.getUuid(),
+          TEST_001_GROUP_ID))
+      .andExpect(status().isForbidden());
   }
 
   @Test

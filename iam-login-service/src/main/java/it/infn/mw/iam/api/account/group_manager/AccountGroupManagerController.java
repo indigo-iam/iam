@@ -74,7 +74,7 @@ public class AccountGroupManagerController {
 
   @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
       method = RequestMethod.POST)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @ResponseStatus(value = HttpStatus.CREATED)
   public void addManagedGroupToAccount(@PathVariable String accountId,
       @PathVariable String groupId) {
@@ -90,7 +90,7 @@ public class AccountGroupManagerController {
 
   @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
       method = RequestMethod.DELETE)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void removeManagedGroupFromAccount(@PathVariable String accountId,
       @PathVariable String groupId) {
