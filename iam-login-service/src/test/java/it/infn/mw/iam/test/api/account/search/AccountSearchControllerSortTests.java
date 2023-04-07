@@ -87,7 +87,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithInvalidSortDirection() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -105,7 +105,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByNameAsc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -123,7 +123,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByNameDesc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -141,7 +141,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByEmailAsc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -159,7 +159,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByEmailDesc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -177,7 +177,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByCreationTimeAsc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -195,7 +195,7 @@ public class AccountSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersSortByCreationTimeDesc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 

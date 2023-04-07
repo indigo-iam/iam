@@ -229,7 +229,7 @@ public class GroupManagerIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void addGroupManagerWorksForAdminWithScope() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
@@ -304,7 +304,7 @@ public class GroupManagerIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void removeGroupManagerWorksForAdminUserWithScope() throws Exception {
     IamAccount testUser = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));

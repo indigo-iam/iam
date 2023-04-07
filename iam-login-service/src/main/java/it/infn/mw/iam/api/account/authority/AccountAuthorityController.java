@@ -68,14 +68,14 @@ public class AccountAuthorityController {
       .orElseThrow(() -> new NoSuchAccountError(format("No account found for name '%s'", name)));
   }
 
-  @PreAuthorize("hasRole('USER')")
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasDashboardRole('ROLE_USER')")
   @RequestMapping(value = "/me/authorities", method = RequestMethod.GET)
   public AuthoritySetDTO getAuthoritiesForMe(Authentication authn) {
     return AuthoritySetDTO
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountByName(authn.getName())));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or #iam.isGroupManager()")
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.GET)
   @ResponseBody
   public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable("id") String id) {
@@ -83,7 +83,7 @@ public class AccountAuthorityController {
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountById(id)));
   }
 
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.POST)
   public void addAuthorityToAccount(@PathVariable("id") String id, @Valid AuthorityDTO authority,
       BindingResult validationResult) {
@@ -96,7 +96,7 @@ public class AccountAuthorityController {
 
   }
 
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.DELETE)
   public void removeAuthorityFromAccount(@PathVariable("id") String id,
       @Valid AuthorityDTO authority, BindingResult validationResult) {

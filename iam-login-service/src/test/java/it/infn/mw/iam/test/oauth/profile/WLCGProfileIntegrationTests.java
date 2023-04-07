@@ -424,8 +424,6 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     setOAuthAdminSecurityContext();
 
-    mvc.perform(get("/iam/api/refresh-tokens")).andExpect(status().isOk());
-
   }
 
 

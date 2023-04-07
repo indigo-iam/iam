@@ -49,8 +49,8 @@ public class AccountClientController {
 
   @JsonView(ClientViews.Limited.class)
   @GetMapping("/iam/account/me/clients")
-  public ListResponseDTO<RegisteredClientDTO> getOwnedClients(
-      @Validated PaginatedRequestForm form, final BindingResult validationResult) {
+  public ListResponseDTO<RegisteredClientDTO> getOwnedClients(@Validated PaginatedRequestForm form,
+      final BindingResult validationResult) {
 
     handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
     return clientSearchService.findOwnedClients(form);

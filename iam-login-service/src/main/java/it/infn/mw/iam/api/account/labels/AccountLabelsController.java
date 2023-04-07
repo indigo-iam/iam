@@ -75,7 +75,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = GET)
-  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id) or #iam.isGroupManager()")
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#id)")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));
@@ -88,7 +88,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = PUT)
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setLabel(@PathVariable String id, @RequestBody @Validated LabelDTO label,
       BindingResult validationResult) {
     handleValidationError(validationResult);
@@ -98,7 +98,7 @@ public class AccountLabelsController {
   }
 
   @RequestMapping(method = DELETE)
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(NO_CONTENT)
   public void deleteLabel(@PathVariable String id, @Validated LabelDTO label,
       BindingResult validationResult) {

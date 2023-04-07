@@ -96,7 +96,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getFirstPageOfAllUsers() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -113,7 +113,24 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockUser(username = "admin", roles = {"ADMIN"})
+  public void getFirstPageOfAllUsersWithoutToken() throws JsonParseException, JsonMappingException,
+      UnsupportedEncodingException, IOException, Exception {
+
+    long expectedSize = accountRepository.count();
+
+    ListResponseDTO<ScimUser> response = mapper.readValue(
+        mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
+        new TypeReference<ListResponseDTO<ScimUser>>() {});
+    assertThat(response.getTotalResults(), equalTo(expectedSize));
+    assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
+    assertThat(response.getStartIndex(), equalTo(1));
+    assertThat(response.getItemsPerPage(), equalTo(DEFAULT_ITEMS_PER_PAGE));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getSecondPageOfAllUsers() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -131,7 +148,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithCustomStartIndexAndCount() throws JsonParseException,
       JsonMappingException, UnsupportedEncodingException, IOException, Exception {
 
@@ -151,7 +168,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getCountOfAllUsers() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -169,7 +186,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getFirstFilteredPageOfUsers() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -193,7 +210,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getCountOfFilteredUsers() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -218,7 +235,7 @@ public class AccountSearchControllerTests {
   }
   
   @Test
-  @WithMockUser(username="test", roles= {"USER", "GM:c617d586-54e6-411d-8e38-649677980001"})
+  @WithMockOAuthUser(user="test", authorities= {"ROLE_USER", "ROLE_GM:c617d586-54e6-411d-8e38-649677980001"}, scopes = "admin:read")
   public void getUsersAsGroupManager() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
     .andExpect(status().isOk());
@@ -232,7 +249,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithNegativeStartIndex() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -250,7 +267,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithStartIndexZero() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -268,7 +285,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithCountBiggerThanPageSize() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
@@ -287,7 +304,7 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
   public void getUsersWithNegativeCount() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 

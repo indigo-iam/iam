@@ -107,7 +107,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:read")
   public void listPolicyWorksForAdminUserTest() throws Exception {
     mvc.perform(get("/iam/scope_policies"))
       .andExpect(status().isOk())
@@ -118,7 +118,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:read")
   public void listUserPolicyTest() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test")
@@ -153,7 +153,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:read")
   public void listGroupPolicyTest() throws Exception {
 
     IamGroup prodGroup = groupRepo.findByName("Production")
@@ -187,7 +187,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void defaultPolicyRuleValidationTest() throws Exception {
     ScopePolicyDTO sp = new ScopePolicyDTO();
     sp.setRule("ciccio");
@@ -199,7 +199,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidAccountIdRuleValidationTest() throws Exception {
     ScopePolicyDTO sp = new ScopePolicyDTO();
     sp.setRule(PolicyRule.DENY.name());
@@ -215,7 +215,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidGroupIdRuleValidationTest() throws Exception {
     ScopePolicyDTO sp = new ScopePolicyDTO();
     sp.setRule(PolicyRule.DENY.name());
@@ -234,7 +234,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidScopePolicyRuleValidationTest() throws Exception {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
@@ -261,7 +261,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidScopePolicyScopesLengthLowerBound() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -288,7 +288,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidScopePolicyScopesLengthUpperBound() throws Exception {
 
     StringBuilder s = new StringBuilder();
@@ -307,7 +307,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
   
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void invalidScopeMatchingPolicy() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -323,7 +323,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testDefaultPolicyCreation() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -338,7 +338,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
   
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testMatchingPolicyIsRequired() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -353,7 +353,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testDefaultPolicyCreationNoScopes() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -367,7 +367,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
   public void testAccountPolicyCreation() throws Exception {
 
     // Cleanup all policies
@@ -407,7 +407,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
   public void testGroupPolicyCreation() throws Exception {
     // Cleanup all policies
     scopePolicyRepo.deleteAll();
@@ -445,7 +445,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
   public void testScopePolicyDeletion() throws Exception {
     mvc.perform(MockMvcRequestBuilders.delete("/iam/scope_policies/1"))
       .andExpect(status().isNoContent());
@@ -462,7 +462,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:read")
   public void testScopePolicyAccess() throws Exception {
 
     mvc.perform(get("/iam/scope_policies/1"))
@@ -480,7 +480,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testScopeCascade() throws Exception {
 
     ScopePolicyDTO sp = new ScopePolicyDTO();
@@ -526,7 +526,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
   public void testDefaultPolicyUpdate() throws Exception {
     final String description = "DENY ALL!";
 
@@ -549,7 +549,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
   
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testPolicyUpdateValidationError() throws Exception {
     final String description = "DENY ALL!";
 
@@ -565,7 +565,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testNonExistingPolicyUpdate() throws Exception {
     final String description = "DENY ALL!";
 
@@ -582,7 +582,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
   public void testEquivalentPolicyCreationNotAllowed() throws Exception {
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));
@@ -607,7 +607,7 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
   public void testEquivalentPolicyUpdateNotAllowed() throws Exception {
     IamGroup analysisGroup = groupRepo.findByName("Analysis")
       .orElseThrow(() -> new AssertionError("Expected Analysis group not found"));

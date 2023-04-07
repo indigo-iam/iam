@@ -56,7 +56,6 @@ import it.infn.mw.iam.api.scim.model.ScimUser;
 
 @RestController
 @RequestMapping(ClientManagementAPIController.ENDPOINT)
-@PreAuthorize("hasRole('ADMIN')")
 public class ClientManagementAPIController {
 
   public static final String ENDPOINT = "/iam/api/clients";
@@ -69,6 +68,7 @@ public class ClientManagementAPIController {
 
   @PostMapping
   @ResponseStatus(CREATED)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO saveNewClient(@RequestBody RegisteredClientDTO client)
       throws ParseException {
     return managementService.saveNewClient(client);
@@ -76,6 +76,7 @@ public class ClientManagementAPIController {
 
   @JsonView({ClientViews.ClientManagement.class})
   @GetMapping
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex,
@@ -93,12 +94,14 @@ public class ClientManagementAPIController {
 
   @JsonView({ClientViews.ClientManagement.class})
   @GetMapping("/{clientId}")
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId) {
     return managementService.retrieveClientByClientId(clientId)
       .orElseThrow(clientNotFound(clientId));
   }
 
   @GetMapping("/{clientId}/owners")
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
@@ -108,6 +111,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(CREATED)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void assignClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.assignClientOwner(clientId, accountId);
@@ -115,18 +119,21 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/rat")
   @ResponseStatus(CREATED)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO rotateRegistrationAccessToken(@PathVariable String clientId) {
     return managementService.rotateRegistrationAccessToken(clientId);
   }
 
   @DeleteMapping("/{clientId}/owners/{accountId}")
   @ResponseStatus(NO_CONTENT)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void removeClientOwner(@PathVariable String clientId,
       @PathVariable final String accountId) {
     managementService.removeClientOwner(clientId, accountId);
   }
 
   @PutMapping("/{clientId}")
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO updateClient(@PathVariable String clientId,
       @RequestBody RegisteredClientDTO client)
       throws ParseException {
@@ -135,12 +142,14 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/secret")
   @ResponseStatus(CREATED)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO rotateClientSecret(@PathVariable String clientId) {
     return managementService.generateNewClientSecret(clientId);
   }
 
   @DeleteMapping("/{clientId}")
   @ResponseStatus(NO_CONTENT)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteClient(@PathVariable String clientId) {
     managementService.deleteClientByClientId(clientId);
   }

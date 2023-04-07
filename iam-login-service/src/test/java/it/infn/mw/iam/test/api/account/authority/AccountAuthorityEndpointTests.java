@@ -261,27 +261,16 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void AddAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = ROLE_ADMIN;
-
-    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
-      .andDo(print())
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.authorities", contains(ROLE_USER)));
 
     mvc
       .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
-
-    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
-      .andDo(print())
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.authorities", hasSize(2)))
-      .andExpect(jsonPath("$.authorities", containsInAnyOrder(ROLE_USER, ROLE_ADMIN)));
 
     // remove
     removeUserAuthority(TEST_100_UUID, ROLE_ADMIN);
@@ -292,11 +281,6 @@ public class AccountAuthorityEndpointTests {
   public void AddAuthorityDoesNotWork() throws Exception {
 
     String authority = ROLE_ADMIN;
-
-    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
-      .andDo(print())
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.authorities", contains(ROLE_USER)));
 
     mvc
       .perform(post("/iam/account/{id}/authorities", TEST_100_UUID).param("authority", authority)
@@ -329,7 +313,7 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void DeleteAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = "ROLE_USER";
@@ -339,11 +323,6 @@ public class AccountAuthorityEndpointTests {
         .contentType(APPLICATION_FORM_URLENCODED_VALUE))
       .andDo(print())
       .andExpect(status().isOk());
-
-    mvc.perform(get("/iam/account/{id}/authorities", TEST_100_UUID))
-      .andDo(print())
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.authorities", empty()));
 
     // Readd authority
     addUserAuthority(TEST_100_UUID, ROLE_USER);

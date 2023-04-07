@@ -63,7 +63,7 @@ public class AccountAttributesController {
     this.converter = converter;
     this.accountService = accountService;
   }
-  
+
   private void handleValidationError(BindingResult result) {
     if (result.hasErrors()) {
       throw new InvalidAttributeError(
@@ -71,8 +71,8 @@ public class AccountAttributesController {
     }
   }
 
-  @RequestMapping(value = "/iam/account/{id}/attributes", method=RequestMethod.GET)
-  @PreAuthorize("hasRole('ADMIN') or #iam.isUser(#id) or #iam.isGroupManager()")
+  @RequestMapping(value = "/iam/account/{id}/attributes", method = RequestMethod.GET)
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
   public List<AttributeDTO> getAttributes(@PathVariable String id) {
 
     IamAccount account =
@@ -84,46 +84,46 @@ public class AccountAttributesController {
     return results;
   }
 
-  @RequestMapping(value = "/iam/account/{id}/attributes", method= PUT)
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+  @RequestMapping(value = "/iam/account/{id}/attributes", method = PUT)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute,
       final BindingResult validationResult) {
 
     handleValidationError(validationResult);
     IamAccount account =
         accountService.findByUuid(id).orElseThrow(() -> NoSuchAccountError.forUuid(id));
-    
+
     IamAttribute attr = converter.entityFromDto(attribute);
-    
+
     accountService.setAttribute(account, attr);
   }
-  
-  @RequestMapping(value = "/iam/account/{id}/attributes", method= DELETE)
-  @PreAuthorize("(hasRole('ADMIN') and #oauth2.hasScope('account:write')) or #iam.isAdmin()")
+
+  @RequestMapping(value = "/iam/account/{id}/attributes", method = DELETE)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = NO_CONTENT)
   public void deleteAttribute(@PathVariable String id, @Validated AttributeDTO attribute,
       final BindingResult validationResult) {
-    
+
     handleValidationError(validationResult);
     IamAccount account =
         accountService.findByUuid(id).orElseThrow(() -> NoSuchAccountError.forUuid(id));
     IamAttribute attr = converter.entityFromDto(attribute);
-    
+
     accountService.deleteAttribute(account, attr);
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidAttributeError.class)
   @ResponseBody
-  public ErrorDTO handleValidationError(InvalidAttributeError e) {    
+  public ErrorDTO handleValidationError(InvalidAttributeError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
-  
+
   @ResponseStatus(code = HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoSuchAccountError.class)
   @ResponseBody
-  public ErrorDTO handleNoSuchAccountError(NoSuchAccountError e) {    
+  public ErrorDTO handleNoSuchAccountError(NoSuchAccountError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
-  
+
 }

@@ -17,10 +17,13 @@ package it.infn.mw.iam.core.expression;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.common.exceptions.InsufficientScopeException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -64,35 +67,21 @@ public class IamSecurityExpressionMethods {
     return false;
   }
 
-  public boolean isAGroupManager() {
-    boolean gm = authentication.getAuthorities()
-      .stream()
-      .anyMatch(a -> a.getAuthority().startsWith(ROLE_GM));
-    return (gm && isRequestWithoutToken());
+  public enum Role {
+    ROLE_ADMIN, ROLE_GM, ROLE_USER
   }
 
   public boolean isGroupManager(String groupUuid) {
     boolean groupManager = authentication.getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
-    return (groupManager && isRequestWithoutToken());
-  }
-
-  public boolean isGroupManager() {
-    return authentication.getAuthorities()
-      .stream()
-      .anyMatch(a -> a.getAuthority().startsWith(ROLE_GM));
-  }
-
-  public boolean isGMOfGroup(String groupUuid) {
-    return authentication.getAuthorities()
-      .stream()
-      .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
+    return groupManager && isRequestWithoutToken();
   }
 
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
-    return account.isPresent() && account.get().getUuid().equals(userUuid);
+    return account.isPresent() && account.get().getUuid().equals(userUuid)
+        && isRequestWithoutToken();
   }
 
   public boolean canManageGroupRequest(String requestId) {
@@ -136,23 +125,24 @@ public class IamSecurityExpressionMethods {
 
   public boolean isRequestWithoutToken() {
 
-    return !(authentication instanceof OAuth2Authentication);
+    return authentication instanceof UsernamePasswordAuthenticationToken;
   }
 
-  public boolean isAdmin() {
-
-    boolean admin = authentication.getAuthorities()
-      .stream()
-      .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
-    return (admin && isRequestWithoutToken());
+  public boolean hasAnyDashboardRole(Role... roles) {
+    Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+    for (Role r : roles) {
+      if (authorities.stream().anyMatch(a -> a.getAuthority().contains(r.name()))) {
+        return isRequestWithoutToken();
+      }
+    }
+    return false;
   }
 
-  public boolean isAdminOrGM() {
-    return (isAdmin() || isAGroupManager());
+  public boolean hasDashboardRole(Role role) {
+    return hasAnyDashboardRole(role);
   }
 
-  public boolean isAdminOrGMOfGroup(String gid) {
-    return (isAdmin() || isGroupManager(gid));
+  public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
+    return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
   }
-
 }

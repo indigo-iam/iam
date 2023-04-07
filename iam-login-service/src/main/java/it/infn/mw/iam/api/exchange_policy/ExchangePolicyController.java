@@ -38,7 +38,6 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 
 @RestController
 @RequestMapping("/iam/api/exchange")
-@PreAuthorize("hasRole('ADMIN')")
 public class ExchangePolicyController {
 
   private final TokenExchangePolicyService service;
@@ -63,6 +62,7 @@ public class ExchangePolicyController {
   }
 
   @RequestMapping(value = "/policies", method = RequestMethod.GET)
+  @PreAuthorize("#oauth2.hasScope('admin:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public List<ExchangePolicyDTO> getExchangePolicies() {
     Page<ExchangePolicyDTO> resultsPage = service.getTokenExchangePolicies(UNPAGED);
     if (resultsPage.hasNext()) {
@@ -74,12 +74,14 @@ public class ExchangePolicyController {
 
   @RequestMapping(value = "/policies/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteExchangePolicy(@PathVariable Long id) {
     service.deleteTokenExchangePolicyById(id);
   }
 
   @RequestMapping(value = "/policies", method = RequestMethod.POST)
   @ResponseStatus(code = HttpStatus.CREATED)
+  @PreAuthorize("#oauth2.hasScope('admin:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void createExchangePolicy(@Valid @RequestBody ExchangePolicyDTO dto,
       BindingResult validationResult) {
 

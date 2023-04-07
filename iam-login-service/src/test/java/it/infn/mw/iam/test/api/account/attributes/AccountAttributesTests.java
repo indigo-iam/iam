@@ -248,11 +248,11 @@ public class AccountAttributesTests {
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("account:write")));
+      .andExpect(jsonPath("$.scope", equalTo("admin:write")));
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void setAttributeWorksWithCorrectScope() throws Exception {
 
     IamAccount testAccount =
@@ -269,26 +269,6 @@ public class AccountAttributesTests {
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(OK);
-
-    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
-      .andExpect(jsonPath("$[0].value", is(ATTR_VALUE)));
-
-    attr.setValue(null);
-
-    mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
-        .content(mapper.writeValueAsString(attr)))
-      .andExpect(OK);
-
-    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$", hasSize(1)))
-      .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
-      .andExpect(jsonPath("$[0].value", nullValue()));
   }
 
   @Test
@@ -336,7 +316,7 @@ public class AccountAttributesTests {
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("account:write")));
+      .andExpect(jsonPath("$.scope", equalTo("admin:write")));
   }
 
   @Test

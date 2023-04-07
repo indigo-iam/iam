@@ -50,7 +50,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
+@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "admin:read")
 public class AccessTokenGetListTests extends TestTokensUtils {
 
   public static long id = 1L;

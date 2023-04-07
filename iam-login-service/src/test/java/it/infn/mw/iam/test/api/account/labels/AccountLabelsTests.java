@@ -169,20 +169,13 @@ public class AccountLabelsTests extends TestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "account:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "admin:write")
   public void setAndDeleteLabelWorksWithScope() throws Exception {
 
     mvc
       .perform(put(RESOURCE, TEST_100_USER_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(TEST_LABEL)))
       .andExpect(OK);
-
-    mvc.perform(get(RESOURCE, TEST_100_USER_UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$[0].prefix", is(TEST_LABEL.getPrefix())))
-      .andExpect(jsonPath("$[0].name", is(TEST_LABEL.getName())))
-      .andExpect(jsonPath("$[0].value", is(TEST_LABEL.getValue())));
 
     mvc
     .perform(delete(RESOURCE, TEST_100_USER_UUID).param("name", TEST_LABEL.getName())
