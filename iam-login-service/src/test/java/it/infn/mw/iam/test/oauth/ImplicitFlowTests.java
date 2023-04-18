@@ -19,6 +19,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,7 +61,7 @@ public class ImplicitFlowTests {
   public static final String LOGIN_URL = "http://localhost/login";
   public static final String AUTHORIZE_URL = "http://localhost/authorize";
 
-  public static final String RESPONSE_TYPE_TOKEN_ID_TOKEN = "token id_token";
+  public static final String RESPONSE_TYPE_TOKEN_ID_TOKEN = "id_token";
 
   public static final String SCOPE = "openid profile";
 
@@ -154,8 +155,8 @@ public class ImplicitFlowTests {
      .andReturn().getResponse().getRedirectedUrl();
      
    assertThat(redirectedUrl, startsWith(IMPLICIT_CLIENT_REDIRECT_URL+"#"));
-   assertThat(redirectedUrl, containsString("access_token="));
    assertThat(redirectedUrl, containsString("id_token="));
+   assertThat(redirectedUrl, not(containsString("access_token=")));
  
   }
 }
