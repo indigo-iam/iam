@@ -38,29 +38,16 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="account">Account</label>
 			<div class="col-sm-10">
-				<ui-select multiple ng-model="$ctrl.selectedUser" theme="bootstrap"
+				<ui-select multiple ng-model="$ctrl.selectedUsers" theme="bootstrap"
 					sortable="true" close-on-select="false" input-id="join-user-input"
 					style="width: 100%;" class="form-control"> <ui-select-match
-					placeholder="Type to search Account">{{$item.displayName}}</ui-select-match>
-				<ui-select-choices
-					repeat="user in $ctrl.users |
-                filter: {displayName: $select.search}">
+					placeholder="Type to search Account">{{$item.name.formatted}}</ui-select-match>
+				<ui-select-choices repeat="user in $ctrl.accounts"
+					refresh="$ctrl.loadUsers($select.search)">
 				<div
-					ng-bind-html="user.displayName | highlight:
+					ng-bind-html="user.name.formatted | highlight:
                 $select.search"
 					class="user-select-name"></div>
-				<div
-					ng-bind-html="user['urn:indigo-dc:scim:schemas:IndigoUser'].description"
-					ng-if="user['urn:indigo-dc:scim:schemas:IndigoUser'].description"
-					class="user-select-description"></div>
-				<div ng-if="user['urn:indigo-dc:scim:schemas:IndigoUser'].labels"
-					class="user-select-labels">
-					<span class="label-pair"
-						ng-repeat="l in user['urn:indigo-dc:scim:schemas:IndigoUser'].labels">
-						<span class="label-key label"> {{$ctrl.labelName(l)}} </span> <span
-						class="label-value label" ng-if="l.value"> {{l.value}} </span>
-					</span>
-				</div>
 				</ui-select-choices> <ui-select-no-choice> No results found </ui-select-no-choice> </ui-select>
 			</div>
 		</div>
@@ -73,9 +60,8 @@
 					input-id="join-group-input" style="width: 100%;"
 					class="form-control"> <ui-select-match
 					placeholder="Type to search Group">{{$item.displayName}}</ui-select-match>
-				<ui-select-choices
-					repeat="group in $ctrl.groups |
-                filter: {displayName: $select.search}">
+				<ui-select-choices repeat="group in $ctrl.groups"
+					refresh="$ctrl.getAllGroups($select.search)">
 				<div
 					ng-bind-html="group.displayName | highlight:
                 $select.search"
@@ -84,45 +70,24 @@
 					ng-bind-html="group['urn:indigo-dc:scim:schemas:IndigoGroup'].description"
 					ng-if="group['urn:indigo-dc:scim:schemas:IndigoGroup'].description"
 					class="group-select-description"></div>
-				<div ng-if="group['urn:indigo-dc:scim:schemas:IndigoGroup'].labels"
-					class="group-select-labels">
-					<span class="label-pair"
-						ng-repeat="l in group['urn:indigo-dc:scim:schemas:IndigoGroup'].labels">
-						<span class="label-key label"> {{$ctrl.labelName(l)}} </span> <span
-						class="label-value label" ng-if="l.value"> {{l.value}} </span>
-					</span>
-				</div>
 				</ui-select-choices> <ui-select-no-choice> No results found </ui-select-no-choice> </ui-select>
 			</div>
 		</div>
 
 		<div class="form-group">
-			<label class="control-label col-sm-2" for="group">Scopes</label>
+			<label class="control-label col-sm-2" for="scope">Scopes</label>
 			<div class="col-sm-10">
 				<ui-select multiple ng-model="$ctrl.selectedScopes"
 					theme="bootstrap" sortable="true" close-on-select="false"
 					input-id="join-scope-input" style="width: 100%;"
 					class="form-control"> <ui-select-match
-					placeholder="Type to search Scope">{{$item.displayName}}</ui-select-match>
-				<ui-select-choices
-					repeat="group in $ctrl.groups |
-                filter: {displayName: $select.search}">
+					placeholder="Type to search Scope">{{$item.value}}</ui-select-match>
+				<ui-select-choices repeat="scope in $ctrl.scopes"
+					refresh="$ctrl.loadScopes($select.search)">
 				<div
-					ng-bind-html="scope.displayName | highlight:
+					ng-bind-html="scope.value | highlight:
                 $select.search"
 					class="scope-select-name"></div>
-				<div
-					ng-bind-html="scope['urn:indigo-dc:scim:schemas:IndigoScope'].description"
-					ng-if="scope['urn:indigo-dc:scim:schemas:IndigoScope'].description"
-					class="scope-select-description"></div>
-				<div ng-if="scope['urn:indigo-dc:scim:schemas:IndigoScope'].labels"
-					class="scope-select-labels">
-					<span class="label-pair"
-						ng-repeat="l in group['urn:indigo-dc:scim:schemas:IndigoScope'].labels">
-						<span class="label-key label"> {{$ctrl.labelName(l)}} </span> <span
-						class="label-value label" ng-if="l.value"> {{l.value}} </span>
-					</span>
-				</div>
 				</ui-select-choices> <ui-select-no-choice> No results found </ui-select-no-choice> </ui-select>
 			</div>
 		</div>

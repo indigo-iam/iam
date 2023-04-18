@@ -17,75 +17,81 @@
 -->
 <!-- Current Active System Scopes Box -->
 <div class="box box-primary" id="policies-list">
-    <div class="box-header with-border">
-        <!-- add search bar ? -->
-    </div>
-    <div class="box-body with-border">
-        <table id="policy-table" class="table table-hover table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Description</th>
-                    <th>Rule</th>
-                    <th>Matching Policy</th>
-                    <th>Account</th>
-                    <th>Group</th>
-                    <th>Scopes</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr ng-repeat="policy in $ctrl.filteredItems">
+	<div class="box-header with-border">
+		<!-- add search bar ? -->
+	</div>
+	<div class="box-body with-border">
+		<table id="policy-table" class="table table-hover table-striped">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Description</th>
+					<th>Rule</th>
+					<th>Matching Policy</th>
+					<th>Account</th>
+					<th>Group</th>
+					<th>Scopes</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="policy in $ctrl.filteredItems">
 
-                    <td class="align-middle">
-                        <a ui-sref="value({id: policy.id})" class="label label-primary"><i class="fa fa-{{policy.rule}}"></i>&nbsp;{{policy.id}}</a>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.description}}</small>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.rule}}</small>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.matchingPolicy}}</small>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.account}}</small>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.group}}</small>
-                    </td>
-                    <td class="align-middle" >    
-                        <small>{{policy.scopes.toString()}}</small>
-                    </td>
-                    <td class="text-right">
-                        <button id="edit_policy_{{policy.id}}" title="Edit Scope Policy" class="btn btn-success btn-xs" ng-click="$ctrl.openEditPolicyDialog(policy)">
-                            <i class="fa fa-edit"></i>
-                        </button>
-                        <button title="Delete policy" id="delete_policy_{{policy.id}}" class="btn btn-danger btn-xs" ng-click="$ctrl.openDeletePolicyDialog(policy)">
-                            <i class="fa fa-times"></i>
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        </br>
-        
-        <div class="text-center">
-             <ul id="policies_pagination_bottom" uib-pagination ng-model="$ctrl.curPage"
-                 items-per-page="$ctrl.itemsPerPage" total-items="$ctrl.totalResults" max-size="$ctrl.maxSize"
-                 boundary-links="true" ng-change="$ctrl.loadData($ctrl.curPage)" previous-text="&lsaquo;"
-                 next-text="&rsaquo;" first-text="&laquo;" last-text="&raquo;" rotate="true">
-             </ul>
-        </div>
+					<td class="align-middle"><a ui-sref="value({id: policy.id})"
+						class="label label-primary"><i class="fa fa-{{policy.rule}}"></i>&nbsp;{{policy.id}}</a>
+					</td>
+					<td class="align-middle"><small>{{policy.description}}</small>
+					</td>
+					<td class="align-middle"><small>{{policy.rule}}</small></td>
+					<td class="align-middle"><small>{{policy.matchingPolicy}}</small>
+					</td>
+					<td class="align-middle"><a
+						ui-sref="user({id: policy.account.uuid})">{{policy.account.username}}</a>
+						<br /> <small>{{policy.account.uuid}}</small></td>
+					<td class="align-middle"><a
+						ui-sref="group({id: policy.group.uuid})">{{policy.group.name}}</a>
+						<br /> <small>{{policy.group.uuid}}</small></td>
+					<td class="align-middle"><span
+						ng-repeat="scope in policy.scopes" class="label label-primary"
+						style="margin-right: 2px;">&nbsp;{{scope}}&nbsp;</span></td>
+					<td class="text-right">
+						<button id="edit_policy_{{policy.id}}" title="Edit Scope Policy"
+							class="btn btn-success btn-xs"
+							ng-click="$ctrl.openEditPolicyDialog(policy)">
+							<i class="fa fa-edit"></i>
+						</button>
+						<button title="Delete policy" id="delete_policy_{{policy.id}}"
+							class="btn btn-danger btn-xs"
+							ng-click="$ctrl.openDeletePolicyDialog(policy)">
+							<i class="fa fa-times"></i>
+						</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		</br>
 
-        </br></br>
-        <div class="well well-small">
-<!--             <button class="btn btn-small refresh-table" ng-click="$ctrl.loadAllPolicies()"><i class="fa fa-refresh"></i> Refresh</button> -->
-            <button class="btn btn-success" id="add-policy-btn" ng-click="$ctrl.openAddPolicyDialog()"><i class="fa fa-plus"></i> New Scope Policy</button>
-            <!-- <a ui-sref="add_policies" href="#!/scope_policies/add_policies"><button class="btn btn-success" id="add-policy-btn"><i
+		<div class="text-center">
+			<ul id="policies_pagination_bottom" uib-pagination
+				ng-model="$ctrl.curPage" items-per-page="$ctrl.itemsPerPage"
+				total-items="$ctrl.totalResults" max-size="$ctrl.maxSize"
+				boundary-links="true" ng-change="$ctrl.loadData($ctrl.curPage)"
+				previous-text="&lsaquo;" next-text="&rsaquo;" first-text="&laquo;"
+				last-text="&raquo;" rotate="true">
+			</ul>
+		</div>
+
+		</br>
+		</br>
+		<div class="well well-small">
+			<!--             <button class="btn btn-small refresh-table" ng-click="$ctrl.loadAllPolicies()"><i class="fa fa-refresh"></i> Refresh</button> -->
+			<button class="btn btn-success" id="add-policy-btn"
+				ng-click="$ctrl.openAddPolicyDialog()">
+				<i class="fa fa-plus"></i> New Scope Policy
+			</button>
+			<!-- <a ui-sref="add_policies" href="#!/scope_policies/add_policies"><button class="btn btn-success" id="add-policy-btn"><i
                 class="fa fa-plus"></i> New Scope Policy</button></a> -->
-        </div>
-    </div>
+		</div>
+	</div>
 </div>
 
