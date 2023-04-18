@@ -29,8 +29,8 @@
             PoliciesService.removePolicy(policy).then(
                 function(response) {
                     console.info("Policy deleted", policy.id);
-                    $rootScope.policiesCount--;
                     $uibModalInstance.close(policy);
+                    $rootScope.policiesCount--;
                     self.enabled = true;
                 },
                 function (error) {
@@ -77,14 +77,14 @@
 
         self.reset = function () {
           self.policy = {
-            id: '',
             description: null,
             rule: '',
-            matchingPolicy: '',
-            account: null,
-            group: null,
-            scopes: '',
+            matchingPolicy: ''
           };
+          self.selectedUsers = '';
+          self.selectedGroups = '';
+          self.selectedScopes = '';
+
           if ($scope.policyCreationForm) {
             $scope.policyCreationForm.$setPristine();
           }
@@ -166,55 +166,55 @@
         }
     }
 
-      function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
+    function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
 
-        var self = this;
+      var self = this;
+
+      self.policy = policy;
+
+      self.$onInit = function () {
+        self.enabled = true;
+      }
+
+      self.updatePolicy = function (policy) {
 
         self.policy = policy;
 
-        self.$onInit = function () {
-          self.enabled = true;
-        }
+        console.log("Policy info to add ", self.policy);
+        self.enabled = false;
 
-        self.updatePolicy = function (policy) {
-          
-          self.policy = policy;
-    
-          console.log("Policy info to add ", self.policy);
-          self.enabled = false;
+        var editedPolicy = {};
 
-          var editedPolicy = {};
-          
-          editedPolicy.id = self.policy.id;
-          editedPolicy.description = self.policy.description;
-          editedPolicy.rule = self.policy.rule;
-          editedPolicy.matchingPolicy = self.policy.matchingPolicy;
-          editedPolicy.account = self.policy.account;
-          editedPolicy.group = self.policy.group;
-          editedPolicy.scopes = self.policy.scopes;
+        editedPolicy.id = self.policy.id;
+        editedPolicy.description = self.policy.description;
+        editedPolicy.rule = self.policy.rule;
+        editedPolicy.matchingPolicy = self.policy.matchingPolicy;
+        editedPolicy.account = self.policy.account;
+        editedPolicy.group = self.policy.group;
+        editedPolicy.scopes = self.policy.scopes;
 
-          console.info("Updating policy ... ", editedPolicy.id, editedPolicy);
+        console.info("Updating policy ... ", editedPolicy.id, editedPolicy);
 
-          PoliciesService.updatePolicyById(editedPolicy).then(
-            function(response) {
-                console.info("Policy Updated", editedPolicy.id);
-                $rootScope.policiesCount++;
-                $uibModalInstance.close(response.data);
-                self.enabled = true;
-              },
-            function (error) {
-              console.error('Error updating policy', error);
-              self.error = error;
+        PoliciesService.updatePolicyById(editedPolicy).then(
+          function(response) {
+              console.info("Policy Updated", editedPolicy.id);
+              //$rootScope.policiesCount++;
+              $uibModalInstance.close(response.data);
               self.enabled = true;
-              toaster.pop({ type: 'error', body: error.data.error_description});
-            });
-        }
-    
-        self.cancel = function () {
-          $uibModalInstance.dismiss("cancel");
-        }
+            },
+          function (error) {
+            console.error('Error updating policy', error);
+            self.error = error;
+            self.enabled = true;
+            toaster.pop({ type: 'error', body: error.data.error_description});
+          });
       }
-//
+
+      self.cancel = function () {
+        $uibModalInstance.dismiss("cancel");
+      }
+    }
+
 	function GroupSelectorController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
         var self = this;
 	}
@@ -222,16 +222,14 @@
 	function UserSelectorController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
         var self = this;
 	}
-//
+
     function PoliciesListController($q, $scope, $rootScope, $uibModal, ModalService,
         PoliciesService, toaster) {
 
       var self = this;
-       
-      self.policies = [];
       
       self.$onInit = function() {
-          
+          self.policies = [];
           self.loadData(1);
       };
       
@@ -256,29 +254,30 @@
 
 
       self.loadAllPolicies = function(page) {
-          return PoliciesService.getAllPolicies().then(function(r) {
-              self.policies = r.data;
-              $rootScope.policiesCount = self.policies.length;
-              console.debug("init PoliciesListController", self.policies);
 
-			  //Pagination Control 
-			  self.totalResults = self.policies.length,
-			  self.filteredItems = [],   	
-        self.curPage = page,
-        self.itemsPerPage = 10,
-        self.maxSize = 5
+        //Pagination Control
+			  self.totalResults = self.policies.length;
+        self.currentOffset = 1;
+        self.curPage = page;
+        self.itemsPerPage = 10;
+        self.maxSize = 5;
 
-			  //this.items = self.policies;
- 
+        return PoliciesService.getAllPolicies().then(function(r) {
+            self.policies = r.data;
+            $rootScope.policiesCount = self.policies.length;
+            console.debug("init PoliciesListController", self.policies);
+
+			  self.filteredItems = [];
+
 			  self.numOfPages = function () {
 			  return Math.ceil(self.policies.length / self.itemsPerPage);
  
 			  };
  
-			  $scope.$watch('curPage + numPerPage', function() {
+			  $scope.$watch('self.curPage + self.numOfPage', function() {
 			  var begin = ((self.curPage - 1) * self.itemsPerPage),
 			  end = begin + self.itemsPerPage;
- 
+
 			  self.filteredItems = self.policies.slice(begin, end);
 			  });
 			  
@@ -290,9 +289,6 @@
       };
 
       self.loadData = function(page) {
-		  
-	  	  
-
           return self.openLoadingModal()
               .then(function() {
                   var promises = [];
@@ -312,10 +308,10 @@
           type: 'success',
           body: 'Policy ' + policy.id + ' has been deleted successfully'
         });
-        $rootScope.policiesCount--;
-        if (self.currentOffset > self.policiesCount) {
-            if (self.currentPage > 1) {
-              self.currentPage--;
+        self.totalResults--;
+        if (self.currentOffset > self.totalResults) {
+            if (self.curPage > 1) {
+              self.curPage--;
             }
           }
         self.loadData(self.curPage);
@@ -339,7 +335,6 @@
           type: 'success',
           body: 'Policy ' + policy.id + ' successfully added'
         });
-        $rootScope.policiesCount++;
 		    self.loadData(self.curPage);
       };
   
@@ -381,7 +376,7 @@
           type: 'success',
           body: 'Policy ' + policy.id + ' successfully edited'
         });
-        $rootScope.policiesCount++;
+        //$rootScope.policiesCount++;
         self.loadData(self.curPage);
       };
 

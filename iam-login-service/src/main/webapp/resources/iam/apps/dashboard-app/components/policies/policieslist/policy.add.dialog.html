@@ -38,8 +38,8 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="account">Account</label>
 			<div class="col-sm-10">
-				<ui-select multiple ng-model="$ctrl.selectedUsers" theme="bootstrap"
-					sortable="true" close-on-select="false" input-id="join-user-input"
+				<ui-select multiple limit="1" ng-model="$ctrl.selectedUsers" theme="bootstrap"
+					sortable="true" close-on-select="true" input-id="join-user-input"
 					style="width: 100%;" class="form-control"> <ui-select-match
 					placeholder="Type to search Account">{{$item.name.formatted}}</ui-select-match>
 				<ui-select-choices repeat="user in $ctrl.accounts"
@@ -55,8 +55,8 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="group">Group</label>
 			<div class="col-sm-10">
-				<ui-select multiple ng-model="$ctrl.selectedGroups"
-					theme="bootstrap" sortable="true" close-on-select="false"
+				<ui-select multiple limit="1" ng-model="$ctrl.selectedGroups"
+					theme="bootstrap" sortable="true" close-on-select="true"
 					input-id="join-group-input" style="width: 100%;"
 					class="form-control"> <ui-select-match
 					placeholder="Type to search Group">{{$item.displayName}}</ui-select-match>
