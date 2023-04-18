@@ -81,9 +81,9 @@
             rule: '',
             matchingPolicy: ''
           };
-          self.selectedUsers = '';
-          self.selectedGroups = '';
-          self.selectedScopes = '';
+          self.selectedUsers = [];
+          self.selectedGroups = [];
+          self.selectedScopes = [];
 
           if ($scope.policyCreationForm) {
             $scope.policyCreationForm.$setPristine();
@@ -330,10 +330,10 @@
         modalInstance.result.then(self.handleDeleteSuccess);
       };
 
-      self.handleAddPolicySuccess = function (policy) {
+      self.handleAddPolicySuccess = function () {
         toaster.pop({
           type: 'success',
-          body: 'Policy ' + policy.id + ' successfully added'
+          body: 'Policy successfully added'
         });
 		    self.loadData(self.curPage);
       };

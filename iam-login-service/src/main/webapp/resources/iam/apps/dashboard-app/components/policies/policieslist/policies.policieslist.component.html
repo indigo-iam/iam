@@ -37,8 +37,8 @@
 			<tbody>
 				<tr ng-repeat="policy in $ctrl.filteredItems">
 
-					<td class="align-middle"><a ui-sref="value({id: policy.id})"
-						class="label label-primary"><i class="fa fa-{{policy.id}}"></i>&nbsp;{{policy.id}}</a>
+					<td class="align-middle">
+                        <a class="label label-primary"><i class="fa fa-{{policy.id}}"></i>&nbsp;{{policy.id}}</a>
 					</td>
 					<td class="align-middle"><small>{{policy.description}}</small>
 					</td>
