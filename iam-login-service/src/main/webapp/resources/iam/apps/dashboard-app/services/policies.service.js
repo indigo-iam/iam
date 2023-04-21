@@ -38,15 +38,15 @@
         }
 
         function doGetPolicyById(policy) {
-            return $http.get(urlScopePolicies + policy.id );
+            return $http.get(urlScopePolicies + policy.id);
         }
 
         function doPut(policy) {
-            return $http.put(urlScopePolicies + policy.id, policy );
+            return $http.put(urlScopePolicies + policy.id, policy);
         }
 
         function doDelete(policy) {
-            return $http.delete(urlScopePolicies + policy.id );
+            return $http.delete(urlScopePolicies + policy.id);
         }
 
         function doPost(data) {
@@ -59,17 +59,17 @@
         }
 
         function updatePolicyById(policy) {
-            console.debug("updatePolicyById: ", policy.id, policy.value);
+            console.debug("updatePolicyById: ", policy.id);
             return doPut(policy);
         }
 
         function addPolicy(policy) {
-            console.debug("addPolicy: ", policy.id, policy.value);
+            console.debug("addPolicy: ", policy.id);
             return doPost(policy);
         }
 
         function removePolicy(policy) {
-            console.debug("removePolicy: ", policy.id, policy.value)
+            console.debug("removePolicy: ", policy.id);
             return doDelete(policy);
         }
 

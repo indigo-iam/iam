@@ -45,13 +45,11 @@
         };
       }
 
-    function AddPolicyController(GroupsService, $rootScope, $scope, $uibModal, $uibModalInstance, toaster, PoliciesService, scimFactory, ScopesService) {
+    function AddPolicyController(GroupsService, $rootScope, $scope, $uibModal, $uibModalInstance, toaster, PoliciesService, scimFactory) {
         var self = this;
         self.groups = [];
         self.accounts = [];
-        self.scopes = [];
         var USERS_CHUNCK_SIZE = 100;
-        self.selectedScopes = [];
         self.selectedGroups = [];
         self.selectedUsers = [];
 
@@ -68,22 +66,17 @@
             .then(function(data) {
                 self.accounts = data;
         });
-
-        ScopesService.getAllScopes().then(
-          function(res) {
-            self.scopes = res.data;
-          });
       }
 
         self.reset = function () {
           self.policy = {
             description: null,
             rule: '',
-            matchingPolicy: ''
+            matchingPolicy: '',
+            scopes: ''
           };
           self.selectedUsers = [];
           self.selectedGroups = [];
-          self.selectedScopes = [];
 
           if ($scope.policyCreationForm) {
             $scope.policyCreationForm.$setPristine();
@@ -115,10 +108,7 @@
             };
           });
 
-          newPolicy.scopes = [];
-          self.selectedScopes.forEach(function(scope) {
-            newPolicy.scopes.push(scope.value);
-          });
+          newPolicy.scopes = self.policy.scopes.split(' ');
 
           console.info("Adding policy ... ", newPolicy);
 
@@ -157,41 +147,75 @@
                 toaster.pop({ type: 'error', body: error });
             });
         }
-
-        self.loadScopes = function() {
-          ScopesService.getAllScopes().then(
-            function(res) {
-              self.scopes = res.data;
-            });
-        }
     }
 
-    function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService) {
+    function EditPolicyController($rootScope, $scope, $uibModal, $uibModalInstance, policy, toaster, PoliciesService, GroupsService, scimFactory) {
 
       var self = this;
 
       self.policy = policy;
 
+      console.info("Updating policy ... ", policy.id, policy);
+
+      self.groups = [];
+      self.accounts = [];
+      var USERS_CHUNCK_SIZE = 100;
+      self.selectedGroups = [];
+      self.selectedUsers = [];
+      self.editScopes = self.policy.scopes.join(' ');
+
+      if (policy.account != null) {
+      scimFactory.getUser(policy.account.uuid)
+              .then(function(res) {
+                  self.selectedUsers = [res.data];
+          });
+      }
+
+      if (policy.group != null) {
+        scimFactory.getGroup(policy.group.uuid)
+                .then(function(res) {
+                    self.selectedGroups = [res.data];
+            });
+       }
+
       self.$onInit = function () {
         self.enabled = true;
+
+        GroupsService.getAllGroups().then(
+          function (res) {
+              self.groups = res;
+            });
+
+        scimFactory.getAllUsers(USERS_CHUNCK_SIZE)
+            .then(function(data) {
+                self.accounts = data;
+        });
       }
 
       self.updatePolicy = function (policy) {
 
         self.policy = policy;
-
-        console.log("Policy info to add ", self.policy);
         self.enabled = false;
 
         var editedPolicy = {};
 
-        editedPolicy.id = self.policy.id;
-        editedPolicy.description = self.policy.description;
-        editedPolicy.rule = self.policy.rule;
-        editedPolicy.matchingPolicy = self.policy.matchingPolicy;
-        editedPolicy.account = self.policy.account;
-        editedPolicy.group = self.policy.group;
-        editedPolicy.scopes = self.policy.scopes;
+        editedPolicy.id = policy.id;
+        editedPolicy.description = policy.description;
+        editedPolicy.rule = policy.rule;
+        editedPolicy.matchingPolicy = policy.matchingPolicy;
+        editedPolicy.scopes = self.editScopes.split(' ');
+
+        self.selectedUsers.filter(function(user) {
+          editedPolicy.account = {
+            uuid: user.id
+          };
+        });
+
+        self.selectedGroups.filter(function(group) {
+          editedPolicy.group = {
+            uuid: group.id
+          };
+        });
 
         console.info("Updating policy ... ", editedPolicy.id, editedPolicy);
 
@@ -201,12 +225,16 @@
               //$rootScope.policiesCount++;
               $uibModalInstance.close(response.data);
               self.enabled = true;
+              toaster.pop({
+                type: 'success',
+                body: 'Policy ' + editedPolicy.id + ' successfully edited'
+              });
             },
           function (error) {
             console.error('Error updating policy', error);
             self.error = error;
             self.enabled = true;
-            toaster.pop({ type: 'error', body: error.data.error_description});
+            toaster.pop({ type: 'error', body: error.data.error});
           });
       }
 
@@ -372,10 +400,6 @@
       };
 
       self.handleEditPolicySuccess = function (policy) {
-        toaster.pop({
-          type: 'success',
-          body: 'Policy ' + policy.id + ' successfully edited'
-        });
         //$rootScope.policiesCount++;
         self.loadData(self.curPage);
       };

@@ -15,78 +15,111 @@
     limitations under the License.
 
 -->
-<form class="form-horizontal" ng-submit="$ctrl.submit()" name="policyEditionForm" id="policyEditionForm" ng-init="$ctrl.reset()">
+<form class="form-horizontal" ng-submit="$ctrl.submit()"
+	name="policyEditionForm" id="policyEditionForm">
 
-  <div class="modal-header">
-    <h3 class="modal-title">Edit Scope Policy</h3>
-  </div>
+	<div class="modal-header">
+		<h3 class="modal-title">Edit Scope Policy</h3>
+	</div>
 
-  <div class="modal-body">
+	<div class="modal-body">
 
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="value">Scope Policy</label>
-        <div class="col-sm-10">
-          <label class="control-label" name="value" id="value" type="text">{{$ctrl.policy.id}}</label>
-      </div>
-    </div>
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="value">Scope
+				Policy</label>
+			<div class="col-sm-10">
+				<label class="control-label" name="value" id="value" type="text">{{$ctrl.policy.id}}</label>
+			</div>
+		</div>
 
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="description">Description</label>
-        <div class="col-sm-10">
-          <input class="form-control" name="description" id="description" type="text" ng-model="$ctrl.policy.description" placeholder="description"/>
-          <small>Human-readable text description</small>
-        </div>
-      </div>
-    
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="account">Account</label>
-        <div class="col-sm-10">
-          <input class="form-control" name="account" id="account" type="text" ng-model="$ctrl.policy.account" placeholder="Account"/>
-          <small>Human-readable text description</small>
-        </div>
-      </div>
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="description">Description</label>
+			<div class="col-sm-10">
+				<input class="form-control" name="description" id="description"
+					type="text" ng-model="$ctrl.policy.description"
+					placeholder="description" /> <small>Human-readable text
+					description</small>
+			</div>
+		</div>
 
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="group">Group</label>
-        <div class="col-sm-10">
-          <input class="form-control" name="group" id="group" type="text" ng-model="$ctrl.policy.group" placeholder="Group"/>
-          <small>Human-readable text description</small>
-        </div>
-      </div>
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="account">Account</label>
+			<div class="col-sm-10">
+				<ui-select multiple limit="1" ng-model="$ctrl.selectedUsers"
+					theme="bootstrap" sortable="true" close-on-select="true"
+					input-id="join-user-input" style="width: 100%;"
+					class="form-control" remove-selected="false"> <ui-select-match
+					placeholder="Account">{{$item.name.formatted}}</ui-select-match> <ui-select-choices
+					repeat="user in $ctrl.accounts">
+				<div
+					ng-bind-html="user.name.formatted | highlight:
+                $select.search"
+					class="user-select-name"></div>
+				</ui-select-choices></ui-select>
+			</div>
+		</div>
 
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="scopes">Scopes</label>
-        <div class="col-sm-10">
-          <input class="form-control" name="scopes" id="scopes" type="text" ng-model="$ctrl.policy.scopes" placeholder="Scopes" ng-minlength="1" ng-maxlength="512"/>
-          <small>Human-readable text description</small>
-        </div>
-      </div>
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="group">Group</label>
+			<div class="col-sm-10">
+				<ui-select multiple limit="1" ng-model="$ctrl.selectedGroups"
+					theme="bootstrap" sortable="true" close-on-select="true"
+					input-id="join-group-input" style="width: 100%;"
+					class="form-control"> <ui-select-match
+					placeholder="Type to search Group">{{$item.displayName}}</ui-select-match>
+				<ui-select-choices repeat="group in $ctrl.groups"
+					refresh="$ctrl.getAllGroups($select.search)">
+				<div
+					ng-bind-html="group.displayName | highlight:
+                $select.search"
+					class="group-select-name"></div>
+				<div
+					ng-bind-html="group['urn:indigo-dc:scim:schemas:IndigoGroup'].description"
+					ng-if="group['urn:indigo-dc:scim:schemas:IndigoGroup'].description"
+					class="group-select-description"></div>
+				</ui-select-choices> </ui-select>
+			</div>
+		</div>
 
-    <div class="control-group" id="rule">
-      <div class="control">
-        <label class="checkboxDefaultPolicy"></span>Rule</span>&nbsp;&nbsp;
-          <input type="radio" ng-model="$ctrl.policy.rule" value="PERMIT" name="rule_value" checked="checked"><label> PERMIT</label>
-          &nbsp;&nbsp;
-          <input type="radio" ng-model="$ctrl.policy.rule" value="DENY" name="rule_value"><label> DENY</label>
-        </label>
-      </div>
-    </div>
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="scopes">Scopes</label>
+			<div class="col-sm-10">
+				<input class="form-control" name="scope" id="scope" type="text"
+					ng-model="$ctrl.editScopes" placeholder="Scope" />
+			</div>
+		</div>
 
-    <div class="control-group" id="matchingPolicy">
-      <div class="control">
-        <label class="checkboxRestricted"></span>Matching Policy</span>&nbsp;&nbsp;
-          <input type="radio" ng-model="$ctrl.policy.matchingPolicy" value="EQ" name="matchingPolicy_value" checked="checked"><label> EQ</label>
-          &nbsp;&nbsp;
-          <input type="radio" ng-model="$ctrl.policy.matchingPolicy" alue="REGEXP" name="matchingPolicy_value"><label> REGEXP</label>
-          &nbsp;&nbsp;
-          <input type="radio" ng-model="$ctrl.policy.matchingPolicy" value="PATH" name="matchingPolicy_value"><label> PATH</label>
-        </label>
-      </div>
-    </div>
+		<div class="control-group" id="rule">
+			<div class="control">
+				<label class="checkboxDefaultPolicy"></span>Rule</span>&nbsp;&nbsp; <input
+					type="radio" ng-model="$ctrl.policy.rule" value="PERMIT"
+					name="rule_value" checked="checked"><label> PERMIT</label>
+					&nbsp;&nbsp; <input type="radio" ng-model="$ctrl.policy.rule"
+					value="DENY" name="rule_value"><label> DENY</label> </label>
+			</div>
+		</div>
 
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-primary" type="submit" name="create" id="modal-btn-confirm" ng-disabled="policyEditionForm.$invalid || policyEditionForm.$pristine || !$ctrl.enabled" ng-click="$ctrl.updatePolicy($ctrl.policy)">Save</button>
-    <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
-  </div>
+		<div class="control-group" id="matchingPolicy">
+			<div class="control">
+				<label class="checkboxRestricted"></span>Matching Policy</span>&nbsp;&nbsp;
+					<input type="radio" ng-model="$ctrl.policy.matchingPolicy"
+					value="EQ" name="matchingPolicy_value" checked="checked"><label>
+						EQ</label> &nbsp;&nbsp; <input type="radio"
+					ng-model="$ctrl.policy.matchingPolicy" alue="REGEXP"
+					name="matchingPolicy_value"><label> REGEXP</label>
+					&nbsp;&nbsp; <input type="radio"
+					ng-model="$ctrl.policy.matchingPolicy" value="PATH"
+					name="matchingPolicy_value"><label> PATH</label> </label>
+			</div>
+		</div>
+
+	</div>
+	<div class="modal-footer">
+		<button class="btn btn-primary" type="submit" name="create"
+			id="modal-btn-confirm"
+			ng-disabled="policyEditionForm.$invalid || policyEditionForm.$pristine || !$ctrl.enabled"
+			ng-click="$ctrl.updatePolicy($ctrl.policy)">Save</button>
+		<button class="btn btn-danger" type="button" name="dismiss"
+			id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
+	</div>
 </form>

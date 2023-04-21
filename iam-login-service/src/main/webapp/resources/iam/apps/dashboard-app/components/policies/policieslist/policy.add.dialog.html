@@ -78,18 +78,9 @@
 		<div class="form-group">
 			<label class="control-label col-sm-2" for="scope">Scopes</label>
 			<div class="col-sm-10">
-				<ui-select multiple ng-model="$ctrl.selectedScopes"
-					theme="bootstrap" sortable="true" close-on-select="false"
-					input-id="join-scope-input" style="width: 100%;"
-					class="form-control"> <ui-select-match
-					placeholder="Type to search Scope">{{$item.value}}</ui-select-match>
-				<ui-select-choices repeat="scope in $ctrl.scopes"
-					refresh="$ctrl.loadScopes($select.search)">
-				<div
-					ng-bind-html="scope.value | highlight:
-                $select.search"
-					class="scope-select-name"></div>
-				</ui-select-choices> <ui-select-no-choice> No results found </ui-select-no-choice> </ui-select>
+				<input class="form-control" name="scope" id="scope" type="text"
+					ng-model="$ctrl.policy.scopes" placeholder="Scope"
+					ng-maxlength="512" />
 			</div>
 		</div>
 
