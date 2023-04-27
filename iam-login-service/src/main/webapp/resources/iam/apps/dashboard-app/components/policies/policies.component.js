@@ -37,7 +37,7 @@
 
         self.closeLoadingModal = function() {
             $rootScope.pageLoadingProgress = 100;
-            self.modal.dismiss('Cancel');
+            self.modal.close(false);
         };
 
         self.handleError = function(error) {
