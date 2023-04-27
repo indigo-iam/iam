@@ -162,7 +162,10 @@
       var USERS_CHUNCK_SIZE = 100;
       self.selectedGroups = [];
       self.selectedUsers = [];
-      self.editScopes = self.policy.scopes.join(' ');
+
+      if (policy.scopes != null) {
+      self.editScopes = policy.scopes.join(' ');
+      }
 
       if (policy.account != null) {
       scimFactory.getUser(policy.account.uuid)
@@ -255,7 +258,7 @@
         PoliciesService, toaster) {
 
       var self = this;
-      
+
       self.$onInit = function() {
           self.policies = [];
           self.loadData(1);
@@ -294,6 +297,12 @@
             self.policies = r.data;
             $rootScope.policiesCount = self.policies.length;
             console.debug("init PoliciesListController", self.policies);
+
+        self.policies.forEach(function(policy) {
+          if(policy.group == null && policy.account == null && policy.scopes == null) {
+            self.defaultPolicy = policy;
+          }
+        });
 
 			  self.filteredItems = [];
 
