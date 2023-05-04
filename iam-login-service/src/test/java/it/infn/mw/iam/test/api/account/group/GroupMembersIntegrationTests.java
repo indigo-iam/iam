@@ -177,7 +177,7 @@ public class GroupMembersIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"}, scopes = {"admin:write"})
+  @WithMockOAuthUser(user = ADMIN_USER, authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin:write"})
   public void adminWithCorrectScopeCanAddGroupMember() throws Exception {
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -214,7 +214,7 @@ public class GroupMembersIntegrationTests {
       .andExpect(status().isForbidden())
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("admin:write")));
+      .andExpect(jsonPath("$.scope", equalTo("iam:admin:write")));
   }
 
   @Test

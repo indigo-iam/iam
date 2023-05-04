@@ -127,7 +127,7 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:read")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin:read")
   public void listPoliciesWorks() throws Exception {
     mvc.perform(get(ENDPOINT))
       .andExpect(status().isOk())
@@ -152,7 +152,7 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin:write")
   public void deletePolicyWorks() throws Exception {
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNoContent());
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNotFound());
@@ -175,7 +175,7 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:read", "admin:write"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"iam:admin:read", "iam:admin:write"})
   public void createPolicyWorks() throws Exception {
     repo.deleteAll();
 
@@ -213,7 +213,7 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"admin:write", "admin:read"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"iam:admin:write", "iam:admin:read"})
   public void createPolicyWithScopePoliciesWorks() throws Exception {
 
     repo.deleteAll();
@@ -260,7 +260,7 @@ public class ExchangePolicyApiIntegrationTests {
 
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin:write")
   public void policyValidation() throws Exception {
 
     // Empty object
