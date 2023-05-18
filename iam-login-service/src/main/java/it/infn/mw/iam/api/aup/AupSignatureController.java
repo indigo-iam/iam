@@ -23,8 +23,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -65,8 +67,8 @@ public class AupSignatureController {
   private Supplier<IllegalStateException> accountNotFoundException(String message) {
     return () -> new IllegalStateException(message);
   }
-  
-  private Supplier<AupSignatureNotFoundError> signatureNotFound(IamAccount account){
+
+  private Supplier<AupSignatureNotFoundError> signatureNotFound(IamAccount account) {
     return () -> new AupSignatureNotFoundError(account);
   }
 
@@ -90,8 +92,8 @@ public class AupSignatureController {
       .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
 
 
-    IamAupSignature sig = signatureRepo.findSignatureForAccount(account)
-      .orElseThrow(signatureNotFound(account));
+    IamAupSignature sig =
+        signatureRepo.findSignatureForAccount(account).orElseThrow(signatureNotFound(account));
 
     return signatureConverter.dtoFromEntity(sig);
   }
@@ -101,11 +103,21 @@ public class AupSignatureController {
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
-    
-    IamAupSignature sig = signatureRepo.findSignatureForAccount(account)
-        .orElseThrow(signatureNotFound(account));
 
-      return signatureConverter.dtoFromEntity(sig);
+    IamAupSignature sig =
+        signatureRepo.findSignatureForAccount(account).orElseThrow(signatureNotFound(account));
+
+    return signatureConverter.dtoFromEntity(sig);
+  }
+
+  @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PUT)
+  @PreAuthorize("#oauth2.hasScope('iam:admin:read')")
+  public void setSignatureForAccount(@PathVariable String accountId,
+      @RequestBody @Validated AupSignatureDTO dto) {
+    IamAccount account = accountUtils.getByAccountId(accountId)
+      .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
+
+    signatureRepo.updateSignatureForAccount(account, dto.getSignatureTime());
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
