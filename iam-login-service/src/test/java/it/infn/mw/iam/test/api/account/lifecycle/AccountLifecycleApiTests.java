@@ -117,7 +117,7 @@ public class AccountLifecycleApiTests extends TestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   public void setEndTimeWorksForAdminUserWithScope() throws Exception {
     Date newEndTime = new Date();
     AccountLifecycleDTO dto = new AccountLifecycleDTO();

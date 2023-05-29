@@ -169,7 +169,7 @@ public class AccountLabelsTests extends TestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   public void setAndDeleteLabelWorksWithScope() throws Exception {
 
     mvc

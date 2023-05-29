@@ -261,7 +261,7 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   public void AddAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = ROLE_ADMIN;
@@ -313,7 +313,7 @@ public class AccountAuthorityEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   public void DeleteAuthorityWorkWithCorrectScope() throws Exception {
 
     String authority = "ROLE_USER";

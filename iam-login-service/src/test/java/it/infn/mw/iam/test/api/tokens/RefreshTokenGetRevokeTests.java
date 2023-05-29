@@ -48,7 +48,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin:read", "iam:admin:write"})
+@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = {"iam:admin.read", "iam:admin.write"})
 public class RefreshTokenGetRevokeTests extends TestTokensUtils {
 
   public static final String[] SCOPES = {"openid", "profile", "offline_access"};

@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin:read")
+@WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
 public class RefreshTokenGetListTests extends TestTokensUtils {
 
   public static final String[] SCOPES = {"openid", "profile", "offline_access"};

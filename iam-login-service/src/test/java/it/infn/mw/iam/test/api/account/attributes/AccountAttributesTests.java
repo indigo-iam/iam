@@ -248,11 +248,11 @@ public class AccountAttributesTests {
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("iam:admin:write")));
+      .andExpect(jsonPath("$.scope", equalTo("iam:admin.write")));
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin:write")
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = "iam:admin.write")
   public void setAttributeWorksWithCorrectScope() throws Exception {
 
     IamAccount testAccount =
@@ -316,7 +316,7 @@ public class AccountAttributesTests {
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
       .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("iam:admin:write")));
+      .andExpect(jsonPath("$.scope", equalTo("iam:admin.write")));
   }
 
   @Test

@@ -71,7 +71,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature", method = RequestMethod.POST)
-  @PreAuthorize("#oauth2.hasScope('iam:admin:write') or #iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_USER')")
   @ResponseStatus(code = HttpStatus.CREATED)
   public void signAup() {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
@@ -84,7 +84,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin:read') or #iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_USER')")
   public AupSignatureDTO getSignature() {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
@@ -97,7 +97,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
+  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
