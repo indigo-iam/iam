@@ -111,7 +111,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PUT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin:write')")
+  @PreAuthorize("#oauth2.hasScope('iam:admin.write')")
   public void setSignatureForAccount(@PathVariable String accountId,
       @RequestBody @Validated AupSignatureDTO dto) {
     IamAccount account = accountUtils.getByAccountId(accountId)
