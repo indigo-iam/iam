@@ -15,13 +15,14 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,6 +48,7 @@ import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -234,5 +236,41 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
       .perform(
           get("/iam/aup/signature/" + TEST_USER_UUID).with(user("admin").roles("USER", "ADMIN")))
       .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = {"iam:admin.read", "iam:admin.write"})
+  public void updateAupWithRightScope() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+
+    Date now = new Date();
+
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+
+    String sigString = mvc.perform(get("/iam/aup/signature"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.aup").exists())
+        .andExpect(jsonPath("$.account.uuid").exists())
+        .andExpect(jsonPath("$.account.username", equalTo("admin")))
+        .andExpect(jsonPath("$.account.name", equalTo("Admin User")))
+        .andExpect(jsonPath("$.signatureTime").exists())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
+    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(now));
+
+    Date newEndTime = new Date();
+    AupSignatureDTO dto = new AupSignatureDTO();
+    dto.setSignatureTime(newEndTime);
+
+    mvc
+    .perform(put("/iam/aup/signature/{accountId}", ADMIN_USER_UUID).content(mapper.writeValueAsString(dto))
+      .contentType(APPLICATION_JSON))
+    .andExpect(OK);
   }
 }
