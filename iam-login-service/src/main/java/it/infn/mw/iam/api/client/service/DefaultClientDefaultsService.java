@@ -60,22 +60,11 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setClientId(UUID.randomUUID().toString());
     }
 
-    client.setAccessTokenValiditySeconds(
-        properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-
     client
       .setIdTokenValiditySeconds(properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
 
     client.setDeviceCodeValiditySeconds(
         properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
-
-    final int rtSecs = properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds();
-
-    if (rtSecs < 0) {
-      client.setRefreshTokenValiditySeconds(null);
-    } else {
-      client.setRefreshTokenValiditySeconds(rtSecs);
-    }
 
     if (client.getGrantTypes().contains(IMPLICIT.getGrantType()) || client.getGrantTypes()
       .contains(AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType())) {
