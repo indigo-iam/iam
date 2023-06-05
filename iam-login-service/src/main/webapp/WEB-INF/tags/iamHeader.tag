@@ -92,6 +92,10 @@ function getAccessTokenValiditySeconds() {
 		return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
 }
 
+function getRefreshTokenValiditySeconds() {
+		return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
+}
+
 function getOidcEnabled() {
   return ${loginPageConfiguration.oidcEnabled};
 }

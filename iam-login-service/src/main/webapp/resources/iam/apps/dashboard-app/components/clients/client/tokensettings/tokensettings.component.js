@@ -27,30 +27,38 @@
         self.canIssueRefreshTokens = false;
         self.hasDeviceCodeGrantType = false;
         self.accessTokenValiditySeconds = getAccessTokenValiditySeconds();
+        self.refreshTokenValiditySeconds = getRefreshTokenValiditySeconds();
+        self.isATBoxChecked = false;
+        self.isRTBoxChecked = false;
 
         self.$onInit = function () {
+
             console.debug('TokenSettingsController.self', self);
             if (!self.client.access_token_validity_seconds) {
                 self.client.access_token_validity_seconds = self.accessTokenValiditySeconds;
             }
 
-            console.log('client.access_token_validity_seconds = ' + self.client.access_token_validity_seconds);
-            console.log('accessTokenValiditySeconds = ' + self.accessTokenValiditySeconds);
-
             if (!self.client.refresh_token_validity_seconds) {
-                self.client.refresh_token_validity_seconds = 0;
+                self.client.refresh_token_validity_seconds = self.refreshTokenValiditySeconds;
             }
 
             $scope.$watch('$ctrl.client.access_token_validity_seconds', function handleChange(newVal, oldVal) {
                 if(newVal <= 0){
                     self.client.access_token_validity_seconds = 0;
+                    self.isATBoxChecked = true;
                 }
+                else self.isATBoxChecked = false;
+
+                console.log('Is AT box checked? ' + self.isATBoxChecked);
+                console.log('client.access_token_validity_seconds = ' + self.client.access_token_validity_seconds);
             });
 
             $scope.$watch('$ctrl.client.refresh_token_validity_seconds', function handleChange(newVal, oldVal) {
-                if (!self.client.refresh_token_validity_seconds) {
+                if (newVal <= 0) {
                     self.client.refresh_token_validity_seconds = 0;
+                    self.isRTBoxChecked = true;
                 }
+                else self.isRTBoxChecked = false;
             });
 
             $scope.$watch('$ctrl.client.grant_types', function handleChange(newVal, oldVal) {
