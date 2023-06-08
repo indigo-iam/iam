@@ -51,6 +51,8 @@
     <rest-assured.version>4.4.0</rest-assured.version>
     <json-path.version>2.2.0</json-path.version>
 
+    <flyway.version>7.15.0</flyway.version>
+
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
     <jacoco-plugin.version>0.8.7</jacoco-plugin.version>
     <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
@@ -230,6 +232,12 @@
         <version>${spring-security-saml.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      
       <!-- JSR APIs (for Java 11 compatibility) -->
       <dependency>
         <groupId>javax.annotation</groupId>
@@ -247,12 +255,6 @@
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
         <version>${jaxb-runtime.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-core</artifactId>
-        <version>7.15.0</version>
       </dependency>
 
     </dependencies>
