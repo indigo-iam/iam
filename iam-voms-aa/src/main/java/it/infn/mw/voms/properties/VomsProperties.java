@@ -104,7 +104,7 @@ public class VomsProperties {
   public static class VOMSAAProperties {
 
     @NotBlank
-    @Pattern(regexp="^[a-z_]([a-z0-9_-]*$)$")
+    @Pattern(regexp = "^[a-z][a-z0-9\\-]*(\\.[a-z][a-z0-9\\-]*)*$")
     private String voName;
 
     @NotBlank

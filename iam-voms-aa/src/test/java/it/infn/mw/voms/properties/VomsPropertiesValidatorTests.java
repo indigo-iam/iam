@@ -18,6 +18,7 @@ package it.infn.mw.voms.properties;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.ConstraintViolation;
@@ -34,6 +35,10 @@ import it.infn.mw.voms.properties.VomsProperties.VOMSAAProperties;
 public class VomsPropertiesValidatorTests {
   private static ValidatorFactory validatorFactory;
   private static Validator validator;
+  private static final List<String> invalidExampleVONames = List.of("VO-name.test", "vo_name.test", "1vo-name.test",
+      "_vo-name.test", "vo_name.test", "vo_name.test1");
+  private static final String validVOName = "vo1-name.test";
+  private static final String validVOHost = "vo-host";
 
   @BeforeClass
   public static void createValidator() {
@@ -47,20 +52,22 @@ public class VomsPropertiesValidatorTests {
   }
 
   @Test
-  public void invalidUppercaseVoName() {
+  public void invalidVoName() {
     VOMSAAProperties vomsaa = new VOMSAAProperties();
-    vomsaa.setHost("vo-host");
-    vomsaa.setVoName("VO-name");
-    Set<ConstraintViolation<VOMSAAProperties>> violations = validator.validate(vomsaa);
-    assertFalse(violations.isEmpty());
+    vomsaa.setHost(validVOHost);
+    for (String voName : invalidExampleVONames) {
+      vomsaa.setVoName(voName);
+      Set<ConstraintViolation<VOMSAAProperties>> violations = validator.validate(vomsaa);
+      assertFalse(violations.isEmpty());
+    }
   }
 
   @Test
-  public void validDowncaseVoName() {
+  public void validVoName() {
     VOMSAAProperties vomsaa = new VOMSAAProperties();
-    vomsaa.setVoName("vo-name");
-    vomsaa.setHost("vo-host");
+    vomsaa.setHost(validVOHost);
+    vomsaa.setVoName(validVOName);
     Set<ConstraintViolation<VOMSAAProperties>> violations = validator.validate(vomsaa);
     assertTrue(violations.isEmpty());
-  } 
+  }
 }
