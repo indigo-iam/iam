@@ -21,7 +21,7 @@
             <label for="at_timeout">Access token timeout (seconds)</label>
             <input id="at_timeout" class="form-control" type="text"
                 ng-model="$ctrl.client.access_token_validity_seconds"
-                ng-disabled="$ctrl.isATBoxChecked">
+                ng-disabled="$ctrl.atDoNotExpire  && $ctrl.accessTokenValiditySeconds > 0">
         </div>
 
         <div class="checkbox">
@@ -67,7 +67,7 @@
 
         <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
             ng-required ng-min="30"
-            ng-disabled="$ctrl.isRTBoxChecked && $ctrl.refreshTokenValiditySeconds > 0">
+            ng-disabled="$ctrl.rtDoNotExpire && $ctrl.refreshTokenValiditySeconds > 0">
 
         <div class="checkbox">
             <label>
