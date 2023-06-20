@@ -25,7 +25,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
-import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientDefaultsProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.core.web.loginpage.LoginPageConfiguration;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
