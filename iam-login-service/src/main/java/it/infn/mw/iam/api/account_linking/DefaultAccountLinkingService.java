@@ -151,7 +151,7 @@ public class DefaultAccountLinkingService
 
     Optional<IamX509Certificate> linkedCert = userAccount.getX509Certificates()
       .stream()
-      .filter(c -> c.getSubjectDn().equals(x509Credential.getSubject()))
+      .filter(c -> c.getIssuerDn().equals(x509Credential.getIssuer()))
       .findAny();
 
     if (linkedCert.isPresent()) {

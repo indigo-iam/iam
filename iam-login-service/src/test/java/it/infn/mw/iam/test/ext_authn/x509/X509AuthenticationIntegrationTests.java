@@ -195,6 +195,26 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getLastUpdateTime().after(lastUpdateTime), is(true));
+
+    MockHttpSession session1 = loginAsTestUserWithTest1Cert(mvc);
+
+    IamX509AuthenticationCredential credential1 =
+        (IamX509AuthenticationCredential) session1.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential1.getSubject(), equalTo(TEST_0_SUBJECT));
+    assertThat(credential1.getIssuer(), equalTo(TEST_NEW_ISSUER));
+
+    String confirmationMsg =
+        String.format("Certificate '%s' linked succesfully", credential1.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session1).with(csrf().asHeader()))
+    .andExpect(status().is3xxRedirection())
+    .andExpect(redirectedUrl("/dashboard"))
+    .andExpect(
+        flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
+
+     assertThat(linkedAccount.getX509Certificates().stream().count(), is(2L));
+
   }
 
 

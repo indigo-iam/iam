@@ -51,10 +51,10 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
   @Column(nullable = false, length = 36)
   private String label;
 
-  @Column(name = "subject_dn", nullable = false, length = 128, unique = true)
+  @Column(name = "subject_dn", nullable = false, length = 128)
   private String subjectDn;
 
-  @Column(name = "issuer_dn", nullable = false, length = 128)
+  @Column(name = "issuer_dn", nullable = false, length = 128, unique = true)
   private String issuerDn;
 
   @Lob
@@ -102,10 +102,7 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
     if (getClass() != obj.getClass())
       return false;
     IamX509Certificate other = (IamX509Certificate) obj;
-    if (subjectDn == null) {
-      if (other.subjectDn != null)
-        return false;
-    } else if (!subjectDn.equals(other.subjectDn))
+    if (!issuerDn.equals(other.issuerDn))
       return false;
     return true;
   }
