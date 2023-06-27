@@ -102,9 +102,7 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
     if (getClass() != obj.getClass())
       return false;
     IamX509Certificate other = (IamX509Certificate) obj;
-    if (!issuerDn.equals(other.issuerDn))
-      return false;
-    return true;
+    return issuerDn.equals(other.issuerDn);
   }
 
   @Override
