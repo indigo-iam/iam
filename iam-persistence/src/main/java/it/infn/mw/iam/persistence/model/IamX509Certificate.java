@@ -54,7 +54,7 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
   @Column(name = "subject_dn", nullable = false, length = 128)
   private String subjectDn;
 
-  @Column(name = "issuer_dn", nullable = false, length = 128, unique = true)
+  @Column(name = "issuer_dn", nullable = false, length = 128)
   private String issuerDn;
 
   @Lob
