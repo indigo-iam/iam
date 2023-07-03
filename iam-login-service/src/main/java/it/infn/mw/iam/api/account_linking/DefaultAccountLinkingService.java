@@ -151,14 +151,13 @@ public class DefaultAccountLinkingService
 
     Optional<IamX509Certificate> linkedCert = userAccount.getX509Certificates()
       .stream()
+      .filter(c -> c.getSubjectDn().equals(x509Credential.getSubject()))
       .filter(c -> c.getIssuerDn().equals(x509Credential.getIssuer()))
       .findAny();
 
     if (linkedCert.isPresent()) {
 
       linkedCert.ifPresent(c -> {
-        c.setSubjectDn(x509Credential.getSubject());
-        c.setIssuerDn(x509Credential.getIssuer());
         c.setCertificate(x509Credential.getCertificateChainPemString());
         c.setLastUpdateTime(new Date());
       });

@@ -217,6 +217,48 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   }
 
+  @Test
+  public void testx509AccountLinkingWithSameSubjectAndIssuer() throws Exception {
+
+    MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
+    IamX509AuthenticationCredential credential =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential.getSubject(), equalTo(TEST_0_SUBJECT));
+
+    String confirmationMessage =
+        String.format("Certificate '%s' linked succesfully", credential.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session).with(csrf().asHeader()))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"))
+      .andExpect(
+          flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
+
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
+
+    assertThat(linkedAccount.getUsername(), equalTo("test"));
+
+    MockHttpSession session1 = loginAsTestUserWithTest0Cert(mvc);
+
+    IamX509AuthenticationCredential credential1 =
+        (IamX509AuthenticationCredential) session1.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential1.getSubject(), equalTo(TEST_0_SUBJECT));
+    assertThat(credential1.getIssuer(), equalTo(TEST_0_ISSUER));
+
+    String confirmationMsg =
+        String.format("Certificate '%s' linked succesfully", credential1.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session1).with(csrf().asHeader()))
+    .andExpect(status().is3xxRedirection())
+    .andExpect(redirectedUrl("/dashboard"))
+    .andExpect(
+        flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
+
+     assertThat(linkedAccount.getX509Certificates().stream().count(), is(1L));
+  }
 
   @Test
   @WithMockUser(username = "test")
