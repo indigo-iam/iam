@@ -195,7 +195,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getLastUpdateTime().after(lastUpdateTime), is(true));
-    assertThat(linkedAccount.getX509Certificates().stream().count(), is(1L));
+    assertThat(linkedAccount.getX509Certificates().size(), is(1));
 
     MockHttpSession session1 = loginAsTestUserWithTest1Cert(mvc);
 
@@ -214,7 +214,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-     assertThat(linkedAccount.getX509Certificates().stream().count(), is(2L));
+     assertThat(linkedAccount.getX509Certificates().size(), is(2));
 
   }
 
@@ -258,7 +258,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-     assertThat(linkedAccount.getX509Certificates().stream().count(), is(2L));
+     assertThat(linkedAccount.getX509Certificates().size(), is(2));
   }
 
   @Test
