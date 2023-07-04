@@ -195,6 +195,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getLastUpdateTime().after(lastUpdateTime), is(true));
+    assertThat(linkedAccount.getX509Certificates().stream().count(), is(1L));
 
     MockHttpSession session1 = loginAsTestUserWithTest1Cert(mvc);
 
@@ -218,7 +219,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   }
 
   @Test
-  public void testx509AccountLinkingWithSameSubjectAndIssuer() throws Exception {
+  public void testx509AccountLinkingWithDifferentSubjectAndIssuer() throws Exception {
 
     MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
     IamX509AuthenticationCredential credential =
@@ -240,13 +241,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     assertThat(linkedAccount.getUsername(), equalTo("test"));
 
-    MockHttpSession session1 = loginAsTestUserWithTest0Cert(mvc);
+    MockHttpSession session1 = loginAsTestUserWithTest2Cert(mvc);
 
     IamX509AuthenticationCredential credential1 =
         (IamX509AuthenticationCredential) session1.getAttribute(X509_CREDENTIAL_SESSION_KEY);
 
-    assertThat(credential1.getSubject(), equalTo(TEST_0_SUBJECT));
-    assertThat(credential1.getIssuer(), equalTo(TEST_0_ISSUER));
+    assertThat(credential1.getSubject(), equalTo(TEST_1_SUBJECT));
+    assertThat(credential1.getIssuer(), equalTo(TEST_NEW_ISSUER));
 
     String confirmationMsg =
         String.format("Certificate '%s' linked succesfully", credential1.getSubject());
@@ -257,7 +258,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-     assertThat(linkedAccount.getX509Certificates().stream().count(), is(1L));
+     assertThat(linkedAccount.getX509Certificates().stream().count(), is(2L));
   }
 
   @Test
