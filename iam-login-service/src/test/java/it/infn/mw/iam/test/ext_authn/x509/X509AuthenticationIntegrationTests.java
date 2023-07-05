@@ -39,7 +39,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +59,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import junit.framework.AssertionFailedError;
@@ -344,6 +349,23 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("http://localhost/login"));
 
     resolvedAccount.setActive(true);
+
+  }
+
+  @Test
+  public void testHashAndEqualsMethods() {
+
+   HashMap<IamX509Certificate, Integer> certs = new HashMap<IamX509Certificate, Integer>();
+   certs.put(TEST_0_IAM_X509_CERT, TEST_0_IAM_X509_CERT.hashCode());
+   certs.put(TEST_1_IAM_X509_CERT, TEST_1_IAM_X509_CERT.hashCode());
+   certs.put(TEST_2_IAM_X509_CERT, TEST_2_IAM_X509_CERT.hashCode());
+   assertThat(certs.size(), is(2));
+
+   Set<IamX509Certificate> set1 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+   assertThat(set1.size(), is(2));
+
+   Set<IamX509Certificate> set2 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT));
+   assertThat(set2.size(), is(1));
 
   }
 
