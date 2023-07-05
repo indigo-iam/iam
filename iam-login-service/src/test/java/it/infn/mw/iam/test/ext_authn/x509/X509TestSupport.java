@@ -85,6 +85,7 @@ public class X509TestSupport {
 
   protected IamX509Certificate TEST_0_IAM_X509_CERT;
   protected IamX509Certificate TEST_1_IAM_X509_CERT;
+  protected IamX509Certificate TEST_2_IAM_X509_CERT;
 
   protected PEMCredential TEST_0_PEM_CREDENTIAL;
 
@@ -123,6 +124,13 @@ public class X509TestSupport {
       TEST_1_IAM_X509_CERT.setIssuerDn(TEST_1_ISSUER);
       TEST_1_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
       TEST_1_IAM_X509_CERT.setPrimary(false);
+
+      TEST_2_IAM_X509_CERT = new IamX509Certificate();
+      TEST_2_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
+      TEST_2_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
+      TEST_2_IAM_X509_CERT.setIssuerDn(TEST_1_ISSUER);
+      TEST_2_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
+      TEST_2_IAM_X509_CERT.setPrimary(false);
 
       // This is how NGINX encodes certificate in the header
       TEST_0_CERT_STRING_NGINX = TEST_0_CERT_STRING.replace('\n', '\t');
