@@ -27,6 +27,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -41,9 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -355,17 +355,17 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
   @Test
   public void testHashAndEqualsMethods() {
 
-   HashMap<IamX509Certificate, Integer> certs = new HashMap<IamX509Certificate, Integer>();
-   certs.put(TEST_0_IAM_X509_CERT, TEST_0_IAM_X509_CERT.hashCode());
-   certs.put(TEST_1_IAM_X509_CERT, TEST_1_IAM_X509_CERT.hashCode());
-   certs.put(TEST_2_IAM_X509_CERT, TEST_2_IAM_X509_CERT.hashCode());
-   assertThat(certs.size(), is(2));
-
-   Set<IamX509Certificate> set1 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+   HashSet<IamX509Certificate> set1 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
    assertThat(set1.size(), is(2));
+   assertNotEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_1_IAM_X509_CERT.hashCode());
+   assertEquals(set1.hashCode(), TEST_0_IAM_X509_CERT.hashCode()+TEST_1_IAM_X509_CERT.hashCode());
+   assertNotEquals(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT);
 
-   Set<IamX509Certificate> set2 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT));
+   HashSet<IamX509Certificate> set2 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT));
    assertThat(set2.size(), is(1));
+   assertEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_2_IAM_X509_CERT.hashCode());
+   assertEquals(set2.hashCode(), TEST_0_IAM_X509_CERT.hashCode());
+   assertEquals(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT);
 
   }
 
