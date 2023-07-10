@@ -220,6 +220,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     result.put("code_challenge_methods_supported", CODE_CHALLENGE_METHODS);
 
+    updateSupportedScopes();
     result.put("scopes_supported", supportedScopes);
     
     return result;
