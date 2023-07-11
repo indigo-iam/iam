@@ -105,7 +105,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String deviceAuthorizationEndpoint;
   private final String aboutEndpoint;
   private Set<String> supportedScopes;
-  
+
 
   public IamWellKnownInfoProvider(IamProperties properties,
       JWTEncryptionAndDecryptionService encService, SystemScopeService scopeService) {
@@ -175,7 +175,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     result.put("jwks_uri", jwkEndpoint);
     result.put("registration_endpoint", clientRegistrationEndpoint);
 
-    result.put("introspection_endpoint", introspectionEndpoint );
+    result.put("introspection_endpoint", introspectionEndpoint);
     result.put("revocation_endpoint", revocationEndpoint);
     result.put("device_authorization_endpoint", deviceAuthorizationEndpoint);
 
@@ -215,7 +215,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     updateSupportedScopes();
     result.put("scopes_supported", supportedScopes);
-    
+
     return result;
   }
 

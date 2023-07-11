@@ -42,9 +42,11 @@ public class CacheConfig {
   
   @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
   public void evictWellKnownCache() {
-	  
-	cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
-	LOG.debug("well-known config cache evicted");
+	
+	if(cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY) != null) {
+	  cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
+	  LOG.debug("well-known config cache evicted");
+	}
   }
 
   @Bean
