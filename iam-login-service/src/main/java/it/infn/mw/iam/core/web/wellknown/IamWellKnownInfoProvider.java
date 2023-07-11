@@ -226,10 +226,4 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     return result;
   }
 
-  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-  @CacheEvict(allEntries = true, cacheNames = CACHE_KEY)
-  protected void evictCacheAndUpdateSupportedScopes() {
-    updateSupportedScopes();
-    LOG.debug("well-known config cache evicted");
-  }
 }

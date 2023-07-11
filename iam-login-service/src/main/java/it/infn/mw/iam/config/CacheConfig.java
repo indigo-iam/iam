@@ -17,11 +17,17 @@ package it.infn.mw.iam.config;
 
 
 
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -29,9 +35,22 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 @EnableCaching
 public class CacheConfig {
 
+  private static final Logger LOG = LoggerFactory.getLogger(CacheConfig.class);
+  
+  @Autowired
+  CacheManager cacheManager;
+  
+  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+  protected void evictWellKnownCache() {
+	  
+	cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY).clear();
+	LOG.debug("well-known config cache evicted");
+  }
+
   @Bean
   public CacheManager cacheManager() {
-    return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY);
+
+	return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY);
   }
 
 }
