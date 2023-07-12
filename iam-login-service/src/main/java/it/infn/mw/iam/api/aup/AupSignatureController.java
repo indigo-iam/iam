@@ -18,6 +18,8 @@ package it.infn.mw.iam.api.aup;
 import java.util.Date;
 import java.util.function.Supplier;
 
+import javax.security.auth.login.AccountNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -64,8 +66,8 @@ public class AupSignatureController {
     this.eventPublisher = publisher;
   }
 
-  private Supplier<IllegalStateException> accountNotFoundException(String message) {
-    return () -> new IllegalStateException(message);
+  private Supplier<AccountNotFoundException> accountNotFoundException(String message) {
+    return () -> new AccountNotFoundException(message);
   }
 
   private Supplier<AupSignatureNotFoundError> signatureNotFound(IamAccount account) {
@@ -73,9 +75,9 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature", method = RequestMethod.POST)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_USER')")
   @ResponseStatus(code = HttpStatus.CREATED)
-  public void signAup() {
+  public void signAup() throws AccountNotFoundException {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
 
@@ -86,8 +88,8 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_USER')")
-  public AupSignatureDTO getSignature() {
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_USER')")
+  public AupSignatureDTO getSignature() throws AccountNotFoundException {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
 
@@ -100,7 +102,7 @@ public class AupSignatureController {
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.GET)
   @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
-  public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) {
+  public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
 
@@ -113,16 +115,22 @@ public class AupSignatureController {
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PUT)
   @PreAuthorize("#oauth2.hasScope('iam:admin.write')")
   public void setSignatureForAccount(@PathVariable String accountId,
-      @RequestBody @Validated AupSignatureDTO dto) {
+      @RequestBody @Validated AupSignatureDTO dto) throws AccountNotFoundException {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
 
-    signatureRepo.updateSignatureForAccount(account, dto.getSignatureTime());
+    signatureRepo.createSignatureForAccount(account, dto.getSignatureTime());
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(AupSignatureNotFoundError.class)
   public ErrorDTO notFoundError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(AccountNotFoundException.class)
+  public ErrorDTO accountNotFoundError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }

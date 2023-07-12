@@ -244,33 +244,32 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
 
-    Date now = new Date();
-
-    mockTimeProvider.setTime(now.getTime());
-
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
-
-    String sigString = mvc.perform(get("/iam/aup/signature"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.aup").exists())
-        .andExpect(jsonPath("$.account.uuid").exists())
-        .andExpect(jsonPath("$.account.username", equalTo("admin")))
-        .andExpect(jsonPath("$.account.name", equalTo("Admin User")))
-        .andExpect(jsonPath("$.signatureTime").exists())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
-    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(now));
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
 
     Date newEndTime = new Date();
     AupSignatureDTO dto = new AupSignatureDTO();
     dto.setSignatureTime(newEndTime);
 
     mvc
-    .perform(put("/iam/aup/signature/{accountId}", ADMIN_USER_UUID).content(mapper.writeValueAsString(dto))
+    .perform(put("/iam/aup/signature/{accountId}", TEST_USER_UUID).content(mapper.writeValueAsString(dto))
       .contentType(APPLICATION_JSON))
     .andExpect(OK);
+
+    String sigString = mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.aup").exists())
+        .andExpect(jsonPath("$.account.uuid").exists())
+        .andExpect(jsonPath("$.account.username", equalTo("test")))
+        .andExpect(jsonPath("$.account.name", equalTo("Test User")))
+        .andExpect(jsonPath("$.signatureTime").exists())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
+    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(newEndTime));
+
   }
 }
