@@ -44,10 +44,10 @@ public class CacheConfig {
   @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
   public void evictWellKnownCache() {
 
-    Cache getCacheForWellKnown = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
+    Cache cacheForWellKnown = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
 
-    if (getCacheForWellKnown != null) {
-      getCacheForWellKnown.clear();
+    if (cacheForWellKnown != null) {
+      cacheForWellKnown.clear();
       LOG.debug("well-known config cache evicted");
     }
   }
