@@ -121,7 +121,8 @@ public class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.introspection_endpoint", is("http://localhost:8080/introspect")))
       .andExpect(jsonPath("$.revocation_endpoint", is("http://localhost:8080/revoke")))
       .andExpect(jsonPath("$.userinfo_endpoint", is("http://localhost:8080/userinfo")))
-      .andExpect(jsonPath("$.jwks_uri", is("http://localhost:8080/jwk")));
+      .andExpect(jsonPath("$.jwks_uri", is("http://localhost:8080/jwk")))
+      .andExpect(jsonPath("$.scim_endpoint", is("http://localhost:8080/scim")));
   }
 
   @Test
@@ -132,23 +133,24 @@ public class WellKnownConfigurationEndpointTests {
       .map(SystemScope::getValue)
       .collect(Collectors.toSet());
 
-    
-    String responseJson = 
-    mvc.perform(get(endpoint))
+
+    String responseJson = mvc.perform(get(endpoint))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scopes_supported", notNullValue()))
-      .andReturn().getResponse().getContentAsString();
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
-    
-    ArrayNode scopesSupported  = (ArrayNode) mapper.readTree(responseJson).get("scopes_supported");
-    
+
+    ArrayNode scopesSupported = (ArrayNode) mapper.readTree(responseJson).get("scopes_supported");
+
     Set<String> returnedScopes = Sets.newHashSet();
 
     Iterator<JsonNode> scopesIterator = scopesSupported.iterator();
     while (scopesIterator.hasNext()) {
       returnedScopes.add(scopesIterator.next().asText());
     }
-    
+
     assertTrue(returnedScopes.containsAll(unrestrictedScopes));
 
   }
