@@ -66,10 +66,11 @@ public class WellKnownConfigurationEndpointTests {
   private static final String IAM_ORGANISATION_NAME_CLAIM = "organisation_name";
   private static final String IAM_GROUPS_CLAIM = "groups";
   private static final String IAM_EXTERNAL_AUTHN_CLAIM = "external_authn";
-  
+
   private static final String SYSTEM_SCOPE_0 = "new-scope0";
   private static final String SYSTEM_SCOPE_1 = "new-scope1";
-  
+  private static final String SYSTEM_SCOPE_2 = "new-scope2";
+
 
   @Autowired
   private MockMvc mvc;
@@ -79,10 +80,10 @@ public class WellKnownConfigurationEndpointTests {
 
   @Autowired
   private ObjectMapper mapper;
-  
+
   @Autowired
   private CacheConfig cacheConfig;
-  
+
   @Test
   public void testGrantTypesSupported() throws Exception {
 
@@ -141,58 +142,59 @@ public class WellKnownConfigurationEndpointTests {
       .map(SystemScope::getValue)
       .collect(Collectors.toSet());
 
-    
-    String responseJson = 
-    mvc.perform(get(endpoint))
+
+    String responseJson = mvc.perform(get(endpoint))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scopes_supported", notNullValue()))
-      .andReturn().getResponse().getContentAsString();
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
-    
-    ArrayNode scopesSupported  = (ArrayNode) mapper.readTree(responseJson).get("scopes_supported");
-    
+
+    ArrayNode scopesSupported = (ArrayNode) mapper.readTree(responseJson).get("scopes_supported");
+
     Set<String> returnedScopes = Sets.newHashSet();
 
     Iterator<JsonNode> scopesIterator = scopesSupported.iterator();
     while (scopesIterator.hasNext()) {
       returnedScopes.add(scopesIterator.next().asText());
     }
-    
+
     assertTrue(returnedScopes.containsAll(unrestrictedScopes));
 
   }
-  
+
   @Test
   public void testWellKnownCacheEviction() throws Exception {
-  
-	cacheConfig.evictWellKnownCache();
-	  
-	SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
-	scopeService.save(scope);
-	  
-	mvc.perform(get(endpoint))
-	  .andExpect(status().isOk())
-	  .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+
+    cacheConfig.evictWellKnownCache();
+
+    SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
       .andExpect(jsonPath("$.scopes_supported").isArray())
       .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
-	
-	scope = new SystemScope(SYSTEM_SCOPE_1);
-	scopeService.save(scope);
-	
-	mvc.perform(get(endpoint))
-	  .andExpect(status().isOk())
-	  .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+
+    scope = new SystemScope(SYSTEM_SCOPE_1);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
       .andExpect(jsonPath("$.scopes_supported").isArray())
       .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
-	
-	cacheConfig.evictWellKnownCache();
-	
-	mvc.perform(get(endpoint))
-	  .andExpect(status().isOk())
-	  .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+
+    cacheConfig.evictWellKnownCache();
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
       .andExpect(jsonPath("$.scopes_supported").isArray())
       .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_1)));
-	
+
   }
 
 }
