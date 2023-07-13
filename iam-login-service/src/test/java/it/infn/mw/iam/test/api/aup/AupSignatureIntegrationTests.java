@@ -271,5 +271,9 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
     AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
     assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(newEndTime));
 
+    mvc.perform(get("/iam/aup/signature/{accountId}", "1234"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", equalTo("Account not found for id: 1234")));
+
   }
 }
