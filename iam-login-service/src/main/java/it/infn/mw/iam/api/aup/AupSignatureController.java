@@ -112,7 +112,7 @@ public class AupSignatureController {
     return signatureConverter.dtoFromEntity(sig);
   }
 
-  @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PUT)
+  @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PATCH)
   @PreAuthorize("#oauth2.hasScope('iam:admin.write')")
   public void setSignatureForAccount(@PathVariable String accountId,
       @RequestBody @Validated AupSignatureDTO dto) throws AccountNotFoundException {
