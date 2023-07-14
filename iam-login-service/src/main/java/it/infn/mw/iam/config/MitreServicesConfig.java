@@ -159,7 +159,7 @@ public class MitreServicesConfig {
   @Bean
   OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
 
-    return new ScopeMatcherOAuthRequestValidator(registry, 50);
+    return new ScopeMatcherOAuthRequestValidator(registry);
   }
 
   @Bean

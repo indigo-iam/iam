@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.audit.events.client.ClientCreatedEvent;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
@@ -52,8 +51,6 @@ public class DefaultClientService implements ClientService {
 
   private ApplicationEventPublisher eventPublisher;
 
-  private OAuth2RequestValidator requestValidator;
-
   private OAuth2TokenEntityService tokenService;
 
   @Autowired
@@ -64,7 +61,6 @@ public class DefaultClientService implements ClientService {
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
     this.eventPublisher = eventPublisher;
-    this.requestValidator = requestValidator;
     this.tokenService = tokenService;
   }
 
@@ -105,7 +101,6 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
-    ((ScopeMatcherOAuthRequestValidator) requestValidator).invalidateScope(client);
     return clientRepo.save(client);
   }
 
