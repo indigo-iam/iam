@@ -24,6 +24,7 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.audit.events.client.ClientCreatedEvent;
+import it.infn.mw.iam.config.CacheConfig;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
@@ -99,6 +101,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
+  @CacheEvict(allEntries = true, cacheNames = CacheConfig.SCOPE_CACHE_KEY_PREFIX)
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     return clientRepo.save(client);

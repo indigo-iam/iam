@@ -15,8 +15,11 @@
  */
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
+import it.infn.mw.iam.config.CacheConfig;
+
 import java.util.Set;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
@@ -31,6 +34,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   }
 
   @Override
+  @Cacheable(CacheConfig.SCOPE_CACHE_KEY_PREFIX)
   public Set<ScopeMatcher> findMatchersForClient(ClientDetails client) {
     Set<ScopeMatcher> result = Sets.newHashSet();
 
