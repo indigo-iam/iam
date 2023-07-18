@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 public class StructuredPathScopeMatcher implements ScopeMatcher {
 
+  private static final long serialVersionUID = 8238476071265296982L;
+
   public static final Logger LOG = LoggerFactory.getLogger(StructuredPathScopeMatcher.class);
 
   private static final Pattern POINT_DIR_MATCHER = Pattern.compile("\\.\\./?");

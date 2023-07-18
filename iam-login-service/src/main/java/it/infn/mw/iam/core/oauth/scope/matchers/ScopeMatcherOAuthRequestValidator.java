@@ -38,12 +38,8 @@ public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator
   private void validateScope(Set<String> requestedScopes, ClientDetails client) {
 
     Set<ScopeMatcher> scopeMatchers = registry.findMatchersForClient(client);
-    boolean isMatched = false;
     for (String s : requestedScopes) {
-      isMatched = scopeMatchers.stream().anyMatch(m -> m.matches(s));
-      if (isMatched) {
-        break;
-      } else {
+      if (scopeMatchers.stream().noneMatch(m -> m.matches(s))) {
         throw new InvalidScopeException(String.format(ERROR_MSG_FMT, s, client.getClientId()));
       }
     }

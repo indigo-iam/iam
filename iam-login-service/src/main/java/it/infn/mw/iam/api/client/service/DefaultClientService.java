@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.infn.mw.iam.audit.events.client.ClientCreatedEvent;
-import it.infn.mw.iam.config.CacheConfig;
+import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
@@ -101,7 +101,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CacheEvict(allEntries = true, cacheNames = CacheConfig.SCOPE_CACHE_KEY_PREFIX)
+  @CacheEvict(allEntries = true, cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY)
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     return clientRepo.save(client);

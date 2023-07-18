@@ -24,6 +24,7 @@ import javax.annotation.Generated;
 
 public class RegexpScopeMatcher implements ScopeMatcher {
 
+  private static final long serialVersionUID = -1419325543749683292L;
   final String regexp;
   final Pattern pattern;
 

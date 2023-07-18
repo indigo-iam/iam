@@ -87,6 +87,7 @@ excludeFilters = {
 public class IamLoginService {
 
   public static void main(final String[] args) {
+    System.setProperty("spring.devtools.restart.enabled", "false");
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.run(args);
