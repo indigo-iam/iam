@@ -16,16 +16,17 @@
     limitations under the License.
 
 -->
-<project xmlns:ns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:ns="https://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>it.infn.mw</groupId>
+    <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
     <version>1.8.3</version>
   </parent>
 
+  <groupId>it.infn.mw.iam-login-service</groupId>
   <artifactId>iam-login-service</artifactId>
   <packaging>war</packaging>
 
@@ -44,7 +45,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>it.infn.mw.iam-persistence</groupId>
       <artifactId>iam-persistence</artifactId>
       <version>${project.version}</version>
       <exclusions>
@@ -56,7 +57,7 @@
     </dependency>
 
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>it.infn.mw.iam-common</groupId>
       <artifactId>iam-common</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -279,12 +280,17 @@
     <!-- SAML -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk15on</artifactId>
+      <artifactId>bcpkix-jdk18on</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcutil-jdk18on</artifactId>
     </dependency>
 
     <dependency>
