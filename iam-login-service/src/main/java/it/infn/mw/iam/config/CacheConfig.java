@@ -16,6 +16,7 @@
 package it.infn.mw.iam.config;
 
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -32,6 +33,7 @@ public class CacheConfig {
 
 
   @Bean
+  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "false")
   public CacheManager cacheManager() {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
         DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
@@ -39,6 +41,7 @@ public class CacheConfig {
 
 
   @Bean
+  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "true")
   public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
     return (builder) -> builder.withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
         RedisCacheConfiguration.defaultCacheConfig());
@@ -46,6 +49,7 @@ public class CacheConfig {
 
 
   @Bean
+  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "true")
   public RedisCacheConfiguration cacheConfiguration() {
 
     return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
