@@ -71,6 +71,7 @@ public class UsernameUpdaterTests extends TestTokensUtils {
   public void setup() {
     clearAllTokens();
     mockOAuth2Filter.cleanupSecurityContext();
+    accessTokenRepository.deleteAll();
   }
 
   @After
