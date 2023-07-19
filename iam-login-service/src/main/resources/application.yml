@@ -182,8 +182,8 @@ iam:
   account-linking:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
 
-scope-matcher-cache:
-  enabled: ${IAM_SCOPE_MATCHER_CACHE_ENABLE:false}
+redis-cache:
+  enabled: ${IAM_REDIS_CACHE_ENABLED:false}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}

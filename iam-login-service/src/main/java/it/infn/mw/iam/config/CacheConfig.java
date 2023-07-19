@@ -33,15 +33,15 @@ public class CacheConfig {
 
 
   @Bean
-  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "false")
-  public CacheManager cacheManager() {
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "false")
+  public CacheManager localCacheManager() {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
         DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
   }
 
 
   @Bean
-  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "true")
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
   public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
     return (builder) -> builder.withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
         RedisCacheConfiguration.defaultCacheConfig());
@@ -49,8 +49,8 @@ public class CacheConfig {
 
 
   @Bean
-  @ConditionalOnProperty(name = "scope-matcher-cache.enabled", havingValue = "true")
-  public RedisCacheConfiguration cacheConfiguration() {
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
+  public RedisCacheConfiguration redisCacheConfiguration() {
 
     return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
 
