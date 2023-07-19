@@ -18,13 +18,11 @@ package it.infn.mw.iam.core.oauth.scope.matchers;
 import java.util.Set;
 
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
 
 @SuppressWarnings("deprecation")
-@EnableCaching
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   public static final String SCOPE_CACHE_KEY = "scope-matcher";
