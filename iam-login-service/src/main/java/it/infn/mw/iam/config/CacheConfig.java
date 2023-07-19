@@ -43,8 +43,12 @@ public class CacheConfig {
   @Bean
   @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
   public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
-    return (builder) -> builder.withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
-        RedisCacheConfiguration.defaultCacheConfig());
+    return (builder) -> builder
+      .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig())
+      .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig());
+
   }
 
 
