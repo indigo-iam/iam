@@ -145,14 +145,11 @@ public class DefaultClientService implements ClientService {
     // delete all valid access tokens (exclude registration and resource tokens)
     tokenService.getAccessTokensForClient(client)
       .stream()
-      .filter(at -> isValidAccessToken(at))
-      .forEach(at -> {
-        tokenService.revokeAccessToken(at);
-      });
+      .filter(this::isValidAccessToken)
+      .forEach(at -> tokenService.revokeAccessToken(at));
     // delete all valid refresh tokens
-    tokenService.getRefreshTokensForClient(client).forEach(rt -> {
-      tokenService.revokeRefreshToken(rt);
-    });
+    tokenService.getRefreshTokensForClient(client)
+      .forEach(rt -> tokenService.revokeRefreshToken(rt));
   }
 
   @Override
