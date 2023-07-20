@@ -41,6 +41,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.config.RedisCacheProperties;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -60,9 +61,12 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   static {
     System.setProperty("spring.devtools.restart.enabled", "false");
   }
-  
+
   @Autowired
   private ClientService clientService;
+
+  @Autowired
+  private RedisCacheProperties cacheProperties;
 
   @LocalServerPort
   private Integer iamPort;
@@ -83,6 +87,7 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   public void setup() {
     TestUtils.initRestAssured();
     RestAssured.port = iamPort;
+    assertTrue(cacheProperties.isEnabled());
 
   }
 
