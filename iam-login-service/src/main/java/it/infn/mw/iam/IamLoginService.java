@@ -17,9 +17,9 @@ package it.infn.mw.iam;
 
 import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.oauth2.web.CorsFilter;
+import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
-import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.openid.connect.web.RootController;
 import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.boot.SpringApplication;
@@ -87,7 +87,6 @@ excludeFilters = {
 public class IamLoginService {
 
   public static void main(final String[] args) {
-    System.setProperty("spring.devtools.restart.enabled", "false");
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.run(args);
