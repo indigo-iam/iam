@@ -55,7 +55,6 @@ import it.infn.mw.iam.core.util.IamBanner;
     "it.infn.mw.iam.actuator",
     "it.infn.mw.iam.rcauth",
     "it.infn.mw.iam.service.aup",
-    "it.infn.mw.iam.util",
     "org.mitre.oauth2.web",
     "org.mitre.oauth2.view", 
     "org.mitre.openid.connect.web", 
