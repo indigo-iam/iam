@@ -67,6 +67,8 @@ public class X509TestSupport {
   public static final String TEST_1_SERIAL = "10";
   public static final String TEST_1_V_START = "Sep 26 15:39:36 2012 GMT";
   public static final String TEST_1_V_END = "Sep 24 15:39:36 2022 GMT";
+  
+  public static final String TEST_NEW_ISSUER = "CN=Test1 CA,O=IGI,C=IT";
 
   public static final String RCAUTH_CA_CERT_PATH = "src/test/resources/x509/rcauth-mock-ca.p12";
   public static final String RCAUTH_CA_CERT_PASSWORD = "pass123";
@@ -83,6 +85,7 @@ public class X509TestSupport {
 
   protected IamX509Certificate TEST_0_IAM_X509_CERT;
   protected IamX509Certificate TEST_1_IAM_X509_CERT;
+  protected IamX509Certificate TEST_2_IAM_X509_CERT;
 
   protected PEMCredential TEST_0_PEM_CREDENTIAL;
 
@@ -122,7 +125,14 @@ public class X509TestSupport {
       TEST_1_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
       TEST_1_IAM_X509_CERT.setPrimary(false);
 
-      // This is how NGINX encodes certficate in the header
+      TEST_2_IAM_X509_CERT = new IamX509Certificate();
+      TEST_2_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
+      TEST_2_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
+      TEST_2_IAM_X509_CERT.setIssuerDn(TEST_1_ISSUER);
+      TEST_2_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
+      TEST_2_IAM_X509_CERT.setPrimary(false);
+
+      // This is how NGINX encodes certificate in the header
       TEST_0_CERT_STRING_NGINX = TEST_0_CERT_STRING.replace('\n', '\t');
       TEST_1_CERT_STRING_NGINX = TEST_1_CERT_STRING.replace('\n', '\t');
 
@@ -150,6 +160,60 @@ public class X509TestSupport {
 
     MockHttpSession session =
         (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
+          .andExpect(status().isFound())
+          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(MockMvcResultMatchers.request()
+            .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
+          .andReturn()
+          .getRequest()
+          .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").session(session)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(authenticated().withUsername("test"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    return session;
+  }
+
+  protected MockHttpSession loginAsTestUserWithTest1Cert(MockMvc mvc) throws Exception {
+
+    MockHttpSession session =
+        (MockHttpSession) mvc.perform(get("/").headers(test1SSLHeadersVerificationSuccess()))
+          .andExpect(status().isFound())
+          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(MockMvcResultMatchers.request()
+            .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
+          .andReturn()
+          .getRequest()
+          .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").session(session)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(authenticated().withUsername("test"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    return session;
+  }
+
+  protected MockHttpSession loginAsTestUserWithTest2Cert(MockMvc mvc) throws Exception {
+
+    MockHttpSession session =
+        (MockHttpSession) mvc.perform(get("/").headers(test2SSLHeadersVerificationSuccess()))
           .andExpect(status().isFound())
           .andExpect(redirectedUrl("http://localhost/login"))
           .andExpect(MockMvcResultMatchers.request()
@@ -214,6 +278,14 @@ public class X509TestSupport {
     return test0SSLHeaders(true, null);
   }
 
+  protected HttpHeaders test1SSLHeadersVerificationSuccess() {
+    return test1SSLHeaders(true, null);
+  }
+
+  protected HttpHeaders test2SSLHeadersVerificationSuccess() {
+    return test2SSLHeaders(true, null);
+  }
+
   protected HttpHeaders test0SSLHeadersVerificationFailed(String verificationError) {
     return test0SSLHeaders(false, verificationError);
   }
@@ -228,6 +300,78 @@ public class X509TestSupport {
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.ISSUER.getHeader(),
         TEST_0_ISSUER);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SERIAL.getHeader(),
+        TEST_0_SERIAL);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.V_START.getHeader(),
+        TEST_0_V_START);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.V_END.getHeader(),
+        TEST_0_V_END);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader(), "TLS");
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SERVER_NAME.getHeader(),
+        "serverName");
+
+    if (verified) {
+      headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader(),
+          "SUCCESS");
+    } else {
+      headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader(),
+          "FAILED:" + verificationError);
+    }
+
+    return headers;
+  }
+
+  private HttpHeaders test2SSLHeaders(boolean verified, String verificationError) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
+        TEST_0_CERT_STRING_NGINX);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
+        TEST_1_SUBJECT);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.ISSUER.getHeader(),
+        TEST_NEW_ISSUER);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SERIAL.getHeader(),
+        TEST_0_SERIAL);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.V_START.getHeader(),
+        TEST_0_V_START);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.V_END.getHeader(),
+        TEST_0_V_END);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader(), "TLS");
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SERVER_NAME.getHeader(),
+        "serverName");
+
+    if (verified) {
+      headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader(),
+          "SUCCESS");
+    } else {
+      headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader(),
+          "FAILED:" + verificationError);
+    }
+
+    return headers;
+  }
+
+  private HttpHeaders test1SSLHeaders(boolean verified, String verificationError) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
+        TEST_0_CERT_STRING_NGINX);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
+        TEST_0_SUBJECT);
+
+    headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.ISSUER.getHeader(),
+        TEST_NEW_ISSUER);
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SERIAL.getHeader(),
         TEST_0_SERIAL);
