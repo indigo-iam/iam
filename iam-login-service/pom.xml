@@ -16,10 +16,9 @@
     limitations under the License.
 
 -->
-<project xmlns:ns="https://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
@@ -398,6 +397,7 @@
     </dependency>
 
   </dependencies>
+
   <build>
     <finalName>iam-login-service</finalName>
     <resources>
@@ -412,6 +412,54 @@
         <directory>src/main/webapp</directory>
       </resource>
     </resources>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <configuration>
+            <header>${project.parent.basedir}/LICENSE</header>
+            <excludes>
+              <exclude>.jslintrc</exclude>
+              <exclude>**/*.vm</exclude>
+              <exclude>**/*.tag</exclude>
+              <exclude>**/Dockerfile</exclude>
+              <exclude>**/Dockerfile.prod</exclude>
+              <exclude>**/resources/iam/js/datepicker/*.js</exclude>
+              <exclude>**/resources/js/lib/*.js</exclude>
+              <exclude>**/resources/js/*.js</exclude>
+              <exclude>**/resources/template/*.html</exclude>
+              <exclude>**/resources/iam-banner.txt</exclude>
+              <exclude>**/resources/css/*.css</exclude>
+              <exclude>**/resources/iam/css/ionicons/ionicons.min.css</exclude>
+              <exclude>**/*.template.html</exclude>
+              <exclude>**/WEB-INF/views/*.jsp</exclude>
+              <exclude>**/*.jks</exclude>
+              <exclude>**/*.pem</exclude>
+              <exclude>**/*.p12</exclude>
+              <exclude>**/*.crt</exclude>
+              <exclude>**/*.key</exclude>
+              <exclude>**/*.jwks</exclude>
+              <exclude>**/*.factorypath</exclude>
+              <exclude>**/*.ftl</exclude>
+              <exclude>**/*.woff</exclude>
+              <exclude>**/*.woff2</exclude>
+              <exclude>**/ddl.sql</exclude>
+            </excludes>
+            <useDefaultExcludes>true</useDefaultExcludes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>check-headers</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -487,54 +535,5 @@
         </configuration>
       </plugin>
     </plugins>
-
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <configuration>
-            <header>${project.parent.basedir}/LICENSE</header>
-            <excludes>
-              <exclude>.jslintrc</exclude>
-              <exclude>**/*.vm</exclude>
-              <exclude>**/*.tag</exclude>
-              <exclude>**/Dockerfile</exclude>
-              <exclude>**/Dockerfile.prod</exclude>
-              <exclude>**/resources/iam/js/datepicker/*.js</exclude>
-              <exclude>**/resources/js/lib/*.js</exclude>
-              <exclude>**/resources/js/*.js</exclude>
-              <exclude>**/resources/template/*.html</exclude>
-              <exclude>**/resources/iam-banner.txt</exclude>
-              <exclude>**/resources/css/*.css</exclude>
-              <exclude>**/resources/iam/css/ionicons/ionicons.min.css</exclude>
-              <exclude>**/*.template.html</exclude>
-              <exclude>**/WEB-INF/views/*.jsp</exclude>
-              <exclude>**/*.jks</exclude>
-              <exclude>**/*.pem</exclude>
-              <exclude>**/*.p12</exclude>
-              <exclude>**/*.crt</exclude>
-              <exclude>**/*.key</exclude>
-              <exclude>**/*.jwks</exclude>
-              <exclude>**/*.factorypath</exclude>
-              <exclude>**/*.ftl</exclude>
-              <exclude>**/*.woff</exclude>
-              <exclude>**/*.woff2</exclude>
-              <exclude>**/ddl.sql</exclude>
-            </excludes>
-            <useDefaultExcludes>true</useDefaultExcludes>
-          </configuration>
-          <executions>
-            <execution>
-              <id>check-headers</id>
-              <phase>validate</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 </project>

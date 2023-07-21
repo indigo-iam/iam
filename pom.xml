@@ -1,22 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:ns="https://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-
     <!-- Update this in sync with the spring-boot version below -->
     <version>2.6.15</version>
-    <relativePath /> <!-- lookup parent from repository -->
+    <relativePath />
+    <!-- lookup parent from repository -->
   </parent>
 
   <groupId>it.infn.mw.iam-parent</groupId>
   <artifactId>iam-parent</artifactId>
   <version>1.8.3</version>
   <packaging>pom</packaging>
+
   <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
+
+  <modules>
+    <module>iam-common</module>
+    <module>iam-persistence</module>
+    <module>iam-voms-aa</module>
+    <module>iam-login-service</module>
+    <module>iam-test-client</module>
+  </modules>
+
+  <distributionManagement>
+    <repository>
+      <id>cnaf-releases</id>
+      <name>CNAF releases</name>
+      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
+    </repository>
+
+    <snapshotRepository>
+      <id>cnaf-snapshots</id>
+      <name>CNAF snapshots</name>
+      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <properties>
     <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
@@ -66,14 +88,6 @@
     <jvm.test.args>-Xmx2500m</jvm.test.args>
     <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*,iam-common/**</sonar.coverage.exclusions>
   </properties>
-
-  <modules>
-    <module>iam-common</module>
-    <module>iam-persistence</module>
-    <module>iam-voms-aa</module>
-    <module>iam-login-service</module>
-    <module>iam-test-client</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
@@ -277,7 +291,6 @@
   </repositories>
 
   <build>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -292,7 +305,6 @@
         </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -415,18 +427,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
-
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 </project>
