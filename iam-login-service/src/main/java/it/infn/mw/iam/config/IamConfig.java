@@ -254,7 +254,7 @@ public class IamConfig {
   @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), 20);
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties));
   }
 
   @Bean

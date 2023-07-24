@@ -15,46 +15,32 @@
  */
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.nonNull;
-
 import java.util.Set;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 
 @SuppressWarnings("deprecation")
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
-  public static final int DEFAULT_CACHE_SIZE = 10;
-
+  public static final String SCOPE_CACHE_KEY = "scope-matcher";
+  
   private final Set<ScopeMatcher> customMatchers;
 
-  private final LoadingCache<String, ScopeMatcher> plainMatchersCache;
-
   public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers) {
-    this(customMatchers, DEFAULT_CACHE_SIZE);
-  }
-
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, int plainMatchersCacheSize) {
-    checkArgument(nonNull(customMatchers), "customMatchers must be non-null");
-    int cacheSize =
-        (plainMatchersCacheSize < DEFAULT_CACHE_SIZE ? DEFAULT_CACHE_SIZE : plainMatchersCacheSize);
-    plainMatchersCache =
-        CacheBuilder.newBuilder().maximumSize(cacheSize).build(CacheLoader.from(StringEqualsScopeMatcher::stringEqualsMatcher));
     this.customMatchers = customMatchers;
   }
 
   @Override
+  @Cacheable(value = SCOPE_CACHE_KEY, key = "{#client?.id}")
   public Set<ScopeMatcher> findMatchersForClient(ClientDetails client) {
     Set<ScopeMatcher> result = Sets.newHashSet();
 
     for (String s : client.getScope()) {
       result.add(findMatcherForScope(s));
+
     }
 
     return result;
@@ -62,10 +48,10 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
+
     return customMatchers.stream()
       .filter(m -> m.matches(scope))
       .findFirst()
-      .orElse(plainMatchersCache.getUnchecked(scope));
+      .orElse(StringEqualsScopeMatcher.stringEqualsMatcher(scope));
   }
-
 }

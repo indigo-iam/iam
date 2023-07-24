@@ -15,23 +15,47 @@
  */
 package it.infn.mw.iam.config;
 
-
-
+import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
+import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
 @Configuration
-@EnableCaching
 public class CacheConfig {
 
+
   @Bean
-  public CacheManager cacheManager() {
-    return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY);
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "false")
+  public CacheManager localCacheManager() {
+    return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
+        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
+  }
+
+
+  @Bean
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
+  public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
+    return builder -> builder
+      .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig())
+      .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig());
+
+  }
+
+
+  @Bean
+  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
+  public RedisCacheConfiguration redisCacheConfiguration() {
+
+    return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
+
   }
 
 }

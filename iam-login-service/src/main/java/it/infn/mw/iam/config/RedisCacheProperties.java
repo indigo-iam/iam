@@ -13,10 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.scope.matchers;
+package it.infn.mw.iam.config;
 
-import java.io.Serializable;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-public interface ScopeMatcher extends Serializable {
-  boolean matches(String scope);
+@ConfigurationProperties("redis-cache")
+@Configuration
+public class RedisCacheProperties {
+
+  private boolean enabled = false;
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(boolean enable) {
+    this.enabled = enable;
+  }
+
 }
