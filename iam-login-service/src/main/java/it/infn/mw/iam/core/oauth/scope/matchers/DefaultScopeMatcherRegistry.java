@@ -34,7 +34,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   }
 
   @Override
-  @Cacheable(value = SCOPE_CACHE_KEY, key = "{#result}")
+  @Cacheable(value = SCOPE_CACHE_KEY, key = "{#client?.id}")
   public Set<ScopeMatcher> findMatchersForClient(ClientDetails client) {
     Set<ScopeMatcher> result = Sets.newHashSet();
 
