@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.scope.matchers;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
@@ -26,9 +27,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
@@ -41,6 +44,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.config.CacheConfig;
 import it.infn.mw.iam.config.RedisCacheProperties;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
@@ -52,7 +56,7 @@ import it.infn.mw.iam.test.util.redis.RedisContainer;
 @Testcontainers
 @IamMockMvcIntegrationTest
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {"redis-cache.enabled=true", "iam.access_token.include_scope=true"})
+    properties = {"iam.access_token.include_scope=true", "redis-cache.enabled=true"})
 public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "cache-client";
@@ -66,7 +70,10 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   private ClientService clientService;
 
   @Autowired
-  private RedisCacheProperties cacheProperties;
+  private CacheConfig cacheConfig;
+
+  @Autowired
+  private RedisCacheProperties redisCacheProperties;
 
   @LocalServerPort
   private Integer iamPort;
@@ -87,7 +94,10 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   public void setup() {
     TestUtils.initRestAssured();
     RestAssured.port = iamPort;
-    assertTrue(cacheProperties.isEnabled());
+    assertTrue(redisCacheProperties.isEnabled());
+    assertThat(cacheConfig.redisCacheConfiguration(), instanceOf(RedisCacheConfiguration.class));
+    assertThat(cacheConfig.redisCacheManagerBuilderCustomizer(),
+        instanceOf(RedisCacheManagerBuilderCustomizer.class));
 
   }
 
