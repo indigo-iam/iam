@@ -354,7 +354,8 @@ public class IamProperties {
     public enum Profile {
       IAM,
       WLCG,
-      AARC
+      AARC,
+      KEYCLOAK
     }
 
     Profile defaultProfile = Profile.IAM;

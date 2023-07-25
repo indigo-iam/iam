@@ -58,6 +58,9 @@ public class ProfileSelectorTests {
   @Mock
   JWTProfile wlcgProfile;
 
+  @Mock
+  JWTProfile keycloakProfile;
+
   ScopeAwareProfileResolver profileResolver;
 
   @Before
@@ -67,6 +70,7 @@ public class ProfileSelectorTests {
     profileMap.put(ScopeAwareProfileResolver.AARC_PROFILE_ID, aarcProfile);
     profileMap.put(ScopeAwareProfileResolver.IAM_PROFILE_ID, iamProfile);
     profileMap.put(ScopeAwareProfileResolver.WLCG_PROFILE_ID, wlcgProfile);
+    profileMap.put(ScopeAwareProfileResolver.KEYCLOAK_PROFILE_ID, keycloakProfile);
 
     profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap, clientsService);
   }
@@ -133,5 +137,24 @@ public class ProfileSelectorTests {
 
     profile = profileResolver.resolveProfile(CLIENT_ID);
     assertThat(profile, is(iamProfile));
+
+    when(client.getScope()).thenReturn(
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak"}).iterator()));
+
+    profile = profileResolver.resolveProfile(CLIENT_ID);
+    assertThat(profile, is(keycloakProfile));
+
+    when(client.getScope()).thenReturn(
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak", "iam"}).iterator()));
+
+    profile = profileResolver.resolveProfile(CLIENT_ID);
+    assertThat(profile, is(iamProfile));
+
+    when(client.getScope()).thenReturn(
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak", "wlcg"}).iterator()));
+
+    profile = profileResolver.resolveProfile(CLIENT_ID);
+    assertThat(profile, is(iamProfile));
+
   }
 }
