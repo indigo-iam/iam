@@ -53,7 +53,9 @@ WHERE id NOT IN (SELECT auth_holder_id FROM access_token)
 AND id NOT IN (SELECT auth_holder_id FROM refresh_token)
 AND id NOT IN (SELECT auth_holder_id FROM authorization_code);
 
+DELETE FROM authentication_holder WHERE user_auth_id NOT IN (SELECT id FROM saved_user_auth);
 ALTER TABLE authentication_holder ADD FOREIGN KEY (user_auth_id) REFERENCES saved_user_auth (id) ON DELETE CASCADE;
+DELETE FROM authentication_holder WHERE client_id NOT IN (SELECT client_id FROM client_details);
 ALTER TABLE authentication_holder ADD FOREIGN KEY (client_id) REFERENCES client_details (client_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 -- ACCESS TOKEN TABLE and related
