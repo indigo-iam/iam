@@ -284,6 +284,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     jwtService.signJwt(signed);
 
     token.setJwt(signed);
+    token.hashMe();
 
     return token;
 

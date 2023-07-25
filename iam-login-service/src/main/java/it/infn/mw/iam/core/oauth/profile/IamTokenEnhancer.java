@@ -93,6 +93,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
 
     accessTokenEntity.setJwt(signClaims(atClaims));
+    accessTokenEntity.hashMe();
 
     /**
      * Authorization request scope MUST include "openid" in OIDC, but access token request may or
