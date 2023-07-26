@@ -15,15 +15,20 @@
  */
 package it.infn.mw.iam.authn.saml.model;
 
+import java.util.List;
+
+import org.opensaml.saml2.metadata.LocalizedString;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(Include.NON_EMPTY)
-public class IdpDescription { 
+public class IdpDescription {
 
   private String entityId;
   private String organizationName;
   private String imageUrl;
+  private List<LocalizedString> displayNames;
 
   public String getEntityId() {
     return entityId;
@@ -49,9 +54,18 @@ public class IdpDescription {
     this.imageUrl = imageUrl;
   }
 
+  public List<LocalizedString> getDisplayNames() {
+    return displayNames;
+  }
+
+  public void setDisplayNames(List<LocalizedString> displayNames) {
+    this.displayNames = displayNames;
+  }
+
   @Override
   public String toString() {
     return "IdpDescription [entityId=" + entityId + ", organizationName=" + organizationName
-        + ", imageUrl=" + imageUrl + "]";
+        + ", imageUrl=" + imageUrl + ", displayNames=" + displayNames + "]";
   }
+
 }

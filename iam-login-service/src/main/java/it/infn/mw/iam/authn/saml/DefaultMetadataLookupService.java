@@ -107,6 +107,7 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
           if (!uiInfo.getDisplayNames().isEmpty()) {
             result.setOrganizationName(uiInfo.getDisplayNames().get(0).getName().getLocalString());
+            result.setDisplayNames(uiInfo.getDisplayNames().stream().map(dn -> dn.getName()).toList());
           }
         }
       }
