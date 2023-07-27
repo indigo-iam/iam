@@ -19,8 +19,14 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 
@@ -47,6 +53,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   private static final String CLIENT_SECRET = "secret";
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
+  protected static final String KC_GROUP_CLAIM = "roles";
 
   private String getAccessTokenForUser(String scopes) throws Exception {
 
@@ -60,16 +67,33 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfile() throws Exception {
+  public void testKeycloakProfileAccessToken() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
     assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
     assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
     assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim("roles"), notNullValue());
-    List<String> roles = Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim("roles"));
+    List<String> roles = Lists.newArrayList(token.getJWTClaimsSet().getStringArrayClaim(KC_GROUP_CLAIM));
     assertThat(roles, hasSize(2));
     assertThat(roles, hasItem("Analysis"));
     assertThat(roles, hasItem("Production"));
+  }
+  
+  @Test
+  public void testKeycloackProfileIntrospect() throws Exception {
+
+    JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
+
+    // @formatter:off
+    mvc.perform(post("/introspect")
+        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .param("token", token.getParsedString()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$." + KC_GROUP_CLAIM, containsInAnyOrder("Analysis", "Production")))
+      .andExpect(jsonPath("$." + KC_GROUP_CLAIM, hasSize(equalTo(2))));
+    // @formatter:on
+
   }
 }
