@@ -59,7 +59,7 @@ public class ProfileSelectorTests {
   JWTProfile wlcgProfile;
 
   @Mock
-  JWTProfile keycloakProfile;
+  JWTProfile kcProfile;
 
   ScopeAwareProfileResolver profileResolver;
 
@@ -70,7 +70,7 @@ public class ProfileSelectorTests {
     profileMap.put(ScopeAwareProfileResolver.AARC_PROFILE_ID, aarcProfile);
     profileMap.put(ScopeAwareProfileResolver.IAM_PROFILE_ID, iamProfile);
     profileMap.put(ScopeAwareProfileResolver.WLCG_PROFILE_ID, wlcgProfile);
-    profileMap.put(ScopeAwareProfileResolver.KEYCLOAK_PROFILE_ID, keycloakProfile);
+    profileMap.put(ScopeAwareProfileResolver.KC_PROFILE_ID, kcProfile);
 
     profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap, clientsService);
   }
@@ -139,19 +139,19 @@ public class ProfileSelectorTests {
     assertThat(profile, is(iamProfile));
 
     when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak"}).iterator()));
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc"}).iterator()));
 
     profile = profileResolver.resolveProfile(CLIENT_ID);
-    assertThat(profile, is(keycloakProfile));
+    assertThat(profile, is(kcProfile));
 
     when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak", "iam"}).iterator()));
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc", "iam"}).iterator()));
 
     profile = profileResolver.resolveProfile(CLIENT_ID);
     assertThat(profile, is(iamProfile));
 
     when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "keycloak", "wlcg"}).iterator()));
+        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc", "wlcg"}).iterator()));
 
     profile = profileResolver.resolveProfile(CLIENT_ID);
     assertThat(profile, is(iamProfile));

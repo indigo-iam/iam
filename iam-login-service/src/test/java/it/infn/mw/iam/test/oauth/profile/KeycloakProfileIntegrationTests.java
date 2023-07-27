@@ -39,7 +39,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
-    "iam.jwt-profile.default-profile=keycloak",
+    "iam.jwt-profile.default-profile=kc",
 })
 public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
 

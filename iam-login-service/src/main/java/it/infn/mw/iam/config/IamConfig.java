@@ -17,7 +17,7 @@ package it.infn.mw.iam.config;
 
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.AARC_PROFILE_ID;
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.IAM_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.KEYCLOAK_PROFILE_ID;
+import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.KC_PROFILE_ID;
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.WLCG_PROFILE_ID;
 
 import java.time.Clock;
@@ -159,8 +159,8 @@ public class IamConfig {
     return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
-  @Bean(name = "keycloakJwtProfile")
-  JWTProfile keycloakJwtProfile(IamProperties props, IamAccountRepository accountRepo,
+  @Bean(name = "kcJwtProfile")
+  JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, UserInfoService userInfoService, ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
@@ -217,7 +217,7 @@ public class IamConfig {
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
       @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
-      @Qualifier("keycloakJwtProfile") JWTProfile kcProfile,
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile,
       IamProperties properties,
       ClientDetailsService clientDetailsService) {
 
@@ -233,7 +233,7 @@ public class IamConfig {
       defaultProfile = aarcProfile;
     }
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.KEYCLOAK
+    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.KC
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = kcProfile;
     }
@@ -242,7 +242,7 @@ public class IamConfig {
     profileMap.put(IAM_PROFILE_ID, iamProfile);
     profileMap.put(WLCG_PROFILE_ID, wlcgProfile);
     profileMap.put(AARC_PROFILE_ID, aarcProfile);
-    profileMap.put(KEYCLOAK_PROFILE_ID, kcProfile);
+    profileMap.put(KC_PROFILE_ID, kcProfile);
 
     LOG.info("Default JWT profile: {}", defaultProfile.name());
     return new ScopeAwareProfileResolver(defaultProfile, profileMap, clientDetailsService);

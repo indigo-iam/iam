@@ -355,7 +355,7 @@ public class IamProperties {
       IAM,
       WLCG,
       AARC,
-      KEYCLOAK
+      KC
     }
 
     Profile defaultProfile = Profile.IAM;
