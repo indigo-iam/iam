@@ -107,6 +107,18 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
+  public void testKeycloakProfileAccessTokenWithClientCredentials() throws Exception {
+    String accessTokenString = (String) new AccessTokenGetter().grantType("client_credentials")
+      .clientId("client-cred")
+      .clientSecret("secret")
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    assert (!accessTokenString.contains("roles"));
+
+  }
+
+  @Test
   public void testKeycloackProfileIntrospect() throws Exception {
 
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
