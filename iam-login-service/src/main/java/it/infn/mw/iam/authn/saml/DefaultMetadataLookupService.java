@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml2.metadata.IDPSSODescriptor;
+import org.opensaml.saml2.metadata.LocalizedString;
 import org.opensaml.saml2.metadata.provider.MetadataProvider;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.saml2.metadata.provider.ObservableMetadataProvider;
@@ -141,6 +142,7 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
   public List<IdpDescription> lookupIdp(String text) {
 
     List<IdpDescription> result = new ArrayList<>();
+    String textToFind = text.toLowerCase();
 
     lookupByEntityId(text).ifPresent(result::addAll);
 
@@ -150,10 +152,22 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
     try {
       lock.readLock().lock();
+     
       return descriptions.stream()
-        .filter(p -> p.getOrganizationName().toLowerCase().contains(text.toLowerCase()))
-        .limit(MAX_RESULTS)
-        .collect(Collectors.toList());
+      .filter(p -> p.getDisplayNames().stream().anyMatch(name -> name.getLocalString().toLowerCase().contains(textToFind)))
+      .limit(MAX_RESULTS)
+      .map(description -> {
+        List<LocalizedString> displayNames = description.getDisplayNames();
+        for (LocalizedString displayName : displayNames) {
+            String localString = displayName.getLocalString();
+            if (localString.toLowerCase().contains(textToFind)) {
+                description.setOrganizationName(localString);
+                break;
+            }
+        }
+        return description;
+      })
+      .collect(Collectors.toList());
     } finally {
       lock.readLock().unlock();
     }
