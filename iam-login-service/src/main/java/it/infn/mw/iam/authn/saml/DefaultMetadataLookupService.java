@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.opensaml.common.xml.SAMLConstants;
@@ -144,6 +145,15 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
     List<IdpDescription> result = new ArrayList<>();
     String textToFind = text.toLowerCase();
 
+    Predicate<IdpDescription> filterForDescriptions = description -> {
+      if (description.getDisplayNames() != null) {
+        return description.getDisplayNames().stream()
+            .anyMatch(name -> name.getLocalString().toLowerCase().contains(textToFind));
+      } else {
+        return description.getEntityId().toLowerCase().contains(textToFind);
+      }
+    };
+
     lookupByEntityId(text).ifPresent(result::addAll);
 
     if (!result.isEmpty()) {
@@ -152,22 +162,25 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
     try {
       lock.readLock().lock();
-     
+
       return descriptions.stream()
-      .filter(p -> p.getDisplayNames().stream().anyMatch(name -> name.getLocalString().toLowerCase().contains(textToFind)))
-      .limit(MAX_RESULTS)
-      .map(description -> {
-        List<LocalizedString> displayNames = description.getDisplayNames();
-        for (LocalizedString displayName : displayNames) {
-            String localString = displayName.getLocalString();
-            if (localString.toLowerCase().contains(textToFind)) {
-                description.setOrganizationName(localString);
-                break;
+          .filter(filterForDescriptions)
+          .limit(MAX_RESULTS)
+          .map(description -> {
+            if (description.getDisplayNames() != null) {
+              List<LocalizedString> displayNames = description.getDisplayNames();
+
+              for (LocalizedString displayName : displayNames) {
+                String localString = displayName.getLocalString();
+                if (localString.toLowerCase().contains(textToFind)) {
+                  description.setOrganizationName(localString);
+                  break;
+                }
+              }
             }
-        }
-        return description;
-      })
-      .collect(Collectors.toList());
+            return description;
+          })
+          .collect(Collectors.toList());
     } finally {
       lock.readLock().unlock();
     }

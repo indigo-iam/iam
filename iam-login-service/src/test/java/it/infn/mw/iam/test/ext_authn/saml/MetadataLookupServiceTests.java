@@ -58,6 +58,7 @@ public class MetadataLookupServiceTests {
   
   public static final String IDP1_ORGANIZATION_NAME = "IDP1 organization";
   public static final String IDP2_ORGANIZATION_NAME = "IDP2 organization";
+  public static final String IDP4_ORGANIZATION_NAME = "IDP4 organization";
   
   @Mock
   MetadataManager manager;
@@ -91,7 +92,7 @@ public class MetadataLookupServiceTests {
     when(idp2DisplayName.getName()).thenReturn(idp2LocalizedString);
     when(idp2UIInfo.getDisplayNames()).thenReturn(asList(idp2DisplayName));
 
-    when(idp4LocalizedString.getLocalString()).thenReturn("");
+    when(idp4LocalizedString.getLocalString()).thenReturn(IDP4_ORGANIZATION_NAME);
     when(idp4DisplayName.getName()).thenReturn(idp4LocalizedString);
     when(idp4UIInfo.getDisplayNames()).thenReturn(asList(idp4DisplayName));
 
@@ -151,7 +152,7 @@ public class MetadataLookupServiceTests {
         hasProperty("organizationName", is(IDP3_ENTITY_ID)))));
 
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP4_ENTITY_ID)),
-        hasProperty("organizationName", is(IDP4_ENTITY_ID)))));
+        hasProperty("organizationName", is(IDP4_ORGANIZATION_NAME)))));
   }
   
   
@@ -191,7 +192,7 @@ public class MetadataLookupServiceTests {
         hasProperty("organizationName", is(IDP3_ENTITY_ID)))));
 
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP4_ENTITY_ID)),
-        hasProperty("organizationName", is(IDP4_ENTITY_ID)))));
+        hasProperty("organizationName", is(IDP4_ORGANIZATION_NAME)))));
   }
   
   @Test
