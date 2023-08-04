@@ -96,4 +96,22 @@ public class KeycloakProfileUserInfoTests {
       .statusCode(HttpStatus.OK.value())
       .body("\"roles\"", nullValue());
   }
+
+  @Test
+  public void testUserinfoResponseWithoutGroupsTwo() {
+    String accessToken = TestUtils.passwordTokenGetter()
+      .port(iamPort)
+      .username("admin")
+      .password(PASSWORD)
+      .scope("openid profile")
+      .getAccessToken();
+
+    RestAssured.given()
+      .header("Authorization", String.format("Bearer %s", accessToken))
+      .when()
+      .get(userinfoUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value())
+      .body("\"roles\"", nullValue());
+  }
 }
