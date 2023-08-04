@@ -159,7 +159,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessTokenString))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.role").doesNotExist());
+      .andExpect(jsonPath("$.roles").doesNotExist());
     // @formatter:on
 
   }
