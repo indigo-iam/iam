@@ -102,7 +102,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .scope("openid profile")
       .getAccessTokenValue();
 
-    assert (!accessTokenString.contains("roles"));
+    assertThat(!accessTokenString.contains("roles"), is(true));
 
   }
 
