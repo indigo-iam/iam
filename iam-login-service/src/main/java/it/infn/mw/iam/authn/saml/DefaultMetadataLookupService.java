@@ -170,9 +170,9 @@ public class DefaultMetadataLookupService
         .filter(filterForDescriptions)
         .limit(MAX_RESULTS)
         .map(description -> {
-          if (description.getDisplayNames() != null) {
-            List<LocalizedString> displayNames = description.getDisplayNames();
-
+          List<LocalizedString> displayNames = description.getDisplayNames();
+          if (displayNames != null) {
+            
             for (LocalizedString displayName : displayNames) {
               String localString = displayName.getLocalString();
               if (localString.toLowerCase().contains(textToFind)) {
