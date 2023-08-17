@@ -102,7 +102,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .scope("openid profile")
       .getAccessTokenValue();
 
-    assert (!accessTokenString.contains("roles"));
+    assertThat(!accessTokenString.contains("roles"), is(true));
 
   }
 
@@ -171,7 +171,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessTokenString))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.role").doesNotExist());
+      .andExpect(jsonPath("$.roles").doesNotExist());
     // @formatter:on
 
   }

@@ -76,6 +76,7 @@ public class KeycloakJWTProfile implements JWTProfile, RequestValidator {
 
   @Override
   public void validateRequest(OAuth2Request request) {
+    // no validation
   }
 
 }

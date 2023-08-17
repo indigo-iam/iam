@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserInfoAdapter.forUserInfo;
+import static it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserInfoAdapter.forUserInfo;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
