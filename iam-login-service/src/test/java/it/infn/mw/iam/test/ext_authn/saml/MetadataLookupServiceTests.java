@@ -76,17 +76,20 @@ public class MetadataLookupServiceTests {
   UIInfo idp1UIInfo, idp2UIInfo, idp4UIInfo;
 
   @Mock
-  DisplayName idp1DisplayName, idp2DisplayName, idp4DisplayName;
+  DisplayName idp1DisplayName, idp1ItDisplayName, idp2DisplayName, idp4DisplayName;
 
   @Mock
-  LocalizedString idp1LocalizedString, idp2LocalizedString, idp4LocalizedString;
+  LocalizedString idp1LocalizedString, idp1ItLocalizedString, idp2LocalizedString,
+      idp4LocalizedString;
 
   @Before
   public void setup() throws MetadataProviderException {
 
     when(idp1LocalizedString.getLocalString()).thenReturn(IDP1_ORGANIZATION_NAME);
+    when(idp1ItLocalizedString.getLocalString()).thenReturn("IDP1 organizzazione");
     when(idp1DisplayName.getName()).thenReturn(idp1LocalizedString);
-    when(idp1UIInfo.getDisplayNames()).thenReturn(asList(idp1DisplayName));
+    when(idp1ItDisplayName.getName()).thenReturn(idp1ItLocalizedString);
+    when(idp1UIInfo.getDisplayNames()).thenReturn(asList(idp1DisplayName, idp1ItDisplayName));
 
     when(idp2LocalizedString.getLocalString()).thenReturn(IDP2_ORGANIZATION_NAME);
     when(idp2DisplayName.getName()).thenReturn(idp2LocalizedString);
@@ -163,15 +166,29 @@ public class MetadataLookupServiceTests {
 
     assertThat(service.listIdps(), hasSize(0));
   }
+  
+  @Test
+  public void testEmptyTextToFind() {
+    DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
+    
+    List<IdpDescription> idps = service.lookupIdp("noMatchOnTextToFind");
+    assertThat(idps, hasSize(0));
+  }
 
   @Test
   public void testLookupByOrganizationNameWorks() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
 
-    List<IdpDescription> idps = service.lookupIdp(IDP1_ORGANIZATION_NAME);
-    assertThat(idps, hasSize(1));
+    List<IdpDescription> idpsIt = service.lookupIdp("organizz");
+    assertThat(idpsIt, hasSize(1));
 
-    assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
+    assertThat(idpsIt, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
+        hasProperty("organizationName", is("IDP1 organizzazione")))));
+
+    List<IdpDescription> idpsEn = service.lookupIdp(IDP1_ORGANIZATION_NAME);
+    assertThat(idpsEn, hasSize(1));
+
+    assertThat(idpsEn, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
         hasProperty("organizationName", is(IDP1_ORGANIZATION_NAME)))));
   }
 
