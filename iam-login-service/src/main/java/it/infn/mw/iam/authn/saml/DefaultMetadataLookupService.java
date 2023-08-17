@@ -51,7 +51,8 @@ import it.infn.mw.iam.authn.saml.model.IdpDescription;
 
 @Component
 @Profile("saml")
-public class DefaultMetadataLookupService implements MetadataLookupService, ObservableMetadataProvider.Observer {
+public class DefaultMetadataLookupService
+    implements MetadataLookupService, ObservableMetadataProvider.Observer {
 
   private static final int MAX_RESULTS = 20;
   private static final Logger LOG = LoggerFactory.getLogger(DefaultMetadataLookupService.class);
@@ -72,7 +73,7 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
     final Instant startTime = Instant.now();
     LOG.debug("Initializing IdP descriptor list from metadata");
-    
+
     Set<IdpDescription> newDescriptions = new HashSet<>();
 
     for (String idpName : metadataManager.getIDPEntityNames()) {
@@ -109,7 +110,8 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
           if (!uiInfo.getDisplayNames().isEmpty()) {
             result.setOrganizationName(uiInfo.getDisplayNames().get(0).getName().getLocalString());
-            result.setDisplayNames(uiInfo.getDisplayNames().stream().map(dn -> dn.getName()).toList());
+            result
+              .setDisplayNames(uiInfo.getDisplayNames().stream().map(dn -> dn.getName()).toList());
           }
         }
       }
@@ -147,8 +149,9 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
 
     Predicate<IdpDescription> filterForDescriptions = description -> {
       if (description.getDisplayNames() != null) {
-        return description.getDisplayNames().stream()
-            .anyMatch(name -> name.getLocalString().toLowerCase().contains(textToFind));
+        return description.getDisplayNames()
+          .stream()
+          .anyMatch(name -> name.getLocalString().toLowerCase().contains(textToFind));
       } else {
         return description.getEntityId().toLowerCase().contains(textToFind);
       }
@@ -164,23 +167,23 @@ public class DefaultMetadataLookupService implements MetadataLookupService, Obse
       lock.readLock().lock();
 
       return descriptions.stream()
-          .filter(filterForDescriptions)
-          .limit(MAX_RESULTS)
-          .map(description -> {
-            if (description.getDisplayNames() != null) {
-              List<LocalizedString> displayNames = description.getDisplayNames();
+        .filter(filterForDescriptions)
+        .limit(MAX_RESULTS)
+        .map(description -> {
+          if (description.getDisplayNames() != null) {
+            List<LocalizedString> displayNames = description.getDisplayNames();
 
-              for (LocalizedString displayName : displayNames) {
-                String localString = displayName.getLocalString();
-                if (localString.toLowerCase().contains(textToFind)) {
-                  description.setOrganizationName(localString);
-                  break;
-                }
+            for (LocalizedString displayName : displayNames) {
+              String localString = displayName.getLocalString();
+              if (localString.toLowerCase().contains(textToFind)) {
+                description.setOrganizationName(localString);
+                break;
               }
             }
-            return description;
-          })
-          .collect(Collectors.toList());
+          }
+          return description;
+        })
+        .collect(Collectors.toList());
     } finally {
       lock.readLock().unlock();
     }
