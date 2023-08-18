@@ -15,68 +15,22 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import org.springframework.security.oauth2.provider.OAuth2Request;
-
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.JWTProfile;
-import it.infn.mw.iam.core.oauth.profile.RequestValidator;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
 
-@SuppressWarnings("deprecation")
-public class KeycloakJWTProfile implements JWTProfile, RequestValidator {
+public class KeycloakJWTProfile extends IamJWTProfile {
 
   public static final String PROFILE_VERSION = "1.0";
   public static final String PROFILE_NAME = "Keycloak JWT profile " + PROFILE_VERSION;
 
-  private final JWTAccessTokenBuilder accessTokenBuilder;
-  private final IDTokenCustomizer idTokenCustomizer;
-  private final UserInfoHelper userInfoHelper;
-  private final IntrospectionResultHelper introspectionHelper;
+  public KeycloakJWTProfile(JWTAccessTokenBuilder accessTokenBuilder,
+      IDTokenCustomizer idTokenBuilder, UserInfoHelper userInfoHelper,
+      IntrospectionResultHelper introspectionHelper) {
 
-  public KeycloakJWTProfile(JWTAccessTokenBuilder accessTokenBuilder, IDTokenCustomizer idTokenBuilder,
-	      UserInfoHelper userInfoHelper, IntrospectionResultHelper introspectionHelper) {
-
-    this.accessTokenBuilder = accessTokenBuilder;
-    this.idTokenCustomizer = idTokenBuilder;
-    this.userInfoHelper = userInfoHelper;
-    this.introspectionHelper = introspectionHelper;
-  }
-
-  @Override
-  public JWTAccessTokenBuilder getAccessTokenBuilder() {
-    return accessTokenBuilder;
-  }
-
-  @Override
-  public IDTokenCustomizer getIDTokenCustomizer() {
-    return idTokenCustomizer;
-  }
-
-  @Override
-  public IntrospectionResultHelper getIntrospectionResultHelper() {
-    return introspectionHelper;
-  }
-
-  @Override
-  public UserInfoHelper getUserinfoHelper() {
-    return userInfoHelper;
-  }
-
-  @Override
-  public String name() {
-    return PROFILE_NAME;
-  }
-
-  @Override
-  public RequestValidator getRequestValidator() {
-    return this;
-  }
-
-  @Override
-  public void validateRequest(OAuth2Request request) {
-    // no validation
+    super(accessTokenBuilder, idTokenBuilder, userInfoHelper, introspectionHelper);
   }
 
 }
