@@ -39,16 +39,16 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
     // @formatter:on
 })
 public class KeycloakProfileUserInfoTests {
-  
+
   @Value("${local.server.port}")
   private Integer iamPort;
 
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
-  
+
   private String userinfoUrl;
   private static final String USERINFO_URL_TEMPLATE = "http://localhost:%d/userinfo";
-  
+
   @BeforeClass
   public static void init() {
     TestUtils.initRestAssured();
@@ -60,7 +60,7 @@ public class KeycloakProfileUserInfoTests {
     RestAssured.port = iamPort;
     userinfoUrl = String.format(USERINFO_URL_TEMPLATE, iamPort);
   }
-  
+
   @Test
   public void testUserinfoResponseWithGroups() {
     String accessToken = TestUtils.passwordTokenGetter()
@@ -78,7 +78,7 @@ public class KeycloakProfileUserInfoTests {
       .statusCode(HttpStatus.OK.value())
       .body("\"roles\"", hasItems("Analysis", "Production"));
   }
-  
+
   @Test
   public void testUserinfoResponseWithoutGroups() {
     String accessToken = TestUtils.passwordTokenGetter()
@@ -113,5 +113,17 @@ public class KeycloakProfileUserInfoTests {
       .then()
       .statusCode(HttpStatus.OK.value())
       .body("\"roles\"", nullValue());
+  }
+
+  @Test
+  public void testUserinfoResponseWithoutUser() {
+    String accessToken = TestUtils.clientCredentialsTokenGetter().port(iamPort).getAccessToken();
+
+    RestAssured.given()
+      .header("Authorization", String.format("Bearer %s", accessToken))
+      .when()
+      .get(userinfoUrl)
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
   }
 }
