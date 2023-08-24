@@ -56,18 +56,14 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   public ScopeMatcher findMatcherForScope(String scope) {
 
     Set<SystemScope> systemScopes = scopeRepo.getAll();
-    ScopeMatcher matcher = null;
 
-    for (SystemScope s : systemScopes) {
-      if (!s.getValue().equals(scope)) {
-        matcher = StringEqualsScopeMatcher.stringEqualsMatcher(scope);
+      if (!systemScopes.toString().contains(scope)) {
+        return StringEqualsScopeMatcher.stringEqualsMatcher(scope);
       } else {
-        matcher = customMatchers.stream()
+        return customMatchers.stream()
           .filter(m -> m.matches(scope))
           .findFirst()
           .orElse(StringEqualsScopeMatcher.stringEqualsMatcher(scope));
       }
-    }
-    return matcher;
   }
 }
