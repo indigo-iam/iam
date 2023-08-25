@@ -22,6 +22,7 @@ import static java.util.Optional.ofNullable;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,8 +31,10 @@ import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
@@ -44,37 +47,45 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
 
 @Controller
 public class AupSignaturePageController {
-
 
   final IamAupRepository repo;
   final IamAupSignatureRepository signatureRepo;
   final AccountUtils accountUtils;
   final TimeProvider timeProvider;
   final ApplicationEventPublisher publisher;
+  final DefaultAupSignatureCheckService service;
 
   @Autowired
   public AupSignaturePageController(IamAupRepository aupRepo,
       IamAupSignatureRepository aupSignatureRepo, AccountUtils accountUtils,
-      TimeProvider timeProvider, ApplicationEventPublisher publisher) {
+      TimeProvider timeProvider, ApplicationEventPublisher publisher,
+      DefaultAupSignatureCheckService service) {
     this.repo = aupRepo;
     this.signatureRepo = aupSignatureRepo;
     this.accountUtils = accountUtils;
     this.timeProvider = timeProvider;
     this.publisher = publisher;
+    this.service = service;
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/iam/aup/sign", method = {RequestMethod.GET})
-  public ModelAndView signAupPage() {
+  @RequestMapping(value = "/iam/aup/sign", method = { RequestMethod.GET })
+  public ModelAndView signAupPage(HttpSession session) {
     ModelAndView view;
 
     Optional<IamAup> aup = repo.findDefaultAup();
 
     if (aup.isPresent()) {
       view = new ModelAndView("iam/signAup");
+
+      IamAccount account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
+          () -> new IllegalStateException("No iam account found for authenticated user"));
+
+      view.addObject("daysLeftToExpirySignature", service.getRemainingDaysSignatureExpiration(account));
       view.addObject("aup", aup.get());
     } else {
       view = new ModelAndView("iam/noAup");
@@ -84,8 +95,7 @@ public class AupSignaturePageController {
   }
 
   private Optional<SavedRequest> checkForSavedSpringSecurityRequest(HttpSession session) {
-    SavedRequest savedRequest =
-        (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+    SavedRequest savedRequest = (SavedRequest) session.getAttribute("SPRING_SECURITY_SAVED_REQUEST");
 
     if (!isNull(savedRequest)) {
       session.removeAttribute("SPRING_SECURITY_SAVED_REQUEST");
@@ -95,14 +105,12 @@ public class AupSignaturePageController {
 
   }
 
-
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.POST, value = "/iam/aup/sign")
   public ModelAndView signAup(HttpServletRequest request, HttpServletResponse response,
       HttpSession session) {
 
     Optional<IamAup> aup = repo.findDefaultAup();
-
 
     if (!aup.isPresent()) {
       return new ModelAndView("iam/noAup");
@@ -129,5 +137,3 @@ public class AupSignaturePageController {
     return new ModelAndView("redirect:/dashboard");
   }
 }
-
-

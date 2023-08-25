@@ -32,6 +32,7 @@ import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.error.AupNotFoundError;
@@ -43,13 +44,16 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class EnforceAupFilter implements Filter {
 
+  @Value("${iam.aup.advance-notice}")
+  private int EXPIRY_NOTICE_DAYS = 30;
+
   public static final Logger LOG = LoggerFactory.getLogger(EnforceAupFilter.class);
 
   public static final String AUP_API_PATH = "/iam/aup";
   public static final String AUP_SIGN_PATH = "/iam/aup/sign";
   public static final String SIGN_AUP_JSP = "signAup.jsp";
-
   public static final String REQUESTING_SIGNATURE = "iam.aup.requesting-signature";
+  public static final String SIGNATURE_REMAINING_DAYS = "iam.aup.signature-remaining-days";
 
   final AUPSignatureCheckService signatureCheckService;
   final AccountUtils accountUtils;
@@ -92,8 +96,9 @@ public class EnforceAupFilter implements Filter {
     }
 
     Optional<IamAccount> authenticatedUser = accountUtils.getAuthenticatedUserAccount();
+    Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    if (!authenticatedUser.isPresent() || !aupRepo.findDefaultAup().isPresent()) {
+    if (!authenticatedUser.isPresent() || !aup.isPresent()) {
       chain.doFilter(request, response);
       return;
     }
@@ -103,15 +108,16 @@ public class EnforceAupFilter implements Filter {
         chain.doFilter(request, response);
         return;
       }
-      if (!res.isCommitted()) {
+      if (!res.isCommitted() && aup.isPresent()) {
         res.sendRedirect(AUP_SIGN_PATH);
       }
       return;
     }
 
-    if (signatureCheckService.needsAupSignature(authenticatedUser.get())
-        && !sessionOlderThanAupCreation(session) && !res.isCommitted()) {
+    int remainingDays = signatureCheckService.getRemainingDaysSignatureExpiration(authenticatedUser.get());
+    if ((remainingDays <= EXPIRY_NOTICE_DAYS) && !sessionOlderThanAupCreation(session) && !res.isCommitted()) {
 
+      session.setAttribute(SIGNATURE_REMAINING_DAYS, remainingDays);
       session.setAttribute(REQUESTING_SIGNATURE, true);
       res.sendRedirect(AUP_SIGN_PATH);
       return;

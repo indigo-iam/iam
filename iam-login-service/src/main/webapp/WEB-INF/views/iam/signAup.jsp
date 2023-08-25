@@ -18,6 +18,14 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
 <t:page title="Sign Acceptable Usage Policy">
+  <c:if test="${daysLeftToExpirySignature > 0}">
+      <form id="skip-sign-aup-form" class="sign-aup-form form" action="/iam/aup/skip-sign" method="post">
+      <h2 class="text-center">You still have ${daysLeftToExpirySignature} days to sign</h2>
+      <div>
+        <input id="skip-sign-aup-btn" class="btn btn-success" type="submit" value="Skip the sign AUP">
+      </div>
+    </form>
+  </c:if>
   <h2 class="text-center">Sign Acceptable Usage Policy</h2>
   <form id="sign-aup-form" class="sign-aup-form form" action="/iam/aup/sign" method="post">
     <c:if test="${aup.text != null}">
