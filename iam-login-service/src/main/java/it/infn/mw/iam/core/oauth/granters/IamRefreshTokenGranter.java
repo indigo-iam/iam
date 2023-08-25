@@ -59,7 +59,7 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
       throw new DisabledException(format("User %s is not active.", user.get().getUsername()));
     }
 
-    if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
+    if (user.isPresent() && (signatureCheckService.getRemainingDaysSignatureExpiration(user.get()) <= 0)) {
       throw new InvalidGrantException(
           format("User %s needs to sign AUP for this organization in order to proceed.",
               user.get().getUsername()));

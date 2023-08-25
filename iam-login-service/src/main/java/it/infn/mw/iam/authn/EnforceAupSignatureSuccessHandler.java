@@ -100,7 +100,7 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
     Optional<IamAccount> authenticatedAccount = lookupAuthenticatedUser(auth);
 
     if (!authenticatedAccount.isPresent()
-        || !service.needsAupSignature(authenticatedAccount.get())) {
+        || !(service.getRemainingDaysSignatureExpiration(authenticatedAccount.get()) <= 0)) {
       delegate.onAuthenticationSuccess(request, response, auth);
 
     } else {

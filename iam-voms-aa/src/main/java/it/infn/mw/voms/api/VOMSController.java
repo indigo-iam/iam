@@ -114,7 +114,7 @@ public class VOMSController extends VOMSControllerSupport {
       }
     } else {
       IamAccount user = context.getIamAccount();
-      if (signatureCheckService.needsAupSignature(user)) {
+      if (signatureCheckService.getRemainingDays(user) <= 0) {
         VOMSErrorMessage em = VOMSErrorMessage.faildToSignAup(user.getUsername());
         return responseBuilder.createErrorResponse(em);
       }

@@ -58,7 +58,7 @@ public class IamResourceOwnerPasswordTokenGranter extends ResourceOwnerPasswordT
     OAuth2Authentication auth = super.getOAuth2Authentication(client, tokenRequest);
     Optional<IamAccount> user = accountUtils.getAuthenticatedUserAccount(auth);
 
-    if (user.isPresent() && signatureCheckService.needsAupSignature(user.get())) {
+    if (user.isPresent() && (signatureCheckService.getRemainingDaysSignatureExpiration(user.get()) <= 0)) {
       throw new InvalidGrantException(
           format("User %s needs to sign AUP for this organization in order to proceed.",
               user.get().getUsername()));

@@ -159,7 +159,7 @@ public class TokenExchangeTokenGranter extends AbstractTokenGranter {
       Optional<IamAccount> account = accountUtils
         .getAuthenticatedUserAccount(subjectToken.getAuthenticationHolder().getUserAuth());
 
-      if (account.isPresent() && signatureCheckService.needsAupSignature(account.get())) {
+      if (account.isPresent() && (signatureCheckService.getRemainingDaysSignatureExpiration(account.get()) <= 0)) {
         throw new InvalidGrantException(
             format("User %s needs to sign AUP for this organization " + "in order to proceed.",
                 account.get().getUsername()));
