@@ -33,4 +33,9 @@ public class KeycloakJWTProfile extends IamJWTProfile {
     super(accessTokenBuilder, idTokenBuilder, userInfoHelper, introspectionHelper);
   }
 
+  @Override
+  public String name() {
+    return PROFILE_NAME;
+  }
+
 }
