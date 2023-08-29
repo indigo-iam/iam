@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.h2.server.web.WebServlet;
+import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
@@ -252,9 +253,9 @@ public class IamConfig {
 
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, SystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties));
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), scopeRepo);
   }
 
   @Bean
