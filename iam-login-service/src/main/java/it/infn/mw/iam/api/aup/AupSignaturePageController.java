@@ -22,7 +22,6 @@ import static java.util.Optional.ofNullable;
 
 import java.util.Date;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,10 +30,8 @@ import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
@@ -74,16 +71,16 @@ public class AupSignaturePageController {
 
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(value = "/iam/aup/sign", method = { RequestMethod.GET })
-  public ModelAndView signAupPage(HttpSession session) {
+  public ModelAndView signAupPage() {
     ModelAndView view;
 
     Optional<IamAup> aup = repo.findDefaultAup();
+    IamAccount account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
+        () -> new IllegalStateException("No iam account found for authenticated user"));
 
     if (aup.isPresent()) {
-      view = new ModelAndView("iam/signAup");
 
-      IamAccount account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
-          () -> new IllegalStateException("No iam account found for authenticated user"));
+      view = new ModelAndView("iam/signAup");
 
       view.addObject("daysLeftToExpirySignature", service.getRemainingDaysSignatureExpiration(account));
       view.addObject("aup", aup.get());
@@ -136,4 +133,14 @@ public class AupSignaturePageController {
 
     return new ModelAndView("redirect:/dashboard");
   }
+
+  @PreAuthorize("hasRole('USER')")
+  @RequestMapping(method = RequestMethod.GET, value = "/iam/aup/skip-sign")
+  public ModelAndView skipSignAup(HttpServletRequest request, HttpServletResponse response,
+      HttpSession session) {
+
+    return new ModelAndView("redirect:/dashboard");
+  }
+
+
 }

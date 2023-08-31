@@ -93,7 +93,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-    assertThat(service.needsAupSignature(testAccount), is(false));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(Integer.MAX_VALUE));
   }
 
   @Test
@@ -116,12 +116,12 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
 
-    assertThat(service.needsAupSignature(testAccount), is(true));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(-Integer.MAX_VALUE));
 
     signatureRepo.createSignatureForAccount(testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
-    assertThat(service.needsAupSignature(testAccount), is(false));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(365));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
 
@@ -133,22 +133,22 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
           patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
 
-    assertThat(service.needsAupSignature(testAccount), is(false));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(364));
 
     mvc.perform(post("/iam/aup/touch")).andExpect(status().isOk());
 
-    assertThat(service.needsAupSignature(testAccount), is(true));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(364));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(20));
 
     signatureRepo.createSignatureForAccount(testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
-    assertThat(service.needsAupSignature(testAccount), is(false));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(365));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.DAYS.toMillis(366));
 
-    assertThat(service.needsAupSignature(testAccount), is(true));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(0));
 
   }
 

@@ -27,12 +27,10 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.error.AupNotFoundError;
@@ -43,9 +41,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 
 public class EnforceAupFilter implements Filter {
-
-  @Value("${iam.aup.advance-notice}")
-  private int EXPIRY_NOTICE_DAYS = 30;
 
   public static final Logger LOG = LoggerFactory.getLogger(EnforceAupFilter.class);
 
@@ -84,7 +79,6 @@ public class EnforceAupFilter implements Filter {
       throws IOException, ServletException {
 
     HttpServletRequest req = (HttpServletRequest) request;
-    HttpServletResponse res = (HttpServletResponse) response;
 
     HttpSession session = req.getSession(false);
 
@@ -108,20 +102,6 @@ public class EnforceAupFilter implements Filter {
         chain.doFilter(request, response);
         return;
       }
-      if (!res.isCommitted() && aup.isPresent()) {
-        res.sendRedirect(AUP_SIGN_PATH);
-      }
-      return;
-    }
-
-    int remainingDays = signatureCheckService.getRemainingDaysSignatureExpiration(authenticatedUser.get());
-    if ((remainingDays <= EXPIRY_NOTICE_DAYS) && !sessionOlderThanAupCreation(session) && !res.isCommitted()) {
-
-      session.setAttribute(SIGNATURE_REMAINING_DAYS, remainingDays);
-      session.setAttribute(REQUESTING_SIGNATURE, true);
-      res.sendRedirect(AUP_SIGN_PATH);
-      return;
-
     }
 
     chain.doFilter(request, response);

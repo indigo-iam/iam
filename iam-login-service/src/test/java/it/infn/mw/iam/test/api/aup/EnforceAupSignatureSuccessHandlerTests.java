@@ -94,7 +94,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
   public void userIsRedirectedToSignAupPageWhenNeeded() throws IOException, ServletException {
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(true);
+    when(signatureCheckService.getRemainingDaysSignatureExpiration(Mockito.any())).thenReturn(-1);
    
     handler.onAuthenticationSuccess(request, response, auth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
@@ -107,7 +107,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
   public void delegateIsCalledIfNoSignatureIsNeeded()throws IOException, ServletException {
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false); 
+    when(signatureCheckService.getRemainingDaysSignatureExpiration(Mockito.any())).thenReturn(30);
     
     handler.onAuthenticationSuccess(request, response, auth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
@@ -124,7 +124,7 @@ public class EnforceAupSignatureSuccessHandlerTests {
     
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false);
+    when(signatureCheckService.getRemainingDaysSignatureExpiration(Mockito.any())).thenReturn(30);
     
     handler.onAuthenticationSuccess(request, response, oauth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
