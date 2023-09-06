@@ -195,7 +195,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testNoActionLifecycleDoesNotSetActionForInValidAccounts() {
+  public void testActionNotSetForDisabledInValidAccounts() {
 
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
 
