@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth.scope;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.core.oauth.scope.matchers.RegexpScopeMatcher.regexpMatcher;
 import static it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher.stringEqualsMatcher;
+import static it.infn.mw.iam.core.oauth.scope.matchers.StructuredPathScopeMatcher.structuredPathMatcher;
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
@@ -93,18 +94,19 @@ public class ScopeRegistryTests {
   public void testMatchingScope() {
 
     DefaultScopeMatcherRegistry matcherRegistry =
-        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")), scopeRepo);
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);
 
     when(client.getScope())
-      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever"));
+      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));
-    assertThat(matchers, hasSize(4));
+    assertThat(matchers, hasSize(5));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
     assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
     assertThat(matchers, hasItem(stringEqualsMatcher("test")));
     assertThat(matchers, hasItem(regexpMatcher("^test:/.*$")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("storage.create:/whatever")));
   }
 
 }
