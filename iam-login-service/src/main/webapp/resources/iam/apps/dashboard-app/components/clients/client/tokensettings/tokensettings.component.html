@@ -20,16 +20,7 @@
         <div class="form-group">
             <label for="at_timeout">Access token timeout (seconds)</label>
             <input id="at_timeout" class="form-control" type="text"
-                ng-model="$ctrl.client.access_token_validity_seconds"
-                ng-disabled="$ctrl.atDoNotExpire  && $ctrl.accessTokenValiditySeconds > 0">
-        </div>
-
-        <div class="checkbox">
-            <label>
-                <input type="checkbox" ng-model="$ctrl.client.access_token_validity_seconds" ng-true-value="0"
-                    ng-false-value="{{$ctrl.client.access_token_validity_seconds}}">
-                Access tokens do not expire
-            </label>
+                ng-model="$ctrl.client.access_token_validity_seconds">
         </div>
 
     </div>

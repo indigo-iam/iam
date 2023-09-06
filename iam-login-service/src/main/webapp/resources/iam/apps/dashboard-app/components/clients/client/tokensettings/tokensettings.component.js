@@ -28,7 +28,6 @@
         self.hasDeviceCodeGrantType = false;
         self.accessTokenValiditySeconds = getAccessTokenValiditySeconds();
         self.refreshTokenValiditySeconds = getRefreshTokenValiditySeconds();
-        self.atDoNotExpire = false;
         self.rtDoNotExpire = false;
 
         self.$onInit = function () {
@@ -42,14 +41,9 @@
             }
 
             $scope.$watch('$ctrl.client.access_token_validity_seconds', function handleChange(newVal, oldVal) {
-
                 if (newVal <= 0) {
                     self.client.access_token_validity_seconds = 0;
-                    self.atDoNotExpire = true;
-                } else {
-                    self.atDoNotExpire = false;
                 }
-
             });
 
             $scope.$watch('$ctrl.client.refresh_token_validity_seconds', function handleChange(newVal, oldVal) {
