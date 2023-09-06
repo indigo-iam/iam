@@ -54,19 +54,10 @@
     </div>
 
     <div class="form-group">
-        <label for="rt_timeout">Refresh token timeout (seconds)</label>
+        <label for="rt_timeout">Refresh token timeout (seconds), type 0 if the refresh token does not expire</label>
 
         <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
-            ng-required ng-min="30"
-            ng-disabled="$ctrl.rtDoNotExpire && $ctrl.refreshTokenValiditySeconds > 0">
-
-        <div class="checkbox">
-            <label>
-                <input type="checkbox" ng-model="$ctrl.client.refresh_token_validity_seconds" ng-true-value="0"
-                    ng-false-value="{{$ctrl.client.refresh_token_validity_seconds}}">
-                Refresh tokens do not expire
-            </label>
-        </div>
+            ng-required ng-min="30">
 
     </div>
     <div class="form-group">
