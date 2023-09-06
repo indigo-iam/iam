@@ -54,10 +54,14 @@
     </div>
 
     <div class="form-group">
-        <label for="rt_timeout">Refresh token timeout (seconds), type 0 if the refresh token does not expire</label>
+        <label for="rt_timeout">Refresh token timeout (seconds)</label>
 
         <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
             ng-required ng-min="30">
+            <p class="help-block">
+                This will setup after how many seconds the refresh token
+                expires. Type 0 to set an infinite lifetime.
+            </p>
 
     </div>
     <div class="form-group">
