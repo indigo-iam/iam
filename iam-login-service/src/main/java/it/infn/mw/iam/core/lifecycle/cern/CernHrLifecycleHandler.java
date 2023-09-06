@@ -203,6 +203,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public void handleInvalidAccount(IamAccount account) {
     if (account.isActive()) {
       disableAccount(account);
+    } else {
+      accountService.setLabel(account, buildStatusLabel(OK));
     }
   }
 
