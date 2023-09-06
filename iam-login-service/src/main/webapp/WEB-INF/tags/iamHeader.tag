@@ -89,11 +89,11 @@ function getOrganisationName() {
 }
 
 function getAccessTokenValiditySeconds() {
-		return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
+  return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
 }
 
 function getRefreshTokenValiditySeconds() {
-		return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
+  return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
 }
 
 function getOidcEnabled() {
