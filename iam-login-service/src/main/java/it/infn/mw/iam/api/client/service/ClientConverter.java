@@ -68,14 +68,14 @@ public class ClientConverter {
 
     if (dto.getAccessTokenValiditySeconds() != null) {
       if (dto.getAccessTokenValiditySeconds() <= 0) {
-        client.setAccessTokenValiditySeconds(null);
+        client.setAccessTokenValiditySeconds(0);
       } else {
         client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
       }
     }
     if (dto.getRefreshTokenValiditySeconds() != null) {
       if (dto.getRefreshTokenValiditySeconds() <= 0) {
-        client.setRefreshTokenValiditySeconds(null);
+        client.setRefreshTokenValiditySeconds(0);
       } else {
         client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
       }

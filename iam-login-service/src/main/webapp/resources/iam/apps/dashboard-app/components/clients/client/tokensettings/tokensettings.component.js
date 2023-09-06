@@ -28,15 +28,14 @@
         self.hasDeviceCodeGrantType = false;
         self.accessTokenValiditySeconds = getAccessTokenValiditySeconds();
         self.refreshTokenValiditySeconds = getRefreshTokenValiditySeconds();
-        self.rtDoNotExpire = false;
 
         self.$onInit = function () {
             console.debug('TokenSettingsController.self', self);
-            if (!self.client.access_token_validity_seconds) {
+            if (self.client.access_token_validity_seconds == null) {
                 self.client.access_token_validity_seconds = self.accessTokenValiditySeconds;
             }
 
-            if (!self.client.refresh_token_validity_seconds) {
+            if (self.client.refresh_token_validity_seconds == null) {
                 self.client.refresh_token_validity_seconds = self.refreshTokenValiditySeconds;
             }
 
@@ -47,14 +46,9 @@
             });
 
             $scope.$watch('$ctrl.client.refresh_token_validity_seconds', function handleChange(newVal, oldVal) {
-
                 if (newVal <= 0) {
                     self.client.refresh_token_validity_seconds = 0;
-                    self.rtDoNotExpire = true;
-                } else {
-                    self.rtDoNotExpire = false;
                 }
-
             });
 
             $scope.$watch('$ctrl.client.grant_types', function handleChange(newVal, oldVal) {
