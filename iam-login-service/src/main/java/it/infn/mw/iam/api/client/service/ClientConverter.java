@@ -38,6 +38,7 @@ import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 
 @Component
 public class ClientConverter {
@@ -46,11 +47,14 @@ public class ClientConverter {
 
   private final String clientRegistrationBaseUrl;
 
+  private final ClientRegistrationProperties clientProperties;
+
   @Autowired
-  public ClientConverter(IamProperties properties) {
+  public ClientConverter(IamProperties properties, ClientRegistrationProperties clientProperties) {
     this.iamProperties = properties;
     clientRegistrationBaseUrl =
         String.format("%s%s", iamProperties.getBaseUrl(), ClientRegistrationApiController.ENDPOINT);
+    this.clientProperties = clientProperties;
   }
 
   private <T> Set<T> cloneSet(Set<T> stringSet) {
@@ -228,12 +232,18 @@ public class ClientConverter {
       client.setCodeChallengeMethod(pkceAlgo);
     }
 
-    if (dto.getAccessTokenValiditySeconds() != null) {
+    if (!isNull(dto.getAccessTokenValiditySeconds())) {
       client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
+    } else {
+      client.setAccessTokenValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
-    
-    if (dto.getRefreshTokenValiditySeconds() != null) {
+
+    if (!isNull(dto.getRefreshTokenValiditySeconds())) {
       client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
+    } else {
+      client.setRefreshTokenValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
     return client;
