@@ -37,7 +37,7 @@ public class IamSystemScopeService extends DefaultSystemScopeService {
   public boolean scopesMatch(Set<String> allowedScopes, Set<String> requestedScopes) {
 
     Set<ScopeMatcher> allowedScopeMatchers =
-        requestedScopes.stream().map(scopeMatcherRegistry::findMatcherForScope).collect(toSet());
+        allowedScopes.stream().map(scopeMatcherRegistry::findMatcherForScope).collect(toSet());
 
     for (String rs : requestedScopes) {
       if (allowedScopeMatchers.stream().noneMatch(m -> m.matches(rs))) {
