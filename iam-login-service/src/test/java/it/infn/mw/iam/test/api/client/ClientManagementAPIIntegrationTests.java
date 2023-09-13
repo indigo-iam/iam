@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -143,5 +144,86 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     responseJson = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     assertThat(client.getRegistrationAccessToken(), notNullValue());
+  }
+
+  @Test
+  public void setTokenLifetimesWorks() throws Exception {
+
+    String clientJson = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .accessTokenValiditySeconds(null)
+      .refreshTokenValiditySeconds(null)
+      .build();
+
+    String responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertTrue(client.getAccessTokenValiditySeconds().equals(3600));
+    assertTrue(client.getRefreshTokenValiditySeconds().equals(108000));
+
+    clientJson = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .accessTokenValiditySeconds(0)
+      .refreshTokenValiditySeconds(0)
+      .build();
+
+    responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertTrue(client.getAccessTokenValiditySeconds().equals(0));
+    assertTrue(client.getRefreshTokenValiditySeconds().equals(0));
+    
+    clientJson = ClientJsonStringBuilder.builder()
+        .scopes("openid")
+        .accessTokenValiditySeconds(10)
+        .refreshTokenValiditySeconds(10)
+        .build();
+
+      responseJson = mvc
+        .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+          .content(clientJson))
+        .andExpect(CREATED)
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+      client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+      assertTrue(client.getAccessTokenValiditySeconds().equals(10));
+      assertTrue(client.getRefreshTokenValiditySeconds().equals(10));
+
+  }
+
+  @Test
+  public void negativeTokenLifetimesNotAllowed() throws Exception {
+
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1).build();
+
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
+
+    clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1).build();
+
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
   }
 }

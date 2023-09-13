@@ -419,6 +419,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     String jsonInString = ClientJsonStringBuilder.builder()
       .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
       .scopes("openid", "profile", "offline_access")
+      .accessTokenValiditySeconds(3600)
       .build();
 
     String clientJson =

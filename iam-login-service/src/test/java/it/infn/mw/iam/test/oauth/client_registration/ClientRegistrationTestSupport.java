@@ -50,7 +50,8 @@ public class ClientRegistrationTestSupport {
     Set<String> grantTypes = Sets.newHashSet("client_credentials");
     Set<String> scopes = Sets.newHashSet();
     Set<String> responseTypes = Sets.newHashSet();
-    int accessTokenValiditySeconds = 3600;
+    Integer accessTokenValiditySeconds;
+    Integer refreshTokenValiditySeconds;
 
     private ClientJsonStringBuilder() {}
 
@@ -83,9 +84,19 @@ public class ClientRegistrationTestSupport {
       return this;
     }
 
-    public ClientJsonStringBuilder accessTokenValiditySeconds(int accessTokenValiditySeconds) {
+    public ClientJsonStringBuilder accessTokenValiditySeconds(Integer accessTokenValiditySeconds) {
       this.accessTokenValiditySeconds = accessTokenValiditySeconds;
       return this;
+    }
+
+    public ClientJsonStringBuilder refreshTokenValiditySeconds(
+        Integer refreshTokenValiditySeconds) {
+      this.refreshTokenValiditySeconds = refreshTokenValiditySeconds;
+      return this;
+    }
+
+    public Integer getAccessTokenValiditySeconds() {
+      return accessTokenValiditySeconds;
     }
 
     public String build() {
@@ -99,6 +110,7 @@ public class ClientRegistrationTestSupport {
       json.add(REQUEST_URIS, getAsArray(newHashSet(), true));
       json.add(CONTACTS, getAsArray(newHashSet("test@iam.test")));
       json.addProperty("access_token_validity_seconds", accessTokenValiditySeconds);
+      json.addProperty("refresh_token_validity_seconds", refreshTokenValiditySeconds);
       return json.toString();
     }
 
