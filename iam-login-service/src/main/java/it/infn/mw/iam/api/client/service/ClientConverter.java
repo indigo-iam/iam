@@ -231,6 +231,11 @@ public class ClientConverter {
       client.setCodeChallengeMethod(pkceAlgo);
     }
 
+    client.setAccessTokenValiditySeconds(
+        clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    client.setRefreshTokenValiditySeconds(
+        clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+
     return client;
   }
 
