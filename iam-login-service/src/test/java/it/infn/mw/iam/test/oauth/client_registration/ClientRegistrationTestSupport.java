@@ -95,10 +95,6 @@ public class ClientRegistrationTestSupport {
       return this;
     }
 
-    public Integer getAccessTokenValiditySeconds() {
-      return accessTokenValiditySeconds;
-    }
-
     public String build() {
       JsonObject json = new JsonObject();
       json.addProperty(CLIENT_NAME, name);
