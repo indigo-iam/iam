@@ -90,7 +90,6 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
     }
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
-    client.setReuseRefreshToken(client.isReuseRefreshToken());
     return client;
   }
 
