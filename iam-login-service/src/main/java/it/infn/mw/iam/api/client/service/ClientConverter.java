@@ -71,18 +71,17 @@ public class ClientConverter {
     ClientDetailsEntity client = entityFromRegistrationRequest(dto);
 
     if (dto.getAccessTokenValiditySeconds() != null) {
-      if (dto.getAccessTokenValiditySeconds() <= 0) {
-        client.setAccessTokenValiditySeconds(0);
-      } else {
-        client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
-      }
+      client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
+    } else {
+      client.setAccessTokenValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
+
     if (dto.getRefreshTokenValiditySeconds() != null) {
-      if (dto.getRefreshTokenValiditySeconds() <= 0) {
-        client.setRefreshTokenValiditySeconds(0);
-      } else {
-        client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
-      }
+      client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
+    } else {
+      client.setRefreshTokenValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
     if (dto.getIdTokenValiditySeconds() != null) {
@@ -230,20 +229,6 @@ public class ClientConverter {
     if (dto.getCodeChallengeMethod() != null) {
       PKCEAlgorithm pkceAlgo = PKCEAlgorithm.parse(dto.getCodeChallengeMethod());
       client.setCodeChallengeMethod(pkceAlgo);
-    }
-
-    if (!isNull(dto.getAccessTokenValiditySeconds())) {
-      client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
-    } else {
-      client.setAccessTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-    }
-
-    if (!isNull(dto.getRefreshTokenValiditySeconds())) {
-      client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
-    } else {
-      client.setRefreshTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
     return client;
