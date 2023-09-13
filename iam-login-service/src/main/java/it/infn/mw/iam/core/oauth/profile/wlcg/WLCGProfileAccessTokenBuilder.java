@@ -79,6 +79,15 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
         builder.claim(ATTR_SCOPE, attributeHelper
           .getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
       }
+      if (properties.getAccessToken().isIncludeAuthnInfo()) {
+        if (token.getScope().contains("email")) {
+          builder.claim("email", userInfo.getEmail());
+        }
+        if (token.getScope().contains("profile")) {
+          builder.claim("preferred_username", userInfo.getPreferredUsername());
+          builder.claim("name", userInfo.getName());
+        }
+      }
     }
 
     if (!hasAudienceRequest(authentication) && !hasRefreshTokenAudienceRequest(authentication)) {
