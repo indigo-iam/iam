@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,6 +48,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -135,7 +135,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   public void testDeviceCodeStructuredScopeRequest() throws Exception {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID);
-    Set<String> scopes = new HashSet<String>();
+    Set<String> scopes = Sets.newHashSet();
     scopes.add("storage.read:/");
     scopes.add("openid");
     scopes.add("profile");

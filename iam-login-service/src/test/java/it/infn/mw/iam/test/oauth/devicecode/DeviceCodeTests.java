@@ -34,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,6 +49,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -563,7 +563,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   public void publicClientDeviceCodeWorks() throws Exception {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(PUBLIC_DEVICE_CODE_CLIENT_ID);
-    Set<String> scopes = new HashSet<String>();
+    Set<String> scopes = Sets.newHashSet();
     scopes.add("openid");
     scopes.add("profile");
     if (client.isPresent()) {
