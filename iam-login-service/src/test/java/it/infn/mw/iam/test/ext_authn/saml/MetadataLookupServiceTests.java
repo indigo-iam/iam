@@ -55,10 +55,11 @@ public class MetadataLookupServiceTests {
   public static final String IDP2_ENTITY_ID = "urn:test:idp2";
   public static final String IDP3_ENTITY_ID = "urn:test:idp3";
   public static final String IDP4_ENTITY_ID = "urn:test:idp4";
-  
+
   public static final String IDP1_ORGANIZATION_NAME = "IDP1 organization";
   public static final String IDP2_ORGANIZATION_NAME = "IDP2 organization";
-  
+  public static final String IDP4_ORGANIZATION_NAME = "IDP4 organization";
+
   @Mock
   MetadataManager manager;
 
@@ -75,23 +76,26 @@ public class MetadataLookupServiceTests {
   UIInfo idp1UIInfo, idp2UIInfo, idp4UIInfo;
 
   @Mock
-  DisplayName idp1DisplayName, idp2DisplayName, idp4DisplayName;
+  DisplayName idp1DisplayName, idp1ItDisplayName, idp2DisplayName, idp4DisplayName;
 
   @Mock
-  LocalizedString idp1LocalizedString, idp2LocalizedString, idp4LocalizedString;
+  LocalizedString idp1LocalizedString, idp1ItLocalizedString, idp2LocalizedString,
+      idp4LocalizedString;
 
   @Before
   public void setup() throws MetadataProviderException {
 
     when(idp1LocalizedString.getLocalString()).thenReturn(IDP1_ORGANIZATION_NAME);
+    when(idp1ItLocalizedString.getLocalString()).thenReturn("IDP1 organizzazione");
     when(idp1DisplayName.getName()).thenReturn(idp1LocalizedString);
-    when(idp1UIInfo.getDisplayNames()).thenReturn(asList(idp1DisplayName));
+    when(idp1ItDisplayName.getName()).thenReturn(idp1ItLocalizedString);
+    when(idp1UIInfo.getDisplayNames()).thenReturn(asList(idp1DisplayName, idp1ItDisplayName));
 
     when(idp2LocalizedString.getLocalString()).thenReturn(IDP2_ORGANIZATION_NAME);
     when(idp2DisplayName.getName()).thenReturn(idp2LocalizedString);
     when(idp2UIInfo.getDisplayNames()).thenReturn(asList(idp2DisplayName));
 
-    when(idp4LocalizedString.getLocalString()).thenReturn("");
+    when(idp4LocalizedString.getLocalString()).thenReturn(IDP4_ORGANIZATION_NAME);
     when(idp4DisplayName.getName()).thenReturn(idp4LocalizedString);
     when(idp4UIInfo.getDisplayNames()).thenReturn(asList(idp4DisplayName));
 
@@ -102,7 +106,7 @@ public class MetadataLookupServiceTests {
       .thenReturn(asList(idp2UIInfo));
 
     when(idp4SsoExtensions.getUnknownXMLObjects(UIInfo.DEFAULT_ELEMENT_NAME))
-    .thenReturn(asList(idp4UIInfo));
+      .thenReturn(asList(idp4UIInfo));
 
     when(idp1SsoDesc.getExtensions()).thenReturn(idp1SsoExtensions);
 
@@ -115,7 +119,7 @@ public class MetadataLookupServiceTests {
 
     when(idp2Desc.getEntityID()).thenReturn(IDP2_ENTITY_ID);
     when(idp2Desc.getIDPSSODescriptor(SAMLConstants.SAML20P_NS)).thenReturn(idp2SsoDesc);
-    
+
     when(idp3Desc.getEntityID()).thenReturn(IDP3_ENTITY_ID);
 
     when(idp4Desc.getEntityID()).thenReturn(IDP4_ENTITY_ID);
@@ -126,8 +130,8 @@ public class MetadataLookupServiceTests {
     when(manager.getEntityDescriptor(IDP3_ENTITY_ID)).thenReturn(idp3Desc);
     when(manager.getEntityDescriptor(IDP4_ENTITY_ID)).thenReturn(idp4Desc);
 
-    when(manager.getIDPEntityNames()).thenReturn(Sets.newHashSet(IDP1_ENTITY_ID, IDP2_ENTITY_ID, 
-        IDP3_ENTITY_ID, IDP4_ENTITY_ID));
+    when(manager.getIDPEntityNames())
+      .thenReturn(Sets.newHashSet(IDP1_ENTITY_ID, IDP2_ENTITY_ID, IDP3_ENTITY_ID, IDP4_ENTITY_ID));
   }
 
 
@@ -138,72 +142,86 @@ public class MetadataLookupServiceTests {
 
     assertNotNull(service.listIdps());
     List<IdpDescription> idps = service.listIdps();
-    
+
     assertThat(idps, hasSize(4));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
         hasProperty("organizationName", is(IDP1_ORGANIZATION_NAME)))));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP2_ENTITY_ID)),
         hasProperty("organizationName", is(IDP2_ORGANIZATION_NAME)))));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP3_ENTITY_ID)),
         hasProperty("organizationName", is(IDP3_ENTITY_ID)))));
 
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP4_ENTITY_ID)),
-        hasProperty("organizationName", is(IDP4_ENTITY_ID)))));
+        hasProperty("organizationName", is(IDP4_ORGANIZATION_NAME)))));
   }
-  
-  
+
+
   @Test
   public void testEmptyMetadataInitialization() {
     when(manager.getIDPEntityNames()).thenReturn(emptySet());
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
-    
+
     assertThat(service.listIdps(), hasSize(0));
   }
   
   @Test
-  public void testLookupByOrganizationNameWorks() {
+  public void testEmptyTextToFind() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
     
-    List<IdpDescription> idps = service.lookupIdp(IDP1_ORGANIZATION_NAME);
-    assertThat(idps, hasSize(1));
-    
-    assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
+    List<IdpDescription> idps = service.lookupIdp("noMatchOnTextToFind");
+    assertThat(idps, hasSize(0));
+  }
+
+  @Test
+  public void testLookupByOrganizationNameWorks() {
+    DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
+
+    List<IdpDescription> idpsIt = service.lookupIdp("organizz");
+    assertThat(idpsIt, hasSize(1));
+
+    assertThat(idpsIt, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
+        hasProperty("organizationName", is("IDP1 organizzazione")))));
+
+    List<IdpDescription> idpsEn = service.lookupIdp(IDP1_ORGANIZATION_NAME);
+    assertThat(idpsEn, hasSize(1));
+
+    assertThat(idpsEn, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
         hasProperty("organizationName", is(IDP1_ORGANIZATION_NAME)))));
   }
-  
+
   @Test
   public void testPartialLookupWorks() {
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
-    
+
     List<IdpDescription> idps = service.lookupIdp("idp");
     assertThat(idps, hasSize(4));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
         hasProperty("organizationName", is(IDP1_ORGANIZATION_NAME)))));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP2_ENTITY_ID)),
         hasProperty("organizationName", is(IDP2_ORGANIZATION_NAME)))));
-    
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP3_ENTITY_ID)),
         hasProperty("organizationName", is(IDP3_ENTITY_ID)))));
 
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP4_ENTITY_ID)),
-        hasProperty("organizationName", is(IDP4_ENTITY_ID)))));
+        hasProperty("organizationName", is(IDP4_ORGANIZATION_NAME)))));
   }
-  
+
   @Test
   public void testEntityIdLookupWorks() {
-   
+
     DefaultMetadataLookupService service = new DefaultMetadataLookupService(manager);
     List<IdpDescription> idps = service.lookupIdp(IDP1_ENTITY_ID);
     assertThat(idps, hasSize(1));
-   
+
     assertThat(idps, hasItem(allOf(hasProperty("entityId", is(IDP1_ENTITY_ID)),
         hasProperty("organizationName", is(IDP1_ORGANIZATION_NAME)))));
-    
+
     idps = service.lookupIdp("unknown");
     assertThat(idps, hasSize(0));
   }
