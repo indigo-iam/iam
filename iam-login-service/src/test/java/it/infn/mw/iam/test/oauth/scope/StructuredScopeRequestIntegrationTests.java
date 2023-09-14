@@ -29,9 +29,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +48,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -66,6 +72,9 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
   @Autowired
   private ObjectMapper mapper;
+
+  @Autowired
+  private IamClientRepository clientRepo;
 
   @Before
   public void setup() throws Exception {
@@ -124,6 +133,17 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
   @Test
   public void testDeviceCodeStructuredScopeRequest() throws Exception {
+
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID);
+    Set<String> scopes = Sets.newHashSet();
+    scopes.add("storage.read:/");
+    scopes.add("openid");
+    scopes.add("profile");
+    scopes.add("offline_access");
+    if (client.isPresent()) {
+      client.get().setScope(scopes);
+    }
+
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -243,11 +263,11 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   public void testRefreshTokenStructuredScopeRequest() throws Exception {
 
     DefaultOAuth2AccessToken tokenResponse = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
-        .clientId(PASSWORD_CLIENT_ID)
-        .clientSecret(PASSWORD_CLIENT_SECRET)
-        .username(TEST_USERNAME)
-        .password(TEST_PASSWORD)
-        .scope("openid storage.read:/ offline_access")
+      .clientId(PASSWORD_CLIENT_ID)
+      .clientSecret(PASSWORD_CLIENT_SECRET)
+      .username(TEST_USERNAME)
+      .password(TEST_PASSWORD)
+      .scope("openid storage.read:/ offline_access")
       .getTokenResponseObject();
 
     assertThat(tokenResponse.getScope(), hasItem("storage.read:/"));
@@ -260,9 +280,8 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
       .andExpect(jsonPath("$.refresh_token").exists())
-      .andExpect(jsonPath("$.scope",
-          allOf(containsString("storage.read:/test "), containsString("offline_access"),
-              containsString("openid"))));
+      .andExpect(jsonPath("$.scope", allOf(containsString("storage.read:/test "),
+          containsString("offline_access"), containsString("openid"))));
 
   }
 }
