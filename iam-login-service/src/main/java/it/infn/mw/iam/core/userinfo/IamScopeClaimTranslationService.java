@@ -45,6 +45,7 @@ import static it.infn.mw.iam.core.userinfo.UserInfoClaim.UPDATED_AT;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WEBSITE;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WLCG_GROUPS;
 import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ZONEINFO;
+import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ROLES;
 
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -79,7 +80,7 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
 
   protected static final Set<UserInfoClaim> PROFILE_CLAIMS = EnumSet.of(NAME, PREFERRED_USERNAME,
       GIVEN_NAME, FAMILY_NAME, MIDDLE_NAME, NICKNAME, PROFILE, PICTURE, WEBSITE, GENDER, ZONEINFO,
-      LOCALE, UPDATED_AT, BIRTHDATE, ORGANISATION_NAME, GROUPS, EXTERNAL_AUTHN);
+      LOCALE, UPDATED_AT, BIRTHDATE, ORGANISATION_NAME, GROUPS, EXTERNAL_AUTHN, ROLES);
 
   protected static final Set<UserInfoClaim> EMAIL_CLAIMS = EnumSet.of(EMAIL, EMAIL_VERIFIED);
 
