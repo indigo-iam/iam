@@ -67,6 +67,14 @@
     <div class="form-group">
         <div class="checkbox">
             <label>
+                <input type="checkbox" ng-model="$ctrl.client.reuse_refresh_token">
+                Reuse refresh token
+            </label>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="checkbox">
+            <label>
                 <input type="checkbox" ng-model="$ctrl.client.clear_access_tokens_on_refresh">
                 Clear access tokens on refresh
             </label>

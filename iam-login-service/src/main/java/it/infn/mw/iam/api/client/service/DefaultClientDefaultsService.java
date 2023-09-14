@@ -75,7 +75,6 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
     }
 
     client.setAuthorities(Sets.newHashSet(Authorities.ROLE_CLIENT));
-
     return client;
   }
 
