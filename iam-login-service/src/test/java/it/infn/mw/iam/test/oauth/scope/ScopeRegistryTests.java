@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth.scope;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.core.oauth.scope.matchers.RegexpScopeMatcher.regexpMatcher;
 import static it.infn.mw.iam.core.oauth.scope.matchers.StringEqualsScopeMatcher.stringEqualsMatcher;
+import static it.infn.mw.iam.core.oauth.scope.matchers.StructuredPathScopeMatcher.structuredPathMatcher;
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
@@ -28,8 +29,11 @@ import static org.mockito.Mockito.when;
 
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -43,52 +47,66 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 @RunWith(MockitoJUnitRunner.class)
 public class ScopeRegistryTests {
 
-  
+
   @Mock
   ClientDetails client;
-  
+
+  @Mock
+  SystemScopeRepository scopeRepo;
+
+  @Before
+  public void setup() {
+    SystemScope testScope = new SystemScope("test:/whatever");
+    when(scopeRepo.getAll()).thenReturn(Sets.newHashSet(testScope));
+  }
+
   @Test
   public void testEmptyScopes() {
-    
-    DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(emptySet());
-    
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid","profile"));
+
+    DefaultScopeMatcherRegistry matcherRegistry =
+        new DefaultScopeMatcherRegistry(emptySet(), scopeRepo);
+
+    when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
-    
+
     assertThat(matchers, not(nullValue()));
     assertThat(matchers, hasSize(2));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
     assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
   }
-  
+
   @Test
   public void testNonMatchingScope() {
-    
-    DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")));
-    
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid","profile"));
+
+    DefaultScopeMatcherRegistry matcherRegistry =
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")), scopeRepo);
+
+    when(client.getScope()).thenReturn(Sets.newHashSet("openid", "profile"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
-    
+
     assertThat(matchers, not(nullValue()));
     assertThat(matchers, hasSize(2));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
     assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
   }
-  
+
   @Test
   public void testMatchingScope() {
-    
-    DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$")));
-    
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid","profile", "test", "test:/whatever"));
+
+    DefaultScopeMatcherRegistry matcherRegistry =
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);
+
+    when(client.getScope())
+      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
-    
+
     assertThat(matchers, not(nullValue()));
-    assertThat(matchers, hasSize(4));
+    assertThat(matchers, hasSize(5));
     assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
     assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
     assertThat(matchers, hasItem(stringEqualsMatcher("test")));
     assertThat(matchers, hasItem(regexpMatcher("^test:/.*$")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("storage.create:/whatever")));
   }
 
 }

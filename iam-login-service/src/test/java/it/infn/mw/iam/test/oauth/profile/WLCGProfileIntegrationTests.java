@@ -42,6 +42,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -130,9 +132,18 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
+  @Autowired
+  private SystemScopeService scopeService;
+
   @Before
   public void setup() {
     oauth2Filter.cleanupSecurityContext();
+    SystemScope wlcgGroupsScope = new SystemScope("wlcg.groups");
+    SystemScope storageReadScope = new SystemScope("storage.read:/");
+    SystemScope storageWriteScope = new SystemScope("storage.write:/");
+    scopeService.save(wlcgGroupsScope);
+    scopeService.save(storageReadScope);
+    scopeService.save(storageWriteScope);
   }
 
   @After

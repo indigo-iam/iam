@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 
 
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -35,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,6 +55,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
 @RunWith(SpringRunner.class)
+@ActiveProfiles({"h2-test", "h2", "saml", "registration", "wlcg-scopes"})
 @IamMockMvcIntegrationTest
 public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
@@ -151,7 +155,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
 
-  
+
   @Test
   public void testChainedOverrideAtGroupIsEnforced() {
     IamAccount testAccount = findTestAccount();
@@ -163,18 +167,18 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     IamScopePolicy gp = initPermitScopePolicy();
     gp.linkGroup(firstGroup);
     gp.setScopes(Sets.newHashSet(OPENID, PROFILE));
-    
-    
+
+
     policyScopeRepo.save(gp);
-    
-    Set<String> filteredScopes = pdp
-        .filterScopes(Sets.newHashSet("openid", "profile"), testAccount);
-    
+
+    Set<String> filteredScopes =
+        pdp.filterScopes(Sets.newHashSet("openid", "profile"), testAccount);
+
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
-  
-  
+
+
   @Test
   public void testChainedOverrideIsEnforced() {
     IamAccount testAccount = findTestAccount();
@@ -257,44 +261,70 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     assertThat(filteredScopes, hasSize(2));
     assertThat(filteredScopes, hasItems("openid", "profile"));
   }
-  
-  
+
+
   @Test
   public void testPathFiltering() {
-    
+
     IamAccount testAccount = findTestAccount();
     IamScopePolicy up = initDenyScopePolicy();
-    
+
     up.getScopes().add("read:/");
     up.getScopes().add("write:/");
     up.setMatchingPolicy(PATH);
-    
+
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
+    Set<String> filteredScopes = pdp.filterScopes(
+        Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
 
     assertThat(filteredScopes, hasSize(3));
     assertThat(filteredScopes, hasItems("openid", "profile", "write"));
   }
-  
+
   @Test
   public void testPathPermit() {
-    
+
     IamAccount testAccount = findTestAccount();
     IamScopePolicy up = initPermitScopePolicy();
-    
+
     up.getScopes().add("read:/");
     up.getScopes().add("write:/");
     up.setMatchingPolicy(PATH);
-    
+
     policyScopeRepo.save(up);
 
-    Set<String> filteredScopes =
-        pdp.filterScopes(Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
+    Set<String> filteredScopes = pdp.filterScopes(
+        Sets.newHashSet("openid", "profile", "read:/", "write", "read:/sub/path"), testAccount);
 
     assertThat(filteredScopes, hasSize(5));
     assertThat(filteredScopes, hasItems("openid", "profile", "write", "read:/", "read:/sub/path"));
+  }
+
+  @Test
+  public void testPathForCustomScope() {
+
+    IamAccount testAccount = findTestAccount();
+    IamScopePolicy up = initDenyScopePolicy();
+
+    up.getScopes().add("storage.write:/");
+    up.setMatchingPolicy(PATH);
+
+    policyScopeRepo.save(up);
+
+    up = initPermitScopePolicy();
+    up.getScopes().add("storage.write:/path");
+    up.linkAccount(testAccount);
+    up.setMatchingPolicy(PATH);
+
+    policyScopeRepo.save(up);
+
+    Set<String> filteredScopes = pdp.filterScopes(Sets.newHashSet("openid", "profile",
+        "storage.write:/", "storage.write:/path", "storage.write:/path/sub"), testAccount);
+
+    assertThat(filteredScopes, hasSize(4));
+    assertThat(filteredScopes,
+        hasItems("openid", "profile", "storage.write:/path", "storage.write:/path/sub"));
   }
 
   @Test
@@ -309,16 +339,49 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     policyScopeRepo.save(up);
 
     mvc
-    .perform(
-        post("/token").with(httpBasic("password-grant", "secret"))
-          .param("grant_type", "password")
-          .param("username", "test")
-          .param("password", "password")
-          .param("scope", "openid storage.read:/"))
-    .andExpect(status().isBadRequest())
-    .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
-    .andExpect(jsonPath("$.error_description", equalTo("Misspelled storage.read/ scope in the scope policy")));
+      .perform(post("/token").with(httpBasic("password-grant", "secret"))
+        .param("grant_type", "password")
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid storage.read:/"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
+      .andExpect(jsonPath("$.error_description",
+          equalTo("Misspelled storage.read/ scope in the scope policy")));
 
+  }
+
+  @Test
+  public void testFakeWLCGScopeAsCustomScopeNotIncluded() throws Exception {
+
+    mvc
+      .perform(post("/token").with(httpBasic("password-grant", "secret"))
+        .param("grant_type", "password")
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid storage.create:/"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token").exists())
+      .andExpect(
+          jsonPath("$.scope", allOf(containsString("openid"), containsString("storage.create:/"))));
+
+    IamScopePolicy up = initDenyScopePolicy();
+    up.getScopes().add("storage.create:/");
+    up.setMatchingPolicy(PATH);
+    up.linkAccount(findTestAccount());
+    up = policyScopeRepo.save(up);
+
+    mvc
+      .perform(post("/token").with(httpBasic("password-grant", "secret"))
+        .param("grant_type", "password")
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid storage.create:/"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.access_token").exists())
+      .andExpect(jsonPath("$.scope", allOf(containsString("openid"))));
+
+    policyScopeRepo.delete(up);
   }
 
 }
