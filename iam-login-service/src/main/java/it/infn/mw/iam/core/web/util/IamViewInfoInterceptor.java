@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.core.web.loginpage.LoginPageConfiguration;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
@@ -39,8 +40,8 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
   public static final String GIT_COMMIT_ID_KEY = "gitCommitId";
   public static final String SIMULATE_NETWORK_LATENCY_KEY = "simulateNetworkLatency";
   public static final String RCAUTH_ENABLED_KEY = "iamRcauthEnabled";
-
   public static final String RESOURCES_PATH_KEY = "resourcesPrefix";
+  public static final String CLIENT_DEFAULTS_PROPERTIES_KEY = "clientDefaultsProperties";
 
   @Value("${iam.version}")
   String iamVersion;
@@ -62,7 +63,10 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
 
   @Autowired
   IamProperties iamProperties;
-
+  
+  @Autowired
+  ClientRegistrationProperties clientRegistrationProperties;
+  
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws Exception {
@@ -78,6 +82,7 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
     
     request.setAttribute(RCAUTH_ENABLED_KEY, rcAuthProperties.isEnabled());
     
+    request.setAttribute(CLIENT_DEFAULTS_PROPERTIES_KEY, clientRegistrationProperties.getClientDefaults());
 
     if (iamProperties.getVersionedStaticResources().isEnableVersioning()) {
       request.setAttribute(RESOURCES_PATH_KEY, String.format("/resources/%s", gitCommitId));

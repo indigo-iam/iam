@@ -42,47 +42,59 @@ public class ClientRegistrationTestSupport {
   public static final String LEGACY_REGISTER_ENDPOINT = "/register";
 
   public static class ClientJsonStringBuilder {
-    
+
     static final Joiner JOINER = Joiner.on(RegisteredClientFields.SCOPE_SEPARATOR);
-    
+
     String name = "test_client";
     Set<String> redirectUris = Sets.newHashSet("http://localhost:9090");
     Set<String> grantTypes = Sets.newHashSet("client_credentials");
     Set<String> scopes = Sets.newHashSet();
     Set<String> responseTypes = Sets.newHashSet();
-    
-    private ClientJsonStringBuilder() {
-    }
-    
+    Integer accessTokenValiditySeconds;
+    Integer refreshTokenValiditySeconds;
+
+    private ClientJsonStringBuilder() {}
+
     public static ClientJsonStringBuilder builder() {
       return new ClientJsonStringBuilder();
     }
-    
+
     public ClientJsonStringBuilder name(String name) {
       this.name = name;
       return this;
     }
-    
-    public ClientJsonStringBuilder redirectUris(String...uris) {
+
+    public ClientJsonStringBuilder redirectUris(String... uris) {
       this.redirectUris = Sets.newHashSet(uris);
       return this;
     }
-    
-    public ClientJsonStringBuilder grantTypes(String...grantTypes) {
+
+    public ClientJsonStringBuilder grantTypes(String... grantTypes) {
       this.grantTypes = Sets.newHashSet(grantTypes);
       return this;
     }
-    
-    public ClientJsonStringBuilder scopes(String...scopes) {
+
+    public ClientJsonStringBuilder scopes(String... scopes) {
       this.scopes = Sets.newHashSet(scopes);
       return this;
     }
-    
-    public ClientJsonStringBuilder responseTypes(String...responseTypes) {
+
+    public ClientJsonStringBuilder responseTypes(String... responseTypes) {
       this.responseTypes = Sets.newHashSet(responseTypes);
       return this;
     }
-    
+
+    public ClientJsonStringBuilder accessTokenValiditySeconds(Integer accessTokenValiditySeconds) {
+      this.accessTokenValiditySeconds = accessTokenValiditySeconds;
+      return this;
+    }
+
+    public ClientJsonStringBuilder refreshTokenValiditySeconds(
+        Integer refreshTokenValiditySeconds) {
+      this.refreshTokenValiditySeconds = refreshTokenValiditySeconds;
+      return this;
+    }
+
     public String build() {
       JsonObject json = new JsonObject();
       json.addProperty(CLIENT_NAME, name);
@@ -93,12 +105,13 @@ public class ClientRegistrationTestSupport {
       json.add(CLAIMS_REDIRECT_URIS, getAsArray(newHashSet(), true));
       json.add(REQUEST_URIS, getAsArray(newHashSet(), true));
       json.add(CONTACTS, getAsArray(newHashSet("test@iam.test")));
-     
+      json.addProperty("access_token_validity_seconds", accessTokenValiditySeconds);
+      json.addProperty("refresh_token_validity_seconds", refreshTokenValiditySeconds);
       return json.toString();
     }
-    
-    
-    
+
+
+
   }
 
   protected String setToString(Set<String> scopes) {
