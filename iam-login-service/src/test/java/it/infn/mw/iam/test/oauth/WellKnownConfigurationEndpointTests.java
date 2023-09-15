@@ -46,8 +46,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
-import it.infn.mw.iam.config.CacheConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
@@ -69,7 +69,6 @@ public class WellKnownConfigurationEndpointTests {
 
   private static final String SYSTEM_SCOPE_0 = "new-scope0";
   private static final String SYSTEM_SCOPE_1 = "new-scope1";
-  private static final String SYSTEM_SCOPE_2 = "new-scope2";
 
 
   @Autowired
@@ -82,7 +81,7 @@ public class WellKnownConfigurationEndpointTests {
   private ObjectMapper mapper;
 
   @Autowired
-  private CacheConfig cacheConfig;
+  private TaskConfig taskConfig;
 
   @Test
   public void testGrantTypesSupported() throws Exception {
@@ -167,7 +166,7 @@ public class WellKnownConfigurationEndpointTests {
   @Test
   public void testWellKnownCacheEviction() throws Exception {
 
-    cacheConfig.evictWellKnownCache();
+    taskConfig.evictWellKnownCache();
 
     SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
     scopeService.save(scope);
@@ -187,7 +186,7 @@ public class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.scopes_supported").isArray())
       .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
 
-    cacheConfig.evictWellKnownCache();
+    taskConfig.evictWellKnownCache();
 
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())
