@@ -50,6 +50,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   public static final String AUTHORIZE_ENDPOINT = "authorize";
   public static final String TOKEN_ENDPOINT = "token";
   public static final String ABOUT_ENDPOINT = "about";
+  public static final String SCIM_ENDPOINT = "scim";
 
   private static final List<String> TOKEN_ENDPOINT_AUTH_METHODS = newArrayList(
       "client_secret_basic", "client_secret_post", "client_secret_jwt", "private_key_jwt", "none");
@@ -104,6 +105,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   private final String revocationEndpoint;
   private final String deviceAuthorizationEndpoint;
   private final String aboutEndpoint;
+  private final String scimEndpoint;
   private Set<String> supportedScopes;
 
 
@@ -131,6 +133,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     revocationEndpoint = buildEndpointUrl(RevocationEndpoint.URL);
     deviceAuthorizationEndpoint = buildEndpointUrl(DeviceEndpoint.URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
+    scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
     updateSupportedScopes();
   }
 
@@ -181,6 +184,8 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     result.put("op_policy_uri", aboutEndpoint);
     result.put("op_tos_uri", aboutEndpoint);
+
+    result.put("scim_endpoint", scimEndpoint);
 
     result.put("response_types_supported", RESPONSE_TYPES);
     result.put("grant_types_supported", GRANT_TYPES);

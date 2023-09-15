@@ -24,3 +24,6 @@ spring:
     redis:
       flush-mode: immediate
       namespace: iam:session
+
+redis-cache:
+  enabled: true

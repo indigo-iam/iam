@@ -45,7 +45,8 @@ public enum UserInfoClaim {
   EDUPERSON_ENTITLEMENT("eduperson_entitlement"),
   ENTITLEMENTS("entitlements"),
   EDUPERSON_ASSURANCE("eduperson_assurance"),
-  SSH_KEYS("ssh_keys");
+  SSH_KEYS("ssh_keys"),
+  ROLES("roles");
 
   private UserInfoClaim(String claimName) {
     this.claimName = claimName;

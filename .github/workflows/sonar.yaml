@@ -1,6 +1,9 @@
 name: Sonar analysis
 
-on: 
+on:
+  push:
+    branches:
+      - develop
   pull_request:
     types: [opened, edited, reopened, synchronize]
 
@@ -28,7 +31,7 @@ jobs:
     - name: Sonar analysis
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_VIANELLO }}
       run: mvn -B -U install sonar:sonar 
             -Dsonar.projectKey=indigo-iam_iam 
             -Dsonar.organization=indigo-iam 

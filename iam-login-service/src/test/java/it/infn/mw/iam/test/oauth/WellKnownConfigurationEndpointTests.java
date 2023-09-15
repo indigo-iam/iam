@@ -130,7 +130,8 @@ public class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.introspection_endpoint", is("http://localhost:8080/introspect")))
       .andExpect(jsonPath("$.revocation_endpoint", is("http://localhost:8080/revoke")))
       .andExpect(jsonPath("$.userinfo_endpoint", is("http://localhost:8080/userinfo")))
-      .andExpect(jsonPath("$.jwks_uri", is("http://localhost:8080/jwk")));
+      .andExpect(jsonPath("$.jwks_uri", is("http://localhost:8080/jwk")))
+      .andExpect(jsonPath("$.scim_endpoint", is("http://localhost:8080/scim")));
   }
 
   @Test

@@ -44,7 +44,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
 
   @Value("${iam.organisation.name}")
   String organisationName;
-  
+
   @Value("${iam.issuer}")
   String issuer;
 
@@ -53,7 +53,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
   private static final String CLIENT_SECRET = "secret";
 
   @Test
-  public void testIntrospectionEndpointRetursBasicUserInformation() throws Exception {
+  public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
     String accessToken = getPasswordAccessToken();
 
     // @formatter:off

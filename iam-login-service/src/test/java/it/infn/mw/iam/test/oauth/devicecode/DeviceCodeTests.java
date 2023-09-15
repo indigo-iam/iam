@@ -34,6 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +49,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -433,7 +436,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     RegisteredClientDTO registrationResponse =
         objectMapper.readValue(clientJson, RegisteredClientDTO.class);
-    
+
     ClientDetailsEntity newClient =
         clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
 
@@ -559,6 +562,13 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   @Test
   public void publicClientDeviceCodeWorks() throws Exception {
 
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(PUBLIC_DEVICE_CODE_CLIENT_ID);
+    Set<String> scopes = Sets.newHashSet();
+    scopes.add("openid");
+    scopes.add("profile");
+    if (client.isPresent()) {
+      client.get().setScope(scopes);
+    }
     String deviceResponse = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .param("client_id", PUBLIC_DEVICE_CODE_CLIENT_ID)

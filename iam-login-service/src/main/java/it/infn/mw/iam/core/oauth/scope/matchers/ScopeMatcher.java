@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
-public interface ScopeMatcher {
+import java.io.Serializable;
+
+public interface ScopeMatcher extends Serializable {
   boolean matches(String scope);
 }

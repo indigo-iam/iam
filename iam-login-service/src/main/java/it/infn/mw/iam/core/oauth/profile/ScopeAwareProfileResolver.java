@@ -34,9 +34,10 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
   public static final String AARC_PROFILE_ID = "aarc";
   public static final String IAM_PROFILE_ID = "iam";
   public static final String WLCG_PROFILE_ID = "wlcg";
+  public static final String KC_PROFILE_ID = "kc";
 
   private static final Set<String> SUPPORTED_PROFILES =
-      newHashSet(AARC_PROFILE_ID, IAM_PROFILE_ID, WLCG_PROFILE_ID);
+      newHashSet(AARC_PROFILE_ID, IAM_PROFILE_ID, WLCG_PROFILE_ID, KC_PROFILE_ID);
 
   private final Map<String, JWTProfile> profileMap;
   private final JWTProfile defaultProfile;

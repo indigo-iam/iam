@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -103,6 +104,7 @@ public class VomsProperties {
   public static class VOMSAAProperties {
 
     @NotBlank
+    @Pattern(regexp = "^[a-z][a-z0-9\\-]*(\\.[a-z][a-z0-9\\-]*)*$")
     private String voName;
 
     @NotBlank

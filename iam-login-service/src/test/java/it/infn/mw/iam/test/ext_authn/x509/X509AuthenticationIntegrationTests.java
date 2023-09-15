@@ -27,6 +27,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -39,7 +41,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +59,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import junit.framework.AssertionFailedError;
@@ -195,8 +200,71 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getLastUpdateTime().after(lastUpdateTime), is(true));
+    assertThat(linkedAccount.getX509Certificates().size(), is(1));
+
+    MockHttpSession session1 = loginAsTestUserWithTest1Cert(mvc);
+
+    IamX509AuthenticationCredential credential1 =
+        (IamX509AuthenticationCredential) session1.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential1.getSubject(), equalTo(TEST_0_SUBJECT));
+    assertThat(credential1.getIssuer(), equalTo(TEST_NEW_ISSUER));
+
+    String confirmationMsg =
+        String.format("Certificate '%s' linked succesfully", credential1.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session1).with(csrf().asHeader()))
+    .andExpect(status().is3xxRedirection())
+    .andExpect(redirectedUrl("/dashboard"))
+    .andExpect(
+        flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
+
+     assertThat(linkedAccount.getX509Certificates().size(), is(2));
+
   }
 
+  @Test
+  public void testx509AccountLinkingWithDifferentSubjectAndIssuer() throws Exception {
+
+    MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
+    IamX509AuthenticationCredential credential =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential.getSubject(), equalTo(TEST_0_SUBJECT));
+
+    String confirmationMessage =
+        String.format("Certificate '%s' linked succesfully", credential.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session).with(csrf().asHeader()))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"))
+      .andExpect(
+          flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
+
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
+
+    assertThat(linkedAccount.getUsername(), equalTo("test"));
+
+    MockHttpSession session1 = loginAsTestUserWithTest2Cert(mvc);
+
+    IamX509AuthenticationCredential credential1 =
+        (IamX509AuthenticationCredential) session1.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    assertThat(credential1.getSubject(), equalTo(TEST_1_SUBJECT));
+    assertThat(credential1.getIssuer(), equalTo(TEST_NEW_ISSUER));
+
+    String confirmationMsg =
+        String.format("Certificate '%s' linked succesfully", credential1.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session1).with(csrf().asHeader()))
+    .andExpect(status().is3xxRedirection())
+    .andExpect(redirectedUrl("/dashboard"))
+    .andExpect(
+        flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
+
+     assertThat(linkedAccount.getX509Certificates().size(), is(2));
+  }
 
   @Test
   @WithMockUser(username = "test")
@@ -281,6 +349,23 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("http://localhost/login"));
 
     resolvedAccount.setActive(true);
+
+  }
+
+  @Test
+  public void testHashAndEqualsMethods() {
+
+   HashSet<IamX509Certificate> set1 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT));
+   assertThat(set1.size(), is(2));
+   assertNotEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_1_IAM_X509_CERT.hashCode());
+   assertEquals(set1.hashCode(), TEST_0_IAM_X509_CERT.hashCode()+TEST_1_IAM_X509_CERT.hashCode());
+   assertNotEquals(TEST_0_IAM_X509_CERT, TEST_1_IAM_X509_CERT);
+
+   HashSet<IamX509Certificate> set2 = new HashSet<IamX509Certificate>(Arrays.asList(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT));
+   assertThat(set2.size(), is(1));
+   assertEquals(TEST_0_IAM_X509_CERT.hashCode(), TEST_2_IAM_X509_CERT.hashCode());
+   assertEquals(set2.hashCode(), TEST_0_IAM_X509_CERT.hashCode());
+   assertEquals(TEST_0_IAM_X509_CERT, TEST_2_IAM_X509_CERT);
 
   }
 
