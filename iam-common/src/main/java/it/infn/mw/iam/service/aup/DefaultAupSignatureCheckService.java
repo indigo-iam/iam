@@ -54,7 +54,7 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
   public int getRemainingDaysSignatureExpiration(IamAccount account) {
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    if (!aup.isPresent()) {
+    if (isNull(aup) || !aup.isPresent()) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",
           account.getUsername());
       return Integer.MAX_VALUE;
@@ -69,6 +69,13 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
     Date signatureTime = account.getAupSignature().getSignatureTime();
     Date aupLastModifiedTime = aup.get().getLastUpdateTime();
     Long signatureValidityInDays = aup.get().getSignatureValidityInDays();
+
+    if (aupLastModifiedTime.getTime() >= signatureTime.getTime()) {
+      LOG.debug(
+          "AUP signature needed for account '{}': signature record expiration after AUP update",
+          account.getUsername());
+      return -Integer.MAX_VALUE;
+    }
 
     int daysLeftBeforeSignAup = calculateDaysLeft(aup.get(), account);
 
@@ -91,8 +98,8 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
       return daysLeftBeforeSignAup;
     } else {
       LOG.debug(
-        "AUP signature needed for account '{}': AUP signature time '{}', AUP last modified time '{}'",
-        account.getUsername(), signatureTime, aupLastModifiedTime);
+          "AUP signature needed for account '{}': AUP signature time '{}', AUP last modified time '{}'",
+          account.getUsername(), signatureTime, aupLastModifiedTime);
 
       return daysLeftBeforeSignAup;
     }
@@ -101,11 +108,12 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
   private int calculateDaysLeft(IamAup aup, IamAccount account) {
     Long signatureValidityInDays = aup.getSignatureValidityInDays();
     Optional<IamAupSignature> signature = signatureRepo.findByAupAndAccount(aup, account);
-
-    Date expirationDateSignature = new Date(signature.get().getSignatureTime().getTime() + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+    Date expirationDateSignature = new Date(signature.get().getSignatureTime().getTime()
+        + TimeUnit.DAYS.toMillis(signatureValidityInDays));
     Date now = new Date(timeProvider.currentTimeMillis());
     Long delta = expirationDateSignature.getTime() - now.getTime();
-    int resultDaysLeft = Long.valueOf(TimeUnit.DAYS.convert(delta, TimeUnit.MILLISECONDS)).intValue();
+    int resultDaysLeft =
+        Long.valueOf(TimeUnit.DAYS.convert(delta, TimeUnit.MILLISECONDS)).intValue();
 
     return resultDaysLeft;
   }
