@@ -137,7 +137,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mvc.perform(post("/iam/aup/touch")).andExpect(status().isOk());
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(364));
+    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(-Integer.MAX_VALUE));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(20));
 
