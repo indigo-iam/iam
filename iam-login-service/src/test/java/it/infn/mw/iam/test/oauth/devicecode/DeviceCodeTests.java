@@ -416,6 +416,58 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   }
 
   @Test
+  public void testDeviceCodeFlowDoesNotWorkIfScopeNotAllowed() throws Exception {
+
+    mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access custom-scope"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_scope")));
+  }
+
+  @Test
+  public void deviceCodeDoesNotWorkForDynamicallyRegisteredClientIfScopeNotAllowed()
+      throws UnsupportedEncodingException, Exception {
+
+    String jsonInString = ClientJsonStringBuilder.builder()
+      .grantTypes("urn:ietf:params:oauth:grant-type:device_code")
+      .scopes("openid", "profile", "offline_access")
+      .build();
+
+    String clientJson =
+        mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.registration_access_token").exists())
+          .andExpect(jsonPath("$.registration_client_uri").exists())
+          .andExpect(jsonPath("$.scope", containsString("offline_access")))
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    RegisteredClientDTO registrationResponse =
+        objectMapper.readValue(clientJson, RegisteredClientDTO.class);
+
+    ClientDetailsEntity newClient =
+        clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
+
+    assertThat(newClient, notNullValue());
+
+    RequestPostProcessor clientBasicAuth =
+        httpBasic(newClient.getClientId(), newClient.getClientSecret());
+
+    mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(clientBasicAuth)
+        .param("client_id", newClient.getClientId())
+        .param("scope", "openid profile offline_access custom-scope"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_scope")));
+  }
+
+
+  @Test
   public void deviceCodeWorksForDynamicallyRegisteredClient()
       throws UnsupportedEncodingException, Exception {
 
