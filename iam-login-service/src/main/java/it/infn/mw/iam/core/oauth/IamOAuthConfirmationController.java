@@ -62,6 +62,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.api.client.service.ClientService;
 
 /**
  * @author jricher
@@ -74,7 +75,10 @@ public class IamOAuthConfirmationController {
 
 
   @Autowired
-  private ClientDetailsEntityService clientService;
+  private ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  private ClientService clientService;
 
   @Autowired
   private SystemScopeService scopeService;
@@ -109,7 +113,7 @@ public class IamOAuthConfirmationController {
   }
 
   public IamOAuthConfirmationController(ClientDetailsEntityService clientService) {
-    this.clientService = clientService;
+    this.clientDetailsService = clientService;
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
@@ -125,7 +129,7 @@ public class IamOAuthConfirmationController {
     ClientDetailsEntity client = null;
 
     try {
-      client = clientService.loadClientByClientId(authRequest.getClientId());
+      client = clientDetailsService.loadClientByClientId(authRequest.getClientId());
     } catch (OAuth2Exception e) {
       logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client", e);
       model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
@@ -239,8 +243,13 @@ public class IamOAuthConfirmationController {
     // warning
     // instead, tag as "Generally Recognized As Safe" (gras)
     Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression = count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
+    Boolean expression =
+        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
+
+    if (client.getClientName().startsWith("oidc-agent")) {
+      clientService.linkClientToAccount(client, account);
+    }
 
     return "iam/approveClient";
   }
@@ -249,14 +258,14 @@ public class IamOAuthConfirmationController {
    * @return the clientService
    */
   public ClientDetailsEntityService getClientService() {
-    return clientService;
+    return clientDetailsService;
   }
 
   /**
    * @param clientService the clientService to set
    */
   public void setClientService(ClientDetailsEntityService clientService) {
-    this.clientService = clientService;
+    this.clientDetailsService = clientService;
   }
 
 
