@@ -196,7 +196,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testNoActionLifecycleWorksForInValidAccounts() {
+  public void testActionNotSetForDisabledInValidAccounts() {
 
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
 
@@ -224,8 +224,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
 
-    assertThat(actionLabel.isPresent(), is(true));
-    assertThat(actionLabel.get().getValue(), is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
+    assertThat(actionLabel.isPresent(), is(false));
 
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
@@ -353,6 +352,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
   @Test
   public void testApiErrorIsHandled() {
+
     when(hrDb.hasValidExperimentParticipation(anyString()))
       .thenThrow(new CernHrDbApiError("API is unreachable"));
 
@@ -499,7 +499,6 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
       assertThat(timestampLabel.isPresent(), is(true));
       assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-
 
     }
   }

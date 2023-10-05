@@ -162,7 +162,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   }
 
-  private boolean accountWasSuspendedByUs(IamAccount account) {
+  private boolean accountWasSuspendedByCernHrLifecycleJob(IamAccount account) {
     Optional<IamLabel> actionLabel =
         account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_ACTION);
 
@@ -192,7 +192,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public void handleValidAccount(IamAccount account) {
     syncMembershipInformation(account);
-    if (!account.isActive() && accountWasSuspendedByUs(account)) {
+    if (!account.isActive() && accountWasSuspendedByCernHrLifecycleJob(account)) {
       restoreAccount(account);
     } else {
       accountService.setLabel(account, buildStatusLabel(OK));
@@ -205,7 +205,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       disableAccount(account);
     } else {
       accountService.setLabel(account, buildStatusLabel(OK));
-      accountService.setLabel(account, buildActionLabel(NO_ACTION));
     }
   }
 
