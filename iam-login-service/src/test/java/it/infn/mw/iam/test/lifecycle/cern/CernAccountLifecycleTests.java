@@ -230,7 +230,6 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
   }
 
-  @Ignore
   @Test
   public void testLifecycleStates() {
 
