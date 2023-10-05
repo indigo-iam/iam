@@ -17,6 +17,8 @@ package it.infn.mw.iam.core.oauth.scope.matchers;
 
 import java.util.Set;
 
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
@@ -26,11 +28,14 @@ import com.google.common.collect.Sets;
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   public static final String SCOPE_CACHE_KEY = "scope-matcher";
-  
+
   private final Set<ScopeMatcher> customMatchers;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers) {
+  private final SystemScopeRepository scopeRepo;
+
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, SystemScopeRepository scopeRepo) {
     this.customMatchers = customMatchers;
+    this.scopeRepo = scopeRepo;
   }
 
   @Override
@@ -49,7 +54,10 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
 
+    Set<SystemScope> systemScopes = scopeRepo.getAll();
+
     return customMatchers.stream()
+      .filter(s -> systemScopes.toString().contains(scope))
       .filter(m -> m.matches(scope))
       .findFirst()
       .orElse(StringEqualsScopeMatcher.stringEqualsMatcher(scope));

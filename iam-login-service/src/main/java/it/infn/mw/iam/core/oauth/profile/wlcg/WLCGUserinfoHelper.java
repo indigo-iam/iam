@@ -44,7 +44,7 @@ public class WLCGUserinfoHelper extends BaseUserinfoHelper {
   }
 
 
-  private Optional<String[]> resolveGroupsFromToken(OAuth2Authentication authentication) {
+  protected Optional<String[]> resolveGroupsFromToken(OAuth2Authentication authentication, String groupClaim) {
     OAuth2AuthenticationDetails details = (OAuth2AuthenticationDetails) authentication.getDetails();
 
     if (isNull(details) || isNull(details.getTokenValue())) {
@@ -53,7 +53,7 @@ public class WLCGUserinfoHelper extends BaseUserinfoHelper {
 
     try {
       JWT accessToken = JWTParser.parse(details.getTokenValue());
-      String[] resolvedGroups = accessToken.getJWTClaimsSet().getStringArrayClaim("wlcg.groups");
+      String[] resolvedGroups = accessToken.getJWTClaimsSet().getStringArrayClaim(groupClaim);
 
       return Optional.ofNullable(resolvedGroups);
 
@@ -72,7 +72,7 @@ public class WLCGUserinfoHelper extends BaseUserinfoHelper {
       return null;
     }
 
-    Optional<String[]> resolvedGroups = resolveGroupsFromToken(authentication);
+    Optional<String[]> resolvedGroups = resolveGroupsFromToken(authentication, WLCGGroupHelper.WLCG_GROUPS_SCOPE);
 
     if (resolvedGroups.isPresent()) {
       return forUserInfo(ui, resolvedGroups.get());

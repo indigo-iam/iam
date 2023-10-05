@@ -1,7 +1,7 @@
 # INDIGO Identity and Access Management (IAM) service
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3496834.svg)](https://doi.org/10.5281/zenodo.3496834)
-[![travis-build-tatus](https://travis-ci.org/indigo-iam/iam.svg?branch=develop)](https://travis-ci.org/indigo-iam/iam)
+[![build & packaging](https://github.com/indigo-iam/iam/actions/workflows/maven.yml/badge.svg?branch=master&event=push)](https://github.com/indigo-iam/iam/actions/workflows/maven.yml)
 [![sonarqube-qg](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=alert_status)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)
 [![sonarqube-coverage](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=coverage)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)
 [![sonarqube-maintainability](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)

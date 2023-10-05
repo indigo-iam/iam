@@ -20,16 +20,7 @@
         <div class="form-group">
             <label for="at_timeout">Access token timeout (seconds)</label>
             <input id="at_timeout" class="form-control" type="text"
-                ng-model="$ctrl.client.access_token_validity_seconds" placeholder="3600"
-                ng-disabled="$ctrl.client.access_token_validity_seconds <= 0">
-        </div>
-
-        <div class="checkbox">
-            <label>
-                <input type="checkbox" ng-model="$ctrl.client.access_token_validity_seconds" ng-true-value="0"
-                    ng-false-value="3600">
-                Access tokens do not expire
-            </label>
+                ng-model="$ctrl.client.access_token_validity_seconds">
         </div>
 
     </div>
@@ -66,16 +57,20 @@
         <label for="rt_timeout">Refresh token timeout (seconds)</label>
 
         <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
-            placeholder="259200" ng-required ng-min="30" ng-disabled="$ctrl.client.refresh_token_validity_seconds <= 0">
+            ng-required ng-min="30">
+            <p class="help-block">
+                This will setup after how many seconds the refresh token
+                expires. Type 0 to set an infinite lifetime.
+            </p>
 
+    </div>
+    <div class="form-group">
         <div class="checkbox">
             <label>
-                <input type="checkbox" ng-model="$ctrl.client.refresh_token_validity_seconds" ng-true-value="0"
-                    ng-false-value="259200">
-                Refresh tokens do not expire
+                <input type="checkbox" ng-model="$ctrl.client.reuse_refresh_token">
+                Reuse refresh token
             </label>
         </div>
-
     </div>
     <div class="form-group">
         <div class="checkbox">
