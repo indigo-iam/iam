@@ -80,6 +80,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 @TestPropertySource(properties = {
 // @formatter:off
     "iam.jwt-profile.default-profile=wlcg",
+    "iam.access_token.include_authn_info=true",
     "scope.matchers[0].name=storage.read",
     "scope.matchers[0].type=path",
     "scope.matchers[0].prefix=storage.read",
@@ -747,7 +748,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void attributesAreIncludedInAccessTokenWhenNotRequested() throws Exception {
+  public void attributesAreIncludedInAccessTokenWhenRequested() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -771,6 +772,57 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     assertThat(claims.getJSONObjectClaim("attr"), notNullValue());
     assertThat(claims.getJSONObjectClaim("attr").get("test"), is("test"));
+  }
+
+  @Test
+  public void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
+
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", CLIENT_ID)
+        .param("client_secret", CLIENT_SECRET)
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid profile email"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JWTClaimsSet claims =
+        JWTParser.parse(mapper.readTree(tokenResponseJson).get("access_token").asText())
+          .getJWTClaimsSet();
+
+    assertThat(claims.getClaim("email"), notNullValue());
+    assertThat(claims.getClaim("email"), is("test@iam.test"));
+    assertThat(claims.getClaim("name"), notNullValue());
+    assertThat(claims.getClaim("name"), is("Test User"));
+    assertThat(claims.getClaim("preferred_username"), notNullValue());
+    assertThat(claims.getClaim("preferred_username"), is("test"));
+  }
+
+  @Test
+  public void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
+
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", CLIENT_ID)
+        .param("client_secret", CLIENT_SECRET)
+        .param("username", "test")
+        .param("password", "password")
+        .param("scope", "openid address"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JWTClaimsSet claims =
+        JWTParser.parse(mapper.readTree(tokenResponseJson).get("access_token").asText())
+          .getJWTClaimsSet();
+
+    assertThat(claims.getClaim("email"), nullValue());
+    assertThat(claims.getClaim("name"), nullValue());
+    assertThat(claims.getClaim("preferred_username"), nullValue());
   }
 
 }

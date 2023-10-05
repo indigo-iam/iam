@@ -61,31 +61,62 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     builder.notBeforeTime(Date.from(issueTime));
 
-    if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
-    }
-
-    builder.claim(WLCG_VER_CLAIM, PROFILE_VERSION);
+    addScopeClaim(builder, token);
+    addWlcgVerClaim(builder);
 
     if (!isNull(userInfo)) {
       Set<String> groupNames =
           groupHelper.resolveGroupNames(token, ((UserInfoAdapter) userInfo).getUserinfo());
-
-      if (!groupNames.isEmpty()) {
-        builder.claim(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groupNames);
-      }
+      addWlcgGroupsScopeClaim(builder, groupNames);
 
       if (token.getScope().contains(ATTR_SCOPE)) {
-        builder.claim(ATTR_SCOPE, attributeHelper
-          .getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
+        addAttributeScopeClaim(builder, userInfo);
+      }
+      if (properties.getAccessToken().isIncludeAuthnInfo()) {
+        addAuthnInfoClaims(builder, token.getScope(), userInfo);
       }
     }
 
+    addAudience(builder, authentication);
+
+    return builder.build();
+  }
+
+  private void addScopeClaim(Builder builder, OAuth2AccessTokenEntity token) {
+    if (!token.getScope().isEmpty()) {
+      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
+    }
+  }
+
+  private void addWlcgVerClaim(Builder builder) {
+    builder.claim(WLCG_VER_CLAIM, PROFILE_VERSION);
+  }
+
+  private void addWlcgGroupsScopeClaim(Builder builder, Set<String> groupNames) {
+    if (!groupNames.isEmpty()) {
+      builder.claim(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groupNames);
+    }
+  }
+
+  private void addAttributeScopeClaim(Builder builder, UserInfo userInfo) {
+    builder.claim(ATTR_SCOPE,
+        attributeHelper.getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
+  }
+
+  private void addAuthnInfoClaims(Builder builder, Set<String> scopes, UserInfo userInfo) {
+    if (scopes.contains("email")) {
+      builder.claim("email", userInfo.getEmail());
+    }
+    if (scopes.contains("profile")) {
+      builder.claim("preferred_username", userInfo.getPreferredUsername());
+      builder.claim("name", userInfo.getName());
+    }
+  }
+
+  private void addAudience(Builder builder, OAuth2Authentication authentication) {
     if (!hasAudienceRequest(authentication) && !hasRefreshTokenAudienceRequest(authentication)) {
       builder.audience(ALL_AUDIENCES_VALUE);
     }
-
-    return builder.build();
   }
 
 }
