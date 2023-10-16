@@ -247,10 +247,6 @@ public class IamOAuthConfirmationController {
         count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
 
-    if (client.getClientName().startsWith("oidc-agent")) {
-      clientService.linkClientToAccount(client, account);
-    }
-
     return "iam/approveClient";
   }
 
