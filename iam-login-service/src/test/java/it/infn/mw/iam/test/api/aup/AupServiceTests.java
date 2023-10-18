@@ -25,11 +25,11 @@ import static org.hamcrest.Matchers.greaterThan;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,9 +73,8 @@ public class AupServiceTests {
     MockTimeProvider mockTimeProvider = new MockTimeProvider();
     mockTimeProvider.setTime(NOW.getTime());
 
-    Integer dayShift = -360;
     Date dateUpdateAUP = new Date();
-    dateUpdateAUP.setTime(NOW.getTime() + ((long) dayShift * (24 * 60 * 60) * 1000));
+    dateUpdateAUP.setTime(NOW.getTime() + TimeUnit.DAYS.toMillis(-360));
 
     aup.setCreationTime(dateUpdateAUP);
     aup.setLastUpdateTime(dateUpdateAUP);
@@ -87,43 +86,44 @@ public class AupServiceTests {
 
   @Test()
   public void aupSignatureValidTest() {
-    Integer daysShiftSignature = -60;
-    Date date = new Date();
-    date.setTime(NOW.getTime() + (long) daysShiftSignature * (24 * 60 * 60) * 1000);
+    Date dateSignature = new Date();
+    dateSignature.setTime(NOW.getTime() + TimeUnit.DAYS.toMillis(-60));
 
     IamAupSignature firma = new IamAupSignature();
-    firma.setSignatureTime(date);
-    when(signatureRepo.findByAupAndAccount(any(), any())).thenReturn(Optional.of(firma));
+    firma.setSignatureTime(dateSignature);
+    // when(signatureRepo.findByAupAndAccount(any(), any())).thenReturn(Optional.of(firma));
 
     IamAccount account = new IamAccount();
     account.setAupSignature(firma);
-    int daysRemainingSignatureCalculated = aupService.getRemainingDaysSignatureExpiration(account);
+    Long daysRemainingSignatureCalculated =
+        aupService.getRemainingTimeToSignatureExpiration(account);
     assertThat(daysRemainingSignatureCalculated, notNullValue());
-    assertThat(daysRemainingSignatureCalculated, is(greaterThan(0)));
+    assertThat(daysRemainingSignatureCalculated, is(greaterThan(0L)));
   }
 
   @Test()
   public void aupSignatureExpiredTest() {
-    Integer daysShiftSignature = -200;
-    Date date = new Date();
-    date.setTime(NOW.getTime() + ((long) daysShiftSignature * (24 * 60 * 60) * 1000));
+    Date dateSignature = new Date();
+    dateSignature.setTime(NOW.getTime() + TimeUnit.DAYS.toMillis(-200));
 
     IamAupSignature firma = new IamAupSignature();
-    firma.setSignatureTime(date);
-    when(signatureRepo.findByAupAndAccount(any(), any())).thenReturn(Optional.of(firma));
+    firma.setSignatureTime(dateSignature);
+    // when(signatureRepo.findByAupAndAccount(any(), any())).thenReturn(Optional.of(firma));
 
     account.setAupSignature(firma);
-    int daysRemainingSignatureCalculated = aupService.getRemainingDaysSignatureExpiration(account);
+    Long daysRemainingSignatureCalculated =
+        aupService.getRemainingTimeToSignatureExpiration(account);
     assertThat(daysRemainingSignatureCalculated, notNullValue());
-    assertThat(daysRemainingSignatureCalculated, is(lessThan(0)));
+    assertThat(daysRemainingSignatureCalculated, is(lessThan(0L)));
   }
 
   @Test()
   public void aupSignatureNoExistTest() {
     IamAccount account = new IamAccount();
-    int daysRemainingSignatureCalculated = aupService.getRemainingDaysSignatureExpiration(account);
+    Long daysRemainingSignatureCalculated =
+        aupService.getRemainingTimeToSignatureExpiration(account);
     assertThat(daysRemainingSignatureCalculated, notNullValue());
-    assertThat(daysRemainingSignatureCalculated, is(equalTo(-Integer.MAX_VALUE)));
+    assertThat(daysRemainingSignatureCalculated, is(equalTo(Long.MIN_VALUE)));
   }
 
   @Test()
@@ -131,9 +131,9 @@ public class AupServiceTests {
     when(aupRepo.findDefaultAup()).thenReturn(null);
 
     IamAccount account = new IamAccount();
-    int daysRemainingSignatureCalculated = aupService.getRemainingDaysSignatureExpiration(account);
+    Long daysRemainingSignatureCalculated = aupService.getRemainingTimeToSignatureExpiration(account);
     assertThat(daysRemainingSignatureCalculated, notNullValue());
-    assertThat(daysRemainingSignatureCalculated, is(equalTo(Integer.MAX_VALUE)));
+    assertThat(daysRemainingSignatureCalculated, is(equalTo(Long.MAX_VALUE)));
   }
 
   @Test()
@@ -141,16 +141,16 @@ public class AupServiceTests {
     aup.setLastUpdateTime(NOW);
     when(aupRepo.findDefaultAup()).thenReturn(Optional.of(aup));
 
-    Integer daysShiftSignature = -10;
-    Date date = new Date();
-    date.setTime(NOW.getTime() + ((long) daysShiftSignature * (24 * 60 * 60) * 1000));
+    Date dateSignature = new Date();
+    dateSignature.setTime(NOW.getTime() + TimeUnit.DAYS.toMillis(-10));
 
     IamAupSignature firma = new IamAupSignature();
-    firma.setSignatureTime(date);
+    firma.setSignatureTime(dateSignature);
 
     account.setAupSignature(firma);
-    int daysRemainingSignatureCalculated = aupService.getRemainingDaysSignatureExpiration(account);
-    assertThat(daysRemainingSignatureCalculated, is(lessThan(0)));
+    Long daysRemainingSignatureCalculated =
+        aupService.getRemainingTimeToSignatureExpiration(account);
+    assertThat(daysRemainingSignatureCalculated, is(lessThan(0L)));
   }
 }
 

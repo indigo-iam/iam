@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +46,7 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   private final AUPSignatureCheckService service;
   private final AccountUtils accountUtils;
   private final IamAccountRepository accountRepo;
-  private final IamProperties iamProperties;
+  private IamProperties iamProperties;
 
   public EnforceAupSignatureSuccessHandler(AuthenticationSuccessHandler delegate,
       AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo,
@@ -104,14 +105,15 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
     Optional<IamAccount> authenticatedAccount = lookupAuthenticatedUser(auth);
 
     if (!authenticatedAccount.isPresent()
-        || !(service.getRemainingDaysSignatureExpiration(authenticatedAccount.get()) < EXPIRY_NOTICE_DAYS && service.getRemainingDaysSignatureExpiration(authenticatedAccount.get()) != 0)) {
+        || !(service.getRemainingTimeToSignatureExpiration(authenticatedAccount
+          .get()) < TimeUnit.DAYS.toMillis(iamProperties.getAup().getExpiryNoticeDays())
+            && service.getRemainingTimeToSignatureExpiration(authenticatedAccount.get()) != 0)) {
       delegate.onAuthenticationSuccess(request, response, auth);
 
     } else {
       session.setAttribute(REQUESTING_SIGNATURE, true);
       response.sendRedirect("/iam/aup/sign");
     }
-
   }
 
 }

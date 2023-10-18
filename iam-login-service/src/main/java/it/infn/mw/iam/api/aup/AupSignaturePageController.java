@@ -82,7 +82,8 @@ public class AupSignaturePageController {
 
       view = new ModelAndView("iam/signAup");
 
-      view.addObject("daysLeftToExpirySignature", service.getRemainingDaysSignatureExpiration(account));
+      view.addObject("timeLeftToExpirySignature",
+          service.getRemainingTimeToSignatureExpiration(account));
       view.addObject("aup", aup.get());
     } else {
       view = new ModelAndView("iam/noAup");

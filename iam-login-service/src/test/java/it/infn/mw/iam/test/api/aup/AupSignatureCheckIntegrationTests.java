@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -31,9 +33,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
+import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.SIGNATURE_REMAINING_DAYS;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,13 +100,52 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(Integer.MAX_VALUE));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount), is(greaterThan(0L)));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void skipSignAup() throws Exception {
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(post("/login").param("username", "admin")
+        .param("password", "password")
+        .param("submit", "Sign in"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/iam/aup/sign"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount),
+        is(lessThan(Long.MAX_VALUE)));
+
+    session.setAttribute(SIGNATURE_REMAINING_DAYS, 5);
+    signatureRepo.createSignatureForAccount(testAccount,
+        new Date(mockTimeProvider.currentTimeMillis() + TimeUnit.DAYS.toMillis(-30)));
+
+    assertThat(session.getAttribute(REQUESTING_SIGNATURE), is(true));
+    MockHttpSession sessionAfterSkip = (MockHttpSession) mvc.perform(post("/iam/aup/skip-sign"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    assertThat(sessionAfterSkip.getAttribute(REQUESTING_SIGNATURE), is(false));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
+    Long oneYearMilliseconds = 31536000000L;
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -116,12 +162,13 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(-Integer.MAX_VALUE));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount), is(Long.MIN_VALUE));
 
     signatureRepo.createSignatureForAccount(testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(365));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount),
+        is(TimeUnit.DAYS.toMillis(365)));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
 
@@ -133,22 +180,23 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
           patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isOk());
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(364));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount),
+        is(greaterThan(oneYearMilliseconds + TimeUnit.DAYS.toMillis(-1))));
 
     mvc.perform(post("/iam/aup/touch")).andExpect(status().isOk());
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(-Integer.MAX_VALUE));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount), is(Long.MIN_VALUE));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(20));
 
     signatureRepo.createSignatureForAccount(testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(365));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount), is(oneYearMilliseconds));
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.DAYS.toMillis(366));
 
-    assertThat(service.getRemainingDaysSignatureExpiration(testAccount), is(0));
+    assertThat(service.getRemainingTimeToSignatureExpiration(testAccount), is(lessThan(0L)));
 
   }
 

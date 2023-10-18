@@ -51,19 +51,20 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
   }
 
   @Override
-  public int getRemainingDaysSignatureExpiration(IamAccount account) {
+  public Long getRemainingTimeToSignatureExpiration(IamAccount account) {
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    if (isNull(aup) || !aup.isPresent()) {
+    if (isNull(aup) || !aup.isPresent()
+        || (aup.isPresent() && aup.get().getSignatureValidityInDays() == 0)) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",
           account.getUsername());
-      return Integer.MAX_VALUE;
+      return Long.MAX_VALUE;
     }
 
     if (isNull(account.getAupSignature())) {
       LOG.debug("AUP signature needed for account '{}': no signature record found for user",
           account.getUsername());
-      return -Integer.MAX_VALUE;
+      return Long.MIN_VALUE;
     }
 
     Date signatureTime = account.getAupSignature().getSignatureTime();
@@ -74,17 +75,17 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
       LOG.debug(
           "AUP signature needed for account '{}': signature record expiration after AUP update",
           account.getUsername());
-      return -Integer.MAX_VALUE;
+      return Long.MIN_VALUE;
     }
 
-    int daysLeftBeforeSignAup = calculateDaysLeft(aup.get(), account);
+    Long daysLeftBeforeSignAup =
+        calculateDaysLeft(signatureValidityInDays, signatureTime.getTime());
 
     if (daysLeftBeforeSignAup > 0) {
 
       if (signatureValidityInDays > 0) {
 
-        Date signatureValidTime =
-            new Date(signatureTime.getTime() + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+        Date signatureValidTime = new Date(signatureTime.getTime() + signatureValidityInDays);
 
         // The signature was on the last version of the AUP
         Date now = new Date(timeProvider.currentTimeMillis());
@@ -105,16 +106,13 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
     }
   }
 
-  private int calculateDaysLeft(IamAup aup, IamAccount account) {
-    Long signatureValidityInDays = aup.getSignatureValidityInDays();
-    Optional<IamAupSignature> signature = signatureRepo.findByAupAndAccount(aup, account);
-    Date expirationDateSignature = new Date(signature.get().getSignatureTime().getTime()
-        + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+  private Long calculateDaysLeft(Long signatureValidityInDays, Long signatureTime) {
+    Date expirationDateSignature =
+        new Date(signatureTime + TimeUnit.DAYS.toMillis(signatureValidityInDays));
     Date now = new Date(timeProvider.currentTimeMillis());
     Long delta = expirationDateSignature.getTime() - now.getTime();
-    int resultDaysLeft =
-        Long.valueOf(TimeUnit.DAYS.convert(delta, TimeUnit.MILLISECONDS)).intValue();
+    // Long resultDaysLeft = TimeUnit.DAYS.convert(delta, TimeUnit.MILLISECONDS);
 
-    return resultDaysLeft;
+    return delta;
   }
 }
