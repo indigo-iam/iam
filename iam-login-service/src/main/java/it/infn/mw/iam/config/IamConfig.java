@@ -241,10 +241,9 @@ public class IamConfig {
 
   @Bean
   FilterRegistrationBean<EnforceAupFilter> aupSignatureCheckFilter(AUPSignatureCheckService service,
-      AccountUtils utils, IamAupRepository repo) {
-    EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
-    FilterRegistrationBean<EnforceAupFilter> frb =
-        new FilterRegistrationBean<>(aupFilter);
+      AccountUtils utils, IamAupRepository repo, IamProperties iamProperties) {
+    EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo, iamProperties);
+    FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }

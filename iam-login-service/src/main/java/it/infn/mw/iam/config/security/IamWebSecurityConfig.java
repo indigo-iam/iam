@@ -195,7 +195,7 @@ public class IamWebSecurityConfig {
           new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
       return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService, accountUtils,
-          accountRepo);
+          accountRepo, iamProperties);
     }
   }
 

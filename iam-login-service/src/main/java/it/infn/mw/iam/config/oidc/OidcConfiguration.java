@@ -72,6 +72,7 @@ import it.infn.mw.iam.authn.oidc.service.DefaultOidcUserDetailsService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
@@ -90,6 +91,9 @@ public class OidcConfiguration {
 
   @Autowired
   private AccountUtils accountUtils;
+
+  @Autowired
+  private IamProperties iamProperties;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -155,7 +159,7 @@ public class OidcConfiguration {
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
 
     EnforceAupSignatureSuccessHandler successHandler = new EnforceAupSignatureSuccessHandler(sa,
-        aupSignatureCheckService, accountUtils, accountRepo);
+        aupSignatureCheckService, accountUtils, accountRepo, iamProperties);
 
     return new ExternalAuthenticationSuccessHandler(successHandler, "/");
   }
@@ -169,11 +173,12 @@ public class OidcConfiguration {
   @Bean
   public OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
       OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator, SessionTimeoutHelper timeoutHelper) {
+      AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper) {
 
     OidcAuthenticationProvider provider =
         new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
-    
+
     provider.setUserInfoFetcher(userInfoFetcher);
 
     return provider;

@@ -27,12 +27,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -41,20 +41,20 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @SuppressWarnings("deprecation")
 public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessHandler {
 
-  @Value("${iam.aup.advance-notice}")
-  private int EXPIRY_NOTICE_DAYS = 5;
-
   private final AuthenticationSuccessHandler delegate;
   private final AUPSignatureCheckService service;
   private final AccountUtils accountUtils;
   private final IamAccountRepository accountRepo;
+  private final IamProperties iamProperties;
 
   public EnforceAupSignatureSuccessHandler(AuthenticationSuccessHandler delegate,
-      AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo) {
+      AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo,
+      IamProperties iamProperties) {
     this.delegate = delegate;
     this.service = service;
     this.accountUtils = utils;
     this.accountRepo = accountRepo;
+    this.iamProperties = iamProperties;
   }
 
   private Optional<Authentication> resolveUserAuthentication(Authentication auth) {

@@ -34,11 +34,11 @@ import org.slf4j.LoggerFactory;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.error.AupNotFoundError;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-
 
 public class EnforceAupFilter implements Filter {
 
@@ -54,12 +54,14 @@ public class EnforceAupFilter implements Filter {
   final AccountUtils accountUtils;
   final IamAupRepository aupRepo;
 
+  private final IamProperties iamProperties;
 
   public EnforceAupFilter(AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils,
-      IamAupRepository aupRepo) {
+      IamAupRepository aupRepo, IamProperties iamProperties) {
     this.signatureCheckService = signatureCheckService;
     this.accountUtils = accountUtils;
     this.aupRepo = aupRepo;
+    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -67,12 +69,10 @@ public class EnforceAupFilter implements Filter {
     // Empty method
   }
 
-
   public boolean sessionOlderThanAupCreation(HttpSession session) {
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(AupNotFoundError::new);
     return session.getCreationTime() < aup.getCreationTime().getTime();
   }
-
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
