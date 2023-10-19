@@ -73,9 +73,22 @@ Even tough we will squash all commits of a PR into an inclusive, long commit, we
 
 ## Useful references
 
-### Code base technologies
-
 ### OAuth standard
+
+- JSON Web Token ([RFC 7519](https://www.rfc-editor.org/rfc/rfc7519))
+- Bearer Token Usage ([RFC 6750](https://www.rfc-editor.org/rfc/rfc6750))
+- The OAuth 2.0 Authorization Framework ([RFC 6749](https://www.rfc-editor.org/rfc/rfc6749))
+- Device Code Grant ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628))
+- Token Exchange ([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693))
+- Proof of Key Code Exchange ([RFC 7636](https://www.rfc-editor.org/rfc/rfc7636))
+
+### Presentations
+
+- [INDIGO IAM: current status & future developments](https://indico.stfc.ac.uk/event/763/sessions/510/attachments/1764/3125/INDIGO%20IAM%20Hackathon%202023.pdf)
+- [INDIGO IAM: future developments and OIDC federations](https://agenda.infn.it/event/34683/contributions/197358/attachments/105521/148354/INDIGO-IAM_%20sviluppi_futuri_e_fed_OIDC.pdf)
+- [Introduction to OAuth and its applications](https://agenda.infn.it/event/34111/attachments/100897/140421/Introduction-to-OAuth.pdf)
+- [INDIGO IAM - status and evolution plans](https://indico.cern.ch/event/1185598/contributions/5043270/subcontributions/396287/attachments/2525106/4342827/October%202022%20Pre-GDB%20Authz%20and%20IAM%20workshop.pdf)
+- [Status and prospects of WLCG transition to tokens](https://agenda.infn.it/event/30202/contributions/168567/attachments/91356/124066/Status%20and%20prospects%20of%20WLCG%20transition%20to%20tokens.pdf)
 
 
 
