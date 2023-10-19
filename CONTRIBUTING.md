@@ -6,7 +6,9 @@ In this guide you will get an overview of the contribution workflow from opening
 
 ## Development environment
 
-The INDIGO IAM service is a [Maven][maven] project build with Java 17.  
+The INDIGO IAM service is a [Maven][maven] project built with Java 17.  
+To download the necessary dependencies from the [CNAF Repository platform][repo] (e.g. to include the patched version of [MitreID][mitre]), add the maven [settings file][mvn-settings] locally, at `~/.m2/settings.xml`.
+
 Run
 
 ```
@@ -20,15 +22,24 @@ $ mvn package -DskipTests
 ```
 to skip tests execution.
 
-You can use your favorite IDE for development (Eclipse is the one adopted at the time of writing).
-Install the `Spring Tools 4` plugin to use Spring buttons and configurations. Please use a modified Google style
-formatter available [here](utils/codestyle-formatter-CNAF.xml) to format your code.
+You can use your favorite IDE for development.  
+In case you are using Eclipse:
+
+- install the `Spring Tools 4` plugin to use Spring buttons and configurations
+- import the Java Google style
+formatter (available [here][formatter]) to format your code.
+
+Visual Studio Code has a similar extension that needs to be installed.
 
 ### Run the app
 
 The main package is __iam-login-service__, listening by default on http://localhost:8080. To run it
 
-- enable `h2-test`, `dev` profiles: these profiles allow to run the app in developer mode, where an in memory database is enabled and populated with test users, clients, groups, etc. A web interface of the database is available at http://localhost:8080/h2-console
+- enable the `h2` and `dev` Spring profiles: these profiles allow to run the app in developer mode, where an in-memory database is enabled and populated with test users, clients, groups, etc. A web interface of the database is available at http://localhost:8080/h2-console. A test administrator can login into IAM with _admin/password_ credentials, while a test user with _test/password_. Connection to the database is possible by inserting the following parameters:
+  - Driver Class: org.h2.Driver
+  - JDBC URL: jdbc:h2:mem:iam
+  - User Name: sa
+  - Password: <empty>
 - the main class to be run is `it.infn.mw.iam.IamLoginService`.
 
 The __iam-test-client__ package is a simple web application used to showcase an authorization code flow where `iam-login-service` is the OAuth Authorization Server. It listens by default on http://localhost:9090/iam-test-client. The main class to be run is `it.infn.mw.tc.IamTestClientApplication`.
@@ -41,7 +52,7 @@ The __voms-aa__ package is a micro-service which provides backward-compatible VO
 There are few rules that we want to follow during our development phase to make the history of this repository as clean as possible:
 
 - the `master` branch is the one containing the latest official release
-- the `develop` branch is a buildable branch, ready for next release
+- the `develop` branch is a branch with a successful build, ready for next release
 - when you want to develop some feature, create a new branch starting from `develop`
   - if you spot a problem within IAM, search if an issue already exists. If not, create a new issue
   - create a new branch named `issue-<number>`
@@ -64,7 +75,7 @@ When you are finished with the changes, create a pull request, also known as a P
 
 ### Commits
 
-Even tough we will squash all commits of a PR into an inclusive, long commit, we invite you to follow few best practices:
+Even tough we will squash all commits of a PR into an inclusive, long commit, we invite you to follow few [best practices][git-commit]:
 
 - fist letter of the commit must be capital
 - tenses in the commit must not be past-like
@@ -93,4 +104,9 @@ Even tough we will squash all commits of a PR into an inclusive, long commit, we
 
 
 [maven]: https://maven.apache.org/
+[repo]: https://repo.cloud.cnaf.infn.it/
+[mitre]: https://github.com/indigo-iam/OpenID-Connect-Java-Spring-Server
+[mvn-settings]: https://github.com/italiangrid/build-settings/blob/master/maven/cnaf-mirror-settings.xml
+[formatter]: https://github.com/italiangrid/codestyle/blob/master/eclipse-google-java-codestyle-formatter.xml
 [sonar]: https://docs.sonarcloud.io/
+[git-commit]: https://cbea.ms/git-commit/
