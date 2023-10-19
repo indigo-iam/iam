@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
 
     'use strict';
 
@@ -29,6 +29,7 @@
             isMe: isMe,
             isAdmin: isAdmin,
             isUser: isUser,
+            isPreAuthenticated: isPreAuthenticated,
             getLoggedUser: getLoggedUser,
             isRegistrationEnabled: isRegistrationEnabled,
             isOidcEnabled: isOidcEnabled,
@@ -84,6 +85,11 @@
         function isUser() {
 
             return (getUserAuthorities().indexOf("ROLE_USER") != -1);
+        }
+
+        function isPreAuthenticated() {
+
+            return (getUserAuthorities().indexOf("ROLE_PRE_AUTHENTICATED") != -1);
         }
 
         function isGroupManager() {
