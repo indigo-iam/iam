@@ -26,6 +26,10 @@ See the [changelog](CHANGELOG.md).
 
 See the [IAM documentation][iam-doc].
 
+## Developer guide
+
+See the [contributing](CONTRIBUTING.md) document.
+
 ## License
 
 [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
