@@ -118,14 +118,14 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(true);
-    totpMfa.setAccount(TEST_ACCOUNT);
+    totpMfa.setAccount(account);
     totpMfa.setSecret("secret");
     String totp = "123456";
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
     when(totpMfaService.enableTotpMfa(account)).thenReturn(totpMfa);
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().isOk());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isOk());
 
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).verifyTotp(account, totp);
@@ -140,7 +140,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(false);
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, times(1)).verifyTotp(account, totp);
     verify(totpMfaService, never()).enableTotpMfa(account);
@@ -152,7 +152,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "abcdef";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).enableTotpMfa(account);
   }
@@ -163,7 +163,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "12345";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).enableTotpMfa(account);
   }
@@ -174,7 +174,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "1234567";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).enableTotpMfa(account);
   }
@@ -185,7 +185,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = null;
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).enableTotpMfa(account);
   }
@@ -196,7 +196,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     String totp = "";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).enableTotpMfa(account);
   }
@@ -206,7 +206,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void testEnableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -214,7 +214,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void testEnableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
-    mvc.perform(post(ENABLE_URL).param("totp", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -227,7 +227,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
     when(totpMfaService.disableTotpMfa(account)).thenReturn(totpMfa);
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().isOk());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isOk());
 
     verify(accountRepository, times(2)).findByUsername(TOTP_USERNAME);
     verify(totpMfaService, times(1)).verifyTotp(account, totp);
@@ -242,7 +242,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(false);
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, times(1)).verifyTotp(account, totp);
     verify(totpMfaService, never()).disableTotpMfa(account);
@@ -254,7 +254,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "123456";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).disableTotpMfa(account);
   }
@@ -265,7 +265,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "12345";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).disableTotpMfa(account);
   }
@@ -276,7 +276,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "1234567";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).disableTotpMfa(account);
   }
@@ -287,7 +287,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = null;
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).disableTotpMfa(account);
   }
@@ -298,7 +298,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     String totp = "";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().is4xxClientError());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().is4xxClientError());
 
     verify(totpMfaService, never()).disableTotpMfa(account);
   }
@@ -308,7 +308,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void testDisableAuthenticatorAppNoAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -316,6 +316,6 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void testDisableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
     String totp = "123456";
 
-    mvc.perform(post(DISABLE_URL).param("totp", totp)).andExpect(status().isUnauthorized());
+    mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }
 }
