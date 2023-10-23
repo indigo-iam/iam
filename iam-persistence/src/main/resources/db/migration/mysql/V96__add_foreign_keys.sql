@@ -71,19 +71,27 @@ DELETE FROM access_token WHERE refresh_token_id NOT IN (SELECT id FROM refresh_t
 DELETE FROM access_token WHERE client_id NOT IN (SELECT id FROM client_details);
 DELETE FROM access_token WHERE auth_holder_id NOT IN (SELECT id FROM authentication_holder);
 
-ALTER TABLE access_token ADD CONSTRAINT FK_access_token_refresh_token_id FOREIGN KEY (refresh_token_id) REFERENCES refresh_token (id) ON DELETE SET NULL;
-ALTER TABLE access_token ADD CONSTRAINT FK_access_token_client_id FOREIGN KEY (client_id) REFERENCES client_details (id) ON DELETE SET NULL;
-ALTER TABLE access_token ADD CONSTRAINT FK_access_token_auth_holder_id FOREIGN KEY (auth_holder_id) REFERENCES authentication_holder (id) ON DELETE SET NULL;
+ALTER TABLE access_token ADD CONSTRAINT FK_access_token_refresh_token_id FOREIGN KEY (refresh_token_id) REFERENCES refresh_token (id) ON DELETE CASCADE;
+ALTER TABLE access_token ADD CONSTRAINT FK_access_token_client_id FOREIGN KEY (client_id) REFERENCES client_details (id) ON DELETE CASCADE;
+ALTER TABLE access_token ADD CONSTRAINT FK_access_token_auth_holder_id FOREIGN KEY (auth_holder_id) REFERENCES authentication_holder (id) ON DELETE CASCADE;
 
 -- REFRESH TOKEN
 
 DELETE FROM refresh_token WHERE client_id NOT IN (SELECT id FROM client_details);
-ALTER TABLE refresh_token ADD CONSTRAINT FK_refresh_token_client_id FOREIGN KEY (client_id) REFERENCES client_details (id) ON DELETE SET NULL;
+ALTER TABLE refresh_token ADD CONSTRAINT FK_refresh_token_client_id FOREIGN KEY (client_id) REFERENCES client_details (id) ON DELETE CASCADE;
+
+DELETE FROM refresh_token WHERE auth_holder_id NOT IN (SELECT id FROM authentication_holder);
+ALTER TABLE refresh_token ADD CONSTRAINT FK_refresh_token_auth_holder_id FOREIGN KEY (auth_holder_id) REFERENCES authentication_holder (id) ON DELETE CASCADE;
+
+-- AUTHORIZATION CODE
+
+DELETE FROM authorization_code WHERE auth_holder_id NOT IN (SELECT id FROM authentication_holder);
+ALTER TABLE authorization_code ADD CONSTRAINT FK_authorization_code_auth_holder_id FOREIGN KEY (auth_holder_id) REFERENCES authentication_holder (id) ON DELETE CASCADE;
 
 -- APPROVED SITE
 
 DELETE FROM approved_site WHERE client_id NOT IN (SELECT id FROM client_details);
-ALTER TABLE approved_site ADD CONSTRAINT FK_approved_site_client_id FOREIGN KEY (client_id) REFERENCES client_details (client_id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE approved_site ADD CONSTRAINT FK_approved_site_client_id FOREIGN KEY (client_id) REFERENCES client_details (client_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 DELETE FROM approved_site_scope WHERE owner_id NOT IN (SELECT id FROM approved_site);
 ALTER TABLE approved_site_scope ADD CONSTRAINT FK_approved_site_scope_owner_id FOREIGN KEY (owner_id) REFERENCES approved_site (id) ON DELETE CASCADE;
