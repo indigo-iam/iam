@@ -136,7 +136,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     // @formatter:on
 
     // @formatter:off
-    ValidatableResponse loginResponse = RestAssured.given()
+    RestAssured.given()
       .cookie(authzResponse.extract().detailedCookie(SESSION))
       .formParam("username", "test")
       .formParam("password", "password")
@@ -151,7 +151,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
 
     // @formatter:off
     String responseBody = RestAssured.given()
-      .cookie(loginResponse.extract().detailedCookie(SESSION))
+      .cookie(authzResponse.extract().detailedCookie(SESSION))
       .queryParam("response_type", RESPONSE_TYPE_CODE)
       .queryParam("client_id", TEST_CLIENT_ID)
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
