@@ -40,8 +40,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
@@ -61,26 +59,24 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
 
   @Before
   public void setup() {
-    when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
+    when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
+    when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
   @Test
-  @WithMockPreAuthenticatedUser
+  @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
   public void testGetVerifyMfaView() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL))
       .andExpect(status().isOk())
       .andExpect(model().attributeExists("factors"));
 
-    verify(accountRepository, times(1)).findByUsername(TEST_USERNAME);
     verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
   }
 
   @Test
-  @WithAnonymousUser
   public void testGetMfaVerifyViewNoAuthenticationIsUnauthorized() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isUnauthorized());
   }

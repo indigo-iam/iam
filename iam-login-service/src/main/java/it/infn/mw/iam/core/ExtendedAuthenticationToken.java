@@ -46,6 +46,7 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
  */
 public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
+  private static final long serialVersionUID = 1L;
   private final Object principal;
   private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
@@ -65,23 +66,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.principal = principal;
     this.credentials = credentials;
   }
-
-  // public ExtendedAuthenticationToken(Object principal, Object credentials,
-  // Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-  // super(null);
-  // this.principal = principal;
-  // this.credentials = credentials;
-  // this.authenticationMethodReferences = authenticationMethodReferences;
-  // }
-
-  // public ExtendedAuthenticationToken(Object principal, Object credentials,
-  // Collection<? extends GrantedAuthority> authorities,
-  // Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-  // super(authorities);
-  // this.principal = principal;
-  // this.credentials = credentials;
-  // this.authenticationMethodReferences = authenticationMethodReferences;
-  // }
 
   public ExtendedAuthenticationToken(ExtendedAuthenticationToken other) {
     super(other.getAuthorities());
