@@ -164,7 +164,12 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("/authorize").session(session))
+    mvc.perform(get("/authorize").session(session)
+      .param("scope", "openid profile read-tasks")
+      .param("response_type", "code")
+      .param("client_id", clientId)
+      .param("redirect_uri", "https://iam.local.io/iam-test-client/openid_connect_login")
+      .param("state", "1234567"))
       .andExpect(status().isOk())
       .andExpect(forwardedUrl("/oauth/confirm_access"))
       .andExpect(model().attribute("scope", equalTo("openid profile")))
@@ -207,7 +212,12 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("/authorize").session(session))
+    session = (MockHttpSession) mvc.perform(get("/authorize").session(session)
+        .param("scope", "openid profile read:/ read:/that/thing write:/")
+        .param("response_type", "code")
+        .param("client_id", clientId)
+        .param("redirect_uri", "https://iam.local.io/iam-test-client/openid_connect_login")
+        .param("state", "1234567"))
       .andExpect(status().isOk())
       .andExpect(forwardedUrl("/oauth/confirm_access"))
       .andExpect(model().attribute("scope", equalTo("openid profile")))
