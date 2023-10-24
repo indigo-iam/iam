@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -189,11 +190,17 @@ public class IamTokenRepositoryTests {
   @Test
   public void testTokenCascadeDeletion() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+    accessTokenRepo.save(at);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
+    refreshTokenRepo.save(rt);
     AuthenticationHolderEntity ah = at.getAuthenticationHolder();
+    authenticationHolderRepo.save(ah);
+    assertThat(accessTokenRepo.findAll()).hasSize(1);
+    assertThat(refreshTokenRepo.findAll()).hasSize(1);
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
     authenticationHolderRepo.remove(ah);
-    assertThat(accessTokenRepo.findById(at.getId()).isEmpty(), is(true));
-    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(true));
+    assertThat(accessTokenRepo.findAll()).isEmpty();
+    assertThat(refreshTokenRepo.findAll()).isEmpty();
     assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
   }
 
