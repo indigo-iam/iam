@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.commons.lang.time.DateUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
@@ -72,6 +73,12 @@ public class IamTokenRepositoryTests {
 
   @Autowired
   private DefaultOAuth2ProviderTokenService tokenService;
+
+  @Before
+  public void setup() {
+    accessTokenRepo.deleteAll();
+    refreshTokenRepo.deleteAll();
+  }
 
   private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username) {
 
