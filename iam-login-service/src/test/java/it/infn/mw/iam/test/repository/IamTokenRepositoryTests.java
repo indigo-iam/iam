@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -22,10 +24,14 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.commons.lang.time.DateUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,10 +66,19 @@ public class IamTokenRepositoryTests {
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
+  private AuthenticationHolderRepository authenticationHolderRepo;
+
+  @Autowired
   private ClientDetailsEntityService clientDetailsService;
 
   @Autowired
   private DefaultOAuth2ProviderTokenService tokenService;
+
+  @Before
+  public void setup() {
+    accessTokenRepo.deleteAll();
+    refreshTokenRepo.deleteAll();
+  }
 
   private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username) {
 
@@ -162,6 +177,38 @@ public class IamTokenRepositoryTests {
 
     assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(1));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now), hasSize(1));
+  }
+
+  @Test
+  public void testTokenNoCascadeDeletion() {
+    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
+    AuthenticationHolderEntity ah = at.getAuthenticationHolder();
+    accessTokenRepo.delete(at);
+    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(false));
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    refreshTokenRepo.delete(rt);
+    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(true));
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    authenticationHolderRepo.remove(ah);
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
+  }
+
+  @Test
+  public void testTokenCascadeDeletion() {
+    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+    accessTokenRepo.save(at);
+    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
+    refreshTokenRepo.save(rt);
+    AuthenticationHolderEntity ah = at.getAuthenticationHolder();
+    authenticationHolderRepo.save(ah);
+    assertThat(accessTokenRepo.findAll()).hasSize(1);
+    assertThat(refreshTokenRepo.findAll()).hasSize(1);
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    authenticationHolderRepo.remove(ah);
+    assertThat(accessTokenRepo.findAll()).isEmpty();
+    assertThat(refreshTokenRepo.findAll()).isEmpty();
+    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
   }
 
 }

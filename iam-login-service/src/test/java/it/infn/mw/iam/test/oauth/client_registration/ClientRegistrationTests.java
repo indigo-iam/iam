@@ -127,7 +127,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
     mvc
       .perform(get(registrationUri).contentType(APPLICATION_JSON)
         .header("Authorization", "Bearer " + rat))
-      .andExpect(status().isNotFound());
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
