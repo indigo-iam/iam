@@ -36,7 +36,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 
 @RestController
 @RequestMapping(SearchClientController.ENDPOINT)
-@PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+@PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
 public class SearchClientController {
 
   public static final int MAX_PAGE_SIZE = 100;

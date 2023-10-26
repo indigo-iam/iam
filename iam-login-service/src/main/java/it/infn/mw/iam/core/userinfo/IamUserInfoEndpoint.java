@@ -57,7 +57,7 @@ public class IamUserInfoEndpoint {
     this.scopeResolver = scopeResolver;
   }
 
-  @PreAuthorize("hasRole('ROLE_USER') and #oauth2.hasScope('" + SystemScopeService.OPENID_SCOPE
+  @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('" + SystemScopeService.OPENID_SCOPE
       + "')")
   @RequestMapping(method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
   public String getInfo(

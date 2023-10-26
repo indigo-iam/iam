@@ -101,7 +101,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
@@ -113,7 +113,7 @@ public class AupSignatureController {
   }
 
   @RequestMapping(value = "/iam/aup/signature/{accountId}", method = RequestMethod.PATCH)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write')")
   public void setSignatureForAccount(@PathVariable String accountId,
       @RequestBody @Validated AupSignatureDTO dto) throws AccountNotFoundException {
     IamAccount account = accountUtils.getByAccountId(accountId)

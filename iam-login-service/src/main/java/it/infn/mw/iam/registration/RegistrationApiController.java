@@ -95,7 +95,7 @@ public class RegistrationApiController {
 
 
 
-  @PreAuthorize("#oauth2.hasScope('registration:read') or hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @RequestMapping(value = "/registration/list", method = RequestMethod.GET)
   @ResponseBody
   public List<RegistrationRequestDto> listRequests(
@@ -104,7 +104,7 @@ public class RegistrationApiController {
     return service.listRequests(status);
   }
 
-  @PreAuthorize("#oauth2.hasScope('registration:read') or hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @RequestMapping(value = "/registration/list/pending", method = RequestMethod.GET)
   @ResponseBody
   public List<RegistrationRequestDto> listPendingRequests() {
@@ -121,13 +121,13 @@ public class RegistrationApiController {
 
   }
 
-  @PreAuthorize("#oauth2.hasScope('registration:write') or hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @RequestMapping(value = "/registration/approve/{uuid}", method = RequestMethod.POST)
   public RegistrationRequestDto approveRequest(@PathVariable("uuid") String uuid) {
     return service.approveRequest(uuid);
   }
 
-  @PreAuthorize("#oauth2.hasScope('registration:write') or hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @RequestMapping(value = "/registration/reject/{uuid}", method = RequestMethod.POST)
   public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
       @RequestParam(required = false) String motivation) {

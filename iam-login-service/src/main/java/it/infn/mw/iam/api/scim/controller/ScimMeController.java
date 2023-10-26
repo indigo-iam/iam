@@ -126,7 +126,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.eventPublisher = publisher;
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or hasRole('USER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser whoami() {
 
@@ -135,7 +135,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or hasRole('USER')")
+  @PreAuthorize("#iam.hasScope('scim:write') or hasRole('USER')")
   @RequestMapping(method = RequestMethod.PATCH, consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateUser(

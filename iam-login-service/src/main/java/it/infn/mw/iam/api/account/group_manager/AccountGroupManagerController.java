@@ -63,7 +63,7 @@ public class AccountGroupManagerController {
 
 
   @RequestMapping(value = "/iam/account/{accountId}/managed-groups", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#accountId)")
   public AccountManagedGroupsDTO getAccountManagedGroupsInformation(
       @PathVariable String accountId) {
     IamAccount account = accountRepository.findByUuid(accountId)
@@ -74,7 +74,7 @@ public class AccountGroupManagerController {
 
   @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
       method = RequestMethod.POST)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.CREATED)
   public void addManagedGroupToAccount(@PathVariable String accountId,
       @PathVariable String groupId) {
@@ -90,7 +90,7 @@ public class AccountGroupManagerController {
 
   @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
       method = RequestMethod.DELETE)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void removeManagedGroupFromAccount(@PathVariable String accountId,
       @PathVariable String groupId) {
@@ -105,7 +105,7 @@ public class AccountGroupManagerController {
   }
 
   @RequestMapping(value = "/iam/group/{groupId}/group-managers", method=RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#groupId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#groupId)")
   public List<ScimUser> getGroupManagersForGroup(@PathVariable String groupId) {
     IamGroup group = groupRepository.findByUuid(groupId)
       .orElseThrow(() -> InvalidManagedGroupError.groupNotFoundException(groupId));

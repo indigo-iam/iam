@@ -157,6 +157,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (5, 'refresh_token'),
   (6, 'client_credentials'),
   (7, 'client_credentials'),
+  (7, 'refresh_token'),
+  (7, 'urn:ietf:params:oauth:grant-type:device_code'),
   (8, 'urn:ietf:params:oauth:grant-type:token-exchange'),
   (8, 'client_credentials'),
   (8, 'password'),

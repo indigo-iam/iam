@@ -55,7 +55,7 @@ public class ScopePolicyController {
   }
 
   @RequestMapping(value = "/iam/scope_policies", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public List<ScopePolicyDTO> listScopePolicies() {
 
     Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();
@@ -70,7 +70,7 @@ public class ScopePolicyController {
 
   @RequestMapping(value = "/iam/scope_policies", method = RequestMethod.POST)
   @ResponseStatus(code = HttpStatus.CREATED)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void addScopePolicy(@Valid @RequestBody ScopePolicyDTO policy,
       BindingResult validationResult) {
 
@@ -83,7 +83,7 @@ public class ScopePolicyController {
 
 
   @RequestMapping(value = "/iam/scope_policies/{id}", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ScopePolicyDTO getScopePolicy(@PathVariable Long id) {
 
     IamScopePolicy p = policyService.findScopePolicyById(id)
@@ -95,7 +95,7 @@ public class ScopePolicyController {
 
   @RequestMapping(value = "/iam/scope_policies/{id}", method = RequestMethod.PUT)
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void updateScopePolicy(@PathVariable Long id,
       @Valid @RequestBody ScopePolicyDTO policy, BindingResult validationResult) {
 
@@ -110,7 +110,7 @@ public class ScopePolicyController {
 
   @RequestMapping(value = "/iam/scope_policies/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteScopePolicy(@PathVariable Long id) {
 
     policyService.deleteScopePolicyById(id);
