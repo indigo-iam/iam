@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
@@ -50,7 +51,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
-@WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"})
 public class ScimMeEndpointPatchRemoveTests {
 
   @Autowired
@@ -77,6 +77,8 @@ public class ScimMeEndpointPatchRemoveTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
+      scopes = {"scim:write", "scim:read"})
   public void testPatchRemovePicture() throws Exception {
 
     ScimPhoto currentPhoto = scimUtils.getMe().getPhotos().get(0);
@@ -89,6 +91,8 @@ public class ScimMeEndpointPatchRemoveTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
+      scopes = {"scim:write", "scim:read"})
   public void testPatchRemoveOidcId() throws Exception {
 
     ScimOidcId currentOidcId = scimUtils.getMe().getIndigoUser().getOidcIds().get(0);
@@ -101,7 +105,48 @@ public class ScimMeEndpointPatchRemoveTests {
   }
 
   @Test
+  @WithMockOAuthUser(user = "test_104", authorities = {"ROLE_USER"},
+      scopes = {"scim:write", "scim:read"})
   public void testPatchRemoveSamlId() throws Exception {
+
+    ScimSamlId currentSamlId = scimUtils.getMe().getIndigoUser().getSamlIds().get(0);
+
+    ScimUser updates = ScimUser.builder().addSamlId(currentSamlId).build();
+
+    scimUtils.patchMe(remove, updates);
+
+    assertThat(scimUtils.getMe().getIndigoUser().getSamlIds(), hasSize(equalTo(0)));
+  }
+
+  @Test
+  @WithMockUser(username = "test_104", roles = {"USER"})
+  public void testPatchRemovePictureNoToken() throws Exception {
+
+    ScimPhoto currentPhoto = scimUtils.getMe().getPhotos().get(0);
+
+    ScimUser updates = ScimUser.builder().addPhoto(currentPhoto).build();
+
+    scimUtils.patchMe(remove, updates);
+
+    assertThat(scimUtils.getMe().hasPhotos(), equalTo(false));
+  }
+
+  @Test
+  @WithMockUser(username = "test_104", roles = {"USER"})
+  public void testPatchRemoveOidcIdNoToken() throws Exception {
+
+    ScimOidcId currentOidcId = scimUtils.getMe().getIndigoUser().getOidcIds().get(0);
+
+    ScimUser updates = ScimUser.builder().addOidcId(currentOidcId).build();
+
+    scimUtils.patchMe(remove, updates);
+
+    assertThat(scimUtils.getMe().getIndigoUser().getOidcIds(), hasSize(equalTo(0)));
+  }
+
+  @Test
+  @WithMockUser(username = "test_104", roles = {"USER"})
+  public void testPatchRemoveSamlIdNoToken() throws Exception {
 
     ScimSamlId currentSamlId = scimUtils.getMe().getIndigoUser().getSamlIds().get(0);
 

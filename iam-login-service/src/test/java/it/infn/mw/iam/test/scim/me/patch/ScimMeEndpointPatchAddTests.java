@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -43,13 +44,11 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
-@WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"})
 public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
   final static String TEST_USERNAME = "test_103";
@@ -57,45 +56,95 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   @Autowired
   private ScimRestUtilsMvc scimUtils;
 
-  @Test
-  public void testPatchGivenAndFamilyName() throws Exception {
-
-    ScimUser updates = ScimUser.builder().name(TESTUSER_NEWNAME).build();
-
+  private void patchNameAndAssert(ScimUser updates) throws Exception {
     scimUtils.patchMe(add, updates);
-
     ScimUser userAfter = scimUtils.getMe();
-
     assertThat(userAfter.getName().getGivenName(), equalTo(updates.getName().getGivenName()));
     assertThat(userAfter.getName().getFamilyName(), equalTo(updates.getName().getFamilyName()));
   }
 
-  @Test
-  public void testPatchPicture() throws Exception {
-
-    ScimUser updates = ScimUser.builder().addPhoto(TESTUSER_NEWPHOTO).build();
-
+  private void patchPicture(ScimUser updates) throws Exception {
     scimUtils.patchMe(add, updates);
-
     ScimUser userAfter = scimUtils.getMe();
-
     assertThat(userAfter.getPhotos(), hasSize(equalTo(1)));
     assertThat(userAfter.getPhotos().get(0), equalTo(TESTUSER_NEWPHOTO));
   }
 
-  @Test
-  public void testPatchEmail() throws Exception {
-
-    ScimUser updates = ScimUser.builder().addEmail(TESTUSER_NEWEMAIL).build();
-
+  private void patchEmail(ScimUser updates) throws Exception {
     scimUtils.patchMe(add, updates);
-
     ScimUser userAfter = scimUtils.getMe();
-
     assertThat(userAfter.getEmails().get(0), equalTo(TESTUSER_NEWEMAIL));
   }
 
+  private void patchMultiple(ScimUser updates) throws Exception {
+    scimUtils.patchMe(add, updates);
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getName().getGivenName(), equalTo(updates.getName().getGivenName()));
+    assertThat(userAfter.getName().getFamilyName(), equalTo(updates.getName().getFamilyName()));
+    assertThat(userAfter.getPhotos(), hasSize(1));
+    assertThat(userAfter.getPhotos().get(0), equalTo(TESTUSER_NEWPHOTO));
+    assertThat(userAfter.getEmails().get(0), equalTo(TESTUSER_NEWEMAIL));
+  }
+
+  private void patch(ScimUser updates) throws Exception {
+    scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
+  }
+
+
   @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
+  public void testPatchGivenAndFamilyName() throws Exception {
+    ScimUser updates = ScimUser.builder().name(TESTUSER_NEWNAME).build();
+    patchNameAndAssert(updates);
+  }
+
+  @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchGivenAndFamilyNameNoToken() throws Exception {
+    ScimUser updates = ScimUser.builder().name(TESTUSER_NEWNAME).build();
+    patchNameAndAssert(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
+  public void testPatchPicture() throws Exception {
+
+    ScimUser updates = ScimUser.builder().addPhoto(TESTUSER_NEWPHOTO).build();
+    patchPicture(updates);
+  }
+
+  @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchPictureNoToken() throws Exception {
+
+    ScimUser updates = ScimUser.builder().addPhoto(TESTUSER_NEWPHOTO).build();
+    patchPicture(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
+  public void testPatchEmail() throws Exception {
+
+    ScimUser updates = ScimUser.builder().addEmail(TESTUSER_NEWEMAIL).build();
+    patchEmail(updates);
+  }
+
+  @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchEmailNoEmail() throws Exception {
+
+    ScimUser updates = ScimUser.builder().addEmail(TESTUSER_NEWEMAIL).build();
+    patchEmail(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchMultiple() throws Exception {
 
     final ScimUser updates = ScimUser.builder()
@@ -104,30 +153,50 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
       .addPhoto(TESTUSER_NEWPHOTO)
       .build();
 
-    scimUtils.patchMe(add, updates);
-
-    ScimUser userAfter = scimUtils.getMe();
-
-    assertThat(userAfter.getName().getGivenName(), equalTo(updates.getName().getGivenName()));
-    assertThat(userAfter.getName().getFamilyName(), equalTo(updates.getName().getFamilyName()));
-    assertThat(userAfter.getPhotos(), hasSize(1));
-    assertThat(userAfter.getPhotos().get(0), equalTo(TESTUSER_NEWPHOTO));
-    assertThat(userAfter.getEmails().get(0), equalTo(TESTUSER_NEWEMAIL));
+    patchMultiple(updates);
   }
 
   @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchMultipleNoToken() throws Exception {
+
+    final ScimUser updates = ScimUser.builder()
+      .name(TESTUSER_NEWNAME)
+      .addEmail(TESTUSER_NEWEMAIL)
+      .addPhoto(TESTUSER_NEWPHOTO)
+      .build();
+
+    patchMultiple(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchPasswordNotSupported() throws Exception {
 
     final String NEW_PASSWORD = "newpassword";
 
     ScimUser updates = ScimUser.builder().password(NEW_PASSWORD).build();
 
-    scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
-    ScimUser userAfter = scimUtils.getMe();
-    assertThat(userAfter.getIndigoUser(), nullValue());
+    patch(updates);
+
   }
 
   @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchPasswordNotSupportedNoToken() throws Exception {
+
+    final String NEW_PASSWORD = "newpassword";
+
+    ScimUser updates = ScimUser.builder().password(NEW_PASSWORD).build();
+
+    patch(updates);
+
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchAddOidcIdNotSupported() throws Exception {
 
     ScimOidcId NEW_TESTUSER_OIDCID =
@@ -135,25 +204,47 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().addOidcId(NEW_TESTUSER_OIDCID).build();
 
-    scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
-    ScimUser userAfter = scimUtils.getMe();
-    assertThat(userAfter.getIndigoUser(), nullValue());
+    patch(updates);
   }
 
   @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchAddOidcIdNotSupportedNoToken() throws Exception {
+
+    ScimOidcId NEW_TESTUSER_OIDCID =
+        ScimOidcId.builder().issuer("new_test_issuer").subject("new_user_subject").build();
+
+    ScimUser updates = ScimUser.builder().addOidcId(NEW_TESTUSER_OIDCID).build();
+
+    patch(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchAddSamlIdNotSupported() throws Exception {
 
     ScimSamlId TESTUSER_SAMLID = ScimSamlId.builder().idpId("AA").userId("BB").build();
 
     ScimUser updates = ScimUser.builder().addSamlId(TESTUSER_SAMLID).build();
 
-    scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
-    
-    ScimUser userAfter = scimUtils.getMe();
-    assertThat(userAfter.getIndigoUser(), nullValue());
+    patch(updates);
   }
 
   @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchAddSamlIdNotSupportedNoToken() throws Exception {
+
+    ScimSamlId TESTUSER_SAMLID = ScimSamlId.builder().idpId("AA").userId("BB").build();
+
+    ScimUser updates = ScimUser.builder().addSamlId(TESTUSER_SAMLID).build();
+
+    patch(updates);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchAddAndRemoveSsHKeyIsSupported() throws Exception {
 
     ScimSshKey NEW_SSH_KEY =
@@ -173,6 +264,28 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   }
 
   @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+  public void testPatchAddAndRemoveSsHKeyIsSupportedNoToken() throws Exception {
+
+    ScimSshKey NEW_SSH_KEY =
+        ScimSshKey.builder().display("ssh-key").value(SshKeyUtils.sshKeys.get(0).key).build();
+
+    ScimUser updates = ScimUser.builder().addSshKey(NEW_SSH_KEY).build();
+
+    scimUtils.patchMe(add, updates, HttpStatus.NO_CONTENT);
+
+    ScimUser userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser().getSshKeys(), hasSize(equalTo(1)));
+
+    scimUtils.patchMe(remove, updates, HttpStatus.NO_CONTENT);
+
+    userAfter = scimUtils.getMe();
+    assertThat(userAfter.getIndigoUser(), nullValue());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = ScimMeEndpointPatchAddTests.TEST_USERNAME, authorities = {"ROLE_USER"},
+      scopes = {"scim:read", "scim:write"})
   public void testPatchAddX509CertificateNotSupported() throws Exception {
 
     ScimX509Certificate NEW_X509_CERT = ScimX509Certificate.builder()
@@ -182,9 +295,21 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
 
     ScimUser updates = ScimUser.builder().addX509Certificate(NEW_X509_CERT).build();
 
-    scimUtils.patchMe(add, updates, HttpStatus.BAD_REQUEST);
+    patch(updates);
+  }
 
-    ScimUser userAfter = scimUtils.getMe();
-    assertThat(userAfter.getIndigoUser(), nullValue());
+  @Test
+  @WithMockUser(username = ScimMeEndpointPatchAddTests.TEST_USERNAME, roles = {"USER"})
+
+  public void testPatchAddX509CertificateNotSupportedNoToken() throws Exception {
+
+    ScimX509Certificate NEW_X509_CERT = ScimX509Certificate.builder()
+      .display("x509-cert")
+      .pemEncodedCertificate(X509Utils.x509Certs.get(0).certificate)
+      .build();
+
+    ScimUser updates = ScimUser.builder().addX509Certificate(NEW_X509_CERT).build();
+
+    patch(updates);
   }
 }
