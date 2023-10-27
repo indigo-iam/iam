@@ -1,7 +1,7 @@
 # INDIGO Identity and Access Management (IAM) service
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3496834.svg)](https://doi.org/10.5281/zenodo.3496834)
-[![build & packaging](https://github.com/indigo-iam/iam/actions/workflows/maven.yml/badge.svg?branch=master&event=push)](https://github.com/indigo-iam/iam/actions/workflows/maven.yml)
+[![github-build-status](https://github.com/indigo-iam/iam/actions/workflows/maven.yml/badge.svg?branch=master&event=push)](https://github.com/indigo-iam/iam/actions/workflows/maven.yml)
 [![sonarqube-qg](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=alert_status)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)
 [![sonarqube-coverage](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=coverage)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)
 [![sonarqube-maintainability](https://sonarcloud.io/api/project_badges/measure?project=indigo-iam_iam&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=indigo-iam_iam)
@@ -15,7 +15,8 @@ developed by [INFN][infn].
 - OpenID connect provider based on the [MitreID OpenID connect library][mitreid]
 - [SCIM][scim] user provisioning and management APIs
 - SAML authentication support
-- Google authentication support 
+- OIDC authentication support
+- X.509 authentication support
 - [OAuth token exchange][token-exchange] support
 
 ## What's new
@@ -36,11 +37,12 @@ See the [contributing](CONTRIBUTING.md) document.
 
 ## Acknowledgements
 
-This work is co-funded by the [EOSC-hub project (Horizon 2020)][eosc-hub] under
-Grant number 777536.
-<img src="https://wiki.eosc-hub.eu/download/attachments/1867786/eu%20logo.jpeg?version=1&modificationDate=1459256840098&api=v2" height="24">
+This work is co-funded by the [EOSC-hub project (Horizon 2020)][eosc-hub] under Grant number 777536.
+<img src="https://wiki.eosc-hub.eu/download/attachments/18973612/EU-logo-mini.png?version=2&modificationDate=1603899760369&api=v2" height="24">
 <img src="https://wiki.eosc-hub.eu/download/attachments/18973612/eosc-hub-web.png?version=1&modificationDate=1516099993132&api=v2" height="24">
 
+INDIGO IAM developers use [YourKit Java Profiler](http://www.yourkit.com/) to provide useful insights into the performance of this Java application. 
+<img src="https://www.yourkit.com/images/yklogo.png" height="24">
 
 [indigo-datacloud]: https://www.indigo-datacloud.eu/ 
 [mitreid]: https://github.com/mitreid-connect/OpenID-Connect-Java-Spring-Server
