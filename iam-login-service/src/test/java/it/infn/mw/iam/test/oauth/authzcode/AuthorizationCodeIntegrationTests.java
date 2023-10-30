@@ -62,7 +62,8 @@ public class AuthorizationCodeIntegrationTests {
 
   public static final String RESPONSE_TYPE_CODE = "code";
 
-  public static final String SCOPE = "openid profile scim:read scim:write offline_access";
+  public static final String SCOPE =
+      "openid profile scim:read scim:write offline_access iam:admin.read iam:admin.write";
 
   public static final String TEST_USER_ID = "test";
   public static final String TEST_USER_PASSWORD = "password";
@@ -254,6 +255,8 @@ public class AuthorizationCodeIntegrationTests {
         .formParam("scope_offline_access", "offline_access")
         .formParam("scope_scim_read", "scim:read")
         .formParam("scope_scim_write", "scim:write")
+        .formParam("scope_iam_admin_read", "iam:admin.read")
+        .formParam("scope_iam_admin_write", "iam:admin.write")
         .formParam("remember", "none")
         .redirects().follow(false)
       .when()
@@ -310,7 +313,161 @@ public class AuthorizationCodeIntegrationTests {
         .get("/scim/Users")
       .then()
         .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/scim/Groups")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .delete("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .delete("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/iam/account/me/authorities")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/iam/api/clients")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      RestAssured.given()
+          .header("Authorization", "Bearer " + refreshedToken)
+      .when()
+          .get("/iam/scope_policies")
+      .then()
+          .statusCode(HttpStatus.FORBIDDEN.value());
+      
+      ValidatableResponse resp7= RestAssured.given()
+        .formParam("grant_type", "refresh_token")
+        .formParam("refresh_token", refreshToken)
+        .formParam("scope", "openid scim:read scim:write")
+        .auth()
+        .preemptive()
+          .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value());
       // @formatter:on
+
+    refreshedToken =
+        mapper.readTree(resp7.extract().body().asString()).get("access_token").asText();
+
+ // @formatter:off
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+      .get("/scim/Users")
+    .then()
+      .statusCode(HttpStatus.OK.value());
+    
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/scim/Groups")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+    
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+    
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+
+    ValidatableResponse resp8= RestAssured.given()
+        .formParam("grant_type", "refresh_token")
+        .formParam("refresh_token", refreshToken)
+        .formParam("scope", "openid iam:admin.read iam:admin.write")
+        .auth()
+        .preemptive()
+          .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.OK.value());
+      // @formatter:on
+
+    refreshedToken =
+        mapper.readTree(resp8.extract().body().asString()).get("access_token").asText();
+    
+// @formatter:off
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/iam/me/authorities")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/iam/api/clients")
+    .then()
+        .statusCode(HttpStatus.OK.value());
+
+    RestAssured.given()
+        .header("Authorization", "Bearer " + refreshedToken)
+    .when()
+        .get("/iam/scope_policies")
+    .then()
+        .statusCode(HttpStatus.OK.value());    
+        // @formatter:on
+
 
   }
 

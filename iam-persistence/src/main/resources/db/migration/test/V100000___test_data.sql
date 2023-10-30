@@ -54,6 +54,8 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'attr'),
   (1, 'scim:read'),
   (1, 'scim:write'),
+  (1, 'iam:admin.read'),
+  (1, 'iam:admin.write'),
   (2, 'openid'),
   (2, 'profile'),
   (2, 'read-tasks'),
