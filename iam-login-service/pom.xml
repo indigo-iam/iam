@@ -488,13 +488,6 @@
             <goals>
               <goal>prepare-agent</goal>
             </goals>
-            <configuration>
-              <tasks>
-                <echo>Project Base Path (WEB):: ${project.basedir}</echo>
-                <echo>Jacoco exec target path (WEB)::
-                  ${sonar.jacoco.reportPath}</echo>
-              </tasks>
-            </configuration>
           </execution>
 
           <execution>
