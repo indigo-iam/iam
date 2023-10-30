@@ -136,6 +136,7 @@
                    Not a member?
                 </div>
                 <a class="btn btn-success btn-block" href="/start-registration">Apply for an account</a>
+                <a class="btn btn-success btn-block" href="/saml/login">Apply for an account with eduGAIN</a>
             </div>
         </c:if>
 
