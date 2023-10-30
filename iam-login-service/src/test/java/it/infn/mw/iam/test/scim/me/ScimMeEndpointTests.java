@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -42,7 +43,7 @@ public class ScimMeEndpointTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
-  
+
   @Autowired
   private MockMvc mvc;
 
@@ -55,11 +56,21 @@ public class ScimMeEndpointTests {
   public void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-  
+
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
-  public void meEndpointUserInfo() throws Exception {
+      scopes = {"openid", "profile", "scim:read"})
+  public void meEndpointUserInfoWithToken() throws Exception {
+    //@formatter:off
+    mvc.perform(get(ME_ENDPOINT)
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk());
+    //@formatter:on
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void meEndpointUserInfoNoToken() throws Exception {
     //@formatter:off
     mvc.perform(get(ME_ENDPOINT)
         .contentType(SCIM_CONTENT_TYPE))
@@ -76,6 +87,6 @@ public class ScimMeEndpointTests {
       .andExpect(jsonPath("$.status", equalTo("400")))
       .andExpect(jsonPath("$.detail", equalTo("No user linked to the current OAuth token")));
   }
-  
-  
+
+
 }

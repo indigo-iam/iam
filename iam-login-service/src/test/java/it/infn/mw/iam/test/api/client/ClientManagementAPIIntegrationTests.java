@@ -28,12 +28,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -41,12 +44,14 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @IamMockMvcIntegrationTest
-@WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-@SpringBootTest(classes = {IamLoginService.class})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
 public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Autowired
@@ -55,60 +60,87 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   @Autowired
   private ObjectMapper mapper;
 
-  @Test
-  @WithAnonymousUser
-  public void clientManagementRequiresAuthenticatedUser() throws Exception {
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
 
+
+  @BeforeEach
+  public void setup() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @AfterEach
+  public void teardown() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  private void clientManagementFailsWithResponseForClient(ResultMatcher response, String clientId)
+      throws Exception {
     String clientJson = ClientJsonStringBuilder.builder().build();
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT)).andExpect(response);
     mvc
       .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
         .content(clientJson))
-      .andExpect(UNAUTHORIZED);
+      .andExpect(response);
     mvc
-      .perform(put(ClientManagementAPIController.ENDPOINT + "/client").contentType(APPLICATION_JSON)
-        .content(clientJson))
-      .andExpect(UNAUTHORIZED);
-    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/client")).andExpect(UNAUTHORIZED);
+      .perform(
+          put(ClientManagementAPIController.ENDPOINT + "/" + clientId).contentType(APPLICATION_JSON)
+            .content(clientJson))
+      .andExpect(response);
+    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/" + clientId))
+      .andExpect(response);
+  }
+
+  private void paginatedGetClientsTest() throws Exception {
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").value(18))
+      .andExpect(jsonPath("$.itemsPerPage").value(10))
+      .andExpect(jsonPath("$.startIndex").value(1))
+      .andExpect(jsonPath("$.Resources", hasSize(10)))
+      .andExpect(jsonPath("$.Resources[0].client_id").value("admin-client-ro"));
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "11"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").value(18))
+      .andExpect(jsonPath("$.itemsPerPage").value(8))
+      .andExpect(jsonPath("$.startIndex").value(11))
+      .andExpect(jsonPath("$.Resources", hasSize(8)))
+      .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
+  }
+
+  @Test
+  @WithAnonymousUser
+  public void clientManagementRequiresAuthenticatedUser() throws Exception {
+    clientManagementFailsWithResponseForClient(UNAUTHORIZED, "client");
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void clientManagementRequiresAdminUser() throws Exception {
-    String clientJson = ClientJsonStringBuilder.builder().build();
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT)).andExpect(FORBIDDEN);
-    mvc
-      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
-        .content(clientJson))
-      .andExpect(FORBIDDEN);
-    mvc
-      .perform(put(ClientManagementAPIController.ENDPOINT + "/client").contentType(APPLICATION_JSON)
-        .content(clientJson))
-      .andExpect(FORBIDDEN);
-    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/client")).andExpect(FORBIDDEN);
-  }
-
-
-  @Test
-  public void paginatedGetClientsWorks() throws Exception {
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT))
-      .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(16))
-      .andExpect(jsonPath("$.itemsPerPage").value(10))
-      .andExpect(jsonPath("$.startIndex").value(1))
-      .andExpect(jsonPath("$.Resources", hasSize(10)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("client"));
-
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "11"))
-      .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(16))
-      .andExpect(jsonPath("$.itemsPerPage").value(6))
-      .andExpect(jsonPath("$.startIndex").value(11))
-      .andExpect(jsonPath("$.Resources", hasSize(6)))
-      .andExpect(jsonPath("$.Resources[0].client_id").value("scim-client-ro"));
+  public void clientManagementIsForbiddenForUsers() throws Exception {
+    clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
   }
 
   @Test
+  @WithMockOAuthUser(user = "test", scopes = {"openid"})
+  public void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
+    clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", scopes = {"iam:admin.read"})
+  public void paginatedGetClientsWorksWithScopes() throws Exception {
+    paginatedGetClientsTest();
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void paginatedGetClientsWorksAsAdmin() throws Exception {
+    paginatedGetClientsTest();
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void clientRemovalWorks() throws Exception {
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
@@ -123,6 +155,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void ratRotationWorks() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
@@ -147,6 +180,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void setTokenLifetimesWorks() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
@@ -184,28 +218,29 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     assertTrue(client.getAccessTokenValiditySeconds().equals(0));
     assertTrue(client.getRefreshTokenValiditySeconds().equals(0));
-    
+
     clientJson = ClientJsonStringBuilder.builder()
-        .scopes("openid")
-        .accessTokenValiditySeconds(10)
-        .refreshTokenValiditySeconds(10)
-        .build();
+      .scopes("openid")
+      .accessTokenValiditySeconds(10)
+      .refreshTokenValiditySeconds(10)
+      .build();
 
-      responseJson = mvc
-        .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
-          .content(clientJson))
-        .andExpect(CREATED)
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+    responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
-      client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-      assertTrue(client.getAccessTokenValiditySeconds().equals(10));
-      assertTrue(client.getRefreshTokenValiditySeconds().equals(10));
+    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertTrue(client.getAccessTokenValiditySeconds().equals(10));
+    assertTrue(client.getRefreshTokenValiditySeconds().equals(10));
 
   }
 
   @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void negativeTokenLifetimesNotAllowed() throws Exception {
 
     String clientJson =

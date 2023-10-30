@@ -36,7 +36,7 @@ import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 
 @RestController
-@PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+@PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
 public class FindAccountController {
 
   public static final String INVALID_FIND_ACCOUNT_REQUEST = "Invalid find account request";

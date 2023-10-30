@@ -34,6 +34,12 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   false, null, 3600, 600, true,'PRIVATE_KEY', false, 'RS256',
   '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}');
 
+INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
+  refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
+  token_endpoint_auth_method, require_auth_time, created_at) VALUES
+(17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP()),
+(18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP());
+  
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
   (1, 'profile'),
@@ -46,6 +52,10 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'read:/'),
   (1, 'write:/'),
   (1, 'attr'),
+  (1, 'scim:read'),
+  (1, 'scim:write'),
+  (1, 'iam:admin.read'),
+  (1, 'iam:admin.write'),
   (2, 'openid'),
   (2, 'profile'),
   (2, 'read-tasks'),
@@ -133,7 +143,10 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (14, 'profile'),
   (14, 'email'),
   (14, 'address'),
-  (14, 'phone');
+  (14, 'phone'),
+  (17, 'iam:admin.read'),
+  (18, 'iam:admin.read'),
+  (18, 'iam:admin.write');
   
   
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
@@ -157,6 +170,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (5, 'refresh_token'),
   (6, 'client_credentials'),
   (7, 'client_credentials'),
+  (7, 'refresh_token'),
+  (7, 'urn:ietf:params:oauth:grant-type:device_code'),
   (8, 'urn:ietf:params:oauth:grant-type:token-exchange'),
   (8, 'client_credentials'),
   (8, 'password'),
@@ -173,7 +188,13 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (12, 'refresh_token'),
   (12, 'urn:ietf:params:oauth:grant-type:device_code'),
   (13, 'implicit'),
-  (14, 'urn:ietf:params:oauth:grant-type:device_code');
+  (14, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (17, 'client_credentials'),
+  (17, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (17, 'authorization_code'),
+  (18, 'client_credentials'),
+  (18, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (18, 'authorization_code');
     
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER) VALUES
   (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M'),

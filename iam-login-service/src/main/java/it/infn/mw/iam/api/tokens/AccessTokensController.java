@@ -49,7 +49,7 @@ public class AccessTokensController extends TokensControllerSupport {
   private TokenService<AccessToken> tokenService;
 
   @RequestMapping(method = RequestMethod.GET, produces = APPLICATION_JSON_CONTENT_TYPE)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public MappingJacksonValue listAccessTokens(@RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex,
       @RequestParam(required = false) String userId,
@@ -63,7 +63,7 @@ public class AccessTokensController extends TokensControllerSupport {
   
   @RequestMapping(method = RequestMethod.DELETE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteAllTokens() {
     tokenService.deleteAllTokens();
   }
@@ -87,7 +87,7 @@ public class AccessTokensController extends TokensControllerSupport {
   }
 
   @RequestMapping(method = RequestMethod.GET, value = "/{id}", produces = APPLICATION_JSON_CONTENT_TYPE)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AccessToken getAccessToken(@PathVariable("id") Long id) {
 
     return tokenService.getTokenById(id);
@@ -95,7 +95,7 @@ public class AccessTokensController extends TokensControllerSupport {
 
   @RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void revokeAccessToken(@PathVariable("id") Long id) {
 
     tokenService.revokeTokenById(id);

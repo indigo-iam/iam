@@ -72,7 +72,7 @@ public class AccountAttributesController {
   }
 
   @RequestMapping(value = "/iam/account/{id}/attributes", method = RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
   public List<AttributeDTO> getAttributes(@PathVariable String id) {
 
     IamAccount account =
@@ -85,7 +85,7 @@ public class AccountAttributesController {
   }
 
   @RequestMapping(value = "/iam/account/{id}/attributes", method = PUT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute,
       final BindingResult validationResult) {
 
@@ -99,7 +99,7 @@ public class AccountAttributesController {
   }
 
   @RequestMapping(value = "/iam/account/{id}/attributes", method = DELETE)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = NO_CONTENT)
   public void deleteAttribute(@PathVariable String id, @Validated AttributeDTO attribute,
       final BindingResult validationResult) {
