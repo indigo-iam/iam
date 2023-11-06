@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:ns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
-    <groupId>it.infn.mw</groupId>
+    <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.2</version>
+    <version>1.8.3</version>
   </parent>
 
+  <groupId>it.infn.mw.iam-common</groupId>
   <artifactId>iam-common</artifactId>
   <packaging>jar</packaging>
 
@@ -18,8 +18,16 @@
   <properties>
    <spring-boot.build-image.skip>true</spring-boot.build-image.skip>
   </properties>
-  <build>
 
+  <dependencies>
+    <dependency>
+      <groupId>it.infn.mw.iam-persistence</groupId>
+      <artifactId>iam-persistence</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -32,12 +40,4 @@
       </plugins>
     </pluginManagement>
   </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>iam-persistence</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
 </project>

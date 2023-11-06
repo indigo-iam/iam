@@ -19,6 +19,8 @@ import static it.infn.mw.iam.config.client_registration.ClientRegistrationProper
 
 import java.util.concurrent.TimeUnit;
 
+import javax.validation.constraints.NotNull;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,10 +30,14 @@ public class ClientRegistrationProperties {
 
   public static class ClientDefaultsProperties {
 
-    private int defaultAccessTokenValiditySeconds = (int) TimeUnit.HOURS.toSeconds(1);
+	@NotNull(message = "Provide a default access token lifetime")
+    private int defaultAccessTokenValiditySeconds;
+	
+	@NotNull(message = "Provide a default refresh token lifetime")
+    private int defaultRefreshTokenValiditySeconds;
+	
     private int defaultIdTokenValiditySeconds = (int) TimeUnit.MINUTES.toSeconds(10);
     private int defaultDeviceCodeValiditySeconds = (int) TimeUnit.MINUTES.toSeconds(10);
-    private int defaultRefreshTokenValiditySeconds = (int) TimeUnit.DAYS.toSeconds(30);
 
     private int defaultRegistrationAccessTokenValiditySeconds = -1;
 

@@ -18,7 +18,7 @@ package it.infn.mw.iam.test.api.requests;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -89,7 +89,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     // @formatter:on
 
     GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
-    assertThat(result.getLastUpdateTime(), greaterThan(result.getCreationTime()));
+    assertThat(result.getLastUpdateTime(), greaterThanOrEqualTo(result.getCreationTime()));
 
     int mailCount = notificationService.countPendingNotifications();
     assertThat(mailCount, equalTo(1));

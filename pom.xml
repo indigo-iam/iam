@@ -1,23 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<project xmlns:ns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-
     <!-- Update this in sync with the spring-boot version below -->
-    <version>2.6.14</version>
-    <relativePath /> <!-- lookup parent from repository -->
+    <version>2.6.15</version>
+    <relativePath />
+    <!-- lookup parent from repository -->
   </parent>
 
-  <groupId>it.infn.mw</groupId>
+  <groupId>it.infn.mw.iam-parent</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.8.2</version>
+  <version>1.8.3</version>
   <packaging>pom</packaging>
+
   <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
+
+  <modules>
+    <module>iam-common</module>
+    <module>iam-persistence</module>
+    <module>iam-voms-aa</module>
+    <module>iam-login-service</module>
+    <module>iam-test-client</module>
+  </modules>
+
+  <distributionManagement>
+    <repository>
+      <id>cnaf-releases</id>
+      <name>CNAF releases</name>
+      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
+    </repository>
+
+    <snapshotRepository>
+      <id>cnaf-snapshots</id>
+      <name>CNAF snapshots</name>
+      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <properties>
     <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
@@ -29,14 +50,14 @@
 
     <testcontainers.version>1.16.2</testcontainers.version>
 
-    <mitreid.version>1.3.5.cnaf-spring-update-080122</mitreid.version>
-    <spring-security-oauth2.version>2.5.1.RELEASE</spring-security-oauth2.version>
+    <mitreid.version>1.3.6.cnaf-20231030</mitreid.version>
+    <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
     <voms.version>3.3.2</voms.version>
     <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
     <!-- Update this in sync with the parent project version -->
-    <spring-boot.version>2.6.14</spring-boot.version>
+    <spring-boot.version>2.6.15</spring-boot.version>
 
     <angularjs.version>1.6.1</angularjs.version>
     <angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
@@ -46,7 +67,7 @@
     <font-awesome.version>4.7.0</font-awesome.version>
     <jquery.version>3.6.0</jquery.version>
     <bootstrap.version>3.4.1</bootstrap.version>
-    <jquery-ui.version>1.13.1</jquery-ui.version>
+    <jquery-ui.version>1.13.2</jquery-ui.version>
 
     <rest-assured.version>4.4.0</rest-assured.version>
     <json-path.version>2.2.0</json-path.version>
@@ -62,19 +83,13 @@
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
 
+    <bouncycastle.version>1.76</bouncycastle.version>
+
     <resource.delimiter>@</resource.delimiter>
 
     <jvm.test.args>-Xmx2500m</jvm.test.args>
     <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*,iam-common/**</sonar.coverage.exclusions>
   </properties>
-
-  <modules>
-    <module>iam-common</module>
-    <module>iam-persistence</module>
-    <module>iam-voms-aa</module>
-    <module>iam-login-service</module>
-    <module>iam-test-client</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
@@ -198,20 +213,24 @@
         <version>${mitreid.version}</version>
       </dependency>
 
-    
-
       <!-- SAML -->
 
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.57</version>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
 
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.57</version>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcutil-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
 
       <dependency>
@@ -272,7 +291,6 @@
   </repositories>
 
   <build>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -287,7 +305,6 @@
         </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -410,18 +427,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
-
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 </project>

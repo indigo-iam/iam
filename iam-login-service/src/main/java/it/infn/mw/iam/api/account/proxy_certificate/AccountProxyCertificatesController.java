@@ -77,7 +77,7 @@ public class AccountProxyCertificatesController {
   }
 
   @RequestMapping(value = "/iam/account/me/proxycert", method = PUT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_USER')")
   public void addProxyCertificate(
       @RequestBody @Validated(
           value = ProxyCertificateDTO.AddProxyCertValidation.class) ProxyCertificateDTO proxyCert,

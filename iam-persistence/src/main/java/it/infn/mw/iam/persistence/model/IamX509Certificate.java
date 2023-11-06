@@ -19,6 +19,7 @@ import static java.util.Objects.isNull;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -51,7 +52,7 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
   @Column(nullable = false, length = 36)
   private String label;
 
-  @Column(name = "subject_dn", nullable = false, length = 128, unique = true)
+  @Column(name = "subject_dn", nullable = false, length = 128)
   private String subjectDn;
 
   @Column(name = "issuer_dn", nullable = false, length = 128)
@@ -87,11 +88,9 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((subjectDn == null) ? 0 : subjectDn.hashCode());
-    return result;
+    return Objects.hash(issuerDn, subjectDn);
   }
+
 
   @Override
   public boolean equals(Object obj) {
@@ -102,13 +101,9 @@ public class IamX509Certificate implements IamAccountRef, Serializable {
     if (getClass() != obj.getClass())
       return false;
     IamX509Certificate other = (IamX509Certificate) obj;
-    if (subjectDn == null) {
-      if (other.subjectDn != null)
-        return false;
-    } else if (!subjectDn.equals(other.subjectDn))
-      return false;
-    return true;
+    return Objects.equals(issuerDn, other.issuerDn) && Objects.equals(subjectDn, other.subjectDn);
   }
+
 
   @Override
   public IamAccount getAccount() {

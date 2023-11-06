@@ -19,6 +19,7 @@ import javax.annotation.Generated;
 
 public class StringEqualsScopeMatcher implements ScopeMatcher {
 
+  private static final long serialVersionUID = -1283075702068272727L;
   final String expectedValue;
 
   private StringEqualsScopeMatcher(String expectedValue) {

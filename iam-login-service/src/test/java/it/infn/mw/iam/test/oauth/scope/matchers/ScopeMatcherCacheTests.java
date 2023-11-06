@@ -15,9 +15,11 @@
  */
 package it.infn.mw.iam.test.oauth.scope.matchers;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertFalse;
 
 import java.text.ParseException;
 
@@ -25,6 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -33,6 +36,8 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.config.CacheConfig;
+import it.infn.mw.iam.config.RedisCacheProperties;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -47,6 +52,12 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
   @Autowired
   private ClientService clientService;
 
+  @Autowired
+  private CacheConfig cacheConfig;
+  
+  @Autowired
+  private RedisCacheProperties redisCacheProperties;
+
   private String getAccessTokenForClient(String scopes) throws Exception {
 
     return new AccessTokenGetter().grantType("client_credentials")
@@ -54,6 +65,12 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       .clientSecret(CLIENT_SECRET)
       .scope(scopes)
       .getAccessTokenValue();
+  }
+
+  @Test
+  public void ensureRedisCashIsDisabled() {
+    assertFalse(redisCacheProperties.isEnabled());
+    assertThat(cacheConfig.localCacheManager(), instanceOf(CacheManager.class));
   }
 
   @Test

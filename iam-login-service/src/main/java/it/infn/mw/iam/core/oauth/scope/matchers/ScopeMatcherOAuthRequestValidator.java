@@ -23,40 +23,27 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 @SuppressWarnings("deprecation")
 public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator {
 
-  public static final int DEFAULT_CACHE_SIZE = 10;
 
   public static final String ERROR_MSG_FMT = "Scope '%s' not allowed for client '%s'";
 
   private final ScopeMatcherRegistry registry;
-  private final LoadingCache<ClientDetails, Set<ScopeMatcher>> scopeMatchersCache;
-
-  public ScopeMatcherOAuthRequestValidator(ScopeMatcherRegistry matcherRegistry, int cacheSize) {
-    this.registry = matcherRegistry;
-    int cs = cacheSize < DEFAULT_CACHE_SIZE ? DEFAULT_CACHE_SIZE : cacheSize;
-    scopeMatchersCache = CacheBuilder.newBuilder()
-      .maximumSize(cs)
-      .build(CacheLoader.from(registry::findMatchersForClient));
-  }
 
   public ScopeMatcherOAuthRequestValidator(ScopeMatcherRegistry matcherRegistry) {
-    this(matcherRegistry, DEFAULT_CACHE_SIZE);
+    this.registry = matcherRegistry;
   }
 
   private void validateScope(Set<String> requestedScopes, ClientDetails client) {
 
-    Set<ScopeMatcher> scopeMatchers = scopeMatchersCache.getUnchecked(client);
+    Set<ScopeMatcher> scopeMatchers = registry.findMatchersForClient(client);
     for (String s : requestedScopes) {
       if (scopeMatchers.stream().noneMatch(m -> m.matches(s))) {
         throw new InvalidScopeException(String.format(ERROR_MSG_FMT, s, client.getClientId()));
       }
     }
+
   }
 
   @Override
@@ -65,11 +52,9 @@ public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator
   }
 
   @Override
-  public void validateScope(TokenRequest tokenRequest, ClientDetails client){
+  public void validateScope(TokenRequest tokenRequest, ClientDetails client) {
     validateScope(tokenRequest.getScope(), client);
   }
 
-  public void invalidateScope(ClientDetails client) {
-    scopeMatchersCache.invalidate(client);
-  }
+
 }

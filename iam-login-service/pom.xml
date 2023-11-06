@@ -16,16 +16,16 @@
     limitations under the License.
 
 -->
-<project xmlns:ns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
-    <groupId>it.infn.mw</groupId>
+    <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.2</version>
+    <version>1.8.3</version>
   </parent>
 
+  <groupId>it.infn.mw.iam-login-service</groupId>
   <artifactId>iam-login-service</artifactId>
   <packaging>war</packaging>
 
@@ -44,7 +44,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>it.infn.mw.iam-persistence</groupId>
       <artifactId>iam-persistence</artifactId>
       <version>${project.version}</version>
       <exclusions>
@@ -56,7 +56,7 @@
     </dependency>
 
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>it.infn.mw.iam-common</groupId>
       <artifactId>iam-common</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -279,12 +279,17 @@
     <!-- SAML -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk15on</artifactId>
+      <artifactId>bcpkix-jdk18on</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcutil-jdk18on</artifactId>
     </dependency>
 
     <dependency>
@@ -392,6 +397,7 @@
     </dependency>
 
   </dependencies>
+
   <build>
     <finalName>iam-login-service</finalName>
     <resources>
@@ -406,82 +412,6 @@
         <directory>src/main/webapp</directory>
       </resource>
     </resources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- Jacoco prepare-agent builds some command-line params without -->
-          <!-- which jacoco will not instrument. Hence it is important to add -->
-          <!-- those command-line params here (${argLine} holds those params) -->
-          <argLine>${argLine} ${jvm.test.args}</argLine>
-          <runOrder>alphabetical</runOrder>
-          <useSystemClassLoader>false</useSystemClassLoader>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>it/infn/mw/iam/api/registration/cern/mock/*.class</exclude>
-            <exclude>it/infn/mw/iam/api/registration/cern/dto/*.class</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <echo>Project Base Path (WEB):: ${project.basedir}</echo>
-                <echo>Jacoco exec target path (WEB)::
-                  ${sonar.jacoco.reportPath}</echo>
-              </tasks>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>report-aggregate</id>
-            <goals>
-              <goal>report-aggregate</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <mainClass>it.infn.mw.iam.IamLoginService</mainClass>
-          <image>
-            <name>indigoiam/iam-login-service-bp:${iam.image.tag}</name>
-            <env>
-              <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
-            </env>
-          </image>
-        </configuration>
-
-        <executions>
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>com.google.cloud.tools</groupId>
-        <artifactId>jib-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-
     <pluginManagement>
       <plugins>
         <plugin>
@@ -530,5 +460,73 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Jacoco prepare-agent builds some command-line params without -->
+          <!-- which jacoco will not instrument. Hence it is important to add -->
+          <!-- those command-line params here (${argLine} holds those params) -->
+          <argLine>${argLine} ${jvm.test.args}</argLine>
+          <runOrder>alphabetical</runOrder>
+          <useSystemClassLoader>false</useSystemClassLoader>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>it/infn/mw/iam/api/registration/cern/mock/*.class</exclude>
+            <exclude>it/infn/mw/iam/api/registration/cern/dto/*.class</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+
+          <execution>
+            <id>report-aggregate</id>
+            <goals>
+              <goal>report-aggregate</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>it.infn.mw.iam.IamLoginService</mainClass>
+          <image>
+            <name>indigoiam/iam-login-service-bp:${iam.image.tag}</name>
+            <env>
+              <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
+            </env>
+          </image>
+        </configuration>
+
+        <executions>
+          <execution>
+            <goals>
+              <goal>build-info</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

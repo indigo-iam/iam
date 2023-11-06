@@ -57,7 +57,7 @@ public class AccountGroupController {
 
   @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = POST)
   @ResponseStatus(value = HttpStatus.CREATED)
-  @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #oauth2.hasScope('iam:admin.write')")
+  @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #iam.hasScope('iam:admin.write')")
   public void addAccountToGroup(@PathVariable String accountUuid, @PathVariable String groupUuid) {
     IamGroup group = groupService.findByUuid(groupUuid).orElseThrow(noSuchGroup(groupUuid));
 
@@ -75,7 +75,7 @@ public class AccountGroupController {
 
   @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = DELETE)
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
-  @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #oauth2.hasScope('iam:admin.write')")
+  @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #iam.hasScope('iam:admin.write')")
   public void removeAccountFromGroup(@PathVariable String accountUuid,
       @PathVariable String groupUuid) {
     IamGroup group = groupService.findByUuid(groupUuid).orElseThrow(noSuchGroup(groupUuid));

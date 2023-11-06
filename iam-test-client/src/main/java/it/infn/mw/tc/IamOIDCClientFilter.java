@@ -121,6 +121,11 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
     form.setAll(getAuthRequestOptionsService().getTokenOptions(config.serverConfig,
         config.clientConfig, request));
 
+    String codeVerifier = getStoredCodeVerifier(request.getSession());
+    if (codeVerifier != null) {
+        form.add("code_verifier", codeVerifier);
+    }
+
     String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESION_VARIABLE);
 
     if (redirectUri != null) {

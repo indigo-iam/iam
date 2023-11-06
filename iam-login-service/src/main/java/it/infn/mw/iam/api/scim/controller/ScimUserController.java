@@ -75,7 +75,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
@@ -98,7 +98,7 @@ public class ScimUserController extends ScimControllerSupport {
     return wrapper;
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
   @RequestMapping(value = "/{id}", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
@@ -106,7 +106,7 @@ public class ScimUserController extends ScimControllerSupport {
     return userProvisioningService.getById(id);
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(method = RequestMethod.POST, consumes = ScimConstants.SCIM_CONTENT_TYPE,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.CREATED)
@@ -120,7 +120,7 @@ public class ScimUserController extends ScimControllerSupport {
     return new MappingJacksonValue(result);
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(value = "/{id}", method = RequestMethod.PUT,
       consumes = ScimConstants.SCIM_CONTENT_TYPE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.OK)
@@ -134,7 +134,7 @@ public class ScimUserController extends ScimControllerSupport {
 
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(value = "/{id}", method = RequestMethod.PATCH,
       consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -148,7 +148,7 @@ public class ScimUserController extends ScimControllerSupport {
 
   }
 
-  @PreAuthorize("#oauth2.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteUser(@PathVariable final String id) {

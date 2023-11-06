@@ -182,6 +182,9 @@ iam:
   account-linking:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
 
+redis-cache:
+  enabled: ${IAM_REDIS_CACHE_ENABLED:false}
+
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
@@ -210,6 +213,10 @@ task:
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
+  client-defaults:
+    default-access-token-validity-seconds: ${DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
+    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:108000}
+
 
 management:
   health:

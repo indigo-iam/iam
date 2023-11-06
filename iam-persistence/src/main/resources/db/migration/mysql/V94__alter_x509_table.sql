@@ -1,0 +1,2 @@
+ALTER TABLE iam_x509_cert MODIFY subject_dn varchar(256) CHARACTER SET latin1 COLLATE latin1_general_cs;
+ALTER TABLE iam_x509_cert MODIFY issuer_dn varchar(256) CHARACTER SET latin1 COLLATE latin1_general_cs;

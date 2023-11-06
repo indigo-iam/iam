@@ -26,25 +26,27 @@
         self.toggleOfflineAccess = toggleOfflineAccess;
         self.canIssueRefreshTokens = false;
         self.hasDeviceCodeGrantType = false;
-
+        self.accessTokenValiditySeconds = getAccessTokenValiditySeconds();
+        self.refreshTokenValiditySeconds = getRefreshTokenValiditySeconds();
 
         self.$onInit = function () {
             console.debug('TokenSettingsController.self', self);
-            if (!self.client.access_token_validity_seconds) {
-                self.client.access_token_validity_seconds = 0;
+            if (self.client.access_token_validity_seconds == null) {
+                self.client.access_token_validity_seconds = self.accessTokenValiditySeconds;
             }
-            if (!self.client.refresh_token_validity_seconds) {
-                self.client.refresh_token_validity_seconds = 0;
+
+            if (self.client.refresh_token_validity_seconds == null) {
+                self.client.refresh_token_validity_seconds = self.refreshTokenValiditySeconds;
             }
 
             $scope.$watch('$ctrl.client.access_token_validity_seconds', function handleChange(newVal, oldVal) {
-                if (!self.client.access_token_validity_seconds) {
+                if (newVal <= 0) {
                     self.client.access_token_validity_seconds = 0;
                 }
             });
 
             $scope.$watch('$ctrl.client.refresh_token_validity_seconds', function handleChange(newVal, oldVal) {
-                if (!self.client.refresh_token_validity_seconds) {
+                if (newVal <= 0) {
                     self.client.refresh_token_validity_seconds = 0;
                 }
             });

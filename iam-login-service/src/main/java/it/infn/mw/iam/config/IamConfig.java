@@ -17,6 +17,7 @@ package it.infn.mw.iam.config;
 
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.AARC_PROFILE_ID;
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.IAM_PROFILE_ID;
+import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.KC_PROFILE_ID;
 import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.WLCG_PROFILE_ID;
 
 import java.time.Clock;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.h2.server.web.WebServlet;
+import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
@@ -69,6 +71,12 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileTokenIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIntrospectionHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakJWTProfile;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGGroupHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTProfile;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
@@ -152,6 +160,27 @@ public class IamConfig {
     return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
+  @Bean(name = "kcJwtProfile")
+  JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
+      ScopeClaimTranslationService converter, UserInfoService userInfoService, ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
+
+    KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
+
+    KeycloakProfileAccessTokenBuilder atBuilder =
+        new KeycloakProfileAccessTokenBuilder(props, groupHelper);
+
+    KeycloakUserinfoHelper uiHelper =
+        new KeycloakUserinfoHelper(props, userInfoService);
+
+    KeycloakIdTokenCustomizer idHelper =
+        new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
+
+    BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
+        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+
+	return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+  }
+
   @Bean(name = "iamJwtProfile")
   JWTProfile iamJwtProfile(IamProperties props, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, ClaimValueHelper claimHelper,
@@ -188,7 +217,9 @@ public class IamConfig {
   @Bean
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
-      @Qualifier("aarcJwtProfile") JWTProfile aarcProfile, IamProperties properties,
+      @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile,
+      IamProperties properties,
       ClientDetailsService clientDetailsService) {
 
     JWTProfile defaultProfile = iamProfile;
@@ -203,10 +234,16 @@ public class IamConfig {
       defaultProfile = aarcProfile;
     }
 
+    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.KC
+      .equals(properties.getJwtProfile().getDefaultProfile())) {
+      defaultProfile = kcProfile;
+    }
+
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
     profileMap.put(IAM_PROFILE_ID, iamProfile);
     profileMap.put(WLCG_PROFILE_ID, wlcgProfile);
     profileMap.put(AARC_PROFILE_ID, aarcProfile);
+    profileMap.put(KC_PROFILE_ID, kcProfile);
 
     LOG.info("Default JWT profile: {}", defaultProfile.name());
     return new ScopeAwareProfileResolver(defaultProfile, profileMap, clientDetailsService);
@@ -252,9 +289,9 @@ public class IamConfig {
 
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, SystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), 20);
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), scopeRepo);
   }
 
   @Bean

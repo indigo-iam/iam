@@ -16,17 +16,16 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>it.infn.mw</groupId>
+    <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.8.2</version>
+    <version>1.8.3</version>
   </parent>
 
+  <groupId>it.infn.mw.iam-voms-aa</groupId>
   <artifactId>iam-voms-aa</artifactId>
   <packaging>jar</packaging>
 
@@ -34,7 +33,7 @@
   <description>IAM VOMS attribute authority</description>
 
   <properties>
-    <guava.version>31.0.1-jre</guava.version>
+    <guava.version>32.0.0-jre</guava.version>
     <!-- Sonar Jacoco massaging -->
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
@@ -42,7 +41,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
+      <groupId>it.infn.mw.iam-common</groupId>
       <artifactId>iam-common</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -149,16 +148,21 @@
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
+      <artifactId>bcprov-jdk18on</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk15on</artifactId>
+      <artifactId>bcpkix-jdk18on</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>it.infn.mw</groupId>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcutil-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>it.infn.mw.iam-persistence</groupId>
       <artifactId>iam-persistence</artifactId>
       <version>${project.version}</version>
       <exclusions>
@@ -232,7 +236,6 @@
         </plugin>
       </plugins>
     </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -292,13 +295,6 @@
             <goals>
               <goal>prepare-agent</goal>
             </goals>
-            <configuration>
-              <tasks>
-                <echo>Project Base Path (WEB):: ${project.basedir}</echo>
-                <echo>Jacoco exec target path (WEB)::
-                  ${sonar.jacoco.reportPath}</echo>
-              </tasks>
-            </configuration>
           </execution>
 
           <execution>

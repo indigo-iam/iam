@@ -1,5 +1,103 @@
 # Changelog
 
+## 1.8.3 (2023-10-30)
+
+### Recommendations
+It is **strongly** recommended to **make a backup of your database** before upgrading to v1.8.3 because several migrations are planned. Also, remember that for updates from versions prior to v1.7.2 you **must** first upgrade to v1.7.2.
+The migration to v1.8.3 will take an amount of time which will be proportional to the amount of currently active access tokens. This means that if you are deploying IAM with some kind of liveness and readiness probes, it's probably better to **switch them off** before upgrading. This migration may take a long **time.**
+
+### Changed
+* Save access token value as an hash in order to use lighter db indexes and avoid conflicts by @rmiccoli in https://github.com/indigo-iam/iam/pull/613
+* Avoid upper case characters into VO names by @SteDev2 in https://github.com/indigo-iam/iam/pull/616
+* Enable Redis scope matchers and well-known endpoint caching by @federicaagostini in https://github.com/indigo-iam/iam/pull/633
+* Consider scope matcher based on string equality for custom scopes by @rmiccoli in https://github.com/indigo-iam/iam/pull/642
+
+### Added
+* Add SCIM endpoint entry to well-known endpoint by @federicaagostini in https://github.com/indigo-iam/iam/pull/631
+* Update account AUP signature time via API by @rmiccoli in https://github.com/indigo-iam/iam/pull/608
+* Add new JWT profile that rename 'groups' claim with 'roles' by @enricovianello in https://github.com/indigo-iam/iam/pull/637
+* Add support for displaying specific language name in federation Metadata by @Sae126V in https://github.com/indigo-iam/iam/pull/640
+* Add missing "Reuse refresh token" box within client management page  by @rmiccoli in https://github.com/indigo-iam/iam/pull/650
+* Add missing foreign keys to the database by @enricovianello, @rmiccoli in https://github.com/indigo-iam/iam/pull/632, https://github.com/indigo-iam/iam/pull/659
+* Add OpenID Connect standard claims in ATs for WLCG JWT profile by @rmiccoli in https://github.com/indigo-iam/iam/pull/651
+
+### Fixed
+* Allow to add certificates with the same subject DN by @rmiccoli in https://github.com/indigo-iam/iam/pull/624
+* Delete unsupported response types by @rmiccoli in https://github.com/indigo-iam/iam/pull/610
+* Fix management of tokens lifetime following RFC9068 by @federicaagostini in https://github.com/indigo-iam/iam/pull/620
+* Fix CERN Restore workflow by @hannahshort in https://github.com/indigo-iam/iam/pull/645
+* Fix authz code flow with PKCE for IAM test client application by @rmiccoli in https://github.com/indigo-iam/iam/pull/653
+* Fix authorization on IAM APIs such to avoid cases where access is granted to already approved scopes instead of effective token scopes by @enricovianello in https://github.com/indigo-iam/iam/pull/664
+
+## 1.8.2p2 (2023-09-21)
+
+This release fixes a privilege escalation present in all previous IAM releases. See https://advisories.egi.eu/Advisory-EGI-SVG-2023-53.
+
+## 1.8.2p1 (2023-07-04)
+
+### Fixes
+
+This release fixes an XSS vulnerability in 1.8.2. See https://advisories.egi.eu/Advisory-EGI-SVG-2023-20.
+
+## 1.8.2 (2023-05-31)
+
+### Added
+
+* Introduced new admin scopes in order to access IAM API endpoints #562
+    * **Note**: From this release, an administrator access token is not enough to have full access to IAM API endpoints. The added scopes (`iam:admin.read` and `iam:admin.write`) are now needed.
+* Bump Spring-Boot version to 2.6.14 #593 
+
+### Fixed
+
+* Fix refresh token lifetime value in case of client credentials or implicit grant types #582
+* Add missing check on challenge code method for PKCE #583 
+* Fix lifecycle end-time for suspended account #585
+* Cosmetic Group Manager dashboard fix #587
+* Properly update OAuth scope list in model after scope policies evaluation #588
+
+
+## 1.8.1p2 (2023-09-21)
+
+This release fixes a privilege escalation present in all previous IAM releases. See https://advisories.egi.eu/Advisory-EGI-SVG-2023-53.
+
+## 1.8.1p1 (2023-07-04)
+
+### Fixes
+
+This release fixes an XSS vulnerability in 1.8.1. See https://advisories.egi.eu/Advisory-EGI-SVG-2023-20.
+
+## 1.8.1 (2023-02-28)
+
+### Added
+
+* Add scope management to IAM dashboard https://github.com/indigo-iam/iam/pull/500
+* Add the groups view for the group managers https://github.com/indigo-iam/iam/pull/536
+* Support for AARC-G069 guideline https://github.com/indigo-iam/iam/pull/553
+
+### Fixed
+
+* Fix /devicecode endpoint in cors endpoint matchers https://github.com/indigo-iam/iam/pull/535
+* Do not raise exception when incorrect scope policy https://github.com/indigo-iam/iam/pull/526
+* Fix bug when updating user fields https://github.com/indigo-iam/iam/pull/512
+* Do not allow IAM to issue RT to users with expired AUP https://github.com/indigo-iam/iam/pull/503
+* Remove orphans from database https://github.com/indigo-iam/iam/pull/547
+* Prevent VOMS aa from issuing ACs when AUP has expired https://github.com/indigo-iam/iam/pull/552
+* Do not allow token refresh for disabled users https://github.com/indigo-iam/iam/pull/570
+* Do not allow disabled users to log in with x509 certificate https://github.com/indigo-iam/iam/pull/571
+* Apply the UsernameValidator whenever a username can be updated (e.g. SCIM API) https://github.com/indigo-iam/iam/pull/572
+* Fix unnamed clients and add missing edit button into clients view https://github.com/indigo-iam/iam/pull/573
+
+### Changed
+
+* Remove health endpoints forward https://github.com/indigo-iam/iam/pull/567
+* Disable register MITREid endpoint for Dynamic Client Registration https://github.com/indigo-iam/iam/pull/567
+* Change default refresh token lifetime from infinity to 30 days https://github.com/indigo-iam/iam/pull/567
+* Add '@' and '.' as allowed characters for a registered username https://github.com/indigo-iam/iam/pull/572
+
+### Notes
+
+The `/health` endpoint and its children have been moved to `/actuator/health` base path since IAM v1.8.0. Since IAM v1.8.1 the forward to the old endpoints has been removed.
+
 ## 1.8.0 (2022-09-08)
 
 This release introduces several new supported features and
