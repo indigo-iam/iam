@@ -90,7 +90,7 @@ ALTER TABLE authorization_code ADD CONSTRAINT FK_authorization_code_auth_holder_
 
 -- APPROVED SITE
 
-DELETE FROM approved_site WHERE client_id NOT IN (SELECT id FROM client_details);
+DELETE FROM approved_site WHERE client_id NOT IN (SELECT client_id FROM client_details);
 ALTER TABLE approved_site ADD CONSTRAINT FK_approved_site_client_id FOREIGN KEY (client_id) REFERENCES client_details (client_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 DELETE FROM approved_site_scope WHERE owner_id NOT IN (SELECT id FROM approved_site);
