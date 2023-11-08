@@ -46,6 +46,11 @@ public class IamProperties {
     NONE
   }
 
+  public enum LoginPageLayoutOptions {
+    LOGIN_FORM,
+    LOGIN_EXTERNAL_AUTHN
+  }
+
   public enum LocalAuthenticationLoginPageMode {
     VISIBLE,
     HIDDEN,
@@ -390,6 +395,34 @@ public class IamProperties {
     }
   }
 
+  public static class LoginPageLayout {
+
+    public enum ExternalAuthnOptions {
+      X509,
+      OIDC,
+      SAML
+    }
+
+    LoginPageLayoutOptions sectionToBeDisplayedFirst;
+    List<ExternalAuthnOptions> externalAuthnOrder;
+
+    public LoginPageLayoutOptions getSectionToBeDisplayedFirst() {
+      return sectionToBeDisplayedFirst;
+    }
+
+    public void setSectionToBeDisplayedFirst(LoginPageLayoutOptions sectionToBeDisplayedFirst) {
+      this.sectionToBeDisplayedFirst = sectionToBeDisplayedFirst;
+    }
+
+    public List<ExternalAuthnOptions> getExternalAuthnOrder() {
+      return externalAuthnOrder;
+    }
+
+    public void setExternalAuthnOrder(List<ExternalAuthnOptions> externalAuthnOrder) {
+      this.externalAuthnOrder = externalAuthnOrder;
+    }
+  }
+
   public static class RegistractionAccessToken {
     long lifetime = -1;
 
@@ -531,6 +564,8 @@ public class IamProperties {
 
   private PrivacyPolicy privacyPolicy = new PrivacyPolicy();
 
+  private LoginPageLayout loginPageLayout = new LoginPageLayout();
+
   private ActuatorUserProperties actuatorUser = new ActuatorUserProperties();
 
   private JWTProfile jwtProfile = new JWTProfile();
@@ -629,6 +664,14 @@ public class IamProperties {
 
   public PrivacyPolicy getPrivacyPolicy() {
     return privacyPolicy;
+  }
+
+  public LoginPageLayout getLoginPageLayout() {
+    return loginPageLayout;
+  }
+
+  public void setLoginLayout(LoginPageLayout loginPageLayout) {
+    this.loginPageLayout = loginPageLayout;
   }
 
   public String getHost() {

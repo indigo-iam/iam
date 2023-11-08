@@ -181,6 +181,13 @@ iam:
     
   account-linking:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
+    
+  login-page-layout:
+    section-to-be-displayed-first: ${IAM_LOGIN_LAYOUT_PRIMARY_CHOICE:LOGIN_FORM}
+    external-authn-order:
+      - x509
+      - oidc
+      - saml
 
 redis-cache:
   enabled: ${IAM_REDIS_CACHE_ENABLED:false}
