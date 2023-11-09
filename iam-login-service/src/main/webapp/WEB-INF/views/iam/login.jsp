@@ -73,7 +73,15 @@
       </h3>
         </div>
         
-        <c:if test="${loginPageConfiguration.localAuthenticationVisible or param.sll != null}">
+        <c:if
+          test="${
+            loginPageConfiguration.localAuthenticationVisible
+            or (
+              loginPageConfiguration.showLinkToLocalAuthenticationPage
+              and param.sll != null
+            )
+          }"
+        >
           <jsp:include page="login-form.jsp" />
         </c:if>
         
