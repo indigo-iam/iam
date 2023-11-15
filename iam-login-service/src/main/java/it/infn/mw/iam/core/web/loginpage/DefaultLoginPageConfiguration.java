@@ -77,7 +77,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
-      .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
+        .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
   }
 
   @Override

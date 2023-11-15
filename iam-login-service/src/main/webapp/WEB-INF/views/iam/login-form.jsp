@@ -34,6 +34,7 @@
       </c:otherwise>
     </c:choose>
   </div>
+
   <div class="form-group">
     <div class="input-group">
       <span class="input-group-addon">
