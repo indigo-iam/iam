@@ -1,1 +1,0 @@
-ALTER TABLE iam_account_client ADD COLUMN last_used TIMESTAMP DEFAULT NULL;
