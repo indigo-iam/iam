@@ -183,11 +183,8 @@ iam:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
     
   login-page-layout:
-    section-to-be-displayed-first: ${IAM_LOGIN_LAYOUT_PRIMARY_CHOICE:LOGIN_FORM}
-    external-authn-order:
-      - x509
-      - oidc
-      - saml
+    section-to-be-displayed-first: ${IAM_LOGIN_PAGE_LAYOUT_SECTION_TO_DISPLAY_FIRST:LOGIN_FORM}
+    external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
 redis-cache:
   enabled: ${IAM_REDIS_CACHE_ENABLED:false}
