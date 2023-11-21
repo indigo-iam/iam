@@ -171,7 +171,9 @@
     authAppCtrl.populateRecoveryCodes = populateRecoveryCodes;
     authAppCtrl.dismiss = dismiss;
     authAppCtrl.resetRecoveryCodesConfirmation = resetRecoveryCodesConfirmation;
+    authAppCtrl.downloadRecoveryCodes = downloadRecoveryCodes;
     authAppCtrl.disabled = false;
+    authAppCtrl.enableDownloadBtn = canBrowserHandleDownloadingFile;
 
     authAppCtrl.$onInit = function () {
       populateRecoveryCodes();
@@ -206,6 +208,41 @@
       modalInstance.result.then(function () {
         populateRecoveryCodes();
       });
+    }
+
+    function downloadRecoveryCodes() {
+      var recoveryCodesInStrFormat = authAppCtrl.recoveryCodes.join('\n\n');
+      var file = new Blob([recoveryCodesInStrFormat], { type: 'text/plain' });
+      var fileURL = window.URL.createObjectURL(file);
+
+      if (canBrowserHandleDownloadingFile()) {
+        var downloadLink = createElementForDownloadingCodes(fileURL);
+
+        window.URL.revokeObjectURL(fileURL);
+        downloadLink.remove();
+      } else if ('ActiveXObject' in window && 'msSaveOrOpenBlob' in window.navigator) {
+        // Helper method to download the file in an IE browser.
+        window.navigator.msSaveOrOpenBlob(file, 'iam-recovery-codes.txt');
+      }
+    }
+
+    function createElementForDownloadingCodes(fileURL) {
+      var downloadLink = angular.element('<a></a>');
+
+      downloadLink.attr('href', fileURL);
+      downloadLink.attr('target', '_self');
+      downloadLink.attr('download', 'iam-recovery-codes.txt');
+      downloadLink.css('display', 'none');
+      angular.element(document.body).append(downloadLink);
+      downloadLink[0].click();
+
+      return downloadLink;
+    }
+
+    function canBrowserHandleDownloadingFile() {
+      var anchorTag = document.createElement('a');
+
+      return 'download' in anchorTag || ('msSaveOrOpenBlob' in window.navigator && 'ActiveXObject' in window);
     }
   }
 
