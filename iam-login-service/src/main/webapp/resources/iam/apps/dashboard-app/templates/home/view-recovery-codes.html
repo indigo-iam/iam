@@ -30,5 +30,8 @@
 
 <div class="modal-footer">
   <button class="btn btn-warning" type="button" name="reset" id="modal-btn-reset" ng-disabled="authAppCtrl.disabled" ng-click="authAppCtrl.resetRecoveryCodesConfirmation()">Reset recovery codes</button>
+    <button ng-if="authAppCtrl.enableDownloadBtn()" class="btn btn-primary" type="button" name="download" id="modal-btn-download" ng-click="authAppCtrl.downloadRecoveryCodes()">
+      Download recovery codes
+    </button>
   <button class="btn btn-danger" type="button" name="dismiss" id="modal-btn-cancel" ng-click="authAppCtrl.dismiss()">Back</button>
 </div>
