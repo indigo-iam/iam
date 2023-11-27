@@ -19,17 +19,12 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-
-import org.mitre.oauth2.model.ClientDetailsEntity;
 
 /**
  * 
@@ -47,9 +42,8 @@ public class IamClientLastUsed {
     @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    @OneToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", nullable = false, updatable = false)
-    private ClientDetailsEntity client;
+    @Column(name = "client_id", nullable = false, updatable = false)
+    private Long clientId;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "last_used", nullable = false, updatable = true)
@@ -59,12 +53,12 @@ public class IamClientLastUsed {
         // emptyOnPurpose
     }
 
-    public ClientDetailsEntity getClient() {
-        return client;
+    public Long getClientId() {
+        return clientId;
     }
 
-    public void setClient(ClientDetailsEntity client) {
-        this.client = client;
+    public void setClient(Long clientId) {
+        this.clientId = clientId;
     }
 
     public Date getLastUsed() {
@@ -79,7 +73,7 @@ public class IamClientLastUsed {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((client == null) ? 0 : client.hashCode());
+        result = prime * result + ((clientId == null) ? 0 : clientId.hashCode());
         return result;
     }
 
@@ -95,11 +89,11 @@ public class IamClientLastUsed {
             return false;
         }
         IamClientLastUsed other = (IamClientLastUsed) obj;
-        if (client == null) {
-            if (other.client != null) {
+        if (clientId == null) {
+            if (other.clientId != null) {
                 return false;
             }
-        } else if (!client.equals(other.client)) {
+        } else if (!clientId.equals(other.clientId)) {
             return false;
         }
         return true;
