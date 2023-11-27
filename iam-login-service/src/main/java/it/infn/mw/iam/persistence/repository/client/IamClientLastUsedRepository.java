@@ -29,10 +29,12 @@ import it.infn.mw.iam.persistence.model.IamClientLastUsed;
 public interface IamClientLastUsedRepository
     extends CrudRepository<IamClientLastUsed, Long>, JpaSpecificationExecutor<IamClientLastUsed> {
 
-  Page<IamClientLastUsed> findByClientId(String clientId, Pageable pageable);
+  Page<IamClientLastUsed> findByClientId(Long clientId, Pageable pageable);  
+  Page<IamClientLastUsed> findAll(Pageable pageable);
+
 
   @Transactional
   @Modifying
-  @Query("UPDATE IamClientLastUsed iclu SET iclu.lastUsed = CURRENT_DATE WHERE iclu.client = :clientId")
-  void updateLastUsedByClientId(@Param("clientId") String clientId);
+  @Query("UPDATE IamClientLastUsed iclu SET iclu.lastUsed = CURRENT_DATE WHERE iclu.clientId = :clientId")
+  void updateLastUsedByClientId(@Param("clientId") Long clientId);
 }
