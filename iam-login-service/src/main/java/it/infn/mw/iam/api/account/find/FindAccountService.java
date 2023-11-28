@@ -30,7 +30,7 @@ public interface FindAccountService {
 
   ScimListResponse<ScimUser> findInactiveAccounts(Pageable pageable);
 
-  ScimListResponse<ScimUser> findAccountByCertificateSubject(String certSubject);
+  ScimListResponse<ScimUser> findAccountByCertificateSubjectAndIssuer(String certSubject, String certIssuer);
 
   ScimListResponse<ScimUser> findActiveAccounts(Pageable pageable);
 

@@ -44,7 +44,7 @@ public class FindAccountController {
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
   public static final String FIND_BY_USERNAME_RESOURCE = "/iam/account/find/byusername";
-  public static final String FIND_BY_CERT_SUBJECT_RESOURCE = "/iam/account/find/bycertsubject";
+  public static final String FIND_BY_CERT_SUBJECT_RESOURCE = "/iam/account/find/bycertsubjectandissuer";
   public static final String FIND_BY_GROUP_RESOURCE = "/iam/account/find/bygroup/{groupUuid}";
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
       "/iam/account/find/notingroup/{groupUuid}";
@@ -81,8 +81,8 @@ public class FindAccountController {
   @RequestMapping(method = GET, value = FIND_BY_CERT_SUBJECT_RESOURCE,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByCertSubject(
-      @RequestParam(required = true) String certificateSubject) {
-    return service.findAccountByCertificateSubject(certificateSubject);
+      @RequestParam(required = true) String certificateSubject, @RequestParam(required = true) String certificateIssuer) {
+    return service.findAccountByCertificateSubjectAndIssuer(certificateSubject, certificateIssuer);
   }
 
 

@@ -310,7 +310,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
         .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isNoContent());
 
-    testUser = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+    testUser = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
     assertThat(testUser.getUsername(), equalTo(TEST_USERNAME));
@@ -408,7 +408,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
 
-    IamAccount account = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+    IamAccount account = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
       .orElseThrow(() -> new AssertionError(
           "Expected account bound to '" + TEST_0_SUBJECT + "' certificate not found"));
 

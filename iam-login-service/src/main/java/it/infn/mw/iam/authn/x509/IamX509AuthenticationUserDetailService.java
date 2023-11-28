@@ -58,10 +58,13 @@ public class IamX509AuthenticationUserDetailService
       throws UsernameNotFoundException {
 
     String principal = (String) token.getPrincipal();
+    IamX509AuthenticationCredential credentials = (IamX509AuthenticationCredential) token.getCredentials();
+
+    String issuerDn = credentials.getIssuer();
 
     LOG.debug("Loading IAM account for X.509 principal '{}'", principal);
 
-    IamAccount account = accountRepository.findByCertificateSubject(principal).orElseThrow(() -> {
+    IamAccount account = accountRepository.findByCertificateSubjectAndIssuer(principal, issuerDn).orElseThrow(() -> {
       final String msg = String.format("No IAM account found for X.509 principal '%s'", principal);
       LOG.debug(msg);
       return new UsernameNotFoundException(msg);

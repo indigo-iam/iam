@@ -113,8 +113,8 @@ public class DefaultFindAccountService implements FindAccountService {
   }
 
   @Override
-  public ScimListResponse<ScimUser> findAccountByCertificateSubject(String certSubject) {
-    Optional<IamAccount> account = repo.findByCertificateSubject(certSubject);
+  public ScimListResponse<ScimUser> findAccountByCertificateSubjectAndIssuer(String certSubject, String certIssuer) {
+    Optional<IamAccount> account = repo.findByCertificateSubjectAndIssuer(certSubject, certIssuer);
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
     account.ifPresent(a -> builder.singleResource(converter.dtoFromEntity(a)));
     return builder.build();
