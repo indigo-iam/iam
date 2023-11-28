@@ -20,17 +20,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.repository.query.Param;
 
 import it.infn.mw.iam.persistence.model.IamClientLastUsed;
 
 public interface IamClientLastUsedRepository
-    extends CrudRepository<IamClientLastUsed, Long>, JpaSpecificationExecutor<IamClientLastUsed> {
+    extends PagingAndSortingRepository<IamClientLastUsed, Long>,
+    JpaSpecificationExecutor<IamClientLastUsed> {
 
-  Page<IamClientLastUsed> findByClientId(Long clientId, Pageable pageable);  
-  Page<IamClientLastUsed> findAll(Pageable pageable);
+  Page<IamClientLastUsed> findByClientId(Long clientId, Pageable pageable);
 
 
   @Transactional
