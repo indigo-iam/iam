@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.account.find;
 
+import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_CERT_SUBJECT_AND_ISSUER_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_EMAIL_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_GROUP_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_LABEL_RESOURCE;
@@ -288,6 +289,16 @@ public class FindAccountIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.totalResults", is(2)))
       .andExpect(jsonPath("$.Resources[0].id", is(adminAccount.getUuid())))
       .andExpect(jsonPath("$.Resources[1].id", is("bffc67b7-47fe-410c-a6a0-cf00173a8fbb")));
+  }
+
+  @Test
+  public void findByCertificateSubjectAndIssuerWorks() throws Exception {
+
+    mvc.perform(get(FIND_BY_CERT_SUBJECT_AND_ISSUER_RESOURCE).param("certificateSubject", "CN=test2,O=IGI,C=IT").param("certificateIssuer", "CN=Test CA,O=IGI,C=IT"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].userName", is("admin")));
+
   }
 
 }
