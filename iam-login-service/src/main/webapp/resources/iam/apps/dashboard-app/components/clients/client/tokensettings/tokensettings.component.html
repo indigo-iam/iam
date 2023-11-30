@@ -21,6 +21,10 @@
             <label for="at_timeout">Access token timeout (seconds)</label>
             <input id="at_timeout" class="form-control" type="text"
                 ng-model="$ctrl.client.access_token_validity_seconds">
+            <p class="help-block">
+                This will setup after how many seconds the access token
+                expires. Type 0 to leave the default lifetime ({{$ctrl.accessTokenValiditySeconds}} s).
+            </p>
         </div>
 
     </div>
