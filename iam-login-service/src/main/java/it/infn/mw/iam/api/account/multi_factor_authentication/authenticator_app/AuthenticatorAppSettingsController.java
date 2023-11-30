@@ -43,12 +43,16 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Controller for customising user's authenticator app MFA settings Can enable or disable the
@@ -66,13 +70,19 @@ public class AuthenticatorAppSettingsController {
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
   private final QrGenerator qrGenerator;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
+
+  public static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
+      .getInstance();
 
   @Autowired
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
-      IamAccountRepository accountRepository, QrGenerator qrGenerator) {
+      IamAccountRepository accountRepository, QrGenerator qrGenerator,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.qrGenerator = qrGenerator;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
 
@@ -92,18 +102,28 @@ public class AuthenticatorAppSettingsController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    SecretAndDataUriDTO dto = new SecretAndDataUriDTO(totpMfa.getSecret());
+    String mfaSecret = "";
 
     try {
-      String dataUri = generateQRCodeFromSecret(totpMfa.getSecret(), account.getUsername());
+      mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          defaultModel.getModeOfOperation(),
+          totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+    } catch (Exception exp) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "Please use the same password which is used for encryption");
+    }
+
+    try {
+      SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);
+
+      String dataUri = generateQRCodeFromSecret(mfaSecret, account.getUsername());
       dto.setDataUri(dataUri);
+
+      return dto;
     } catch (QrGenerationException e) {
       throw new BadMfaCodeError("Could not generate QR code");
     }
-
-    return dto;
   }
-
 
   /**
    * Enable authenticator app MFA on account User sends a TOTP through POST which we verify before
@@ -193,7 +213,6 @@ public class AuthenticatorAppSettingsController {
     }
     return auth.getName();
   }
-
 
   /**
    * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
