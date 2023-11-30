@@ -25,7 +25,7 @@ public class IamTotpMfaProperties {
   private boolean editMultiFactorSettingsBtnEnabled;
   private String passwordToEncryptAndDecrypt;
 
-  public String getPasswordToEncryptAndDecrypt() {
+  public String getPasswordToEncryptOrDecrypt() {
     return passwordToEncryptAndDecrypt;
   }
 
