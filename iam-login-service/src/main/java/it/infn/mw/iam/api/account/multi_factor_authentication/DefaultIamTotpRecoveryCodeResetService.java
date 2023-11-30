@@ -28,12 +28,16 @@ import org.springframework.stereotype.Service;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodesResetEvent;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpRecoveryCodeResetService
@@ -42,14 +46,20 @@ public class DefaultIamTotpRecoveryCodeResetService
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
   private final RecoveryCodeGenerator recoveryCodeGenerator;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
+
+  private static final IamTotpMfaEncryptionAndDecryptionHelper model = IamTotpMfaEncryptionAndDecryptionHelper
+      .getInstance();
 
   @Autowired
   public DefaultIamTotpRecoveryCodeResetService(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, RecoveryCodeGenerator recoveryCodeGenerator) {
+      IamTotpMfaRepository totpMfaRepository, RecoveryCodeGenerator recoveryCodeGenerator,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.recoveryCodeGenerator = recoveryCodeGenerator;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   private void recoveryCodesResetEvent(IamAccount account, IamTotpMfa totpMfa) {
@@ -76,21 +86,30 @@ public class DefaultIamTotpRecoveryCodeResetService
     IamTotpMfa totpMfa = totpMfaOptional.get();
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
-    for (String code : recoveryCodeStrings) {
-      IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
-      recoveryCode.setCode(code);
-      recoveryCodes.add(recoveryCode);
+
+    try {
+      for (String code : recoveryCodeStrings) {
+        IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
+
+        recoveryCode.setCode(
+            IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+                model.getModeOfOperation(), code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt(),
+                IamTotpMfaEncryptionAndDecryptionUtil.getIVSecureRandom(model.getModeOfOperation())));
+        recoveryCodes.add(recoveryCode);
+      }
+
+      // Attach to account
+      totpMfa.setRecoveryCodes(recoveryCodes);
+      totpMfa.touch();
+      account.touch();
+      accountRepository.save(account);
+      totpMfaRepository.save(totpMfa);
+      recoveryCodesResetEvent(account, totpMfa);
+
+      return account;
+    } catch (Exception exp) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "Please ensure that you either use the same password or set the password");
     }
-
-    // Attach to account
-    totpMfa.setRecoveryCodes(recoveryCodes);
-    totpMfa.touch();
-    account.touch();
-    accountRepository.save(account);
-    totpMfaRepository.save(totpMfa);
-    recoveryCodesResetEvent(account, totpMfa);
-
-    return account;
   }
-
 }
