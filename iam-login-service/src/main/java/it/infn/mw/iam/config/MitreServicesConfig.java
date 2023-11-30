@@ -26,12 +26,10 @@ import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
@@ -108,7 +106,7 @@ public class MitreServicesConfig {
   private String topbarTitle;
 
   @Bean
-  public ConfigurationPropertiesBean config(IamProperties properties) {
+  ConfigurationPropertiesBean config(IamProperties properties) {
 
     ConfigurationPropertiesBean config = new ConfigurationPropertiesBean();
 
@@ -137,7 +135,7 @@ public class MitreServicesConfig {
 
 
   @Bean
-  public UIConfiguration uiConfiguration() {
+  UIConfiguration uiConfiguration() {
 
     Set<String> jsFiles =
         Sets.newHashSet("resources/js/client.js", "resources/js/grant.js", "resources/js/scope.js",
@@ -180,27 +178,20 @@ public class MitreServicesConfig {
     return new DefaultOAuth2ClientDetailsEntityService();
   }
 
-  @Bean
-  OAuth2TokenEntityService tokenServices() {
-
-    return new DefaultOAuth2ProviderTokenService();
-  }
-
-
   @Bean(name = "mitreUserInfoInterceptor")
-  public IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {
+  IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {
 
     return new IamUserInfoInterceptor(service);
   }
 
   @Bean(name = "mitreServerConfigInterceptor")
-  public ServerConfigInterceptor serverConfigInterceptor() {
+  ServerConfigInterceptor serverConfigInterceptor() {
 
     return new ServerConfigInterceptor();
   }
 
   @Bean
-  public FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
+  FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
       AuthorizationRequestFilter f) {
 
     FilterRegistrationBean<AuthorizationRequestFilter> b =
@@ -210,25 +201,25 @@ public class MitreServicesConfig {
   }
 
   @Bean(name = "mitreAuthzRequestFilter")
-  public AuthorizationRequestFilter authorizationRequestFilter() {
+  AuthorizationRequestFilter authorizationRequestFilter() {
 
     return new AuthorizationRequestFilter();
   }
 
   @Bean
-  public AuthenticationTimeStamper timestamper() {
+  AuthenticationTimeStamper timestamper() {
 
     return new AuthenticationTimeStamper();
   }
 
   @Bean
-  public Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
+  Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
 
     return new Http403ForbiddenEntryPoint();
   }
 
   @Bean
-  public OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
+  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
 
     OAuth2AuthenticationEntryPoint entryPoint = new OAuth2AuthenticationEntryPoint();
     entryPoint.setRealmName("openidconnect");
@@ -236,20 +227,20 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  public TokenEnhancer defaultTokenEnhancer() {
+  TokenEnhancer defaultTokenEnhancer() {
 
     return new ConnectTokenEnhancer();
   }
 
   @Bean(name = "clientUserDetailsService")
-  public ClientUserDetailsService defaultClientUserDetailsService(
+  ClientUserDetailsService defaultClientUserDetailsService(
       ClientDetailsEntityService clientService) {
 
     return new IAMClientUserDetailsService(clientService);
   }
 
   @Bean
-  public DynamicClientValidationService clientValidationService(ScopeMatcherRegistry registry,
+  DynamicClientValidationService clientValidationService(ScopeMatcherRegistry registry,
       SystemScopeService scopeService, BlacklistedSiteService blacklistService,
       ConfigurationPropertiesBean config,
       @Qualifier("clientAssertionValidator") AssertionValidator validator,

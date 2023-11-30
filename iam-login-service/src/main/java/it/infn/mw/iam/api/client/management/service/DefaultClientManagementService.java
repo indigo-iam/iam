@@ -29,7 +29,6 @@ import javax.validation.constraints.NotBlank;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,8 +70,6 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final IamTokenService tokenService;
   private final ApplicationEventPublisher eventPublisher;
 
-
-  @Autowired
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
       IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,

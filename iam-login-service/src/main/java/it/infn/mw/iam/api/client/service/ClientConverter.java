@@ -26,7 +26,6 @@ import java.util.Set;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -49,7 +48,6 @@ public class ClientConverter {
 
   private final ClientRegistrationProperties clientProperties;
 
-  @Autowired
   public ClientConverter(IamProperties properties, ClientRegistrationProperties clientProperties) {
     this.iamProperties = properties;
     clientRegistrationBaseUrl =
@@ -70,30 +68,32 @@ public class ClientConverter {
       throws ParseException {
     ClientDetailsEntity client = entityFromRegistrationRequest(dto);
 
-    if (dto.getAccessTokenValiditySeconds() != null) {
+    if (dto.getAccessTokenValiditySeconds() != null && dto.getAccessTokenValiditySeconds() > 0) {
       client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
     } else {
       client.setAccessTokenValiditySeconds(
           clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
 
-    if (dto.getRefreshTokenValiditySeconds() != null) {
+    if (dto.getRefreshTokenValiditySeconds() != null && dto.getRefreshTokenValiditySeconds() > 0) {
       client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
     } else {
       client.setRefreshTokenValiditySeconds(
           clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
 
-    if (dto.getIdTokenValiditySeconds() != null) {
-      if (dto.getIdTokenValiditySeconds() <= 0) {
-        client.setIdTokenValiditySeconds(null);
-      } else {
-        client.setIdTokenValiditySeconds(dto.getIdTokenValiditySeconds());
-      }
+    if (dto.getIdTokenValiditySeconds() != null && dto.getIdTokenValiditySeconds() > 0) {
+      client.setIdTokenValiditySeconds(dto.getIdTokenValiditySeconds());
+    } else {
+      client.setIdTokenValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
     }
 
     if (dto.getDeviceCodeValiditySeconds() != null && dto.getDeviceCodeValiditySeconds() > 0) {
       client.setDeviceCodeValiditySeconds(dto.getDeviceCodeValiditySeconds());
+    } else {
+      client.setDeviceCodeValiditySeconds(
+          clientProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
     }
 
     client.setAllowIntrospection(dto.isAllowIntrospection());
