@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -198,8 +198,8 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(3600));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(108000));
+    assertThat(client.getAccessTokenValiditySeconds(), is(3600));
+    assertThat(client.getRefreshTokenValiditySeconds(), is(108000));
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -216,8 +216,8 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(0));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(0));
+    assertThat(client.getAccessTokenValiditySeconds(), is(3600));
+    assertThat(client.getRefreshTokenValiditySeconds(), is(108000));
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -234,8 +234,8 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(10));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(10));
+    assertThat(client.getAccessTokenValiditySeconds(), is(10));
+    assertThat(client.getRefreshTokenValiditySeconds(), is(10));
 
   }
 
