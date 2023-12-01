@@ -64,6 +64,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -83,13 +84,14 @@ public class IamOIDCTokenService implements OIDCTokenService {
   private final ClientKeyCacheService encrypters;
   private final SymmetricKeyJWTValidatorCacheService symmetricCacheService;
   private final OAuth2TokenEntityService tokenService;
+  private final ClientRegistrationProperties clientProps;
 
   public IamOIDCTokenService(Clock clock, JWTProfileResolver profileResolver,
       IamAccountRepository accountRepository, JWTSigningAndValidationService jwtService,
       AuthenticationHolderRepository authenticationHolderRepository,
       ConfigurationPropertiesBean configBean, ClientKeyCacheService encrypters,
       SymmetricKeyJWTValidatorCacheService symmetricCacheService,
-      OAuth2TokenEntityService tokenService) {
+      OAuth2TokenEntityService tokenService, ClientRegistrationProperties clientProps) {
     this.clock = clock;
     this.profileResolver = profileResolver;
     this.accountRepository = accountRepository;
@@ -99,6 +101,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     this.encrypters = encrypters;
     this.symmetricCacheService = symmetricCacheService;
     this.tokenService = tokenService;
+    this.clientProps = clientProps;
   }
 
 
@@ -156,10 +159,13 @@ public class IamOIDCTokenService implements OIDCTokenService {
     idClaims.issueTime(issueTime);
     handleAuthTimestamp(client, request, idClaims);
 
-    if (client.getIdTokenValiditySeconds() != null) {
-      Date expiration =
-          new Date(System.currentTimeMillis() + (client.getIdTokenValiditySeconds() * 1000L));
-      idClaims.expirationTime(expiration);
+    if (client.getIdTokenValiditySeconds() != null && client.getIdTokenValiditySeconds() > 0) {
+      idClaims.expirationTime(
+          new Date(System.currentTimeMillis() + (client.getIdTokenValiditySeconds() * 1000L)));
+    } else {
+      idClaims.expirationTime(
+          new Date(System.currentTimeMillis()
+              + (clientProps.getClientDefaults().getDefaultIdTokenValiditySeconds() * 1000L)));
     }
 
     String nonce = (String) request.getExtensions().get(NONCE);

@@ -97,7 +97,7 @@ public class IdTokenEnhancerTests {
     assertThat(token.getJWTClaimsSet().getClaim("preferred_username"), is(notNullValue()));
     assertThat(token.getJWTClaimsSet().getClaim("organisation_name"), is(notNullValue()));
     assertThat(token.getJWTClaimsSet().getClaim("groups"), is(notNullValue()));
-    
+    assertThat(token.getJWTClaimsSet().getExpirationTime(), is(notNullValue()));
   }
 
   @Test
