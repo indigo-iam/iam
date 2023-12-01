@@ -26,10 +26,12 @@ import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.BlacklistAwareRedirectResolver;
 import org.mitre.oauth2.service.impl.DefaultDeviceCodeService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ClientDetailsEntityService;
+import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.config.UIConfiguration;
 import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
@@ -176,6 +178,12 @@ public class MitreServicesConfig {
   @Qualifier("iamClientDetailsEntityService")
   ClientDetailsEntityService clientDetailsEntityService() {
     return new DefaultOAuth2ClientDetailsEntityService();
+  }
+
+  @Bean
+  OAuth2TokenEntityService tokenServices() {
+
+    return new DefaultOAuth2ProviderTokenService();
   }
 
   @Bean(name = "mitreUserInfoInterceptor")
