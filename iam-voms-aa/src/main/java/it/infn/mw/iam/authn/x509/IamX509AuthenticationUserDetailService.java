@@ -64,13 +64,10 @@ public class IamX509AuthenticationUserDetailService
   public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token) {
 
     String principal = (String) token.getPrincipal();
-    IamX509AuthenticationCredential credentials = (IamX509AuthenticationCredential) token.getCredentials();
-
-    String issuerDn = credentials.getIssuer();
 
     LOG.debug("Loading IAM account for X.509 principal '{}'", principal);
 
-    Optional<IamAccount> account = accountRepository.findByCertificateSubjectAndIssuer(principal, issuerDn);
+    Optional<IamAccount> account = accountRepository.findByCertificateSubject(principal);
 
     if (account.isPresent()) {
       LOG.debug("Found IAM account {} linked to principal '{}'", account.get().getUuid(), principal);

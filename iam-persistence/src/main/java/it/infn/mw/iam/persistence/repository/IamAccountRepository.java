@@ -65,8 +65,8 @@ public interface IamAccountRepository
   Optional<IamAccount> findByEmailWithDifferentUUID(@Param("emailAddress") String emailAddress,
       @Param("uuid") String uuid);
 
-  @Query("select a from IamAccount a join a.x509Certificates c where c.subjectDn = :subject and c.issuerDn = :issuer")
-  Optional<IamAccount> findByCertificateSubjectAndIssuer(@Param("subject") String subject, @Param("issuer") String issuer);
+  @Query("select a from IamAccount a join a.x509Certificates c where c.subjectDn = :subject")
+  Optional<IamAccount> findByCertificateSubject(@Param("subject") String subject);
 
   @Query("select a from IamAccount a join a.x509Certificates c where c.certificate = :certificate")
   Optional<IamAccount> findByCertificate(@Param("certificate") String certificate);

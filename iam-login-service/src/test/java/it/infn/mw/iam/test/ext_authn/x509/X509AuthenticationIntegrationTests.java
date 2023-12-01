@@ -95,7 +95,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(
           () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
@@ -114,7 +114,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("/dashboard"))
       .andExpect(authenticated().withUsername("test"));
 
-    resolvedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(
           () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
@@ -133,7 +133,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(
           () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
@@ -183,7 +183,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
 
-    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     Date lastUpdateTime = linkedAccount.getLastUpdateTime();
@@ -196,7 +196,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
 
-    linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getLastUpdateTime().after(lastUpdateTime), is(true));
@@ -219,7 +219,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-    linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_NEW_ISSUER)
+    linkedAccount = iamAccountRepo.findByUsername("test")
         .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
      assertThat(linkedAccount.getX509Certificates().size(), is(2));
@@ -244,7 +244,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
 
-    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
     assertThat(linkedAccount.getUsername(), equalTo("test"));
@@ -266,9 +266,6 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-    linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_1_SUBJECT, TEST_NEW_ISSUER)
-        .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
-
      assertThat(linkedAccount.getX509Certificates().size(), is(2));
   }
 
@@ -282,7 +279,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(user);
 
-    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionError(
           "Expected test user linked with certificate subject " + TEST_0_SUBJECT));
 
@@ -294,7 +291,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andDo(print())
       .andExpect(status().isNoContent());
 
-    iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER).ifPresent(a -> {
+    iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError(
           "Found unexpected user linked with certificate subject " + TEST_0_SUBJECT);
     });
@@ -307,7 +304,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     iamAccountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected user not found"));
 
-    iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER).ifPresent(a -> {
+    iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError(
           "Found unexpected user linked with certificate subject " + TEST_0_SUBJECT);
     });
@@ -317,7 +314,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
         .with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
-    iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER).ifPresent(a -> {
+    iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError(
           "Found unexpected user linked with certificate subject " + TEST_0_SUBJECT);
     });
@@ -342,7 +339,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     iamAccountRepo.save(testAccount);
 
-    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER)
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(
           () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 

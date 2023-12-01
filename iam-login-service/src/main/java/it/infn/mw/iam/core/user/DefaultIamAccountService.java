@@ -327,7 +327,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkArgument(!isNullOrEmpty(cert.getIssuerDn()), "null or empty X.509 certificate issuer DN");
     checkArgument(!isNullOrEmpty(cert.getLabel()), "null or empty X.509 certificate label");
 
-    accountRepo.findByCertificateSubjectAndIssuer(cert.getSubjectDn(), cert.getIssuerDn()).ifPresent(c -> {
+    accountRepo.findByCertificateSubject(cert.getSubjectDn()).ifPresent(c -> {
       throw new CredentialAlreadyBoundException(
           String.format("X509 certificate with subject '%s' is already bound to another user",
               cert.getSubjectDn()));

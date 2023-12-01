@@ -329,7 +329,7 @@ public class X509TestSupport {
   private HttpHeaders test2SSLHeaders(boolean verified, String verificationError) {
     HttpHeaders headers = new HttpHeaders();
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader(),
-        TEST_1_CERT_STRING_NGINX);
+        TEST_0_CERT_STRING_NGINX);
 
     headers.add(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader(),
         TEST_1_SUBJECT);

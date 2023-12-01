@@ -140,7 +140,7 @@ public class DefaultAccountLinkingService
 
     IamAccount userAccount = findAccount(authenticatedUser);
 
-    iamAccountRepository.findByCertificateSubjectAndIssuer(x509Credential.getSubject(), x509Credential.getIssuer())
+    iamAccountRepository.findByCertificateSubject(x509Credential.getSubject())
       .ifPresent(linkedAccount -> {
         if (!linkedAccount.getUuid().equals(userAccount.getUuid())) {
           throw new AccountAlreadyLinkedError(

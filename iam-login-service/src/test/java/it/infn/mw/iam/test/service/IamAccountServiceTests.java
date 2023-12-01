@@ -115,7 +115,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     when(accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(any()))
       .thenReturn(emptyList());
-    when(accountRepo.findByCertificateSubjectAndIssuer(anyString(), anyString())).thenReturn(Optional.empty());
+    when(accountRepo.findByCertificateSubject(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySshKeyValue(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
     when(accountRepo.findByOidcId(anyString(), anyString())).thenReturn(Optional.empty());
@@ -636,7 +636,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     IamAccount account = cloneAccount(CICCIO_ACCOUNT);
     account.linkX509Certificates(asList(TEST_X509_CERTIFICATE_1));
 
-    when(accountRepo.findByCertificateSubjectAndIssuer(TEST_X509_CERTIFICATE_SUBJECT_1, TEST_X509_CERTIFICATE_ISSUER_1))
+    when(accountRepo.findByCertificateSubject(TEST_X509_CERTIFICATE_SUBJECT_1))
       .thenReturn(Optional.of(TEST_ACCOUNT));
 
     accountService.createAccount(account);

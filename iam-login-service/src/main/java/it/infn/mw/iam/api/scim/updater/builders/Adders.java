@@ -74,7 +74,7 @@ public class Adders extends Replacers {
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
     findBySamlId = repo::findBySamlId;
     findBySshKey = key -> repo.findBySshKeyValue(key.getValue());
-    findByX509CertificateSubject = cert -> repo.findByCertificateSubjectAndIssuer(cert.getSubjectDn(), cert.getIssuerDn());
+    findByX509CertificateSubject = cert -> repo.findByCertificateSubject(cert.getSubjectDn());
 
     oidcIdAddChecks = buildOidcIdsAddChecks();
     samlIdAddChecks = buildSamlIdsAddChecks();

@@ -33,9 +33,8 @@ public class DefaultIamVomsAccountResolver implements IamVOMSAccountResolver {
   public Optional<IamAccount> resolveAccountFromRequest(VOMSRequestContext requestContext) {
     
     String certificateSubject = requestContext.getRequest().getRequesterSubject();
-    String certificateIssuer = requestContext.getRequest().getRequesterIssuer();
     
-    return accountRepo.findByCertificateSubjectAndIssuer(certificateSubject, certificateIssuer);
+    return accountRepo.findByCertificateSubject(certificateSubject);
     
   }
 
