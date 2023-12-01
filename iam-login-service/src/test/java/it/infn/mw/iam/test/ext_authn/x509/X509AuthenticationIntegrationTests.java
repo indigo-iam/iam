@@ -219,7 +219,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-    linkedAccount = iamAccountRepo.findByUsername("test")
+    linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
         .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
      assertThat(linkedAccount.getX509Certificates().size(), is(2));
@@ -265,6 +265,9 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(redirectedUrl("/dashboard"))
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
+
+    linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_1_SUBJECT)
+        .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
 
      assertThat(linkedAccount.getX509Certificates().size(), is(2));
   }
