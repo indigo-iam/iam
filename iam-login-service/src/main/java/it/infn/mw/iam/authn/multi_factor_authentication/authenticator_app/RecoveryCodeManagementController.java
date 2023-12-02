@@ -42,10 +42,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
-
 
 /**
  * Provides webpages related to recovery codes. Most of this appears if the user chooses to use a
@@ -64,8 +62,6 @@ public class RecoveryCodeManagementController {
   private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
-      .getInstance();
 
   @Autowired
   public RecoveryCodeManagementController(AccountUtils accountUtils,
@@ -130,8 +126,7 @@ public class RecoveryCodeManagementController {
     try {
       for (int i = 0; i < recs.size(); i++) {
         codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-            defaultModel.getModeOfOperation(), recs.get(i).getCode(),
-            iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+            recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
       }
 
       return codes;

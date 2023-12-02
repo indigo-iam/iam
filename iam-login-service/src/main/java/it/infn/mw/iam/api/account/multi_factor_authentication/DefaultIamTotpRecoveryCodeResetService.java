@@ -35,7 +35,6 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
@@ -48,9 +47,6 @@ public class DefaultIamTotpRecoveryCodeResetService
   private final RecoveryCodeGenerator recoveryCodeGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
-
-  private static final IamTotpMfaEncryptionAndDecryptionHelper model = IamTotpMfaEncryptionAndDecryptionHelper
-      .getInstance();
 
   @Autowired
   public DefaultIamTotpRecoveryCodeResetService(IamAccountRepository accountRepository,
@@ -91,10 +87,8 @@ public class DefaultIamTotpRecoveryCodeResetService
       for (String code : recoveryCodeStrings) {
         IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
-        recoveryCode.setCode(
-            IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-                model.getModeOfOperation(), code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt(),
-                IamTotpMfaEncryptionAndDecryptionUtil.getIVSecureRandom(model.getModeOfOperation())));
+        recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+            code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
         recoveryCodes.add(recoveryCode);
       }
 
