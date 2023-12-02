@@ -50,7 +50,6 @@ import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionHelper;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
@@ -72,9 +71,6 @@ public class AuthenticatorAppSettingsController {
   private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
-      .getInstance();
-
   @Autowired
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator,
@@ -84,7 +80,6 @@ public class AuthenticatorAppSettingsController {
     this.qrGenerator = qrGenerator;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
-
 
   /**
    * Before we can enable authenticator app, we must first add a TOTP secret to the user's account
@@ -106,7 +101,6 @@ public class AuthenticatorAppSettingsController {
 
     try {
       mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          defaultModel.getModeOfOperation(),
           totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(

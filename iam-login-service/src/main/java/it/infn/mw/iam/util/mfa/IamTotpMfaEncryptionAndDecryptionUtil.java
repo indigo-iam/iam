@@ -33,35 +33,32 @@ import java.util.Base64;
 
 public class IamTotpMfaEncryptionAndDecryptionUtil {
 
-  private static final IamTotpMfaEncryptionAndDecryptionHelper model = IamTotpMfaEncryptionAndDecryptionHelper
+  private static final IamTotpMfaEncryptionAndDecryptionHelper defaultModel = IamTotpMfaEncryptionAndDecryptionHelper
       .getInstance();
 
   private IamTotpMfaEncryptionAndDecryptionUtil() {
     // Prevent instantiation
   }
-
   /**
    * This process requires a password for encrypting the plaintext. Ensure to use
    * the same password for decryption as well.
    *
-   * @param modeOfOperation AES mode of operations.
-   * @param input           plaintext to encrypt.
+   * @param input plaintext to encrypt.
    * @param password        Provided by the admin through the environment
    *                        variable.
-   * @param iv              Used as an additional input alongside the encryption
-   *                        key.
    *
    * @return String If encryption is successful, the cipherText would be returned.
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String encryptSecretOrRecoveryCode(String modeOfOperation, String input, String password,
-      IvParameterSpec iv)
+  public static String encryptSecretOrRecoveryCode(String input, String password)
       throws IamTotpMfaInvalidArgumentError {
     byte[] salt = generateSalt();
+    String modeOfOperation = defaultModel.getModeOfOperation();
 
     try {
-      Key key = getKeyFromPassword(password, salt, model.getEncryptionAlgorithm());
+      Key key = getKeyFromPassword(password, salt, defaultModel.getEncryptionAlgorithm());
+      IvParameterSpec iv = getIVSecureRandom(defaultModel.getModeOfOperation());
 
       Cipher cipher1 = Cipher.getInstance(modeOfOperation);
       cipher1.init(Cipher.ENCRYPT_MODE, key, iv);
@@ -87,8 +84,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * Helper to decrypt the cipherText. Ensure you use the same password as you did
    * during encryption.
    *
-   * @param modeOfOperation AES mode of operations.
-   * @param input           plaintext to encrypt.
+   * @param cipherText Encrypted data which help us to extract the plaintext.
    * @param password        Provided by the admin through the environment
    *                        variable.
    *
@@ -96,17 +92,20 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String decryptSecretOrRecoveryCode(String modeOfOperation, String cipherText, String password)
+  public static String decryptSecretOrRecoveryCode(String cipherText, String password)
       throws IamTotpMfaInvalidArgumentError {
+    String modeOfOperation = defaultModel.getModeOfOperation();
 
     try {
       byte[] encryptedData = Base64.getDecoder().decode(cipherText);
 
       // Extract salt, IV, and cipherText from the combined data
-      byte[] salt = Arrays.copyOfRange(encryptedData, 0, model.getSaltSize());
-      Key key = getKeyFromPassword(password, salt, model.getEncryptionAlgorithm());
-      byte[] ivBytes = Arrays.copyOfRange(encryptedData, model.getSaltSize(), model.getSaltSize() + model.getIvSize());
-      byte[] extractedCipherText = Arrays.copyOfRange(encryptedData, model.getSaltSize() + model.getIvSize(),
+      byte[] salt = Arrays.copyOfRange(encryptedData, 0, defaultModel.getSaltSize());
+      Key key = getKeyFromPassword(password, salt, defaultModel.getEncryptionAlgorithm());
+      byte[] ivBytes = Arrays.copyOfRange(encryptedData, defaultModel.getSaltSize(),
+          defaultModel.getSaltSize() + defaultModel.getIvSize());
+      byte[] extractedCipherText = Arrays.copyOfRange(encryptedData,
+          defaultModel.getSaltSize() + defaultModel.getIvSize(),
           encryptedData.length);
 
       Cipher cipher = Cipher.getInstance(modeOfOperation);
@@ -134,7 +133,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * @throws NoSuchAlgorithmException
    * @throws NoSuchPaddingException
    */
-  public static IvParameterSpec getIVSecureRandom(String algorithm)
+  private static IvParameterSpec getIVSecureRandom(String algorithm)
       throws NoSuchAlgorithmException, NoSuchPaddingException {
     SecureRandom random = SecureRandom.getInstanceStrong();
     byte[] iv = new byte[Cipher.getInstance(algorithm).getBlockSize()];
@@ -160,7 +159,8 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
   private static SecretKey getKeyFromPassword(String password, byte[] salt, String algorithm)
       throws NoSuchAlgorithmException, InvalidKeySpecException {
     SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-    KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, model.getIterations(), model.getKeySize());
+    KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, defaultModel.getIterations(),
+        defaultModel.getKeySize());
     SecretKey secretKey = new SecretKeySpec(factory.generateSecret(spec)
         .getEncoded(), algorithm);
 
@@ -171,7 +171,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * Generates a random salt using a secure random generator.
    */
   private static byte[] generateSalt() {
-    byte[] salt = new byte[model.getSaltSize()];
+    byte[] salt = new byte[defaultModel.getSaltSize()];
     SecureRandom random = new SecureRandom();
 
     random.nextBytes(salt);
