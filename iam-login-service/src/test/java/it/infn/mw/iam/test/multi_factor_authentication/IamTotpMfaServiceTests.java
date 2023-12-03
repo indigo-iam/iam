@@ -50,6 +50,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaS
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -58,6 +59,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
@@ -82,11 +84,16 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Mock
   private ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  private IamTotpMfaProperties iamTotpMfaProperties;
+
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
   @Before
   public void setup() {
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("define_me_please");
+
     when(secretGenerator.generate()).thenReturn("test_secret");
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
@@ -98,7 +105,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        recoveryCodeGenerator, codeVerifier, eventPublisher);
+        recoveryCodeGenerator, codeVerifier, eventPublisher, iamTotpMfaProperties);
   }
 
   @After
@@ -166,10 +173,12 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testEnablesTotpMfa() {
+  public void testEnablesTotpMfa() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
-    totpMfa.setSecret("secret");
+    totpMfa.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+            "secret", iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     totpMfa.setActive(false);
     totpMfa.setAccount(account);
 

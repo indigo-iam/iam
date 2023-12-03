@@ -37,15 +37,15 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       .getInstance();
 
   private IamTotpMfaEncryptionAndDecryptionUtil() {
-    // Prevent instantiation
   }
+
   /**
    * This process requires a password for encrypting the plaintext. Ensure to use
    * the same password for decryption as well.
    *
-   * @param input plaintext to encrypt.
-   * @param password        Provided by the admin through the environment
-   *                        variable.
+   * @param input    plaintext to encrypt.
+   * @param password Provided by the admin through the environment
+   *                 variable.
    *
    * @return String If encryption is successful, the cipherText would be returned.
    *
@@ -85,8 +85,8 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * during encryption.
    *
    * @param cipherText Encrypted data which help us to extract the plaintext.
-   * @param password        Provided by the admin through the environment
-   *                        variable.
+   * @param password   Provided by the admin through the environment
+   *                   variable.
    *
    * @return String Returns plainText which we obtained from the cipherText.
    *
