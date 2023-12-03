@@ -68,4 +68,17 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
       assertEquals(TOTP_MFA_SECRET, plainText);
     }
   }
+
+  @Test
+  public void testEncryptSecretOrRecoveryCodeWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      // Try to encrypt the empty plainText
+      IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(null, DEFAULT_KEY);
+    });
+
+    // Always throws an error because we have passed empty plaintext.
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+
+  }
 }

@@ -51,7 +51,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
-import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Controller for customising user's authenticator app MFA settings Can enable or disable the
@@ -102,9 +101,8 @@ public class AuthenticatorAppSettingsController {
     try {
       mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
           totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
-    } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "Please use the same password which is used for encryption");
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
 
     try {
