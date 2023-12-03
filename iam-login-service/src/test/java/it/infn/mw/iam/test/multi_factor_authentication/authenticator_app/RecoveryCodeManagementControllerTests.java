@@ -55,6 +55,7 @@ import org.springframework.web.context.WebApplicationContext;
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
@@ -62,6 +63,7 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockMfaUser;
 import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -87,6 +89,9 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
   @MockBean
   private RecoveryCodeGenerator generator;
 
+  @MockBean
+  private IamTotpMfaProperties iamTotpMfaProperties;
+
   @Captor
   private ArgumentCaptor<ApplicationEvent> authEventCaptor;
 
@@ -98,6 +103,7 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
     when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     when(service.resetRecoveryCodes(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(DEFAULT_KEY);
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -185,7 +191,8 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
     String[] originalCodes = new String[RECOVERY_CODE_SET_FIRST.size()];
     List<IamTotpRecoveryCode> recoveryCodes = new ArrayList<>(RECOVERY_CODE_SET_FIRST);
     for (int i = 0; i < recoveryCodes.size(); i++) {
-      originalCodes[i] = recoveryCodes.get(i).getCode();
+      originalCodes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          recoveryCodes.get(i).getCode(), DEFAULT_KEY);
 
       // This is here because the string.split() method adds backslashed quotes around the separated
       // strings. So this is a hacky method to remove them to allow for the comparison to succeed.
