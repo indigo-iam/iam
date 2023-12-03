@@ -43,7 +43,6 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
-import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Provides webpages related to recovery codes. Most of this appears if the user chooses to use a
@@ -130,8 +129,8 @@ public class RecoveryCodeManagementController {
       }
 
       return codes;
-    } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError("Please use the same password which is used for encryption");
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
   }
 

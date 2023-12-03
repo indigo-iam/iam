@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
@@ -60,6 +61,7 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
@@ -170,6 +172,35 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
       assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
       throw e;
     }
+  }
+
+  @Test
+  public void testAddsMfaRecoveryCode_whenPasswordIsEmpty() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      // Decrypt the cipherText with a different key
+      service.addTotpMfaSecret(account);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+  }
+
+  @Test
+  public void testAddsMfaRecoveryCodes_whenPasswordIsEmpty() {
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      // Decrypt the cipherText with a different key
+      service.addTotpMfaRecoveryCodes(account);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
   }
 
   @Test

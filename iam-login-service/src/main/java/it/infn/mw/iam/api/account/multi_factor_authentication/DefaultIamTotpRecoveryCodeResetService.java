@@ -36,7 +36,6 @@ import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
-import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpRecoveryCodeResetService
@@ -101,9 +100,8 @@ public class DefaultIamTotpRecoveryCodeResetService
       recoveryCodesResetEvent(account, totpMfa);
 
       return account;
-    } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "Please ensure that you either use the same password or set the password");
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
   }
 }

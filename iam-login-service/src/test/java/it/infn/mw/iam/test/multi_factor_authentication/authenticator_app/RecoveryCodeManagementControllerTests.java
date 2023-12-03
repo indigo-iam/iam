@@ -20,6 +20,8 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,6 +53,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.util.NestedServletException;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -211,5 +214,18 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
   @WithMockPreAuthenticatedUser
   public void testGetRecoveryCodesWithPreAuthenticationFails() throws Exception {
     mvc.perform(get(RECOVERY_CODE_GET_URL)).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockMfaUser
+  public void testGetRecoveryCodes_WithDifferentPassword() throws Exception {
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("Different_Password");
+
+    // Test with different password for decryption to get the plaintext.
+    NestedServletException thrownException = assertThrows(NestedServletException.class, () -> {
+      mvc.perform(get(RECOVERY_CODE_GET_URL));
+    });
+
+    assertTrue(thrownException.getCause().getMessage().startsWith("Please use the same password which"));
   }
 }

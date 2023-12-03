@@ -43,18 +43,23 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * This process requires a password for encrypting the plaintext. Ensure to use
    * the same password for decryption as well.
    *
-   * @param input    plaintext to encrypt.
-   * @param password Provided by the admin through the environment
-   *                 variable.
+   * @param plaintext plaintext to encrypt.
+   * @param password  Provided by the admin through the environment
+   *                  variable.
    *
    * @return String If encryption is successful, the cipherText would be returned.
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String encryptSecretOrRecoveryCode(String input, String password)
+  public static String encryptSecretOrRecoveryCode(String plaintext, String password)
       throws IamTotpMfaInvalidArgumentError {
     byte[] salt = generateSalt();
     String modeOfOperation = defaultModel.getModeOfOperation();
+
+    if (validatePlaintext(plaintext) || validatePlaintext(password)) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "Please ensure that you provide plaintext and the password");
+    }
 
     try {
       Key key = getKeyFromPassword(password, salt, defaultModel.getEncryptionAlgorithm());
@@ -64,7 +69,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       cipher1.init(Cipher.ENCRYPT_MODE, key, iv);
 
       byte[] ivBytes = cipher1.getIV();
-      byte[] cipherText = cipher1.doFinal(input.getBytes());
+      byte[] cipherText = cipher1.doFinal(plaintext.getBytes());
       byte[] encryptedData = new byte[salt.length + ivBytes.length + cipherText.length];
 
       // Append salt, IV, and cipherText into `encryptedData`.
@@ -76,7 +81,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
           .encodeToString(encryptedData);
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(
-          "Please ensure that you either use the same password or set the password", exp);
+          "Please ensure that you provide plaintext and the password", exp);
     }
   }
 
@@ -95,6 +100,11 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
   public static String decryptSecretOrRecoveryCode(String cipherText, String password)
       throws IamTotpMfaInvalidArgumentError {
     String modeOfOperation = defaultModel.getModeOfOperation();
+
+    if (validatePlaintext(cipherText) || validatePlaintext(password)) {
+      throw new IamTotpMfaInvalidArgumentError(
+          "Please ensure that you provide cipherText and the password");
+    }
 
     try {
       byte[] encryptedData = Base64.getDecoder().decode(cipherText);
@@ -177,5 +187,9 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
     random.nextBytes(salt);
 
     return salt;
+  }
+
+  private static boolean validatePlaintext(String text) {
+    return (text == null || text.isEmpty());
   }
 }

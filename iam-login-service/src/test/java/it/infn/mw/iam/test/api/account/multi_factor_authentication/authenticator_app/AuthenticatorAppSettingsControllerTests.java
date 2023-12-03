@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.api.account.multi_factor_authentication.authenticato
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ADD_SECRET_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.DISABLE_URL;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,6 +43,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.util.NestedServletException;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
@@ -105,6 +108,26 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     // TODO called twice for some reason?
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).addTotpMfaSecret(account);
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USERNAME)
+  public void testAddSecret_withDifferentPassword() throws Exception {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setActive(false);
+    totpMfa.setAccount(null);
+    totpMfa.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+            iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+    when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    NestedServletException thrownException = assertThrows(NestedServletException.class, () -> {
+      mvc.perform(put(ADD_SECRET_URL));
+    });
+
+    assertTrue(thrownException.getCause().getMessage().startsWith("Please ensure that you provide"));
   }
 
   @Test
