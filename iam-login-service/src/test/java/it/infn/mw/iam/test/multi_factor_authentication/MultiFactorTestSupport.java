@@ -22,8 +22,9 @@ import java.util.Set;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
-public class MultiFactorTestSupport {
+public class MultiFactorTestSupport extends IamTotpMfaCommons{
   public static final String TEST_USERNAME = "test-user";
   public static final String TEST_UUID = "a23deabf-88a7-47af-84b5-1d535a1b267c";
   public static final String TEST_EMAIL = "test@example.org";
@@ -34,7 +35,6 @@ public class MultiFactorTestSupport {
   public static final String TOTP_EMAIL = "test-mfa@example.org";
   public static final String TOTP_GIVEN_NAME = "Test";
   public static final String TOTP_FAMILY_NAME = "Mfa";
-  public static final String TOTP_MFA_SECRET = "secret";
   public static final String TOTP_RECOVERY_CODE_STRING_1 = "code-1";
   public static final String TOTP_RECOVERY_CODE_STRING_2 = "code-2";
   public static final String TOTP_RECOVERY_CODE_STRING_3 = "code-3";
@@ -88,7 +88,9 @@ public class MultiFactorTestSupport {
 
     TOTP_MFA = new IamTotpMfa();
     TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
-    TOTP_MFA.setSecret(TOTP_MFA_SECRET);
+    TOTP_MFA.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+            TOTP_MFA_SECRET, DEFAULT_KEY));
     TOTP_MFA.setActive(true);
     TOTP_MFA.touch();
 
@@ -105,18 +107,18 @@ public class MultiFactorTestSupport {
     TOTP_RECOVERY_CODE_11 = new IamTotpRecoveryCode(TOTP_MFA);
     TOTP_RECOVERY_CODE_12 = new IamTotpRecoveryCode(TOTP_MFA);
 
-    TOTP_RECOVERY_CODE_1.setCode(TOTP_RECOVERY_CODE_STRING_1);
-    TOTP_RECOVERY_CODE_2.setCode(TOTP_RECOVERY_CODE_STRING_2);
-    TOTP_RECOVERY_CODE_3.setCode(TOTP_RECOVERY_CODE_STRING_3);
-    TOTP_RECOVERY_CODE_4.setCode(TOTP_RECOVERY_CODE_STRING_4);
-    TOTP_RECOVERY_CODE_5.setCode(TOTP_RECOVERY_CODE_STRING_5);
-    TOTP_RECOVERY_CODE_6.setCode(TOTP_RECOVERY_CODE_STRING_6);
-    TOTP_RECOVERY_CODE_7.setCode(TOTP_RECOVERY_CODE_STRING_7);
-    TOTP_RECOVERY_CODE_8.setCode(TOTP_RECOVERY_CODE_STRING_8);
-    TOTP_RECOVERY_CODE_9.setCode(TOTP_RECOVERY_CODE_STRING_9);
-    TOTP_RECOVERY_CODE_10.setCode(TOTP_RECOVERY_CODE_STRING_10);
-    TOTP_RECOVERY_CODE_11.setCode(TOTP_RECOVERY_CODE_STRING_11);
-    TOTP_RECOVERY_CODE_12.setCode(TOTP_RECOVERY_CODE_STRING_12);
+    TOTP_RECOVERY_CODE_1.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_1, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_2.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_2, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_3.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_3, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_4.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_4, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_5.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_5, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_6.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_6, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_7.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_7, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_8.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_8, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_9.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_9, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_10.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_10, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_11.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_11, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_12.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_12, DEFAULT_KEY));
 
     RECOVERY_CODE_SET_FIRST = new HashSet<>(
         Arrays.asList(TOTP_RECOVERY_CODE_1, TOTP_RECOVERY_CODE_2, TOTP_RECOVERY_CODE_3,
@@ -148,22 +150,24 @@ public class MultiFactorTestSupport {
     TOTP_MFA_ACCOUNT.touch();
 
     TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
-    TOTP_MFA.setSecret(TOTP_MFA_SECRET);
+    TOTP_MFA.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+            TOTP_MFA_SECRET, DEFAULT_KEY));
     TOTP_MFA.setActive(true);
     TOTP_MFA.touch();
 
-    TOTP_RECOVERY_CODE_1.setCode(TOTP_RECOVERY_CODE_STRING_1);
-    TOTP_RECOVERY_CODE_2.setCode(TOTP_RECOVERY_CODE_STRING_2);
-    TOTP_RECOVERY_CODE_3.setCode(TOTP_RECOVERY_CODE_STRING_3);
-    TOTP_RECOVERY_CODE_4.setCode(TOTP_RECOVERY_CODE_STRING_4);
-    TOTP_RECOVERY_CODE_5.setCode(TOTP_RECOVERY_CODE_STRING_5);
-    TOTP_RECOVERY_CODE_6.setCode(TOTP_RECOVERY_CODE_STRING_6);
-    TOTP_RECOVERY_CODE_7.setCode(TOTP_RECOVERY_CODE_STRING_7);
-    TOTP_RECOVERY_CODE_8.setCode(TOTP_RECOVERY_CODE_STRING_8);
-    TOTP_RECOVERY_CODE_9.setCode(TOTP_RECOVERY_CODE_STRING_9);
-    TOTP_RECOVERY_CODE_10.setCode(TOTP_RECOVERY_CODE_STRING_10);
-    TOTP_RECOVERY_CODE_11.setCode(TOTP_RECOVERY_CODE_STRING_11);
-    TOTP_RECOVERY_CODE_12.setCode(TOTP_RECOVERY_CODE_STRING_12);
+    TOTP_RECOVERY_CODE_1.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_1, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_2.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_2, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_3.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_3, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_4.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_4, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_5.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_5, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_6.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_6, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_7.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_7, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_8.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_8, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_9.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_9, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_10.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_10, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_11.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_11, DEFAULT_KEY));
+    TOTP_RECOVERY_CODE_12.setCode(getEncryptedCode(TOTP_RECOVERY_CODE_STRING_12, DEFAULT_KEY));
 
     TOTP_MFA.setRecoveryCodes(RECOVERY_CODE_SET_FIRST);
   }
@@ -198,5 +202,9 @@ public class MultiFactorTestSupport {
     newTotpMfa.touch();
 
     return newTotpMfa;
+  }
+
+  public String getEncryptedCode(String plaintext, String key) {
+    return IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(plaintext, key);
   }
 }

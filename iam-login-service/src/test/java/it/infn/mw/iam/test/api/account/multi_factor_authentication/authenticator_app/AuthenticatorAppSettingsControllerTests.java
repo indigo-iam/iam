@@ -43,6 +43,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -52,6 +53,7 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockMfaUser;
 import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -68,6 +70,9 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   @MockBean
   private IamTotpMfaService totpMfaService;
 
+  @MockBean
+  private IamTotpMfaProperties iamTotpMfaProperties;
+
   @BeforeClass
   public static void init() {
     TestUtils.initRestAssured();
@@ -77,6 +82,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("define_me_please");
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -89,7 +95,9 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
-    totpMfa.setSecret("secret");
+    totpMfa.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+            iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isOk());
@@ -119,7 +127,9 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(true);
     totpMfa.setAccount(account);
-    totpMfa.setSecret("secret");
+    totpMfa.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+            iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     String totp = "123456";
 
     when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
