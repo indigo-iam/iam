@@ -43,7 +43,6 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
-import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
@@ -131,9 +130,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
       totpMfaRepository.save(totpMfa);
 
       return totpMfa;
-    } catch (Exception exp) {
-      throw new IamTotpMfaInvalidArgumentError(
-          "Please ensure that you either use the same password or set the password", exp);
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
   }
 
@@ -235,8 +234,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
         totpVerifiedEvent(account, totpMfa);
         return true;
       }
-    } catch (Exception exp) {
-      LOG.error("Please ensure that you either use the same password or set the password", exp);
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
 
     return false;
@@ -275,8 +275,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
           return true;
         }
       }
-    } catch (Exception exp) {
-      LOG.error("Please ensure that you either use the same password or set the password", exp);
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
 
     return false;
@@ -295,8 +295,9 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
             code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
         recoveryCodes.add(recoveryCode);
       }
-    } catch (Exception exp) {
-      LOG.error("Please ensure that you either use the same password or set the password", exp);
+    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
+      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
+      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
 
     return recoveryCodes;
