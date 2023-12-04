@@ -226,6 +226,6 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
       mvc.perform(get(RECOVERY_CODE_GET_URL));
     });
 
-    assertTrue(thrownException.getCause().getMessage().startsWith("Please use the same password which"));
+    assertTrue(thrownException.getCause().getMessage().startsWith("Please use the same password and mode"));
   }
 }
