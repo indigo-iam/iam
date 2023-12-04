@@ -234,6 +234,10 @@ public class RegisteredClientDTO {
       ClientViews.DynamicRegistration.class})
   private Date createdAt;
 
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  private Date lastUsed;
+
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   @Size(max = 2048, groups = {OnClientCreation.class, OnClientUpdate.class})
@@ -470,6 +474,14 @@ public class RegisteredClientDTO {
 
   public void setCreatedAt(Date createdAt) {
     this.createdAt = createdAt;
+  }
+
+  public Date getLastUsed() {
+    return lastUsed;
+  }
+
+  public void setLastUsed(Date lastUsed) {
+    this.lastUsed = lastUsed;
   }
 
   public String getJwk() {
