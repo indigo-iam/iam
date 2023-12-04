@@ -127,6 +127,7 @@ public class ClientConverter {
     clientDTO.setTosUri(entity.getTosUri());
 
     clientDTO.setCreatedAt(entity.getCreatedAt());
+    clientDTO.setLastUsed(entity.getLastUsed());
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
     clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());
