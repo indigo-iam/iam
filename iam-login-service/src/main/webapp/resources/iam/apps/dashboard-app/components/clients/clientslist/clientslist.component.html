@@ -109,10 +109,10 @@
                             <td class="col-xs-1">
                                 <!-- Last Used -->
                                 <div ng-if="c.last_used">
-                                    {{c.last_used}}
+                                    {{c.last_used | date }}
                                 </div>
                                 <div ng-if="!c.last_used" class="text-muted">
-                                    N/A
+                                    Never
                                 </div>
                             </td>
                             <td class="col-xs-4">
