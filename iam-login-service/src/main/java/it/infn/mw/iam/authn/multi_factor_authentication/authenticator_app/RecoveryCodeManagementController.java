@@ -43,6 +43,7 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Provides webpages related to recovery codes. Most of this appears if the user chooses to use a
@@ -60,7 +61,6 @@ public class RecoveryCodeManagementController {
   private final IamTotpMfaRepository totpMfaRepository;
   private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
   private final IamTotpMfaProperties iamTotpMfaProperties;
-
 
   @Autowired
   public RecoveryCodeManagementController(AccountUtils accountUtils,
@@ -105,7 +105,7 @@ public class RecoveryCodeManagementController {
    */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_GET_URL)
-  public @ResponseBody String[] getRecoveryCodes() {
+  public @ResponseBody String[] getRecoveryCodes() throws IamTotpMfaInvalidArgumentError {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
 
@@ -122,16 +122,12 @@ public class RecoveryCodeManagementController {
     List<IamTotpRecoveryCode> recs = new ArrayList<>(totpMfa.getRecoveryCodes());
     String[] codes = new String[recs.size()];
 
-    try {
-      for (int i = 0; i < recs.size(); i++) {
-        codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-            recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
-      }
-
-      return codes;
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      throw iamTotpMfaInvalidArgumentErrorMsg;
+    for (int i = 0; i < recs.size(); i++) {
+      codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
     }
+
+    return codes;
   }
 
   /**

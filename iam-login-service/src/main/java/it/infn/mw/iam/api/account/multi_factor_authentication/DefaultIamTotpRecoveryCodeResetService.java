@@ -36,6 +36,7 @@ import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpRecoveryCodeResetService
@@ -72,7 +73,7 @@ public class DefaultIamTotpRecoveryCodeResetService
    * @param account - the account to regenerate codes on
    */
   @Override
-  public IamAccount resetRecoveryCodes(IamAccount account) {
+  public IamAccount resetRecoveryCodes(IamAccount account) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
@@ -82,26 +83,22 @@ public class DefaultIamTotpRecoveryCodeResetService
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
-    try {
-      for (String code : recoveryCodeStrings) {
-        IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
+    for (String code : recoveryCodeStrings) {
+      IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
-        recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-            code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
-        recoveryCodes.add(recoveryCode);
-      }
-
-      // Attach to account
-      totpMfa.setRecoveryCodes(recoveryCodes);
-      totpMfa.touch();
-      account.touch();
-      accountRepository.save(account);
-      totpMfaRepository.save(totpMfa);
-      recoveryCodesResetEvent(account, totpMfa);
-
-      return account;
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      throw iamTotpMfaInvalidArgumentErrorMsg;
+      recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+          code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+      recoveryCodes.add(recoveryCode);
     }
+
+    // Attach to account
+    totpMfa.setRecoveryCodes(recoveryCodes);
+    totpMfa.touch();
+    account.touch();
+    accountRepository.save(account);
+    totpMfaRepository.save(totpMfa);
+    recoveryCodesResetEvent(account, totpMfa);
+
+    return account;
   }
 }
