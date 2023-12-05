@@ -76,9 +76,9 @@
         <c:if
             test="${
                 (
-                    loginPageConfiguration.localAuthenticationVisible
-                    or param.sll != null
-                ) && loginPageConfiguration.defaultLoginPageLayout
+                  loginPageConfiguration.localAuthenticationVisible
+                  or param.sll != null
+                ) and loginPageConfiguration.defaultLoginPageLayout
             }"
         >
             <jsp:include page="login-form.jsp" />
@@ -87,9 +87,9 @@
         <c:if
             test="${
                 !loginPageConfiguration.defaultLoginPageLayout
-                || (
-                    !loginPageConfiguration.localAuthenticationVisible
-                    && (param.sll == null or !loginPageConfiguration.defaultLoginPageLayout)
+                or (
+                  !loginPageConfiguration.localAuthenticationVisible
+                  and param.sll == null
                 )
             }"
         >
@@ -104,13 +104,11 @@
                     <c:choose>
                         <c:when
                             test="${
-                                (
-                                    loginPageConfiguration.localAuthenticationVisible
-                                    && loginPageConfiguration.defaultLoginPageLayout
-                                ) || (
-                                    loginPageConfiguration.defaultLoginPageLayout
-                                    && param.sll != null
-                                )
+                              loginPageConfiguration.defaultLoginPageLayout
+                              and (
+                                loginPageConfiguration.localAuthenticationVisible
+                                or param.sll != null
+                              )
                             }"
                         >
                             Or sign in with
@@ -188,9 +186,9 @@
         <c:if
             test="${
                 (
-                    loginPageConfiguration.localAuthenticationVisible
-                    or param.sll != null
-                ) && !loginPageConfiguration.defaultLoginPageLayout
+                  loginPageConfiguration.localAuthenticationVisible
+                  or param.sll != null
+                ) and !loginPageConfiguration.defaultLoginPageLayout
             }"
         >
             <jsp:include page="login-form.jsp" />
