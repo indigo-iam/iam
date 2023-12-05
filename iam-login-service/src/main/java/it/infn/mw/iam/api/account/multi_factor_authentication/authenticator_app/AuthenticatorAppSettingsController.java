@@ -51,6 +51,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Controller for customising user's authenticator app MFA settings Can enable or disable the
@@ -90,20 +91,14 @@ public class AuthenticatorAppSettingsController {
   @RequestMapping(value = ADD_SECRET_URL, method = RequestMethod.PUT,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
-  public SecretAndDataUriDTO addSecret() {
+  public SecretAndDataUriDTO addSecret() throws IamTotpMfaInvalidArgumentError {
     final String username = getUsernameFromSecurityContext();
     IamAccount account = accountRepository.findByUsername(username)
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    String mfaSecret = "";
-
-    try {
-      mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      throw iamTotpMfaInvalidArgumentErrorMsg;
-    }
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);

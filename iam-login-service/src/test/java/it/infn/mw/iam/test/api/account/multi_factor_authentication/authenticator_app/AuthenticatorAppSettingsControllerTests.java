@@ -85,7 +85,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   public void setup() {
     when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("define_me_please");
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -99,7 +99,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
@@ -112,14 +112,15 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @Test
   @WithMockUser(username = TEST_USERNAME)
-  public void testAddSecret_withDifferentPassword() throws Exception {
+  public void testAddSecret_withEmptyPassword() throws Exception {
     IamAccount account = cloneAccount(TEST_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
 
@@ -151,7 +152,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     totpMfa.setActive(true);
     totpMfa.setAccount(account);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     String totp = "123456";
 

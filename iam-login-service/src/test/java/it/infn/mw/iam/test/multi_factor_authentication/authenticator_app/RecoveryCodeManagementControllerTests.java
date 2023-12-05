@@ -106,7 +106,7 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
     when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
     when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     when(service.resetRecoveryCodes(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(DEFAULT_KEY);
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     mvc =
         MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -195,7 +195,7 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
     List<IamTotpRecoveryCode> recoveryCodes = new ArrayList<>(RECOVERY_CODE_SET_FIRST);
     for (int i = 0; i < recoveryCodes.size(); i++) {
       originalCodes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          recoveryCodes.get(i).getCode(), DEFAULT_KEY);
+          recoveryCodes.get(i).getCode(), KEY_TO_ENCRYPT_DECRYPT);
 
       // This is here because the string.split() method adds backslashed quotes around the separated
       // strings. So this is a hacky method to remove them to allow for the comparison to succeed.
