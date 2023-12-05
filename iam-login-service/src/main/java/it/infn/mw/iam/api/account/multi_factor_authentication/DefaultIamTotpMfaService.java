@@ -19,8 +19,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -43,11 +41,10 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
-
-  private static final Logger LOG = LoggerFactory.getLogger(DefaultIamTotpMfaService.class);
 
   public static final int RECOVERY_CODE_QUANTITY = 6;
 
@@ -103,7 +100,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
    * @return the new TOTP secret
    */
   @Override
-  public IamTotpMfa addTotpMfaSecret(IamAccount account) {
+  public IamTotpMfa addTotpMfaSecret(IamAccount account) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (totpMfaOptional.isPresent()) {
       if (totpMfaOptional.get().isActive()) {
@@ -116,24 +113,16 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     // Generate secret
     IamTotpMfa totpMfa = new IamTotpMfa(account);
-    String sharedSecretToken = secretGenerator.generate();
 
-    try {
-      String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-          sharedSecretToken, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+    totpMfa.setAccount(account);
 
-      totpMfa.setSecret(cipherText);
-      totpMfa.setAccount(account);
+    Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa);
+    totpMfa.setRecoveryCodes(recoveryCodes);
+    totpMfaRepository.save(totpMfa);
 
-      Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa);
-      totpMfa.setRecoveryCodes(recoveryCodes);
-      totpMfaRepository.save(totpMfa);
-
-      return totpMfa;
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
-      throw iamTotpMfaInvalidArgumentErrorMsg;
-    }
+    return totpMfa;
   }
 
   /**
@@ -213,30 +202,24 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
    * Verifies a provided TOTP against an account multi-factor secret
    * 
    * @param account the account whose secret we will check against
-   * @param totp the TOTP to validate
+   * @param totp    the TOTP to validate
    * @return true if valid, false otherwise
    */
   @Override
-  public boolean verifyTotp(IamAccount account, String totp) {
+  public boolean verifyTotp(IamAccount account, String totp) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
-    try {
-      String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
-
-      // Verify provided TOTP
-      if (codeVerifier.isValidCode(mfaSecret, totp)) {
-        totpVerifiedEvent(account, totpMfa);
-        return true;
-      }
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
-      throw iamTotpMfaInvalidArgumentErrorMsg;
+    // Verify provided TOTP
+    if (codeVerifier.isValidCode(mfaSecret, totp)) {
+      totpVerifiedEvent(account, totpMfa);
+      return true;
     }
 
     return false;
@@ -264,40 +247,31 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     // Check for a matching recovery code
     Set<IamTotpRecoveryCode> accountRecoveryCodes = totpMfa.getRecoveryCodes();
 
-    try {
-      for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
-        String recoveryCodeEncrypted = recoveryCodeObject.getCode();
-        String recoveryCodeString = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-            recoveryCodeEncrypted, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+    for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
+      String recoveryCodeEncrypted = recoveryCodeObject.getCode();
+      String recoveryCodeString = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          recoveryCodeEncrypted, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
-        if (recoveryCode.equals(recoveryCodeString)) {
-          recoveryCodeVerifiedEvent(account, totpMfa);
-          return true;
-        }
+      if (recoveryCode.equals(recoveryCodeString)) {
+        recoveryCodeVerifiedEvent(account, totpMfa);
+        return true;
       }
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      throw iamTotpMfaInvalidArgumentErrorMsg;
     }
 
     return false;
   }
 
 
-  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) {
+  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) throws IamTotpMfaInvalidArgumentError {
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
-    try {
-      for (String code : recoveryCodeStrings) {
-        IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
+    for (String code : recoveryCodeStrings) {
+      IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
-        recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-            code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
-        recoveryCodes.add(recoveryCode);
-      }
-    } catch (Exception iamTotpMfaInvalidArgumentErrorMsg) {
-      LOG.error(iamTotpMfaInvalidArgumentErrorMsg.getMessage());
-      throw iamTotpMfaInvalidArgumentErrorMsg;
+      recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+          code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+      recoveryCodes.add(recoveryCode);
     }
 
     return recoveryCodes;

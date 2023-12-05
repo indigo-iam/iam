@@ -94,16 +94,16 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Before
   public void setup() {
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("define_me_please");
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     when(secretGenerator.generate()).thenReturn("test_secret");
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
-    String[] testArray = {TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
+    String[] testArray = { TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
         TOTP_RECOVERY_CODE_STRING_9, TOTP_RECOVERY_CODE_STRING_10, TOTP_RECOVERY_CODE_STRING_11,
-        TOTP_RECOVERY_CODE_STRING_12};
+        TOTP_RECOVERY_CODE_STRING_12 };
     when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
@@ -175,14 +175,14 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testAddsMfaRecoveryCode_whenPasswordIsEmpty() {
+  public void testAddTotpMfaSecret_whenPasswordIsEmpty() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-      // Decrypt the cipherText with a different key
+      // Decrypt the cipherText with empty key
       service.addTotpMfaSecret(account);
     });
 
@@ -196,7 +196,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-      // Decrypt the cipherText with a different key
+      // Decrypt the cipherText with empty key
       service.addTotpMfaRecoveryCodes(account);
     });
 
@@ -282,5 +282,96 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
       assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
       throw e;
     }
+  }
+
+  @Test
+  public void testVerifyTotp_WithNoMultiFactorSecretAttached() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    MfaSecretNotFoundException thrownException = assertThrows(MfaSecretNotFoundException.class, () -> {
+      service.verifyTotp(account, TOTP_CODE);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("No multi-factor secret is attached"));
+  }
+
+  @Test
+  public void testVerifyTotp() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertTrue(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  public void testVerifyTotp_WithEmptyPasswordForDecryption() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      service.verifyTotp(account, TOTP_CODE);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+  }
+
+  @Test
+  public void testVerifyTotp_WithCodeNotValid() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertFalse(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  public void verifyRecoveryCode_WithNoMultiFactorSecretAttached() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    MfaSecretNotFoundException thrownException = assertThrows(MfaSecretNotFoundException.class, () -> {
+      service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("No multi-factor secret is attached"));
+  }
+
+  @Test
+  public void verifyRecoveryCode() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertTrue(service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1));
+  }
+
+  @Test
+  public void verifyRecoveryCode_WithEmptyPasswordForDecryption() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
   }
 }

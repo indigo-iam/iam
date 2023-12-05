@@ -19,9 +19,16 @@ public class IamTotpMfaEncryptionAndDecryptionHelper {
 
   private String encryptionAlgorithm = "AES";
   private String modeOfOperation = "AES/CBC/PKCS5Padding";
-  private int keySize = 256;
+
+  // AES `keySize` has 3 options: 128, 192, or 256 bits.
+  private int keySize = 128;
+
   private int ivSize = 16;
+
+  // Multiples of 8
   private int saltSize = 16;
+
+  // The higher value the better
   private int iterations = 65536;
 
   private static IamTotpMfaEncryptionAndDecryptionHelper instance;
@@ -40,10 +47,6 @@ public class IamTotpMfaEncryptionAndDecryptionHelper {
 
   public int getIvSize() {
     return ivSize;
-  }
-
-  public void setIvSize(int ivSize) {
-    this.ivSize = ivSize;
   }
 
   public int getSaltSize() {
@@ -66,16 +69,8 @@ public class IamTotpMfaEncryptionAndDecryptionHelper {
     return encryptionAlgorithm;
   }
 
-  public void setEncryptionAlgorithm(String encryptionAlgorithm) {
-    this.encryptionAlgorithm = encryptionAlgorithm;
-  }
-
   public String getModeOfOperation() {
     return modeOfOperation;
-  }
-
-  public void setModeOfOperation(String modeOfOperation) {
-    this.modeOfOperation = modeOfOperation;
   }
 
   /**

@@ -40,8 +40,8 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
   }
 
   /**
-   * This process requires a password for encrypting the plaintext. Ensure to use
-   * the same password for decryption as well.
+   * This helper method requires a password for encrypting the plaintext.
+   * Ensure to use the same password for decryption as well.
    *
    * @param plaintext plaintext to encrypt.
    * @param password  Provided by the admin through the environment
@@ -129,7 +129,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       return new String(decryptedTextBytes);
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(
-          "Please use the same password and mode of operation which you used for encryption");
+          "Please use the same password and mode of operation which you used for encryption", exp);
     }
   }
 
@@ -171,10 +171,9 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
     SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
     KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, defaultModel.getIterations(),
         defaultModel.getKeySize());
-    SecretKey secretKey = new SecretKeySpec(factory.generateSecret(spec)
-        .getEncoded(), algorithm);
 
-    return secretKey;
+    return new SecretKeySpec(factory.generateSecret(spec)
+        .getEncoded(), algorithm);
   }
 
   /**
