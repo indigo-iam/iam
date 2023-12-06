@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -393,6 +394,14 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
 
+    if (newClient.getTokenEndpointAuthMethod().equals(AuthMethod.NONE)) {
+      newClient.setTokenEndpointAuthMethod(AuthMethod.NONE);
+      newClient.setClientSecret(null);
+    } else if (!newClient.getTokenEndpointAuthMethod().equals(AuthMethod.NONE)
+        && isNull(newClient.getClientSecret())) {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
+    }
+
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
@@ -438,7 +447,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     final IamAccount account =
         accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-    
+
     client = clientService.linkClientToAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));

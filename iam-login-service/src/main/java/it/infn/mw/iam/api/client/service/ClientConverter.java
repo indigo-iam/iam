@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.api.client.service;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
-
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -43,8 +40,6 @@ import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 
-import org.apache.commons.codec.binary.Base64;
-
 
 @Component
 public class ClientConverter {
@@ -54,9 +49,6 @@ public class ClientConverter {
   private final String clientRegistrationBaseUrl;
 
   private final ClientRegistrationProperties clientProperties;
-  
-  private static final int SECRET_SIZE = 512;
-  private static final SecureRandom RNG = new SecureRandom();
 
   @Autowired
   public ClientConverter(IamProperties properties, ClientRegistrationProperties clientProperties) {
@@ -234,12 +226,6 @@ public class ClientConverter {
 
     if (isNull(dto.getTokenEndpointAuthMethod())) {
       client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    } else if (dto.getTokenEndpointAuthMethod().equals(TokenEndpointAuthenticationMethod.none)) {
-      client.setTokenEndpointAuthMethod(AuthMethod.NONE);
-      client.setClientSecret(null);
-    } else if (!dto.getTokenEndpointAuthMethod().equals(TokenEndpointAuthenticationMethod.none)
-        && isNull(client.getClientSecret())) {
-      client.setClientSecret(generateClientSecret());
     } else {
       client
         .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
@@ -264,12 +250,6 @@ public class ClientConverter {
         String.format("%s/%s", clientRegistrationBaseUrl, entity.getClientId()));
 
     return response;
-  }
-
-  public String generateClientSecret() {
-    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
-      .replace("=", "");
-
   }
 
 }
