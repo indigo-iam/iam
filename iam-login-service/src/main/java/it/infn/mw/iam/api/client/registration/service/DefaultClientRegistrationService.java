@@ -383,7 +383,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
-    newClient.setClientSecret(oldClient.getClientSecret());
     newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
     newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
     newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
