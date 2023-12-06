@@ -19,11 +19,11 @@ public class IamTotpMfaCommons {
   public static final String KEY_TO_ENCRYPT_DECRYPT = "define_me_please";
   public static final String TOTP_MFA_SECRET = "secret";
 
-  public static final int DEFAULT_KEY_SIZE = 126;
+  public static final int DEFAULT_KEY_SIZE = 128;
   public static final int DEFAULT_ITERATIONS = 65536;
   public static final int DEFAULT_SALT_SIZE = 16;
 
   public static final int ANOTHER_KEY_SIZE = 192;
   public static final int ANOTHER_ITERATIONS = 6000;
-  public static final int ANOTHER_SALT_SIZE = 36;
+  public static final int ANOTHER_SALT_SIZE = 8;
 }
