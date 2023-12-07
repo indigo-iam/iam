@@ -77,7 +77,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
   public void testRatWorkAsExpected() throws ParseException {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
-    
+
     // @formatter:off
     RegisteredClientDTO registerResponse = RestAssured
       .given()
@@ -96,53 +96,52 @@ public class RegistrationAccessTokenTests extends TestSupport {
     assertThat(jwt.getJWTClaimsSet().getExpirationTime(), nullValue());
     assertThat(registerResponse.getScope(), not(empty()));
 
-    RegisteredClientDTO getResponse =
-    RestAssured.given()
-      .auth()
-          .oauth2(registerResponse.getRegistrationAccessToken())
-      .when()
-          .get(registerUrl + "/" + registerResponse.getClientId())
-      .then()
-      .statusCode(HttpStatus.OK.value())
-      .log()
-          .all()
-          .extract()
-          .body()
-          .as(RegisteredClientDTO.class);
-
-    assertThat(getResponse.getClientSecret(), is(registerResponse.getClientSecret()));
-    assertThat(getResponse.getRegistrationAccessToken(), nullValue());
-    
-    RegisteredClientDTO rotatedRatClient =
-    managementService.rotateRegistrationAccessToken(getResponse.getClientId());
-
-    assertThat(rotatedRatClient.getRegistrationAccessToken(), notNullValue());
-    
-    try {
-      
-    RestAssured.given()
+    RegisteredClientDTO getResponse = RestAssured.given()
       .auth()
       .oauth2(registerResponse.getRegistrationAccessToken())
       .when()
       .get(registerUrl + "/" + registerResponse.getClientId())
       .then()
-      .statusCode(HttpStatus.UNAUTHORIZED.value())
+      .statusCode(HttpStatus.OK.value())
       .log()
-      .ifError();
+      .all()
+      .extract()
+      .body()
+      .as(RegisteredClientDTO.class);
 
-    RestAssured.given()
-      .auth()
-      .oauth2(rotatedRatClient.getRegistrationAccessToken())
-      .when()
-      .get(registerUrl + "/" + registerResponse.getClientId())
-      .then()
-      .statusCode(HttpStatus.OK.value());
-   }
-    
-   finally {
-    managementService.deleteClientByClientId(getResponse.getClientId());
-   }
-    
+    assertThat(getResponse.getClientSecret(), is(registerResponse.getClientSecret()));
+    assertThat(getResponse.getRegistrationAccessToken(), nullValue());
+
+    RegisteredClientDTO rotatedRatClient =
+        managementService.rotateRegistrationAccessToken(getResponse.getClientId());
+
+    assertThat(rotatedRatClient.getRegistrationAccessToken(), notNullValue());
+
+    try {
+
+      RestAssured.given()
+        .auth()
+        .oauth2(registerResponse.getRegistrationAccessToken())
+        .when()
+        .get(registerUrl + "/" + registerResponse.getClientId())
+        .then()
+        .statusCode(HttpStatus.UNAUTHORIZED.value())
+        .log()
+        .ifError();
+
+      RestAssured.given()
+        .auth()
+        .oauth2(rotatedRatClient.getRegistrationAccessToken())
+        .when()
+        .get(registerUrl + "/" + registerResponse.getClientId())
+        .then()
+        .statusCode(HttpStatus.OK.value());
+    }
+
+    finally {
+      managementService.deleteClientByClientId(getResponse.getClientId());
+    }
+
   }
 
   @Test
@@ -164,64 +163,62 @@ public class RegistrationAccessTokenTests extends TestSupport {
         .extract().body().as(RegisteredClientDTO.class);
     // @formatter:on
     try {
-    assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
-    assertThat(registerResponse.getScope(), not(empty()));
+      assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
+      assertThat(registerResponse.getScope(), not(empty()));
 
-    // 2. Get an access token for the 'test' account
-    String testAt =
-        TestUtils.passwordTokenGetter()
-          .username("test")
-          .password("password")
-          .port(iamPort)
-          .getAccessToken();
+      // 2. Get an access token for the 'test' account
+      String testAt = TestUtils.passwordTokenGetter()
+        .username("test")
+        .password("password")
+        .port(iamPort)
+        .getAccessToken();
 
-    // 3. Check that test account doesn't own any client
-    RestAssured.given()
-      .auth()
-      .oauth2(testAt)
-      .log()
-      .all()
-      .when()
-      .get(ownedClientsUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value())
-      .body("totalResults", equalTo(0));
+      // 3. Check that test account doesn't own any client
+      RestAssured.given()
+        .auth()
+        .oauth2(testAt)
+        .log()
+        .all()
+        .when()
+        .get(ownedClientsUrl)
+        .then()
+        .log()
+        .all()
+        .statusCode(HttpStatus.OK.value())
+        .body("totalResults", equalTo(0));
 
-    // 4. Redeem just-registered client
-    RestAssured.given()
-      .contentType(MediaType.APPLICATION_JSON_VALUE)
-      .body(registerResponse.getRegistrationAccessToken())
-      .auth()
-      .oauth2(testAt)
-      .log()
-      .all()
-      .when()
-      .post(registerUrl + "/" + registerResponse.getClientId() + "/redeem")
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value());
+      // 4. Redeem just-registered client
+      RestAssured.given()
+        .contentType(MediaType.APPLICATION_JSON_VALUE)
+        .body(registerResponse.getRegistrationAccessToken())
+        .auth()
+        .oauth2(testAt)
+        .log()
+        .all()
+        .when()
+        .post(registerUrl + "/" + registerResponse.getClientId() + "/redeem")
+        .then()
+        .log()
+        .all()
+        .statusCode(HttpStatus.OK.value());
 
-    // 5. Test account own registered client
-    RestAssured.given()
-      .auth()
-      .oauth2(testAt)
-      .log()
-      .all()
-      .when()
-      .get(ownedClientsUrl)
-      .then()
-      .log()
-      .all()
-      .statusCode(HttpStatus.OK.value())
-      .body("totalResults", equalTo(1))
-      .body("Resources[0].client_id", equalTo(registerResponse.getClientId()));
-}
-  finally {
-    managementService.deleteClientByClientId(registerResponse.getClientId());
+      // 5. Test account own registered client
+      RestAssured.given()
+        .auth()
+        .oauth2(testAt)
+        .log()
+        .all()
+        .when()
+        .get(ownedClientsUrl)
+        .then()
+        .log()
+        .all()
+        .statusCode(HttpStatus.OK.value())
+        .body("totalResults", equalTo(1))
+        .body("Resources[0].client_id", equalTo(registerResponse.getClientId()));
+    } finally {
+      managementService.deleteClientByClientId(registerResponse.getClientId());
+    }
   }
- }
 
 }

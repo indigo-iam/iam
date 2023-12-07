@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.oauth.client_registration;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static org.mitre.oauth2.model.RegisteredClientFields.CLAIMS_REDIRECT_URIS;
+import static org.mitre.oauth2.model.RegisteredClientFields.CLIENT_ID;
 import static org.mitre.oauth2.model.RegisteredClientFields.CLIENT_NAME;
 import static org.mitre.oauth2.model.RegisteredClientFields.CONTACTS;
 import static org.mitre.oauth2.model.RegisteredClientFields.GRANT_TYPES;
@@ -45,6 +46,7 @@ public class ClientRegistrationTestSupport {
 
     static final Joiner JOINER = Joiner.on(RegisteredClientFields.SCOPE_SEPARATOR);
 
+    String clientId = null;
     String name = "test_client";
     Set<String> redirectUris = Sets.newHashSet("http://localhost:9090");
     Set<String> grantTypes = Sets.newHashSet("client_credentials");
@@ -57,6 +59,11 @@ public class ClientRegistrationTestSupport {
 
     public static ClientJsonStringBuilder builder() {
       return new ClientJsonStringBuilder();
+    }
+
+    public ClientJsonStringBuilder clientId(String clientId) {
+      this.clientId = clientId;
+      return this;
     }
 
     public ClientJsonStringBuilder name(String name) {
@@ -97,6 +104,9 @@ public class ClientRegistrationTestSupport {
 
     public String build() {
       JsonObject json = new JsonObject();
+      if (clientId != null) {
+        json.addProperty(CLIENT_ID, clientId);
+      }
       json.addProperty(CLIENT_NAME, name);
       json.addProperty(SCOPE, JOINER.join(scopes));
       json.add(REDIRECT_URIS, getAsArray(redirectUris));
