@@ -38,7 +38,6 @@ import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 
 @Component
 public class ClientConverter {
@@ -47,14 +46,11 @@ public class ClientConverter {
 
   private final String clientRegistrationBaseUrl;
 
-  private final ClientRegistrationProperties clientProperties;
-
   @Autowired
-  public ClientConverter(IamProperties properties, ClientRegistrationProperties clientProperties) {
+  public ClientConverter(IamProperties properties) {
     this.iamProperties = properties;
     clientRegistrationBaseUrl =
         String.format("%s%s", iamProperties.getBaseUrl(), ClientRegistrationApiController.ENDPOINT);
-    this.clientProperties = clientProperties;
   }
 
   private <T> Set<T> cloneSet(Set<T> stringSet) {
@@ -71,17 +67,18 @@ public class ClientConverter {
     ClientDetailsEntity client = entityFromRegistrationRequest(dto);
 
     if (dto.getAccessTokenValiditySeconds() != null) {
-      client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
-    } else {
-      client.setAccessTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+      if (dto.getAccessTokenValiditySeconds() <= 0) {
+        client.setAccessTokenValiditySeconds(null);
+      } else {
+        client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
+      }
     }
-
     if (dto.getRefreshTokenValiditySeconds() != null) {
-      client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
-    } else {
-      client.setRefreshTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+      if (dto.getRefreshTokenValiditySeconds() <= 0) {
+        client.setRefreshTokenValiditySeconds(null);
+      } else {
+        client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
+      }
     }
 
     if (dto.getIdTokenValiditySeconds() != null) {
@@ -196,16 +193,19 @@ public class ClientConverter {
 
     client.setLogoUri(dto.getLogoUri());
     client.setPolicyUri(dto.getPolicyUri());
-
+    
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
     client.setScope(cloneSet(dto.getScope()));
-
-    client.setGrantTypes(new HashSet<>());
+    
+    client.setGrantTypes(new HashSet<>());   
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(
-          dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
+          dto.getGrantTypes()
+          .stream()
+          .map(AuthorizationGrantType::getGrantType)
+          .collect(toSet()));
     }
 
     if (dto.getScope().contains("offline_access")) {
@@ -230,11 +230,6 @@ public class ClientConverter {
       PKCEAlgorithm pkceAlgo = PKCEAlgorithm.parse(dto.getCodeChallengeMethod());
       client.setCodeChallengeMethod(pkceAlgo);
     }
-
-    client.setAccessTokenValiditySeconds(
-        clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-    client.setRefreshTokenValiditySeconds(
-        clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
 
     return client;
   }

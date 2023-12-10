@@ -58,16 +58,31 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setClientId(UUID.randomUUID().toString());
     }
 
+    client.setAccessTokenValiditySeconds(
+        properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+
     client
       .setIdTokenValiditySeconds(properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
 
     client.setDeviceCodeValiditySeconds(
         properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
 
+    final int rtSecs = properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds();
+
+    if (rtSecs < 0) {
+      client.setRefreshTokenValiditySeconds(null);
+    } else {
+      client.setRefreshTokenValiditySeconds(rtSecs);
+    }
+
     client.setAllowIntrospection(true);
 
     if (isNull(client.getContacts())) {
       client.setContacts(new HashSet<>());
+    }
+
+    if (isNull(client.getClientId())) {
+      client.setClientId(UUID.randomUUID().toString());
     }
 
     if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {

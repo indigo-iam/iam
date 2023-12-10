@@ -105,8 +105,7 @@ public class ClientRegistrationTestSupport {
       json.add(CLAIMS_REDIRECT_URIS, getAsArray(newHashSet(), true));
       json.add(REQUEST_URIS, getAsArray(newHashSet(), true));
       json.add(CONTACTS, getAsArray(newHashSet("test@iam.test")));
-      json.addProperty("access_token_validity_seconds", accessTokenValiditySeconds);
-      json.addProperty("refresh_token_validity_seconds", refreshTokenValiditySeconds);
+
       return json.toString();
     }
 

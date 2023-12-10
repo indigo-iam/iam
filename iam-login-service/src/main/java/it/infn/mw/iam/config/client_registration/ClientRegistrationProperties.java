@@ -17,8 +17,6 @@ package it.infn.mw.iam.config.client_registration;
 
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ANYONE;
 
-import java.util.concurrent.TimeUnit;
-
 import javax.validation.constraints.NotNull;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -30,14 +28,14 @@ public class ClientRegistrationProperties {
 
   public static class ClientDefaultsProperties {
 
-	@NotNull(message = "Provide a default access token lifetime")
+    @NotNull(message = "Provide a default access token lifetime")
     private int defaultAccessTokenValiditySeconds;
-	
-	@NotNull(message = "Provide a default refresh token lifetime")
+    @NotNull(message = "Provide a default id token lifetime")
+    private int defaultIdTokenValiditySeconds;
+    @NotNull(message = "Provide a default device code lifetime")
+    private int defaultDeviceCodeValiditySeconds;
+    @NotNull(message = "Provide a default refresh token lifetime")
     private int defaultRefreshTokenValiditySeconds;
-	
-    private int defaultIdTokenValiditySeconds = (int) TimeUnit.MINUTES.toSeconds(10);
-    private int defaultDeviceCodeValiditySeconds = (int) TimeUnit.MINUTES.toSeconds(10);
 
     private int defaultRegistrationAccessTokenValiditySeconds = -1;
 
