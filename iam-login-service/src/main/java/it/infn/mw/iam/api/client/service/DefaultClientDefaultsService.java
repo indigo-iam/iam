@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.apache.commons.codec.binary.Base64;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
@@ -46,7 +45,6 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
 
   private final ClientRegistrationProperties properties;
 
-  @Autowired
   public DefaultClientDefaultsService(ClientRegistrationProperties properties) {
     this.properties = properties;
   }
@@ -58,21 +56,26 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setClientId(UUID.randomUUID().toString());
     }
 
-    client.setAccessTokenValiditySeconds(
-        properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    if (client.getAccessTokenValiditySeconds() == null
+        || client.getAccessTokenValiditySeconds() == 0) {
+      client.setAccessTokenValiditySeconds(
+          properties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    }
 
-    client
-      .setIdTokenValiditySeconds(properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+    if (client.getRefreshTokenValiditySeconds() == null) {
+      client.setRefreshTokenValiditySeconds(
+          properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+    }
 
-    client.setDeviceCodeValiditySeconds(
-        properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
+    if (client.getIdTokenValiditySeconds() == null || client.getIdTokenValiditySeconds() == 0) {
+      client.setIdTokenValiditySeconds(
+          properties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+    }
 
-    final int rtSecs = properties.getClientDefaults().getDefaultRefreshTokenValiditySeconds();
-
-    if (rtSecs < 0) {
-      client.setRefreshTokenValiditySeconds(null);
-    } else {
-      client.setRefreshTokenValiditySeconds(rtSecs);
+    if (client.getDeviceCodeValiditySeconds() == null
+        || client.getDeviceCodeValiditySeconds() == 0) {
+      client.setDeviceCodeValiditySeconds(
+          properties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
     }
 
     client.setAllowIntrospection(true);
@@ -85,7 +88,12 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setClientId(UUID.randomUUID().toString());
     }
 
-    if (AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
+    if (isNull(client.getTokenEndpointAuthMethod())) {
+      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
+    }
+
+    if (isNull(client.getClientSecret())
+        && AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
       client.setClientSecret(generateClientSecret());
     }
 

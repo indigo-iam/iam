@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -198,8 +198,10 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(3600));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(108000));
+    assertEquals(3600, client.getAccessTokenValiditySeconds());
+    assertEquals(2592000, client.getRefreshTokenValiditySeconds());
+    assertEquals(600, client.getIdTokenValiditySeconds());
+    assertEquals(600, client.getDeviceCodeValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -216,8 +218,8 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(0));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(0));
+    assertEquals(3600, client.getAccessTokenValiditySeconds());
+    assertEquals(0, client.getRefreshTokenValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -234,14 +236,14 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .getContentAsString();
 
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
-    assertTrue(client.getAccessTokenValiditySeconds().equals(10));
-    assertTrue(client.getRefreshTokenValiditySeconds().equals(10));
+    assertEquals(10, client.getAccessTokenValiditySeconds());
+    assertEquals(10, client.getRefreshTokenValiditySeconds());
 
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void negativeTokenLifetimesNotAllowed() throws Exception {
+  public void negativeAccessTokenLifetimesSetToDefault() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1).build();
@@ -251,8 +253,13 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
         .content(clientJson))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
+  }
 
-    clientJson =
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
+
+    String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1).build();
 
     mvc
@@ -261,5 +268,4 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
   }
-
 }

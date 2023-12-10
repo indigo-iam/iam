@@ -50,8 +50,8 @@ public class ClientRegistrationTestSupport {
     Set<String> grantTypes = Sets.newHashSet("client_credentials");
     Set<String> scopes = Sets.newHashSet();
     Set<String> responseTypes = Sets.newHashSet();
-    Integer accessTokenValiditySeconds;
-    Integer refreshTokenValiditySeconds;
+    Integer accessTokenValiditySeconds = null;
+    Integer refreshTokenValiditySeconds = null;
 
     private ClientJsonStringBuilder() {}
 
@@ -105,7 +105,8 @@ public class ClientRegistrationTestSupport {
       json.add(CLAIMS_REDIRECT_URIS, getAsArray(newHashSet(), true));
       json.add(REQUEST_URIS, getAsArray(newHashSet(), true));
       json.add(CONTACTS, getAsArray(newHashSet("test@iam.test")));
-
+      json.addProperty("access_token_validity_seconds", accessTokenValiditySeconds);
+      json.addProperty("refresh_token_validity_seconds", refreshTokenValiditySeconds);
       return json.toString();
     }
 
