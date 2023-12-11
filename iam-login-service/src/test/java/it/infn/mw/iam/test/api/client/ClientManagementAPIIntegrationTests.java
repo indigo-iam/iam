@@ -28,6 +28,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,12 +45,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
@@ -63,6 +67,8 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  @Autowired
+  private IamClientRepository clientRepo;
 
   @BeforeEach
   public void setup() {
@@ -203,6 +209,12 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(600, client.getIdTokenValiditySeconds());
     assertEquals(600, client.getDeviceCodeValiditySeconds());
 
+    Optional<ClientDetailsEntity> clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
       .accessTokenValiditySeconds(0)
@@ -221,6 +233,12 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(3600, client.getAccessTokenValiditySeconds());
     assertEquals(0, client.getRefreshTokenValiditySeconds());
 
+    clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
       .accessTokenValiditySeconds(10)
@@ -238,6 +256,12 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     assertEquals(10, client.getAccessTokenValiditySeconds());
     assertEquals(10, client.getRefreshTokenValiditySeconds());
+
+    clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
 
   }
 
