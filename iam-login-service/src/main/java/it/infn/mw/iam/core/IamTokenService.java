@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
@@ -80,10 +81,17 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
-    OAuth2AccessTokenEntity accessToken = super.createAccessToken(authentication);
+    OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
+    token.getClient().setLastUsed(new Date());
+    return token;
+  }
 
-    accessToken.getClient().setLastUsed(new Date());
+  @Override
+  public OAuth2AccessTokenEntity refreshAccessToken(String refreshTokenValue,
+      TokenRequest authRequest) {
 
-    return accessToken;
+    OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
+    token.getClient().setLastUsed(new Date());
+    return token;
   }
 }
