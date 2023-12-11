@@ -23,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Date;
+import java.time.Duration;
+import java.time.Instant;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
@@ -31,7 +33,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -44,7 +45,6 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.rcauth.RCAuthTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -52,13 +52,8 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, RCAuthTestSupport.class,
-    CoreControllerTestSupport.class, ProxyCertificateClockConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"proxycert.enabled=true", "rcauth.enabled=true",
-    "rcauth.client-id=" + RCAuthTestSupport.CLIENT_ID,
-    "rcauth.client-secret=" + RCAuthTestSupport.CLIENT_SECRET,
-    "rcauth.issuer=" + RCAuthTestSupport.ISSUER})
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
+@TestPropertySource(properties = {"proxycert.enabled=true"})
 public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
   @Autowired
@@ -91,8 +86,11 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
     IamX509Certificate cert = testAccount.getX509Certificates().iterator().next();
     IamX509ProxyCertificate proxyCert = new IamX509ProxyCertificate();
 
-    proxyCert.setChain(generateTest0Proxy(NOW, ONE_YEAR_FROM_NOW));
-    proxyCert.setExpirationTime(Date.from(ONE_YEAR_FROM_NOW));
+    Instant current = Instant.now();
+    Instant plusOneYearDuration = current.plus(Duration.ofDays(365));
+
+    proxyCert.setChain(generateTest0Proxy(current, plusOneYearDuration));
+    proxyCert.setExpirationTime(Date.from(plusOneYearDuration));
     proxyCert.setCertificate(cert);
     cert.setProxy(proxyCert);
 
