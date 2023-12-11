@@ -20,20 +20,19 @@
         <div class="form-group">
             <label for="at_timeout">Access token timeout (seconds)</label>
             <input id="at_timeout" class="form-control" type="text"
-                ng-model="$ctrl.client.access_token_validity_seconds">
+                ng-model="$ctrl.client.access_token_validity_seconds"/>
         </div>
-
     </div>
     <div class="form-group">
         <label for="id_timeout">ID token timeout (seconds)</label>
 
         <input id="id_timeout" class="form-control" type="text" ng-model="$ctrl.client.id_token_validity_seconds"
-            placeholder="600" ng-required ng-min="30">
+            placeholder="600" ng-required ng-min="30"/>
     </div>
     <div class="form-group">
         <div class="checkbox">
             <label>
-                <input type="checkbox" ng-model="$ctrl.client.require_auth_time">
+                <input type="checkbox" ng-model="$ctrl.client.require_auth_time"/>
                 Always require authentication time in ID tokens
             </label>
         </div>
@@ -57,11 +56,11 @@
         <label for="rt_timeout">Refresh token timeout (seconds)</label>
 
         <input id="rt_timeout" class="form-control" type="text" ng-model="$ctrl.client.refresh_token_validity_seconds"
-            ng-required ng-min="30">
-            <p class="help-block">
-                This will setup after how many seconds the refresh token
-                expires. Type 0 to set an infinite lifetime.
-            </p>
+            ng-required ng-min="30"/>
+        <p class="help-block">
+           This will setup after how many seconds the refresh token
+           expires. Type 0 to set an infinite lifetime.
+        </p>
 
     </div>
     <div class="form-group">

@@ -24,6 +24,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import java.text.ParseException;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -69,7 +74,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
   }
 
   @Test
-  public void testRatWorkAsExpected() {
+  public void testRatWorkAsExpected() throws ParseException {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
     
@@ -87,6 +92,8 @@ public class RegistrationAccessTokenTests extends TestSupport {
     // @formatter:on
 
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
+    JWT jwt = JWTParser.parse(registerResponse.getRegistrationAccessToken());
+    assertThat(jwt.getJWTClaimsSet().getExpirationTime(), nullValue());
     assertThat(registerResponse.getScope(), not(empty()));
 
     RegisteredClientDTO getResponse =
