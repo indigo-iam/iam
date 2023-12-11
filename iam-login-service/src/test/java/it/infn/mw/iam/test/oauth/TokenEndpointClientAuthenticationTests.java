@@ -130,6 +130,21 @@ public class TokenEndpointClientAuthenticationTests {
   }
 
   @Test
+  public void testTokenEndpointPublicClientAuthentication() throws Exception {
+
+    String clientId = "public-client";
+
+    // @formatter:off
+    mvc.perform(post(TOKEN_ENDPOINT)
+        .param("grant_type", GRANT_TYPE)
+        .param("client_id", clientId))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope", containsString("profile")))
+      .andExpect(jsonPath("$.scope", containsString("email")));
+    // @formatter:on
+  }
+
+  @Test
   public void testTokenEndpointOptionsMethodAllowed() throws Exception {
     mvc.perform(options(TOKEN_ENDPOINT)).andExpect(status().isOk());
   }

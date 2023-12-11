@@ -36,7 +36,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -99,7 +98,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
 
-  @Autowired
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
       OIDCTokenService clientTokenService, IamTokenService tokenService,

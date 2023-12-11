@@ -20,7 +20,6 @@ import static java.util.Objects.isNull;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -79,14 +78,6 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
     }
 
     client.setAllowIntrospection(true);
-
-    if (isNull(client.getContacts())) {
-      client.setContacts(new HashSet<>());
-    }
-
-    if (isNull(client.getClientId())) {
-      client.setClientId(UUID.randomUUID().toString());
-    }
 
     if (isNull(client.getTokenEndpointAuthMethod())) {
       client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);

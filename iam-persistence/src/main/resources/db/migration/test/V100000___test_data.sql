@@ -12,7 +12,7 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (9, 'token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP()),
   (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP()),
   (11, 'token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC', false, CURRENT_TIMESTAMP());
-  
+
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
   token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, created_at) VALUES
@@ -38,8 +38,9 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
   token_endpoint_auth_method, require_auth_time, created_at) VALUES
 (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP()),
-(18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP());
-  
+(18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, CURRENT_TIMESTAMP()),
+(19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, CURRENT_TIMESTAMP());
+
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
   (1, 'profile'),
@@ -146,7 +147,9 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (14, 'phone'),
   (17, 'iam:admin.read'),
   (18, 'iam:admin.read'),
-  (18, 'iam:admin.write');
+  (18, 'iam:admin.write'),
+  (19, 'profile'),
+  (19, 'email');
   
   
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
@@ -194,7 +197,8 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (17, 'authorization_code'),
   (18, 'client_credentials'),
   (18, 'urn:ietf:params:oauth:grant-type:device_code'),
-  (18, 'authorization_code');
+  (18, 'authorization_code'),
+  (19, 'client_credentials');
     
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER) VALUES
   (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M'),

@@ -91,6 +91,11 @@ public class ClientConverter {
       client.setCodeChallengeMethod(pkceAlgo);
     }
 
+    if (dto.getTokenEndpointAuthMethod() != null) {
+      client
+        .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
+    }
+
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
 
     return client;
@@ -208,9 +213,7 @@ public class ClientConverter {
 
     client.setContacts(cloneSet(dto.getContacts()));
 
-    if (isNull(dto.getTokenEndpointAuthMethod())) {
-      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    } else {
+    if (!isNull(dto.getTokenEndpointAuthMethod())) {
       client
         .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
