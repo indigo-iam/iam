@@ -60,7 +60,6 @@ import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.IamTokenService;
@@ -102,8 +101,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
       OIDCTokenService clientTokenService, IamTokenService tokenService,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
-      IamProperties iamProperties, ScopeMatcherRegistry scopeMatcherRegistry,
-      ApplicationEventPublisher aep) {
+      ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -437,7 +435,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     final IamAccount account =
         accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-    
+
     client = clientService.linkClientToAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));
