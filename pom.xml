@@ -50,7 +50,7 @@
 
     <testcontainers.version>1.16.2</testcontainers.version>
 
-    <mitreid.version>1.3.6.cnaf-20240119</mitreid.version>
+    <mitreid.version>1.3.6.iam-issue-605</mitreid.version>
     <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
     <voms.version>3.3.2</voms.version>
