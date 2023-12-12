@@ -24,6 +24,7 @@ import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.TokenRequest;
@@ -31,6 +32,8 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
+import it.infn.mw.iam.audit.events.tokens.AccessTokenRefreshedEvent;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
@@ -42,14 +45,16 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final ApplicationEventPublisher eventPublisher;
 
 
   @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
-      IamOAuthRefreshTokenRepository rtRepo) {
+      IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher) {
 
     this.accessTokenRepo = atRepo;
     this.refreshTokenRepo = rtRepo;
+    this.eventPublisher = publisher;
   }
 
   @Override
@@ -83,6 +88,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
     OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
     token.getClient().setLastUsed(new Date());
+    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
   }
 
@@ -92,6 +98,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
     OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
     token.getClient().setLastUsed(new Date());
+    eventPublisher.publishEvent(new AccessTokenRefreshedEvent(this, token));
     return token;
   }
 }
