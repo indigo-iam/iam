@@ -15,21 +15,43 @@
  */
 package it.infn.mw.iam.util.mfa;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 public class IamTotpMfaEncryptionAndDecryptionHelper {
 
+  public enum AesCipherModes {
+    CBC("AES/CBC/PKCS5Padding"),
+    GCM("AES/GCM/NoPadding");
+
+    private final String cipherMode;
+
+    AesCipherModes(String cipherMode) {
+      this.cipherMode = cipherMode;
+    }
+
+    public String getCipherMode() {
+      return cipherMode;
+    }
+  }
+
   private String encryptionAlgorithm = "AES";
-  private String modeOfOperation = "AES/CBC/PKCS5Padding";
+  private AesCipherModes shortFormOfCipherMode = AesCipherModes.GCM;
+  private String modeOfOperation = shortFormOfCipherMode.getCipherMode();
 
   // AES `keySize` has 3 options: 128, 192, or 256 bits.
-  private int keySize = 128;
+  private int keyLengthInBits = 128;
 
-  private int ivSize = 16;
+  private int ivLengthInBytes = 16;
+  private int tagLengthInBits = 128;
+  private int ivLengthInBytesForGCM = 12;
 
   // Multiples of 8
-  private int saltSize = 16;
+  private int saltLengthInBytes = 16;
 
   // The higher value the better
   private int iterations = 65536;
+  private Charset utf8 = StandardCharsets.UTF_8;
 
   private static IamTotpMfaEncryptionAndDecryptionHelper instance;
 
@@ -37,24 +59,60 @@ public class IamTotpMfaEncryptionAndDecryptionHelper {
     // Prevent instantiation
   }
 
-  public int getKeySize() {
-    return keySize;
+  public String getEncryptionAlgorithm() {
+    return encryptionAlgorithm;
   }
 
-  public void setKeySize(int keySize) {
-    this.keySize = keySize;
+  public void setEncryptionAlgorithm(String encryptionAlgorithm) {
+    this.encryptionAlgorithm = encryptionAlgorithm;
   }
 
-  public int getIvSize() {
-    return ivSize;
+  public String getModeOfOperation() {
+    return modeOfOperation;
   }
 
-  public int getSaltSize() {
-    return saltSize;
+  public void setModeOfOperation(String modeOfOperation) {
+    this.modeOfOperation = modeOfOperation;
   }
 
-  public void setSaltSize(int saltSize) {
-    this.saltSize = saltSize;
+  public int getKeyLengthInBits() {
+    return keyLengthInBits;
+  }
+
+  public void setKeyLengthInBits(int keyLengthInBits) {
+    this.keyLengthInBits = keyLengthInBits;
+  }
+
+  public int getIvLengthInBytes() {
+    return ivLengthInBytes;
+  }
+
+  public void setIvLengthInBytes(int ivLengthInBytes) {
+    this.ivLengthInBytes = ivLengthInBytes;
+  }
+
+  public int getTagLengthInBits() {
+    return tagLengthInBits;
+  }
+
+  public void setTagLengthInBits(int tagLengthInBits) {
+    this.tagLengthInBits = tagLengthInBits;
+  }
+
+  public int getIvLengthInBytesForGCM() {
+    return ivLengthInBytesForGCM;
+  }
+
+  public void setIvLengthInBytesForGCM(int ivLengthInBytesForGCM) {
+    this.ivLengthInBytesForGCM = ivLengthInBytesForGCM;
+  }
+
+  public int getSaltLengthInBytes() {
+    return saltLengthInBytes;
+  }
+
+  public void setSaltLengthInBytes(int saltLengthInBytes) {
+    this.saltLengthInBytes = saltLengthInBytes;
   }
 
   public int getIterations() {
@@ -65,12 +123,16 @@ public class IamTotpMfaEncryptionAndDecryptionHelper {
     this.iterations = iterations;
   }
 
-  public String getEncryptionAlgorithm() {
-    return encryptionAlgorithm;
+  public Charset getUtf8() {
+    return utf8;
   }
 
-  public String getModeOfOperation() {
-    return modeOfOperation;
+  public AesCipherModes getShortFormOfCipherMode() {
+    return shortFormOfCipherMode;
+  }
+
+  public void setShortFormOfCipherMode(AesCipherModes shortFormOfCipherMode) {
+    this.shortFormOfCipherMode = shortFormOfCipherMode;
   }
 
   /**
