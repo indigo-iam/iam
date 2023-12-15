@@ -16,20 +16,21 @@
 package it.infn.mw.iam.util.mfa;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.security.Key;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
-import java.util.Arrays;
 import java.util.Base64;
+import java.nio.ByteBuffer;
 
 public class IamTotpMfaEncryptionAndDecryptionUtil {
 
@@ -53,35 +54,46 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    */
   public static String encryptSecretOrRecoveryCode(String plaintext, String password)
       throws IamTotpMfaInvalidArgumentError {
-    byte[] salt = generateSalt();
     String modeOfOperation = defaultModel.getModeOfOperation();
 
-    if (validatePlaintext(plaintext) || validatePlaintext(password)) {
+    if (validateText(plaintext) || validateText(password)) {
       throw new IamTotpMfaInvalidArgumentError(
           "Please ensure that you provide plaintext and the password");
     }
 
     try {
+      byte[] salt = generateNonce(defaultModel.getSaltLengthInBytes());
       Key key = getKeyFromPassword(password, salt, defaultModel.getEncryptionAlgorithm());
-      IvParameterSpec iv = getIVSecureRandom(defaultModel.getModeOfOperation());
+      byte[] iv;
 
-      Cipher cipher1 = Cipher.getInstance(modeOfOperation);
-      cipher1.init(Cipher.ENCRYPT_MODE, key, iv);
+      Cipher cipher = Cipher.getInstance(modeOfOperation);
 
-      byte[] ivBytes = cipher1.getIV();
-      byte[] cipherText = cipher1.doFinal(plaintext.getBytes());
-      byte[] encryptedData = new byte[salt.length + ivBytes.length + cipherText.length];
+      if (isCipherModeCBC()) {
+        IvParameterSpec ivParamSpec = getIVSecureRandom(defaultModel.getIvLengthInBytes());
+
+        cipher.init(Cipher.ENCRYPT_MODE, key, ivParamSpec);
+
+        iv = cipher.getIV();
+      } else {
+        iv = generateNonce(defaultModel.getIvLengthInBytesForGCM());
+
+        cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
+      }
+
+      byte[] cipherText = cipher.doFinal(plaintext.getBytes());
 
       // Append salt, IV, and cipherText into `encryptedData`.
-      System.arraycopy(salt, 0, encryptedData, 0, salt.length);
-      System.arraycopy(iv.getIV(), 0, encryptedData, salt.length, iv.getIV().length);
-      System.arraycopy(cipherText, 0, encryptedData, salt.length + iv.getIV().length, cipherText.length);
+      byte[] encryptedData = ByteBuffer.allocate(salt.length + iv.length + cipherText.length)
+          .put(salt)
+          .put(iv)
+          .put(cipherText)
+          .array();
 
       return Base64.getEncoder()
           .encodeToString(encryptedData);
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(
-          "Please ensure that you provide plaintext and the password", exp);
+          "An error occurred while encrypting secret or recovery code", exp);
     }
   }
 
@@ -89,64 +101,77 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    * Helper to decrypt the cipherText. Ensure you use the same password as you did
    * during encryption.
    *
-   * @param cipherText Encrypted data which help us to extract the plaintext.
-   * @param password   Provided by the admin through the environment
-   *                   variable.
+   * @param cText    Encrypted data which help us to extract the plaintext.
+   * @param password Provided by the admin through the environment
+   *                 variable.
    *
    * @return String Returns plainText which we obtained from the cipherText.
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String decryptSecretOrRecoveryCode(String cipherText, String password)
+  public static String decryptSecretOrRecoveryCode(String cText, String password)
       throws IamTotpMfaInvalidArgumentError {
     String modeOfOperation = defaultModel.getModeOfOperation();
 
-    if (validatePlaintext(cipherText) || validatePlaintext(password)) {
+    if (validateText(cText) || validateText(password)) {
       throw new IamTotpMfaInvalidArgumentError(
           "Please ensure that you provide cipherText and the password");
     }
 
     try {
-      byte[] encryptedData = Base64.getDecoder().decode(cipherText);
+      byte[] encryptedData = Base64.getDecoder().decode(cText);
+
+      ByteBuffer byteBuffer = ByteBuffer.wrap(encryptedData);
 
       // Extract salt, IV, and cipherText from the combined data
-      byte[] salt = Arrays.copyOfRange(encryptedData, 0, defaultModel.getSaltSize());
+      byte[] salt = new byte[defaultModel.getSaltLengthInBytes()];
+      byteBuffer.get(salt);
+
+      byte[] iv;
+
+      if (isCipherModeCBC()) {
+        iv = new byte[defaultModel.getIvLengthInBytes()];
+      } else {
+        iv = new byte[defaultModel.getIvLengthInBytesForGCM()];
+      }
+
+      byteBuffer.get(iv);
+
+      byte[] cipherText = new byte[byteBuffer.remaining()];
+      byteBuffer.get(cipherText);
+
       Key key = getKeyFromPassword(password, salt, defaultModel.getEncryptionAlgorithm());
-      byte[] ivBytes = Arrays.copyOfRange(encryptedData, defaultModel.getSaltSize(),
-          defaultModel.getSaltSize() + defaultModel.getIvSize());
-      byte[] extractedCipherText = Arrays.copyOfRange(encryptedData,
-          defaultModel.getSaltSize() + defaultModel.getIvSize(),
-          encryptedData.length);
 
       Cipher cipher = Cipher.getInstance(modeOfOperation);
 
-      cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(ivBytes));
+      if (isCipherModeCBC()) {
+        cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+      } else {
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(defaultModel.getTagLengthInBits(), iv));
+      }
 
-      byte[] decryptedTextBytes = cipher.doFinal(
-          Base64.getDecoder().decode(
-              Base64.getEncoder().encodeToString(extractedCipherText)));
+      byte[] decryptedTextBytes = cipher.doFinal(cipherText);
 
       return new String(decryptedTextBytes);
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(
-          "Please use the same password and mode of operation which you used for encryption", exp);
+          "An error occurred while decrypting ciphertext", exp);
     }
   }
 
   /**
    * Generates a random Initialization Vector(IV) using a secure random generator.
    *
-   * @param algorithm A symmetric key algorithm (AES) has been used.
+   * @param byteSize. Specifies IV length for CBC.
    *
    * @return IvParameterSpec
    *
    * @throws NoSuchAlgorithmException
-   * @throws NoSuchPaddingException
    */
-  private static IvParameterSpec getIVSecureRandom(String algorithm)
-      throws NoSuchAlgorithmException, NoSuchPaddingException {
+  private static IvParameterSpec getIVSecureRandom(int byteSize)
+      throws NoSuchAlgorithmException {
     SecureRandom random = SecureRandom.getInstanceStrong();
-    byte[] iv = new byte[Cipher.getInstance(algorithm).getBlockSize()];
+    byte[] iv = new byte[byteSize];
 
     random.nextBytes(iv);
 
@@ -170,25 +195,51 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
       throws NoSuchAlgorithmException, InvalidKeySpecException {
     SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
     KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, defaultModel.getIterations(),
-        defaultModel.getKeySize());
+        defaultModel.getKeyLengthInBits());
 
-    return new SecretKeySpec(factory.generateSecret(spec)
-        .getEncoded(), algorithm);
+    byte[] calculatedHash = factory.generateSecret(spec).getEncoded();
+    byte[] storedHash = factory.generateSecret(spec).getEncoded();
+
+    if (MessageDigest.isEqual(calculatedHash, storedHash)) {
+      return new SecretKeySpec(calculatedHash, algorithm);
+    } else {
+      throw new IamTotpMfaInvalidArgumentError("Invalid password");
+    }
   }
 
   /**
    * Generates a random salt using a secure random generator.
+   *
+   * @param byteSize Specifies either salt or IV for GCM byte length
+   *
+   * @return byte[]
+   * @throws NoSuchAlgorithmException
    */
-  private static byte[] generateSalt() {
-    byte[] salt = new byte[defaultModel.getSaltSize()];
-    SecureRandom random = new SecureRandom();
+  private static byte[] generateNonce(int byteSize) throws NoSuchAlgorithmException {
+    SecureRandom random = SecureRandom.getInstanceStrong();
+    byte[] salt = new byte[byteSize];
 
     random.nextBytes(salt);
 
     return salt;
   }
 
-  private static boolean validatePlaintext(String text) {
+  /**
+   * Helper method to determine whether the provided text is an empty or NULL.
+   *
+   * @return boolean
+   */
+  private static boolean validateText(String text) {
     return (text == null || text.isEmpty());
+  }
+
+  /**
+   * Helper method to determine whether it is in CBC mode or NOT.
+   *
+   * @return boolean
+   */
+  private static boolean isCipherModeCBC() {
+    return defaultModel.getModeOfOperation().equalsIgnoreCase(
+        IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC.getCipherMode());
   }
 }

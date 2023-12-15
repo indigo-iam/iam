@@ -25,5 +25,7 @@ public class IamTotpMfaCommons {
 
   public static final int ANOTHER_KEY_SIZE = 192;
   public static final int ANOTHER_ITERATIONS = 6000;
-  public static final int ANOTHER_SALT_SIZE = 8;
+  public static final int ANOTHER_SALT_SIZE = 24;
+
+  public static final int INVALID_SALT_SIZE = 0;
 }
