@@ -47,4 +47,7 @@ public interface ClientService {
 
   void deleteClient(ClientDetailsEntity client);
 
+  ClientDetailsEntity updateLastUsedByCliendId(String clientId);
+
+  ClientDetailsEntity updateLastUsed(ClientDetailsEntity client);
 }

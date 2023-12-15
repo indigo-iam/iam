@@ -28,6 +28,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,14 +98,14 @@ public class DefaultClientService implements ClientService {
 
     accountClientRepo.findByAccountAndClient(owner, client).ifPresent(accountClientRepo::delete);
 
-    return client;
+    return updateLastUsed(client);
   }
 
   @Override
   @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
-    return clientRepo.save(client);
+    return updateLastUsed(client);
   }
 
 
@@ -169,6 +170,21 @@ public class DefaultClientService implements ClientService {
 
     return accountClientRepo.findByClientClientId(clientId, page);
 
+  }
+
+  @Override
+  public ClientDetailsEntity updateLastUsedByCliendId(String clientId)
+      throws InvalidClientException {
+    return findClientByClientId(clientId)
+      .map(this::updateLastUsed)
+      .orElseThrow(
+          () -> new InvalidClientException("Client not found: " + clientId));
+  }
+
+  @Override
+  public ClientDetailsEntity updateLastUsed(ClientDetailsEntity client) {
+    client.setLastUsed(Date.from(clock.instant()));
+    return clientRepo.save(client);
   }
 
 }
