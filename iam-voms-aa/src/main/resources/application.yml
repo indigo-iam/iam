@@ -15,31 +15,31 @@
 #
 
 server:
-  address: localhost
-  port: 15000
+  address: ${VOMS_AA_HOST:localhost}
+  port: ${VOMS_AA_PORT:15000}
   max-http-header-size: 16000
-    
-  
+
 spring:
   flyway:
     table: schema_version
-  
+
   main:
     banner-mode: "off"
     allow-circular-references: true
-  
+
   jpa:
     open-in-view: false
-  
+
 voms:
   tls:
-    certificate-path: /etc/grid-security/voms/hostcert.pem
-    private-key-path: /etc/grid-security/voms/hostkey.pem
-    trust-anchors-dir: /etc/grid-security/certificates
-    trust-anchors-refresh-interval-secs: 14400
+    certificate-path: ${VOMS_TLS_CERTIFICATE_PATH:/etc/grid-security/voms/hostcert.pem}
+    private-key-path: ${VOMS_TLS_PRIVATE_KEY_PATH:/etc/grid-security/voms/hostkey.pem}
+    trust-anchors-dir: ${VOMS_TLS_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
+    trust-anchors-refresh-interval-secs: ${VOMS_TLS_TRUST_ANCHORS_REFRESH_INTERVAL_SECS:14400}
   aa:
     host: ${server.address}
     port: ${server.port}
-    vo-name: test
-    optional-group-label: voms.role
-    use-legacy-fqan-encoding: false
+    vo-name: ${VOMS_AA_VO:test}
+    optional-group-label: ${VOMS_AA_OPTIONAL_GROUP_LABEL:voms.role}
+    use-legacy-fqan-encoding: ${VOMS_AA_USE_LEGACY_FQAN_ENCODING:false}
+    max-ac-lifetime-in-seconds: ${VOMS_AA_MAX_AC_LIFETIME_IN_SECONDS:43200}
