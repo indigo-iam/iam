@@ -18,6 +18,7 @@ package it.infn.mw.iam.core;
 import java.util.Date;
 import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
@@ -36,6 +37,7 @@ import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenRefreshedEvent;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service("defaultOAuth2ProviderTokenService")
 @Primary
@@ -46,15 +48,18 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final ApplicationEventPublisher eventPublisher;
+  private final IamClientRepository clientRepo;
 
 
   @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
-      IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher) {
+      IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
+      IamClientRepository clientRepo) {
 
     this.accessTokenRepo = atRepo;
     this.refreshTokenRepo = rtRepo;
     this.eventPublisher = publisher;
+    this.clientRepo = clientRepo;
   }
 
   @Override
@@ -87,7 +92,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
     OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
-    token.getClient().setLastUsed(new Date());
+    ClientDetailsEntity client = token.getClient();
+    client.setLastUsed(new Date());
+    clientRepo.save(client);
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
   }
@@ -97,7 +104,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
       TokenRequest authRequest) {
 
     OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
-    token.getClient().setLastUsed(new Date());
+    ClientDetailsEntity client = token.getClient();
+    client.setLastUsed(new Date());
+    clientRepo.save(client);
     eventPublisher.publishEvent(new AccessTokenRefreshedEvent(this, token));
     return token;
   }
