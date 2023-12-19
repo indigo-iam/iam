@@ -98,14 +98,14 @@ public class DefaultClientService implements ClientService {
 
     accountClientRepo.findByAccountAndClient(owner, client).ifPresent(accountClientRepo::delete);
 
-    return updateLastUsed(client);
+    return client;
   }
 
   @Override
   @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
-    return updateLastUsed(client);
+    return clientRepo.save(client);
   }
 
 
