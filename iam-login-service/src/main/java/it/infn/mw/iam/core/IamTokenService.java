@@ -36,6 +36,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenRefreshedEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -50,17 +51,19 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final ApplicationEventPublisher eventPublisher;
   private final IamClientRepository clientRepo;
+  private final IamProperties iamProperties;
 
 
   @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
-      IamClientRepository clientRepo) {
+      IamClientRepository clientRepo, IamProperties iamProperties) {
 
     this.accessTokenRepo = atRepo;
     this.refreshTokenRepo = rtRepo;
     this.eventPublisher = publisher;
     this.clientRepo = clientRepo;
+    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -94,7 +97,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
     OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
     
-    updateClientLastUsed(token);
+    if (iamProperties.getClient().isTrackLastUsed()) {
+      updateClientLastUsed(token);
+    }
 
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
@@ -106,13 +111,15 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
     OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
     
-    updateClientLastUsed(token);
+    if (iamProperties.getClient().isTrackLastUsed()) {
+      updateClientLastUsed(token);
+    }
     
     eventPublisher.publishEvent(new AccessTokenRefreshedEvent(this, token));
     return token;
   }
 
-  private void updateClientLastUsed(OAuth2AccessTokenEntity token) {
+  private void updateClientLastUsed(OAuth2AccessTokenEntity token) { 
     ClientDetailsEntity client = token.getClient();
     
     Date now = new LocalDate().toDate(); // keep only the day
