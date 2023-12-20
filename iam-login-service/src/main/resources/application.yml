@@ -225,6 +225,9 @@ client-registration:
     default-id-token-validity-seconds: ${DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
     default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
 
+client:
+  track_last_used: ${IAM_CLIENT_TRACK_LAST_USED:false}
+
 management:
   health:
       redis:
