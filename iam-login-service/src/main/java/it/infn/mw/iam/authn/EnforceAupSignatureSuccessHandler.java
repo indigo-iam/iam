@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.web.aup.EnforceAupFilter.REQUESTING_SIGNATURE;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -32,6 +33,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.util.IamAuthenticationLogger;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -44,13 +46,16 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
   private final AUPSignatureCheckService service;
   private final AccountUtils accountUtils;
   private final IamAccountRepository accountRepo;
+  private IamProperties iamProperties;
 
   public EnforceAupSignatureSuccessHandler(AuthenticationSuccessHandler delegate,
-      AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo) {
+      AUPSignatureCheckService service, AccountUtils utils, IamAccountRepository accountRepo,
+      IamProperties iamProperties) {
     this.delegate = delegate;
     this.service = service;
     this.accountUtils = utils;
     this.accountRepo = accountRepo;
+    this.iamProperties = iamProperties;
   }
 
   private Optional<Authentication> resolveUserAuthentication(Authentication auth) {
@@ -100,14 +105,15 @@ public class EnforceAupSignatureSuccessHandler implements AuthenticationSuccessH
     Optional<IamAccount> authenticatedAccount = lookupAuthenticatedUser(auth);
 
     if (!authenticatedAccount.isPresent()
-        || !service.needsAupSignature(authenticatedAccount.get())) {
+        || !(service.getRemainingTimeToSignatureExpiration(authenticatedAccount
+          .get()) < TimeUnit.DAYS.toMillis(iamProperties.getAup().getExpiryNoticeDays())
+            && service.getRemainingTimeToSignatureExpiration(authenticatedAccount.get()) != 0)) {
       delegate.onAuthenticationSuccess(request, response, auth);
 
     } else {
       session.setAttribute(REQUESTING_SIGNATURE, true);
       response.sendRedirect("/iam/aup/sign");
     }
-
   }
 
 }

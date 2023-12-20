@@ -15,11 +15,14 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
+// import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.greaterThan;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -51,36 +54,34 @@ public class EnforceAupSignatureSuccessHandlerTests {
 
   @Mock
   AuthenticationSuccessHandler delegate;
-  
+
   @Mock
   AUPSignatureCheckService signatureCheckService;
-  
+
   @Mock
   AccountUtils accountUtils;
-  
+
   @Mock
   IamAccountRepository accountRepo;
-  
+
   @Mock
   HttpServletRequest request;
-  
+
   @Mock
   HttpServletResponse response;
-  
+
   @Mock
   HttpSession session;
-  
+
   @Mock
   Authentication auth;
-  
+
   @Mock
   IamAccount account;
-  
-  
+
   @InjectMocks
   EnforceAupSignatureSuccessHandler handler;
-  
-  
+
   @Before
   public void before() {
     when(request.getSession(false)).thenReturn(session);
@@ -89,63 +90,84 @@ public class EnforceAupSignatureSuccessHandlerTests {
     when(auth.getName()).thenReturn("test");
     
   }
-  
+
   @Test
   public void userIsRedirectedToSignAupPageWhenNeeded() throws IOException, ServletException {
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(true);
+    when(signatureCheckService.getRemainingTimeToSignatureExpiration(Mockito.any())).thenReturn(-1L);
    
     handler.onAuthenticationSuccess(request, response, auth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
-    verify(session).setAttribute(Mockito.eq(EnforceAupFilter.REQUESTING_SIGNATURE), Mockito.eq(true));
+    verify(session).setAttribute(Mockito.eq(EnforceAupFilter.REQUESTING_SIGNATURE), Mockito.eq(true));    
     verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
     verify(response).sendRedirect(Mockito.eq("/iam/aup/sign"));
   }
+
+  // @Test
+  // public void redirectFirmaInScadenza() throws IOException, ServletException {
+  // when(signatureCheckService.getRemainingTimeToSignatureExpiration(Mockito.any())).thenReturn(TimeUnit.DAYS.toMillis(10));
+  // handler.onAuthenticationSuccess(request, response, auth);
+
+  // verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP),
+  // Mockito.any());
+  // // verify(session).setAttribute(Mockito.eq(EnforceAupFilter.SIGNATURE_REMAINING_DAYS),
+  // Mockito.eq(TimeUnit.DAYS.toMillis(10)));
+  // //
+  // verify(session).getAttribute(EnforceAupFilter.SIGNATURE_REMAINING_DAYS).equals(TimeUnit.DAYS.toMillis(10));
+  // verify(session).setAttribute(Mockito.eq(EnforceAupFilter.REQUESTING_SIGNATURE),
+  // Mockito.eq(false));
+
+  // }
 
   @Test
   public void delegateIsCalledIfNoSignatureIsNeeded()throws IOException, ServletException {
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false); 
+    when(signatureCheckService.getRemainingTimeToSignatureExpiration(Mockito.any())).thenReturn(Long.MAX_VALUE);
     
     handler.onAuthenticationSuccess(request, response, auth);
     verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
     verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response), Mockito.eq(auth));
     verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
   }
- 
-  
+
   @Test
   public void testOAuthAuthenticationIsUnderstood() throws IOException, ServletException {
     OAuth2Authentication oauth = Mockito.mock(OAuth2Authentication.class);
     when(oauth.getName()).thenReturn("oauth-client-for-test");
     when(oauth.getUserAuthentication()).thenReturn(auth);
-    
+
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.of(account));
     when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.of(account));
-    when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false);
-    
+    when(signatureCheckService.getRemainingTimeToSignatureExpiration(Mockito.any()))
+      .thenReturn(Long.MAX_VALUE);
+
     handler.onAuthenticationSuccess(request, response, oauth);
-    verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
-    verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response), Mockito.eq(oauth));
-    verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test")); 
+    verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP),
+        Mockito.any());
+    verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response),
+        Mockito.eq(oauth));
+    verify(accountRepo).touchLastLoginTimeForUserWithUsername(Mockito.eq("test"));
   }
-  
+
   @Test
-  public void testOAuthClientAuthenticationDoesNotResultInUserLoginTimeUpdate() throws IOException, ServletException {
+  public void testOAuthClientAuthenticationDoesNotResultInUserLoginTimeUpdate()
+      throws IOException, ServletException {
     OAuth2Authentication oauth = Mockito.mock(OAuth2Authentication.class);
     when(oauth.getName()).thenReturn("oauth-client-for-test");
     when(oauth.getUserAuthentication()).thenReturn(null);
     // when(signatureCheckService.needsAupSignature(Mockito.any())).thenReturn(false);
-    
+
     // when(accountUtils.getAuthenticatedUserAccount()).thenReturn(Optional.empty());
     // when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.empty());
-    
+
     handler.onAuthenticationSuccess(request, response, oauth);
-    verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP), Mockito.any());
-    verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response), Mockito.eq(oauth));
-    verify(accountRepo, Mockito.never()).touchLastLoginTimeForUserWithUsername(Mockito.anyString()); 
+    verify(session).setAttribute(Mockito.eq(AuthenticationTimeStamper.AUTH_TIMESTAMP),
+        Mockito.any());
+    verify(delegate).onAuthenticationSuccess(Mockito.eq(request), Mockito.eq(response),
+        Mockito.eq(oauth));
+    verify(accountRepo, Mockito.never()).touchLastLoginTimeForUserWithUsername(Mockito.anyString());
   }
-  
+
 }

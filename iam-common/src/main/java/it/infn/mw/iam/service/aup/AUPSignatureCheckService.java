@@ -20,5 +20,5 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 @FunctionalInterface
 public interface AUPSignatureCheckService {
 
-  boolean needsAupSignature(IamAccount account);
+  Long getRemainingTimeToSignatureExpiration(IamAccount account);
 }

@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 
@@ -50,52 +51,68 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
   }
 
   @Override
-  public boolean needsAupSignature(IamAccount account) {
+  public Long getRemainingTimeToSignatureExpiration(IamAccount account) {
     Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    Date now = new Date(timeProvider.currentTimeMillis());
-
-    if (!aup.isPresent()) {
+    if (isNull(aup) || !aup.isPresent()
+        || (aup.isPresent() && aup.get().getSignatureValidityInDays() == 0)) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",
           account.getUsername());
-      return false;
+      return Long.MAX_VALUE;
     }
 
     if (isNull(account.getAupSignature())) {
       LOG.debug("AUP signature needed for account '{}': no signature record found for user",
           account.getUsername());
-      return true;
+      return Long.MIN_VALUE;
     }
 
     Date signatureTime = account.getAupSignature().getSignatureTime();
     Date aupLastModifiedTime = aup.get().getLastUpdateTime();
     Long signatureValidityInDays = aup.get().getSignatureValidityInDays();
 
-    if (signatureTime.compareTo(aupLastModifiedTime) > 0) {
+    if (aupLastModifiedTime.getTime() >= signatureTime.getTime()) {
+      LOG.debug(
+          "AUP signature needed for account '{}': signature record expiration after AUP update",
+          account.getUsername());
+      return Long.MIN_VALUE;
+    }
+
+    Long daysLeftBeforeSignAup =
+        calculateDaysLeft(signatureValidityInDays, signatureTime.getTime());
+
+    if (daysLeftBeforeSignAup > 0) {
 
       if (signatureValidityInDays > 0) {
 
-        Date signatureValidTime =
-            new Date(signatureTime.getTime() + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+        Date signatureValidTime = new Date(signatureTime.getTime() + signatureValidityInDays);
 
         // The signature was on the last version of the AUP
+        Date now = new Date(timeProvider.currentTimeMillis());
         boolean signatureNeeded = now.compareTo(signatureValidTime) > 0;
         String signatureNeededString = (signatureNeeded ? "needed" : "not needed");
         LOG.debug(
             "AUP signature {} for account '{}': Now '{}' AUP signature time '{}', AUP signature end of validity '{}'",
             signatureNeededString, account.getUsername(), now, signatureTime, signatureValidTime);
-        return signatureNeeded;
       }
 
-      return false;
+      return daysLeftBeforeSignAup;
+    } else {
+      LOG.debug(
+          "AUP signature needed for account '{}': AUP signature time '{}', AUP last modified time '{}'",
+          account.getUsername(), signatureTime, aupLastModifiedTime);
+
+      return daysLeftBeforeSignAup;
     }
-
-    // The signature is needed anyway since it was done before the last changes to the AUP
-    LOG.debug(
-        "AUP signature needed for account '{}': AUP signature time '{}', AUP last modified time '{}'",
-        account.getUsername(), signatureTime, aupLastModifiedTime);
-
-    return true;
   }
 
+  private Long calculateDaysLeft(Long signatureValidityInDays, Long signatureTime) {
+    Date expirationDateSignature =
+        new Date(signatureTime + TimeUnit.DAYS.toMillis(signatureValidityInDays));
+    Date now = new Date(timeProvider.currentTimeMillis());
+    Long delta = expirationDateSignature.getTime() - now.getTime();
+    // Long resultDaysLeft = TimeUnit.DAYS.convert(delta, TimeUnit.MILLISECONDS);
+
+    return delta;
+  }
 }

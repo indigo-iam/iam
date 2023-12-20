@@ -18,12 +18,12 @@ server:
   servlet:
     session:
       timeout: ${IAM_SESSION_TIMEOUT_SECS:1800}
-        
+
   error:
     path: /error
-    
+
   port: ${IAM_PORT:8080}
-  
+
   tomcat:
     accesslog:
       enabled: ${IAM_TOMCAT_ACCESS_LOG_ENABLED:false}
@@ -31,38 +31,37 @@ server:
       pattern: "%{X-Forwarded-For}i %l %u %t \"%r\" %s %b"
 
   forward-headers-strategy: ${IAM_FORWARD_HEADERS_STRATEGY:none}
-  
+
 spring:
   redis:
-    
     host: ${IAM_SPRING_REDIS_HOST:localhost}
     port: ${IAM_SPRING_REDIS_PORT:6379}
     password: ${IAM_SPRING_REDIS_PASSWORD:}
-    
+
   application:
     name: INDIGO IAM
-  
+
   session:
     timeout: ${IAM_SESSION_TIMEOUT_SECS:1800}
     store-type: ${IAM_SPRING_SESSION_STORE_TYPE:none}
     redis:
       flush-mode: on-save
       namespace: iam:session
-     
+
   security:
     filter:
       order: 1
-       
+
   profiles:
     default: h2-test
     group:
-     "h2-test": "h2,saml,registration"
-     "h2-test-redis": "h2,saml,registration,redis-test"
-     "mysql-test": "mysql,saml,registration"
-     "mysql-test-tc": "mysql-test-tc,saml,registration"
-     "mysql-test-tc-redis": "mysql-test-tc,saml,registration,redis-test"
-     "prod": "mysql,flyway-repair"
-    
+      "h2-test": "h2,saml,registration"
+      "h2-test-redis": "h2,saml,registration,redis-test"
+      "mysql-test": "mysql,saml,registration"
+      "mysql-test-tc": "mysql-test-tc,saml,registration"
+      "mysql-test-tc-redis": "mysql-test-tc,saml,registration,redis-test"
+      "prod": "mysql,flyway-repair"
+
   jpa:
     generate-ddl: true
     open-in-view: false
@@ -75,13 +74,13 @@ spring:
 
   flyway:
     table: schema_version
-    
+
   freemarker:
     template-loader-path: ${IAM_CUSTOM_TEMPLATE_LOCATION:classpath:/email-templates}
 
   main:
     allow-circular-references: true
-    
+
   web:
     resources:
       cache:
@@ -90,41 +89,42 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: "ant-path-matcher"
+
 iam:
   
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
-  
+
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
     default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
     default-jwe-decrypt-key-id: ${IAM_JWK_DEFAULT_JWE_DECRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
-    default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
-    
+    default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256}
+
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}
-  
+
   logo:
     url: ${IAM_LOGO_URL:resources/images/indigo-logo.png}
     dimension: ${IAM_LOGO_DIMENSION:200}
     height: ${IAM_LOGO_HEIGHT:150}
     width: ${IAM_LOGO_WIDTH:200}
-  
+
   token:
     # This is the registration access token lifetime
-    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}  
+    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}
 
   organisation:
     name: ${IAM_ORGANISATION_NAME:indigo-dc}
-  
+
   privacyPolicy:
     url: ${IAM_PRIVACY_POLICY_URL:}
     text: ${IAM_PRIVACY_POLICY_TEXT:Privacy policy}
-  
+
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
 
@@ -138,29 +138,32 @@ iam:
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}
     password: ${IAM_ACTUATOR_USER_PASSWORD:actuator-password}
-  
+
   local-resources:
     enable: ${IAM_LOCAL_RESOURCES_ENABLE:false}
     location: ${IAM_LOCAL_RESOURCES_LOCATION:file:/indigo-iam/local-resources}
-  
+
   device-code:
     allow-complete-verification-uri: ${IAM_DEVICE_CODE_ALLOW_COMPLETE_VERIFICATION_URI:true}
-  
+
   registration:
     show-registration-button-in-login-page: ${IAM_REGISTRATION_SHOW_REGISTRATION_BUTTON_IN_LOGIN_PAGE:true}
     require-external-authentication: ${IAM_REGISTRATION_REQUIRE_EXTERNAL_AUTHENTICATION:false}
     authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
-    
+
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
     enabled-for: ${IAM_LOCAL_AUTHN_ENABLED_FOR:all}
-  
+
   customization:
     custom-login-page-content-url: ${IAM_CUSTOMIZATION_CUSTOM_LOGIN_PAGE_CONTENT_URL}
     include-custom-login-page-content: ${IAM_CUSTOMIZATION_INCLUDE_CUSTOM_LOGIN_PAGE_CONTENT:false}
-  
+
+  aup:
+    expiry-notice-days: ${EXPIRY_NOTICE_DAYS:30}
+
   user-profile:
     editable-fields:
     - email
@@ -173,7 +176,7 @@ iam:
     urn-delegated-namespace: ${IAM_AARC_PROFILE_URN_DELEGATED_NAMESPACE:iam.example}
     urn-nid: ${IAM_AARC_PROFILE_URN_NID:geant}
     urn-subnamespaces: ${IAM_AARC_PROFILE_URN_SUBNAMESPACES:}
-    
+
   external-connectivity-probe:
     enabled: ${IAM_HEALTH_EXTERNAL_CONNECTIVITY_PROBE_ENABLED:false}
     endpoint: ${IAM_HEALTH_EXTERNAL_CONNECTIVITY_PROBE_ENDPOINT:https://www.google.it}
@@ -189,7 +192,7 @@ x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
   tlsVersion: ${IAM_X509_TLS_VERSION:TLSv1}
-    
+
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:false}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
@@ -244,7 +247,7 @@ management:
       
     metrics:
       enabled: true
-    
+
 rcauth:
   enabled: ${IAM_RCAUTH_ENABLED:false}
   label: ${IAM_RCAUTH_LABEL:RCAuth.eu online CA}
@@ -269,5 +272,5 @@ lifecycle:
       remove-expired-accounts: ${IAM_LIFECYCLE_REMOVE_EXPIRED_ACCOUNTS:true}
       removal-grace-period-days: ${IAM_LIFECYCLE_ACCOUNT_REMOVAL_GRACE_PERIOD_DAYS:30}
     expired-accounts-task:
-      cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
+      cron-schedule: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}

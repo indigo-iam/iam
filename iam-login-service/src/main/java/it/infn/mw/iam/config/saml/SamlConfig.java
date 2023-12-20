@@ -724,8 +724,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     RootIsDashboardSuccessHandler sa = new RootIsDashboardSuccessHandler(iamProperties.getBaseUrl(),
         new HttpSessionRequestCache());
 
-    EnforceAupSignatureSuccessHandler aup =
-        new EnforceAupSignatureSuccessHandler(sa, aupSignatureCheckService, accountUtils, repo);
+    EnforceAupSignatureSuccessHandler aup = new EnforceAupSignatureSuccessHandler(sa,
+        aupSignatureCheckService, accountUtils, repo, iamProperties);
 
     return new ExternalAuthenticationSuccessHandler(aup, "/");
   }

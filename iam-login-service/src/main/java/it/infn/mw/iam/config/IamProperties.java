@@ -87,14 +87,11 @@ public class IamProperties {
 
   }
 
-
   public static class ExternalConnectivityProbeProperties {
 
     private boolean enabled = true;
-
     private String endpoint = "https://www.google.com";
     private int timeoutInSecs = 10;
-
 
     public boolean isEnabled() {
       return enabled;
@@ -287,7 +284,18 @@ public class IamProperties {
       this.allowCompleteVerificationUri = allowCompleteVerificationUri;
     }
 
+  }
 
+  public static class AupProperties {
+    private int expiryNoticeDays;
+
+    public int getExpiryNoticeDays() {
+      return expiryNoticeDays;
+    }
+
+    public void setExpiryNoticeDays(int expiryNoticeDays) {
+      this.expiryNoticeDays = expiryNoticeDays;
+    }
   }
 
   public static class JWKProperties {
@@ -537,6 +545,8 @@ public class IamProperties {
 
   private JWKProperties jwk = new JWKProperties();
 
+  private AupProperties aup = new AupProperties();
+
   private DeviceCodeProperties deviceCode = new DeviceCodeProperties();
 
   private boolean generateDdlSqlScript = false;
@@ -677,6 +687,14 @@ public class IamProperties {
 
   public JWKProperties getJwk() {
     return jwk;
+  }
+
+  public void setAup(AupProperties aup) {
+    this.aup = aup;
+  }
+
+  public AupProperties getAup() {
+    return aup;
   }
 
   public void setDeviceCode(DeviceCodeProperties deviceCode) {

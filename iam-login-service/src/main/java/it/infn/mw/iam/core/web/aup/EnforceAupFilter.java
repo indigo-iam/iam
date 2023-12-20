@@ -27,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
@@ -35,11 +34,11 @@ import org.slf4j.LoggerFactory;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.error.AupNotFoundError;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-
 
 public class EnforceAupFilter implements Filter {
 
@@ -48,19 +47,21 @@ public class EnforceAupFilter implements Filter {
   public static final String AUP_API_PATH = "/iam/aup";
   public static final String AUP_SIGN_PATH = "/iam/aup/sign";
   public static final String SIGN_AUP_JSP = "signAup.jsp";
-
   public static final String REQUESTING_SIGNATURE = "iam.aup.requesting-signature";
+  public static final String SIGNATURE_REMAINING_DAYS = "iam.aup.signature-remaining-days";
 
   final AUPSignatureCheckService signatureCheckService;
   final AccountUtils accountUtils;
   final IamAupRepository aupRepo;
 
+  private final IamProperties iamProperties;
 
   public EnforceAupFilter(AUPSignatureCheckService signatureCheckService, AccountUtils accountUtils,
-      IamAupRepository aupRepo) {
+      IamAupRepository aupRepo, IamProperties iamProperties) {
     this.signatureCheckService = signatureCheckService;
     this.accountUtils = accountUtils;
     this.aupRepo = aupRepo;
+    this.iamProperties = iamProperties;
   }
 
   @Override
@@ -68,19 +69,16 @@ public class EnforceAupFilter implements Filter {
     // Empty method
   }
 
-
   public boolean sessionOlderThanAupCreation(HttpSession session) {
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(AupNotFoundError::new);
     return session.getCreationTime() < aup.getCreationTime().getTime();
   }
-
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
 
     HttpServletRequest req = (HttpServletRequest) request;
-    HttpServletResponse res = (HttpServletResponse) response;
 
     HttpSession session = req.getSession(false);
 
@@ -92,8 +90,9 @@ public class EnforceAupFilter implements Filter {
     }
 
     Optional<IamAccount> authenticatedUser = accountUtils.getAuthenticatedUserAccount();
+    Optional<IamAup> aup = aupRepo.findDefaultAup();
 
-    if (!authenticatedUser.isPresent() || !aupRepo.findDefaultAup().isPresent()) {
+    if (!authenticatedUser.isPresent() || !aup.isPresent()) {
       chain.doFilter(request, response);
       return;
     }
@@ -103,19 +102,6 @@ public class EnforceAupFilter implements Filter {
         chain.doFilter(request, response);
         return;
       }
-      if (!res.isCommitted()) {
-        res.sendRedirect(AUP_SIGN_PATH);
-      }
-      return;
-    }
-
-    if (signatureCheckService.needsAupSignature(authenticatedUser.get())
-        && !sessionOlderThanAupCreation(session) && !res.isCommitted()) {
-
-      session.setAttribute(REQUESTING_SIGNATURE, true);
-      res.sendRedirect(AUP_SIGN_PATH);
-      return;
-
     }
 
     chain.doFilter(request, response);
