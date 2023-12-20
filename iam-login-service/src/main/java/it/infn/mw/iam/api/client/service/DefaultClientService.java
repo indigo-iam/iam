@@ -184,7 +184,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity updateLastUsed(ClientDetailsEntity client) {
     client.setLastUsed(Date.from(clock.instant()));
-    return clientRepo.save(client);
+    return client;
   }
 
 }
