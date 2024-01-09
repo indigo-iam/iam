@@ -81,8 +81,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   public static final String GRANT_TYPE_NOT_ALLOWED_ERROR_STR = "Grant type not allowed: %s";
 
-  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_ALLOWED_GRANT_TYPES =
+  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_ADMIN_GRANT_TYPES =
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
+  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_USER_GRANT_TYPES =
+      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS);
 
   private final Clock clock;
   private final ClientService clientService;
@@ -136,25 +138,44 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   private void checkAllowedGrantTypes(RegisteredClientDTO request, Authentication authentication) {
 
-    if (!accountUtils.isAdmin(authentication)) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-        .stream()
-        .filter(PRIVILEGED_ALLOWED_GRANT_TYPES::contains)
-        .findFirst()
-        .ifPresent(this::throwGrantTypeNotAllowed);
+      .stream()
+      .filter(PRIVILEGED_ADMIN_GRANT_TYPES::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
+    } else {
+      request.getGrantTypes()
+      .stream()
+      .filter(PRIVILEGED_USER_GRANT_TYPES::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
   private void checkAllowedGrantTypesOnUpdate(RegisteredClientDTO request,
       Authentication authentication, ClientDetailsEntity oldClient) {
 
-    if (!accountUtils.isAdmin(authentication)) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-        .stream()
-        .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-        .filter(PRIVILEGED_ALLOWED_GRANT_TYPES::contains)
-        .findFirst()
-        .ifPresent(this::throwGrantTypeNotAllowed);
+      .stream()
+      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+      .filter(PRIVILEGED_ADMIN_GRANT_TYPES::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
+    } else {
+      request.getGrantTypes()
+      .stream()
+      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+      .filter(PRIVILEGED_USER_GRANT_TYPES::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 

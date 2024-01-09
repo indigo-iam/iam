@@ -167,7 +167,7 @@ public class ClientRegistrationServiceTests {
     doReturn(Optional.of(test100Account)).when(accountUtils)
       .getAuthenticatedUserAccount(anotherUserAuth);
     doReturn(Optional.of(adminAccount)).when(accountUtils).getAuthenticatedUserAccount(adminAuth);
-    
+
     ratAuth = Mockito.mock(OAuth2Authentication.class);
     oauthRequest = Mockito.mock(OAuth2Request.class);
     oauthDetails = Mockito.mock(OAuth2AuthenticationDetails.class);
@@ -304,6 +304,7 @@ public class ClientRegistrationServiceTests {
   @Test
   public void testAllowedGrantTypeChecks() throws ParseException {
 
+    // ask exchange grant type as user
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
@@ -317,6 +318,21 @@ public class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
 
+    // ask exchange grant type as anonymous
+    exception =
+        Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+          RegisteredClientDTO request = new RegisteredClientDTO();
+          request.setClientName("example");
+          request.setGrantTypes(
+              Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+          request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+          service.registerClient(request, noAuth);
+        });
+
+    assertThat(exception.getMessage(), containsString(
+        "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
+
+    // ask password grant type as user
     exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
@@ -329,20 +345,68 @@ public class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.PASSWORD.getGrantType()));
 
+    // ask password grant type as anonymous
+    exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+      RegisteredClientDTO request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request.setGrantTypes(
+          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
+      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      service.registerClient(request, noAuth);
+    });
 
+    assertThat(exception.getMessage(), containsString(
+        "Grant type not allowed: " + AuthorizationGrantType.PASSWORD.getGrantType()));
+
+    // ask client credentials grant type as anonymous
+    exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+      RegisteredClientDTO request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request.setGrantTypes(
+          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      service.registerClient(request, noAuth);
+    });
+
+    assertThat(exception.getMessage(), containsString(
+        "Grant type not allowed: " + AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType()));
+
+    // ask client credentials grant type as user
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE,
-        AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE));
+    request.setGrantTypes(
+        Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
     request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    RegisteredClientDTO response = service.registerClient(request, userAuth);
 
-    RegisteredClientDTO response = service.registerClient(request, adminAuth);
+    assertThat(exception.getMessage(), containsString(
+        "Grant type not allowed: " + AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType()));
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
     assertThat(response.getTokenEndpointAuthMethod(),
         is(TokenEndpointAuthenticationMethod.client_secret_basic));
-    assertThat(response.getGrantTypes(), hasItems(AuthorizationGrantType.CODE,
-        AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.PASSWORD));
+    assertThat(response.getGrantTypes(),
+        hasItems(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+
+    assertThat(response.getRegistrationAccessToken(), nullValue());
+    assertThat(response.getClientSecret(), notNullValue());
+
+    // ask password, client credentials and exchange grant types as admin
+    request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request
+      .setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD,
+          AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+
+    response = service.registerClient(request, adminAuth);
+    assertThat(response.getClientName(), is("example"));
+    assertThat(response.getClientId(), notNullValue());
+    assertThat(response.getTokenEndpointAuthMethod(),
+        is(TokenEndpointAuthenticationMethod.client_secret_basic));
+    assertThat(response.getGrantTypes(),
+        hasItems(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE,
+            AuthorizationGrantType.PASSWORD, AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     assertThat(response.getRegistrationAccessToken(), nullValue());
     assertThat(response.getClientSecret(), notNullValue());
@@ -388,8 +452,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesAreFilteredOutWithMatchers()
-      throws ParseException {
+  public void testRestrictedScopesAreFilteredOutWithMatchers() throws ParseException {
 
     String restrictedScope1 = "storage.read:/whatever";
     String restrictedScope2 = "storage.read:/";
@@ -476,8 +539,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAnonymousRequestYeldsRegistrationAccessToken()
-      throws ParseException {
+  public void testAnonymousRequestYeldsRegistrationAccessToken() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -596,8 +658,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRegisterAndRetrieveWorksForUser()
-      throws ParseException {
+  public void testRegisterAndRetrieveWorksForUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -621,8 +682,7 @@ public class ClientRegistrationServiceTests {
 
 
   @Test
-  public void testRegisterAndRetrieveWorksForAnonymousUser()
-      throws ParseException {
+  public void testRegisterAndRetrieveWorksForAnonymousUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -649,8 +709,7 @@ public class ClientRegistrationServiceTests {
 
 
   @Test
-  public void testRatClientIdAndScopesAreChecked()
-      throws ParseException {
+  public void testRatClientIdAndScopesAreChecked() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -707,8 +766,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAccountAuthzForClientManagement()
-      throws ParseException {
+  public void testAccountAuthzForClientManagement() throws ParseException {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
@@ -728,8 +786,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testGranTypesAreCheckedOnUpdate()
-      throws ParseException {
+  public void testGranTypesAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -749,8 +806,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRedirectUrisAreCheckedOnUpdate()
-      throws ParseException {
+  public void testRedirectUrisAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -808,8 +864,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testPrivilegedGrantTypesArePreservedOnUpdate()
-      throws ParseException {
+  public void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -841,8 +896,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesArePreserved()
-      throws ParseException {
+  public void testRestrictedScopesArePreserved() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("restricted-scopes-preserved");
