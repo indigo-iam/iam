@@ -543,14 +543,14 @@ public class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO response = service.registerClient(request, noAuth);
 
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
     assertThat(response.getTokenEndpointAuthMethod(),
         is(TokenEndpointAuthenticationMethod.client_secret_basic));
-    assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.DEVICE_CODE));
     assertThat(response.getRegistrationAccessToken(), notNullValue());
     assertThat(response.getRegistrationClientUri(),
         is("http://localhost:8080/iam/api/client-registration/" + response.getClientId()));
@@ -686,7 +686,7 @@ public class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
@@ -700,7 +700,7 @@ public class ClientRegistrationServiceTests {
     assertThat(response.getClientId(), is(registerResponse.getClientId()));
     assertThat(response.getTokenEndpointAuthMethod(),
         is(TokenEndpointAuthenticationMethod.client_secret_basic));
-    assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    assertThat(response.getGrantTypes(), hasItem(AuthorizationGrantType.DEVICE_CODE));
     assertThat(response.getClientSecret(), notNullValue());
     assertThat(response.getRegistrationClientUri(),
         is("http://localhost:8080/iam/api/client-registration/" + response.getClientId()));
@@ -713,7 +713,7 @@ public class ClientRegistrationServiceTests {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
-    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
