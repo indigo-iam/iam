@@ -81,9 +81,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   public static final String GRANT_TYPE_NOT_ALLOWED_ERROR_STR = "Grant type not allowed: %s";
 
-  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_ADMIN_GRANT_TYPES =
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER =
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
-  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_USER_GRANT_TYPES =
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS =
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS);
 
   private final Clock clock;
@@ -144,13 +144,13 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
       .stream()
-      .filter(PRIVILEGED_ADMIN_GRANT_TYPES::contains)
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
       .findFirst()
       .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
       .stream()
-      .filter(PRIVILEGED_USER_GRANT_TYPES::contains)
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
       .findFirst()
       .ifPresent(this::throwGrantTypeNotAllowed);
     }
@@ -166,14 +166,14 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       request.getGrantTypes()
       .stream()
       .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(PRIVILEGED_ADMIN_GRANT_TYPES::contains)
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
       .findFirst()
       .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
       .stream()
       .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(PRIVILEGED_USER_GRANT_TYPES::contains)
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
       .findFirst()
       .ifPresent(this::throwGrantTypeNotAllowed);
     }
