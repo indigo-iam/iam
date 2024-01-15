@@ -50,7 +50,7 @@
         actionButtonText: 'Send password reset e-mail',
         headerText: 'Send password reset e-mail',
         bodyText:
-            `Are you sure you want to send the password reset e-mail to ${self.user.name.formatted} at ${self.userCtrl.user.emails[0].value}?`
+            `Are you sure you want to send the password reset e-mail to ${self.userCtrl.user.name.formatted} at ${self.userCtrl.user.emails[0].value}?`
       };
 
       ModalService.showModal({}, modalOptions)
