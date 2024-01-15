@@ -30,7 +30,7 @@
 
     self.doPasswordReset = function() {
 
-      ResetPasswordService.forgotPassword(self.user.emails[0].value)
+      ResetPasswordService.forgotPassword(self.userCtrl.user.emails[0].value)
           .then(
               function(response) {
                 toaster.pop({
@@ -50,7 +50,7 @@
         actionButtonText: 'Send password reset e-mail',
         headerText: 'Send password reset e-mail',
         bodyText:
-            `Are you sure you want to send the password reset e-mail to ${self.user.name.formatted}?`
+            `Are you sure you want to send the password reset e-mail to ${self.user.name.formatted} at ${self.userCtrl.user.emails[0].value}?`
       };
 
       ModalService.showModal({}, modalOptions)
