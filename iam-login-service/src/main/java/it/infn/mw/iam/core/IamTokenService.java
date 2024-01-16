@@ -39,7 +39,6 @@ import it.infn.mw.iam.audit.events.tokens.AccessTokenRefreshedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service("defaultOAuth2ProviderTokenService")
 @Primary
@@ -91,6 +90,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
     OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
@@ -104,6 +104,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public OAuth2AccessTokenEntity refreshAccessToken(String refreshTokenValue,
       TokenRequest authRequest) {
 
