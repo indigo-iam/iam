@@ -50,19 +50,17 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final ApplicationEventPublisher eventPublisher;
-  private final IamClientRepository clientRepo;
   private final IamProperties iamProperties;
 
 
   @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
-      IamClientRepository clientRepo, IamProperties iamProperties) {
+      IamProperties iamProperties) {
 
     this.accessTokenRepo = atRepo;
     this.refreshTokenRepo = rtRepo;
     this.eventPublisher = publisher;
-    this.clientRepo = clientRepo;
     this.iamProperties = iamProperties;
   }
 
@@ -96,7 +94,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
     OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
-    
+
     if (iamProperties.getClient().isTrackLastUsed()) {
       updateClientLastUsed(token);
     }
@@ -110,18 +108,18 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
       TokenRequest authRequest) {
 
     OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
-    
+
     if (iamProperties.getClient().isTrackLastUsed()) {
       updateClientLastUsed(token);
     }
-    
+
     eventPublisher.publishEvent(new AccessTokenRefreshedEvent(this, token));
     return token;
   }
 
-  private void updateClientLastUsed(OAuth2AccessTokenEntity token) { 
+  private void updateClientLastUsed(OAuth2AccessTokenEntity token) {
     ClientDetailsEntity client = token.getClient();
-    
+
     Date now = new LocalDate().toDate(); // keep only the day
     Date lastUsed = client.getLastUsed();
     if (lastUsed == null || lastUsed.before(now)) {
