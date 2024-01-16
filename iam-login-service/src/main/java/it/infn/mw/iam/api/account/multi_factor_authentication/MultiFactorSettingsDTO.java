@@ -27,6 +27,9 @@ public class MultiFactorSettingsDTO {
   @NotEmpty
   private boolean authenticatorAppActive;
 
+  @NotEmpty
+  private boolean isMfaFeatureDisabled;
+
   // add further factors if/when implemented
 
   public MultiFactorSettingsDTO() {}
@@ -43,6 +46,16 @@ public class MultiFactorSettingsDTO {
     return authenticatorAppActive;
   }
 
+  /**
+   * @return true if mfaFeature is disabled
+   */
+  public boolean isMfaFeatureDisabled() {
+    return isMfaFeatureDisabled;
+  }
+
+  public void setMfaFeatureDisabled(boolean isMfaFeatureDisabled) {
+    this.isMfaFeatureDisabled = isMfaFeatureDisabled;
+  }
 
   /**
    * @param authenticatorAppActive new status of authenticator app
@@ -54,6 +67,7 @@ public class MultiFactorSettingsDTO {
   public JSONObject toJson() {
     JSONObject json = new JSONObject();
     json.put("authenticatorAppActive", authenticatorAppActive);
+    json.put("isMfaFeatureDisabled", isMfaFeatureDisabled);
     return json;
   }
 }

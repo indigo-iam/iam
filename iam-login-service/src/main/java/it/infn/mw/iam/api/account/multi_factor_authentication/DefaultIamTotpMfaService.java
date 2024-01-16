@@ -31,7 +31,6 @@ import it.infn.mw.iam.audit.events.account.multi_factor_authentication.Authentic
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodeVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.TotpVerifiedEvent;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -53,21 +52,22 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   private final SecretGenerator secretGenerator;
   private final RecoveryCodeGenerator recoveryCodeGenerator;
   private final CodeVerifier codeVerifier;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
+  private final IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
 
   @Autowired
   public DefaultIamTotpMfaService(IamAccountService iamAccountService,
       IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
       RecoveryCodeGenerator recoveryCodeGenerator, CodeVerifier codeVerifier,
-      ApplicationEventPublisher eventPublisher, IamTotpMfaProperties iamTotpMfaProperties) {
+      ApplicationEventPublisher eventPublisher,
+      IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService) {
     this.iamAccountService = iamAccountService;
     this.totpMfaRepository = totpMfaRepository;
     this.secretGenerator = secretGenerator;
     this.recoveryCodeGenerator = recoveryCodeGenerator;
     this.codeVerifier = codeVerifier;
     this.eventPublisher = eventPublisher;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamTotpMfaEncryptionAndDecryptionService = iamTotpMfaEncryptionAndDecryptionService;
   }
 
   private void authenticatorAppEnabledEvent(IamAccount account, IamTotpMfa totpMfa) {
@@ -115,10 +115,10 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     IamTotpMfa totpMfa = new IamTotpMfa(account);
 
     totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+        secretGenerator.generate(), iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService()));
     totpMfa.setAccount(account);
 
-    Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa);
+    Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa, iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService());
     totpMfa.setRecoveryCodes(recoveryCodes);
     totpMfaRepository.save(totpMfa);
 
@@ -140,7 +140,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
 
-    Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa);
+    Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa,
+        iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService());
 
     // Attach to account
     totpMfa.setRecoveryCodes(recoveryCodes);
@@ -214,7 +215,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+        totpMfa.getSecret(), iamTotpMfaEncryptionAndDecryptionService
+            .whichPasswordToUseForEncryptAndDecrypt(totpMfa.getId(), totpMfa.isKeyUpdateRequest()));
 
     // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
@@ -233,7 +235,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
    * @return true if valid, false otherwise
    */
   @Override
-  public boolean verifyRecoveryCode(IamAccount account, String recoveryCode) {
+  public boolean verifyRecoveryCode(IamAccount account, String recoveryCode) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
@@ -250,7 +252,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
       String recoveryCodeEncrypted = recoveryCodeObject.getCode();
       String recoveryCodeString = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          recoveryCodeEncrypted, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+          recoveryCodeEncrypted, iamTotpMfaEncryptionAndDecryptionService
+              .whichPasswordToUseForEncryptAndDecrypt(totpMfa.getId(), totpMfa.isKeyUpdateRequest()));
 
       if (recoveryCode.equals(recoveryCodeString)) {
         recoveryCodeVerifiedEvent(account, totpMfa);
@@ -262,7 +265,8 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
 
-  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) throws IamTotpMfaInvalidArgumentError {
+  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa, String password)
+      throws IamTotpMfaInvalidArgumentError {
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
@@ -270,7 +274,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
       recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-          code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+          code, password));
       recoveryCodes.add(recoveryCode);
     }
 

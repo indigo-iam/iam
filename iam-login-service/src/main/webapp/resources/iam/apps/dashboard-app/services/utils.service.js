@@ -41,7 +41,8 @@
             isGroupManagerForGroup: isGroupManagerForGroup,
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
-            username: username
+            username: username,
+            isMfaFeatureEnabled: isMfaFeatureEnabled
         };
 
         return service;
@@ -119,6 +120,10 @@
         function isSamlEnabled() {
 
             return getSamlEnabled();
+        }
+
+        function isMfaFeatureEnabled() {
+            return hasMfaFeatureEnabled();
         }
 
         function buildErrorResult(errorString) {

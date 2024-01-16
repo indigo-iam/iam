@@ -28,7 +28,6 @@ import org.springframework.stereotype.Service;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodesResetEvent;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -45,17 +44,17 @@ public class DefaultIamTotpRecoveryCodeResetService
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
   private final RecoveryCodeGenerator recoveryCodeGenerator;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public DefaultIamTotpRecoveryCodeResetService(IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, RecoveryCodeGenerator recoveryCodeGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.recoveryCodeGenerator = recoveryCodeGenerator;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamTotpMfaEncryptionAndDecryptionService = iamTotpMfaEncryptionAndDecryptionService;
   }
 
   private void recoveryCodesResetEvent(IamAccount account, IamTotpMfa totpMfa) {
@@ -80,14 +79,24 @@ public class DefaultIamTotpRecoveryCodeResetService
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
+
+    if (iamTotpMfaEncryptionAndDecryptionService.hasAdminTriggeredTheJob()) {
+      totpMfa.setKeyUpdateRequest(true);
+    }
+
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
     for (String code : recoveryCodeStrings) {
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
+      if (iamTotpMfaEncryptionAndDecryptionService.hasAdminTriggeredTheJob()) {
+        recoveryCode.setKeyUpdateRequest(true);
+      }
+
       recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-          code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+          code, iamTotpMfaEncryptionAndDecryptionService.whichPasswordToUseForEncryptAndDecrypt(totpMfa.getId(),
+              totpMfa.isKeyUpdateRequest())));
       recoveryCodes.add(recoveryCode);
     }
 

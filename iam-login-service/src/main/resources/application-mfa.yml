@@ -17,3 +17,6 @@
 mfa:
   edit-multi-factor-settings-btn-enabled: ${IAM_TOTP_MFA_ENABLE_EDIT_BUTTON:true}
   password-to-encrypt-and-decrypt: ${IAM_TOTP_MFA_PASSWORD_TO_ENCRYPT_AND_DECRYPT:define_me_please}
+
+  old-password-to-encrypt-and-decrypt: ${IAM_TOTP_MFA_OLD_PASSWORD_TO_ENCRYPT_AND_DECRYPT:update_me_please}
+  update-key-request: ${IAM_TOTP_MFA_UPDATE_KEY_REQUEST:true}

@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -44,12 +45,15 @@ public class MultiFactorSettingsController {
   public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   @Autowired
   public MultiFactorSettingsController(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
 
@@ -77,6 +81,11 @@ public class MultiFactorSettingsController {
     }
 
     // add further factors if/when implemented
+    if (iamTotpMfaProperties.getPasswordToEncryptOrDecrypt().length() > 15) {
+      dto.setMfaFeatureDisabled(false);
+    } else {
+      dto.setMfaFeatureDisabled(true);
+    }
 
     return dto;
   }

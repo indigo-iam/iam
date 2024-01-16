@@ -44,6 +44,9 @@ public class IamTotpRecoveryCode implements Serializable {
   @JoinColumn(referencedColumnName = "id", nullable = false, name = "totp_mfa_id")
   private IamTotpMfa totpMfa;
 
+  @Column(name = "key_update_request", nullable = false)
+  private boolean keyUpdateRequest = false;
+
   public IamTotpRecoveryCode() {}
 
   public IamTotpRecoveryCode(IamTotpMfa totpMfa) {
@@ -74,9 +77,17 @@ public class IamTotpRecoveryCode implements Serializable {
     this.code = code;
   }
 
+  public boolean isKeyUpdateRequest() {
+    return keyUpdateRequest;
+  }
+
+  public void setKeyUpdateRequest(boolean keyUpdateRequest) {
+    this.keyUpdateRequest = keyUpdateRequest;
+  }
+
   @Override
   public String toString() {
-    return "IamTotpRecoveryCode [code=" + code + ", id=" + id + "]";
+    return "IamTotpRecoveryCode [code=" + code + ", id=" + id + ", keyUpdateRequest=" + keyUpdateRequest + "]";
   }
 
   @Override
