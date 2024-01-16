@@ -34,6 +34,10 @@
             return Utils.isAdmin();
         };
 
+        self.isMfaFeatureEnabled = function () {
+            return Utils.isMfaFeatureEnabled();
+        };
+
         self.isGroupManager = function () {
             return Utils.isGroupManager();
         };

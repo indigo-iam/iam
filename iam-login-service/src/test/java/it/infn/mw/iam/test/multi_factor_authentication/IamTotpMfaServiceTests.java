@@ -23,7 +23,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -48,10 +50,10 @@ import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaEncryptionAndDecryptionService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -87,14 +89,15 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   private ApplicationEventPublisher eventPublisher;
 
   @Mock
-  private IamTotpMfaProperties iamTotpMfaProperties;
+  private IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
   @Before
   public void setup() {
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+    when(iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+    when(iamTotpMfaEncryptionAndDecryptionService.whichPasswordToUseForEncryptAndDecrypt(anyLong(), anyBoolean())).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
 
     when(secretGenerator.generate()).thenReturn("test_secret");
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
@@ -107,7 +110,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        recoveryCodeGenerator, codeVerifier, eventPublisher, iamTotpMfaProperties);
+        recoveryCodeGenerator, codeVerifier, eventPublisher, iamTotpMfaEncryptionAndDecryptionService);
   }
 
   @After
@@ -177,7 +180,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void testAddTotpMfaSecret_whenPasswordIsEmpty() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    when(iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -191,7 +194,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Test
   public void testAddsMfaRecoveryCodes_whenPasswordIsEmpty() {
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    when(iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService()).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -209,7 +212,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
     totpMfa.setSecret(
         IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
-            "secret", iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+            "secret", KEY_TO_ENCRYPT_DECRYPT));
     totpMfa.setActive(false);
     totpMfa.setAccount(account);
 
@@ -300,7 +303,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void testVerifyTotp() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
-
+    totpMfa.setId(1L);
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
@@ -311,9 +314,10 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void testVerifyTotp_WithEmptyPasswordForDecryption() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setId(1L);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    when(iamTotpMfaEncryptionAndDecryptionService.whichPasswordToUseForEncryptAndDecrypt(anyLong(), anyBoolean())).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
@@ -327,6 +331,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void testVerifyTotp_WithCodeNotValid() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setId(1L);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
@@ -352,6 +357,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void verifyRecoveryCode() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setId(1L);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
 
@@ -363,9 +369,10 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Test
   public void verifyRecoveryCode_WithEmptyPasswordForDecryption() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setId(1L);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
-    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+    when(iamTotpMfaEncryptionAndDecryptionService.whichPasswordToUseForEncryptAndDecrypt(anyLong(), anyBoolean())).thenReturn("");
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {

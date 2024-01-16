@@ -32,11 +32,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaEncryptionAndDecryptionService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.NoMultiFactorSecretError;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
@@ -60,17 +60,17 @@ public class RecoveryCodeManagementController {
   private final AccountUtils accountUtils;
   private final IamTotpMfaRepository totpMfaRepository;
   private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
 
   @Autowired
   public RecoveryCodeManagementController(AccountUtils accountUtils,
       IamTotpMfaRepository totpMfaRepository,
       IamTotpRecoveryCodeResetService recoveryCodeResetService,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService) {
     this.accountUtils = accountUtils;
     this.totpMfaRepository = totpMfaRepository;
     this.recoveryCodeResetService = recoveryCodeResetService;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamTotpMfaEncryptionAndDecryptionService = iamTotpMfaEncryptionAndDecryptionService;
   }
 
   /**
@@ -124,7 +124,8 @@ public class RecoveryCodeManagementController {
 
     for (int i = 0; i < recs.size(); i++) {
       codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+          recs.get(i).getCode(), iamTotpMfaEncryptionAndDecryptionService
+              .whichPasswordToUseForEncryptAndDecrypt(totpMfa.getId(), totpMfa.isKeyUpdateRequest()));
     }
 
     return codes;

@@ -99,7 +99,7 @@ function getRefreshTokenValiditySeconds() {
 function getOidcEnabled() {
   return ${loginPageConfiguration.oidcEnabled};
 }
-	
+
 function getSamlEnabled() {
   return ${loginPageConfiguration.samlEnabled};
 }
@@ -110,5 +110,9 @@ function getRcauthEnabled() {
 
 function getExternalAuthenticationEnabled() {
     return ${loginPageConfiguration.externalAuthenticationEnabled};
+}
+
+function hasMfaFeatureEnabled() {
+  return ${loginPageConfiguration.mfaFeatureEnabled};
 }
 </script>

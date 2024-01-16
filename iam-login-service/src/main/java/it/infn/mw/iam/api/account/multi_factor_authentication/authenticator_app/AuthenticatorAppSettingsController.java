@@ -39,11 +39,11 @@ import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaEncryptionAndDecryptionService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
@@ -69,16 +69,16 @@ public class AuthenticatorAppSettingsController {
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
   private final QrGenerator qrGenerator;
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
 
   @Autowired
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.qrGenerator = qrGenerator;
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamTotpMfaEncryptionAndDecryptionService = iamTotpMfaEncryptionAndDecryptionService;
   }
 
   /**
@@ -98,7 +98,7 @@ public class AuthenticatorAppSettingsController {
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
     String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+        totpMfa.getSecret(), iamTotpMfaEncryptionAndDecryptionService.getCurrentPasswordFromService());
 
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);

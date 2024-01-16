@@ -64,6 +64,9 @@ public class IamTotpMfa implements Serializable {
       orphanRemoval = true)
   private Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
+  @Column(name = "key_update_request", nullable = false)
+  private boolean keyUpdateRequest = false;
+
   public IamTotpMfa() {
     Date now = new Date();
     setCreationTime(now);
@@ -145,9 +148,18 @@ public class IamTotpMfa implements Serializable {
     this.recoveryCodes.addAll(recoveryCodes);
   }
 
+  public boolean isKeyUpdateRequest() {
+    return keyUpdateRequest;
+  }
+
+  public void setKeyUpdateRequest(boolean keyUpdateRequest) {
+    this.keyUpdateRequest = keyUpdateRequest;
+  }
+
   @Override
   public String toString() {
-    return "IamTotpMfa [active=" + active + ", id=" + id + ", secret=" + secret + "]";
+    return "IamTotpMfa [active=" + active + ", id=" + id + ", secret=" + secret + ", keyUpdateRequest="
+        + keyUpdateRequest + "]";
   }
 
   @Override

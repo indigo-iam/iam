@@ -24,6 +24,16 @@ public class IamTotpMfaProperties {
 
   private boolean editMultiFactorSettingsBtnEnabled;
   private String passwordToEncryptAndDecrypt;
+  private String oldPasswordToEncryptAndDecrypt;
+  private boolean updateKeyRequest;
+
+  public void setEditMultiFactorSettingsBtnEnabled(boolean editMultiFactorSettingsBtnEnabled) {
+    this.editMultiFactorSettingsBtnEnabled = editMultiFactorSettingsBtnEnabled;
+  }
+
+  public boolean isEditMultiFactorSettingsBtnEnabled() {
+    return editMultiFactorSettingsBtnEnabled;
+  }
 
   public String getPasswordToEncryptOrDecrypt() {
     return passwordToEncryptAndDecrypt;
@@ -33,11 +43,19 @@ public class IamTotpMfaProperties {
     this.passwordToEncryptAndDecrypt = passwordToEncryptAndDecrypt;
   }
 
-  public void setEditMultiFactorSettingsBtnEnabled(boolean editMultiFactorSettingsBtnEnabled) {
-    this.editMultiFactorSettingsBtnEnabled = editMultiFactorSettingsBtnEnabled;
+  public String getOldPasswordToEncryptAndDecrypt() {
+    return oldPasswordToEncryptAndDecrypt;
   }
 
-  public boolean isEditMultiFactorSettingsBtnEnabled() {
-    return editMultiFactorSettingsBtnEnabled;
+  public void setOldPasswordToEncryptAndDecrypt(String oldPasswordToEncryptAndDecrypt) {
+    this.oldPasswordToEncryptAndDecrypt = oldPasswordToEncryptAndDecrypt;
+  }
+
+  public boolean isUpdateKeyRequest() {
+    return updateKeyRequest;
+  }
+
+  public void setUpdateKeyRequest(boolean updateKeyRequest) {
+    this.updateKeyRequest = updateKeyRequest;
   }
 }

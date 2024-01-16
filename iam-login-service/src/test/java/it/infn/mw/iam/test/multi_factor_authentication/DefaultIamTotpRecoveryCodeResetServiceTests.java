@@ -16,7 +16,9 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,7 +34,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpRecoveryCodeResetService;
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaEncryptionAndDecryptionService;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -41,9 +43,6 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @SpringBootTest
 class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport {
-
-  @Autowired
-  private IamTotpMfaProperties iamTotpMfaProperties;
 
   @MockBean
   private IamAccountRepository accountRepository;
@@ -55,6 +54,9 @@ class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport
   private RecoveryCodeGenerator recoveryCodeGenerator;
 
   @MockBean
+  private IamTotpMfaEncryptionAndDecryptionService iamTotpMfaEncryptionAndDecryptionService;
+
+  @MockBean
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
@@ -63,16 +65,8 @@ class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport
   @BeforeEach
   public void setUp() {
     // Only place(Test Class) to define and set password
-    iamTotpMfaProperties.setPasswordToEncryptAndDecrypt(KEY_TO_ENCRYPT_DECRYPT);
-  }
-
-  @Test
-  public void testEditMultiFactorSettingsIsEnabled() {
-    /**
-     * Admin hasn't defined true for the edit multi-factor settings
-     * button to be visible.
-     */
-    assertFalse(iamTotpMfaProperties.isEditMultiFactorSettingsBtnEnabled());
+    when(iamTotpMfaEncryptionAndDecryptionService.hasAdminTriggeredTheJob()).thenReturn(false);
+    when(iamTotpMfaEncryptionAndDecryptionService.whichPasswordToUseForEncryptAndDecrypt(anyLong(), anyBoolean())).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
   }
 
   @Test
@@ -105,8 +99,6 @@ class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport
   @Test
   public void testResetRecoveryCodes_WithEmptyPassword() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    iamTotpMfaProperties.setPasswordToEncryptAndDecrypt("");
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     String[] testArray = { TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
