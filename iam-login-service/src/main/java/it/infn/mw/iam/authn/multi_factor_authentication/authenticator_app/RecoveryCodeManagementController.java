@@ -36,11 +36,14 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCod
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.MultiFactorAuthenticationError;
 import it.infn.mw.iam.authn.multi_factor_authentication.error.NoMultiFactorSecretError;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 /**
  * Provides webpages related to recovery codes. Most of this appears if the user chooses to use a
@@ -57,14 +60,17 @@ public class RecoveryCodeManagementController {
   private final AccountUtils accountUtils;
   private final IamTotpMfaRepository totpMfaRepository;
   private final IamTotpRecoveryCodeResetService recoveryCodeResetService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   @Autowired
   public RecoveryCodeManagementController(AccountUtils accountUtils,
       IamTotpMfaRepository totpMfaRepository,
-      IamTotpRecoveryCodeResetService recoveryCodeResetService) {
+      IamTotpRecoveryCodeResetService recoveryCodeResetService,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountUtils = accountUtils;
     this.totpMfaRepository = totpMfaRepository;
     this.recoveryCodeResetService = recoveryCodeResetService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   /**
@@ -99,7 +105,7 @@ public class RecoveryCodeManagementController {
    */
   @PreAuthorize("hasRole('USER')")
   @RequestMapping(method = RequestMethod.GET, path = RECOVERY_CODE_GET_URL)
-  public @ResponseBody String[] getRecoveryCodes() {
+  public @ResponseBody String[] getRecoveryCodes() throws IamTotpMfaInvalidArgumentError {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
       .orElseThrow(() -> new MultiFactorAuthenticationError("Account not found"));
 
@@ -117,7 +123,8 @@ public class RecoveryCodeManagementController {
     String[] codes = new String[recs.size()];
 
     for (int i = 0; i < recs.size(); i++) {
-      codes[i] = recs.get(i).getCode();
+      codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
     }
 
     return codes;

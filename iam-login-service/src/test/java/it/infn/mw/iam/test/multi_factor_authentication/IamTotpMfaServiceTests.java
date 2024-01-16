@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
@@ -50,6 +51,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaS
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -58,6 +60,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
@@ -82,23 +86,28 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   @Mock
   private ApplicationEventPublisher eventPublisher;
 
+  @Mock
+  private IamTotpMfaProperties iamTotpMfaProperties;
+
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
   @Before
   public void setup() {
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn(KEY_TO_ENCRYPT_DECRYPT);
+
     when(secretGenerator.generate()).thenReturn("test_secret");
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     when(iamAccountService.saveAccount(TOTP_MFA_ACCOUNT)).thenAnswer(i -> i.getArguments()[0]);
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
-    String[] testArray = {TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
+    String[] testArray = { TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
         TOTP_RECOVERY_CODE_STRING_9, TOTP_RECOVERY_CODE_STRING_10, TOTP_RECOVERY_CODE_STRING_11,
-        TOTP_RECOVERY_CODE_STRING_12};
+        TOTP_RECOVERY_CODE_STRING_12 };
     when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        recoveryCodeGenerator, codeVerifier, eventPublisher);
+        recoveryCodeGenerator, codeVerifier, eventPublisher, iamTotpMfaProperties);
   }
 
   @After
@@ -166,10 +175,41 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testEnablesTotpMfa() {
+  public void testAddTotpMfaSecret_whenPasswordIsEmpty() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      // Decrypt the cipherText with empty key
+      service.addTotpMfaSecret(account);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+  }
+
+  @Test
+  public void testAddsMfaRecoveryCodes_whenPasswordIsEmpty() {
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      // Decrypt the cipherText with empty key
+      service.addTotpMfaRecoveryCodes(account);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+  }
+
+  @Test
+  public void testEnablesTotpMfa() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
-    totpMfa.setSecret("secret");
+    totpMfa.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+            "secret", iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     totpMfa.setActive(false);
     totpMfa.setAccount(account);
 
@@ -242,5 +282,96 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
       assertThat(e.getMessage(), equalTo("No multi-factor secret is attached to this account"));
       throw e;
     }
+  }
+
+  @Test
+  public void testVerifyTotp_WithNoMultiFactorSecretAttached() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    MfaSecretNotFoundException thrownException = assertThrows(MfaSecretNotFoundException.class, () -> {
+      service.verifyTotp(account, TOTP_CODE);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("No multi-factor secret is attached"));
+  }
+
+  @Test
+  public void testVerifyTotp() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertTrue(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  public void testVerifyTotp_WithEmptyPasswordForDecryption() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      service.verifyTotp(account, TOTP_CODE);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
+  }
+
+  @Test
+  public void testVerifyTotp_WithCodeNotValid() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(false);
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertFalse(service.verifyTotp(account, TOTP_CODE));
+  }
+
+  @Test
+  public void verifyRecoveryCode_WithNoMultiFactorSecretAttached() {
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    MfaSecretNotFoundException thrownException = assertThrows(MfaSecretNotFoundException.class, () -> {
+      service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("No multi-factor secret is attached"));
+  }
+
+  @Test
+  public void verifyRecoveryCode() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+
+    assertTrue(service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1));
+  }
+
+  @Test
+  public void verifyRecoveryCode_WithEmptyPasswordForDecryption() {
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
+    when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
+
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
+      service.verifyRecoveryCode(account, TOTP_RECOVERY_CODE_STRING_1);
+    });
+
+    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
   }
 }

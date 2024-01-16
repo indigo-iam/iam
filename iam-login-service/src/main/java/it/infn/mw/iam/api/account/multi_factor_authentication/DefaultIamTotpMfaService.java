@@ -31,6 +31,7 @@ import it.infn.mw.iam.audit.events.account.multi_factor_authentication.Authentic
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.RecoveryCodeVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.TotpVerifiedEvent;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -39,6 +40,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
+import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @Service
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
@@ -50,19 +53,21 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   private final SecretGenerator secretGenerator;
   private final RecoveryCodeGenerator recoveryCodeGenerator;
   private final CodeVerifier codeVerifier;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
 
   @Autowired
   public DefaultIamTotpMfaService(IamAccountService iamAccountService,
       IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
       RecoveryCodeGenerator recoveryCodeGenerator, CodeVerifier codeVerifier,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher, IamTotpMfaProperties iamTotpMfaProperties) {
     this.iamAccountService = iamAccountService;
     this.totpMfaRepository = totpMfaRepository;
     this.secretGenerator = secretGenerator;
     this.recoveryCodeGenerator = recoveryCodeGenerator;
     this.codeVerifier = codeVerifier;
     this.eventPublisher = eventPublisher;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   private void authenticatorAppEnabledEvent(IamAccount account, IamTotpMfa totpMfa) {
@@ -95,7 +100,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
    * @return the new TOTP secret
    */
   @Override
-  public IamTotpMfa addTotpMfaSecret(IamAccount account) {
+  public IamTotpMfa addTotpMfaSecret(IamAccount account) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (totpMfaOptional.isPresent()) {
       if (totpMfaOptional.get().isActive()) {
@@ -108,12 +113,15 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     // Generate secret
     IamTotpMfa totpMfa = new IamTotpMfa(account);
-    totpMfa.setSecret(secretGenerator.generate());
+
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+        secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     totpMfa.setAccount(account);
 
     Set<IamTotpRecoveryCode> recoveryCodes = generateRecoveryCodes(totpMfa);
     totpMfa.setRecoveryCodes(recoveryCodes);
     totpMfaRepository.save(totpMfa);
+
     return totpMfa;
   }
 
@@ -194,18 +202,19 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
    * Verifies a provided TOTP against an account multi-factor secret
    * 
    * @param account the account whose secret we will check against
-   * @param totp the TOTP to validate
+   * @param totp    the TOTP to validate
    * @return true if valid, false otherwise
    */
   @Override
-  public boolean verifyTotp(IamAccount account, String totp) {
+  public boolean verifyTotp(IamAccount account, String totp) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
       throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
-    String mfaSecret = totpMfa.getSecret();
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     // Verify provided TOTP
     if (codeVerifier.isValidCode(mfaSecret, totp)) {
@@ -237,8 +246,12 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
 
     // Check for a matching recovery code
     Set<IamTotpRecoveryCode> accountRecoveryCodes = totpMfa.getRecoveryCodes();
+
     for (IamTotpRecoveryCode recoveryCodeObject : accountRecoveryCodes) {
-      String recoveryCodeString = recoveryCodeObject.getCode();
+      String recoveryCodeEncrypted = recoveryCodeObject.getCode();
+      String recoveryCodeString = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+          recoveryCodeEncrypted, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+
       if (recoveryCode.equals(recoveryCodeString)) {
         recoveryCodeVerifiedEvent(account, totpMfa);
         return true;
@@ -248,14 +261,19 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     return false;
   }
 
-  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) {
+
+  private Set<IamTotpRecoveryCode> generateRecoveryCodes(IamTotpMfa totpMfa) throws IamTotpMfaInvalidArgumentError {
     String[] recoveryCodeStrings = recoveryCodeGenerator.generateCodes(RECOVERY_CODE_QUANTITY);
     Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
+
     for (String code : recoveryCodeStrings) {
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
-      recoveryCode.setCode(code);
+
+      recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+          code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
       recoveryCodes.add(recoveryCode);
     }
+
     return recoveryCodes;
   }
 }
