@@ -137,8 +137,8 @@ public class DefaultClientService implements ClientService {
   }
 
   private boolean isValidAccessToken(OAuth2AccessTokenEntity a) {
-    return !(a.getAuthenticationHolder().getScope().contains("registration-token")
-        || a.getAuthenticationHolder().getScope().contains("resource-token"));
+    return !(a.getScope().contains("registration-token")
+        || a.getScope().contains("resource-token"));
   }
 
   private void deleteTokensByClient(ClientDetailsEntity client) {
