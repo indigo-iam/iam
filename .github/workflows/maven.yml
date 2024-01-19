@@ -28,6 +28,7 @@ jobs:
 
     - name: Build, test, package
       run: |
+        sudo echo "127.0.0.1	iam.local.io dev.local.io" >> /etc/hosts
         docker-compose up -d db
         mvn -Dspring.profiles.active=mysql-test test
 
