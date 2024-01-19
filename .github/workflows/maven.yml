@@ -27,7 +27,9 @@ jobs:
       run: mvn -B license:check
 
     - name: Build, test, package
-      run: mvn -U -B clean package install
+      run: |
+        docker-compose up -d db
+        mvn -Dspring.profiles.active=mysql-test test
 
     - name: Copy artifacts to docker dir
       run: |
