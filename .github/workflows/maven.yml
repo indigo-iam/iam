@@ -27,10 +27,12 @@ jobs:
       run: mvn -B license:check
 
     - name: Build, test, package
+      env:
+        IAM_DB_HOST: localhost
       run: |
-        sudo echo "127.0.0.1	iam.local.io dev.local.io" >> /etc/hosts
-        docker-compose up -d db
-        mvn -Dspring.profiles.active=mysql-test test
+        mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
+        mysql -uroot -proot -e "GRANT ALL PRIVILEGES on iam.* to 'iam'@'%' identified by 'pwd';"
+        mvn -Dsping.profiles.active=mysql-test test
 
     - name: Copy artifacts to docker dir
       run: |
