@@ -30,6 +30,7 @@ jobs:
       env:
         IAM_DB_HOST: localhost
       run: |
+        sudo systemctl start mysql
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL PRIVILEGES on iam.* to 'iam'@'%' identified by 'pwd';"
         mvn -Dsping.profiles.active=mysql-test test
