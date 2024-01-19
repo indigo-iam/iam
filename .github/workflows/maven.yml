@@ -35,7 +35,7 @@ jobs:
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dsping.profiles.active=mysql-test test
+        mvn -Dspring.profiles.active=mysql-test test
 
     - name: Copy artifacts to docker dir
       run: |
