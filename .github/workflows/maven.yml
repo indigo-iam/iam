@@ -33,7 +33,7 @@ jobs:
         sudo systemctl start mysql
         mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
-        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'localhost';"
+        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
         mvn -Dsping.profiles.active=mysql-test test
 
