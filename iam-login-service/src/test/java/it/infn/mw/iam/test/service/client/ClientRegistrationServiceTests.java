@@ -803,6 +803,22 @@ public class ClientRegistrationServiceTests {
         });
 
     assertThat(exception.getMessage(), containsString("Grant type not allowed"));
+
+    // update client grant types as admin
+
+    RegisteredClientDTO reqClient = new RegisteredClientDTO();
+    reqClient.setClientName("example2");
+    reqClient.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    RegisteredClientDTO respClient = service.registerClient(reqClient, adminAuth);
+
+    RegisteredClientDTO updateReq = respClient;
+    updateReq.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS,
+        AuthorizationGrantType.TOKEN_EXCHANGE));
+    RegisteredClientDTO updateResponse = service.updateClient(respClient.getClientId(), updateReq, adminAuth);
+
+    assertThat(updateResponse.getGrantTypes(), hasItems(AuthorizationGrantType.CLIENT_CREDENTIALS,
+        AuthorizationGrantType.TOKEN_EXCHANGE));
+
   }
 
   @Test
