@@ -120,6 +120,32 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithAnonymousUser
+  public void clientRemovalWorksWithRatAuthentication() throws Exception {
+
+    String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
+
+    String responseJson = mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    final String url =
+        String.format("%s/%s", ClientRegistrationApiController.ENDPOINT, client.getClientId());
+
+    mvc.perform(delete(url).header(org.apache.http.HttpHeaders.AUTHORIZATION, "Bearer " + client.getRegistrationAccessToken())).andExpect(NO_CONTENT);
+
+    mvc.perform(get(url))
+      .andExpect(NOT_FOUND)
+      .andExpect(jsonPath("$.error", containsString("Client not found")));
+  }
+
+  @Test
   public void tokenLifetimesAreNotEditable() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
