@@ -36,7 +36,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -61,7 +60,6 @@ import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.IamTokenService;
@@ -99,13 +97,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
 
-  @Autowired
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
       OIDCTokenService clientTokenService, IamTokenService tokenService,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
-      IamProperties iamProperties, ScopeMatcherRegistry scopeMatcherRegistry,
-      ApplicationEventPublisher aep) {
+      ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -439,7 +435,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     final IamAccount account =
         accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-    
+
     client = clientService.linkClientToAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));

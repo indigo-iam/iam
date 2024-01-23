@@ -26,7 +26,6 @@ import java.util.Set;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.PKCEAlgorithm;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -46,15 +45,14 @@ public class ClientConverter {
   private final IamProperties iamProperties;
 
   private final String clientRegistrationBaseUrl;
+  private final ClientRegistrationProperties clientRegistrationProperties;
 
-  private final ClientRegistrationProperties clientProperties;
-
-  @Autowired
-  public ClientConverter(IamProperties properties, ClientRegistrationProperties clientProperties) {
+  public ClientConverter(IamProperties properties,
+      ClientRegistrationProperties clientRegistrationProperties) {
     this.iamProperties = properties;
+    this.clientRegistrationProperties = clientRegistrationProperties;
     clientRegistrationBaseUrl =
         String.format("%s%s", iamProperties.getBaseUrl(), ClientRegistrationApiController.ENDPOINT);
-    this.clientProperties = clientProperties;
   }
 
   private <T> Set<T> cloneSet(Set<T> stringSet) {
@@ -70,28 +68,16 @@ public class ClientConverter {
       throws ParseException {
     ClientDetailsEntity client = entityFromRegistrationRequest(dto);
 
-    if (dto.getAccessTokenValiditySeconds() != null) {
+    if (dto.getAccessTokenValiditySeconds() != null && dto.getAccessTokenValiditySeconds() > 0) {
       client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
-    } else {
-      client.setAccessTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
     }
-
-    if (dto.getRefreshTokenValiditySeconds() != null) {
+    // Refresh Token validity seconds zero value is valid and means infinite duration
+    if (dto.getRefreshTokenValiditySeconds() != null && dto.getRefreshTokenValiditySeconds() >= 0) {
       client.setRefreshTokenValiditySeconds(dto.getRefreshTokenValiditySeconds());
-    } else {
-      client.setRefreshTokenValiditySeconds(
-          clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
     }
-
-    if (dto.getIdTokenValiditySeconds() != null) {
-      if (dto.getIdTokenValiditySeconds() <= 0) {
-        client.setIdTokenValiditySeconds(null);
-      } else {
-        client.setIdTokenValiditySeconds(dto.getIdTokenValiditySeconds());
-      }
+    if (dto.getIdTokenValiditySeconds() != null && dto.getIdTokenValiditySeconds() > 0) {
+      client.setIdTokenValiditySeconds(dto.getIdTokenValiditySeconds());
     }
-
     if (dto.getDeviceCodeValiditySeconds() != null && dto.getDeviceCodeValiditySeconds() > 0) {
       client.setDeviceCodeValiditySeconds(dto.getDeviceCodeValiditySeconds());
     }
@@ -103,6 +89,11 @@ public class ClientConverter {
     if (dto.getCodeChallengeMethod() != null) {
       PKCEAlgorithm pkceAlgo = PKCEAlgorithm.parse(dto.getCodeChallengeMethod());
       client.setCodeChallengeMethod(pkceAlgo);
+    }
+
+    if (dto.getTokenEndpointAuthMethod() != null) {
+      client
+        .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
@@ -196,16 +187,19 @@ public class ClientConverter {
 
     client.setLogoUri(dto.getLogoUri());
     client.setPolicyUri(dto.getPolicyUri());
-
+    
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
     client.setScope(cloneSet(dto.getScope()));
-
-    client.setGrantTypes(new HashSet<>());
+    
+    client.setGrantTypes(new HashSet<>());   
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(
-          dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
+          dto.getGrantTypes()
+          .stream()
+          .map(AuthorizationGrantType::getGrantType)
+          .collect(toSet()));
     }
 
     if (dto.getScope().contains("offline_access")) {
@@ -219,9 +213,7 @@ public class ClientConverter {
 
     client.setContacts(cloneSet(dto.getContacts()));
 
-    if (isNull(dto.getTokenEndpointAuthMethod())) {
-      client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
-    } else {
+    if (!isNull(dto.getTokenEndpointAuthMethod())) {
       client
         .setTokenEndpointAuthMethod(AuthMethod.getByValue(dto.getTokenEndpointAuthMethod().name()));
     }
@@ -231,10 +223,11 @@ public class ClientConverter {
       client.setCodeChallengeMethod(pkceAlgo);
     }
 
-    client.setAccessTokenValiditySeconds(
-        clientProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-    client.setRefreshTokenValiditySeconds(
-        clientProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+    // bypasses MitreID default setting to zero inside client's entity
+    client.setAccessTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    client.setRefreshTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+    client.setIdTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+    client.setDeviceCodeValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
 
     return client;
   }

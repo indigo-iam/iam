@@ -15,7 +15,13 @@
  */
 package it.infn.mw.iam.test.client.management;
 
+import static it.infn.mw.iam.api.common.client.AuthorizationGrantType.CLIENT_CREDENTIALS;
+import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.client_secret_basic;
+import static it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod.none;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -40,6 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
@@ -58,11 +66,15 @@ class ClientManagementAPIControllerTests {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  private IamClientRepository clientRepository;
+
   public static final String IAM_CLIENTS_API_URL = "/iam/api/clients/";
 
   public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
   public static final ResultMatcher BAD_REQUEST = status().isBadRequest();
   public static final ResultMatcher CREATED = status().isCreated();
+  public static final ResultMatcher OK = status().isOk();
 
   @Before
   public void setup() {
@@ -88,6 +100,36 @@ class ClientManagementAPIControllerTests {
       .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(UNAUTHORIZED);
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  public void updateAuthMethodToNone() throws JsonProcessingException, Exception {
+
+    RegisteredClientDTO client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setClientId("test-client-creation");
+    client.setGrantTypes(Sets.newHashSet(CLIENT_CREDENTIALS));
+    client.setScope(Sets.newHashSet("test"));
+
+    mvc
+      .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(CREATED)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is(client_secret_basic.name())));
+
+    client.setTokenEndpointAuthMethod(none);
+
+    mvc
+      .perform(put(IAM_CLIENTS_API_URL + "/test-client-creation").contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.token_endpoint_auth_method", is("none")));
+
+    ClientDetailsEntity clientEntity = clientRepository.findByClientId("test-client-creation").get();
+    assertEquals(NONE, clientEntity.getTokenEndpointAuthMethod());
+    assertNull(clientEntity.getClientSecret());
+
   }
 
   @Test
