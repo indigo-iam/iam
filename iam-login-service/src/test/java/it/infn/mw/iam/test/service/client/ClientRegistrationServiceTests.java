@@ -912,6 +912,32 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
+  public void testPrivilegedGrantTypesAreCheckedOnUpdateForAnonymousUser() throws ParseException {
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
+
+    RegisteredClientDTO response = service.registerClient(request, noAuth);
+
+    when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
+    when(oauthRequest.getClientId()).thenReturn(response.getClientId());
+    when(oauthRequest.getScope())
+      .thenReturn(Sets.newHashSet(SystemScopeService.REGISTRATION_TOKEN_SCOPE));
+
+    InvalidClientRegistrationRequest exception =
+        Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+          RegisteredClientDTO updateRequest = response;
+          updateRequest.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+          service.updateClient(response.getClientId(), updateRequest, ratAuth);
+
+        });
+
+    assertThat(exception.getMessage(), containsString("Grant type not allowed"));
+  }
+
+  @Test
   public void testRestrictedScopesArePreserved() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
