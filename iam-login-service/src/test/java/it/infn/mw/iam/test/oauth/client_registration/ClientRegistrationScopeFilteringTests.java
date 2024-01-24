@@ -56,12 +56,21 @@ public class ClientRegistrationScopeFilteringTests extends ClientRegistrationTes
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .scopes("example", "storage.read:/", "storage.read:/sub/path")
+      .grantTypes("authorization_code")
       .build();
 
     mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
       .andExpect(status().isCreated())
       .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.scope", is("example")));
+
+    jsonInString = ClientJsonStringBuilder.builder()
+      .scopes("example", "storage.read:/", "storage.read:/sub/path")
+      .grantTypes("client_credentials")
+      .build();
+
+    mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
+      .andExpect(status().isBadRequest());
   }
 
 }

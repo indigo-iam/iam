@@ -87,7 +87,7 @@ class ClientRegistrationAPIControllerTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     client.setScope(Sets.newHashSet("test"));
     client.setAccessTokenValiditySeconds(null);
     client.setRefreshTokenValiditySeconds(null);
@@ -102,7 +102,7 @@ class ClientRegistrationAPIControllerTests {
       .andExpect(jsonPath("$.client_name", is("test-client-creation")))
       .andExpect(jsonPath("$.scope", is("test")))
       .andExpect(jsonPath("$.grant_types").isArray())
-      .andExpect(jsonPath("$.grant_types", hasItem("client_credentials")))
+      .andExpect(jsonPath("$.grant_types", hasItem("urn:ietf:params:oauth:grant-type:device_code")))
       .andExpect(jsonPath("$.token_endpoint_auth_method", is("client_secret_basic")))
       .andExpect(jsonPath("$.dynamically_registered", is(true)))
       .andExpect(jsonPath("$.registration_access_token").exists())
@@ -115,10 +115,24 @@ class ClientRegistrationAPIControllerTests {
       .getResponse()
       .getContentAsString(), RegisteredClientDTO.class);
 
-    ClientDetailsEntity createdClient = clientRepository.findByClientId(response.getClientId()).get();
+    ClientDetailsEntity createdClient =
+        clientRepository.findByClientId(response.getClientId()).get();
 
     assertEquals(3600, createdClient.getAccessTokenValiditySeconds());
     assertEquals(2592000, createdClient.getRefreshTokenValiditySeconds());
+
+    client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Sets.newHashSet("test"));
+    client.setAccessTokenValiditySeconds(null);
+    client.setRefreshTokenValiditySeconds(null);
+    client.setTokenEndpointAuthMethod(null);
+
+    mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(BAD_REQUEST);
   }
 
   @Test
@@ -179,7 +193,7 @@ class ClientRegistrationAPIControllerTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     client.setScope(Sets.newHashSet("test"));
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
 
@@ -204,6 +218,31 @@ class ClientRegistrationAPIControllerTests {
       mvc.perform(delete(IAM_CLIENT_REGISTRATION_API_URL + client.getClientId()));
     }
 
+    client = new RegisteredClientDTO();
+    client.setClientName("test-client-creation");
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setScope(Sets.newHashSet("test"));
+    client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
+
+    expectedMessage = "registerClient.request: private_key_jwt requires a jwks uri or a jwk value";
+
+    mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", is(expectedMessage)));
+
+    client.setJwk(NOT_A_JSON_STRING);
+    client.setJwksUri(URI_STRING);
+
+    expectedMessage = "Grant type not allowed: client_credentials";
+
+    mvc
+      .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(client)))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", is(expectedMessage)));
+
   }
 
   @Test
@@ -213,7 +252,7 @@ class ClientRegistrationAPIControllerTests {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
-    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
     client.setScope(Sets.newHashSet("test"));
 
     mvc
