@@ -36,6 +36,7 @@ import org.springframework.orm.jpa.vendor.EclipseLinkJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.jta.JtaTransactionManager;
+import it.infn.mw.iam.config.IamProperties;
 
 @Configuration
 @EnableTransactionManagement
@@ -43,10 +44,12 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   public static final String ECLIPSELINK_LOGGING_LEVEL = "eclipselink.logging.level";
   public static final String ECLIPSELINK_LOGGING_LEVEL_SQL = "eclipselink.logging.level.sql";
+  public final IamProperties iamProperties;
 
   protected JpaConfig(DataSource dataSource, JpaProperties properties,
-      ObjectProvider<JtaTransactionManager> jtaTransactionManager) {
+      ObjectProvider<JtaTransactionManager> jtaTransactionManager, IamProperties iamProperties) {
     super(dataSource, properties, jtaTransactionManager);
+    this.iamProperties = iamProperties;
   }
 
   @Autowired
@@ -68,18 +71,18 @@ public class JpaConfig extends JpaBaseConfiguration {
     map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "OFF");
     map.put("eclipselink.cache.shared.default", "false");
 
-    if (System.getProperty("iam.show_sql") != null) {
-      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
+    if (iamProperties.isShowSql()) {
+      map.put(ECLIPSELINK_LOGGING_LEVEL, "INFO");
       map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "FINE");
       map.put("eclipselink.logging.parameters", "true");
     }
 
-    if (System.getProperty("iam.generate-ddl-sql-script") != null) {
-      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
-      map.put("eclipselink.ddl-generation.output-mode", "sql-script");
-      map.put("eclipselink.ddl-generation", "create-tables");
-      map.put("eclipselink.create-ddl-jdbc-file-name", "ddl.sql");
-    }
+    // if (System.getProperty("iam.generate-ddl-sql-script") != null) {
+    //   map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
+    //   map.put("eclipselink.ddl-generation.output-mode", "sql-script");
+    //   map.put("eclipselink.ddl-generation", "create-tables");
+    //   map.put("eclipselink.create-ddl-jdbc-file-name", "ddl.sql");
+    // }
 
     return map;
 
