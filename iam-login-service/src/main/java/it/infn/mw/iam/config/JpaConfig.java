@@ -36,7 +36,6 @@ import org.springframework.orm.jpa.vendor.EclipseLinkJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.jta.JtaTransactionManager;
-import it.infn.mw.iam.config.IamProperties;
 
 @Configuration
 @EnableTransactionManagement
@@ -77,12 +76,12 @@ public class JpaConfig extends JpaBaseConfiguration {
       map.put("eclipselink.logging.parameters", "true");
     }
 
-    // if (System.getProperty("iam.generate-ddl-sql-script") != null) {
-    //   map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
-    //   map.put("eclipselink.ddl-generation.output-mode", "sql-script");
-    //   map.put("eclipselink.ddl-generation", "create-tables");
-    //   map.put("eclipselink.create-ddl-jdbc-file-name", "ddl.sql");
-    // }
+    if (System.getProperty("iam.generate-ddl-sql-script") != null) {
+      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
+      map.put("eclipselink.ddl-generation.output-mode", "sql-script");
+      map.put("eclipselink.ddl-generation", "create-tables");
+      map.put("eclipselink.create-ddl-jdbc-file-name", "ddl.sql");
+    }
 
     return map;
 
