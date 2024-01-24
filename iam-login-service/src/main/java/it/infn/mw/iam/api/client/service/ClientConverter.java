@@ -105,7 +105,7 @@ public class ClientConverter {
 
   public RegisteredClientDTO registeredClientDtoFromEntity(ClientDetailsEntity entity) {
     RegisteredClientDTO clientDTO = new RegisteredClientDTO();
-
+    
     clientDTO.setClientId(entity.getClientId());
     clientDTO.setClientSecret(entity.getClientSecret());
     clientDTO.setClientName(entity.getClientName());
@@ -127,7 +127,9 @@ public class ClientConverter {
     clientDTO.setTosUri(entity.getTosUri());
 
     clientDTO.setCreatedAt(entity.getCreatedAt());
-    clientDTO.setLastUsed(entity.getLastUsed());
+    if (entity.getClientLastUsed() != null) {
+      clientDTO.setLastUsed(entity.getClientLastUsed().getLastUsed());
+    }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
     clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());

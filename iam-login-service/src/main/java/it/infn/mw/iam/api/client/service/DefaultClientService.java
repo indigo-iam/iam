@@ -172,19 +172,4 @@ public class DefaultClientService implements ClientService {
 
   }
 
-  @Override
-  public ClientDetailsEntity updateLastUsedByCliendId(String clientId)
-      throws InvalidClientException {
-    return findClientByClientId(clientId)
-      .map(this::updateLastUsed)
-      .orElseThrow(
-          () -> new InvalidClientException("Client not found: " + clientId));
-  }
-
-  @Override
-  public ClientDetailsEntity updateLastUsed(ClientDetailsEntity client) {
-    client.setLastUsed(Date.from(clock.instant()));
-    return client;
-  }
-
 }
