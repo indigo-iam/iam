@@ -62,7 +62,7 @@ public interface IamOAuthAccessTokenRepository
     @Param("timestamp") Date timestamp, Pageable op);
 
   @Query("select distinct t from OAuth2AccessTokenEntity t "
-    + "where (t.authenticationHolder.scope not in ('registration-token', 'resource-token')) "
+    + "where (t.scope not in ('registration-token', 'resource-token')) "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration ")
   Page<OAuth2AccessTokenEntity> findAllValidAccessTokens(
     @Param("timestamp") Date timestamp, Pageable op);
