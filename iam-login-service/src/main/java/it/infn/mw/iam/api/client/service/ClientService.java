@@ -46,8 +46,4 @@ public interface ClientService {
   ClientDetailsEntity updateClient(ClientDetailsEntity client);
 
   void deleteClient(ClientDetailsEntity client);
-
-  ClientDetailsEntity updateLastUsedByCliendId(String clientId);
-
-  ClientDetailsEntity updateLastUsed(ClientDetailsEntity client);
 }
