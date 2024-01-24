@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.joda.time.LocalDate;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientLastUsed;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
@@ -120,11 +121,18 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
   private void updateClientLastUsed(OAuth2AccessTokenEntity token) {
     ClientDetailsEntity client = token.getClient();
-
+    ClientLastUsed clientLastUsed = client.getClientLastUsed();
     Date now = new LocalDate().toDate(); // keep only the day
-    Date lastUsed = client.getLastUsed();
-    if (lastUsed == null || lastUsed.before(now)) {
-      client.setLastUsed(now);
+
+    if (clientLastUsed == null) {
+      clientLastUsed = new ClientLastUsed();
+      client.setClientLastUsed(clientLastUsed);
+      clientLastUsed.setLastUsed(now);
+    } else {
+      Date lastUsed = clientLastUsed.getLastUsed();
+      if (lastUsed == null || lastUsed.before(now)) {
+        clientLastUsed.setLastUsed(now);
+      }
     }
   }
 }
