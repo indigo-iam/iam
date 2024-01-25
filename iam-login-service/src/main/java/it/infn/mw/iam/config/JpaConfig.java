@@ -71,7 +71,7 @@ public class JpaConfig extends JpaBaseConfiguration {
     map.put("eclipselink.cache.shared.default", "false");
 
     if (iamProperties.isShowSql()) {
-      map.put(ECLIPSELINK_LOGGING_LEVEL, "INFO");
+      map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
       map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "FINE");
       map.put("eclipselink.logging.parameters", "true");
     }
