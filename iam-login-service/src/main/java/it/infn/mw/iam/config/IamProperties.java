@@ -517,6 +517,8 @@ public class IamProperties {
 
   private boolean enableScopeAuthz = true;
 
+  private boolean showSql = false;
+
   private LocalResources localResources = new LocalResources();
 
   private Logo logo = new Logo();
@@ -613,6 +615,14 @@ public class IamProperties {
 
   public void setEnableScopeAuthz(boolean enableScopeAuthz) {
     this.enableScopeAuthz = enableScopeAuthz;
+  }
+
+  public boolean isShowSql() {
+    return showSql;
+  }
+
+  public void setShowSql(boolean showSql) {
+    this.showSql = showSql;
   }
 
   public LoginButtonProperties getLoginButton() {

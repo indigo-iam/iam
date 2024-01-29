@@ -91,11 +91,11 @@ spring:
     pathmatch:
       matching-strategy: "ant-path-matcher"
 iam:
-  
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
+  showSql: ${IAM_DATABASE_SHOW_SQL:false}
   
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
