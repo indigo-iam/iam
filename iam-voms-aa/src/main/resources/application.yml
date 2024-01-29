@@ -17,18 +17,38 @@
 server:
   address: ${VOMS_AA_HOST:localhost}
   port: ${VOMS_AA_PORT:15000}
-  max-http-header-size: 16000
+  forward-headers-strategy: ${VOMS_FORWARD_HEADERS_STRATEGY:native}
+  max-http-header-size: ${MAX_HTTP_HEADER_SIZE:16000}
 
 spring:
   flyway:
     table: schema_version
+    enabled: false
 
   main:
     banner-mode: "off"
     allow-circular-references: true
 
   jpa:
-    open-in-view: false
+    open-in-view: ${OPEN_SESSION_IN_VIEW:false}
+    
+  datasource:
+    dataSourceClassName: com.mysql.jdbc.jdbc2.optional.MysqlDataSource
+    url: jdbc:mysql://${IAM_DB_HOST}:${IAM_DB_PORT:3306}/${IAM_DB_NAME}?useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+    username: ${IAM_DB_USERNAME}
+    password: ${IAM_DB_PASSWORD}
+    max-active: ${IAM_DB_MAX_ACTIVE:10}
+    max-idle:  ${IAM_DB_MAX_IDLE:5}
+    initial-size: ${IAM_DB_INITIAL_SIZE:1}
+    test-while-idle: ${IAM_DB_TEST_WHILE_IDLE:true}
+    test-on-borrow: ${IAM_DB_TEST_ON_BORROW:true}
+    validation-query: ${IAM_DB_VALIDATION_QUERY:SELECT 1}
+    time-between-eviction-runs-millis: ${IAM_DB_TIME_BETWEEN_EVICTION_RUNS_MILLIS:5000}
+    min-evictable-idle-time-millis: ${IAM_DB_MIN_EVICTABLE_IDLE_TIME_MILLIS:60000}
+    
+    hikari:
+      maximum-pool-size: ${IAM_DB_MAX_ACTIVE:100}
+      connection-test-query: ${IAM_DB_VALIDATION_QUERY:SELECT 1}
 
 voms:
   tls:
