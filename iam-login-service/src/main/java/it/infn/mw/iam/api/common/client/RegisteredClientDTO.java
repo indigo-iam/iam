@@ -30,6 +30,7 @@ import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -237,6 +238,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
   private LocalDate lastUsed;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
