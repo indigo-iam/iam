@@ -1530,13 +1530,8 @@ insert into iam_totp_mfa(active, secret, creation_time, last_update_time, accoun
 (true, 'secret', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 1000);
 
 -- Client last used dates
-insert into client_last_used(id, last_used) VALUES
+insert into client_last_used(client_details_id, last_used) VALUES
 (1, '1994-03-21'),
 (2, '1994-03-20'),
 (3, '1994-03-19'),
 (4, '1994-03-23');
-
-UPDATE client_details SET last_used_id = 1 WHERE id = 1;
-UPDATE client_details SET last_used_id = 2 WHERE id = 2;
-UPDATE client_details SET last_used_id = 3 WHERE id = 3;
-UPDATE client_details SET last_used_id = 4 WHERE id = 4;
