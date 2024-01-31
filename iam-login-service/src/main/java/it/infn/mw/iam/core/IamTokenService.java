@@ -125,9 +125,8 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     LocalDate now = LocalDate.now();
 
     if (clientLastUsed == null) {
-      clientLastUsed = new ClientLastUsedEntity();
+      clientLastUsed = new ClientLastUsedEntity(client, now);
       client.setClientLastUsed(clientLastUsed);
-      clientLastUsed.setLastUsed(now);
     } else {
       LocalDate lastUsed = clientLastUsed.getLastUsed();
       if (lastUsed.isBefore(now)) {
