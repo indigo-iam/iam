@@ -18,9 +18,9 @@ package it.infn.mw.iam.core;
 import java.util.Date;
 import java.util.Set;
 
-import org.joda.time.LocalDate;
+import java.time.LocalDate;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientLastUsed;
+import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
@@ -121,16 +121,16 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
   private void updateClientLastUsed(OAuth2AccessTokenEntity token) {
     ClientDetailsEntity client = token.getClient();
-    ClientLastUsed clientLastUsed = client.getClientLastUsed();
-    Date now = new LocalDate().toDate(); // keep only the day
+    ClientLastUsedEntity clientLastUsed = client.getClientLastUsed();
+    LocalDate now = LocalDate.now();
 
     if (clientLastUsed == null) {
-      clientLastUsed = new ClientLastUsed();
+      clientLastUsed = new ClientLastUsedEntity();
       client.setClientLastUsed(clientLastUsed);
       clientLastUsed.setLastUsed(now);
     } else {
-      Date lastUsed = clientLastUsed.getLastUsed();
-      if (lastUsed == null || lastUsed.before(now)) {
+      LocalDate lastUsed = clientLastUsed.getLastUsed();
+      if (lastUsed.isBefore(now)) {
         clientLastUsed.setLastUsed(now);
       }
     }

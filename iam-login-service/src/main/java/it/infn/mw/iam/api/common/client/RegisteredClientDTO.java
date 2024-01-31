@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.common.client;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
@@ -236,7 +237,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
-  private Date lastUsed;
+  private LocalDate lastUsed;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
@@ -476,11 +477,11 @@ public class RegisteredClientDTO {
     this.createdAt = createdAt;
   }
 
-  public Date getLastUsed() {
+  public LocalDate getLastUsed() {
     return lastUsed;
   }
 
-  public void setLastUsed(Date lastUsed) {
+  public void setLastUsed(LocalDate lastUsed) {
     this.lastUsed = lastUsed;
   }
 
