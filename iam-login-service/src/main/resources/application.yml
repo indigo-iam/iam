@@ -226,7 +226,7 @@ client-registration:
     default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
 
 client:
-  track_last_used: ${IAM_CLIENT_TRACK_LAST_USED:false}
+  track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
 management:
   health:
