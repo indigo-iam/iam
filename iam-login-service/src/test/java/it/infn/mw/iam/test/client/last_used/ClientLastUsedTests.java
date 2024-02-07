@@ -16,10 +16,10 @@
 package it.infn.mw.iam.test.client.last_used;
 
 import static java.util.Collections.emptyMap;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -95,7 +95,7 @@ public class ClientLastUsedTests extends TestTokensUtils {
         iamProperties.getClient().setTrackLastUsed(false);
 
         ClientDetailsEntity client = loadTestClient(TOKEN_LOOKUP_CLIENT);
-        assertThat(client.isAllowRefresh());
+        assertTrue(client.isAllowRefresh());
 
         // Initially, the last used date is null
         OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TEST_347_USER, SCOPES);
@@ -121,7 +121,7 @@ public class ClientLastUsedTests extends TestTokensUtils {
         // tokens
         ClientDetailsEntity client = loadTestClient(POST_CLIENT);
         client.setGrantTypes(Set.of("refresh_token"));
-        assertThat(client.isAllowRefresh());
+        assertTrue(client.isAllowRefresh());
 
         // Initially, the last used date is set to the default value
         assertNotNull(client.getClientLastUsed());
