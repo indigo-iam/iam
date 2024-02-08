@@ -27,7 +27,15 @@ jobs:
       run: mvn -B license:check
 
     - name: Build, test, package
-      run: mvn -U -B clean package install
+      env:
+        IAM_DB_HOST: localhost
+      run: |
+        sudo systemctl start mysql
+        mysql -uroot -proot -e "CREATE USER 'iam'@'%' IDENTIFIED BY 'pwd';"
+        mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
+        mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
+        mysql -uroot -proot -e "FLUSH PRIVILEGES;"
+        mvn -Dspring.profiles.active=mysql-test package install
 
     - name: Copy artifacts to docker dir
       run: |

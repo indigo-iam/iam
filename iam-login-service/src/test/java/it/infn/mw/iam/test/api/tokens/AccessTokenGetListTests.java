@@ -18,11 +18,13 @@ package it.infn.mw.iam.test.api.tokens;
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.TOKENS_MAX_PAGE_SIZE;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -37,6 +39,7 @@ import org.springframework.util.MultiValueMap;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
@@ -68,6 +71,9 @@ public class AccessTokenGetListTests extends TestTokensUtils {
 
   @Autowired
   private IamOAuthAccessTokenRepository tokenRepository;
+
+  @Autowired
+  private DefaultClientService clientService;
 
   private static final String TESTUSER_USERNAME = "test_102";
   private static final String TESTUSER2_USERNAME = "test_103";
@@ -535,6 +541,9 @@ public class AccessTokenGetListTests extends TestTokensUtils {
     
     OAuth2AccessTokenEntity at = buildAccessToken(client, null,
     SCOPES_RESOURCE);
+    Set<String> scopes = new HashSet<String>();
+    scopes.add("resource-token");
+    at.setScope(scopes);
 
     accessTokens.add(at);
     
@@ -557,6 +566,8 @@ public class AccessTokenGetListTests extends TestTokensUtils {
       tokenRepository.findAllValidAccessTokens(new Date(), new OffsetPageable(0, 10));
   
     tokens.forEach(t -> assertThat(t.getScope(), not(hasItem("resource-token"))));
+
+    clientService.deleteClient(client);
     
     }
 }

@@ -89,7 +89,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   @Test
   public void testClientRegistrationAccessTokenWorks() throws Exception {
 
-    String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
+    String jsonInString =
+        ClientJsonStringBuilder.builder().scopes("test").grantTypes("authorization_code").build();
 
     // @formatter:off
     String response =
@@ -112,15 +113,15 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
     assertThat(rat, notNullValue());
     assertThat(registrationUri, notNullValue());
 
-    mvc.perform(get(registrationUri)
-        .contentType(APPLICATION_JSON)
+    mvc
+      .perform(get(registrationUri).contentType(APPLICATION_JSON)
         .header("Authorization", "Bearer " + rat))
       .andExpect(status().isOk())
       .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.client_id", is(clientId)));
-    
-    mvc.perform(delete(registrationUri)
-        .contentType(APPLICATION_JSON)
+
+    mvc
+      .perform(delete(registrationUri).contentType(APPLICATION_JSON)
         .header("Authorization", "Bearer " + rat))
       .andExpect(status().isNoContent());
 
@@ -128,6 +129,15 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
       .perform(get(registrationUri).contentType(APPLICATION_JSON)
         .header("Authorization", "Bearer " + rat))
       .andExpect(status().isUnauthorized());
+
+    jsonInString =
+        ClientJsonStringBuilder.builder().scopes("test").grantTypes("client_credentilas").build();
+
+    // @formatter:off
+    mvc.perform(post(REGISTER_ENDPOINT)
+            .contentType(APPLICATION_JSON)
+            .content(jsonInString))
+          .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -136,8 +146,7 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
     String[] scopes =
         {"registration:read", "registration:write", "scim:read", "scim:write", "proxy:generate"};
 
-    String jsonInString = ClientJsonStringBuilder.builder().scopes(scopes).build();
-
+    String jsonInString = ClientJsonStringBuilder.builder().scopes(scopes).grantTypes("authorization_code").build();
 
     // @formatter:off
     String response =
@@ -164,7 +173,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
 
     String[] scopes = {"scim:read", "scim:write", "registration:read", "registration:write"};
 
-    String jsonInString = ClientJsonStringBuilder.builder().scopes(scopes).build();
+    String jsonInString =
+        ClientJsonStringBuilder.builder().scopes(scopes).grantTypes("authorization_code").build();
 
     // @formatter:off
     String response =
@@ -195,11 +205,10 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
   @Test
   public void passwordGrantTypeNotAllowedWhenRegisteringNewClient() throws Exception {
 
-    String jsonInString =
-        ClientJsonStringBuilder.builder()
-          .grantTypes("authorization_code", "password")
-          .scopes("openid")
-          .build();
+    String jsonInString = ClientJsonStringBuilder.builder()
+      .grantTypes("authorization_code", "password")
+      .scopes("openid")
+      .build();
 
     mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
       .andExpect(status().isBadRequest())
@@ -255,8 +264,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
         .header("Authorization", "Bearer " + rat))
       .andExpect(status().isOk())
       .andExpect(content().contentType(APPLICATION_JSON))
-      .andExpect(
-          jsonPath("$.grant_types", hasItems("password", TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)))
+      .andExpect(jsonPath("$.grant_types",
+          hasItems("password", TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)))
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -267,7 +276,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
         .content(clientJson))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.grant_types", hasItem("password")))
-      .andExpect(jsonPath("$.grant_types", hasItem(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)));
+      .andExpect(
+          jsonPath("$.grant_types", hasItem(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE)));
 
 
     clientModel = clientService.loadClientByClientId(clientId);
@@ -281,7 +291,8 @@ public class ClientRegistrationTests extends ClientRegistrationTestSupport {
       .andExpect(status().isOk())
       .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.grant_types", not(hasItem("password"))))
-      .andExpect(jsonPath("$.grant_types", not(hasItem(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE))))
+      .andExpect(jsonPath("$.grant_types",
+          not(hasItem(TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE))))
       .andReturn()
       .getResponse()
       .getContentAsString();

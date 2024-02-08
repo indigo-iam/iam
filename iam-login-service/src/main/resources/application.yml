@@ -91,11 +91,11 @@ spring:
     pathmatch:
       matching-strategy: "ant-path-matcher"
 iam:
-  
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
+  showSql: ${IAM_DATABASE_SHOW_SQL:false}
   
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
@@ -181,6 +181,10 @@ iam:
     
   account-linking:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
+    
+  login-page-layout:
+    section-to-be-displayed-first: ${IAM_LOGIN_PAGE_LAYOUT_SECTION_TO_DISPLAY_FIRST:LOGIN_FORM}
+    external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
 redis-cache:
   enabled: ${IAM_REDIS_CACHE_ENABLED:false}
@@ -215,8 +219,9 @@ client-registration:
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
   client-defaults:
     default-access-token-validity-seconds: ${DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
-    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:108000}
-
+    default-device-code-validity-seconds: ${DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
+    default-id-token-validity-seconds: ${DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
+    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
 
 management:
   health:

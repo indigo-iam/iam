@@ -63,10 +63,10 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
 
   @Autowired
   IamProperties iamProperties;
-  
+
   @Autowired
   ClientRegistrationProperties clientRegistrationProperties;
-  
+
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws Exception {
@@ -81,7 +81,7 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
     request.setAttribute(IAM_SAML_PROPERTIES_KEY, samlProperties);
     
     request.setAttribute(RCAUTH_ENABLED_KEY, rcAuthProperties.isEnabled());
-    
+
     request.setAttribute(CLIENT_DEFAULTS_PROPERTIES_KEY, clientRegistrationProperties.getClientDefaults());
 
     if (iamProperties.getVersionedStaticResources().isEnableVersioning()) {
