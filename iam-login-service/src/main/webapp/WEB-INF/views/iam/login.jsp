@@ -72,62 +72,127 @@
             <h3>Welcome to <strong>${iamOrganisationName}</strong>
       </h3>
         </div>
-        
-        <c:if test="${loginPageConfiguration.localAuthenticationVisible or param.sll != null}">
-          <jsp:include page="login-form.jsp" />
+
+        <c:if
+            test="${
+                (
+                  loginPageConfiguration.localAuthenticationVisible
+                  or param.sll != null
+                ) and loginPageConfiguration.defaultLoginPageLayout
+            }"
+        >
+            <jsp:include page="login-form.jsp" />
         </c:if>
         
-        <div id="login-external-authn">
+        <c:if
+            test="${
+                !loginPageConfiguration.defaultLoginPageLayout
+                or (
+                  !loginPageConfiguration.localAuthenticationVisible
+                  and param.sll == null
+                )
+            }"
+        >
+            <c:set value="container-spacer" var="containerSpacer"></c:set>
+        </c:if>
+        
+        <div id="login-external-authn" class="${containerSpacer}">
             <c:if
-        test="${loginPageConfiguration.oidcEnabled or loginPageConfiguration.samlEnabled or IAM_X509_CAN_LOGIN}">
-              <div class="ext-login-preamble text-muted">
-                <c:choose>
-                    <c:when test="${ loginPageConfiguration.localAuthenticationVisible}">Or sign in with</c:when>
-                    <c:otherwise>
-                        Sign in with
-                    </c:otherwise>
-                </c:choose>
-              </div>
-            </c:if>
-            
-            <c:if test="${IAM_X509_CAN_LOGIN}">
-              <div id="x509-login" class="ext-authn-login-button">
-                <a class="btn btn-block btn-default" href="/dashboard?x509ClientAuth=true"
-            title="${IAM_X509_CRED.subject}">
-                  Your X.509 certificate 
-               </a>
-              </div>
-            </c:if>
-            
-            <c:if test="${loginPageConfiguration.oidcEnabled}">
-            	<c:forEach items="${loginPageConfiguration.oidcProviders}" var="provider">
-                <t:loginButton cssClass="ext-authn-login-button" href="/openid_connect_login?iss=${provider.issuer}"
-            btn="${provider.loginButton}" id="oidc-login-${provider.name}" />
-            	</c:forEach> 
+                test="${loginPageConfiguration.oidcEnabled or loginPageConfiguration.samlEnabled or IAM_X509_CAN_LOGIN}"
+            >
+                <div class="ext-login-preamble text-muted">
+                    <c:choose>
+                        <c:when
+                            test="${
+                              loginPageConfiguration.defaultLoginPageLayout
+                              and (
+                                loginPageConfiguration.localAuthenticationVisible
+                                or param.sll != null
+                              )
+                            }"
+                        >
+                            Or sign in with
+                        </c:when>
+                        <c:otherwise>
+                            Sign in with
+                        </c:otherwise>
+                    </c:choose>
+                </div>
             </c:if>
 
-            <c:if test="${loginPageConfiguration.samlEnabled}">
-                
-                <!-- WAYF login button -->
-                <c:if test="${iamSamlProperties.wayfLoginButton.visible}">
-                  <t:loginButton href="/saml/login" btn="${iamSamlProperties.wayfLoginButton}"
-            cssClass="ext-authn-login-button" id="saml-login" />
-                </c:if>
-                
-                <!-- SAML login shortcuts -->
-                <c:forEach items="${iamSamlProperties.loginShortcuts}" var="ls">
-                  <c:if test="${ls.enabled}">
-                    <t:loginButton cssClass="ext-authn-login-button" href="/saml/login?idp=${ls.entityId}"
-              btn="${ls.loginButton}" id="saml-login-${ls.name}" />
-                  </c:if>
-                </c:forEach>
-            </c:if>
-            
+            <c:forEach items="${loginPageConfiguration.externalAuthnOptionsOrder}" var="externalAuthnMethodName">
+                <c:choose>
+                    <c:when test="${externalAuthnMethodName == 'X509'}">
+                        <c:if test="${IAM_X509_CAN_LOGIN}">
+                            <div id="x509-login" class="ext-authn-login-button">
+                                <a
+                                    class="btn btn-block btn-default"
+                                    href="/dashboard?x509ClientAuth=true"
+                                    title="${IAM_X509_CRED.subject}"
+                                >
+                                    Your X.509 certificate
+                                </a>
+                            </div>
+                        </c:if>
+                    </c:when>
+
+                    <c:when test="${externalAuthnMethodName == 'OIDC'}">
+                        <c:if test="${loginPageConfiguration.oidcEnabled}">
+                            <c:forEach items="${loginPageConfiguration.oidcProviders}" var="provider">
+                                <t:loginButton
+                                    cssClass="ext-authn-login-button"
+                                    href="/openid_connect_login?iss=${provider.issuer}"
+                                    btn="${provider.loginButton}"
+                                    id="oidc-login-${provider.name}"
+                                 />
+                            </c:forEach>
+                        </c:if>
+                    </c:when>
+
+                    <c:when test="${ externalAuthnMethodName == 'SAML'}">
+                        <c:if test="${loginPageConfiguration.samlEnabled}">
+
+                            <!-- WAYF login button -->
+                            <c:if test="${iamSamlProperties.wayfLoginButton.visible}">
+                                <t:loginButton
+                                    href="/saml/login"
+                                    btn="${iamSamlProperties.wayfLoginButton}"
+                                    cssClass="ext-authn-login-button"
+                                    id="saml-login"
+                                />
+                            </c:if>
+
+                            <!-- SAML login shortcuts -->
+                            <c:forEach items="${iamSamlProperties.loginShortcuts}" var="ls">
+                                <c:if test="${ls.enabled}">
+                                    <t:loginButton
+                                        cssClass="ext-authn-login-button"
+                                        href="/saml/login?idp=${ls.entityId}"
+                                        btn="${ls.loginButton}"
+                                        id="saml-login-${ls.name}"
+                                    />
+                                </c:if>
+                            </c:forEach>
+                        </c:if>
+                    </c:when>
+                </c:choose>
+            </c:forEach>
+
             <c:if test="${loginPageConfiguration.showLinkToLocalAuthenticationPage and param.sll == null}">
                 <a class="btn btn-block btn-login" href="/login?sll=y">Local credentials</a>
             </c:if>
         </div>
-        
+
+        <c:if
+            test="${
+                (
+                  loginPageConfiguration.localAuthenticationVisible
+                  or param.sll != null
+                ) and !loginPageConfiguration.defaultLoginPageLayout
+            }"
+        >
+            <jsp:include page="login-form.jsp" />
+        </c:if>
 
         <c:if test="${loginPageConfiguration.registrationEnabled && loginPageConfiguration.showRegistrationButton}">
             

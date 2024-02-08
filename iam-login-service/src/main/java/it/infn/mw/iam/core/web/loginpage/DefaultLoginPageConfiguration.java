@@ -31,6 +31,7 @@ import com.google.common.base.Strings;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.Logo;
+import it.infn.mw.iam.config.IamProperties.LoginPageLayout.ExternalAuthnOptions;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 
@@ -48,6 +49,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean registrationEnabled;
   private boolean localAuthenticationVisible;
   private boolean showLinkToLocalAuthn;
+  private boolean defaultLoginPageLayout;
 
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
@@ -74,6 +76,8 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+    defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
+        .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
   }
 
   @Override
@@ -178,5 +182,15 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   @Override
   public String getCustomContentUrl() {
     return iamProperties.getCustomization().getCustomLoginPageContentUrl();
+  }
+
+  @Override
+  public boolean isDefaultLoginPageLayout() {
+    return defaultLoginPageLayout;
+  }
+
+  @Override
+  public List<ExternalAuthnOptions> getExternalAuthnOptionsOrder() {
+    return iamProperties.getLoginPageLayout().getExternalAuthnOrder();
   }
 }
