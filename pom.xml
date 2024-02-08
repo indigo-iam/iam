@@ -269,6 +269,13 @@
         <artifactId>jaxb-runtime</artifactId>
         <version>${jaxb-runtime.version}</version>
       </dependency>
+      
+      <!-- OPA -->
+      <dependency>
+    	<groupId>org.openpolicyagent</groupId>
+    	<artifactId>opa-spring-boot-starter</artifactId>
+    	<version>0.21.0</version>
+      </dependency>
 
     </dependencies>
 
