@@ -77,7 +77,7 @@
             test="${
                 (
                   loginPageConfiguration.localAuthenticationVisible
-                  or param.sll != null
+                  or (param.sll != null and loginPageConfiguration.showLinkToLocalAuthenticationPage)
                 ) and loginPageConfiguration.defaultLoginPageLayout
             }"
         >
