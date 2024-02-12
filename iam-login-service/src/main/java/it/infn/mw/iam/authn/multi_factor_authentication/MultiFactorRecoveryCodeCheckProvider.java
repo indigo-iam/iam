@@ -20,14 +20,11 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 import java.util.Set;
 
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
-import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 /**
@@ -36,13 +33,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
  */
 public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvider {
 
-  private final IamAccountRepository accountRepo;
-  private final IamTotpMfaService totpMfaService;
-
   public MultiFactorRecoveryCodeCheckProvider(IamAccountRepository accountRepo,
       IamTotpMfaService totpMfaService) {
-    this.accountRepo = accountRepo;
-    this.totpMfaService = totpMfaService;
   }
 
   @Override
@@ -52,21 +44,6 @@ public class MultiFactorRecoveryCodeCheckProvider implements AuthenticationProvi
     String recoveryCode = token.getRecoveryCode();
     if (recoveryCode == null) {
       return null;
-    }
-
-    IamAccount account = accountRepo.findByUsername(authentication.getName())
-      .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
-
-    boolean valid = false;
-
-    try {
-      valid = totpMfaService.verifyRecoveryCode(account, recoveryCode);
-    } catch (MfaSecretNotFoundException e) {
-      throw e;
-    }
-
-    if (!valid) {
-      throw new BadCredentialsException("Bad recovery code");
     }
 
     return createSuccessfulAuthentication(token);
