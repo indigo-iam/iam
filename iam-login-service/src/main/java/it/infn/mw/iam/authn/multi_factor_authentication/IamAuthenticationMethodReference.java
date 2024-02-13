@@ -15,8 +15,14 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
-public class IamAuthenticationMethodReference {
+import java.io.Serializable;
 
+public class IamAuthenticationMethodReference implements Serializable {
+
+  /**
+   *
+   */
+  private static final long serialVersionUID = 1L;
   public static final String AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING = "amr";
 
   public enum AuthenticationMethodReferenceValues {
