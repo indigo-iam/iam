@@ -42,6 +42,7 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
   public static final String RCAUTH_ENABLED_KEY = "iamRcauthEnabled";
   public static final String RESOURCES_PATH_KEY = "resourcesPrefix";
   public static final String CLIENT_DEFAULTS_PROPERTIES_KEY = "clientDefaultsProperties";
+  public static final String CLIENT_TRACK_LAST_USED_KEY = "clientTrackLastUsed";
 
   @Value("${iam.version}")
   String iamVersion;
@@ -83,6 +84,8 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
     request.setAttribute(RCAUTH_ENABLED_KEY, rcAuthProperties.isEnabled());
 
     request.setAttribute(CLIENT_DEFAULTS_PROPERTIES_KEY, clientRegistrationProperties.getClientDefaults());
+    
+    request.setAttribute(CLIENT_TRACK_LAST_USED_KEY, iamProperties.getClient().isTrackLastUsed());
 
     if (iamProperties.getVersionedStaticResources().isEnableVersioning()) {
       request.setAttribute(RESOURCES_PATH_KEY, String.format("/resources/%s", gitCommitId));
