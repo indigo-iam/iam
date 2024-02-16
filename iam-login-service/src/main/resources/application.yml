@@ -273,4 +273,5 @@ lifecycle:
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
 
 opa:
-  url: http://localhost:8181/v1/data
+  enable: true
+  url: http://localhost:8181

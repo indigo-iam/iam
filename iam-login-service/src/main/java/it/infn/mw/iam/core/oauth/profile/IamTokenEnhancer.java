@@ -17,10 +17,13 @@ package it.infn.mw.iam.core.oauth.profile;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -34,6 +37,8 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.shaded.json.JSONObject;
@@ -57,7 +62,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   @Autowired
   private IamScopeFilter scopeFilter;
-  
+
   @Autowired
   private IamOpaController opaService;
 
@@ -66,7 +71,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   @Autowired
   private Clock clock;
-  
+
   @Autowired
   private IamAccountRepository accountRepo;
 
@@ -81,19 +86,19 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     return signedJWT;
 
   }
-  
-protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
-    
-    if (authn == null){
+
+  protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
+
+    if (authn == null) {
       return Optional.empty();
     }
-    
+
     Authentication userAuthn = authn;
-    
-    if (authn instanceof OAuth2Authentication){
+
+    if (authn instanceof OAuth2Authentication) {
       userAuthn = ((OAuth2Authentication) authn).getUserAuthentication();
     }
-    
+
     if (userAuthn == null) {
       return Optional.empty();
     }
@@ -112,25 +117,32 @@ protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
     String clientId = originalAuthRequest.getClientId();
 
     UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, clientId);
-    
-    JSONObject params = new JSONObject();
-    params.put("id", "1234"); // take clientId, accountUuid and groupUuid from authZ request
-    params.put("scopes", String.join(" ", originalAuthRequest.getScope()));
-    params.put("type", "group"); // it can be group, client or account
-    
-    JSONObject json = new JSONObject();
-    json.put("input", params);
-    
- //   opaService.evaluatePolicy(json);  // prendere i filtered_scopes
-    
-    Optional<IamAccount> maybeAccount = resolveIamAccount(authentication);
 
-    if (maybeAccount.isPresent()) {
-      
-   //   originalAuthRequest.getScope().retainAll(filteredScopes);
+    JSONObject input = new JSONObject();
+    input.put("id", "1234"); // take clientId, accountUuid and groupUuid from authZ request
+    input.put("scopes", originalAuthRequest.getScope());
+    input.put("type", "group"); // it can be group, client or account
+
+
+    try {
+      JSONObject result =
+          new ObjectMapper().readValue(opaService.evaluatePolicy(input), JSONObject.class);
+      String substringBetween =
+          StringUtils.substringBetween(result.getAsString("filtered_scopes"), "[", "]")
+            .replaceAll("\"", ""); // get rid of bracket
+      Set<String> filteredScopes = new HashSet<String>(Arrays.asList(substringBetween.split(", ")));
+
+      Optional<IamAccount> maybeAccount = resolveIamAccount(authentication);
+      if (maybeAccount.isPresent()) {
+
+        accessToken.getScope().retainAll(filteredScopes);
+      }
+    } catch (JsonProcessingException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
-    
-   // scopeFilter.filterScopes(accessToken.getScope(), authentication); 
+
+    // scopeFilter.filterScopes(accessToken.getScope(), authentication);
 
     Instant tokenIssueInstant = clock.instant();
 
@@ -138,7 +150,7 @@ protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
 
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
-    
+
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
 
@@ -160,8 +172,7 @@ protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
       ClientDetailsEntity client = getClientService().loadClientByClientId(clientId);
 
       JWT idToken = connectTokenService.createIdToken(client, originalAuthRequest,
-          Date.from(tokenIssueInstant),
-          userInfo.getSub(), accessTokenEntity);
+          Date.from(tokenIssueInstant), userInfo.getSub(), accessTokenEntity);
 
       accessTokenEntity.setIdToken(idToken);
     }
