@@ -75,7 +75,7 @@ public class PasswordResetTests {
   public void testChangePassword() throws Exception {
     String testEmail = "test@iam.test";
 
-    String newPassword = "secure_password";
+    String newPassword = "secure_Passw0rd";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
       .andExpect(status().isOk());
