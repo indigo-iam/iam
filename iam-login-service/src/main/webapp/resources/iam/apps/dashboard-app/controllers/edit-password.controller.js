@@ -28,7 +28,7 @@
       $scope, $state, $uibModalInstance, Utils, ResetPasswordService, user) {
     var editPasswordCtrl = this;
 
-    editPasswordCtrl.passwordMinlength = 6;
+    editPasswordCtrl.passwordMinlength = 8;
     editPasswordCtrl.userToEdit = user;
 
     editPasswordCtrl.dismiss = dismiss;

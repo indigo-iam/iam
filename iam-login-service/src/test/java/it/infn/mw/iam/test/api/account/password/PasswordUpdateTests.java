@@ -124,7 +124,7 @@ public class PasswordUpdateTests {
   public void testUpdatePassword() {
 
     String currentPassword = "password";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_p@ssw0rd";
 
 
     String accessToken = passwordTokenGetter().port(iamPort)
@@ -220,10 +220,52 @@ public class PasswordUpdateTests {
   }
 
   @Test
+  public void testUpdatePasswordWithWeakPasswordAccess() {
+
+    String currentPassword = "password";
+    String newPassword = "newweakpassword";
+    String accessToken = passwordTokenGetter().port(iamPort)
+      .username(testUser.getUserName())
+      .password(currentPassword)
+      .getAccessToken();
+
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value())
+      .body(containsString("The password must be strong"));
+  }
+
+  @Test
+  public void testUpdatePasswordWithWeakPasswordWithoutSpecialCharts() {
+
+    String currentPassword = "password";
+    String newPassword = "3jfyt785hdddW";
+    String accessToken = passwordTokenGetter().port(iamPort)
+      .username(testUser.getUserName())
+      .password(currentPassword)
+      .getAccessToken();
+
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value())
+      .body(containsString("The password must be strong"));
+  }
+
+  @Test
+  public void testUpdatePasswordWithWeakPasswordWithoutNumbers() {
+
+    String currentPassword = "password";
+    String newPassword = "Sjfyt-hdddW!";
+    String accessToken = passwordTokenGetter().port(iamPort)
+      .username(testUser.getUserName())
+      .password(currentPassword)
+      .getAccessToken();
+
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value())
+      .body(containsString("FUNZIONA"));
+  }
+
+  @Test
   public void testUpdatePasswordUserNotActive() throws Exception {
 
     String currentPassword = "password";
-    String newPassword = "newPassword";
+    String newPassword = "newP@ssw0rd";
     String accessToken = passwordTokenGetter().port(iamPort)
       .username(testUser.getUserName())
       .password(currentPassword)
