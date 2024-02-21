@@ -89,7 +89,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       IamAccount account = accountRepo.findByUsername(principalName).orElseThrow(noSuchAccountError(principalName));
       Set<String> finalScopes = scopeFilter.opaScopeFilter(account, requestedScopes);
       requestedScopes.retainAll(finalScopes);
-      //scopeFilter.filterScopes(requestedScopes, authn);
       inputParams.put(OAuth2Utils.SCOPE, joiner.join(requestedScopes));
     }
 
