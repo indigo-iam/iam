@@ -17,13 +17,9 @@ package it.infn.mw.iam.core.oauth.profile;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -37,17 +33,13 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.core.oauth.scope.IamOpaController;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.IamOpaFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -61,10 +53,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
   private OIDCTokenService connectTokenService;
 
   @Autowired
-  private IamScopeFilter scopeFilter;
-
-  @Autowired
-  private IamOpaController opaService;
+  private IamOpaFilter iamOpaFilter;
 
   @Autowired
   private JWTProfileResolver profileResolver;
@@ -117,32 +106,9 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     String clientId = originalAuthRequest.getClientId();
 
     UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, clientId);
+    Optional<IamAccount> maybeAccount = resolveIamAccount(authentication);
 
-    JSONObject input = new JSONObject();
-    input.put("id", "1234"); // take clientId, accountUuid and groupUuid from authZ request
-    input.put("scopes", originalAuthRequest.getScope());
-    input.put("type", "group"); // it can be group, client or account
-
-
-    try {
-      JSONObject result =
-          new ObjectMapper().readValue(opaService.evaluatePolicy(input), JSONObject.class);
-      String substringBetween =
-          StringUtils.substringBetween(result.getAsString("filtered_scopes"), "[", "]")
-            .replaceAll("\"", ""); // get rid of bracket
-      Set<String> filteredScopes = new HashSet<String>(Arrays.asList(substringBetween.split(", ")));
-
-      Optional<IamAccount> maybeAccount = resolveIamAccount(authentication);
-      if (maybeAccount.isPresent()) {
-
-        accessToken.getScope().retainAll(filteredScopes);
-      }
-    } catch (JsonProcessingException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-
-    // scopeFilter.filterScopes(accessToken.getScope(), authentication);
+    iamOpaFilter.filterScopesWithOPA(authentication, maybeAccount, accessToken);
 
     Instant tokenIssueInstant = clock.instant();
 

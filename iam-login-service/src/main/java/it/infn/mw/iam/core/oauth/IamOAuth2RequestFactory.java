@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
@@ -38,8 +39,11 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.IamOpaScopeFilter;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
@@ -50,19 +54,25 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
 
-  private final IamScopeFilter scopeFilter;
+  private final IamOpaScopeFilter scopeFilter;
 
   private final JWTProfileResolver profileResolver;
 
   private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsEntityService clientDetailsService;
+  private final IamAccountRepository accountRepo;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
-      IamScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
+      IamOpaScopeFilter scopeFilter, JWTProfileResolver profileResolver,IamAccountRepository accountRepo) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.profileResolver = profileResolver;
+    this.accountRepo = accountRepo;
+  }
+
+  private Supplier<NoSuchAccountError> noSuchAccountError(String username) {
+    return () -> NoSuchAccountError.forUsername(username);
   }
 
 
@@ -75,7 +85,11 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       final Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
-      scopeFilter.filterScopes(requestedScopes, authn);
+      String principalName = authn.getName();
+      IamAccount account = accountRepo.findByUsername(principalName).orElseThrow(noSuchAccountError(principalName));
+      Set<String> finalScopes = scopeFilter.opaScopeFilter(account, requestedScopes);
+      requestedScopes.retainAll(finalScopes);
+      //scopeFilter.filterScopes(requestedScopes, authn);
       inputParams.put(OAuth2Utils.SCOPE, joiner.join(requestedScopes));
     }
 

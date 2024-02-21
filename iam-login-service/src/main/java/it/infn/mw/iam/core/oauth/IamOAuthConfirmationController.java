@@ -60,7 +60,7 @@ import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.core.oauth.scope.IamOpaScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 /**
@@ -92,10 +92,10 @@ public class IamOAuthConfirmationController {
   private RedirectResolver redirectResolver;
 
   @Autowired
-  private ScopePolicyPDP pdp;
+  private AccountUtils accountUtils;
 
   @Autowired
-  private AccountUtils accountUtils;
+  private IamOpaScopeFilter iamOpaScopeFilter;
 
 
   /**
@@ -174,7 +174,6 @@ public class IamOAuthConfirmationController {
 
     model.put("redirect_uri", redirectUri);
 
-
     // pre-process the scopes
     Set<SystemScope> scopes = scopeService.fromStrings(authRequest.getScope());
 
@@ -185,7 +184,7 @@ public class IamOAuthConfirmationController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
 
-    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+    Set<String> filteredScopes = iamOpaScopeFilter.opaScopeFilter(account, scopeService.toStrings(scopes));
 
     // sort scopes for display based on the inherent order of system scopes
     for (SystemScope s : systemScopes) {

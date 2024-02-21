@@ -84,12 +84,13 @@ import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.oauth.scope.IamOpaScopeFilter;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -169,9 +170,9 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  OAuth2RequestFactory requestFactory(IamScopeFilter scopeFilter,
-      JWTProfileResolver profileResolver) {
-    return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver);
+  OAuth2RequestFactory requestFactory(IamOpaScopeFilter scopeFilter,
+      JWTProfileResolver profileResolver, IamAccountRepository accounRepo) {
+    return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver, accounRepo);
   }
 
   @Bean
