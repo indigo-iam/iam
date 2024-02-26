@@ -33,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -43,6 +44,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
@@ -138,6 +141,16 @@ public class ClientManagementAPIController {
       @RequestBody RegisteredClientDTO client)
       throws ParseException {
     return managementService.updateClient(clientId, client);
+  }
+
+  @PatchMapping("/{clientId}/status")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void updateClientStatus(@PathVariable String clientId,
+      @RequestBody String body) {  
+    JsonObject jsonObject = JsonParser.parseString(body).getAsJsonObject();
+    boolean status = jsonObject.get("status").getAsBoolean();
+    String userId = jsonObject.get("userId").getAsString();      
+    managementService.updateClientStatus(clientId, status, userId);
   }
 
   @PostMapping("/{clientId}/secret")

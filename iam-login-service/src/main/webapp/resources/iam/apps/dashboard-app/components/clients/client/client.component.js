@@ -17,7 +17,7 @@
     'use strict';
 
 
-    function ClientController(ClientsService, toaster, $uibModal, $location) {
+    function ClientController(ClientsService, FindService, toaster, $uibModal, $location) {
         var self = this;
 
         self.resetVal = resetVal;
@@ -25,6 +25,7 @@
         self.loadClient = loadClient;
         self.deleteClient = deleteClient;
         self.cancel = cancel;
+        self.getClientStatusMessage = getClientStatusMessage;
 
         self.$onInit = function () {
             if (self.newClient) {
@@ -131,6 +132,22 @@
                 }
             });
         }
+
+        function getClientStatusMessage(){
+            FindService.findAccountByUuid(self.clientVal.status_changed_by).then(function(res){
+                self.clientStatusMessage = "Suspended by " + res.username + " on " + getFormatedDate(self.clientVal.status_changed_on);                                            
+            }).catch(function (res) {
+                console.debug("Error retrieving user account!", res);
+            });           
+        }
+
+        function getFormatedDate(dateToFormat){
+            var dateISOString = new Date(dateToFormat).toISOString();
+            var ymd = dateISOString.split('T')[0];
+            //Remove milliseconds
+            var time = dateISOString.split('T')[1].slice(0, -5);
+            return ymd + " " + time;
+        }
     }
 
     angular
@@ -147,7 +164,7 @@
                 newClient: '<',
                 clientOwners: '<'
             },
-            controller: ['ClientsService', 'toaster', '$uibModal', '$location', ClientController],
+            controller: ['ClientsService', 'FindService', 'toaster', '$uibModal', '$location', ClientController],
             controllerAs: '$ctrl'
         };
     }

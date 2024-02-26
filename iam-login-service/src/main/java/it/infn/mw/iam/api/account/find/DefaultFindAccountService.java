@@ -25,7 +25,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -142,5 +141,9 @@ public class DefaultFindAccountService implements FindAccountService {
     IamGroup group = groupRepo.findByUuid(groupUuid).orElseThrow(groupNotFoundError(groupUuid));
     Page<IamAccount> results = repo.findByGroupUuidWithFilter(group.getUuid(), filter, pageable);
     return responseFromPage(results, converter, pageable);
+  }
+
+  public Optional<IamAccount> findAccountByUuid(String uuid) {
+    return repo.findByUuid(uuid);
   }
 }

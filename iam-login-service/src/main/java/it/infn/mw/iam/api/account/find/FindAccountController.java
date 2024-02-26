@@ -20,20 +20,27 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationErro
 import static java.util.Objects.isNull;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import com.nimbusds.jose.shaded.json.JSONObject;
+
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -44,6 +51,7 @@ public class FindAccountController {
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
   public static final String FIND_BY_USERNAME_RESOURCE = "/iam/account/find/byusername";
+  public static final String FIND_BY_UUID_RESOURCE = "/iam/account/find/byuuid/{accountUuid}";
   public static final String FIND_BY_CERT_SUBJECT_RESOURCE = "/iam/account/find/bycertsubject";
   public static final String FIND_BY_GROUP_RESOURCE = "/iam/account/find/bygroup/{groupUuid}";
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
@@ -121,4 +129,31 @@ public class FindAccountController {
     }
   }
 
+  @GetMapping(FIND_BY_UUID_RESOURCE)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or hasRole('USER')")
+  public JSONObject findByUuid(@PathVariable String accountUuid) {
+    Optional<IamAccount> iamAccount = service.findAccountByUuid(accountUuid);
+    if(iamAccount.isPresent()){
+      return getIamAccountJson(iamAccount.get());
+    } else{
+      throw NoSuchAccountError.forUuid(accountUuid);
+    }    
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoSuchAccountError.class)
+  @ResponseBody
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or hasRole('USER')")
+  public ErrorDTO accountNotFoundError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  private JSONObject getIamAccountJson(IamAccount iamAccount) {
+    JSONObject iamAccountJson = new JSONObject();
+    iamAccountJson.put("id", iamAccount.getId());
+    iamAccountJson.put("accountUuid", iamAccount.getUuid());
+    iamAccountJson.put("username", iamAccount.getUsername());
+    iamAccountJson.put("active", iamAccount.isActive());
+    return iamAccountJson;
+  }
 }

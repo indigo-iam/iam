@@ -43,6 +43,10 @@
   rel="stylesheet"
   href="${resourcesPrefix}/iam/css/iam.css"></link>
 
+<link
+  rel="stylesheet"
+  href="${resourcesPrefix}/iam/css/tooltip.css"></link>  
+
 </head>
 
 <script>
