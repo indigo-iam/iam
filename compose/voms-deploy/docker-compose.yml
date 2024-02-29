@@ -1,0 +1,93 @@
+version: "3"
+
+volumes:
+  data:
+  trustanchors:
+  cabundle:
+
+services:
+  trust:
+    image: ${TRUST_IMAGE}:${TRUST_IMAGE_TAG}
+    environment:
+      - FORCE_TRUST_ANCHORS_UPDATE=1
+    volumes:
+      - trustanchors:/etc/grid-security/certificates
+      - cabundle:/etc/pki
+  db:
+    container_name: db
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    volumes:
+      - data:/var/lib/mysql
+    
+    env_file:
+      - env-files/db.env
+
+    ports:
+      - "3306:3306"
+  
+  ngx:
+    image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
+
+    depends_on: 
+      - vomsaa
+      - trust
+    
+    environment:
+      TZ: Europe/Rome
+      X509_VOMS_DIR: /vomsdir
+
+    ports:
+      - "443:443"
+
+    volumes:
+      - cabundle:/igtf
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/certs:/certs
+      - ./assets/vomsdir:/vomsdir
+      - ./assets/openresty-voms/conf.d:/etc/nginx/conf.d:ro
+
+    # Workaround to avoid a service shut down trustanchor still not concluded to populate volume
+    restart: unless-stopped
+
+    
+    networks:
+      default:
+        aliases:
+          - iam.test.example
+          - voms.test.example
+  vomsaa:
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+      
+    ports:
+      - "9444:1044"
+
+    depends_on:
+      - db
+
+    # Workaround to avoid a service shut down when the db is still not UP
+    restart: unless-stopped
+
+
+    volumes:
+      - ./assets/etc/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+
+  client:
+    image: ${GRID_CLIENTS_IMAGE}:${GRID_CLIENTS_IMAGE_TAG}
+    environment:
+      TZ: Europe/Rome
+
+    depends_on:
+      - trust
+
+    volumes:
+      - cabundle:/etc/pki
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/vomsdir:/etc/grid-security/vomsdir
+      - ./assets/vomses:/etc/vomses
+
+    entrypoint: sleep infinity
