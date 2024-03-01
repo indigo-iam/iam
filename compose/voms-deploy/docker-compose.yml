@@ -13,18 +13,20 @@ services:
     volumes:
       - trustanchors:/etc/grid-security/certificates
       - cabundle:/etc/pki
+
   db:
     container_name: db
     image: ${DB_IMAGE}:${DB_IMAGE_TAG}
     volumes:
       - data:/var/lib/mysql
+      - ./assets/db:/docker-entrypoint-initdb.d
     
     env_file:
       - env-files/db.env
 
     ports:
       - "3306:3306"
-  
+
   ngx:
     image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
 
@@ -49,29 +51,28 @@ services:
     # Workaround to avoid a service shut down trustanchor still not concluded to populate volume
     restart: unless-stopped
 
-    
     networks:
       default:
         aliases:
-          - iam.test.example
           - voms.test.example
+
   vomsaa:
     image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    
     env_file:
-      - env-files/voms.env
-      
-    ports:
-      - "9444:1044"
+      - env-files/voms.env      
 
+    ports:
+      - "1044:1044"
+    
     depends_on:
       - db
 
     # Workaround to avoid a service shut down when the db is still not UP
     restart: unless-stopped
 
-
     volumes:
-      - ./assets/etc/vomsaa:/workspace/config:ro
+      - ./assets/vomsaa:/workspace/config:ro
       - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
       - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
       - trustanchors:/etc/grid-security/certificates
