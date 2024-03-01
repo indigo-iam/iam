@@ -133,6 +133,15 @@ public class DefaultClientManagementService implements ClientManagementService {
     eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
   }
 
+  @Override
+  public void updateClientStatus(String clientId, boolean status) {
+
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    client = clientService.updateClientStatus(client, status);
+    eventPublisher.publishEvent(new ClientUpdatedEvent(this, client));
+  }
+
   @Validated(OnClientUpdate.class)
   @Override
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO client)

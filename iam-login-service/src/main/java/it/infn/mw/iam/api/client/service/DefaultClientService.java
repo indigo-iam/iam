@@ -88,7 +88,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-      .orElseGet(newAccountClient(owner, client));
+        .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -107,6 +107,13 @@ public class DefaultClientService implements ClientService {
     return clientRepo.save(client);
   }
 
+  @Override
+  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#clientId}")
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status) {
+    client.setActive(status);
+    client.setStatusChangedOn(Date.from(clock.instant()));
+    return clientRepo.save(client);
+  }
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
@@ -122,7 +129,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-        .map(IamAccountClient::getClient);
+          .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -144,12 +151,12 @@ public class DefaultClientService implements ClientService {
   private void deleteTokensByClient(ClientDetailsEntity client) {
     // delete all valid access tokens (exclude registration and resource tokens)
     tokenService.getAccessTokensForClient(client)
-      .stream()
-      .filter(this::isValidAccessToken)
-      .forEach(at -> tokenService.revokeAccessToken(at));
+        .stream()
+        .filter(this::isValidAccessToken)
+        .forEach(at -> tokenService.revokeAccessToken(at));
     // delete all valid refresh tokens
     tokenService.getRefreshTokensForClient(client)
-      .forEach(rt -> tokenService.revokeRefreshToken(rt));
+        .forEach(rt -> tokenService.revokeRefreshToken(rt));
   }
 
   @Override

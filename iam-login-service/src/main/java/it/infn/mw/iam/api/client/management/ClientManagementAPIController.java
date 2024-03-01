@@ -33,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -138,6 +139,13 @@ public class ClientManagementAPIController {
       @RequestBody RegisteredClientDTO client)
       throws ParseException {
     return managementService.updateClient(clientId, client);
+  }
+
+  @PatchMapping("/{clientId}/status")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void updateClientStatus(@PathVariable String clientId,
+      @RequestBody boolean status) {
+    managementService.updateClientStatus(clientId, status);
   }
 
   @PostMapping("/{clientId}/secret")
