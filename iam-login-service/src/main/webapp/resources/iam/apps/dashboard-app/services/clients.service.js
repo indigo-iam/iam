@@ -44,7 +44,8 @@
             assignClientOwner: assignClientOwner,
             removeClientOwner: removeClientOwner,
             newClient: newClient,
-            getClientList: getClientList
+            getClientList: getClientList,
+            setClientActiveStatus: setClientActiveStatus
         };
 
         return service;
@@ -174,6 +175,14 @@
                 contacts: [email],
             };
             return newClient;
+        }
+
+        function setClientActiveStatus(clientId, isActive){
+            return $http.patch(endpoint(clientId) + "/status", isActive, defaultRequestConfig).then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
         }
     }
 })();

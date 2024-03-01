@@ -246,6 +246,8 @@ public class RegisteredClientDTO {
       groups = {OnClientCreation.class,
       OnClientUpdate.class, OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
   private String codeChallengeMethod;
+  private boolean active;
+  private Date statusChangedOn;
 
   public String getClientId() {
     return clientId;
@@ -494,6 +496,22 @@ public class RegisteredClientDTO {
 
   public void setDefaultMaxAge(Integer defaultMaxAge) {
     this.defaultMaxAge = defaultMaxAge;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
+  public Date getStatusChangedOn() {
+    return statusChangedOn;
+  }
+
+  public void setStatusChangedOn(Date statusChangedOn) {
+    this.statusChangedOn = statusChangedOn;
   }
 
 }
