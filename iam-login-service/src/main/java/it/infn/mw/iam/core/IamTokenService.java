@@ -15,10 +15,11 @@
  */
 package it.infn.mw.iam.core;
 
+import java.time.LocalDate;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
 
-import java.time.LocalDate;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -26,9 +27,11 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
@@ -52,8 +55,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
 
+  @Value("${task.tokenCleanupCount}")
+  long tokenCleanupCount;
 
-  @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
       IamProperties iamProperties) {
@@ -131,6 +135,36 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
       LocalDate lastUsed = clientLastUsed.getLastUsed();
       if (lastUsed.isBefore(now)) {
         clientLastUsed.setLastUsed(now);
+      }
+    }
+  }
+
+  @Override
+  public void clearExpiredTokens() {
+
+    Pageable pageRequest = Pageable.ofSize(Long.valueOf(tokenCleanupCount).intValue());
+
+    LOG.debug("Cleaning expired access-tokens ...");
+    Date startedAt = Calendar.getInstance().getTime();
+    Page<Long> page = accessTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
+    LOG.debug("Found {} expired access-tokens", page.getSize());
+    if (page.getSize() > 0) {
+      int deleted = accessTokenRepo.deleteTokensById(page.getContent());
+      if (deleted > 0) {
+        LOG.info("Removed {} expired access-tokens from database in {} millisecs", deleted,
+            Calendar.getInstance().getTimeInMillis() - startedAt.getTime());
+      }
+    }
+
+    LOG.debug("Cleaning expired refresh-tokens ...");
+    startedAt = Calendar.getInstance().getTime();
+    page = refreshTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
+    LOG.debug("Found {} expired access-tokens", page.getSize());
+    if (page.getSize() > 0) {
+      int deleted = refreshTokenRepo.deleteTokensById(page.getContent());
+      if (deleted > 0) {
+        LOG.info("Removed {} expired refresh-tokens from database in {} millisecs", deleted,
+            Calendar.getInstance().getTimeInMillis() - startedAt.getTime());
       }
     }
   }

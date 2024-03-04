@@ -15,14 +15,14 @@
  */
 package it.infn.mw.iam.core;
 
-import java.util.List;
 import java.util.Map;
 
-import org.mitre.data.PageCriteria;
+import org.mitre.data.DefaultPageCriteria;
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
@@ -35,16 +35,14 @@ import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 @Primary
 public class IamAuthenticationHolderEntityService implements AuthenticationHolderEntityService {
 
-
-  final AuthenticationHolderRepository repo;
-  final ExternalAuthenticationInfoBuilder mapBuilder;
+  @Autowired
+  AuthenticationHolderRepository repo;
 
   @Autowired
-  public IamAuthenticationHolderEntityService(AuthenticationHolderRepository repo,
-      ExternalAuthenticationInfoBuilder mapBuilder) {
-    this.repo = repo;
-    this.mapBuilder = mapBuilder;
-  }
+  ExternalAuthenticationInfoBuilder mapBuilder;
+
+  @Value("${task.authenticationHolderCleanupCount}")
+  long cleanupCount;
 
   @Override
   public AuthenticationHolderEntity create(OAuth2Authentication authn) {
@@ -74,13 +72,8 @@ public class IamAuthenticationHolderEntityService implements AuthenticationHolde
   }
 
   @Override
-  public List<AuthenticationHolderEntity> getOrphanedAuthenticationHolders() {
+  public long clearOrphaned() {
 
-    return repo.getOrphanedAuthenticationHolders();
-  }
-
-  @Override
-  public List<AuthenticationHolderEntity> getOrphanedAuthenticationHolders(PageCriteria page) {
-    return repo.getOrphanedAuthenticationHolders(page);
+    return repo.clearOrphaned(new DefaultPageCriteria(0, Long.valueOf(cleanupCount).intValue()));
   }
 }

@@ -15,9 +15,11 @@
  */
 package it.infn.mw.iam.config;
 
+import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
@@ -33,8 +35,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
+import it.infn.mw.iam.core.IamOAuth2AuthorizationCodeService;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
@@ -45,6 +49,7 @@ import it.infn.mw.iam.notification.service.NotificationStoreService;
 @Configuration
 @EnableScheduling
 @Profile({"prod", "dev"})
+@SuppressWarnings("deprecation")
 public class TaskConfig implements SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(TaskConfig.class);
@@ -53,6 +58,10 @@ public class TaskConfig implements SchedulingConfigurer {
   public static final long TEN_SECONDS_MSEC = 10 * ONE_SECOND_MSEC;
   public static final long THIRTY_SECONDS_MSEC = 30 * ONE_SECOND_MSEC;
   public static final long ONE_MINUTE_MSEC = 60 * ONE_SECOND_MSEC;
+  public static final long TWO_MINUTE_MSEC = 2 * 60 * ONE_SECOND_MSEC;
+  public static final long THREE_MINUTE_MSEC = 3 * 60 * ONE_SECOND_MSEC;
+  public static final long FOUR_MINUTE_MSEC = 4 * 60 * ONE_SECOND_MSEC;
+  public static final long FIVE_MINUTE_MSEC = 5 * 60 * ONE_SECOND_MSEC;
   public static final long TEN_MINUTES_MSEC = 10 * ONE_MINUTE_MSEC;
   public static final long ONE_HOUR_MSEC = 60 * ONE_MINUTE_MSEC;
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
@@ -76,6 +85,12 @@ public class TaskConfig implements SchedulingConfigurer {
   DeviceCodeService deviceCodeService;
 
   @Autowired
+  AuthorizationCodeServices authorizationCodeService;
+
+  @Autowired
+  AuthenticationHolderEntityService authenticationHolderEntityService;
+
+  @Autowired
   NotificationDeliveryTask deliveryTask;
 
   @Autowired
@@ -96,35 +111,52 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
-  @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
+  @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs}",
       timeUnit = TimeUnit.SECONDS)
   @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
   public void logWellKnownCacheEviction() {
     LOG.debug("well-known config cache evicted");
   }
 
-  @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
+  @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = FIVE_MINUTE_MSEC)
   public void clearExpiredTokens() {
 
+    LOG.debug("Task clearExpiredTokens starting ...");
     tokenEntityService.clearExpiredTokens();
+    LOG.debug("Task clearExpiredTokens ended");
   }
 
-  @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}",
-      initialDelay = TEN_MINUTES_MSEC)
-  public void clearExpiredSites() {
+  @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}", initialDelay = ONE_MINUTE_MSEC)
+  public void clearExpiredSites() throws URISyntaxException {
 
+    LOG.debug("Task clearExpiredSites starting ...");
     approvedSiteService.clearExpiredSites();
-  }
-
-  @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)
-  public void clearExpiredNotifications() {
-    notificationStoreService.clearExpiredNotifications();
+    LOG.debug("Task clearExpiredSites ended");
   }
 
   @Scheduled(fixedDelayString = "${task.deviceCodeCleanupPeriodMsec}",
-      initialDelay = TEN_MINUTES_MSEC)
+      initialDelay = THREE_MINUTE_MSEC)
   public void clearExpiredDeviceCodes() {
+    LOG.debug("Task clearExpiredDeviceCodes starting ...");
     deviceCodeService.clearExpiredDeviceCodes();
+    LOG.debug("Task clearExpiredDeviceCodes ended");
+  }
+
+  @Scheduled(fixedDelayString = "${task.authorizationCodeCleanupPeriodMsec}",
+      initialDelay = FOUR_MINUTE_MSEC)
+  public void clearExpiredAuthorizationCodes() {
+    LOG.debug("Task clearExpiredAuthorizationCodes starting ...");
+    ((IamOAuth2AuthorizationCodeService) authorizationCodeService).clearExpiredAuthorizationCodes();
+    LOG.debug("Task clearExpiredAuthorizationCodes ended");
+  }
+
+  @Scheduled(fixedDelayString = "${task.authenticationHolderCleanupPeriodMsec}",
+      initialDelay = FIVE_MINUTE_MSEC)
+  public void clearOrphanedAuthenticationHolder() {
+    LOG.debug("Task clearOrphanedAuthenticationHolder starting ...");
+    long deleted = authenticationHolderEntityService.clearOrphaned();
+    LOG.debug("Deleted {} records.", deleted);
+    LOG.debug("Task clearOrphanedAuthenticationHolder ended");
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {
