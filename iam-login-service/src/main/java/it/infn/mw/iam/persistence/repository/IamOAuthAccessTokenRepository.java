@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -94,4 +95,9 @@ public interface IamOAuthAccessTokenRepository
     + "select sua.id from SavedUserAuthentication sua where sua.name not in ("
     + "select a.username from IamAccount a))")
   List<OAuth2AccessTokenEntity> findOrphanedTokens();
+
+  @Modifying
+  @Query(value = "delete from OAuth2AccessTokenEntity where (expiration is not NULL) "
+      + "and (expiration < :timestamp) order by id limit :count", nativeQuery = true)
+  int deleteExpiredAccessTokens(@Param("timestamp") Date timestamp, @Param("count") long count);
 }
