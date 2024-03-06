@@ -1,3 +1,4 @@
 [mysqld]
 server-id = 2
 log_bin = mysql-bin
+read_only = 1
