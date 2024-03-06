@@ -3,6 +3,9 @@ server-id = 1
 log_bin = mysql-bin
 binlog_do_db = iam
 
+general_log = 1
+general_log_file = /var/log/mysql/primary.log
+
 ssl_ca=/certs/ca-cert.pem
 ssl_cert=/certs/server-cert.pem
 ssl_key=/certs/server-key.pem

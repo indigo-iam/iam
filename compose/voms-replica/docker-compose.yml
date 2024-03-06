@@ -20,6 +20,7 @@ services:
     image: ${DB_IMAGE}:${DB_IMAGE_TAG}
     volumes:
       - data-primary:/var/lib/mysql
+      - ./assets/db-logs:/var/log/mysql
       - ./assets/db-primary:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/primary.cnf:/etc/mysql/conf.d/primary.cnf
       - ./assets/certs:/certs
@@ -46,6 +47,7 @@ services:
           condition: service_healthy
     volumes:
       - data-replica:/var/lib/mysql
+      - ./assets/db-logs:/var/log/mysql
       - ./assets/db-replica:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/replica.cnf:/etc/mysql/conf.d/replica.cnf
       - ./assets/certs:/certs
