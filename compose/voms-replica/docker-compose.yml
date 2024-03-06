@@ -1,0 +1,169 @@
+version: "3"
+
+volumes:
+  data-primary:
+  data-replica:
+  trustanchors:
+  cabundle:
+
+services:
+  trust:
+    image: ${TRUST_IMAGE}:${TRUST_IMAGE_TAG}
+    environment:
+      - FORCE_TRUST_ANCHORS_UPDATE=1
+    volumes:
+      - trustanchors:/etc/grid-security/certificates
+      - cabundle:/etc/pki
+
+  db-primary:
+    container_name: db-primary
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    volumes:
+      - data-primary:/var/lib/mysql
+      - ./assets/db-primary:/docker-entrypoint-initdb.d
+      - ./assets/mysql-conf/primary.cnf:/etc/mysql/conf.d/primary.cnf
+      - ./assets/certs:/certs
+    env_file:
+      - env-files/db.env
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
+    networks:
+      default:
+        aliases:
+          - db-primary.test.example
+
+  db-replica:
+    container_name: db-replica
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    depends_on:
+        db-primary:
+          condition: service_healthy
+    volumes:
+      - data-replica:/var/lib/mysql
+      - ./assets/db-replica:/docker-entrypoint-initdb.d
+      - ./assets/mysql-conf/replica.cnf:/etc/mysql/conf.d/replica.cnf
+      - ./assets/certs:/certs
+    env_file:
+      - env-files/db.env
+    environment:
+      - REPORT_HOST=db-replica.test.example
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
+    networks:
+      default:
+        aliases:
+         - db-replica.test.example
+  
+  ngx-primary:
+    image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
+    depends_on: 
+      vomsaa-primary: 
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
+    environment:
+      TZ: Europe/Rome
+      X509_VOMS_DIR: /vomsdir
+    ports:
+      - "443:443"
+    volumes:
+      - cabundle:/igtf
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/certs:/certs
+      - ./assets/vomsdir:/vomsdir
+      - ./assets/openresty-voms/conf.d/voms-primary.test.example.conf:/etc/nginx/conf.d/voms-primary.test.example.conf:ro
+    networks:
+      default:
+        aliases:
+          - voms-primary.test.example
+
+  ngx-replica:
+    image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
+    depends_on: 
+      vomsaa-replica:
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
+    environment:
+      TZ: Europe/Rome
+      X509_VOMS_DIR: /vomsdir
+    ports:
+      - "444:443"
+    volumes:
+      - cabundle:/igtf
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/certs:/certs
+      - ./assets/vomsdir:/vomsdir
+      - ./assets/openresty-voms/conf.d/voms-replica.test.example.conf:/etc/nginx/conf.d/voms-replica.test.example.conf:ro
+    networks:
+      default:
+        aliases:
+          - voms-replica.test.example
+
+  vomsaa-primary:
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+    environment:
+      - IAM_DB_HOST=db-primary.test.example
+    ports:
+      - "1044:1044"
+    depends_on:
+      db-primary:
+        condition: service_healthy
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+    networks:
+      default:
+        aliases:
+          - vomsaa-primary.test.example
+
+  vomsaa-replica:
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+    environment:
+      - IAM_DB_HOST=db-replica.test.example
+    ports:
+      - "1045:1044"
+    depends_on:
+      db-replica:
+        condition: service_healthy
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+    networks:
+      default:
+        aliases:
+          - vomsaa-replica.test.example
+
+  client:
+    image: ${GRID_CLIENTS_IMAGE}:${GRID_CLIENTS_IMAGE_TAG}
+    environment:
+      TZ: Europe/Rome
+    depends_on:
+      trust:
+        condition: service_completed_successfully
+    volumes:
+      - cabundle:/etc/pki
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/vomsdir:/etc/grid-security/vomsdir
+      - ./assets/vomses:/etc/vomses
+    entrypoint: sleep infinity
