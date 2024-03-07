@@ -1,12 +1,17 @@
-This folder contains docker compose files for the voms-aa microservice.
+# VOMS-AA Replica
 
-## Deploy voms-aa
+This folder contains a docker compose example to deploy two VOMS-AA with a DB replica.
 
-This folder contains a docker-compose file that could be useful for deployment.
+![Setup schema.](VOMS-AA_replica.png)
+
+With this setup the VOMS-AA service can be replicated on one or more remote locations. If one location fails or is overloaded, a VOMS client can connect to the other locations.
+
+## Deployment
+
 The services defined here are:
 * `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` used in this deployment for test certificates
 * `db-primary`: a dump of the IAM db for test environment. In addition to the db populated with the iam `mysql-dev` profile, the user `test` has a certificate with DN `/C=IT/O=IGI/CN=test0` linked to his account and he also is part of the `indigo-dc` group (necessary to obtain VOMS proxies). A second SQL script creates a `replicator` user for replica.
-* `db-replica`: a DB configured to replicate all the statements of `db-primary`, from the initial one. It conects with SSL.
+* `db-replica`: a DB configured to replicate all the statements of `db-primary`, from the initial one. It conects with SSL and is configured to be read-only. Only the IAM DB tables which are used by VOMS-AA are replicated. You can see them [here](assets/mysql-conf/replica.cnf).
 * `ngx-primary` and `ngx-replica`: an extension to NGINX, used for TLS termination, reverse proxy and possibly VOMS proxies validation. They sends requests to the corresponding `vomsaa-primary` and `vomsaa-replica` services.
 * `vomsaa-primary` and `vomsaa-replica`: the main voms-aa microservices, each connected to their own DB.
 * `client`: it is a single container containing GRID clients (in particular `voms-proxy-init`) used to query both the primary and replica voms-aa (via ngx).
