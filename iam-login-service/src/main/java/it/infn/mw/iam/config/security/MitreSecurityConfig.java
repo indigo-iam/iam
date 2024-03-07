@@ -306,5 +306,25 @@ public class MitreSecurityConfig {
       // @formatter:on
     }
   }
+  
+  @Configuration
+  @Order(28)
+  public static class WellKnownEndpointConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/.well-known**")
+          .cors()
+        .and()
+          .sessionManagement()
+          .sessionCreationPolicy(STATELESS)
+        .and()
+          .authorizeRequests()
+            .antMatchers("/**").permitAll();
+      // @formatter:on
+    }
+  }
 
 }
