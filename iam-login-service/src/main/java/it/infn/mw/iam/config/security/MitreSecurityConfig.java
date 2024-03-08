@@ -315,7 +315,7 @@ public class MitreSecurityConfig {
     protected void configure(final HttpSecurity http) throws Exception {
 
       // @formatter:off
-      http.antMatcher("/.well-known**")
+      http.antMatcher("/.well-known/openid-configuration")
           .cors()
         .and()
           .sessionManagement()

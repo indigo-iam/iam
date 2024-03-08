@@ -15,32 +15,46 @@
  */
 package it.infn.mw.iam.config.security;
 
+import java.util.List;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+@ConfigurationProperties("cors")
 @Configuration
 public class CorsConfig {
 
   private static final String[] CORS_ENDPOINT_MATCHERS =
   // @formatter:off
     {
-        "/api/**", 
-        "/resource/**", 
+        "/api/**",
+        "/resource/**",
         "/register/**",
-        "/iam/**", 
-        "/scim/**", 
-        "/token", 
-        "/introspect", 
-        "/userinfo", 
-        "/revoke/**", 
+        "/iam/**",
+        "/scim/**",
+        "/token",
+        "/introspect",
+        "/userinfo",
+        "/revoke/**",
         "/jwk",
         "/devicecode",
-        "/.well-known/**"
+        "/.well-known/openid-configuration"
     };
     //@formatter:on
+
+  private List<String> allowedOrigins;
+
+  public List<String> getAllowedOrigins() {
+    return allowedOrigins;
+  }
+
+  public void setAllowedOrigins(List<String> allowedOrigins) {
+    this.allowedOrigins = allowedOrigins;
+  }
 
   @Bean
   CorsFilter corsFilter() {
@@ -49,6 +63,7 @@ public class CorsConfig {
     corsConfig.setAllowedMethods(
         java.util.List.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     corsConfig.applyPermitDefaultValues();
+    corsConfig.setAllowedOriginPatterns(allowedOrigins);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     for (String m : CORS_ENDPOINT_MATCHERS) {
