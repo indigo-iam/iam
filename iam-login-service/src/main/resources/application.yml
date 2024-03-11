@@ -91,9 +91,6 @@ spring:
     pathmatch:
       matching-strategy: "ant-path-matcher"
 
-cors:
-  allowed-origins: ${ALLOWED_ORIGINS:**}
-
 iam:
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
