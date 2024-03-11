@@ -27,12 +27,21 @@ services:
     ports:
       - "3306:3306"
 
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
+
   ngx:
     image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
 
     depends_on: 
-      - vomsaa
-      - trust
+      vomsaa:
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
     
     environment:
       TZ: Europe/Rome
@@ -47,9 +56,6 @@ services:
       - ./assets/certs:/certs
       - ./assets/vomsdir:/vomsdir
       - ./assets/openresty-voms/conf.d:/etc/nginx/conf.d:ro
-
-    # Workaround to avoid a service shut down trustanchor still not concluded to populate volume
-    restart: unless-stopped
 
     networks:
       default:
@@ -66,10 +72,8 @@ services:
       - "1044:1044"
     
     depends_on:
-      - db
-
-    # Workaround to avoid a service shut down when the db is still not UP
-    restart: unless-stopped
+      db:
+        condition: service_healthy
 
     volumes:
       - ./assets/vomsaa:/workspace/config:ro
@@ -83,7 +87,8 @@ services:
       TZ: Europe/Rome
 
     depends_on:
-      - trust
+      trust:
+        condition: service_completed_successfully
 
     volumes:
       - cabundle:/etc/pki
