@@ -35,7 +35,7 @@ services:
       start_period: 0s
 
   ngx:
-    image: ${OPENRESTY_IMAGE}:${OPENRESTY_IMAGE_TAG}
+    image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
 
     depends_on: 
       vomsaa:
@@ -55,7 +55,8 @@ services:
       - trustanchors:/etc/grid-security/certificates
       - ./assets/certs:/certs
       - ./assets/vomsdir:/vomsdir
-      - ./assets/openresty-voms/conf.d:/etc/nginx/conf.d:ro
+      - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./assets/nginx/conf.d/voms.test.example.conf:/etc/nginx/conf.d/voms.test.example.conf:ro
 
     networks:
       default:
