@@ -163,6 +163,7 @@ public class ClientConverter {
     }
 
     clientDTO.setActive(entity.isActive());
+    clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
 
     return clientDTO;
   }
