@@ -20,6 +20,7 @@
         <h1>
             <i class="fa fa-rocket"></i>&nbsp;&nbsp; <span
                 ng-if="!$ctrl.newClient">{{$ctrl.clientVal.client_name}}</span>
+            <span ng-if="!$ctrl.newClient && !$ctrl.clientVal.active"> (Suspended)</span>    
             <span ng-if="$ctrl.newClient">Create a new client</span>
         </h1>
         <ol class="breadcrumb hidden-xs" ng-if="!$ctrl.newClient">

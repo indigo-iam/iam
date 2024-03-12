@@ -88,6 +88,7 @@
                                 <div>
                                     <a ui-sref="client({id: c.client_id})">
                                         {{c.client_name}}
+                                    <span ng-if="!c.active"> (Suspended)</span>
                                     </a>
                                 </div>
                                 <div class="text-muted">{{c.client_id}}</div>
