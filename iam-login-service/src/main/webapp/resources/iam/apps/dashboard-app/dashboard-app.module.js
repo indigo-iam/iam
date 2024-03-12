@@ -32,7 +32,7 @@
     angular.module('dashboardApp')
         .run(function (
             $window, $rootScope, $state, $stateParams, $q, $uibModal, $trace, Utils,
-            UserService, RegistrationRequestService, TokensService, GroupRequestsService, ScopesService, toaster) {
+            UserService, RegistrationRequestService, TokensService, GroupRequestsService, ScopesService, PoliciesService, toaster) {
 
             $state.defaultErrorHandler(function (response) {
                 if (response.status) {
@@ -110,6 +110,9 @@
                     }));
                     promises.push(TokensService.getRefreshTokensCount().then(function (r) {
                         $rootScope.refreshTokensCount = r.data.totalResults;
+                    }));
+                    promises.push(PoliciesService.getAllPolicies().then(function (r) {
+                        $rootScope.policiesCount = r.data.length;
                     }));
                     promises.push(ScopesService.getAllScopes().then(function (r) {
                         $rootScope.scopesCount = r.data.length;

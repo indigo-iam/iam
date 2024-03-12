@@ -89,6 +89,21 @@ angular
                     }
                 })
                 .state(
+                    'policies', {
+                        url: '/scope_policies',
+                        resolve: {
+                            policies: loadPolicies,
+                            scopes: loadScopes,
+                            groups: loadGroups,
+                            account: loadUsers
+                        },
+                        views: {
+                            content: {
+                                component: 'policies'
+                            }
+                        }
+                    })
+                .state(
                     'scopes', {
                         url: '/scopes',
                         resolve: {
@@ -221,8 +236,17 @@ angular
                 return UserService.getUser($stateParams.id);
             }
 
+            function loadUsers(UsersService, $stateParams) {
+                return UsersService.getUsers($stateParams.id, $stateParams.count);
+            }
+
             function loadGroup(GroupService, $stateParams) {
                 return GroupService.getGroup($stateParams.id);
+
+            }
+
+            function loadGroups(GroupsService) {
+                return GroupsService.getAllGroups();
 
             }
 
@@ -262,9 +286,12 @@ angular
                 return AupService.getAup();
             }
 
+            function loadPolicies(PoliciesService) {
+                return PoliciesService.getAllPolicies();
+            }
+                
             function loadScopes(ScopesService) {
                 return ScopesService.getAllScopes();
-
             }
 
             function loadGroupLabels(LabelsService, $stateParams) {
