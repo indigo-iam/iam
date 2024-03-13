@@ -19,66 +19,64 @@ angular.module('dashboardApp').factory('ResetPasswordService', ResetPasswordServ
 
 ResetPasswordService.$inject = ['$http', '$httpParamSerializerJQLike'];
 
-function ResetPasswordService($http, $httpParamSerializerJQLike){
-	
+function ResetPasswordService($http, $httpParamSerializerJQLike) {
+
 	var service = {
-		forgotPassword : forgotPassword,
-		changePassword : changePassword,
-		updatePassword : updatePassword
+		forgotPassword: forgotPassword,
+		changePassword: changePassword,
+		updatePassword: updatePassword
 	};
-	
+
 	return service;
-	
-	function forgotPassword(email){
-		
+
+	function forgotPassword(email) {
+
 		var data = $httpParamSerializerJQLike({
-				email: email
+			email: email
 		});
-		
+
 		var config = {
-			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded'
-			}
-		} 
-		
-		return $http.post('/iam/password-reset/token', data, config);
-		
-	};
-	
-	function changePassword(resetKey, newPassword){
-		var data = $httpParamSerializerJQLike({
-			token : resetKey,
-			password : newPassword
-		});
-		
-		var config = {
-			headers : {
+			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			}
 		}
-		
-		return $http.post('/iam/password-reset', data, config);
-	}
 
-	function updatePassword(oldPassword, newPassword){
+		return $http.post('/iam/password-reset/token', data, config);
+
+	};
+
+	function changePassword(resetKey, newPassword) {
+		var body = JSON.stringify({ "updatedPassword": newPassword, "token": resetKey, });
 
 		var config = {
-			headers : {
-				'Accept' : 'text/plain',
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			}
+		}
+
+		return $http.post('/iam/password-reset', body, config);
+	}
+
+	function updatePassword(oldPassword, newPassword) {
+
+		var config = {
+			headers: {
+				'Accept': 'text/plain',
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
-			transformRequest: function(obj) {
-		        var str = [];
-		        for(var p in obj)
-		        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-		        return str.join("&");
-		    }
+			transformRequest: function (obj) {
+				var str = [];
+				for (var p in obj)
+					str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+				return str.join("&");
+			}
 		};
 
 		var data = {
-				'currentPassword' : oldPassword,
-			'updatedPassword' : newPassword
-	    };
+			'currentPassword': oldPassword,
+			'updatedPassword': newPassword
+		};
 		return $http.post('/iam/password-update', data, config);
 	}
 }
