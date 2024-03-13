@@ -76,7 +76,7 @@ public class PasswordResetTests {
   public void testChangePassword() throws Exception {
     String testEmail = "test@iam.test";
 
-    String newPassword = "secure_Passw0rd";
+    String newPassword = "Secure_P@ssw0rd!";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
         .andExpect(status().isOk());
@@ -87,10 +87,11 @@ public class PasswordResetTests {
 
     JsonObject jsonBody = new JsonObject();
     jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetToken);
 
     mvc
         .perform(
-            post("/iam/password-reset").param("token", resetToken).contentType(APPLICATION_JSON).content(jsonBody.toString()))
+            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
         .andExpect(status().isOk());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
