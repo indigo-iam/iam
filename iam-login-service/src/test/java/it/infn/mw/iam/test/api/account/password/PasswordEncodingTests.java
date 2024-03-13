@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -80,7 +81,7 @@ public class PasswordEncodingTests {
   @Test
   public void testPasswordEncoded() throws Exception {
     String username = "password_encoded";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
 
     RegistrationRequestDto request = new RegistrationRequestDto();
     request.setGivenname("Password encoded");
@@ -111,9 +112,12 @@ public class PasswordEncodingTests {
 
     String resetKey = tokenGenerator.getLastToken();
 
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetKey);
+
     mvc
-      .perform(post("/iam/password-reset").param("token", resetKey)
-        .param("password", newPassword)
+      .perform(post("/iam/password-reset").content(jsonBody.toString())
         .with(authentication(adminAuthentication()))
         .contentType(MediaType.APPLICATION_JSON))
       .andExpect(MockMvcResultMatchers.status().isOk());
@@ -122,8 +126,6 @@ public class PasswordEncodingTests {
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
     Assert.assertTrue(passwordEncoder.matches(newPassword, account.getPassword()));
-
-
   }
 
 }
