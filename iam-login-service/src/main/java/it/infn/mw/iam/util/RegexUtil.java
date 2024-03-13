@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-angular.module('dashboardApp').directive('strongPassword', function () {
-    return {
-        require: 'ngModel',
-        link: function (scope, element, attrs, ngModel) {
-            ngModel.$parsers.unshift(function (viewValue) {
-                var passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[(\@\$\!\%\*\?\&)]).{8,}$/;
-                var isStrong = passwordStrengthRegex.test(viewValue);
-                
-                ngModel.$setValidity('strongPassword', isStrong);
-                
-                return viewValue;
-            });
-        }
-    };
-});
+package it.infn.mw.iam.util;
+
+public final class RegexUtil {
+
+    // Regex matches password with at least one lowercase letter, one uppercase
+    // letter, one number, one symbol and minimum length of 8 characters
+    public static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\\@\\$\\!\\%\\*\\?\\&]).{8,}$";
+}
