@@ -141,7 +141,7 @@ public class PasswordUpdateTests {
   public void testUpdatePasswordFullAuthenticationRequired() {
 
     String currentPassword = "password";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
 
     doPost(currentPassword, newPassword).statusCode(HttpStatus.UNAUTHORIZED.value())
         .body("error", equalTo("unauthorized"))
@@ -153,7 +153,7 @@ public class PasswordUpdateTests {
   public void testUpdateWrongPasswordProvided() {
 
     String currentPassword = "password";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
     String accessToken = passwordTokenGetter().port(iamPort)
         .username(testUser.getUserName())
         .password(currentPassword)
@@ -167,7 +167,7 @@ public class PasswordUpdateTests {
   public void testUpdatePasswordForbiddenAccess() {
 
     String currentPassword = "password";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
     String accessToken = TestUtils.clientCredentialsTokenGetter().port(iamPort).getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.FORBIDDEN.value());
