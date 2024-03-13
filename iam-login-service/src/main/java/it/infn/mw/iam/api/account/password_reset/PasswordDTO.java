@@ -15,19 +15,18 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
+
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
-
-import org.hibernate.validator.constraints.Length;
 
 public class PasswordDTO {
 
   @NotEmpty
   private String currentPassword;
-  
-  @NotEmpty(message = "The password cannot be empty")
-  @Length(min = 8, message = "The password must be at least 8 characters")
-  @Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", message = "The password must be strong")
+
+  @NotEmpty
+  @Pattern(regexp = PASSWORD_REGEX, message = "The password must include at least one uppercase letter, one lowercase letter, one number one symbol (e.g., @$!%*?&) and must contain at least 8 characters for greater security.")
   private String updatedPassword;
 
   public String getCurrentPassword() {
