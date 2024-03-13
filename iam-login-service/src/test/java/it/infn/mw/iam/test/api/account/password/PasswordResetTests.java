@@ -96,7 +96,57 @@ public class PasswordResetTests {
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
         .andExpect(status().isNotFound());
+  }
 
+  @Test
+  public void testChangePasswordWeak() throws Exception {
+    String testEmail = "test@iam.test";
+
+    String newPassword = "weakpassword";
+
+    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+        .andExpect(status().isOk());
+
+    String resetToken = tokenGenerator.getLastToken();
+
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetToken);
+
+    mvc
+        .perform(
+            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+        .andExpect(status().isMethodNotAllowed());
+  }
+
+  @Test
+  public void testChangePasswordWithTokenJustUsed() throws Exception {
+    String testEmail = "test@iam.test";
+
+    String newPassword = "Secure_P@ssw0rd!";
+
+    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+        .andExpect(status().isOk());
+
+    String resetToken = tokenGenerator.getLastToken();
+
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetToken);
+
+    mvc
+        .perform(
+            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+        .andExpect(status().isOk());
+
+    mvc
+        .perform(
+            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+        .andExpect(status().is4xxClientError());
   }
 
   @Test
