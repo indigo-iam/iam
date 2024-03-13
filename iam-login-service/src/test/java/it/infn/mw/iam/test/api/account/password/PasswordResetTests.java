@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.account.password;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +31,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import com.google.gson.JsonObject;
+
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -39,15 +42,13 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, NotificationTestConfig.class,
-    CoreControllerTestSupport.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = { IamLoginService.class, NotificationTestConfig.class,
+    CoreControllerTestSupport.class }, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 public class PasswordResetTests {
 
-  
   @Autowired
   private PersistentUUIDTokenGenerator tokenGenerator;
 
@@ -78,19 +79,22 @@ public class PasswordResetTests {
     String newPassword = "secure_Passw0rd";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-      .andExpect(status().isOk());
+        .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
 
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+
     mvc
-      .perform(
-          post("/iam/password-reset").param("token", resetToken).param("password", newPassword))
-      .andExpect(status().isOk());
+        .perform(
+            post("/iam/password-reset").param("token", resetToken).contentType(APPLICATION_JSON).content(jsonBody.toString()))
+        .andExpect(status().isOk());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
-      .andExpect(status().isNotFound());
+        .andExpect(status().isNotFound());
 
   }
 
@@ -100,27 +104,27 @@ public class PasswordResetTests {
     String resetToken = "abcdefghilmnopqrstuvz";
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isNotFound());
-   
+
   }
 
   @Test
   public void testCreatePasswordResetTokenReturnsOkForUnknownAddress() throws Exception {
 
     String testEmail = "test@foo.bar";
-   
+
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-    .andExpect(status().isOk());
+        .andExpect(status().isOk());
 
   }
 
   @Test
   public void testEmailValidationForPasswordResetTokenCreation() throws Exception {
     String invalidEmailAddress = "this_is_not_an_email";
-    
+
     mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))
-    .andExpect(status().isBadRequest())
-    .andExpect(MockMvcResultMatchers.content().string("validation error: please specify a valid email address"));
-     
+        .andExpect(status().isBadRequest())
+        .andExpect(MockMvcResultMatchers.content().string("validation error: please specify a valid email address"));
+
   }
 
 }
