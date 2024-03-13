@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-angular.module('dashboardApp').directive('strongPassword', function () {
+angular.module('passwordResetApp').directive('strongPassword', function () {
     return {
         require: 'ngModel',
         link: function (scope, element, attrs, ngModel) {
             ngModel.$parsers.unshift(function (viewValue) {
-                var passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[(\@\$\!\%\*\?\&)]).{8,}$/;
+                var passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[\@\$\!\%\*\?\&]).{8,}$/;
                 var isStrong = passwordStrengthRegex.test(viewValue);
                 
                 ngModel.$setValidity('strongPassword', isStrong);
