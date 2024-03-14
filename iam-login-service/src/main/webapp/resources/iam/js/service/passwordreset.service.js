@@ -19,43 +19,42 @@ angular.module('passwordResetApp').factory('ResetPasswordService', ResetPassword
 
 ResetPasswordService.$inject = ['$http', '$httpParamSerializerJQLike'];
 
-function ResetPasswordService($http, $httpParamSerializerJQLike){
-	
+function ResetPasswordService($http, $httpParamSerializerJQLike) {
+
 	var service = {
-		forgotPassword : forgotPassword,
-		changePassword : changePassword,
+		forgotPassword: forgotPassword,
+		changePassword: changePassword,
 	};
-	
+
 	return service;
-	
-	function forgotPassword(email){
-		
+
+	function forgotPassword(email) {
+
 		var data = $httpParamSerializerJQLike({
-				email: email
+			email: email
 		});
-		
+
 		var config = {
-			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded'
-			}
-		} 
-		
-		return $http.post('/iam/password-reset/token', data, config);
-		
-	};
-	
-	function changePassword(resetKey, newPassword){
-		var data = $httpParamSerializerJQLike({
-			token : resetKey,
-			password : newPassword
-		});
-		
-		var config = {
-			headers : {
+			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			}
 		}
-		
+
+		return $http.post('/iam/password-reset/token', data, config);
+
+	};
+
+	function changePassword(resetKey, newPassword) {
+
+		var data = JSON.stringify({ "updatedPassword": newPassword, "token": resetKey });
+
+		var config = {
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			}
+		}
+
 		return $http.post('/iam/password-reset', data, config);
 	}
 }
