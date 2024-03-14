@@ -83,9 +83,14 @@ public class DefaultClientSearchService implements ClientSearchService {
 
     Pageable pageable = PagingUtils.buildPageRequest(clientSearchForm.getCount(),
         clientSearchForm.getStartIndex(), MAX_PAGE_SIZE, parseSortParameters(clientSearchForm));
+    Page<ClientDetailsEntity> pagedResults;
 
-    Specification<ClientDetailsEntity> spec = ClientSpecs.fromSearchForm(clientSearchForm);
-    Page<ClientDetailsEntity> pagedResults = clientRepo.findAll(spec, pageable);
+    if (clientSearchForm.getSearch() == null || clientSearchForm.getSearch().isEmpty()) {
+      pagedResults = clientRepo.findAll(pageable);
+    } else {
+      Specification<ClientDetailsEntity> spec = ClientSpecs.fromSearchForm(clientSearchForm);
+      pagedResults = clientRepo.findAll(spec, pageable);
+    }
 
     ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
 

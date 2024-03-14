@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.persistence.repository.client;
 
-
-
 import static javax.persistence.criteria.JoinType.LEFT;
+
+import java.time.LocalDate;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,9 +32,6 @@ public class ClientSpecs {
   static final String SCOPE = "scope";
   static final String GRANT_TYPES = "grantTypes";
   static final String REDIRECT_URIS = "redirectUris";
-  static final String ACCOUNT = "account";
-  static final String CLIENT = "account";
-  static final String USERNAME = "username";
 
   public enum SearchType {
     name,
@@ -71,17 +68,20 @@ public class ClientSpecs {
         break;
       case name:
       default:
-        spec =
-            hasClientIdLike(searchForm.getSearch()).or(hasClientNameLike(searchForm.getSearch()));
+        spec = hasClientIdLike(searchForm.getSearch()).or(hasClientNameLike(searchForm.getSearch()));
     }
 
     if (searchForm.isDrOnly()) {
       spec = isDynamicallyRegistered().and(spec);
     }
+    System.out.println("RUN LastUsedBefore: " + searchForm.getLastUsedBefore());
+    if (searchForm.getLastUsedBefore() != null) {
+      System.out.println("Not null");
+      spec = lastUsedBefore(LocalDate.parse(searchForm.getLastUsedBefore())).and(spec);
+    }
 
     return spec;
   }
-
 
   public static Specification<ClientDetailsEntity> isDynamicallyRegistered() {
     return (root, query, builder) -> builder.isTrue(root.get(DYNAMICALLY_REGISTERED));
@@ -112,7 +112,7 @@ public class ClientSpecs {
 
   public static Specification<ClientDetailsEntity> hasScopeLike(String scope) {
     return (root, query, builder) -> {
-      query.distinct(true);   
+      query.distinct(true);
       return builder.like(root.joinSet(SCOPE), wildcardify(scope));
     };
   }
@@ -121,6 +121,14 @@ public class ClientSpecs {
     return (root, query, builder) -> {
       query.distinct(true);
       return builder.like(root.joinSet(REDIRECT_URIS), wildcardify(redirectUri));
+    };
+  }
+
+  public static Specification<ClientDetailsEntity> lastUsedBefore(LocalDate date) {
+    return (root, query, builder) -> {
+      query.distinct(true);
+      System.out.println("lastUsedBefore: " + date);
+      return builder.lessThanOrEqualTo(root.<LocalDate>get("lastUsedBefore"), date);
     };
   }
 }

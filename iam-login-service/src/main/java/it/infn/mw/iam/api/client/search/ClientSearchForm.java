@@ -15,22 +15,20 @@
  */
 package it.infn.mw.iam.api.client.search;
 
-import javax.validation.constraints.NotBlank;
+import java.time.LocalDate;
+
 import javax.validation.constraints.Size;
 
 import org.springframework.data.domain.Sort.Direction;
 
 import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
-import it.infn.mw.iam.api.scope_policy.validation.IamAccountId;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
 
 public class ClientSearchForm extends PaginatedRequestForm {
 
   private ClientSpecs.SearchType searchType = ClientSpecs.SearchType.name;
 
-  @NotBlank(message = "Please provide a non-blank search string")
-  @Size(min = 1, max = 256,
-      message = "Please provide a search string that is at most 256 chars long")
+  @Size(max = 256, message = "Please provide a search string that is at most 256 chars long")
   private String search;
 
   private Direction sortDirection = Direction.ASC;
@@ -40,8 +38,7 @@ public class ClientSearchForm extends PaginatedRequestForm {
 
   boolean drOnly = false;
 
-  @IamAccountId(nullable = true)
-  private String accountId = null;
+  String lastUsedBefore;
 
   public String getSearch() {
     return search;
@@ -83,11 +80,11 @@ public class ClientSearchForm extends PaginatedRequestForm {
     this.searchType = searchType;
   }
 
-  public String getAccountId() {
-    return accountId;
+  public String getLastUsedBefore() {
+    return lastUsedBefore;
   }
 
-  public void setAccountId(String accountId) {
-    this.accountId = accountId;
+  public void setLastUsedBefore(String lastUsedBefore) {
+    this.lastUsedBefore = lastUsedBefore;
   }
 }
