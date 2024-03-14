@@ -100,8 +100,6 @@ public class PasswordResetController {
   }
 
   @RequestMapping(value = { "", "/" }, method = RequestMethod.POST)
-  @ExceptionHandler(InvalidPasswordError.class)
-  @ResponseBody
   public void resetPassword(@RequestBody @Valid ResetPasswordDTO password, BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
@@ -115,6 +113,13 @@ public class PasswordResetController {
   @ExceptionHandler(InvalidEmailAddressError.class)
   @ResponseBody
   public String emailValidationError(HttpServletRequest req, Exception ex) {
+    return ex.getMessage();
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidPasswordError.class)
+  @ResponseBody
+  public String passwordResetValidationError(HttpServletRequest req, Exception ex) {
     return ex.getMessage();
   }
 

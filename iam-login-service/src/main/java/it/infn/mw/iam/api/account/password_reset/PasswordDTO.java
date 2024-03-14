@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.account.password_reset;
 
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
@@ -26,7 +27,7 @@ public class PasswordDTO {
   private String currentPassword;
 
   @NotEmpty
-  @Pattern(regexp = PASSWORD_REGEX, message = "The password must include at least one uppercase letter, one lowercase letter, one number one symbol (e.g., @$!%*?&) and must contain at least 8 characters for greater security.")
+  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
   private String updatedPassword;
 
   public String getCurrentPassword() {
