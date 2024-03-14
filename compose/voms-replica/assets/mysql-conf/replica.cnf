@@ -1,6 +1,7 @@
 [mysqld]
 server-id = 2
 log_bin = mysql-bin
+binlog_do_db = iam
 read_only = 1
 
 general_log = 1
@@ -23,3 +24,7 @@ replicate-do-table=iam.iam_ssh_key
 replicate-do-table=iam.iam_user_info
 replicate-do-table=iam.iam_x509_cert
 replicate-do-table=iam.iam_x509_proxy
+
+ssl_ca=/certs/ca-cert.pem
+ssl_cert=/certs/db-replica-cert.pem
+ssl_key=/certs/db-replica-key.pem

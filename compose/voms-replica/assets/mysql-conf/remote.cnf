@@ -1,0 +1,7 @@
+[mysqld]
+server-id = 3
+log_bin = mysql-bin
+read_only = 1
+
+general_log = 1
+general_log_file = /var/log/mysql/remote.log

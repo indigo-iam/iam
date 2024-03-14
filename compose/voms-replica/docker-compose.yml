@@ -3,11 +3,13 @@ version: "3"
 volumes:
   data-primary:
   data-replica:
+  data-remote:
   trustanchors:
   cabundle:
 
 services:
   trust:
+    container_name: trust
     image: ${TRUST_IMAGE}:${TRUST_IMAGE_TAG}
     environment:
       - FORCE_TRUST_ANCHORS_UPDATE=1
@@ -67,8 +69,82 @@ services:
       default:
         aliases:
          - db-replica.test.example
+
+  db-remote:
+    container_name: db-remote
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    depends_on:
+        db-replica:
+          condition: service_healthy
+    volumes:
+      - data-remote:/var/lib/mysql
+      - ./assets/db-logs:/var/log/mysql
+      - ./assets/db-remote:/docker-entrypoint-initdb.d
+      - ./assets/mysql-conf/remote.cnf:/etc/mysql/conf.d/remote.cnf
+      - ./assets/certs:/certs
+    env_file:
+      - env-files/db.env
+    environment:
+      - REPORT_HOST=db-remote.test.example
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
+    networks:
+      default:
+        aliases:
+         - db-remote.test.example
   
+  vomsaa-primary:
+    container_name: vomsaa-primary
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+    environment:
+      - IAM_DB_HOST=db-primary.test.example
+    ports:
+      - "1044:1044"
+    depends_on:
+      db-primary:
+        condition: service_healthy
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+    networks:
+      default:
+        aliases:
+          - vomsaa-primary.test.example
+
+  vomsaa-replica:
+    container_name: vomsaa-replica
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+    environment:
+      - IAM_DB_HOST=db-replica.test.example
+    ports:
+      - "1045:1044"
+    depends_on:
+      db-replica:
+        condition: service_healthy
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+    networks:
+      default:
+        aliases:
+          - vomsaa-replica.test.example
+
   ngx-primary:
+    container_name: ngx-primary
     image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
     depends_on: 
       vomsaa-primary: 
@@ -92,6 +168,7 @@ services:
           - voms-primary.test.example
 
   ngx-replica:
+    container_name: ngx-replica
     image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
     depends_on: 
       vomsaa-replica:
@@ -115,49 +192,8 @@ services:
         aliases:
           - voms-replica.test.example
 
-  vomsaa-primary:
-    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
-    env_file:
-      - env-files/voms.env
-    environment:
-      - IAM_DB_HOST=db-primary.test.example
-    ports:
-      - "1044:1044"
-    depends_on:
-      db-primary:
-        condition: service_healthy
-    volumes:
-      - ./assets/vomsaa:/workspace/config:ro
-      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
-      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
-      - trustanchors:/etc/grid-security/certificates
-    networks:
-      default:
-        aliases:
-          - vomsaa-primary.test.example
-
-  vomsaa-replica:
-    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
-    env_file:
-      - env-files/voms.env
-    environment:
-      - IAM_DB_HOST=db-replica.test.example
-    ports:
-      - "1045:1044"
-    depends_on:
-      db-replica:
-        condition: service_healthy
-    volumes:
-      - ./assets/vomsaa:/workspace/config:ro
-      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
-      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
-      - trustanchors:/etc/grid-security/certificates
-    networks:
-      default:
-        aliases:
-          - vomsaa-replica.test.example
-
   client:
+    container_name: client
     image: ${GRID_CLIENTS_IMAGE}:${GRID_CLIENTS_IMAGE_TAG}
     environment:
       TZ: Europe/Rome

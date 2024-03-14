@@ -7,5 +7,5 @@ general_log = 1
 general_log_file = /var/log/mysql/primary.log
 
 ssl_ca=/certs/ca-cert.pem
-ssl_cert=/certs/server-cert.pem
-ssl_key=/certs/server-key.pem
+ssl_cert=/certs/db-primary-cert.pem
+ssl_key=/certs/db-primary-key.pem

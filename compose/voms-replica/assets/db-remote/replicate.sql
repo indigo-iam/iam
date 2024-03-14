@@ -1,6 +1,6 @@
 STOP REPLICA;
 CHANGE REPLICATION SOURCE TO 
-  SOURCE_HOST='db-primary.test.example',
+  SOURCE_HOST='db-replica.test.example',
   SOURCE_USER='replicator',
   SOURCE_PASSWORD='pwd',
   SOURCE_SSL=1,
