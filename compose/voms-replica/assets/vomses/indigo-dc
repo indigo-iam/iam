@@ -1,4 +1,6 @@
 "voms-primary" "voms-primary.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"
 "voms-replica" "voms-replica.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"
+"voms-remote" "voms-remote.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"
 "indigo-dc" "voms-primary.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"
 "indigo-dc" "voms-replica.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"
+"indigo-dc" "voms-remote.test.example" "443" "/C=IT/O=IGI/CN=*.test.example" "indigo-dc"

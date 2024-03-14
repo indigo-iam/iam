@@ -143,6 +143,28 @@ services:
         aliases:
           - vomsaa-replica.test.example
 
+  vomsaa-remote:
+    container_name: vomsaa-remote
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    env_file:
+      - env-files/voms.env
+    environment:
+      - IAM_DB_HOST=db-remote.test.example
+    ports:
+      - "1046:1044"
+    depends_on:
+      db-remote:
+        condition: service_healthy
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+    networks:
+      default:
+        aliases:
+          - vomsaa-remote.test.example
+
   ngx-primary:
     container_name: ngx-primary
     image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
@@ -191,6 +213,31 @@ services:
       default:
         aliases:
           - voms-replica.test.example
+
+  ngx-remote:
+    container_name: ngx-remote
+    image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+    depends_on: 
+      vomsaa-remote:
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
+    environment:
+      TZ: Europe/Rome
+      X509_VOMS_DIR: /vomsdir
+    ports:
+      - "445:443"
+    volumes:
+      - cabundle:/igtf
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/certs:/certs
+      - ./assets/vomsdir:/vomsdir
+      - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./assets/nginx/conf.d/voms-remote.test.example.conf:/etc/nginx/conf.d/voms-remote.test.example.conf:ro
+    networks:
+      default:
+        aliases:
+          - voms-remote.test.example
 
   client:
     container_name: client
