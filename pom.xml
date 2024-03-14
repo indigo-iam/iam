@@ -83,7 +83,7 @@
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
 
-    <bouncycastle.version>1.58</bouncycastle.version>
+    <bouncycastle.version>1.70</bouncycastle.version>
 
     <resource.delimiter>@</resource.delimiter>
 
