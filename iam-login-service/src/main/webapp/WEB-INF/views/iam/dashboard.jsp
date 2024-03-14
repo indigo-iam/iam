@@ -111,15 +111,18 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/attributes.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/proxycert.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/find.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/authenticator-app.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/system-scope.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/openid-configuration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scopes.service.js"></script>
   
   
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/authenticator-app.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/edit-password.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/user-mfa.controller.js"></script>
 
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/header/header.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/result.component.js"></script>
@@ -136,6 +139,8 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/user.edit.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/edit-user.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/status/user.status.component.js"></script>
+  <script type="text/javascript"
+    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/mfa/user.mfa.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/privileges/user.privileges.component.js"></script>
   <script type="text/javascript"

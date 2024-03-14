@@ -15,16 +15,17 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING;
 import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
 
 import java.util.Set;
+
+import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-
-import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
@@ -59,7 +60,17 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       .filter(ADDITIONAL_CLAIMS::contains)
       .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
 
+    // Add the methods of authentication to the id_token. These were added to the OAuth2 request
+    // from the ExtendedHttpServletRequest
+    String amrParam =
+        request.getRequestParameters().get(AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING);
+    if (amrParam != null) {
+      String[] amrArr = amrParam.split("\\+");
+      idClaims.claim(AUTHENTICATION_METHOD_REFERENCE_CLAIM_STRING, amrArr);
+    }
+    
     includeLabelsInIdToken(idClaims, account);
+
   }
 
 }
