@@ -41,6 +41,7 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -118,7 +119,9 @@ public class PasswordResetTests {
     mvc
         .perform(
             post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-        .andExpect(status().isMethodNotAllowed());
+        .andExpect(status().isBadRequest()).andExpect(MockMvcResultMatchers.content().string(
+            "Invalid reset password: [resetPasswordDTO.updatedPassword : " + PASSWORD_REGEX_MESSAGE_ERROR + "]"));
+    ;
   }
 
   @Test
