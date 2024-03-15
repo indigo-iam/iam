@@ -42,7 +42,6 @@ function UserMfaController(
 
   userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
   userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
-  userMfaCtrl.viewRecoveryCodes = viewRecoveryCodes;
 
   function enableAuthenticatorApp() {
     var modalInstance = $uibModal.open({
@@ -61,19 +60,6 @@ function UserMfaController(
     var modalInstance = $uibModal.open({
       templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disable-authenticator-app.html',
       controller: 'DisableAuthenticatorAppController',
-      controllerAs: 'authAppCtrl',
-      resolve: { user: function () { return self.user; } }
-    });
-
-    modalInstance.result.then(function (msg) {
-      return $uibModalInstance.close(msg);
-    });
-  }
-
-  function viewRecoveryCodes() {
-    var modalInstance = $uibModal.open({
-      templateUrl: '/resources/iam/apps/dashboard-app/templates/home/view-recovery-codes.html',
-      controller: 'ViewRecoveryCodesController',
       controllerAs: 'authAppCtrl',
       resolve: { user: function () { return self.user; } }
     });
