@@ -7,6 +7,16 @@ volumes:
   trustanchors:
   cabundle:
 
+networks:
+  site1-lan:
+    name: site1-lan
+  site2-lan:
+    name: site2-lan
+  site-to-site-tunnel:
+    name: tunnel
+  wan:
+    name: wan
+
 services:
   trust:
     container_name: trust
@@ -38,7 +48,7 @@ services:
       retries: 10
       start_period: 0s
     networks:
-      default:
+      site1-lan:
         aliases:
           - db-primary.test.example
 
@@ -68,7 +78,10 @@ services:
       retries: 10
       start_period: 0s
     networks:
-      default:
+      site1-lan:
+        aliases:
+         - db-replica.test.example
+      site-to-site-tunnel:
         aliases:
          - db-replica.test.example
 
@@ -98,7 +111,10 @@ services:
       retries: 10
       start_period: 0s
     networks:
-      default:
+      site2-lan:
+        aliases:
+         - db-remote.test.example
+      site-to-site-tunnel:
         aliases:
          - db-remote.test.example
   
@@ -121,7 +137,7 @@ services:
       - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
       - trustanchors:/etc/grid-security/certificates
     networks:
-      default:
+      site1-lan:
         aliases:
           - vomsaa-primary.test.example
 
@@ -144,7 +160,7 @@ services:
       - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
       - trustanchors:/etc/grid-security/certificates
     networks:
-      default:
+      site1-lan:
         aliases:
           - vomsaa-replica.test.example
 
@@ -167,7 +183,7 @@ services:
       - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
       - trustanchors:/etc/grid-security/certificates
     networks:
-      default:
+      site2-lan:
         aliases:
           - vomsaa-remote.test.example
 
@@ -191,7 +207,8 @@ services:
       - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./assets/nginx/conf.d/voms-primary.test.example.conf:/etc/nginx/conf.d/voms-primary.test.example.conf:ro
     networks:
-      default:
+      site1-lan:
+      wan:
         aliases:
           - voms-primary.test.example
 
@@ -216,7 +233,8 @@ services:
       - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./assets/nginx/conf.d/voms-replica.test.example.conf:/etc/nginx/conf.d/voms-replica.test.example.conf:ro
     networks:
-      default:
+      site1-lan:
+      wan:
         aliases:
           - voms-replica.test.example
 
@@ -241,7 +259,8 @@ services:
       - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./assets/nginx/conf.d/voms-remote.test.example.conf:/etc/nginx/conf.d/voms-remote.test.example.conf:ro
     networks:
-      default:
+      site2-lan:
+      wan:
         aliases:
           - voms-remote.test.example
 
@@ -259,3 +278,5 @@ services:
       - ./assets/vomsdir:/etc/grid-security/vomsdir
       - ./assets/vomses:/etc/vomses
     entrypoint: sleep infinity
+    networks:
+      wan:
