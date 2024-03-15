@@ -3,6 +3,7 @@ server-id = 2
 log_bin = mysql-bin
 binlog_do_db = iam
 read_only = 1
+relay_log = 7309661fdc26-relay-bin
 
 general_log = 1
 general_log_file = /var/log/mysql/replica.log
