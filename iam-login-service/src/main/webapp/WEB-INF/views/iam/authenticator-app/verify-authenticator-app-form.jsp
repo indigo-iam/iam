@@ -33,31 +33,10 @@
     <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
     <input id="verify-submit" type="submit" class="btn btn-primary btn-block"
       value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
-</div>
-</form>
-<form class="verify-form" action="/iam/verify" method="post">
-  <div class="verify-preamble text-muted">
-    Lost access to your authenticator app? Enter a recovery code to regain access
-  </div>
-  <div class="form-group">
-    <div class="input-group">
-      <span class="input-group-addon">
-        <i class="glyphicon glyphicon-lock"></i>
-      </span>
-      <!-- Currently, user must manually input the dashes that appear in the recovery code. Could look into some JS that could automatically place these in -->
-      <input id="recoveryCode" class="form-control" type="text" placeholder="Recovery code" autocomplete="off"
-        spellcheck="false" name="recoveryCode">
-    </div>
-  </div>
-  <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
-  <input id="verify-submit" type="submit" class="btn btn-primary btn-block"
-    value="${multiFactorVerificationPageConfiguration.verifyButtonText}" name="submit" class="form-control">
-  </div>
 </form>
 <form class="verify-form text-center" action="/logout" method="post">
   <button type="submit" class="btn btn-warning">Back to Login Page</button>
 </form>
-</div>
 </div>
 
 </html>
