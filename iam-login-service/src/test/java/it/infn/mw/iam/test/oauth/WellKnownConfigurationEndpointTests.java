@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -65,6 +67,10 @@ public class WellKnownConfigurationEndpointTests {
   private static final String IAM_GROUPS_CLAIM = "groups";
   private static final String IAM_EXTERNAL_AUTHN_CLAIM = "external_authn";
 
+  private static final String SYSTEM_SCOPE_0 = "new-scope0";
+  private static final String SYSTEM_SCOPE_1 = "new-scope1";
+
+
   @Autowired
   private MockMvc mvc;
 
@@ -73,6 +79,9 @@ public class WellKnownConfigurationEndpointTests {
 
   @Autowired
   private ObjectMapper mapper;
+
+  @Autowired
+  private TaskConfig taskConfig;
 
   @Test
   public void testGrantTypesSupported() throws Exception {
@@ -152,6 +161,39 @@ public class WellKnownConfigurationEndpointTests {
     }
 
     assertTrue(returnedScopes.containsAll(unrestrictedScopes));
+
+  }
+
+  @Test
+  public void testWellKnownCacheEviction() throws Exception {
+
+    taskConfig.evictWellKnownCache();
+
+    SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
+
+    scope = new SystemScope(SYSTEM_SCOPE_1);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
+
+    taskConfig.evictWellKnownCache();
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_1)));
 
   }
 

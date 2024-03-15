@@ -46,6 +46,7 @@ import it.infn.mw.iam.core.util.IamBanner;
     "it.infn.mw.iam.authn",
     "it.infn.mw.iam.persistence", 
     "it.infn.mw.iam.core",
+    "it.infn.mw.iam.core.web.wellknown",
     "it.infn.mw.iam.core.oauth.scope",
     "it.infn.mw.iam.core.time",
     "it.infn.mw.iam.api", 

@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -37,6 +39,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
@@ -82,6 +85,9 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Autowired
   ExpiredAccountsHandler expiredAccountsHandler;
+  
+  @Autowired
+  CacheManager cacheManager;
 
   @Value("${notification.disable}")
   boolean notificationDisabled;
@@ -89,6 +95,16 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
+  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+  public void evictWellKnownCache() {
+
+    Cache cacheForWellKnown = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
+
+    if (cacheForWellKnown != null) {
+      cacheForWellKnown.clear();
+      LOG.debug("well-known config cache evicted");
+    }
+  }
 
   @Bean(destroyMethod = "shutdown")
   public ScheduledExecutorService taskScheduler() {

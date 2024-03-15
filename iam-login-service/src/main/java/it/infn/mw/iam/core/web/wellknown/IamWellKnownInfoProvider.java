@@ -22,7 +22,6 @@ import static java.util.stream.Collectors.toList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
@@ -31,11 +30,7 @@ import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.web.UserInfoEndpoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.Algorithm;
@@ -49,8 +44,6 @@ import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @Service
 public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
-
-  private static final Logger LOG = LoggerFactory.getLogger(IamWellKnownInfoProvider.class);
 
   public static final String CACHE_KEY = "well-known-config";
 
@@ -225,15 +218,10 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     result.put("code_challenge_methods_supported", CODE_CHALLENGE_METHODS);
 
+    updateSupportedScopes();
     result.put("scopes_supported", supportedScopes);
 
     return result;
   }
 
-  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-  @CacheEvict(allEntries = true, cacheNames = CACHE_KEY)
-  protected void evictCacheAndUpdateSupportedScopes() {
-    updateSupportedScopes();
-    LOG.debug("well-known config cache evicted");
-  }
 }
