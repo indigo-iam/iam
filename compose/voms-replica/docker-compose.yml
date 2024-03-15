@@ -109,6 +109,7 @@ services:
       - env-files/voms.env
     environment:
       - IAM_DB_HOST=db-primary.test.example
+      - VOMS_HOST=voms-primary.test.example
     ports:
       - "1044:1044"
     depends_on:
@@ -131,6 +132,7 @@ services:
       - env-files/voms.env
     environment:
       - IAM_DB_HOST=db-replica.test.example
+      - VOMS_HOST=voms-replica.test.example
     ports:
       - "1045:1044"
     depends_on:
@@ -153,6 +155,7 @@ services:
       - env-files/voms.env
     environment:
       - IAM_DB_HOST=db-remote.test.example
+      - VOMS_HOST=voms-remote.test.example
     ports:
       - "1046:1044"
     depends_on:

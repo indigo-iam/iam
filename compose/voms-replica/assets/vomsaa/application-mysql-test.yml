@@ -30,7 +30,7 @@ voms:
     trust-anchors-dir: /etc/grid-security/certificates
     trust-anchors-refresh-interval-secs: 14400
   aa:
-    host: voms.test.example
+    host: ${VOMS_HOST:voms.test.example}
     port: ${server.port}
     vo-name: indigo-dc
     optional-group-label: voms.role
