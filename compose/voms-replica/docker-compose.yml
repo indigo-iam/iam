@@ -26,6 +26,7 @@ services:
       - ./assets/db-primary:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/primary.cnf:/etc/mysql/conf.d/primary.cnf
       - ./assets/certs:/certs
+      - trustanchors:/etc/grid-security/certificates
     env_file:
       - env-files/db.env
     ports:
@@ -53,6 +54,7 @@ services:
       - ./assets/db-replica:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/replica.cnf:/etc/mysql/conf.d/replica.cnf
       - ./assets/certs:/certs
+      - trustanchors:/etc/grid-security/certificates
     env_file:
       - env-files/db.env
     environment:
@@ -82,6 +84,7 @@ services:
       - ./assets/db-remote:/docker-entrypoint-initdb.d
       - ./assets/mysql-conf/remote.cnf:/etc/mysql/conf.d/remote.cnf
       - ./assets/certs:/certs
+      - trustanchors:/etc/grid-security/certificates
     env_file:
       - env-files/db.env
     environment:

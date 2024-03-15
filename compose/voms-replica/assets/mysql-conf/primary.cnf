@@ -6,6 +6,6 @@ binlog_do_db = iam
 general_log = 1
 general_log_file = /var/log/mysql/primary.log
 
-ssl_ca=/certs/ca-cert.pem
-ssl_cert=/certs/db-primary-cert.pem
-ssl_key=/certs/db-primary-key.pem
+ssl_ca=/etc/grid-security/certificates/igi-test-ca.pem
+ssl_cert=/certs/voms.test.example.cert.pem
+ssl_key=/certs/voms.test.example.key.pem
