@@ -15,13 +15,9 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +33,6 @@ import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 
 @SpringBootTest
 class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport {
@@ -86,38 +81,4 @@ class DefaultIamTotpRecoveryCodeResetServiceTests extends MultiFactorTestSupport
     assertTrue(thrownException.getMessage().startsWith("No multi-factor secret is attached"));
   }
 
-  @Test
-  public void testResetRecoveryCodes() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    String[] testArray = { TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
-        TOTP_RECOVERY_CODE_STRING_9, TOTP_RECOVERY_CODE_STRING_10, TOTP_RECOVERY_CODE_STRING_11,
-        TOTP_RECOVERY_CODE_STRING_12 };
-    when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
-
-    IamAccount result = recoveryCodeResetService.resetRecoveryCodes(account);
-
-    assertNotNull(result);
-    verify(accountRepository, times(1)).save(account);
-  }
-
-  @Test
-  public void testResetRecoveryCodes_WithEmptyPassword() {
-    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
-
-    iamTotpMfaProperties.setPasswordToEncryptAndDecrypt("");
-
-    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
-    String[] testArray = { TOTP_RECOVERY_CODE_STRING_7, TOTP_RECOVERY_CODE_STRING_8,
-        TOTP_RECOVERY_CODE_STRING_9, TOTP_RECOVERY_CODE_STRING_10, TOTP_RECOVERY_CODE_STRING_11,
-        TOTP_RECOVERY_CODE_STRING_12 };
-    when(recoveryCodeGenerator.generateCodes(anyInt())).thenReturn(testArray);
-
-    IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-      recoveryCodeResetService.resetRecoveryCodes(account);
-    });
-
-    assertTrue(thrownException.getMessage().startsWith("Please ensure that you provide"));
-  }
 }

@@ -86,7 +86,7 @@ public class DefaultIamTotpRecoveryCodeResetService
     for (String code : recoveryCodeStrings) {
       IamTotpRecoveryCode recoveryCode = new IamTotpRecoveryCode(totpMfa);
 
-      recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+      recoveryCode.setCode(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
           code, iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
       recoveryCodes.add(recoveryCode);
     }

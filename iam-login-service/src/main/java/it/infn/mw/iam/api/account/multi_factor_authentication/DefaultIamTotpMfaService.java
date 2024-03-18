@@ -81,7 +81,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   }
 
   /**
-   * Generates and attaches a TOTP MFA secret to a user account, along with a set of recovery codes
+   * Generates and attaches a TOTP MFA secret to a user account
    * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
    * server-side TOTP verification during the user's enabling of MFA on their account
    * 
@@ -103,7 +103,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     // Generate secret
     IamTotpMfa totpMfa = new IamTotpMfa(account);
 
-    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
         secretGenerator.generate(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     totpMfa.setAccount(account);
 
@@ -177,7 +177,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
-    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
         totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     // Verify provided TOTP

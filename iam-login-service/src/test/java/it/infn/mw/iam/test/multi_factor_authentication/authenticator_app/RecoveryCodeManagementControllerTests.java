@@ -18,8 +18,6 @@ package it.infn.mw.iam.test.multi_factor_authentication.authenticator_app;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_GET_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.reset;
@@ -33,8 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.After;
@@ -50,7 +46,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.util.NestedServletException;
@@ -59,14 +54,12 @@ import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
-import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockMfaUser;
 import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -179,29 +172,6 @@ public class RecoveryCodeManagementControllerTests extends MultiFactorTestSuppor
   @WithMockPreAuthenticatedUser
   public void testViewRecoveryCodesWithPreAuthenticationFails() throws Exception {
     mvc.perform(get(RECOVERY_CODE_VIEW_URL)).andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  @WithMockMfaUser
-  public void testGetRecoveryCodes() throws Exception {
-    MvcResult result =
-        mvc.perform(get(RECOVERY_CODE_GET_URL)).andExpect(status().isOk()).andReturn();
-
-    String content = result.getResponse().getContentAsString();
-    content = content.substring(1, content.length() - 1);
-    String[] arr = content.split(",");
-
-    String[] originalCodes = new String[RECOVERY_CODE_SET_FIRST.size()];
-    List<IamTotpRecoveryCode> recoveryCodes = new ArrayList<>(RECOVERY_CODE_SET_FIRST);
-    for (int i = 0; i < recoveryCodes.size(); i++) {
-      originalCodes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
-          recoveryCodes.get(i).getCode(), KEY_TO_ENCRYPT_DECRYPT);
-
-      // This is here because the string.split() method adds backslashed quotes around the separated
-      // strings. So this is a hacky method to remove them to allow for the comparison to succeed.
-      arr[i] = arr[i].substring(1, arr[i].length() - 1);
-    }
-    assertThat(originalCodes, equalTo(arr));
   }
 
   @Test

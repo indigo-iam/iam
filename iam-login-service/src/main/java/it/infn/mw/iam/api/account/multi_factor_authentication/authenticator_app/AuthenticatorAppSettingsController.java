@@ -97,7 +97,7 @@ public class AuthenticatorAppSettingsController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
         totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     try {
