@@ -123,7 +123,7 @@ public class RecoveryCodeManagementController {
     String[] codes = new String[recs.size()];
 
     for (int i = 0; i < recs.size(); i++) {
-      codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(
+      codes[i] = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
           recs.get(i).getCode(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
     }
 

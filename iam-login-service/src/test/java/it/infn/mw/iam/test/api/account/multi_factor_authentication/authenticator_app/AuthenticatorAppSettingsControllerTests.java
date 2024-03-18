@@ -99,7 +99,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
@@ -118,7 +118,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     totpMfa.setActive(false);
     totpMfa.setAccount(null);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
 
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
@@ -152,7 +152,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     totpMfa.setActive(true);
     totpMfa.setAccount(account);
     totpMfa.setSecret(
-        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
             iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     String totp = "123456";
 

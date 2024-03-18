@@ -149,7 +149,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   public void testEnablesTotpMfa() throws Exception {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
-    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode("secret",
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret("secret",
         iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
     totpMfa.setActive(false);
     totpMfa.setAccount(account);

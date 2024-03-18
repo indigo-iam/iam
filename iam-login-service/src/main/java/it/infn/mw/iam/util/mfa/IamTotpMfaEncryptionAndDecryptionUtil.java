@@ -52,7 +52,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String encryptSecretOrRecoveryCode(String plaintext, String password)
+  public static String encryptSecret(String plaintext, String password)
       throws IamTotpMfaInvalidArgumentError {
     String modeOfOperation = defaultModel.getModeOfOperation();
 
@@ -93,7 +93,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
           .encodeToString(encryptedData);
     } catch (Exception exp) {
       throw new IamTotpMfaInvalidArgumentError(
-          "An error occurred while encrypting secret or recovery code", exp);
+          "An error occurred while encrypting secret", exp);
     }
   }
 
@@ -109,7 +109,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtil {
    *
    * @throws IamTotpMfaInvalidArgumentError
    */
-  public static String decryptSecretOrRecoveryCode(String cText, String password)
+  public static String decryptSecret(String cText, String password)
       throws IamTotpMfaInvalidArgumentError {
     String modeOfOperation = defaultModel.getModeOfOperation();
 
