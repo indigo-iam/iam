@@ -50,42 +50,42 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptionAndDecryption_SecretOrRecoveryCodeMethods() throws IamTotpMfaInvalidArgumentError {
+  public void testEncryptionAndDecryptionSecretMethods() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
-    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
 
     // Decrypt the cipherText
-    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(cipherText,
+    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(cipherText,
         KEY_TO_ENCRYPT_DECRYPT);
 
     assertEquals(TOTP_MFA_SECRET, plainText);
   }
 
   @Test
-  public void testDecryptSecretOrRecoveryCode_WithDifferentKey() throws IamTotpMfaInvalidArgumentError {
+  public void testDecryptSecretWithDifferentKey() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
-    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
       // Decrypt the cipherText with a different key
-      IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(cipherText, "NOT_THE_SAME_KEY");
+      IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(cipherText, "NOT_THE_SAME_KEY");
     });
 
     assertTrue(thrownException.getMessage().startsWith("An error occurred while decrypting"));
 
     // Decrypt the cipherText with a the same key used for encryption.
-    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(cipherText,
+    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(cipherText,
         KEY_TO_ENCRYPT_DECRYPT);
 
     assertEquals(TOTP_MFA_SECRET, plainText);
   }
 
   @Test
-  public void testEncryptSecretOrRecoveryCode_WithTamperedCipher() throws IamTotpMfaInvalidArgumentError {
+  public void testEncryptSecretWithTamperedCipher() throws IamTotpMfaInvalidArgumentError {
     // Encrypt the plainText
-    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
 
     String modifyCipher = cipherText.substring(1);
@@ -95,7 +95,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
 
       IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
         // Decrypt the tampered cipherText
-        IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(tamperedCipher, KEY_TO_ENCRYPT_DECRYPT);
+        IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(tamperedCipher, KEY_TO_ENCRYPT_DECRYPT);
       });
 
       // Always throws an error because user have tampered the cipherText.
@@ -103,7 +103,7 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
     } else {
 
       // Decrypt the right cipherText with a the same key used for encryption.
-      String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(cipherText,
+      String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(cipherText,
           KEY_TO_ENCRYPT_DECRYPT);
 
       assertEquals(TOTP_MFA_SECRET, plainText);
@@ -111,11 +111,11 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretOrRecoveryCode_WithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
+  public void testEncryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
       // Try to encrypt the empty plainText
-      IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(null, KEY_TO_ENCRYPT_DECRYPT);
+      IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(null, KEY_TO_ENCRYPT_DECRYPT);
     });
 
     // Always throws an error because we have passed empty plaintext.
@@ -123,21 +123,21 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretOrRecoveryCode_WithInvalidSaltSize() throws IamTotpMfaInvalidArgumentError {
+  public void testEncryptSecretWithInvalidSaltSize() throws IamTotpMfaInvalidArgumentError {
     defaultModel.setSaltLengthInBytes(INVALID_SALT_SIZE);
 
     IamTotpMfaInvalidArgumentError throwException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-      IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT);
+      IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT);
     });
 
     assertTrue(throwException.getCause().getMessage().startsWith("the salt parameter must not"));
   }
 
   @Test
-  public void testDecryptSecretOrRecoveryCode_WithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
+  public void testDecryptSecretWithEmptyPlainText() throws IamTotpMfaInvalidArgumentError {
 
     IamTotpMfaInvalidArgumentError thrownException = assertThrows(IamTotpMfaInvalidArgumentError.class, () -> {
-      IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(null, KEY_TO_ENCRYPT_DECRYPT);
+      IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(null, KEY_TO_ENCRYPT_DECRYPT);
     });
 
     // Always throws an error because we have passed empty ciphertext.
@@ -145,18 +145,18 @@ public class IamTotpMfaEncryptionAndDecryptionUtilTests extends IamTotpMfaCommon
   }
 
   @Test
-  public void testEncryptSecretOrRecoveryCode_WithAesCipher_CBC_Mode() throws IamTotpMfaInvalidArgumentError {
+  public void testEncryptSecretWithAesCipher_CBC_Mode() throws IamTotpMfaInvalidArgumentError {
     defaultModel.setShortFormOfCipherMode(
         IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC);
     defaultModel.setModeOfOperation(
         IamTotpMfaEncryptionAndDecryptionHelper.AesCipherModes.CBC.getCipherMode());
 
     // Encrypt the plainText with CBC Cipher mode
-    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecretOrRecoveryCode(TOTP_MFA_SECRET,
+    String cipherText = IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
         KEY_TO_ENCRYPT_DECRYPT);
 
     // Decrypt the cipherText with CBC Cipher mode
-    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecretOrRecoveryCode(cipherText,
+    String plainText = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(cipherText,
         KEY_TO_ENCRYPT_DECRYPT);
 
     defaultModel.setShortFormOfCipherMode(
