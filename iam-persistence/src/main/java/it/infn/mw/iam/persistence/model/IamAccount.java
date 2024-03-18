@@ -48,6 +48,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 
 @Entity
@@ -90,6 +91,7 @@ public class IamAccount implements Serializable {
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "user_info_id")
+  @JsonIgnore
   private IamUserInfo userInfo;
 
   @Temporal(TemporalType.TIMESTAMP)
@@ -107,10 +109,12 @@ public class IamAccount implements Serializable {
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamSamlId> samlIds = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamOidcId> oidcIds = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
@@ -119,6 +123,7 @@ public class IamAccount implements Serializable {
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamX509Certificate> x509Certificates = new HashSet<>();
 
   @Column(name = "confirmation_key", unique = true, length = 36)
