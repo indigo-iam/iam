@@ -31,14 +31,6 @@ public interface IamTotpMfaService {
   IamTotpMfa addTotpMfaSecret(IamAccount account);
 
   /**
-   * Adds a set of recovery codes to a given account's TOTP secret.
-   * 
-   * @param account the account to add recovery codes to
-   * @return the affected TOTP secret
-   */
-  IamTotpMfa addTotpMfaRecoveryCodes(IamAccount account);
-
-  /**
    * Enables TOTP MFA on a provided account. Relies on the account already having a non-active TOTP
    * secret attached to it
    * 
@@ -66,12 +58,4 @@ public interface IamTotpMfaService {
    */
   boolean verifyTotp(IamAccount account, String totp);
 
-  /**
-   * Verifies a provided recovery code against an account
-   * 
-   * @param account the account we will check against
-   * @param recoveryCode the recovery code to validate
-   * @return true if valid, false otherwise
-   */
-  boolean verifyRecoveryCode(IamAccount account, String recoveryCode);
 }
