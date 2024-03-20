@@ -108,7 +108,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#clientId}")
+  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
   public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status) {
     client.setActive(status);
     client.setStatusChangedOn(Date.from(clock.instant()));

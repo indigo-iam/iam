@@ -24,13 +24,16 @@
     };
 
     self.handleError = function(error) {
-      self.clientCtrl.handleError(error);
+      console.error(error);
       self.enabled = true;
     };
 
     self.handleSuccess = function() {
       self.enabled = true;
-      self.clientCtrl.loadClient().then(function(client) {
+      ClientsService.retrieveClient(self.client.client_id).then(function (client) {
+        console.debug("Loaded client", client);
+        self.client = client;
+        self.clientVal = angular.copy(self.client);
         if (client.active) {
           toaster.pop({
             type: 'success',
@@ -43,6 +46,12 @@
             body: `Client '${client.client_name}' is now disabled.`
           });
         }
+      }).catch(function (res) {
+          console.debug("Error retrieving client!", res);
+          toaster.pop({
+              type: 'error',
+              body: 'Error retrieving client!'
+          });
       });
     };
 
