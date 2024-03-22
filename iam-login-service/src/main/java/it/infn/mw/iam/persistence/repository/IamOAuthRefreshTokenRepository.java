@@ -21,6 +21,7 @@ import java.util.List;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -85,4 +86,9 @@ public interface IamOAuthRefreshTokenRepository
       + "select sua.id from SavedUserAuthentication sua where sua.name not in ("
       + "select a.username from IamAccount a))")
   List<OAuth2RefreshTokenEntity> findOrphanedTokens();
+
+  @Modifying
+  @Query(value = "delete from OAuth2RefreshTokenEntity where (expiration is not NULL) "
+      + "and (expiration < :timestamp) order by id limit :count", nativeQuery = true)
+  int deleteExpiredRefreshTokens(@Param("timestamp") Date timestamp, @Param("count") long count);
 }

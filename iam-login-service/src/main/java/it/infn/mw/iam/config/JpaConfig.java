@@ -101,14 +101,14 @@ public class JpaConfig extends JpaBaseConfiguration {
   }
 
   @Bean(name = {"defaultTransactionManager", "transactionManager"})
-  public PlatformTransactionManager defaultTransactionManager() {
+  PlatformTransactionManager defaultTransactionManager() {
 
     return new JpaTransactionManager();
   }
 
   @Bean
   @Profile("no-flyway")
-  public FlywayMigrationStrategy flywayMigrationStrategy() {
+  FlywayMigrationStrategy flywayMigrationStrategy() {
     return f -> {
       //  empty on purpose
     }; 
@@ -116,7 +116,7 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   @Bean
   @Profile("flyway-repair")
-  public FlywayMigrationStrategy flywayRepairStrategy() {
+  FlywayMigrationStrategy flywayRepairStrategy() {
     return f -> {
       f.repair();
       f.migrate();

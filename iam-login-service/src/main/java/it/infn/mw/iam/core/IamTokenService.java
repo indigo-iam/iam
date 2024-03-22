@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -41,8 +42,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
 
+  @Value("${task.tokenCleanupCount}")
+  long tokenCleanupCount;
 
-  @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo) {
 
@@ -74,6 +76,26 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public void revokeRefreshToken(OAuth2RefreshTokenEntity refreshToken) {
     refreshTokenRepo.delete(refreshToken);
+  }
+
+  @Override
+  public void clearExpiredTokens() {
+
+    LOG.debug("Cleaning expired access-tokens ...");
+    Date startedAt = Calendar.getInstance().getTime();
+    int deleted = accessTokenRepo.deleteExpiredAccessTokens(startedAt, tokenCleanupCount);
+    if (deleted > 0) {
+      LOG.info("Removed {} expired access-tokens from database in {} secs", deleted,
+          (Calendar.getInstance().getTimeInMillis() - startedAt.getTime()) / 1000);
+    }
+
+    LOG.debug("Cleaning expired refresh-tokens ...");
+    startedAt = Calendar.getInstance().getTime();
+    deleted = refreshTokenRepo.deleteExpiredRefreshTokens(startedAt, tokenCleanupCount);
+    if (deleted > 0) {
+      LOG.info("Removed {} expired refresh-tokens from database in {} secs", deleted,
+          (Calendar.getInstance().getTimeInMillis() - startedAt.getTime()) / 1000);
+    }
   }
 
 }
