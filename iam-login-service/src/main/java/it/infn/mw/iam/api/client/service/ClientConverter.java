@@ -162,6 +162,9 @@ public class ClientConverter {
       clientDTO.setRequireAuthTime(false);
     }
 
+    clientDTO.setActive(entity.isActive());
+    clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
+
     return clientDTO;
   }
 

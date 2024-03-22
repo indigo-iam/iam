@@ -20,6 +20,7 @@
         <h1>
             <i class="fa fa-rocket"></i>&nbsp;&nbsp; <span
                 ng-if="!$ctrl.newClient">{{$ctrl.clientVal.client_name}}</span>
+            <span ng-if="!$ctrl.newClient && !$ctrl.clientVal.active"> (Suspended)</span>    
             <span ng-if="$ctrl.newClient">Create a new client</span>
         </h1>
         <ol class="breadcrumb hidden-xs" ng-if="!$ctrl.newClient">
@@ -79,6 +80,7 @@
                     <button class="btn btn-success" ng-click="$ctrl.saveClient()">Save client</button>
                     <button class="btn btn-danger" ng-click="$ctrl.deleteClient()" ng-if="!$ctrl.newClient">Delete
                         client</button>
+					<client-status client="$ctrl.clientVal" ng-if="!$ctrl.newClient"></client-status>	
                     <button class="btn btn-default" ng-click="$ctrl.resetVal()" ng-if="!$ctrl.newClient">Reset</button>
                     <button class="btn btn-default" ng-click="$ctrl.cancel()">Cancel</button>
                 </div>

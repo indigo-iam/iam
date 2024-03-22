@@ -330,6 +330,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
+    client.setActive(true);
 
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
@@ -410,6 +411,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
+    newClient.setActive(oldClient.isActive());
 
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
