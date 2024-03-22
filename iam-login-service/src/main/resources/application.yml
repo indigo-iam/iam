@@ -90,13 +90,14 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: "ant-path-matcher"
+
 iam:
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
   showSql: ${IAM_DATABASE_SHOW_SQL:false}
-  
+
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
     default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
@@ -104,7 +105,7 @@ iam:
     default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
     default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
-    
+
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}
   

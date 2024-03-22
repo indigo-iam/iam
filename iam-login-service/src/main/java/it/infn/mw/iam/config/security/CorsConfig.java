@@ -27,17 +27,18 @@ public class CorsConfig {
   private static final String[] CORS_ENDPOINT_MATCHERS =
   // @formatter:off
     {
-        "/api/**", 
-        "/resource/**", 
+        "/api/**",
+        "/resource/**",
         "/register/**",
-        "/iam/**", 
-        "/scim/**", 
-        "/token", 
-        "/introspect", 
-        "/userinfo", 
-        "/revoke/**", 
+        "/iam/**",
+        "/scim/**",
+        "/token",
+        "/introspect",
+        "/userinfo",
+        "/revoke/**",
         "/jwk",
-        "/devicecode"
+        "/devicecode",
+        "/.well-known/openid-configuration"
     };
     //@formatter:on
 
