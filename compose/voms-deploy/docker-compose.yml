@@ -1,0 +1,100 @@
+version: "3"
+
+volumes:
+  data:
+  trustanchors:
+  cabundle:
+
+services:
+  trust:
+    image: ${TRUST_IMAGE}:${TRUST_IMAGE_TAG}
+    environment:
+      - FORCE_TRUST_ANCHORS_UPDATE=1
+    volumes:
+      - trustanchors:/etc/grid-security/certificates
+      - cabundle:/etc/pki
+
+  db:
+    container_name: db
+    image: ${DB_IMAGE}:${DB_IMAGE_TAG}
+    volumes:
+      - data:/var/lib/mysql
+      - ./assets/db:/docker-entrypoint-initdb.d
+    
+    env_file:
+      - env-files/db.env
+
+    ports:
+      - "3306:3306"
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
+
+  ngx:
+    image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+
+    depends_on: 
+      vomsaa:
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
+    
+    environment:
+      TZ: Europe/Rome
+      X509_VOMS_DIR: /vomsdir
+
+    ports:
+      - "443:443"
+
+    volumes:
+      - cabundle:/igtf
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/certs:/certs
+      - ./assets/vomsdir:/vomsdir
+      - ./assets/nginx/conf.d/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./assets/nginx/conf.d/voms.test.example.conf:/etc/nginx/conf.d/voms.test.example.conf:ro
+
+    networks:
+      default:
+        aliases:
+          - voms.test.example
+
+  vomsaa:
+    image: ${VOMS_AA_IMAGE}:${VOMS_AA_IMAGE_TAG}
+    
+    env_file:
+      - env-files/voms.env      
+
+    ports:
+      - "1044:1044"
+    
+    depends_on:
+      db:
+        condition: service_healthy
+
+    volumes:
+      - ./assets/vomsaa:/workspace/config:ro
+      - ./assets/certs/voms.test.example.cert.pem:/etc/grid-security/voms/hostcert.pem:ro
+      - ./assets/certs/voms.test.example.key.pem:/etc/grid-security/voms/hostkey.pem:ro
+      - trustanchors:/etc/grid-security/certificates
+
+  client:
+    image: ${GRID_CLIENTS_IMAGE}:${GRID_CLIENTS_IMAGE_TAG}
+    environment:
+      TZ: Europe/Rome
+
+    depends_on:
+      trust:
+        condition: service_completed_successfully
+
+    volumes:
+      - cabundle:/etc/pki
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/vomsdir:/etc/grid-security/vomsdir
+      - ./assets/vomses:/etc/vomses
+
+    entrypoint: sleep infinity

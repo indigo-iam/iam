@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import it.infn.mw.iam.config.IamProperties.Logo;
+import it.infn.mw.iam.config.IamProperties.LoginPageLayout.ExternalAuthnOptions;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 
 public interface LoginPageConfiguration {
@@ -55,4 +56,7 @@ public interface LoginPageConfiguration {
 
   Logo getLogo();
 
+  boolean isDefaultLoginPageLayout();
+
+  List<ExternalAuthnOptions> getExternalAuthnOptionsOrder();
 }

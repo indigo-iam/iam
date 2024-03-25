@@ -120,15 +120,6 @@ public class RegisteredClientDTO {
       OnClientCreation.class, OnClientUpdate.class})
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
-  private String logoUri;
-
-  @Size(max = 2048,
-      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-          OnClientCreation.class, OnClientUpdate.class})
-  @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-      OnClientCreation.class, OnClientUpdate.class})
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.DynamicRegistration.class})
   private String tosUri;
 
   @Valid
@@ -302,14 +293,6 @@ public class RegisteredClientDTO {
 
   public void setClientUri(String clientUri) {
     this.clientUri = clientUri;
-  }
-
-  public String getLogoUri() {
-    return logoUri;
-  }
-
-  public void setLogoUri(String logoUri) {
-    this.logoUri = logoUri;
   }
 
   public String getTosUri() {

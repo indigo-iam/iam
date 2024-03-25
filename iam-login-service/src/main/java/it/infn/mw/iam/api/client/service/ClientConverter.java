@@ -116,7 +116,6 @@ public class ClientConverter {
       .collect(toSet()));
 
     clientDTO.setJwksUri(entity.getJwksUri());
-    clientDTO.setLogoUri(entity.getLogoUri());
     clientDTO.setRedirectUris(cloneSet(entity.getRedirectUris()));
 
     clientDTO.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
@@ -139,7 +138,6 @@ public class ClientConverter {
     clientDTO.setJwksUri(entity.getJwksUri());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
-    clientDTO.setLogoUri(entity.getLogoUri());
     clientDTO.setPolicyUri(entity.getPolicyUri());
     clientDTO.setRefreshTokenValiditySeconds(entity.getRefreshTokenValiditySeconds());
 
@@ -185,7 +183,6 @@ public class ClientConverter {
       client.setJwks(JWKSet.parse(dto.getJwk()));
     }
 
-    client.setLogoUri(dto.getLogoUri());
     client.setPolicyUri(dto.getPolicyUri());
     
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));

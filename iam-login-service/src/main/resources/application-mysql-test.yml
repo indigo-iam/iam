@@ -21,7 +21,7 @@ spring:
     
   datasource:
     
-    url: jdbc:mysql://${IAM_DB_HOST:dev.local.io}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=${IAM_DB_USE_SSL:false}
+    url: jdbc:mysql://${IAM_DB_HOST:dev.local.io}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=${IAM_DB_USE_SSL:false}&allowPublicKeyRetrieval=${IAM_DB_ALLOW_PUBLIC_KEY_RETRIEVAL:true}
     username: ${IAM_DB_USERNAME:iam}
     password: ${IAM_DB_PASSWORD:pwd}
     

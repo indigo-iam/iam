@@ -1,0 +1,1 @@
+UPDATE client_details set logo_uri = NULL;

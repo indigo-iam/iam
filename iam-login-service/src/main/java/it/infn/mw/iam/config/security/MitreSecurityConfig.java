@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -56,7 +57,11 @@ public class MitreSecurityConfig {
     public void configure(final HttpSecurity http) throws Exception {
 
       // @formatter:off
-      http.antMatcher("/api/**")
+     http.authorizeRequests()
+       .antMatchers(HttpMethod.POST, "/api/clients").denyAll()
+       .antMatchers(HttpMethod.PUT, "/api/clients/**").denyAll()
+       .antMatchers(HttpMethod.DELETE, "/api/clients/**").denyAll();
+     http.antMatcher("/api/**")
           .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
           .exceptionHandling()
             .authenticationEntryPoint(authenticationEntryPoint)
@@ -298,6 +303,26 @@ public class MitreSecurityConfig {
           .and()
             .sessionManagement()
               .sessionCreationPolicy(STATELESS);
+      // @formatter:on
+    }
+  }
+  
+  @Configuration
+  @Order(28)
+  public static class WellKnownEndpointConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/.well-known/openid-configuration")
+          .cors()
+        .and()
+          .sessionManagement()
+          .sessionCreationPolicy(STATELESS)
+        .and()
+          .authorizeRequests()
+            .antMatchers("/**").permitAll();
       // @formatter:on
     }
   }
