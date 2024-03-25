@@ -1528,3 +1528,10 @@ insert into iam_account_client(id, account_id, client_id, creation_time) VALUES
 -- TOTP multi-factor secrets
 insert into iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
 (true, 'secret', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 1000);
+
+-- Client last used dates
+insert into client_last_used(client_details_id, last_used) VALUES
+(1, '1994-03-21'),
+(2, '1994-03-20'),
+(3, '1994-03-19'),
+(4, '1994-03-23');

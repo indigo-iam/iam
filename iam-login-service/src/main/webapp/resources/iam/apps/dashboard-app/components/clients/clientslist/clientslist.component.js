@@ -26,6 +26,7 @@
         self.resetFilter = resetFilter;
         self.onChangePage = onChangePage;
         self.deleteClient = deleteClient;
+        self.clientTrackLastUsed = getClientTrackLastUsed();
 
         self.$onInit = function () {
             console.debug('ClientsListController.self', self);
