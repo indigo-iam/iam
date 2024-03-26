@@ -280,3 +280,22 @@ services:
     entrypoint: sleep infinity
     networks:
       wan:
+
+  testsuite:
+    image: italiangrid/voms-testsuite:latest
+    init: true
+    depends_on:
+      trust:
+        condition: service_completed_successfully
+    environment:
+      - TZ=Europe/Rome
+      - "ROBOT_OPTIONS=--variable vo1:indigo-dc --variable vo1_host:voms-primary.test.example --variable vo1_issuer:'/C=IT/O=IGI/CN=*.test.example' --variable vo1_legacy_fqan_enabled:False"
+    volumes:
+      - trustanchors:/etc/grid-security/certificates
+      - ./assets/vomses:/etc/vomses
+      - ./assets/vomsdir:/etc/grid-security/vomsdir
+      - ./voms-testsuite:/home/test/voms-testsuite
+    working_dir: /home/test/voms-testsuite
+    command: ["sleep", "infinity"]
+    networks:
+      wan:

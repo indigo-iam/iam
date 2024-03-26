@@ -42,7 +42,7 @@ We use a few distinct networks, similar to a real scenario:
 Run the docker-compose with
 
 ```
-$ docker-compose up -d
+$ docker compose up -d
 ```
 
 and wait for the `trust` service to finish; all the services will be available shortly afterwards.
@@ -50,7 +50,7 @@ and wait for the `trust` service to finish; all the services will be available s
 To query the voms-aa using the VOMS client, run:
 
 ``` 
-$ docker-compose exec client voms-proxy-init -voms indigo-dc
+$ docker compose exec client voms-proxy-init -voms indigo-dc
 Enter GRID pass phrase for this identity:
 Contacting voms-remote.test.example:443 [/C=IT/O=IGI/CN=*.test.example] "indigo-dc"...
 Remote VOMS server contacted succesfully.
@@ -84,7 +84,12 @@ uri       : voms-remote.test.example:8080
 ```
 If you want to force the query to one voms-aa use one of the followings:
 ```
-$ docker-compose exec client voms-proxy-init -voms voms-primary
-$ docker-compose exec client voms-proxy-init -voms voms-replica
-$ docker-compose exec client voms-proxy-init -voms voms-remote
+$ docker compose exec client voms-proxy-init -voms voms-primary
+$ docker compose exec client voms-proxy-init -voms voms-replica
+$ docker compose exec client voms-proxy-init -voms voms-remote
+```
+
+To run the testsuite:
+```
+$ docker compose exec testsuite bash run-testsuite.sh
 ```
