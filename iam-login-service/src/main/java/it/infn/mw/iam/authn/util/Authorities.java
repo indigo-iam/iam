@@ -24,6 +24,8 @@ public class Authorities {
   public static final GrantedAuthority ROLE_ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
   public static final GrantedAuthority ROLE_USER = new SimpleGrantedAuthority("ROLE_USER");
   public static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
+  public static final GrantedAuthority ROLE_PRE_AUTHENTICATED =
+      new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED");
 
   private Authorities() {
     // prevent instantiation
