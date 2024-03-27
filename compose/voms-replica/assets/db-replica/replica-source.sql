@@ -1,0 +1,2 @@
+CREATE USER 'replicator'@'%' IDENTIFIED BY 'pwd' REQUIRE SSL;
+GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%';

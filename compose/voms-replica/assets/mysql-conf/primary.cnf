@@ -1,0 +1,11 @@
+[mysqld]
+server-id = 1
+log_bin = mysql-bin
+binlog_do_db = iam
+
+general_log = 1
+general_log_file = /var/log/mysql/primary.log
+
+ssl_ca=/etc/grid-security/certificates/igi-test-ca.pem
+ssl_cert=/certs/voms.test.example.cert.pem
+ssl_key=/certs/voms.test.example.key.pem

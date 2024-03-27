@@ -1,0 +1,3 @@
+[submodule "compose/voms-replica/voms-testsuite"]
+	path = compose/voms-replica/voms-testsuite
+	url = git@github.com:italiangrid/voms-testsuite.git
