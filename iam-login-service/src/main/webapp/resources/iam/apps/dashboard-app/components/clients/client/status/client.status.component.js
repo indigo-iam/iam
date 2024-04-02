@@ -56,22 +56,23 @@
     };
 
     self.enableClient = function() {
-      return ClientsService.setClientActiveStatus(self.client.client_id, true)
+      return ClientsService.setClientActiveStatus(self.client.client_id, true, self.loggedUserId)
           .then(self.handleSuccess)
           .catch(self.handleError);
     };
 
     self.disableClient = function() {
-      return ClientsService.setClientActiveStatus(self.client.client_id, false)
+      return ClientsService.setClientActiveStatus(self.client.client_id, false, self.loggedUserId)
           .then(self.handleSuccess)
           .catch(self.handleError);
     };
 
 
-    self.openDialog = function() {
+    self.openDialog = function(loggedUserId) {
 
       var modalOptions = null;
       var updateStatusFunc = null;
+      self.loggedUserId = loggedUserId;
 
       if (self.client.active) {
         modalOptions = {
@@ -98,7 +99,7 @@
       ModalService.showModal({}, modalOptions)
           .then(function() { updateStatusFunc(); })
           .catch(function() {
-
+              console.debug("Error updating client status!", res);
           });
     };
   }

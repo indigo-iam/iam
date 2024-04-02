@@ -18,7 +18,7 @@
 <!-- Disable client button -->
 <button class="btn btn-warning"
     ng-if="$ctrl.client.active" 
-    ng-click="$ctrl.openDialog()"
+    ng-click="$ctrl.openDialog($root.loggedUser.me.id)"
     name="disable-client-btn">
     <i class="fa fa-ban"></i>
     Disable Client
@@ -27,7 +27,7 @@
 <!-- Enable client button -->
 <button class="btn btn-primary" 
     ng-if="!$ctrl.client.active" 
-    ng-click="$ctrl.openDialog()"
+    ng-click="$ctrl.openDialog($root.loggedUser.me.id)"
     name="enable-client-btn">
     <i class="fa fa-power-off"></i>
     Restore Client

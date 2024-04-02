@@ -108,9 +108,9 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
     client.setActive(status);
+    client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
     return clientRepo.save(client);
   }

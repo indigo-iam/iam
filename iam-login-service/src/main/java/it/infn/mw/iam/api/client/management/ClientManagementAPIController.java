@@ -44,6 +44,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
@@ -144,8 +146,11 @@ public class ClientManagementAPIController {
   @PatchMapping("/{clientId}/status")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void updateClientStatus(@PathVariable String clientId,
-      @RequestBody boolean status) {
-    managementService.updateClientStatus(clientId, status);
+      @RequestBody String body) {  
+    JsonObject jsonObject = JsonParser.parseString(body).getAsJsonObject();
+    boolean status = jsonObject.get("status").getAsBoolean();
+    String userId = jsonObject.get("userId").getAsString();      
+    managementService.updateClientStatus(clientId, status, userId);
   }
 
   @PostMapping("/{clientId}/secret")

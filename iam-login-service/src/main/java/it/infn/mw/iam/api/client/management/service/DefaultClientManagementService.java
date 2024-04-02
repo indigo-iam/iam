@@ -52,6 +52,7 @@ import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerRemoved;
 import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
+import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -135,12 +136,13 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
   @Override
-  public void updateClientStatus(String clientId, boolean status) {
+  public void updateClientStatus(String clientId, boolean status, String userId) {
 
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    client = clientService.updateClientStatus(client, status);
-    eventPublisher.publishEvent(new ClientUpdatedEvent(this, client));
+    client = clientService.updateClientStatus(client, status, userId);
+    String message = "Client " + (status?"enabled":"disabled");
+    eventPublisher.publishEvent(new ClientStatusChangedEvent(this, client, message));
   }
 
   @Validated(OnClientUpdate.class)

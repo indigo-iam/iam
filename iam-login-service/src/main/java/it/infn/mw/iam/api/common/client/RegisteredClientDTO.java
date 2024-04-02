@@ -248,6 +248,7 @@ public class RegisteredClientDTO {
   private String codeChallengeMethod;
   private boolean active;
   private Date statusChangedOn;
+  private String statusChangedBy;
 
   public String getClientId() {
     return clientId;
@@ -512,6 +513,14 @@ public class RegisteredClientDTO {
 
   public void setStatusChangedOn(Date statusChangedOn) {
     this.statusChangedOn = statusChangedOn;
+  }
+
+  public void setStatusChangedBy(String statusChangedBy) {
+    this.statusChangedBy = statusChangedBy;
+  }
+
+  public String getStatusChangedBy() {
+    return statusChangedBy;
   }
 
 }

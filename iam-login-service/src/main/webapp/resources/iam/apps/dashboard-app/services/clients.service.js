@@ -177,8 +177,8 @@
             return newClient;
         }
 
-        function setClientActiveStatus(clientId, isActive){
-            return $http.patch(endpoint(clientId) + "/status", isActive, defaultRequestConfig).then(function (res) {
+        function setClientActiveStatus(clientId, isActive, userId){
+            return $http.patch(endpoint(clientId) + "/status", "{\"status\": "+ isActive + ",\"userId\":" + userId + "}", defaultRequestConfig).then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);

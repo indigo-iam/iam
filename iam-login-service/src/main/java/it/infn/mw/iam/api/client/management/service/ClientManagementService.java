@@ -50,7 +50,7 @@ public interface ClientManagementService {
 
   void deleteClientByClientId(@NotBlank String clientId);
 
-  void updateClientStatus(String clientId, boolean status);
+  void updateClientStatus(String clientId, boolean status, String userId);
 
   ListResponseDTO<ScimUser> getClientOwners(@NotBlank String clientId, @NotNull Pageable pageable);
 
