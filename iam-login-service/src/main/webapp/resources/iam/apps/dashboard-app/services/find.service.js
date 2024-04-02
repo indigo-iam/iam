@@ -26,7 +26,8 @@
     function FindService($q, $http) {
 
         var service = {
-            findUnsubscribedGroupsForAccount: findUnsubscribedGroupsForAccount
+            findUnsubscribedGroupsForAccount: findUnsubscribedGroupsForAccount,
+            findAccountByUuid: findAccountByUuid
         };
 
         return service;
@@ -43,6 +44,16 @@
                 return result.data;
             }).catch(function (error) {
                 console.error("Error loading group members: ", error);
+                return $q.reject(error);
+            });
+        }
+
+        function findAccountByUuid(accountUuid) {
+            var url = "/iam/account/find/byuuid/" + accountUuid;
+            return $http.get(url).then(function (result) {
+                return result.data;
+            }).catch(function (error) {
+                console.error("Error loading account details: ", error);
                 return $q.reject(error);
             });
         }

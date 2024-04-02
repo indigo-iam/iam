@@ -25,15 +25,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import com.nimbusds.jose.shaded.json.JSONObject;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
@@ -44,6 +44,7 @@ public class FindAccountController {
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
   public static final String FIND_BY_USERNAME_RESOURCE = "/iam/account/find/byusername";
+  public static final String FIND_BY_UUID_RESOURCE = "/iam/account/find/byuuid/{accountUuid}";
   public static final String FIND_BY_CERT_SUBJECT_RESOURCE = "/iam/account/find/bycertsubject";
   public static final String FIND_BY_GROUP_RESOURCE = "/iam/account/find/bygroup/{groupUuid}";
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
@@ -121,4 +122,18 @@ public class FindAccountController {
     }
   }
 
+  @GetMapping(FIND_BY_UUID_RESOURCE)
+  public JSONObject findByUuid(@PathVariable String accountUuid) {
+    IamAccount iamAccount = service.findAccountByUuid(accountUuid);
+    return getIamAccountJson(iamAccount);
+  }
+
+  private JSONObject getIamAccountJson(IamAccount iamAccount) {
+    JSONObject iamAccountJson = new JSONObject();
+    iamAccountJson.put("id", iamAccount.getId());
+    iamAccountJson.put("accountUuid", iamAccount.getUuid());
+    iamAccountJson.put("username", iamAccount.getUsername());
+    iamAccountJson.put("active", iamAccount.isActive());
+    return iamAccountJson;
+  }
 }

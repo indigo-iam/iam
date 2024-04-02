@@ -88,10 +88,13 @@
                                 <div>
                                     <a ui-sref="client({id: c.client_id})">
                                         {{c.client_name}}
-                                    <span ng-if="!c.active"> (Suspended)</span>
                                     </a>
                                 </div>
                                 <div class="text-muted">{{c.client_id}}</div>
+                                <div class="label-danger label tool-tip" ng-mouseover="$ctrl.getClientStatusMessage(c)" 
+                                    style="vertical-align: text-top;" ng-if="!c.active">Suspended
+                                        <span class="tooltiptext">{{$ctrl.clientStatusMessage}}</span>
+                                </div>
                             </td>
                             <td class="col-xs-1">
                                 <!-- Created -->

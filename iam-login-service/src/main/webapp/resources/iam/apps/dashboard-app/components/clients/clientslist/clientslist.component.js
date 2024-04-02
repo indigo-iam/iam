@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    function ClientsListController($filter, $uibModal, ClientsService, toaster) {
+    function ClientsListController($filter, $uibModal, ClientsService, FindService, toaster) {
         var self = this;
 
         self.searchFilter = '';
@@ -26,6 +26,7 @@
         self.resetFilter = resetFilter;
         self.onChangePage = onChangePage;
         self.deleteClient = deleteClient;
+        self.getClientStatusMessage = getClientStatusMessage;
 
         self.$onInit = function () {
             console.debug('ClientsListController.self', self);
@@ -117,6 +118,22 @@
                 }
             });
         }
+
+        function getClientStatusMessage(client){
+            FindService.findAccountByUuid(client.status_changed_by).then(function(res){
+                self.clientStatusMessage = "Suspended by " + res.username + " on " + getFormatedDate(client.status_changed_on);                                            
+            }).catch(function (res) {
+                console.debug("Error retrieving user account!", res);
+            });           
+        }
+
+        function getFormatedDate(dateToFormat){
+            var dateISOString = new Date(dateToFormat).toISOString();
+            var ymd = dateISOString.split('T')[0];
+            //Remove milliseconds
+            var time = dateISOString.split('T')[1].slice(0, -5);
+            return ymd + " " + time;
+        }
     }
 
     angular
@@ -129,7 +146,7 @@
             bindings: {
                 clients: "<"
             },
-            controller: ['$filter', '$uibModal', 'ClientsService', 'toaster', ClientsListController],
+            controller: ['$filter', '$uibModal', 'ClientsService', 'FindService', 'toaster', ClientsListController],
             controllerAs: '$ctrl'
         };
     }
