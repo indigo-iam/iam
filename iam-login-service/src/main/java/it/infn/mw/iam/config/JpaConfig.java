@@ -43,10 +43,12 @@ public class JpaConfig extends JpaBaseConfiguration {
 
   public static final String ECLIPSELINK_LOGGING_LEVEL = "eclipselink.logging.level";
   public static final String ECLIPSELINK_LOGGING_LEVEL_SQL = "eclipselink.logging.level.sql";
+  public final IamProperties iamProperties;
 
   protected JpaConfig(DataSource dataSource, JpaProperties properties,
-      ObjectProvider<JtaTransactionManager> jtaTransactionManager) {
+      ObjectProvider<JtaTransactionManager> jtaTransactionManager, IamProperties iamProperties) {
     super(dataSource, properties, jtaTransactionManager);
+    this.iamProperties = iamProperties;
   }
 
   @Autowired
@@ -68,7 +70,7 @@ public class JpaConfig extends JpaBaseConfiguration {
     map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "OFF");
     map.put("eclipselink.cache.shared.default", "false");
 
-    if (System.getProperty("iam.show_sql") != null) {
+    if (iamProperties.isShowSql()) {
       map.put(ECLIPSELINK_LOGGING_LEVEL, "FINE");
       map.put(ECLIPSELINK_LOGGING_LEVEL_SQL, "FINE");
       map.put("eclipselink.logging.parameters", "true");

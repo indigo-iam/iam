@@ -1,0 +1,37 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+  forward-headers-strategy: native
+
+spring:
+  main:
+    banner-mode: "off" 
+  
+  jpa:
+    open-in-view: false
+
+  datasource:
+    url: jdbc:mysql://${IAM_DB_HOST:db}:${IAM_DB_PORT:3306}/${IAM_DB_NAME:iam}?useSSL=false&serverTimezone=UTC
+    username: ${IAM_DB_USERNAME:iam}
+    password: ${IAM_DB_PASSWORD:pwd}
+    max-active: ${IAM_DB_MAX_ACTIVE:100}
+    max-idle:  ${IAM_DB_MAX_IDLE:5}
+    validation-query: ${IAM_DB_VALIDATION_QUERY:SELECT 1}
+    time-between-eviction-runs-millis: ${IAM_DB_TIME_BETWEEN_EVICTION_RUNS_MILLIS:5000}
+    min-evictable-idle-time-millis: ${IAM_DB_MIN_EVICTABLE_IDLE_TIME_MILLIS:60000}
+  
+  flyway:
+    enabled: false
+      
+voms:
+  tls:
+    certificate-path: /etc/grid-security/voms/hostcert.pem
+    private-key-path: /etc/grid-security/voms/hostkey.pem
+    trust-anchors-dir: /etc/grid-security/certificates
+    trust-anchors-refresh-interval-secs: 14400
+  aa:
+    host: voms.test.example
+    port: ${server.port}
+    vo-name: indigo-dc
+    optional-group-label: voms.role
+    use-legacy-fqan-encoding: true

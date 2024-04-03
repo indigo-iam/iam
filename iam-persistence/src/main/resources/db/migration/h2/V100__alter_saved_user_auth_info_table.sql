@@ -1,0 +1,1 @@
+-- Nothing to do because H2 already supports Unicode
