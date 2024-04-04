@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.mitre.oauth2.service.DeviceCodeService;
@@ -26,9 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Bean;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -85,9 +83,12 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Autowired
   ExpiredAccountsHandler expiredAccountsHandler;
-  
+
   @Autowired
   CacheManager cacheManager;
+
+  @Autowired
+  ExecutorService taskScheduler;
 
   @Value("${notification.disable}")
   boolean notificationDisabled;
@@ -95,20 +96,11 @@ public class TaskConfig implements SchedulingConfigurer {
   @Value("${notification.taskDelay}")
   long notificationTaskPeriodMsec;
 
-  @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
-  public void evictWellKnownCache() {
-
-    Cache cacheForWellKnown = cacheManager.getCache(IamWellKnownInfoProvider.CACHE_KEY);
-
-    if (cacheForWellKnown != null) {
-      cacheForWellKnown.clear();
-      LOG.debug("well-known config cache evicted");
-    }
-  }
-
-  @Bean(destroyMethod = "shutdown")
-  public ScheduledExecutorService taskScheduler() {
-    return Executors.newSingleThreadScheduledExecutor();
+  @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
+      timeUnit = TimeUnit.SECONDS)
+  @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
+  public void logWellKnownCacheEviction() {
+    LOG.debug("well-known config cache evicted");
   }
 
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
@@ -162,7 +154,7 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Override
   public void configureTasks(final ScheduledTaskRegistrar taskRegistrar) {
-    taskRegistrar.setScheduler(taskScheduler());
+    taskRegistrar.setScheduler(taskScheduler);
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
   }

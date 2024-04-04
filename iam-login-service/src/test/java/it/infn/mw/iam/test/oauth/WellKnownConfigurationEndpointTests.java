@@ -37,6 +37,8 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -46,7 +48,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -54,6 +55,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@TestPropertySource(properties = "task.wellKnownCacheCleanupPeriodSecs=1")
+@ActiveProfiles({"h2-test", "dev"})
 public class WellKnownConfigurationEndpointTests {
 
   private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;
@@ -70,7 +73,6 @@ public class WellKnownConfigurationEndpointTests {
   private static final String SYSTEM_SCOPE_0 = "new-scope0";
   private static final String SYSTEM_SCOPE_1 = "new-scope1";
 
-
   @Autowired
   private MockMvc mvc;
 
@@ -79,9 +81,6 @@ public class WellKnownConfigurationEndpointTests {
 
   @Autowired
   private ObjectMapper mapper;
-
-  @Autowired
-  private TaskConfig taskConfig;
 
   @Test
   public void testGrantTypesSupported() throws Exception {
@@ -167,8 +166,6 @@ public class WellKnownConfigurationEndpointTests {
   @Test
   public void testWellKnownCacheEviction() throws Exception {
 
-    taskConfig.evictWellKnownCache();
-
     SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
     scopeService.save(scope);
 
@@ -187,7 +184,10 @@ public class WellKnownConfigurationEndpointTests {
       .andExpect(jsonPath("$.scopes_supported").isArray())
       .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
 
-    taskConfig.evictWellKnownCache();
+    try {
+      Thread.sleep(1100);
+    } catch (InterruptedException e) {
+    }
 
     mvc.perform(get(endpoint))
       .andExpect(status().isOk())
