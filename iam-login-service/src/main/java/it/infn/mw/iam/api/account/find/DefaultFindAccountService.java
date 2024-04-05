@@ -144,7 +144,7 @@ public class DefaultFindAccountService implements FindAccountService {
     return responseFromPage(results, converter, pageable);
   }
 
-  public IamAccount findAccountByUuid(String uuid) {
-    return repo.findByUuid(uuid).orElseThrow(() -> NoSuchAccountError.forUuid(uuid));
+  public Optional<IamAccount> findAccountByUuid(String uuid) {
+    return repo.findByUuid(uuid);
   }
 }

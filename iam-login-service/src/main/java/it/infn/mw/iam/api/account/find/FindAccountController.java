@@ -20,8 +20,11 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationErro
 import static java.util.Objects.isNull;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +32,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.nimbusds.jose.shaded.json.JSONObject;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -124,8 +129,18 @@ public class FindAccountController {
 
   @GetMapping(FIND_BY_UUID_RESOURCE)
   public JSONObject findByUuid(@PathVariable String accountUuid) {
-    IamAccount iamAccount = service.findAccountByUuid(accountUuid);
-    return getIamAccountJson(iamAccount);
+    if(service.findAccountByUuid(accountUuid).isPresent()){
+      IamAccount iamAccount = service.findAccountByUuid(accountUuid).get();
+      return getIamAccountJson(iamAccount);
+    } else{
+      throw NoSuchAccountError.forUuid(accountUuid);
+    }    
+  }
+
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoSuchAccountError.class)
+  public ErrorDTO accountNotFoundError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
   }
 
   private JSONObject getIamAccountJson(IamAccount iamAccount) {
