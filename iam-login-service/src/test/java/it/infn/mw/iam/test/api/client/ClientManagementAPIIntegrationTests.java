@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -291,5 +292,22 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
         .content(clientJson))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void clientStatusUpdateWorks() throws Exception {
+
+   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/status", "client")
+    .content("{\"status\": false, \"userId\": userId}")
+    ).andExpect(OK);
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(false));
   }
 }
