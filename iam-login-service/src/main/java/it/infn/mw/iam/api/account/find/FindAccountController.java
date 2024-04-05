@@ -20,6 +20,8 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationErro
 import static java.util.Objects.isNull;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+import java.util.Optional;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,9 +131,9 @@ public class FindAccountController {
 
   @GetMapping(FIND_BY_UUID_RESOURCE)
   public JSONObject findByUuid(@PathVariable String accountUuid) {
-    if(service.findAccountByUuid(accountUuid).isPresent()){
-      IamAccount iamAccount = service.findAccountByUuid(accountUuid).get();
-      return getIamAccountJson(iamAccount);
+    Optional<IamAccount> iamAccount = service.findAccountByUuid(accountUuid);
+    if(iamAccount.isPresent()){
+      return getIamAccountJson(iamAccount.get());
     } else{
       throw NoSuchAccountError.forUuid(accountUuid);
     }    
