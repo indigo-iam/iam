@@ -214,6 +214,7 @@ task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
+  wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
