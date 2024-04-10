@@ -104,6 +104,7 @@ public class FindAccountIntegrationTests extends TestSupport {
     mvc.perform(get(FIND_BY_USERNAME_RESOURCE).param("username", "test")).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_BY_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, TEST_USER_UUID)).andExpect(UNAUTHORIZED);
 
   }
 
@@ -296,6 +297,7 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "USER")
   public void findByUUIDWorks() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
@@ -310,8 +312,8 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "USER")
   public void findByUUIDThorowsException() throws Exception {
-
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
        .andExpect(status().isNotFound())
        .andExpect(result -> assertTrue(result.getResolvedException() instanceof NoSuchAccountError))

@@ -130,6 +130,7 @@ public class FindAccountController {
   }
 
   @GetMapping(FIND_BY_UUID_RESOURCE)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or hasRole('USER')")
   public JSONObject findByUuid(@PathVariable String accountUuid) {
     Optional<IamAccount> iamAccount = service.findAccountByUuid(accountUuid);
     if(iamAccount.isPresent()){
@@ -141,6 +142,8 @@ public class FindAccountController {
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoSuchAccountError.class)
+  @ResponseBody
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or hasRole('USER')")
   public ErrorDTO accountNotFoundError(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }

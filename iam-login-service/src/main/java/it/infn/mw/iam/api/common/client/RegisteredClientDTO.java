@@ -246,8 +246,14 @@ public class RegisteredClientDTO {
       groups = {OnClientCreation.class,
       OnClientUpdate.class, OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
   private String codeChallengeMethod;
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+    ClientViews.DynamicRegistration.class})
   private boolean active;
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+    ClientViews.DynamicRegistration.class})
   private Date statusChangedOn;
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+    ClientViews.DynamicRegistration.class})
   private String statusChangedBy;
 
   public String getClientId() {
