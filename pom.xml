@@ -13,7 +13,7 @@
 
   <groupId>it.infn.mw.iam-parent</groupId>
   <artifactId>iam-parent</artifactId>
-  <version>1.8.4</version>
+  <version>1.9.0</version>
   <packaging>pom</packaging>
 
   <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
