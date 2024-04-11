@@ -23,6 +23,8 @@ import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.WLCG_P
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
@@ -304,6 +306,11 @@ public class IamConfig {
   @Bean
   UsernameValidator usernameRegExpValidator() {
     return new UsernameValidator();
+  }
+
+  @Bean(destroyMethod = "shutdown")
+  public ScheduledExecutorService taskScheduler() {
+    return Executors.newSingleThreadScheduledExecutor();
   }
 
 }

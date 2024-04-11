@@ -115,4 +115,8 @@ function getAccessTokenValiditySeconds() {
 function getRefreshTokenValiditySeconds() {
   return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
 }
+
+function getClientTrackLastUsed() {
+  return ${clientTrackLastUsed};
+}
 </script>

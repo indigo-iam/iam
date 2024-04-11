@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.8.4 (2024-03-25)
+
+### Added
+* Add property to show SQL queries (default to false) https://github.com/indigo-iam/iam/pull/702
+* Add refresh token value index on database https://github.com/indigo-iam/iam/pull/722
+* Add support for admin to customize login layout https://github.com/indigo-iam/iam/pull/668
+
+### Fixed
+* Encode/decode token value hash with Charset UTF-8 to match the MySQL algorithm https://github.com/indigo-iam/iam/pull/694
+* Update the email address/username without needs to refresh the web UI https://github.com/indigo-iam/iam/pull/686
+* Allow Chinese characters to be shown on user's info column https://github.com/indigo-iam/iam/pull/701
+* Update login form display strategy https://github.com/indigo-iam/iam/pull/669
+
+### Changed
+* Only registered users can get client credentials grant type https://github.com/indigo-iam/iam/pull/683
+* Remove possibility to add a client logo URI https://github.com/indigo-iam/iam/pull/697
+* Disable client editing through MitreID endpoint (`/api/clients/*`) https://github.com/indigo-iam/iam/pull/703
+* Request for an optional "Apply for an account with eduGAIN" button https://github.com/indigo-iam/iam/pull/665
+
 ## 1.8.3 (2023-10-30)
 
 ### Recommendations
