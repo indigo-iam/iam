@@ -256,11 +256,11 @@ public class RegisteredClientDTO {
           OnDynamicClientUpdate.class})
   private String codeChallengeMethod;
 
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   private boolean active;
 
-  @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   private Date statusChangedOn;
 
