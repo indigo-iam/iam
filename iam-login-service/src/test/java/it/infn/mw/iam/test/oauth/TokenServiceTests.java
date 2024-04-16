@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(properties = {"iam.showSql=true"}, classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class TokenServiceTests extends EndpointsTestUtils {
 
   private static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";
