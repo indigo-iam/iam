@@ -117,7 +117,7 @@ iam:
   
   token:
     # This is the registration access token lifetime
-    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}  
+    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}
 
   organisation:
     name: ${IAM_ORGANISATION_NAME:indigo-dc}
@@ -212,9 +212,14 @@ notification:
 
 task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
+  tokenCleanupCount: ${IAM_TOKEN_CLEANUP_COUNT:100}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
   wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
+  authorizationCodeCleanupPeriodMsec: ${IAM_AUTHORIZATION_CODE_CLEANUP_PERIOD_MSEC:300000}
+  authorizationCodeCleanupCount: ${IAM_AUTHORIZATION_CODE_CLEANUP_COUNT:100}
+  authenticationHolderCleanupPeriodMsec: ${IAM_AUTHENTICATION_HOLDER_CLEANUP_PERIOD_MSEC:300000}
+  authenticationHolderCleanupCount: ${IAM_AUTHENTICATION_HOLDER_CLEANUP_COUNT:100}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}

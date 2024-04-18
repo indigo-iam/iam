@@ -30,7 +30,6 @@ import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.slf4j.Logger;
@@ -54,6 +53,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
+import it.infn.mw.iam.core.IamOAuth2AuthorizationCodeService;
 import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
@@ -258,7 +258,7 @@ public class IamConfig {
 
   @Bean
   AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
+    return new IamOAuth2AuthorizationCodeService();
   }
 
   @Bean
