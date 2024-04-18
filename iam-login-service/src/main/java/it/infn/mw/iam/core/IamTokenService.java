@@ -142,13 +142,13 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public void clearExpiredTokens() {
 
-    Pageable pageRequest = Pageable.ofSize(Long.valueOf(tokenCleanupCount).intValue());
+    Pageable pageRequest = Pageable.ofSize((int) tokenCleanupCount);
 
     LOG.debug("Cleaning expired access-tokens ...");
     Date startedAt = Calendar.getInstance().getTime();
     Page<Long> page = accessTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
     LOG.debug("Found {} expired access-tokens", page.getSize());
-    if (page.getContent().size() > 0) {
+    if (!page.getContent().isEmpty()) {
       int deleted = accessTokenRepo.deleteTokensById(page.getContent());
       if (deleted > 0) {
         LOG.info("Removed {} expired access-tokens from database in {} millisecs", deleted,
@@ -160,7 +160,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     startedAt = Calendar.getInstance().getTime();
     page = refreshTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
     LOG.debug("Found {} expired access-tokens", page.getSize());
-    if (page.getContent().size() > 0) {
+    if (!page.getContent().isEmpty()) {
       int deleted = refreshTokenRepo.deleteTokensById(page.getContent());
       if (deleted > 0) {
         LOG.info("Removed {} expired refresh-tokens from database in {} millisecs", deleted,

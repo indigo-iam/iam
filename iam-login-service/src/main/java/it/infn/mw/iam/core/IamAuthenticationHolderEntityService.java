@@ -74,6 +74,6 @@ public class IamAuthenticationHolderEntityService implements AuthenticationHolde
   @Override
   public long clearOrphaned() {
 
-    return repo.clearOrphaned(new DefaultPageCriteria(0, Long.valueOf(cleanupCount).intValue()));
+    return repo.clearOrphaned(new DefaultPageCriteria(0, (int) cleanupCount));
   }
 }

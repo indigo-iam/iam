@@ -19,17 +19,23 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.repository.AuthorizationCodeRepository;
+import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Sets;
@@ -38,6 +44,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -47,13 +54,17 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@ActiveProfiles({"dev", "h2-test"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class TokenServiceTests extends EndpointsTestUtils {
+public class TaskConfigTests extends EndpointsTestUtils {
 
   private static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";
 
   @Autowired
   private IamTokenService iamTokenService;
+
+  @Autowired
+  private DefaultOAuth2AuthorizationCodeService iamAuthorizationCodeService;
 
   @Autowired
   private IamOAuthAccessTokenRepository aTokenRepository;
@@ -62,15 +73,24 @@ public class TokenServiceTests extends EndpointsTestUtils {
   private IamOAuthRefreshTokenRepository rTokenRepository;
 
   @Autowired
+  private AuthorizationCodeRepository authzCodeRepository;
+
+  @Autowired
   private IamClientRepository clientRepository;
+
+  @Autowired
+  TaskConfig taskConfig;
 
   private ClientDetailsEntity client;
 
   @Before
-  public void clearAllAccessTokens() {
+  public void clearAll() {
 
-    iamTokenService.clearExpiredTokens();
     client = clientRepository.findByClientId(PASSWORD_GRANT_CLIENT_ID).get();
+    iamTokenService.clearExpiredTokens();
+    iamAuthorizationCodeService.clearExpiredAuthorizationCodes();
+    addExpiredAccessAndRefreshTokens(10);
+    addExpiredAuthorizationCode(5);
   }
 
   private void addExpiredAccessAndRefreshTokens(int count) {
@@ -78,7 +98,7 @@ public class TokenServiceTests extends EndpointsTestUtils {
     Calendar cal = Calendar.getInstance();
     cal.add(Calendar.DATE, -1);
 
-    for (int i=0; i<count; i++) {
+    for (int i = 0; i < count; i++) {
       OAuth2RefreshTokenEntity rTokenEntity = new OAuth2RefreshTokenEntity();
       rTokenEntity.setExpiration(cal.getTime());
       rTokenEntity.setClient(client);
@@ -93,10 +113,10 @@ public class TokenServiceTests extends EndpointsTestUtils {
       aTokenEntity.setExpiration(cal.getTime());
       aTokenEntity.setClient(client);
       claims = new JWTClaimsSet.Builder().issuer("issuer")
-          .expirationTime(cal.getTime())
-          .subject(client.getClientId())
-          .jwtID(UUID.randomUUID().toString())
-          .build();
+        .expirationTime(cal.getTime())
+        .subject(client.getClientId())
+        .jwtID(UUID.randomUUID().toString())
+        .build();
       JWT at = new PlainJWT(claims);
       aTokenEntity.setJwt(at);
       aTokenEntity.setScope(Sets.newHashSet("openid", "profile"));
@@ -105,18 +125,33 @@ public class TokenServiceTests extends EndpointsTestUtils {
     }
   }
 
-  @Test
-  public void clearExpiredTokensWorks() throws Exception {
+  private void addExpiredAuthorizationCode(int count) {
 
-    long sizeAtBefore = aTokenRepository.count();
-    long sizeRtBefore = rTokenRepository.count();
-    addExpiredAccessAndRefreshTokens(10);
-    assertThat(aTokenRepository.count(), is(sizeAtBefore + 10L));
-    assertThat(rTokenRepository.count(), is(sizeRtBefore + 10L));
-    iamTokenService.clearExpiredTokens();
-    assertThat(aTokenRepository.count(), is(sizeAtBefore));
-    assertThat(rTokenRepository.count(), is(sizeRtBefore));
+    Calendar cal = Calendar.getInstance();
+    cal.add(Calendar.DATE, -1);
 
+    for (int i = 0; i < count; i++) {
+      AuthorizationCodeEntity codeEntity = new AuthorizationCodeEntity();
+      codeEntity.setCode("code" + i);
+      codeEntity.setExpiration(cal.getTime());
+      authzCodeRepository.save(codeEntity);
+    }
   }
 
+  @Test
+  public void clearUsingTaskConfigMethodsWorks() {
+
+    Pageable pageRequest = Pageable.ofSize(10);
+
+    taskConfig.clearExpiredTokens();
+    assertThat(aTokenRepository.count() - aTokenRepository
+      .findValidAccessTokensForClient(PASSWORD_GRANT_CLIENT_ID, new Date(), pageRequest)
+      .getTotalElements(), is(0L));
+    assertThat(rTokenRepository.count() - rTokenRepository
+        .findValidRefreshTokensForClient(PASSWORD_GRANT_CLIENT_ID, new Date(), pageRequest)
+        .getTotalElements(), is(0L));
+
+    taskConfig.clearExpiredAuthorizationCodes();
+    assertThat(authzCodeRepository.getExpiredCodes().size(), is(0));
+  }
 }

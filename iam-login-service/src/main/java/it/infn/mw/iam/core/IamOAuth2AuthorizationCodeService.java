@@ -47,7 +47,7 @@ public class IamOAuth2AuthorizationCodeService extends DefaultOAuth2Authorizatio
   public void clearExpiredAuthorizationCodes() {
 
     LOG.debug("Cleaning expired authorization codes ...");
-    PageCriteria pageCriteria = new DefaultPageCriteria(0, Long.valueOf(codeCleanupCount).intValue());
+    PageCriteria pageCriteria = new DefaultPageCriteria(0, (int) codeCleanupCount);
     long startedAt = Calendar.getInstance().getTimeInMillis();
     long deleted = authorizationCodeRepository.deleteExpiredCodes(pageCriteria);
     if (deleted > 0) {

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.config;
 
-import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -127,7 +126,7 @@ public class TaskConfig implements SchedulingConfigurer {
   }
 
   @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}", initialDelay = ONE_MINUTE_MSEC)
-  public void clearExpiredSites() throws URISyntaxException {
+  public void clearExpiredSites() {
 
     LOG.debug("Task clearExpiredSites starting ...");
     approvedSiteService.clearExpiredSites();
