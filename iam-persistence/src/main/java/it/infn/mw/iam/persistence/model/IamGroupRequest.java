@@ -31,7 +31,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 
 @Entity
 @Table(name = "iam_group_request")
@@ -56,7 +56,7 @@ public class IamGroupRequest implements Serializable {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
-  private IamGroupRequestStatus status;
+  private IamRequestStatus status;
 
   @Column(nullable = false)
   private String notes;
@@ -109,7 +109,7 @@ public class IamGroupRequest implements Serializable {
     this.group = group;
   }
 
-  public void setStatus(IamGroupRequestStatus status) {
+  public void setStatus(IamRequestStatus status) {
     this.status = status;
   }
 
@@ -137,7 +137,7 @@ public class IamGroupRequest implements Serializable {
     this.creationTime = creationTime;
   }
 
-  public IamGroupRequestStatus getStatus() {
+  public IamRequestStatus getStatus() {
     return status;
   }
 
