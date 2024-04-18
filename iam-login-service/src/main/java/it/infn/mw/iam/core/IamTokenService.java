@@ -148,7 +148,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     Date startedAt = Calendar.getInstance().getTime();
     Page<Long> page = accessTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
     LOG.debug("Found {} expired access-tokens", page.getSize());
-    if (page.getSize() > 0) {
+    if (page.getContent().size() > 0) {
       int deleted = accessTokenRepo.deleteTokensById(page.getContent());
       if (deleted > 0) {
         LOG.info("Removed {} expired access-tokens from database in {} millisecs", deleted,
@@ -160,7 +160,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     startedAt = Calendar.getInstance().getTime();
     page = refreshTokenRepo.findExpiredTokenIds(startedAt, pageRequest);
     LOG.debug("Found {} expired access-tokens", page.getSize());
-    if (page.getSize() > 0) {
+    if (page.getContent().size() > 0) {
       int deleted = refreshTokenRepo.deleteTokensById(page.getContent());
       if (deleted > 0) {
         LOG.info("Removed {} expired refresh-tokens from database in {} millisecs", deleted,

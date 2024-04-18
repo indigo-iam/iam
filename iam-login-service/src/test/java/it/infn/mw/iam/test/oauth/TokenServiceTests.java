@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(properties = {"iam.showSql=true"}, classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class TokenServiceTests extends EndpointsTestUtils {
 
   private static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";
@@ -100,6 +100,7 @@ public class TokenServiceTests extends EndpointsTestUtils {
       JWT at = new PlainJWT(claims);
       aTokenEntity.setJwt(at);
       aTokenEntity.setScope(Sets.newHashSet("openid", "profile"));
+      aTokenEntity.hashMe();
       aTokenRepository.save(aTokenEntity);
     }
   }

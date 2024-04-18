@@ -100,6 +100,6 @@ public interface IamOAuthAccessTokenRepository
   Page<Long> findExpiredTokenIds(@Param("timestamp") Date timestamp, Pageable pageable);
 
   @Modifying
-  @Query("delete from OAuth2AccessTokenEntity t where t.id in ?1")
-  int deleteTokensById(List<Long> ids);
+  @Query("delete from OAuth2AccessTokenEntity t where t.id in :idList")
+  int deleteTokensById(@Param("idList") List<Long> ids);
 }
