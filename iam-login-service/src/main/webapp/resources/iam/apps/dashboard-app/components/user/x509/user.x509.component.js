@@ -42,6 +42,7 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
+        self.inputMode = undefined;
 
         self.certVal = {};
 
@@ -86,8 +87,11 @@
                 label: '',
                 primary: false,
                 pemEncodedCertificate: '',
+                subject: '',
+                issuer: '',
             };
             self.error = undefined;
+            self.inputMode = undefined;
         };
 
         self.certLabelValid = function () {
