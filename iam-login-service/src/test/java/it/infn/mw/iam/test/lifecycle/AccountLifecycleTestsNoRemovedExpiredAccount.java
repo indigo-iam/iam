@@ -21,8 +21,6 @@ import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Clock;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
@@ -30,9 +28,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -53,15 +48,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
 public class AccountLifecycleTestsNoRemovedExpiredAccount extends TestSupport implements LifecycleTestSupport {
-
-  @TestConfiguration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-  }
 
   @Autowired
   private IamAccountRepository repo;
