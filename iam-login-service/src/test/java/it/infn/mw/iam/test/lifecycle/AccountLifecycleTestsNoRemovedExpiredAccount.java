@@ -71,7 +71,7 @@ public class AccountLifecycleTestsNoRemovedExpiredAccount extends TestSupport im
   
   
   @Test
-  public void testNoExpiredAccountRemovalWorks() {
+  public void testSuspendedLabelWorks() {
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
@@ -97,6 +97,34 @@ public class AccountLifecycleTestsNoRemovedExpiredAccount extends TestSupport im
         is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
   }
   
-  
+  @Test
+  public void testNoRemovalWorks() {
+    IamAccount testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(true));
+    testAccount.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
+    repo.save(testAccount);
+
+    handler.handleExpiredAccounts();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+
+    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
+
+    assertThat(timestampLabel.isPresent(), is(true));
+    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
+
+    Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(),
+        is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
+
+    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
+    assertThat(account.isPresent(), is(true));
+  }
 
 }

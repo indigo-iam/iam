@@ -139,7 +139,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
 
     handler.handleExpiredAccounts();
 
-    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);;
+    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
 
     assertThat(account.isPresent(), is(false));
   }
