@@ -42,9 +42,9 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
-        self.inputMode = undefined;
+        self.inputMode = 0;
 
-        self.certVal = {};
+        self.certVal = {}; // TODO: check content based on inputMode
 
         self.doAdd = function () {
             self.error = undefined;
@@ -91,7 +91,7 @@
                 issuer: '',
             };
             self.error = undefined;
-            self.inputMode = undefined;
+            self.inputMode = 0;
         };
 
         self.certLabelValid = function () {
