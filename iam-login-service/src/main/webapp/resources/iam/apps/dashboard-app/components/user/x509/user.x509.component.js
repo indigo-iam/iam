@@ -44,11 +44,17 @@
         self.successHandler = successHandler;
         self.inputMode = 0;
 
-        self.certVal = {}; // TODO: check content based on inputMode
+        self.certVal = {};
 
         self.doAdd = function () {
             self.error = undefined;
             self.enabled = false;
+            if (self.inputMode == 0) {
+                delete self.certVal.subject;
+                delete self.certVal.issuer;
+            } else if (self.inputMode == 1) {
+                delete self.certVal.pemEncodedCertificate;
+            }
             scimFactory.addX509Certificate(self.user.id, self.certVal)
                 .then(function (response) {
                     $uibModalInstance.close(response.data);

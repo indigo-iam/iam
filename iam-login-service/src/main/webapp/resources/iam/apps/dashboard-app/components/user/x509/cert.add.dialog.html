@@ -72,7 +72,7 @@
             ng-show="$ctrl.inputMode == 1">
             <label>Subject</label>
             <input name="subject" class="form-control" type="text" placeholder="Certificate subject..."
-                ng-model="$ctrl.certVal.subject" ng-required="$ctrl.inputMode == 1">
+                ng-model="$ctrl.certVal.subjectDn" ng-required="$ctrl.inputMode == 1">
             <span class="help-block" ng-if="addCert.subject.$dirty && addCert.subject.$error.required">
                 Please provide the subject of the certificate
             </span>
@@ -82,7 +82,7 @@
             ng-show="$ctrl.inputMode == 1">
             <label>Issuer</label>
             <input name="issuer" class="form-control" type="text" placeholder="Certificate issuer..."
-                ng-model="$ctrl.certVal.issuer" ng-required="$ctrl.inputMode == 1">
+                ng-model="$ctrl.certVal.issuerDn" ng-required="$ctrl.inputMode == 1">
             <span class="help-block" ng-if="addCert.issuer.$dirty && addCert.issuer.$error.required">
                 Please provide the issuer of the certificate
             </span>
@@ -95,7 +95,7 @@
         ng-disabled="!$ctrl.certVal.label || 
                      $ctrl.inputMode === undefined || 
                      ($ctrl.inputMode == 0 && !$ctrl.certVal.pemEncodedCertificate) || 
-                     ($ctrl.inputMode == 1 && !($ctrl.certVal.subject && $ctrl.certVal.issuer)) || 
+                     ($ctrl.inputMode == 1 && !($ctrl.certVal.subjectDn && $ctrl.certVal.issuerDn)) || 
                      !$ctrl.enabled"
         ng-click="$ctrl.doAdd()">Add Certificate</button>
 
