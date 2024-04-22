@@ -48,6 +48,7 @@ import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
+import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -398,33 +399,36 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
+    if(oldClient.isActive()){    
+      ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
+      newClient.setId(oldClient.getId());
+      newClient.setClientSecret(oldClient.getClientSecret());
+      newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
+      newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
+      newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
+      newClient.setDeviceCodeValiditySeconds(oldClient.getDeviceCodeValiditySeconds());
+      newClient.setDynamicallyRegistered(true);
+      newClient.setAllowIntrospection(oldClient.isAllowIntrospection());
+      newClient.setAuthorities(oldClient.getAuthorities());
+      newClient.setCreatedAt(oldClient.getCreatedAt());
+      newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
+      newClient.setActive(oldClient.isActive());
 
-    ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
-    newClient.setId(oldClient.getId());
-    newClient.setClientSecret(oldClient.getClientSecret());
-    newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
-    newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
-    newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
-    newClient.setDeviceCodeValiditySeconds(oldClient.getDeviceCodeValiditySeconds());
-    newClient.setDynamicallyRegistered(true);
-    newClient.setAllowIntrospection(oldClient.isAllowIntrospection());
-    newClient.setAuthorities(oldClient.getAuthorities());
-    newClient.setCreatedAt(oldClient.getCreatedAt());
-    newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
-    newClient.setActive(oldClient.isActive());
+      ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
-    ClientDetailsEntity savedClient = clientService.updateClient(newClient);
+      eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
 
-    eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
+      RegisteredClientDTO response = converter.registrationResponseFromClient(savedClient);
 
-    RegisteredClientDTO response = converter.registrationResponseFromClient(savedClient);
-
-    maybeUpdateRegistrationAccessToken(savedClient, authentication).ifPresent(t -> {
-      eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
-      response.setRegistrationAccessToken(t);
-    });
-
-    return response;
+      maybeUpdateRegistrationAccessToken(savedClient, authentication).ifPresent(t -> {
+        eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
+        response.setRegistrationAccessToken(t);
+      });
+      return response;
+  } else {
+    throw new ClientSuspended("Client " + clientId + " is suspended!");
+  }
+    
   }
 
   @Override
