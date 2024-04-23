@@ -56,17 +56,19 @@ public class VOMSWarningMessage {
 
   public static VOMSWarningMessage orderingNotSatisfied(String vo) {
 
-    return new VOMSWarningMessage(VOMSWarning.OrderNotSatisfied, vo);
+    return new VOMSWarningMessage(VOMSWarning.orderNotSatisfied(), vo);
   }
 
-  public static VOMSWarningMessage shortenedAttributeValidity(String vo) {
+  public static VOMSWarningMessage shortenedAttributeValidity(String vo,
+      long maxAcValidityInSeconds) {
 
-    return new VOMSWarningMessage(VOMSWarning.ShortenedAttributeValidity, vo);
+    return new VOMSWarningMessage(VOMSWarning.shortenedAttributeValidity(maxAcValidityInSeconds),
+        vo);
   }
 
   public static VOMSWarningMessage attributeSubset(String vo) {
 
-    return new VOMSWarningMessage(VOMSWarning.AttributeSubset, vo);
+    return new VOMSWarningMessage(VOMSWarning.attributeSubset(), vo);
   }
 
 }

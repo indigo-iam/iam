@@ -71,7 +71,9 @@ public class VOMSAAImpl implements AttributeAuthority {
     }
 
     if (requestedValidity > MAX_VALIDITY) {
-      context.getResponse().getWarnings().add(shortenedAttributeValidity(context.getVOName()));
+      context.getResponse()
+        .getWarnings()
+        .add(shortenedAttributeValidity(context.getVOName(), MAX_VALIDITY));
     }
 
     Instant now = clock.instant();
