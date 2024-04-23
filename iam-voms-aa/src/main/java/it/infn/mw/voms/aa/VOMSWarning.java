@@ -22,7 +22,7 @@ public class VOMSWarning {
   public static final String OrderNotSatisfiedMessage =
       "The requested order could not be satisfied.";
   public static final String ShortenedAttributeValidityMessage =
-      "The validity of this VOMS AC in your proxy is shortened to %l seconds, "
+      "The validity of this VOMS AC in your proxy is shortened to %d seconds, "
           + "which is the maximum allowed by this VOMS server configuration.";
   public static final String AttributeSubsetMessage =
       "Only a subset of the requested attributes has been returned.";
