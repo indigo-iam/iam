@@ -66,7 +66,14 @@
 
                         <!-- Send reset password email or change password-->
                         <user-password user="$ctrl.user"></user-password>
-
+                        <button ng-if="$ctrl.user.aupSignature"
+                            class="btn btn-success btn-block"
+                            style="margin-top: 5px" 
+                            ng-click="$ctrl.openSignAUPModal()" 
+                            name="sign-aup-btn" ng-if="$ctrl.isMe()">
+                            <i class="fa fa-file-text-o"></i>
+                            <strong>Re-sign AUP</strong>
+                        </button>
                     </div>
                 </div>
             </section>
