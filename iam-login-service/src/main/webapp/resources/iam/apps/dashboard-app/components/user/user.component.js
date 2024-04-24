@@ -16,6 +16,29 @@
 (function () {
     'use strict';
 
+    function ResignAupController($scope, $uibModalInstance, AupService, user) {
+        var self = this;
+        self.enabled = true;
+        self.user = user;
+
+        self.cancel = function() {
+            $uibModalInstance.close();
+        };
+
+        self.submit = function() {
+            self.error = undefined;
+            self.enabled = false;
+            AupService.signAup()
+                .then(function(res) {
+                    $uibModalInstance.close('AUP signature re-signed succesfully');
+                    self.enabled = true;
+                }).catch(function(res) {
+                    self.error = res.data.error;
+                    self.enabled = true;
+                });
+        };
+    }
+
     function UserController(
         $timeout, $cookies, $rootScope, $uibModal, ModalService, scimFactory,
         UserService, Utils, toaster) {
@@ -116,6 +139,21 @@
                 })
                 .catch(self.handleError);
         };
+
+        self.openSignAUPModal = function() {
+            var modalInstance = $uibModal.open({
+                templateUrl: '/resources/iam/apps/dashboard-app/templates/home/resignAup.html',
+                controller: ResignAupController,
+                controllerAs: '$ctrl',
+                resolve: {user: function() { return self.user; }}
+              });
+      
+            modalInstance.result.then(function(msg) {
+              toaster.pop({type: 'success', body: msg});
+            }, function () {
+                console.log('Re-sign AUP modal dismissed at: ' + new Date());
+            });
+          };
     }
 
 
