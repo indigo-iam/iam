@@ -30,7 +30,8 @@
             touchAup: touchAup,
             deleteAup: deleteAup,
             getAupSignature: getAupSignature,
-            getAupSignatureForUser: getAupSignatureForUser
+            getAupSignatureForUser: getAupSignatureForUser,
+            signAup: signAup
         };
 
         return service;
@@ -79,6 +80,10 @@
                 }
                 return $q.reject(res);
             });
+        }
+
+        function signAup() {
+            return $http.post('/iam/aup/sign');
         }
     }
 })();
