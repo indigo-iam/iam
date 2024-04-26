@@ -22,7 +22,7 @@
         self.user = user;
 
         self.cancel = function() {
-            $uibModalInstance.close();
+            $uibModalInstance.close('Cancelled');
         };
 
         self.submit = function() {
