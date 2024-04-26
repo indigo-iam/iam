@@ -55,7 +55,7 @@ public class VOMSWarning {
 
   public String getDefaultMessage() {
 
-    return message;
+    return ORDER_NOT_SATISFIED_MESSAGE;
   }
 
 }
