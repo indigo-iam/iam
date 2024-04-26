@@ -19,11 +19,13 @@ public class VOMSWarningMessage {
 
   private final VOMSWarning warning;
   private final String vo;
+  private final String message;
 
   private VOMSWarningMessage(VOMSWarning warning, String vo) {
 
     this.warning = warning;
     this.vo = vo;
+    this.message = warning.getMessage();
   }
 
   /**
@@ -32,6 +34,14 @@ public class VOMSWarningMessage {
   public String getVo() {
 
     return vo;
+  }
+
+  /**
+   * @return the message
+   */
+  public String getMessage() {
+
+    return message;
   }
 
   /**
