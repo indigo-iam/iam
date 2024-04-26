@@ -19,27 +19,15 @@ import static java.lang.String.format;
 
 public class VOMSWarning {
 
-  public static final String ORDER_NOT_SATISFIED_MESSAGE =
-      "The requested order could not be satisfied.";
   public static final String SHORTENED_ATTRIBUTE_VALIDITY_MESSAGE =
       "The validity of this VOMS AC in your proxy is shortened to %d seconds, "
           + "which is the maximum allowed by this VOMS server configuration.";
-  public static final String ATTRIBUTE_SUBSET_MESSAGE =
-      "Only a subset of the requested attributes has been returned.";
 
   private int code;
   private String message;
 
-  public static VOMSWarning orderNotSatisfied() {
-    return new VOMSWarning(1, ORDER_NOT_SATISFIED_MESSAGE);
-  }
-
   public static VOMSWarning shortenedAttributeValidity(long maxAcValidityInSeconds) {
-    return new VOMSWarning(2, format(SHORTENED_ATTRIBUTE_VALIDITY_MESSAGE, maxAcValidityInSeconds));
-  }
-
-  public static VOMSWarning attributeSubset() {
-    return new VOMSWarning(3, ATTRIBUTE_SUBSET_MESSAGE);
+    return new VOMSWarning(1, format(SHORTENED_ATTRIBUTE_VALIDITY_MESSAGE, maxAcValidityInSeconds));
   }
 
   private VOMSWarning(int legacyCode, String message) {
@@ -53,7 +41,7 @@ public class VOMSWarning {
     return code;
   }
 
-  public String getMessage() {
+  public String getDefaultMessage() {
 
     return message;
   }
