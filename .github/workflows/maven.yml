@@ -35,7 +35,7 @@ jobs:
         mysql -uroot -proot -e "CREATE DATABASE iam CHARACTER SET latin1 COLLATE latin1_swedish_ci;"
         mysql -uroot -proot -e "GRANT ALL ON *.* TO 'iam'@'%';"
         mysql -uroot -proot -e "FLUSH PRIVILEGES;"
-        mvn -Dspring.profiles.active=mysql-test package install
+        mvn -Dspring.profiles.active=mysql-test -q package install
 
     - name: Copy artifacts to docker dir
       run: |
@@ -43,7 +43,7 @@ jobs:
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
 
     - name: Generate buildpacks
-      run: mvn -DskipTests -U -B spring-boot:build-image
+      run: mvn -DskipTests -U -B -q spring-boot:build-image
     
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v3
