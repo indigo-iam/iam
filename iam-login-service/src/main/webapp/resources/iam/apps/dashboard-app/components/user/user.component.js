@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    function ResignAupController($scope, $uibModalInstance, AupService, user) {
+    function ResignAupController($scope, $uibModalInstance, AupService, user, toaster) {
         var self = this;
         self.enabled = true;
         self.user = user;
@@ -28,13 +28,14 @@
         self.submit = function() {
             self.error = undefined;
             self.enabled = false;
-            AupService.signAup()
+            AupService.resignAup()
                 .then(function(res) {
                     $uibModalInstance.close('AUP signature re-signed succesfully');
                     self.enabled = true;
-                }).catch(function(res) {
+                }, function(res) {
                     self.error = res.data.error;
                     self.enabled = true;
+                    toaster.pop({ type: 'error', body: self.error});
                 });
         };
     }

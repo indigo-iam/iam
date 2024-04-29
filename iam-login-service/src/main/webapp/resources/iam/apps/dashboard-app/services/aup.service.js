@@ -31,7 +31,7 @@
             deleteAup: deleteAup,
             getAupSignature: getAupSignature,
             getAupSignatureForUser: getAupSignatureForUser,
-            signAup: signAup
+            resignAup: resignAup
         };
 
         return service;
@@ -82,8 +82,8 @@
             });
         }
 
-        function signAup() {
-            return $http.post('/iam/aup/sign');
+        function resignAup() {
+            return $http.patch('/iam/aup/sign');
         }
     }
 })();
