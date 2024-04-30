@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.api.aup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -45,6 +47,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureNotFoundError;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
@@ -301,6 +304,19 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
     AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
     assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(updateTime));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void withoutAUPResignAupThrowsException() throws Exception {   
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);   
+
+    Date updateTime = new Date();
+    mockTimeProvider.setTime(updateTime.getTime());
+    mvc.perform(patch("/iam/aup/sign")).andExpect(status().isNotFound())
+    .andExpect(result -> assertTrue(result.getResolvedException() instanceof IamAupSignatureNotFoundError))
+    .andExpect(result -> assertEquals("AUP signature not found for user 'test'", result.getResolvedException().getMessage()));
   }
 
 }
