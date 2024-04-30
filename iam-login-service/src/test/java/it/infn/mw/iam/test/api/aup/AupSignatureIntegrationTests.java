@@ -276,4 +276,31 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(jsonPath("$.error", equalTo("Account not found for id: 1234")));
 
   }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void userCanResignAup() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+    mvc.perform(post("/iam/aup/signature").with(user("test").roles("USER")))
+      .andExpect(status().isCreated());
+    
+    Date updateTime = new Date();
+    mockTimeProvider.setTime(updateTime.getTime());
+    mvc.perform(patch("/iam/aup/sign")).andExpect(status().isOk());
+
+    String sigString = mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+    .andExpect(status().isOk())
+    .andExpect(jsonPath("$.signatureTime").exists())
+    .andReturn()
+    .getResponse()
+    .getContentAsString();
+
+    AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
+    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(updateTime));
+  }
+
 }
