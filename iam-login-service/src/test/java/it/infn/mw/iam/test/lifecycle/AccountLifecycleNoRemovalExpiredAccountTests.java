@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
     AccountLifecycleTests.TestConfig.class})
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
-public class AccountLifecycleTestsNoRemovedExpiredAccount extends TestSupport implements LifecycleTestSupport {
+public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport implements LifecycleTestSupport {
 
   @Autowired
   private IamAccountRepository repo;
