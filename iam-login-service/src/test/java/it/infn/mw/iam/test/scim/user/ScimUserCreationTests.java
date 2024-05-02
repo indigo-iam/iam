@@ -469,7 +469,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     final String AUP_DESCRIPTION = "Test AUP";
     final Date currentDate = new Date();
 
-    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate);
+    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate, "30,15,1");
     aupService.saveAup(aup);
 
     Calendar cal = Calendar.getInstance();
@@ -477,9 +477,10 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     cal.add(Calendar.HOUR_OF_DAY, 1);
     Date signatureTime = cal.getTime();
 
-    ScimUser user = buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
-      .aupSignatureTime(signatureTime)
-      .build();
+    ScimUser user =
+        buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
+          .aupSignatureTime(signatureTime)
+          .build();
     ScimUser createdUser = scimUtils.postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));

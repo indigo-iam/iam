@@ -20,6 +20,7 @@ import java.util.Date;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
@@ -47,6 +48,11 @@ public class AupDTO {
   @Min(value = 0L, message = "Invalid AUP: signatureValidityInDays must be >= 0")
   Long signatureValidityInDays;
 
+  @NotNull(message = "Invalid AUP: aupRemindersInDays is required")
+  @Pattern(regexp = "\\d+,\\d+,\\d+",
+      message = "Invalid AUP: aupRemindersInDays must be a sequence of three comma-separated numbers")
+  String aupRemindersInDays;
+
   @JsonSerialize(using = JsonDateSerializer.class)
   Date creationTime;
 
@@ -57,13 +63,15 @@ public class AupDTO {
       @JsonProperty("description") String description,
       @JsonProperty("signatureValidityInDays") Long signatureValidityInDays,
       @JsonProperty("creationTime") Date creationTime,
-      @JsonProperty("lastUpdateTime") Date lastUpdateTime) {
+      @JsonProperty("lastUpdateTime") Date lastUpdateTime,
+      @JsonProperty("aupRemindersInDays") String aupRemindersInDays) {
     this.url = url;
     this.description = description;
     this.signatureValidityInDays = signatureValidityInDays;
     this.creationTime = creationTime;
     this.lastUpdateTime = lastUpdateTime;
     this.text = text;
+    this.aupRemindersInDays = aupRemindersInDays;
   }
 
   public String getDescription() {
@@ -99,6 +107,14 @@ public class AupDTO {
 
   public void setSignatureValidityInDays(Long signatureValidityInDays) {
     this.signatureValidityInDays = signatureValidityInDays;
+  }
+
+  public String getAupRemindersInDays() {
+    return aupRemindersInDays;
+  }
+
+  public void setAupRemindersInDays(String aupRemindersInDays) {
+    this.aupRemindersInDays = aupRemindersInDays;
   }
 
 

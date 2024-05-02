@@ -18,6 +18,9 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -26,25 +29,26 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import freemarker.template.Configuration;
-import freemarker.template.TemplateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-import freemarker.template.Template;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -67,7 +71,8 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final Configuration freeMarkerConfiguration;
 
   @Autowired
-  public TransientNotificationFactory(Configuration fm, NotificationProperties np, AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+  public TransientNotificationFactory(Configuration fm, NotificationProperties np,
+      AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
     this.freeMarkerConfiguration = fm;
     this.properties = np;
     this.adminNotificationDeliveryStrategy = ands;
@@ -199,7 +204,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     LOG.debug("Create group membership admin notification for request {}", groupRequest.getUuid());
     return createMessage("adminHandleGroupRequest.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
-        subject, groupManagerDeliveryStrategy.resolveGroupManagersEmailAddresses(groupRequest.getGroup()));
+        subject,
+        groupManagerDeliveryStrategy.resolveGroupManagersEmailAddresses(groupRequest.getGroup()));
   }
 
   @Override
@@ -249,6 +255,60 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
+  @Override
+  public IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup) {
+    String recipient = account.getUserInfo().getName();
+    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+
+    LocalDate now = LocalDate.now();
+    long signatureValidityInDays = aup.getSignatureValidityInDays();
+    LocalDate signatureTime = account.getAupSignature()
+      .getSignatureTime()
+      .toInstant()
+      .atZone(ZoneId.systemDefault())
+      .toLocalDate();
+    LocalDate signatureValidTime = signatureTime.plusDays(signatureValidityInDays);
+    long missingDays = ChronoUnit.DAYS.between(now, signatureValidTime);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("aupUrl", aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("missingDays", missingDays);
+
+    String subject = "AUP signature reminder";
+
+    IamEmailNotification notification = createMessage("signAupReminder.ftl", model,
+        IamNotificationType.AUP_REMINDER, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created reminder message for signing the account {} AUP. Signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAupSignatureExpMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("aupUrl", aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "AUP signature expiration";
+
+    IamEmailNotification notification = createMessage("aupExpirationMessage.ftl", model,
+        IamNotificationType.AUP_EXPIRATION, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created AUP expiration message for the account {}. AUP signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
@@ -265,8 +325,8 @@ public class TransientNotificationFactory implements NotificationFactory {
       message.setCreationTime(new Date());
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
       message.setReceivers(receiverAddress.stream()
-              .map(a -> IamNotificationReceiver.forAddress(message, a))
-              .collect(Collectors.toList()));
+        .map(a -> IamNotificationReceiver.forAddress(message, a))
+        .collect(Collectors.toList()));
 
       return message;
     } catch (IOException | TemplateException e) {

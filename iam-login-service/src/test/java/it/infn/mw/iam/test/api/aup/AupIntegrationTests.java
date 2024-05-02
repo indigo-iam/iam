@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -125,7 +125,9 @@ public class AupIntegrationTests extends AupTestSupport {
   @Test
   public void aupCreationRequiresAuthenticatedUser() throws JsonProcessingException, Exception {
     Date now = new Date();
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now);
+    String reminders = "1,15,30";
+    AupDTO aup =
+        new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
 
     mvc
       .perform(
@@ -138,7 +140,9 @@ public class AupIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "test", roles = {"USER"})
   public void aupCreationRequiresAdminPrivileges() throws JsonProcessingException, Exception {
     Date now = new Date();
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now);
+    String reminders = "1,15,30";
+    AupDTO aup =
+        new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, DEFAULT_AUP_DESC, -1L, now, now, reminders);
 
     mvc
       .perform(
@@ -228,7 +232,8 @@ public class AupIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupCreationRequiresSignatureValidityDays() throws JsonProcessingException, Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, null, null, null);
+    String reminders = "1,15,30";
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, null, null, null, reminders);
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -244,7 +249,8 @@ public class AupIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupCreationRequiresPositiveSignatureValidityDays()
       throws JsonProcessingException, Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, -1L, null, null);
+    String reminders = "1,15,30";
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, -1L, null, null, reminders);
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
@@ -253,6 +259,36 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("Invalid AUP: signatureValidityInDays must be >= 0"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresAupRemindersInDays() throws JsonProcessingException, Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, null);
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays is required"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresValidAupRemindersInDays()
+      throws JsonProcessingException, Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "30,15,7,1");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value(
+          "Invalid AUP: aupRemindersInDays must be a sequence of three comma-separated numbers"));
   }
 
   @Test
