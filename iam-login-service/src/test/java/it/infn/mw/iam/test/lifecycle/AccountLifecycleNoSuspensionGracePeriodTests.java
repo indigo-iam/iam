@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.lifecycle;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_TIMESTAMP_LABEL;
+import static it.infn.mw.iam.test.api.TestSupport.EXPECTED_ACCOUNT_NOT_FOUND;
+import static it.infn.mw.iam.test.api.TestSupport.TEST_USER_UUID;
 import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,11 +32,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -48,16 +49,16 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.lifecycle.cern.LifecycleTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    AccountLifecycleTests.TestConfig.class})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class,
+        AccountLifecycleNoSuspensionGracePeriodTests.TestConfig.class},
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=7",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
-        "lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=true"})
-public class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
+    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
+        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
+public class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
@@ -67,7 +68,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
       return Clock.fixed(NOW, ZoneId.systemDefault());
     }
   }
-
+  
   @Autowired
   private IamAccountRepository repo;
 
@@ -75,40 +76,13 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   private ExpiredAccountsHandler handler;
 
   @Test
-  public void testSuspensionGracePeriodWorks() {
+  public void testZeroDaysSuspensionGracePeriod() {
     IamAccount testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TestSupport.TEST_USER_UUID).orElseThrow(assertionError(TestSupport.EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
 
     testAccount.setEndTime(Date.from(FOUR_DAYS_AGO));
-    repo.save(testAccount);
-
-    handler.handleExpiredAccounts();
-
-    testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-
-    assertThat(testAccount.isActive(), is(true));
-
-    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
-
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
-
-    Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
-    assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(),
-        is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_SUSPENSION.name()));
-  }
-
-  @Test
-  public void testRemovalGracePeriodWorks() {
-    IamAccount testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-
-    assertThat(testAccount.isActive(), is(true));
-    testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
     repo.save(testAccount);
 
     handler.handleExpiredAccounts();
@@ -126,63 +100,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL.name()));
+        is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL.toString()));
   }
-
-  @Test
-  public void testAccountRemovalWorks() {
-    IamAccount testAccount =
-        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-
-    testAccount.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
-
-    repo.save(testAccount);
-
-    handler.handleExpiredAccounts();
-
-    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
-
-    assertThat(account.isPresent(), is(false));
-  }
-
-  @Test
-  public void testNoAccountsRemoved() {
-
-    long accountBefore = repo.count();
-
-    handler.handleExpiredAccounts();
-
-    long accountAfter = repo.count();
-
-    assertThat(accountBefore, is(accountAfter));
-  }
-
-  @Test
-  public void testMultiplePagesOfAccountsRemoved() {
-
-    long accountBefore = repo.count();
-
-    Page<IamAccount> accountsPage = repo.findAll(PageRequest.of(0, 20));
-
-    long touchedAccounts = 0;
-
-    if (accountsPage.hasContent()) {
-      for (IamAccount a : accountsPage.getContent()) {
-        a.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
-        repo.save(a);
-        touchedAccounts++;
-      }
-    }
-
-    assertThat(touchedAccounts, is(20L));
-
-    handler.handleExpiredAccounts();
-
-    long accountAfter = repo.count();
-
-    assertThat(accountAfter, is(accountBefore - 20));
-  }
-
-
 
 }
