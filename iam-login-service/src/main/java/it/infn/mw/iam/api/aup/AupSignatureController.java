@@ -69,7 +69,6 @@ public class AupSignatureController {
   private final IamAupRepository aupRepo;
   private final TimeProvider timeProvider;
   private final ApplicationEventPublisher eventPublisher;
-
   public AupSignatureController(AupSignatureConverter conv, AccountUtils utils,
       IamAupSignatureRepository signatureRepo, IamAupRepository aupRepo, TimeProvider timeProvider,
       ApplicationEventPublisher publisher) {

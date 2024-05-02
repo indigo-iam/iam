@@ -73,7 +73,8 @@
         self.reset = function() {
             self.aupVal = {
                 url: self.aup.url,
-                signatureValidityInDays: self.aup.signatureValidityInDays
+                signatureValidityInDays: self.aup.signatureValidityInDays,
+                aupRemindersInDays: self.aup.aupRemindersInDays
             };
         };
 
@@ -104,7 +105,8 @@
         self.reset = function() {
             self.aupVal = {
                 url: "",
-                signatureValidityInDays: 0
+                signatureValidityInDays: 0,
+                aupRemindersInDays: "30,15,1"
             };
         };
 

@@ -178,6 +178,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     aup.setUrl("http://default-aup.org/");
     aup.setDescription("AUP description");
     aup.setSignatureValidityInDays(0L);
+    aup.setAupRemindersInDays("30,15,1");
 
     aupRepo.save(aup);
 
