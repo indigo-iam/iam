@@ -53,12 +53,12 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class,
-        AccountLifecycleTestsNoSuspensionGracePeriod.TestConfig.class},
+        AccountLifecycleNoSuspensionGracePeriodTests.TestConfig.class},
     webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
         "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
-public class AccountLifecycleTestsNoSuspensionGracePeriod implements LifecycleTestSupport {
+public class AccountLifecycleNoSuspensionGracePeriodTests implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {
