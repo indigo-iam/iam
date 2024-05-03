@@ -57,6 +57,95 @@
         };
     }
 
+    function CertLinkRequest($uibModalInstance, CertLinkRequestsService, toaster, $sanitize, user) {
+
+        var self = this;
+
+        self.user = user;
+        self.enabled = true;
+        self.certReq = {};
+        self.inputMode = 0;
+        self.error = undefined;
+
+        self.canSubmit = canSubmit;
+        self.cancel = cancel;
+        self.submit = submit;
+        self.reset = reset;
+        self.certLabelValid = certLabelValid;
+
+        // TODO: show CAs as a dropdown to select the isssuer
+        // self.certificationAuthorities = certificationAuthorities;
+
+        function canSubmit() {
+            return self.certReq.notes && self.enabled;
+        }
+
+        function handleSuccess(res) {
+            self.enabled = true;
+            $uibModalInstance.close("Request submitted");
+        }
+
+        function handleError(err) {
+            self.enabled = true;
+            var msg;
+
+            if (err.data) {
+                msg = err.data.error;
+            } else {
+                msg = err.statusText;
+            }
+
+            toaster.pop({
+                type: 'error',
+                body: msg
+            });
+
+            $uibModalInstance.dismiss(msg);
+        }
+
+        function cancel() {
+            $uibModalInstance.dismiss('Dismissed');
+        }
+
+        function submit() {
+            self.error = undefined;
+            self.enabled = false;
+
+            const req = {
+                notes: $sanitize(self.certReq.note),
+                label: self.certReq.label,
+            }
+            if (self.inputMode == 0) {
+                req.pemEncodedCertificate = self.certReq.pemEncodedCertificate;
+            } else if (self.inputMode == 1) {
+                req.subject = self.certReq.subject;
+                req.issuer = self.certReq.issuer;
+            }
+
+            console.log('Submitting certificate request', req);
+            CertLinkRequestsService.submit(req)
+                .then(handleSuccess)
+                .catch(handleError);
+        }
+
+        function reset() {
+            self.certReq = {
+                label: '',
+                pemEncodedCertificate: '',
+                subject: '',
+                issuer: '',
+                notes: ''
+            };
+            self.error = undefined;
+            self.inputMode = 0;
+        }
+
+        function certLabelValid() {
+            return $scope.certLabel.$dirty && $scope.certLabel.$valid;
+        }
+
+    }
+
     function PendingCertLinkRequestsController(Utils, CertLinkRequestsService, toaster, $uibModal) {
         var self = this;
 
@@ -64,6 +153,7 @@
 
         self.$onInit = $onInit;
         self.abortRequest = abortRequest;
+        self.openRequestCertLinkDialog = openRequestCertLinkDialog;
 
         function $onInit() {
             self.voAdmin = Utils.isAdmin();
@@ -96,6 +186,27 @@
                 });
             }).catch(function (r) {
                 loadCertLinkRequests();
+            });
+        }
+
+        function openRequestCertLinkDialog() {
+            var modalInstance = $uibModal.open({
+                templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509-requests/cert-link.dialog.html',
+                controller: CertLinkRequest,
+                controllerAs: '$ctrl',
+                resolve: {
+                    user: function () {
+                        return self.user;
+                    },
+                }
+            });
+            console.log('modalInstance', modalInstance);
+
+            modalInstance.result.then(function (r) {
+                toaster.pop({
+                    type: 'success',
+                    body: `Certificate linking request submitted.`
+                });
             });
         }
     }
