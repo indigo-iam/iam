@@ -112,11 +112,11 @@ public class IamSecurityExpressionMethods {
     if (authentication instanceof OAuth2Authentication) {
       OAuth2Authentication oauth = (OAuth2Authentication) authentication;
       boolean result = scopeResolver.resolveScope(oauth).stream().anyMatch(s -> s.equals(scope));
-      if (!result) {
-        Throwable failure = new InsufficientScopeException("Insufficient scope for this resource",
-            Sets.newHashSet(scope));
-        throw new AccessDeniedException(failure.getMessage(), failure);
-      }
+//      if (!result) {
+//        Throwable failure = new InsufficientScopeException("Insufficient scope for this resource",
+//            Sets.newHashSet(scope));
+//        throw new AccessDeniedException(failure.getMessage(), failure);
+//      }
       return result;
     } else
       return false;

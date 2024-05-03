@@ -88,5 +88,15 @@ public class ScimMeEndpointTests {
       .andExpect(jsonPath("$.detail", equalTo("No user linked to the current OAuth token")));
   }
 
+  @Test
+  @WithMockOAuthUser(user = "test", scopes = {"opeind", "profile"}, authorities = {"ROLE_USER"})
+  public void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
+    //@formatter:off
+    mvc.perform(get(ME_ENDPOINT)
+        .contentType(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk());
+    //@formatter:on
+  }
+
 
 }

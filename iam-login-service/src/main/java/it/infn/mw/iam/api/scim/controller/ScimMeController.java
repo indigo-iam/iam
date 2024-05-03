@@ -126,7 +126,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.eventPublisher = publisher;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or hasRole('USER')")
+  @PreAuthorize("#iam.hasScope('scim:read') or hasRole('ROLE_USER')")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser whoami() {
 
