@@ -15,37 +15,34 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import java.util.Date;
-import java.util.Set;
+import java.text.ParseException;
+import java.util.Map;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 
 public abstract class TokenEvent extends IamAuditApplicationEvent {
   private static final long serialVersionUID = 1L;
-  private final Date expiration;
-  private final String clientId;
-  private final Set<String> scopes;
+  private Map<String, Object> body;
+
+  public static final Logger LOG = LoggerFactory.getLogger(TokenEvent.class);
 
   public TokenEvent(Object source, OAuth2AccessTokenEntity token, String message) {
     super(IamEventCategory.TOKEN, source, message);
-    this.expiration = token.getExpiration();
-    this.clientId = token.getClient().getClientId();
-    this.scopes = token.getScope();
+    try {
+      this.body = token.getJwt().getJWTClaimsSet().getClaims();
+    } catch (ParseException e) {
+      LOG.error(e.getMessage(), e);
+    }
+
   }
 
-  public Date getExpiration() {
-    return expiration;
+  public Map<String, Object> getBody() {
+    return body;
   }
-
-  public String getClientId() {
-    return clientId;
-  }
-
-  public Set<String> getScopes() {
-    return scopes;
-  }
-
 
 }
