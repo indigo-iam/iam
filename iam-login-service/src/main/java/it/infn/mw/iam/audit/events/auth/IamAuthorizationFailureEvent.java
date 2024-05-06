@@ -20,6 +20,7 @@ import org.springframework.security.access.event.AuthorizationFailureEvent;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 import it.infn.mw.iam.audit.utils.IamAuthorizationFailureEventSerializer;
 
 public class IamAuthorizationFailureEvent extends IamAuditApplicationEvent {

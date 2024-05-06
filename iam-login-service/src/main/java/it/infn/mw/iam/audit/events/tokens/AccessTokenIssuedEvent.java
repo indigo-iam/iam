@@ -17,13 +17,22 @@ package it.infn.mw.iam.audit.events.tokens;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 
+import com.nimbusds.jose.JWSHeader;
+
 
 public class AccessTokenIssuedEvent extends TokenEvent {
 
   private static final long serialVersionUID = 1L;
+  private final HeaderDTO header = new HeaderDTO();
 
   public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token) {
     super(source, token, "Access token issued");
+    this.header.setAlg(token.getJwt().getHeader().getAlgorithm().getName());
+    this.header.setKid(String.valueOf(((JWSHeader) token.getJwt().getHeader()).getKeyID()));
+  }
+
+  public HeaderDTO getHeader() {
+    return header;
   }
 
 }
