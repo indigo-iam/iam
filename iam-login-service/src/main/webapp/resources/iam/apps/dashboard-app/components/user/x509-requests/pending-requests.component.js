@@ -57,7 +57,7 @@
         };
     }
 
-    function CertLinkRequest($uibModalInstance, CertLinkRequestsService, toaster, $sanitize, user) {
+    function CertLinkRequest($uibModalInstance, CertLinkRequestsService, toaster, $sanitize, user, certificationAuthorities) {
 
         var self = this;
 
@@ -72,9 +72,7 @@
         self.submit = submit;
         self.reset = reset;
         self.certLabelValid = certLabelValid;
-
-        // TODO: show CAs as a dropdown to select the isssuer
-        // self.certificationAuthorities = certificationAuthorities;
+        self.certificationAuthorities = certificationAuthorities;
 
         function canSubmit() {
             return self.certReq.notes && self.enabled;
@@ -195,9 +193,8 @@
                 controller: CertLinkRequest,
                 controllerAs: '$ctrl',
                 resolve: {
-                    user: function () {
-                        return self.user;
-                    },
+                    user: () => self.user,
+                    certificationAuthorities: () => ['CA1', 'CA2']
                 }
             });
             console.log('modalInstance', modalInstance);

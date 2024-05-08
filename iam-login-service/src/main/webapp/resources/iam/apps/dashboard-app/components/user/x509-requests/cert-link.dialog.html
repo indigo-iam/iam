@@ -81,8 +81,13 @@
         <div class="form-group" ng-class="{'has-error': addCert.issuer.$dirty && !addCert.issuer.$valid}"
             ng-show="$ctrl.inputMode == 1">
             <label>Issuer</label>
-            <input name="issuer" class="form-control" type="text" placeholder="Certificate issuer..."
-                ng-model="$ctrl.certVal.issuerDn" ng-required="$ctrl.inputMode == 1">
+            <ui-select ng-model="$ctrl.certVal.issuerDn" sortable="true" close-on-select="true">
+                <ui-select-match allow-clear="true" placeholder="Certificate issuer...">{{$ctrl.certVal.issuerDn}}</ui-select-match>
+                <ui-select-choices repeat="ca in $ctrl.certificationAuthorities">
+                    <small> {{ ca }} </small>
+                </ui-select-choices>
+                <ui-select-no-choice> No certification authorities available</ui-select-no-choice>
+            </ui-select>
             <span class="help-block" ng-if="addCert.issuer.$dirty && addCert.issuer.$error.required">
                 Please provide the issuer of the certificate
             </span>
@@ -97,13 +102,11 @@
 </div>
 
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm"
-        ng-disabled="!$ctrl.certVal.label || 
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.certVal.label || 
                      $ctrl.inputMode === undefined || 
                      ($ctrl.inputMode == 0 && !$ctrl.certVal.pemEncodedCertificate) || 
                      ($ctrl.inputMode == 1 && !($ctrl.certVal.subjectDn && $ctrl.certVal.issuerDn)) || 
-                     !$ctrl.enabled"
-        ng-click="$ctrl.submit()">Submit request</button>
+                     !$ctrl.enabled" ng-click="$ctrl.submit()">Submit request</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>
 
