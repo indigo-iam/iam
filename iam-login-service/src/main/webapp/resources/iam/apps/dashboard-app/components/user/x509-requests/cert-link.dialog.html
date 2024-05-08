@@ -29,7 +29,7 @@
     <form name="addCert">
         <div class="form-group" ng-class="{'has-error': addCert.label.$dirty && !addCert.label.$valid }">
             <label>Label</label> <input name="label" class="form-control" type="text" placeholder="Label..."
-                ng-model="$ctrl.certVal.label" required="true" ng-minlength="2" ng-maxlength="36">
+                ng-model="$ctrl.certReq.label" required="true" ng-minlength="2" ng-maxlength="36">
             <span class="help-block" ng-if="addCert.label.$dirty && addCert.label.$error.required">
                 Please provide a label
             </span>
@@ -45,21 +45,21 @@
             <label>Choose how you want to add the certificate</label>
             <div class="radio">
                 <label>
-                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value=0 ng-checked="true"> From PEM content
+                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="pem" ng-checked="true"> From PEM content
                 </label>
             </div>
             <div class="radio">
                 <label>
-                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value=1> Add subject and issuer
+                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="dn"> Add subject and issuer
                 </label>
             </div>
         </div>
 
         <div class="form-group" ng-class="{'has-error': $ctrl.error || addCert.cert.$dirty && !addCert.cert.$valid}"
-            ng-show="$ctrl.inputMode == 0">
+            ng-show="$ctrl.inputMode == 'pem'">
             <label>Certificate</label>
             <textarea class="form-control" name="cert" type="text" placeholder="Insert PEM-encoded certificate here..."
-                ng-model="$ctrl.certVal.pemEncodedCertificate" ng-required="$ctrl.inputMode == 0"></textarea>
+                ng-model="$ctrl.certReq.pemEncodedCertificate" ng-required="$ctrl.inputMode == 'dn'"></textarea>
             <span class="help-block" ng-if="$ctrl.error">
                 {{ $ctrl.error.data.detail }}
             </span>
@@ -69,20 +69,20 @@
         </div>
 
         <div class="form-group" ng-class="{'has-error': addCert.subject.$dirty && !addCert.subject.$valid}"
-            ng-show="$ctrl.inputMode == 1">
+            ng-show="$ctrl.inputMode == 'dn'">
             <label>Subject</label>
             <input name="subject" class="form-control" type="text" placeholder="Certificate subject..."
-                ng-model="$ctrl.certVal.subjectDn" ng-required="$ctrl.inputMode == 1">
+                ng-model="$ctrl.certReq.subjectDn" ng-required="$ctrl.inputMode == 'dn'">
             <span class="help-block" ng-if="addCert.subject.$dirty && addCert.subject.$error.required">
                 Please provide the subject of the certificate
             </span>
         </div>
 
         <div class="form-group" ng-class="{'has-error': addCert.issuer.$dirty && !addCert.issuer.$valid}"
-            ng-show="$ctrl.inputMode == 1">
+            ng-show="$ctrl.inputMode == 'dn'">
             <label>Issuer</label>
-            <ui-select ng-model="$ctrl.certVal.issuerDn" sortable="true" close-on-select="true">
-                <ui-select-match allow-clear="true" placeholder="Certificate issuer...">{{$ctrl.certVal.issuerDn}}</ui-select-match>
+            <ui-select ng-model="$ctrl.certReq.issuerDn" sortable="true" close-on-select="true" ng-required="$ctrl.inputMode == 'dn'">
+                <ui-select-match allow-clear="true" placeholder="Certificate issuer...">{{$ctrl.certReq.issuerDn}}</ui-select-match>
                 <ui-select-choices repeat="ca in $ctrl.certificationAuthorities">
                     <small> {{ ca }} </small>
                 </ui-select-choices>
@@ -96,16 +96,16 @@
         <div class="form-group">
             <label>Optional request note</label>
             <textarea name="issuer" class="form-control" type="text" placeholder="Send a note to the administrator..."
-                ng-model="$ctrl.certVal.notes" ng-required=false></textarea>
+                ng-model="$ctrl.certReq.notes" ng-required=false></textarea>
         </div>
     </form>
 </div>
 
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.certVal.label || 
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.certReq.label || 
                      $ctrl.inputMode === undefined || 
-                     ($ctrl.inputMode == 0 && !$ctrl.certVal.pemEncodedCertificate) || 
-                     ($ctrl.inputMode == 1 && !($ctrl.certVal.subjectDn && $ctrl.certVal.issuerDn)) || 
+                     ($ctrl.inputMode == 'pem' && !$ctrl.certReq.pemEncodedCertificate) || 
+                     ($ctrl.inputMode == 'dn' && !($ctrl.certReq.subjectDn && $ctrl.certReq.issuerDn)) || 
                      !$ctrl.enabled" ng-click="$ctrl.submit()">Submit request</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>

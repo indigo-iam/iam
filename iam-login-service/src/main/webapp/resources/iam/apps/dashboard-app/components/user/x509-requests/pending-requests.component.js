@@ -64,7 +64,7 @@
         self.user = user;
         self.enabled = true;
         self.certReq = {};
-        self.inputMode = 0;
+        self.inputMode = "pem";
         self.error = undefined;
 
         self.canSubmit = canSubmit;
@@ -113,9 +113,9 @@
                 notes: $sanitize(self.certReq.note),
                 label: self.certReq.label,
             }
-            if (self.inputMode == 0) {
+            if (self.inputMode == "pem") {
                 req.pemEncodedCertificate = self.certReq.pemEncodedCertificate;
-            } else if (self.inputMode == 1) {
+            } else if (self.inputMode == "dn") {
                 req.subject = self.certReq.subject;
                 req.issuer = self.certReq.issuer;
             }
@@ -135,7 +135,7 @@
                 notes: ''
             };
             self.error = undefined;
-            self.inputMode = 0;
+            self.inputMode = "pem";
         }
 
         function certLabelValid() {
