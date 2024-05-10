@@ -296,14 +296,29 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void clientStatusUpdateWorks() throws Exception {
+  public void setClientEnableWorks() throws Exception {
 
    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/status", "client")
-    .content("{\"status\": false, \"userId\": userId}")
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client")
+    ).andExpect(OK);
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void setClientDisableWorks() throws Exception {
+
+   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client")
     ).andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
