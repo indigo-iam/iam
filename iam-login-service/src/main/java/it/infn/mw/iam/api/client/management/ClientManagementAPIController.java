@@ -44,9 +44,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
@@ -56,6 +55,7 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @RequestMapping(ClientManagementAPIController.ENDPOINT)
@@ -64,9 +64,11 @@ public class ClientManagementAPIController {
   public static final String ENDPOINT = "/iam/api/clients";
 
   private final ClientManagementService managementService;
+  private final AccountUtils accountUtils;
 
-  public ClientManagementAPIController(ClientManagementService managementService) {
+  public ClientManagementAPIController(ClientManagementService managementService, AccountUtils accountUtils) {
     this.managementService = managementService;
+    this.accountUtils = accountUtils;
   }
 
   @PostMapping
@@ -143,14 +145,18 @@ public class ClientManagementAPIController {
     return managementService.updateClient(clientId, client);
   }
 
-  @PatchMapping("/{clientId}/status")
+  @PatchMapping("/{clientId}/enable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void updateClientStatus(@PathVariable String clientId,
-      @RequestBody String body) {  
-    JsonObject jsonObject = JsonParser.parseString(body).getAsJsonObject();
-    boolean status = jsonObject.get("status").getAsBoolean();
-    String userId = jsonObject.get("userId").getAsString();      
-    managementService.updateClientStatus(clientId, status, userId);
+  public void enableClient(@PathVariable String clientId) {   
+    Optional<IamAccount> accpunt = accountUtils.getAuthenticatedUserAccount();
+    accpunt.ifPresent(a -> managementService.updateClientStatus(clientId, true, a.getUuid()));
+  }
+
+  @PatchMapping("/{clientId}/disable")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void disableClient(@PathVariable String clientId) {
+    Optional<IamAccount> accpunt = accountUtils.getAuthenticatedUserAccount();     
+    accpunt.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
   }
 
   @PostMapping("/{clientId}/secret")
