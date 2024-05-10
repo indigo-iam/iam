@@ -51,7 +51,7 @@
         function findAccountByUuid(accountUuid) {
             var url = "/iam/account/find/byuuid/" + accountUuid;
             return $http.get(url).then(function (result) {
-                return result.data;
+                return result.data.Resources[0];
             }).catch(function (error) {
                 console.error("Error loading account details: ", error);
                 return $q.reject(error);
