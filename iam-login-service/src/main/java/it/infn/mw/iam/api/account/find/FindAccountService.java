@@ -15,13 +15,10 @@
  */
 package it.infn.mw.iam.api.account.find;
 
-import java.util.Optional;
-
 import org.springframework.data.domain.Pageable;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface FindAccountService {
 
@@ -49,5 +46,5 @@ public interface FindAccountService {
   ScimListResponse<ScimUser> findAccountNotInGroupWithFilter(String groupUuid, String filter,
       Pageable pageable);
       
-  Optional<IamAccount> findAccountByUuid(String uuid);
+  ScimListResponse<ScimUser> findAccountByUuid(String uuid);
 }

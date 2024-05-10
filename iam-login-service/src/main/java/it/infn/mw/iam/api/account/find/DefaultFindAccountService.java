@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.account.find;
 
 import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
+import static it.infn.mw.iam.api.utils.FindUtils.responseFromOptional;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -28,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
-import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -64,18 +64,13 @@ public class DefaultFindAccountService implements FindAccountService {
   @Override
   public ScimListResponse<ScimUser> findAccountByEmail(String emailAddress) {
     Optional<IamAccount> account = repo.findByEmail(emailAddress);
-
-    ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
-    account.ifPresent(a -> builder.singleResource(converter.dtoFromEntity(a)));
-    return builder.build();
+    return responseFromOptional(account, converter);
   }
 
   @Override
   public ScimListResponse<ScimUser> findAccountByUsername(String username) {
     Optional<IamAccount> account = repo.findByUsername(username);
-    ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
-    account.ifPresent(a -> builder.singleResource(converter.dtoFromEntity(a)));
-    return builder.build();
+    return responseFromOptional(account, converter);
   }
 
   @Override
@@ -114,9 +109,7 @@ public class DefaultFindAccountService implements FindAccountService {
   @Override
   public ScimListResponse<ScimUser> findAccountByCertificateSubject(String certSubject) {
     Optional<IamAccount> account = repo.findByCertificateSubject(certSubject);
-    ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
-    account.ifPresent(a -> builder.singleResource(converter.dtoFromEntity(a)));
-    return builder.build();
+    return responseFromOptional(account, converter);
   }
 
   @Override
@@ -143,7 +136,8 @@ public class DefaultFindAccountService implements FindAccountService {
     return responseFromPage(results, converter, pageable);
   }
 
-  public Optional<IamAccount> findAccountByUuid(String uuid) {
-    return repo.findByUuid(uuid);
+  public ScimListResponse<ScimUser> findAccountByUuid(String uuid) {
+    Optional<IamAccount> account = repo.findByUuid(uuid);
+    return responseFromOptional(account, converter);
   }
 }
