@@ -26,11 +26,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.emptyIterable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.function.Supplier;
 
@@ -43,7 +40,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -305,19 +301,17 @@ public class FindAccountIntegrationTests extends TestSupport {
 
     mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
       .andExpect(OK)
-      .andExpect(jsonPath("$.id", is(testAccount.getId()), Long.class))
-      .andExpect(jsonPath("$.accountUuid", is(testAccount.getUuid())))
-      .andExpect(jsonPath("$.username", is(testAccount.getUsername())))
-      .andExpect(jsonPath("$.active", is(testAccount.isActive())));
+      .andExpect(jsonPath("$.Resources[0].id", is(testAccount.getUuid())))
+      .andExpect(jsonPath("$.Resources[0].userName", is(testAccount.getUsername())))
+      .andExpect(jsonPath("$.Resources[0].active", is(testAccount.isActive())));
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void findByUUIDThorowsException() throws Exception {
+  public void totalResultDoesNotExistForUnknownUUID() throws Exception {
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
-       .andExpect(status().isNotFound())
-       .andExpect(result -> assertTrue(result.getResolvedException() instanceof NoSuchAccountError))
-       .andExpect(result -> assertEquals("Account not found for id 'unknown_uuid'", result.getResolvedException().getMessage()));
+       .andExpect(OK)
+       .andExpect(jsonPath("$.totalResults").doesNotExist())
+       .andExpect(jsonPath("$.Resources", emptyIterable()));
   }
-
 }

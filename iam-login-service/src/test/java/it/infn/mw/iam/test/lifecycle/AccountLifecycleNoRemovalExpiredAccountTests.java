@@ -17,14 +17,10 @@ package it.infn.mw.iam.test.lifecycle;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_TIMESTAMP_LABEL;
-import static it.infn.mw.iam.test.api.TestSupport.EXPECTED_ACCOUNT_NOT_FOUND;
-import static it.infn.mw.iam.test.api.TestSupport.TEST_USER_UUID;
 import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.time.Clock;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
@@ -32,10 +28,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -51,38 +43,26 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class,
-        AccountLifecycleTestsNoSuspensionGracePeriod.TestConfig.class},
-    webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
+    AccountLifecycleTests.TestConfig.class})
 @TestPropertySource(
-    properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
-public class AccountLifecycleTestsNoSuspensionGracePeriod implements LifecycleTestSupport {
+    properties = {"lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=false"})
+public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport implements LifecycleTestSupport {
 
-  @TestConfiguration
-  public static class TestConfig {
-    @Bean
-    @Primary
-    Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
-    }
-  }
-  
   @Autowired
   private IamAccountRepository repo;
 
   @Autowired
   private ExpiredAccountsHandler handler;
-
+  
+  
   @Test
-  public void testZeroDaysSuspensionGracePeriod() {
+  public void testSuspendedLabelWorks() {
     IamAccount testAccount =
-        repo.findByUuid(TestSupport.TEST_USER_UUID).orElseThrow(assertionError(TestSupport.EXPECTED_ACCOUNT_NOT_FOUND));
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
-
-    testAccount.setEndTime(Date.from(FOUR_DAYS_AGO));
+    testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
     repo.save(testAccount);
 
     handler.handleExpiredAccounts();
@@ -100,7 +80,37 @@ public class AccountLifecycleTestsNoSuspensionGracePeriod implements LifecycleTe
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL.toString()));
+        is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
+  }
+  
+  @Test
+  public void testNoRemovalWorks() {
+    IamAccount testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(true));
+    testAccount.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
+    repo.save(testAccount);
+
+    handler.handleExpiredAccounts();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+
+    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
+
+    assertThat(timestampLabel.isPresent(), is(true));
+    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
+
+    Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(),
+        is(ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED.name()));
+
+    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
+    assertThat(account.isPresent(), is(true));
   }
 
 }

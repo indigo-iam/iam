@@ -135,7 +135,7 @@
 
         function getClientStatusMessage(){
             FindService.findAccountByUuid(self.clientVal.status_changed_by).then(function(res){
-                self.clientStatusMessage = "Suspended by " + res.username + " on " + getFormatedDate(self.clientVal.status_changed_on);                                            
+                self.clientStatusMessage = "Suspended by " + res.userName + " on " + getFormatedDate(self.clientVal.status_changed_on);                                            
             }).catch(function (res) {
                 console.debug("Error retrieving user account!", res);
             });           

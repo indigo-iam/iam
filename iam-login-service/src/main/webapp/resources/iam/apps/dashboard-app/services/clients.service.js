@@ -45,7 +45,8 @@
             removeClientOwner: removeClientOwner,
             newClient: newClient,
             getClientList: getClientList,
-            setClientActiveStatus: setClientActiveStatus
+            enableClient: enableClient,
+            disableClient: disableClient
         };
 
         return service;
@@ -177,8 +178,16 @@
             return newClient;
         }
 
-        function setClientActiveStatus(clientId, isActive, userId){
-            return $http.patch(endpoint(clientId) + "/status", "{\"status\": "+ isActive + ",\"userId\":" + userId + "}", defaultRequestConfig).then(function (res) {
+        function enableClient(clientId){
+            return $http.patch(endpoint(clientId) + "/enable").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+        }
+
+        function disableClient(clientId){
+            return $http.patch(endpoint(clientId) + "/disable").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);

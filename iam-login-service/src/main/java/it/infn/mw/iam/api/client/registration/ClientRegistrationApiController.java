@@ -120,7 +120,7 @@ public class ClientRegistrationApiController {
     return ErrorDTO.fromString(ex.getMessage());
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ResponseStatus(value = HttpStatus.FORBIDDEN)
   @ExceptionHandler(ClientSuspended.class)
   public ErrorDTO clientSuspended(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
