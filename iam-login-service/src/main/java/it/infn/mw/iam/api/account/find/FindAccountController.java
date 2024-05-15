@@ -20,27 +20,17 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationErro
 import static java.util.Objects.isNull;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.nimbusds.jose.shaded.json.JSONObject;
-
-import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
-import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
