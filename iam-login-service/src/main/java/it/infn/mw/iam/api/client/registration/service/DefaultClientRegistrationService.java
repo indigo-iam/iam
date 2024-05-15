@@ -321,6 +321,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return Optional.empty();
   }
 
+  private void checkUserUpdatingSuspendedClient(Authentication authentication, ClientDetailsEntity oldClient) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if(!oldClient.isActive()){
+      throw new ClientSuspended("Client " + oldClient.getClientId() + " is suspended!");
+    }
+  }
+
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
@@ -396,9 +405,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity oldClient =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
-    if(!oldClient.isActive()){
-      throw new ClientSuspended("Client " + clientId + " is suspended!");
-    }    
+
+    checkUserUpdatingSuspendedClient(authentication, oldClient);    
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
        
