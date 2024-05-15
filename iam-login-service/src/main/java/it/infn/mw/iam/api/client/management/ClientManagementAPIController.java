@@ -148,15 +148,15 @@ public class ClientManagementAPIController {
   @PatchMapping("/{clientId}/enable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void enableClient(@PathVariable String clientId) {   
-    Optional<IamAccount> accpunt = accountUtils.getAuthenticatedUserAccount();
-    accpunt.ifPresent(a -> managementService.updateClientStatus(clientId, true, a.getUuid()));
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
+    account.ifPresent(a -> managementService.updateClientStatus(clientId, true, a.getUuid()));
   }
 
   @PatchMapping("/{clientId}/disable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void disableClient(@PathVariable String clientId) {
-    Optional<IamAccount> accpunt = accountUtils.getAuthenticatedUserAccount();     
-    accpunt.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();     
+    account.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
   }
 
   @PostMapping("/{clientId}/secret")
