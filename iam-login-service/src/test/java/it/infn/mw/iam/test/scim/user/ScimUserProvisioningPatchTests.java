@@ -20,12 +20,12 @@ import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperatio
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.Base64;
@@ -45,7 +45,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -132,9 +131,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Test
   public void testAddReassignAndRemoveOidcId() throws Exception {
 
-    ScimIndigoUser indigoUser = ScimIndigoUser.builder().addOidcid(OIDCID_TEST).build();
-
-    ScimUser updateOidcId = ScimUser.builder().indigoUserInfo(indigoUser).build();
+    ScimUser updateOidcId = ScimUser.builder().addOidcId(OIDCID_TEST).build();
 
     scimUtils.patchUser(lennon.getId(), add, updateOidcId);
 
@@ -158,9 +155,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Test
   public void testAddReassignAndRemoveSamlId() throws Exception {
 
-    ScimUser updateSamlId = ScimUser.builder()
-      .indigoUserInfo(ScimIndigoUser.builder().addSamlId(SAMLID_TEST).build())
-      .build();
+    ScimUser updateSamlId = ScimUser.builder().addSamlId(SAMLID_TEST).build();
 
     scimUtils.patchUser(lennon.getId(), add, updateSamlId);
 
@@ -185,9 +180,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Test
   public void testRemoveNotExistingOidcId() throws Exception {
 
-    ScimUser updates = ScimUser.builder()
-      .indigoUserInfo(ScimIndigoUser.builder().addOidcid(OIDCID_TEST).build())
-      .build();
+    ScimUser updates = ScimUser.builder().addOidcId(OIDCID_TEST).build();
 
     scimUtils.patchUser(lennon.getId(), remove, updates);
   }
@@ -300,9 +293,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     scimUtils.patchUser(lennon.getId(), add, updateSshKey);
 
     updateSshKey = ScimUser.builder()
-      .indigoUserInfo(ScimIndigoUser.builder()
-        .addSshKey(ScimSshKey.builder().value(SSHKEY_TEST.getValue()).build())
-        .build())
+      .addSshKey(ScimSshKey.builder().value(SSHKEY_TEST.getValue()).build())
       .build();
 
     scimUtils.patchUser(lennon.getId(), remove, updateSshKey);

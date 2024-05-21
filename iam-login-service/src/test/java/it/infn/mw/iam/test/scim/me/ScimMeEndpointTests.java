@@ -30,6 +30,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
@@ -74,7 +75,11 @@ public class ScimMeEndpointTests {
     //@formatter:off
     mvc.perform(get(ME_ENDPOINT)
         .contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS).doesNotExist());
     //@formatter:on
   }
 
@@ -94,9 +99,11 @@ public class ScimMeEndpointTests {
     //@formatter:off
     mvc.perform(get(ME_ENDPOINT)
         .contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES).doesNotExist())
+      .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS).doesNotExist());
     //@formatter:on
   }
-
-
 }

@@ -15,27 +15,31 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
+import it.infn.mw.iam.api.scim.model.ScimAttribute;
+import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.config.scim.ScimProperties;
+import it.infn.mw.iam.config.scim.ScimProperties.AttributeDescriptor;
 import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
@@ -50,13 +54,18 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   private final SshKeyConverter sshKeyConverter;
   private final SamlIdConverter samlIdConverter;
   private final X509CertificateConverter x509CertificateIamConverter;
+  private final AttributeConverter attributeConverter;
+
+  private final AccountGroupManagerService groupManagerService;
+
+  private final IamAupRepository aupRepository;
 
   private final ScimProperties properties;
 
-  @Autowired
   public UserConverter(ScimProperties properties, ScimResourceLocationProvider rlp,
       AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
-      X509CertificateConverter x509Iamcc) {
+      X509CertificateConverter x509Iamcc, AttributeConverter attributeConverter,
+      AccountGroupManagerService groupManagerService, IamAupRepository aupRepository) {
 
     this.resourceLocationProvider = rlp;
     this.properties = properties;
@@ -65,6 +74,9 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     this.sshKeyConverter = sshc;
     this.samlIdConverter = samlc;
     this.x509CertificateIamConverter = x509Iamcc;
+    this.attributeConverter = attributeConverter;
+    this.groupManagerService = groupManagerService;
+    this.aupRepository = aupRepository;
   }
 
   @Override
@@ -83,6 +95,15 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     if (scimUser.getPassword() != null) {
 
       account.setPassword(scimUser.getPassword());
+    }
+
+    if (scimUser.hasAupSignature()) {
+
+      IamAupSignature aupSignature = new IamAupSignature();
+      aupSignature.setSignatureTime(scimUser.getIndigoUser().getAupSignatureTime());
+      aupSignature.setAccount(account);
+      aupSignature.setAup(aupRepository.findDefaultAup().get());
+      account.setAupSignature(aupSignature);
     }
 
     if (scimUser.hasOidcIds()) {
@@ -141,6 +162,12 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       });
     }
 
+    if (scimUser.hasAttributes()) {
+      scimUser.getIndigoUser().getAttributes().forEach(c -> {
+        account.getAttributes().add(attributeConverter.entityFromDto(c));
+      });
+    }
+
     IamUserInfo userInfo = new IamUserInfo();
 
     userInfo.setEmail(scimUser.getEmails().get(0).getValue());
@@ -165,23 +192,21 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   @Override
   public ScimUser dtoFromEntity(IamAccount entity) {
 
-    ScimMeta meta = getScimMeta(entity);
-    ScimName name = getScimName(entity);
-    ScimIndigoUser indigoUser = getScimIndigoUser(entity);
     ScimAddress address = getScimAddress(entity);
     ScimPhoto picture = getScimPhoto(entity);
 
-    ScimUser.Builder builder = new ScimUser.Builder(entity.getUsername()).id(entity.getUuid())
-      .meta(meta)
-      .name(name)
+    ScimUser.Builder builder = ScimUser.builder()
+      .userName(entity.getUsername())
+      .id(entity.getUuid())
+      .meta(getScimMeta(entity))
+      .name(getScimName(entity))
       .active(entity.isActive())
       .displayName(entity.getUsername())
       .locale(entity.getUserInfo().getLocale())
       .nickName(entity.getUserInfo().getNickname())
       .profileUrl(entity.getUserInfo().getProfile())
       .timezone(entity.getUserInfo().getZoneinfo())
-      .buildEmail(entity.getUserInfo().getEmail())
-      .indigoUserInfo(indigoUser);
+      .buildEmail(entity.getUserInfo().getEmail());
 
     if (address != null) {
 
@@ -194,6 +219,59 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     entity.getGroups().forEach(group -> builder.addGroupRef(getScimGroupRef(group.getGroup())));
+
+    entity.getOidcIds()
+      .forEach(oidcId -> builder.addOidcId(oidcIdConverter.dtoFromEntity(oidcId)));
+
+    entity.getSshKeys()
+      .forEach(sshKey -> builder.addSshKey(sshKeyConverter.dtoFromEntity(sshKey)));
+
+    entity.getSamlIds()
+      .forEach(samlId -> builder.addSamlId(samlIdConverter.dtoFromEntity(samlId)));
+
+    entity.getX509Certificates()
+      .forEach(cert -> builder.addX509Certificate(x509CertificateIamConverter.dtoFromEntity(cert)));
+
+    if (entity.getAupSignature() != null) {
+      builder.aupSignatureTime(entity.getAupSignature().getSignatureTime());
+    }
+
+    if (entity.getEndTime() != null) {
+      builder.endTime(entity.getEndTime());
+    }
+
+    for (LabelDescriptor ld : properties.getIncludeLabels()) {
+      entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
+        .ifPresent(el -> builder.addLabel(ScimLabel.builder()
+          .withPrefix(el.getPrefix())
+          .withName(el.getName())
+          .withVaule(el.getValue())
+          .build()));
+    }
+
+    for (AttributeDescriptor ad : properties.getIncludeAttributes()) {
+      entity.getAttributeByName(ad.getName())
+        .ifPresent(attribute -> builder.addAttribute(ScimAttribute.builder()
+          .withName(attribute.getName())
+          .withVaule(attribute.getValue())
+          .build()));
+    }
+
+    if (properties.isIncludeAuthorities()) {
+      entity.getAuthorities()
+        .forEach(authority -> builder
+          .addAuthority(ScimAuthority.builder().withAuthority(authority.getAuthority()).build()));
+    }
+
+    if (properties.isIncludeManagedGroups()) {
+      groupManagerService.getManagedGroupInfoForAccount(entity).getManagedGroups().forEach(mg -> {
+        builder.addManagedGroup(ScimGroupRef.builder()
+          .display(mg.getName())
+          .value(mg.getId())
+          .ref(resourceLocationProvider.groupLocation(mg.getId()))
+          .build());
+      });
+    }
 
     return builder.build();
   }
@@ -212,43 +290,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .givenName(entity.getUserInfo().getGivenName())
       .familyName(entity.getUserInfo().getFamilyName())
       .build();
-  }
-
-  private ScimIndigoUser getScimIndigoUser(IamAccount entity) {
-
-    ScimIndigoUser.Builder indigoUserBuilder = new ScimIndigoUser.Builder();
-
-    entity.getOidcIds()
-      .forEach(oidcId -> indigoUserBuilder.addOidcid(oidcIdConverter.dtoFromEntity(oidcId)));
-
-    entity.getSshKeys()
-      .forEach(sshKey -> indigoUserBuilder.addSshKey(sshKeyConverter.dtoFromEntity(sshKey)));
-
-    entity.getSamlIds()
-      .forEach(samlId -> indigoUserBuilder.addSamlId(samlIdConverter.dtoFromEntity(samlId)));
-
-    entity.getX509Certificates()
-      .forEach(cert -> indigoUserBuilder
-        .addCertificate(x509CertificateIamConverter.dtoFromEntity(cert)));
-
-    if (entity.getAupSignature() != null) {
-      indigoUserBuilder.aupSignatureTime(entity.getAupSignature().getSignatureTime());
-    }
-
-    for (LabelDescriptor ld : properties.getIncludeLabels()) {
-      entity.getLabelByPrefixAndName(ld.getPrefix(), ld.getName())
-        .ifPresent(el -> indigoUserBuilder.addLabel(ScimLabel.builder()
-          .withPrefix(el.getPrefix())
-          .withName(el.getName())
-          .withVaule(el.getValue())
-          .build()));
-    }
-
-    indigoUserBuilder.endTime(entity.getEndTime());
-
-    ScimIndigoUser indigoUser = indigoUserBuilder.build();
-
-    return indigoUser.isEmpty() ? null : indigoUser;
   }
 
   private ScimGroupRef getScimGroupRef(IamGroup group) {

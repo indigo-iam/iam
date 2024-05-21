@@ -33,6 +33,9 @@ public @interface WithMockOAuthUser {
 
   String[] scopes() default {};
 
+  /**
+   * The list of authorities (e.g. ROLE_USER, ROLE_ADMIN, etc.)
+   **/
   String[] authorities() default {};
 
   boolean externallyAuthenticated() default false;

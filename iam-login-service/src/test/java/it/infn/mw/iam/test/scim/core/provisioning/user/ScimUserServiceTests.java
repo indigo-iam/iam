@@ -15,18 +15,23 @@
  */
 package it.infn.mw.iam.test.scim.core.provisioning.user;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
+import it.infn.mw.iam.api.scim.model.ScimAttribute;
+import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimEmail;
+import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimPhoto;
@@ -42,7 +47,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.SshKeyUtils;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-@RunWith(SpringRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @IamNoMvcTest
 public class ScimUserServiceTests {
 
@@ -54,6 +59,13 @@ public class ScimUserServiceTests {
 
   @Autowired
   private PasswordEncoder passwordEncoder;
+
+  @Autowired
+  private ScimResourceLocationProvider resourceLocationProvider;
+
+  final String TESTUSER_ATTRIBUTE_NAME = "name";
+  final String TESTUSER_ATTRIBUTE_VALUE = "value";
+  final String PRODUCTION_GROUP_UUID = "c617d586-54e6-411d-8e38-64967798fa8a";
 
   final String TESTUSER_USERNAME = "testProvisioningUser";
   final String TESTUSER_PASSWORD = "password";
@@ -68,6 +80,26 @@ public class ScimUserServiceTests {
     .display("Personal Key")
     .value(SshKeyUtils.sshKeys.get(0).key)
     .build();
+  final ScimAttribute TESTUSER_ATTRIBUTE =
+      ScimAttribute.builder()
+        .withName(TESTUSER_ATTRIBUTE_NAME)
+        .withVaule(TESTUSER_ATTRIBUTE_VALUE)
+        .build();
+  final ScimAuthority TESTUSER_USER_AUTHORITY =
+      ScimAuthority.builder().withAuthority("ROLE_USER").build();
+  final ScimAuthority TESTUSER_ADMIN_AUTHORITY =
+      ScimAuthority.builder().withAuthority("ROLE_ADMIN").build();
+
+  private ScimGroupRef TESTUSER_GROUP_REF;
+
+  @Before
+  public void setup() {
+    TESTUSER_GROUP_REF = ScimGroupRef.builder()
+        .value(PRODUCTION_GROUP_UUID)
+        .display("Production")
+        .ref(resourceLocationProvider.groupLocation(PRODUCTION_GROUP_UUID))
+        .build();
+  }
 
   @Test
   public void createUserTest() {
@@ -82,6 +114,9 @@ public class ScimUserServiceTests {
       .addOidcId(TESTUSER_OIDCID)
       .addSamlId(TESTUSER_SAMLID)
       .addSshKey(TESTUSER_SSHKEY)
+      .addAttribute(TESTUSER_ATTRIBUTE)
+      .addAuthority(TESTUSER_ADMIN_AUTHORITY)
+      .addManagedGroup(TESTUSER_GROUP_REF)
       .build();
 
     userService.create(scimUser);
@@ -105,7 +140,6 @@ public class ScimUserServiceTests {
 
     assertThat(iamAccount.getUserInfo().getEmail(), equalTo(TESTUSER_EMAIL.getValue()));
 
-    
     IamOidcId oidcId = iamAccount.getOidcIds().iterator().next();
     assertThat(oidcId.getIssuer(), equalTo(TESTUSER_OIDCID.getIssuer()));
     assertThat(oidcId.getSubject(), equalTo(TESTUSER_OIDCID.getSubject()));
@@ -122,6 +156,12 @@ public class ScimUserServiceTests {
         equalTo(SshKeyUtils.sshKeys.get(0).fingerprintSHA256));
     assertThat(sshKey.getValue(), equalTo(TESTUSER_SSHKEY.getValue()));
     assertThat(sshKey.isPrimary(), equalTo(TESTUSER_SSHKEY.isPrimary()));
+
+    assertThat(iamAccount.getAttributeByName(TESTUSER_ATTRIBUTE_NAME).isPresent(), equalTo(true));
+    assertThat(iamAccount.getAttributeByName(TESTUSER_ATTRIBUTE_NAME).get().getName(),
+        equalTo(TESTUSER_ATTRIBUTE_NAME));
+    assertThat(iamAccount.getAttributeByName(TESTUSER_ATTRIBUTE_NAME).get().getValue(),
+        equalTo(TESTUSER_ATTRIBUTE_VALUE));
 
     userService.delete(iamAccount.getUuid());
   }

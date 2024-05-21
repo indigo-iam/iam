@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,6 @@ public class DefaultAccountAuthorityService
   final IamAccountRepository accountRepo;
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultAccountAuthorityService(IamAuthoritiesRepository authRepo,
       IamAccountRepository accountRepo) {
     this.authRepo = authRepo;

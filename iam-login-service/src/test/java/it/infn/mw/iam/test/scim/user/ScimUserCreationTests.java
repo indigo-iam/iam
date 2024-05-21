@@ -50,7 +50,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -230,9 +229,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     ScimUser user = ScimUser.builder("user_with_sshkey")
       .buildEmail("test_user@test.org")
       .buildName("User", "With ssh key Account")
-      .indigoUserInfo(ScimIndigoUser.builder()
-        .addSshKey(ScimSshKey.builder().value(SshKeyUtils.sshKeys.get(0).key).build())
-        .build())
+      .addSshKey(ScimSshKey.builder().value(SshKeyUtils.sshKeys.get(0).key).build())
       .active(true)
       .build();
 
