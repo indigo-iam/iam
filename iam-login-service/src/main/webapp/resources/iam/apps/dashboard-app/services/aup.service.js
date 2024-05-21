@@ -83,7 +83,13 @@
         }
 
         function resignAup() {
-            return $http.patch('/iam/aup/sign');
+            return $http.post('/iam/aup/signature/').catch(function(res) {
+                if (res.status == 404) {
+                    console.info("Account not found");
+                    return null;
+                }
+                return $q.reject(res);
+            });
         }
     }
 })();

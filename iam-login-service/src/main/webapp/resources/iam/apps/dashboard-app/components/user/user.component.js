@@ -16,30 +16,6 @@
 (function () {
     'use strict';
 
-    function ResignAupController($scope, $uibModalInstance, AupService, user, toaster) {
-        var self = this;
-        self.enabled = true;
-        self.user = user;
-
-        self.cancel = function() {
-            $uibModalInstance.close('Cancelled');
-        };
-
-        self.submit = function() {
-            self.error = undefined;
-            self.enabled = false;
-            AupService.resignAup()
-                .then(function(res) {
-                    $uibModalInstance.close('AUP signature re-signed succesfully');
-                    self.enabled = true;
-                }, function(res) {
-                    self.error = res.data.error;
-                    self.enabled = true;
-                    toaster.pop({ type: 'error', body: self.error});
-                });
-        };
-    }
-
     function UserController(
         $timeout, $cookies, $rootScope, $uibModal, ModalService, scimFactory,
         UserService, Utils, toaster) {
@@ -140,21 +116,6 @@
                 })
                 .catch(self.handleError);
         };
-
-        self.openSignAUPModal = function() {
-            var modalInstance = $uibModal.open({
-                templateUrl: '/resources/iam/apps/dashboard-app/templates/home/resignAup.html',
-                controller: ResignAupController,
-                controllerAs: '$ctrl',
-                resolve: {user: function() { return self.user; }}
-              });
-      
-            modalInstance.result.then(function(msg) {
-              toaster.pop({type: 'success', body: msg});
-            }, function () {
-                console.log('Re-sign AUP modal dismissed at: ' + new Date());
-            });
-          };
     }
 
 

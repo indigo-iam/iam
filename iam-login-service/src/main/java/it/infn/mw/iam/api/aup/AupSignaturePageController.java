@@ -29,27 +29,20 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.audit.events.aup.AupResignedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.IamAupSignatureNotFoundError;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 
 @Controller
@@ -134,34 +127,6 @@ public class AupSignaturePageController {
     }
 
     return new ModelAndView("redirect:/dashboard");
-  }
-
-  @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.PATCH, value = "/iam/aup/sign")
-  public void resignAup(HttpServletRequest request, HttpServletResponse response) {
-
-    Optional<IamAup> aup = repo.findDefaultAup();
-    IamAccount account = null;
-
-    if (aup.isPresent()) {
-      Date now = new Date(timeProvider.currentTimeMillis());
-      account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
-          () -> new IllegalStateException("No iam account found for authenticated user"));
-
-      IamAupSignature signature = signatureRepo.updateSignatureForAccount(account, now);
-
-      publisher.publishEvent(new AupResignedEvent(this, signature));
-    } else {
-      throw new IamAupSignatureNotFoundError(account);
-    }
-  }
-
-  @ResponseStatus(value = HttpStatus.NOT_FOUND)
-  @ExceptionHandler(IamAupSignatureNotFoundError.class)
-  @ResponseBody
-  @PreAuthorize("hasRole('USER')")
-  public ErrorDTO accountNotFoundError(HttpServletRequest req, Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
   }
 }
 

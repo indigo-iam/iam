@@ -21,21 +21,21 @@
   </h3>
 </div>
 <div class="modal-body">
-    <div ng-if="$ctrl.user.aupSignature.aup.text != null">
+    <div ng-if="resignModalCtrl.user.aupSignature.aup.text != null">
       <p id="sign-aup-subtitle">In order to proceed, you need to sign the Acceptable Usage Policy (AUP) for this
         organization:</p>
       <div class="form-group">
-        <div class="aup-text">{{ $ctrl.user.aupSignature.aup.text }}</div>
+        <div class="aup-text">{{ resignModalCtrl.user.aupSignature.aup.text }}</div>
       </div>
     </div>
-    <div ng-if="$ctrl.user.aupSignature.aup.url != null">
+    <div ng-if="resignModalCtrl.user.aupSignature.aup.url != null">
       <p id="sign-aup-subtitle">
         In order to proceed, you need to declare that you have read and that you accept the terms of this organization
-        <a href="$ctrl.user.aupSignature.aup.url" target="_blank" rel="noopener noreferrer">Acceptable Usage Policy (AUP).</a>
+        <a href="{{ resignModalCtrl.user.aupSignature.aup.url }}" target="_blank" rel="noopener noreferrer">Acceptable Usage Policy (AUP).</a>
       </p>
     </div>
     <div class="form-group sign-aup-btns">
-      <button id="sign-aup-btn" class="btn btn-success" type="button"  ng-click="$ctrl.submit()">I agree with the AUP terms</button>
-      <button id="sign-aup-btn-cancel" class="btn btn-danger" type="button" ng-click="$ctrl.cancel()">Cancel</button>
+      <button id="sign-aup-btn" class="btn btn-success" type="button"  ng-click="resignModalCtrl.submit()">I agree with the AUP terms</button>
+      <button id="sign-aup-btn-cancel" class="btn btn-danger" type="button" ng-click="resignModalCtrl.cancel()">Cancel</button>
     </div>
 </div>
