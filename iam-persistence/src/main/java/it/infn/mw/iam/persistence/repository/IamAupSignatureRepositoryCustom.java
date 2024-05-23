@@ -19,14 +19,15 @@ import java.util.Date;
 import java.util.Optional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 
 public interface IamAupSignatureRepositoryCustom {
   
-  Optional<IamAupSignature> findSignatureForAccount(IamAccount account);
+  Optional<IamAupSignature> findSignatureForAccount(IamAup aup, IamAccount account);
   
-  IamAupSignature createSignatureForAccount(IamAccount account, Date currentTime);
-  
-  IamAupSignature updateSignatureForAccount(IamAccount account, Date currentTime);
+  IamAupSignature createSignatureForAccount(IamAup aup, IamAccount account, Date currentTime);
+
+  void deleteSignatureForAccount(IamAup aup, IamAccount account);
 
 }
