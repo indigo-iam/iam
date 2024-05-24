@@ -44,7 +44,9 @@
             assignClientOwner: assignClientOwner,
             removeClientOwner: removeClientOwner,
             newClient: newClient,
-            getClientList: getClientList
+            getClientList: getClientList,
+            enableClient: enableClient,
+            disableClient: disableClient
         };
 
         return service;
@@ -174,6 +176,22 @@
                 contacts: [email],
             };
             return newClient;
+        }
+
+        function enableClient(clientId){
+            return $http.patch(endpoint(clientId) + "/enable").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+        }
+
+        function disableClient(clientId){
+            return $http.patch(endpoint(clientId) + "/disable").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
         }
     }
 })();

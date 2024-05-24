@@ -105,7 +105,7 @@ public class ClientConverter {
 
   public RegisteredClientDTO registeredClientDtoFromEntity(ClientDetailsEntity entity) {
     RegisteredClientDTO clientDTO = new RegisteredClientDTO();
-    
+
     clientDTO.setClientId(entity.getClientId());
     clientDTO.setClientSecret(entity.getClientSecret());
     clientDTO.setClientName(entity.getClientName());
@@ -164,6 +164,10 @@ public class ClientConverter {
     } else {
       clientDTO.setRequireAuthTime(false);
     }
+
+    clientDTO.setActive(entity.isActive());
+    clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
+    clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
 
     return clientDTO;
   }

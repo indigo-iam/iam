@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,9 @@ public class FindUtils {
     return builder.build();
   }
 
-
-
+  public static <D, E> ScimListResponse<D> responseFromOptional(Optional<E> account, Converter<D, E> converter) {
+    ScimListResponseBuilder<D> builder = ScimListResponse.builder();
+    account.ifPresent(a -> builder.singleResource(converter.dtoFromEntity(a)));
+    return builder.build();
+  }
 }

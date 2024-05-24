@@ -48,18 +48,27 @@
 							ng-repeat="client
                         in $ctrl.clients.Resources">
 							<div class="iam-detail col-xs-8 col-sm-8">
-								<a
+								<a ng-if="client.active"
 									ui-sref="myClient({id:
                                 client.client_id})">{{client.client_name}}</a>
+								<a ng-if="!client.active" style="cursor: not-allowed;">{{client.client_name}}</a>
 								<div class="text-muted">{{client.client_id}}</div>
+								<div class="label-danger label tool-tip" ng-mouseover="$ctrl.getClientStatusMessage(client)" 
+                                    style="vertical-align: text-top;" ng-if="!client.active">Suspended
+                                        <span class="tooltiptext">{{$ctrl.clientStatusMessage}}</span>
+                                </div>
 							</div>
 							<div class="iam-actions col-xs-4 col-sm-4 text-right">
-								<button class="btn btn-default btn-xs"
+								<button ng-if="client.active" class="btn btn-default btn-xs"
 									uib-tooltip="Edit client
                                 '{{client.client_name}}'"
 									ui-sref="myClient({id: client.client_id})">
 									<i class="fa
                             fa-pencil"></i>
+								</button>
+								<button ng-if="!client.active" class="btn btn-default btn-xs" 
+										style="cursor: not-allowed;">
+									<i class="fa fa-pencil"></i>
 								</button>
 								<button class="btn btn-danger btn-xs"
 									uib-tooltip="Delete client

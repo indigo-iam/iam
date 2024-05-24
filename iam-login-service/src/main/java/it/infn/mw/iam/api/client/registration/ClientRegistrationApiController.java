@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
+import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
@@ -116,6 +117,12 @@ public class ClientRegistrationApiController {
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoSuchClient.class)
   public ErrorDTO noSuchClient(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.FORBIDDEN)
+  @ExceptionHandler(ClientSuspended.class)
+  public ErrorDTO clientSuspended(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 

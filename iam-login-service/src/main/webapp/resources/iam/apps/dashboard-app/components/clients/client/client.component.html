@@ -17,11 +17,15 @@
 -->
 <div>
     <section class="content-header" ng-cloak>
-        <h1>
+        <h1 style="display: inline;">
             <i class="fa fa-rocket"></i>&nbsp;&nbsp; <span
-                ng-if="!$ctrl.newClient">{{$ctrl.clientVal.client_name}}</span>
+                ng-if="!$ctrl.newClient">{{$ctrl.clientVal.client_name}}</span>    
             <span ng-if="$ctrl.newClient">Create a new client</span>
         </h1>
+        <div class="label-danger label tool-tip" ng-mouseover="$ctrl.getClientStatusMessage()" 
+            style="vertical-align: text-top;" ng-if="!$ctrl.newClient && !$ctrl.clientVal.active">Suspended
+                <span class="tooltiptext">{{$ctrl.clientStatusMessage}}</span>
+        </div>
         <ol class="breadcrumb hidden-xs" ng-if="!$ctrl.newClient">
             <li><a ui-sref="clients" ui-sref-opts="{reload:true}"><i class="fa fa-rocket"></i> Clients</a> &gt;
                 {{$ctrl.client.client_name}}</li>
@@ -79,6 +83,7 @@
                     <button class="btn btn-success" ng-click="$ctrl.saveClient()">Save client</button>
                     <button class="btn btn-danger" ng-click="$ctrl.deleteClient()" ng-if="!$ctrl.newClient">Delete
                         client</button>
+					<client-status client="$ctrl.clientVal" ng-if="!$ctrl.newClient"></client-status>	
                     <button class="btn btn-default" ng-click="$ctrl.resetVal()" ng-if="!$ctrl.newClient">Reset</button>
                     <button class="btn btn-default" ng-click="$ctrl.cancel()">Cancel</button>
                 </div>
