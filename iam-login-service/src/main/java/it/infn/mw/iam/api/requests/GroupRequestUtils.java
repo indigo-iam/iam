@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.requests;
 
-import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
+import static it.infn.mw.iam.core.IamRequestStatus.PENDING;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +32,7 @@ import com.google.common.base.Strings;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.exception.GroupRequestValidationError;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAuthority;
@@ -48,7 +48,7 @@ public class GroupRequestUtils {
   private IamGroupRequestRepository groupRequestRepository;
 
   @Autowired
-  private IamAccountRepository accoutRepository;
+  private IamAccountRepository accountRepository;
 
   @Autowired
   private AccountUtils accountUtils;
@@ -71,7 +71,7 @@ public class GroupRequestUtils {
       .findByUsernameAndGroup(request.getUsername(), request.getGroupName());
     
     for (IamGroupRequest r: results) {
-      IamGroupRequestStatus status = r.getStatus();
+      IamRequestStatus status = r.getStatus();
       
       if (PENDING.equals(status)) {
         throw new GroupRequestValidationError(
@@ -93,7 +93,7 @@ public class GroupRequestUtils {
   }
 
   public void checkUserMembership(GroupRequestDto request) {
-    Optional<IamAccount> userAccount = accoutRepository.findByUsername(request.getUsername());
+    Optional<IamAccount> userAccount = accountRepository.findByUsername(request.getUsername());
     if (userAccount.isPresent()) {
       Optional<IamGroup> group = userAccount.get()
         .getGroups()

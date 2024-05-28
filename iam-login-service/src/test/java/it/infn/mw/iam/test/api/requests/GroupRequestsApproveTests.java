@@ -40,7 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -77,7 +77,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     // @formatter:off
     String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
@@ -165,7 +165,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))

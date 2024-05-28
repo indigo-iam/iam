@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.api.requests.service;
 
-import static it.infn.mw.iam.core.IamGroupRequestStatus.APPROVED;
-import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
-import static it.infn.mw.iam.core.IamGroupRequestStatus.REJECTED;
+import static it.infn.mw.iam.core.IamRequestStatus.APPROVED;
+import static it.infn.mw.iam.core.IamRequestStatus.PENDING;
+import static it.infn.mw.iam.core.IamRequestStatus.REJECTED;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -48,7 +48,7 @@ import it.infn.mw.iam.audit.events.group.request.GroupRequestApprovedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestCreatedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestDeletedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestRejectedEvent;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
@@ -88,8 +88,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   @Autowired
   private ApplicationEventPublisher eventPublisher;
 
-  private static final Table<IamGroupRequestStatus, IamGroupRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS =
-      new ImmutableTable.Builder<IamGroupRequestStatus, IamGroupRequestStatus, Boolean>()
+  private static final Table<IamRequestStatus, IamRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS =
+      new ImmutableTable.Builder<IamRequestStatus, IamRequestStatus, Boolean>()
         .put(PENDING, APPROVED, true)
         .put(PENDING, REJECTED, true)
         .build();
@@ -203,7 +203,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   private IamGroupRequest updateGroupRequestStatus(IamGroupRequest request,
-      IamGroupRequestStatus status) {
+      IamRequestStatus status) {
 
     if (!ALLOWED_STATE_TRANSITIONS.contains(request.getStatus(), status)) {
       throw new InvalidGroupRequestStatusError(
@@ -231,7 +231,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> withStatus(String status) {
-    return (req, cq, cb) -> cb.equal(req.get("status"), IamGroupRequestStatus.valueOf(status));
+    return (req, cq, cb) -> cb.equal(req.get("status"), IamRequestStatus.valueOf(status));
   }
 
   private Page<IamGroupRequest> lookupGroupRequests(Optional<String> usernameFilter,

@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -92,7 +92,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.userUuid", equalTo(TEST_ADMIN_UUID)))
       .andExpect(jsonPath("$.userFullName", equalTo(TEST_ADMIN_FULL_NAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.PENDING.name())));
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.PENDING.name())));
     // @formatter:on
   }
 
@@ -109,7 +109,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.PENDING.name())));
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.PENDING.name())));
     // @formatter:on
     int mailCount = notificationService.countPendingNotifications();
     assertThat(mailCount, equalTo(1));
@@ -225,7 +225,7 @@ public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.PENDING.name())));
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.PENDING.name())));
     // @formatter:on
   }
 }

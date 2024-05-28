@@ -15,6 +15,6 @@
  */
 package it.infn.mw.iam.core;
 
-public enum IamGroupRequestStatus {
+public enum IamRequestStatus {
   PENDING, APPROVED, REJECTED
 }

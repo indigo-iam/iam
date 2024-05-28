@@ -15,9 +15,9 @@
  */
 package it.infn.mw.iam.test.api.requests;
 
-import static it.infn.mw.iam.core.IamGroupRequestStatus.APPROVED;
-import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
-import static it.infn.mw.iam.core.IamGroupRequestStatus.REJECTED;
+import static it.infn.mw.iam.core.IamRequestStatus.APPROVED;
+import static it.infn.mw.iam.core.IamRequestStatus.PENDING;
+import static it.infn.mw.iam.core.IamRequestStatus.REJECTED;
 
 import java.util.Date;
 import java.util.UUID;
@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.requests.GroupRequestConverter;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
@@ -87,7 +87,7 @@ public class GroupRequestsTestUtils {
   }
 
   private GroupRequestDto saveGroupRequest(String username, String groupName,
-      IamGroupRequestStatus status) {
+      IamRequestStatus status) {
 
     IamGroupRequest iamGroupRequest = new IamGroupRequest();
     iamGroupRequest.setUuid(UUID.randomUUID().toString());

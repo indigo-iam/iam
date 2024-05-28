@@ -27,7 +27,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
@@ -99,7 +99,7 @@ public class IamSecurityExpressionMethods {
     Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
 
     return groupRequest.isPresent() && ((canAccessGroupRequest(requestId)
-        && IamGroupRequestStatus.PENDING.equals(groupRequest.get().getStatus()))
+        && IamRequestStatus.PENDING.equals(groupRequest.get().getStatus()))
         || canManageGroupRequest(requestId));
   }
 
