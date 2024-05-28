@@ -36,7 +36,7 @@ public abstract class TokenEvent extends IamAuditApplicationEvent {
     try {
       this.body = token.getJwt().getJWTClaimsSet().getClaims();
     } catch (ParseException e) {
-      LOG.error(e.getMessage(), e);
+      LOG.warn(e.getMessage(), e);
     }
 
   }
