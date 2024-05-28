@@ -126,6 +126,7 @@ services:
     environment:
       - IAM_DB_HOST=db-primary.test.example
       - VOMS_HOST=voms-primary.test.example
+      - VOMS_PORT=443
     ports:
       - "1044:1044"
     depends_on:
@@ -149,6 +150,7 @@ services:
     environment:
       - IAM_DB_HOST=db-replica.test.example
       - VOMS_HOST=voms-replica.test.example
+      - VOMS_PORT=443
     ports:
       - "1045:1044"
     depends_on:
@@ -172,6 +174,7 @@ services:
     environment:
       - IAM_DB_HOST=db-remote.test.example
       - VOMS_HOST=voms-remote.test.example
+      - VOMS_PORT=443
     ports:
       - "1046:1044"
     depends_on:
@@ -289,7 +292,13 @@ services:
         condition: service_completed_successfully
     environment:
       - TZ=Europe/Rome
-      - "ROBOT_OPTIONS=--variable vo1:indigo-dc --variable vo1_host:voms-primary.test.example --variable vo1_issuer:'/C=IT/O=IGI/CN=*.test.example' --variable vo1_legacy_fqan_enabled:False"
+      - "ROBOT_OPTIONS=--variable vo1:indigo-dc 
+                       --variable vo1_host:voms-primary.test.example 
+                       --variable vo1_issuer:'/C=IT/O=IGI/CN=*.test.example' 
+                       --variable vo1_legacy_fqan_enabled:True
+                       --variable vo2:test.vo --variable vo1_host:voms-dev.cloud.cnaf.infn.it 
+                       --variable vo2_issuer:'/DC=org/DC=terena/DC=tcs/C=IT/ST=Roma/O=Istituto Nazionale di Fisica Nucleare/CN=voms-dev.cloud.cnaf.infn.it' 
+                       --variable vo2_legacy_fqan_enabled:True"
     volumes:
       - trustanchors:/etc/grid-security/certificates
       - ./assets/vomses:/etc/vomses

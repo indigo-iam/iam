@@ -31,7 +31,7 @@ voms:
     trust-anchors-refresh-interval-secs: 14400
   aa:
     host: ${VOMS_HOST:voms.test.example}
-    port: ${server.port}
+    port: ${VOMS_PORT:server.port}
     vo-name: indigo-dc
     optional-group-label: voms.role
     use-legacy-fqan-encoding: true
