@@ -26,17 +26,17 @@
         <label>User</label>
         <p class="form-control-static">{{$ctrl.user.name.formatted}}</p>
     </div>
-    <form name="addCert">
-        <div class="form-group" ng-class="{'has-error': addCert.label.$dirty && !addCert.label.$valid }">
+    <form name="certReqForm">
+        <div class="form-group" ng-class="{'has-error': certReqForm.label.$dirty && !certReqForm.label.$valid }">
             <label>Label</label> <input name="label" class="form-control" type="text" placeholder="Label..."
                 ng-model="$ctrl.certReq.label" required="true" ng-minlength="2" ng-maxlength="36">
-            <span class="help-block" ng-if="addCert.label.$dirty && addCert.label.$error.required">
+            <span class="help-block" ng-if="certReqForm.label.$dirty && certReqForm.label.$error.required">
                 Please provide a label
             </span>
-            <span class="help-block" ng-if="addCert.label.$dirty &&     addCert.label.$error.minlength">
+            <span class="help-block" ng-if="certReqForm.label.$dirty &&     certReqForm.label.$error.minlength">
                 Label must be at least 2 characters long
             </span>
-            <span class="help-block" ng-if="addCert.label.$dirty && addCert.label.$error.maxlength">
+            <span class="help-block" ng-if="certReqForm.label.$dirty && certReqForm.label.$error.maxlength">
                 Label must be at most 36 characters long
             </span>
         </div>
@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        <div class="form-group" ng-class="{'has-error': $ctrl.error || addCert.cert.$dirty && !addCert.cert.$valid}"
+        <div class="form-group" ng-class="{'has-error': $ctrl.error || certReqForm.cert.$dirty && !certReqForm.cert.$valid}"
             ng-show="$ctrl.inputMode == 'pem'">
             <label>Certificate</label>
             <textarea class="form-control" name="cert" type="text" placeholder="Insert PEM-encoded certificate here..."
@@ -63,22 +63,22 @@
             <span class="help-block" ng-if="$ctrl.error">
                 {{ $ctrl.error.data.detail }}
             </span>
-            <span class="help-block" ng-if="addCert.cert.$dirty && addCert.cert.$error.required">
+            <span class="help-block" ng-if="certReqForm.cert.$dirty && certReqForm.cert.$error.required">
                 Please paste here a PEM-encoded certificate
             </span>
         </div>
 
-        <div class="form-group" ng-class="{'has-error': addCert.subject.$dirty && !addCert.subject.$valid}"
+        <div class="form-group" ng-class="{'has-error': certReqForm.subject.$dirty && !certReqForm.subject.$valid}"
             ng-show="$ctrl.inputMode == 'dn'">
             <label>Subject</label>
             <input name="subject" class="form-control" type="text" placeholder="Certificate subject..."
                 ng-model="$ctrl.certReq.subjectDn" ng-required="$ctrl.inputMode == 'dn'">
-            <span class="help-block" ng-if="addCert.subject.$dirty && addCert.subject.$error.required">
+            <span class="help-block" ng-if="certReqForm.subject.$dirty && certReqForm.subject.$error.required">
                 Please provide the subject of the certificate
             </span>
         </div>
 
-        <div class="form-group" ng-class="{'has-error': addCert.issuer.$dirty && !addCert.issuer.$valid}"
+        <div class="form-group" ng-class="{'has-error': certReqForm.issuer.$dirty && !certReqForm.issuer.$valid}"
             ng-show="$ctrl.inputMode == 'dn'">
             <label>Issuer</label>
             <ui-select ng-model="$ctrl.certReq.issuerDn" sortable="true" close-on-select="true" ng-required="$ctrl.inputMode == 'dn'">
@@ -88,7 +88,7 @@
                 </ui-select-choices>
                 <ui-select-no-choice> No certification authorities available</ui-select-no-choice>
             </ui-select>
-            <span class="help-block" ng-if="addCert.issuer.$dirty && addCert.issuer.$error.required">
+            <span class="help-block" ng-if="certReqForm.issuer.$dirty && certReqForm.issuer.$error.required">
                 Please provide the issuer of the certificate
             </span>
         </div>

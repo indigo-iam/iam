@@ -116,8 +116,8 @@
             if (self.inputMode == "pem") {
                 req.pemEncodedCertificate = self.certReq.pemEncodedCertificate;
             } else if (self.inputMode == "dn") {
-                req.subject = self.certReq.subject;
-                req.issuer = self.certReq.issuer;
+                req.subjectDn = self.certReq.subjectDn;
+                req.issuerDn = self.certReq.issuerDn;
             }
 
             console.log('Submitting certificate request', req);
@@ -130,8 +130,8 @@
             self.certReq = {
                 label: '',
                 pemEncodedCertificate: '',
-                subject: '',
-                issuer: '',
+                subjectDn: '',
+                issuerDn: '',
                 notes: ''
             };
             self.error = undefined;
@@ -194,7 +194,7 @@
                 controllerAs: '$ctrl',
                 resolve: {
                     user: () => self.user,
-                    certificationAuthorities: () => ['CA1', 'CA2']
+                    certificationAuthorities: () => ['CN=CA1, O=INFN, C=IT', 'CN=CA2, O=INFN, C=IT']
                 }
             });
             console.log('modalInstance', modalInstance);
