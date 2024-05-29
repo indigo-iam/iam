@@ -169,6 +169,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/tokens/tokens.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/aup/aup.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/aup/aup.resign.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.description.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.component.js"></script>

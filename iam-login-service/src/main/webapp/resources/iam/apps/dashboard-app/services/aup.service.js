@@ -30,7 +30,8 @@
             touchAup: touchAup,
             deleteAup: deleteAup,
             getAupSignature: getAupSignature,
-            getAupSignatureForUser: getAupSignatureForUser
+            getAupSignatureForUser: getAupSignatureForUser,
+            resignAup: resignAup
         };
 
         return service;
@@ -75,6 +76,16 @@
             return $http.get('/iam/aup').catch(function(res) {
                 if (res.status == 404) {
                     console.info("AUP not defined");
+                    return null;
+                }
+                return $q.reject(res);
+            });
+        }
+
+        function resignAup() {
+            return $http.post('/iam/aup/signature/').catch(function(res) {
+                if (res.status == 404) {
+                    console.info("Account not found");
                     return null;
                 }
                 return $q.reject(res);

@@ -276,4 +276,5 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(jsonPath("$.error", equalTo("Account not found for id: 1234")));
 
   }
+
 }
