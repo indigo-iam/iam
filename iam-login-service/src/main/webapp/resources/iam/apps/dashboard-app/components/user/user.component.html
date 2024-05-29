@@ -40,7 +40,7 @@
                 <result result="$ctrl.result"></result>
             </div>
         </div>
-        <!-- Main content -->
+        <!-- Main content -->	
         <div class="row" ng-cloak>
             <!-- Left part of the main content -->
             <section id="user-profile-left" class="col-sm-12 col-md-5 col-lg-4">
@@ -62,11 +62,18 @@
 
                             <!-- Change membership end time -->
                             <user-end-time user="$ctrl.user"></user-end-time>
+
+                            <div ng-if="!$ctrl.isMe()">
+                                  <!-- Sign On Behalf into user page when you're an admin -->
+                                  <user-sign-on-behalf user="$ctrl.user" aup="$ctrl.aup"></user-sign-on-behalf>
+                            </div>
                         </div>
 
                         <!-- Send reset password email or change password-->
                         <user-password user="$ctrl.user"></user-password>
                         <aup-resign user="$ctrl.user" ng-if="$ctrl.isMe()"></aup-resign>
+
+
                     </div>
                 </div>
             </section>
