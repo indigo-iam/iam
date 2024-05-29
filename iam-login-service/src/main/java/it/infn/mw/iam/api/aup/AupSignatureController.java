@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.aup;
 
 import java.util.Date;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -152,11 +153,13 @@ public class AupSignatureController {
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
 
-    IamAupSignature signature =
-        signatureRepo.findSignatureForAccount(aup, signatureAccount).orElseThrow(signatureNotFound(signatureAccount));
+    Optional<IamAupSignature> signature =
+        signatureRepo.findSignatureForAccount(aup, signatureAccount);
 
-    signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
-    eventPublisher.publishEvent(new AupSignatureDeletedEvent(this, deleterAccount.getUsername(), signature));
+    if (signature.isPresent()) {
+      signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
+      eventPublisher.publishEvent(new AupSignatureDeletedEvent(this, deleterAccount.getUsername(), signature.get()));
+    }
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)

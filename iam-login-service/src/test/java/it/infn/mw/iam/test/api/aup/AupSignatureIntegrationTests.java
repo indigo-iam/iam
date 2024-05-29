@@ -233,6 +233,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
     mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
+      .andExpect(status().isNoContent());
     mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
