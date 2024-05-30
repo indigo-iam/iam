@@ -104,10 +104,10 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
     aupRepo.save(aup);
     IamAccount testAccount = findTestAccount();
 
-    IamAupSignature sig = repo.createSignatureForAccount(aup, testAccount, new Date());
+    repo.createSignatureForAccount(aup, testAccount, new Date());
 
     Date updateTime = new Date();
-    sig = repo.createSignatureForAccount(aup, testAccount, updateTime);
+    IamAupSignature sig = repo.createSignatureForAccount(aup, testAccount, updateTime);
     assertThat(sig.getSignatureTime(), equalTo(updateTime));
   }
 

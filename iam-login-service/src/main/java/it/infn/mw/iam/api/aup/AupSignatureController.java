@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.aup;
 
+import static java.lang.String.format;
+
 import java.util.Date;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -54,6 +56,9 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 @Transactional
 public class AupSignatureController {
 
+  private static final String ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE = "Account not found for id: %s";
+  private static final String ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE = "Account not found for authenticated user";
+
   private final AupSignatureConverter signatureConverter;
   private final AccountUtils accountUtils;
   private final IamAupSignatureRepository signatureRepo;
@@ -73,7 +78,7 @@ public class AupSignatureController {
   }
 
   private Supplier<AupNotFoundError> aupNotFoundException() {
-    return () -> new AupNotFoundError();
+    return AupNotFoundError::new;
   }
 
   private Supplier<AccountNotFoundException> accountNotFoundException(String message) {
@@ -91,7 +96,7 @@ public class AupSignatureController {
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
+      .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
 
     Date now = new Date(timeProvider.currentTimeMillis());
     IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
@@ -103,7 +108,7 @@ public class AupSignatureController {
   public AupSignatureDTO getSignature() throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
+        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     IamAupSignature sig =
@@ -116,7 +121,7 @@ public class AupSignatureController {
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getByAccountId(accountId)
-      .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
+      .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     IamAupSignature sig =
@@ -131,7 +136,7 @@ public class AupSignatureController {
   public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getByAccountId(accountId)
-      .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
+      .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     Date now = new Date(timeProvider.currentTimeMillis());
 
@@ -147,9 +152,9 @@ public class AupSignatureController {
   public void deleteSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
 
     IamAccount deleterAccount = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(accountNotFoundException("Account not found for authenticated user"));
+        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
     IamAccount signatureAccount = accountUtils.getByAccountId(accountId)
-      .orElseThrow(accountNotFoundException("Account not found for id: " + accountId));
+      .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
 

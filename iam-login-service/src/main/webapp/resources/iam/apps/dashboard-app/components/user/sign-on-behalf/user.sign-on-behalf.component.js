@@ -16,7 +16,7 @@
 (function() {
   'use strict';
 
-  function AupSignOnBehalfController(toaster, Utils, ModalService, AupService, user) {
+  function AupSignOnBehalfController(toaster, Utils, ModalService, AupService, user, aup) {
     var self = this;
 	self.enabled = true;
 
@@ -73,7 +73,8 @@
 
   angular.module('dashboardApp').component('userSignOnBehalf', {
     bindings: {
-      user: '<'
+      user: '<',
+      aup: '='
     },
     templateUrl:
       '/resources/iam/apps/dashboard-app/components/user/sign-on-behalf/user.sign-on-behalf.component.html',

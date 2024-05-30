@@ -21,6 +21,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Objects;
+
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -80,9 +82,11 @@ public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryC
   @Override
   public void deleteSignatureForAccount(IamAup aup, IamAccount account) {
 
-    signatureRepo.findByAupAndAccount(aup, account)
-      .orElseThrow(() -> new IamAupSignatureNotFoundError(account));
-    deleteSignature(account);
+    if (signatureRepo.findByAupAndAccount(aup, account).isPresent()) {
+      deleteSignature(account);
+      return;
+    }
+    throw new IamAupSignatureNotFoundError(account);
   }
 
 }
