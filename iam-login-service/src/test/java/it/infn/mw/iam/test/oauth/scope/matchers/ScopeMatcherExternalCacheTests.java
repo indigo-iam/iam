@@ -45,7 +45,7 @@ import com.nimbusds.jwt.JWTParser;
 import io.restassured.RestAssured;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.CacheConfig;
-import it.infn.mw.iam.config.RedisCacheProperties;
+import it.infn.mw.iam.config.CacheProperties;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -54,7 +54,7 @@ import it.infn.mw.iam.test.util.redis.RedisContainer;
 @Testcontainers
 @IamMockMvcIntegrationTest
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {"iam.access_token.include_scope=true", "redis-cache.enabled=true"})
+    properties = {"iam.access_token.include_scope=true", "cache.redis.enabled=true"})
 public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "cache-client";
@@ -71,7 +71,7 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   private CacheConfig cacheConfig;
 
   @Autowired
-  private RedisCacheProperties redisCacheProperties;
+  private CacheProperties redisCacheProperties;
 
   @LocalServerPort
   private Integer iamPort;

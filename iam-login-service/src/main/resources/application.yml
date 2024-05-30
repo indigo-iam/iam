@@ -187,8 +187,8 @@ iam:
     section-to-be-displayed-first: ${IAM_LOGIN_PAGE_LAYOUT_SECTION_TO_DISPLAY_FIRST:LOGIN_FORM}
     external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
-redis-cache:
-  enabled: ${IAM_REDIS_CACHE_ENABLED:false}
+cache:
+  redis.enabled: ${CACHE_REDIS_ENABLED:false}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}

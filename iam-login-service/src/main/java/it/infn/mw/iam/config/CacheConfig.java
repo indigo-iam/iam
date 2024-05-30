@@ -27,17 +27,18 @@ import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
 @Configuration
+@ConditionalOnProperty(name = "cache.enabled", havingValue = "true")
 public class CacheConfig {
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "false")
+  @ConditionalOnProperty(name = "cache.redis.enabled", havingValue = "false")
   public CacheManager localCacheManager() {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
         DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
   }
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
+  @ConditionalOnProperty(name = "cache.redis.enabled", havingValue = "true")
   public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
     return builder -> builder
       .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
@@ -48,7 +49,7 @@ public class CacheConfig {
   }
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
+  @ConditionalOnProperty(name = "cache.redis.enabled", havingValue = "true")
   public RedisCacheConfiguration redisCacheConfiguration() {
 
     return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
