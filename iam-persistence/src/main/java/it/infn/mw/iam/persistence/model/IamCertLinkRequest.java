@@ -65,13 +65,12 @@ public class IamCertLinkRequest implements Serializable {
   private String motivation;
 
   @Temporal(TemporalType.TIMESTAMP)
-  @Column(name="creationtime", nullable = false)
+  @Column(name = "creationtime", nullable = false)
   private Date creationTime;
 
   @Temporal(TemporalType.TIMESTAMP)
-  @Column(name="lastupdatetime", nullable = true)
+  @Column(name = "lastupdatetime", nullable = true)
   private Date lastUpdateTime;
-
 
   public IamCertLinkRequest() {
     // empty constructor
@@ -181,7 +180,8 @@ public class IamCertLinkRequest implements Serializable {
   @Override
   public String toString() {
     return String.format(
-        "IamCertLinkRequest [id=%s, uuid=%s, accountUsername=%s, certificateName=%s, status=%s,creationTime=%s, lastUpdateTime=%s]",
-        id, uuid, account.getUsername(), certificate.getLabel(), status, creationTime, lastUpdateTime);
+        "IamCertLinkRequest [id=%s, uuid=%s, accountUsername=%s, certificateName=%s, subject=%s, issuer=%s, status=%s,creationTime=%s, lastUpdateTime=%s]",
+        id, uuid, account.getUsername(), certificate.getLabel(), certificate.getSubjectDn(), certificate.getIssuerDn(),
+        status, creationTime, lastUpdateTime);
   }
 }
