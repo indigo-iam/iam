@@ -37,7 +37,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.CacheConfig;
-import it.infn.mw.iam.config.RedisCacheProperties;
+import it.infn.mw.iam.config.CacheProperties;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -56,7 +56,7 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
   private CacheConfig cacheConfig;
   
   @Autowired
-  private RedisCacheProperties redisCacheProperties;
+  private CacheProperties redisCacheProperties;
 
   private String getAccessTokenForClient(String scopes) throws Exception {
 
