@@ -39,6 +39,7 @@ import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
@@ -67,7 +68,8 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final Configuration freeMarkerConfiguration;
 
   @Autowired
-  public TransientNotificationFactory(Configuration fm, NotificationProperties np, AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+  public TransientNotificationFactory(Configuration fm, NotificationProperties np,
+      AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
     this.freeMarkerConfiguration = fm;
     this.properties = np;
     this.adminNotificationDeliveryStrategy = ands;
@@ -102,8 +104,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     String recipient = request.getAccount().getUserInfo().getName();
     String resetPasswordUrl = String.format("%s%s/%s", baseUrl,
         PasswordResetController.BASE_TOKEN_URL, request.getAccount().getResetKey());
-
-
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -173,9 +173,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
     model.put(USERNAME_FIELD, account.getUsername());
 
-    IamEmailNotification notification =
-        createMessage("resetPassword.ftl", model, IamNotificationType.RESETPASSWD,
-            properties.getSubject().get("resetPassword"), asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("resetPassword.ftl", model, IamNotificationType.RESETPASSWD,
+        properties.getSubject().get("resetPassword"), asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created reset password message for account {}. Reset password URL: {}",
         account.getUsername(), resetPasswordUrl);
@@ -214,12 +213,11 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("status", status);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject =
-        String.format("Membership request for group %s has been %s", groupName, status);
+    String subject = String.format("Membership request for group %s has been %s", groupName, status);
 
-    IamEmailNotification notification =
-        createMessage("groupMembershipApproved.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
-            subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("groupMembershipApproved.ftl", model,
+        IamNotificationType.GROUP_MEMBERSHIP,
+        subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
     return notification;
@@ -238,15 +236,62 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("motivation", groupRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject =
-        String.format("Membership request for group %s has been %s", groupName, status);
+    String subject = String.format("Membership request for group %s has been %s", groupName, status);
 
-    IamEmailNotification notification =
-        createMessage("groupMembershipRejected.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
-            subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("groupMembershipRejected.ftl", model,
+        IamNotificationType.GROUP_MEMBERSHIP,
+        subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
     return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAdminHandleCertLinkRequestMessage(IamCertLinkRequest certLinkRequest) {
+    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
+    String subject = "Certificate link request";
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
+    model.put("notes", certLinkRequest.getNotes());
+    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(ORGANISATION_NAME, organisationName);
+
+    return createMessage("adminHandleCertLinkRequest.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+        subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+  }
+
+  @Override
+  public IamEmailNotification createCertLinkApprovedMessage(IamCertLinkRequest certLinkRequest) {
+    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
+    String subject = "Certificate link request approved";
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
+    model.put(ORGANISATION_NAME, organisationName);
+
+    return createMessage("certLinkApproved.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+        subject, asList(certLinkRequest.getAccount().getUserInfo().getEmail()));
+  }
+
+  @Override
+  public IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest) {
+    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
+    String subject = "Certificate link request rejected";
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
+    model.put("motivation", certLinkRequest.getMotivation());
+    model.put(ORGANISATION_NAME, organisationName);
+
+    return createMessage("certLinkRejected.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+        subject, asList(certLinkRequest.getAccount().getUserInfo().getEmail()));
   }
 
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
@@ -265,8 +310,8 @@ public class TransientNotificationFactory implements NotificationFactory {
       message.setCreationTime(new Date());
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
       message.setReceivers(receiverAddress.stream()
-              .map(a -> IamNotificationReceiver.forAddress(message, a))
-              .collect(Collectors.toList()));
+          .map(a -> IamNotificationReceiver.forAddress(message, a))
+          .collect(Collectors.toList()));
 
       return message;
     } catch (IOException | TemplateException e) {
