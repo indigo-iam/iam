@@ -15,9 +15,11 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +30,8 @@ public interface IamCertLinkRequestRepository
     JpaSpecificationExecutor<IamCertLinkRequest> {
 
   Optional<IamCertLinkRequest> findByUuid(@Param("uuid") String uuid);
+
+  @Query("select r from IamCertLinkRequest r join r.account a join r.certificate c where a.uuid= :userUuid and c.subject= :subjectDn and c.issuer= :issuerDn")
+  List<IamCertLinkRequest> findByAccountAndDns(@Param("userUuid") String userUuid,
+      @Param("subjectDn") String subjectDn, @Param("issuerDn") String issuerDn);
 }
