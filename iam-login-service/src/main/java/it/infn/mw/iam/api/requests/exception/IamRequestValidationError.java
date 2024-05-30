@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.api.requests.exception;
 
-public class GroupRequestValidationError extends IllegalArgumentException {
+public class IamRequestValidationError extends IllegalArgumentException {
 
   private static final long serialVersionUID = 1L;
 
-  public GroupRequestValidationError(String message) {
+  public IamRequestValidationError(String message) {
     super(message);
   }
 }

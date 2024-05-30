@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.requests.exception.GroupRequestValidationError;
+import it.infn.mw.iam.api.requests.exception.IamRequestValidationError;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -61,7 +61,7 @@ public class GroupRequestUtils {
 
   public IamGroupRequest getGroupRequest(String requestId) {
     return groupRequestRepository.findByUuid(requestId)
-      .orElseThrow(() -> new GroupRequestValidationError(
+      .orElseThrow(() -> new IamRequestValidationError(
           String.format("Group request with UUID [%s] does not exist", requestId)));
   }
 
@@ -74,7 +74,7 @@ public class GroupRequestUtils {
       IamRequestStatus status = r.getStatus();
       
       if (PENDING.equals(status)) {
-        throw new GroupRequestValidationError(
+        throw new IamRequestValidationError(
             String.format("Group request already exists for [%s, %s]",
                 request.getUsername(), request.getGroupName()));
       }
@@ -88,7 +88,7 @@ public class GroupRequestUtils {
     }
 
     if (Strings.isNullOrEmpty(value)) {
-      throw new GroupRequestValidationError("Reject motivation cannot be empty");
+      throw new IamRequestValidationError("Reject motivation cannot be empty");
     }
   }
 
@@ -103,7 +103,7 @@ public class GroupRequestUtils {
         .map(IamAccountGroupMembership::getGroup);
 
       if (group.isPresent()) {
-        throw new GroupRequestValidationError(
+        throw new IamRequestValidationError(
             String.format("User [%s] is already member of the group [%s]", request.getUsername(),
                 request.getGroupName()));
       }

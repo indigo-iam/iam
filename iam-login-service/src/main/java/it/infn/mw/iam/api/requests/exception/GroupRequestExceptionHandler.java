@@ -28,9 +28,9 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 public class GroupRequestExceptionHandler extends ResponseEntityExceptionHandler {
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(GroupRequestValidationError.class)
+  @ExceptionHandler(IamRequestValidationError.class)
   @ResponseBody
-  public ErrorDTO handleValidationException(GroupRequestValidationError e) {
+  public ErrorDTO handleValidationException(IamRequestValidationError e) {
 
     return buildErrorResponse(e.getMessage());
   }
