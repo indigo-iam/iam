@@ -36,9 +36,9 @@ public class GroupRequestExceptionHandler extends ResponseEntityExceptionHandler
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidGroupRequestStatusError.class)
+  @ExceptionHandler(InvalidIamRequestStatusError.class)
   @ResponseBody
-  public ErrorDTO handleValidationException(InvalidGroupRequestStatusError e) {
+  public ErrorDTO handleValidationException(InvalidIamRequestStatusError e) {
 
     return buildErrorResponse(e.getMessage());
   }

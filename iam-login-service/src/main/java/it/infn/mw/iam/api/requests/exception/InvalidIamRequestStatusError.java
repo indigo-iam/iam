@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.api.requests.exception;
 
-public class InvalidGroupRequestStatusError extends IllegalArgumentException {
+public class InvalidIamRequestStatusError extends IllegalArgumentException {
 
   private static final long serialVersionUID = 1L;
 
-  public InvalidGroupRequestStatusError(String message) {
+  public InvalidIamRequestStatusError(String message) {
     super(message);
   }
 }

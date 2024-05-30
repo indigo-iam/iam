@@ -42,7 +42,7 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.requests.GroupRequestConverter;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
-import it.infn.mw.iam.api.requests.exception.InvalidGroupRequestStatusError;
+import it.infn.mw.iam.api.requests.exception.InvalidIamRequestStatusError;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestApprovedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestCreatedEvent;
@@ -206,7 +206,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       IamRequestStatus status) {
 
     if (!ALLOWED_STATE_TRANSITIONS.contains(request.getStatus(), status)) {
-      throw new InvalidGroupRequestStatusError(
+      throw new InvalidIamRequestStatusError(
           String.format("Invalid group request transition: %s -> %s", request.getStatus(), status));
     }
     request.setStatus(status);
