@@ -65,6 +65,10 @@
 
                             <!-- Sign On Behalf into user page when you're an admin -->
                             <user-sign-on-behalf user="$ctrl.user" aup="$ctrl.aup"></user-sign-on-behalf>
+
+                            <!-- Trigger AUP acceptance -->
+                            <user-request-aup-signature user="$ctrl.user" aup="$ctrl.aup"></user-request-aup-signature>
+
                         </div>
 
                         <!-- Send reset password email or change password-->

@@ -32,7 +32,8 @@
             getAupSignature: getAupSignature,
             getAupSignatureForUser: getAupSignatureForUser,
             resignAup: resignAup,
-            signAupOnBehalf: signAupOnBehalf
+            signAupOnBehalf: signAupOnBehalf,
+            deleteAupSignatureForUser: deleteAupSignatureForUser
         };
 
         return service;
@@ -95,6 +96,16 @@
 
         function signAupOnBehalf(userId) {
             return $http.patch('/iam/aup/signature/' + userId).catch(function(res) {
+                if (res.status == 404) {
+                    console.info("Account not found");
+                    return null;
+                }
+                return $q.reject(res);
+            });
+        }
+
+        function deleteAupSignatureForUser(userId) {
+            return $http.delete('/iam/aup/signature/' + userId).catch(function(res) {
                 if (res.status == 404) {
                     console.info("Account not found");
                     return null;
