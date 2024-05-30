@@ -32,7 +32,7 @@
             getAupSignature: getAupSignature,
             getAupSignatureForUser: getAupSignatureForUser,
             resignAup: resignAup,
-            signAupOnBefalh: signAupOnBehalf
+            signAupOnBehalf: signAupOnBehalf
         };
 
         return service;
@@ -53,8 +53,8 @@
             return $http.post('/iam/aup/touch');
         }
 
-        function getAupSignatureForUser(user) {
-            return $http.get('/iam/aup/signature/' + user.uuid).catch(function(res) {
+        function getAupSignatureForUser(userId) {
+            return $http.get('/iam/aup/signature/' + userId).catch(function(res) {
                 if (res.status == 404) {
                     console.info("AUP signature not found");
                     return null;

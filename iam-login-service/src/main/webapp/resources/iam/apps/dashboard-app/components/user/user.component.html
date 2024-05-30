@@ -63,16 +63,13 @@
                             <!-- Change membership end time -->
                             <user-end-time user="$ctrl.user"></user-end-time>
 
-                            <div ng-if="!$ctrl.isMe()">
-                                  <!-- Sign On Behalf into user page when you're an admin -->
-                                  <user-sign-on-behalf user="$ctrl.user" aup="$ctrl.aup"></user-sign-on-behalf>
-                            </div>
+                            <!-- Sign On Behalf into user page when you're an admin -->
+                            <user-sign-on-behalf ng-if="!$ctrl.isMe()" user="$ctrl.user"></user-sign-on-behalf>
                         </div>
 
                         <!-- Send reset password email or change password-->
                         <user-password user="$ctrl.user"></user-password>
                         <aup-resign user="$ctrl.user" ng-if="$ctrl.isMe()"></aup-resign>
-
 
                     </div>
                 </div>
