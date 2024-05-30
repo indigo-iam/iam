@@ -70,28 +70,28 @@ public class CertLinkRequestsController {
   }
 
   @RequestMapping(method = RequestMethod.GET, value = "/{requestId}")
-  @PreAuthorize("hasRole('ADMIN') or #iam.canAccessCertLinkRequest(#requestId)")
+  @PreAuthorize("hasScope('iam:admin:read')")
   public CertLinkRequestDto getCertLinkRequestDetails(
       @Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.getCertLinkRequestDetails(requestId);
   }
 
   @RequestMapping(method = RequestMethod.DELETE, value = "/{requestId}")
-  @PreAuthorize("hasRole('ADMIN') or #iam.userCanDeleteCertLinkRequest(#requestId)")
+  @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
     certLinkRequestService.deleteCertLinkRequest(requestId);
   }
 
   @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/approve")
-  @PreAuthorize("hasRole('ADMIN') or #iam.canManageCertLinkRequest(#requestId)")
+  @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.OK)
   public CertLinkRequestDto approveCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.approveCertLinkRequest(requestId);
   }
 
   @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/reject")
-  @PreAuthorize("hasRole('ADMIN') or #iam.canManageCertLinkRequest(#requestId)")
+  @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.OK)
   public CertLinkRequestDto rejectCertLinkRequest(@Valid @PathVariable("requestId") String requestId,
       @RequestParam @NotEmpty String motivation) {
