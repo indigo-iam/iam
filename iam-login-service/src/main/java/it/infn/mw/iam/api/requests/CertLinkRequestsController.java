@@ -47,26 +47,26 @@ public class CertLinkRequestsController {
   @Autowired
   private CertLinkRequestsService certLinkRequestService;
 
-  @RequestMapping(method = RequestMethod.POST, value = {"", "/"})
+  @RequestMapping(method = RequestMethod.POST, value = { "", "/" })
   @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
   public CertLinkRequestDto createCertLinkRequest(@RequestBody @Valid CertLinkRequestDto certLinkRequest) {
     return certLinkRequestService.createCertLinkRequest(certLinkRequest);
   }
 
-  @RequestMapping(method = RequestMethod.GET, value = {"", "/"})
+  @RequestMapping(method = RequestMethod.GET, value = { "", "/" })
   @PreAuthorize("hasAnyRole('ADMIN','USER')")
   public ListResponseDTO<CertLinkRequestDto> listCertLinkRequest(
       @RequestParam(required = false) String username,
-      @RequestParam(required = false) String label,
-      @RequestParam(required = false) String status, @RequestParam(required = false) Integer count,
+      @RequestParam(required = false) String subject,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex) {
 
-    final Sort sort = Sort.by("account.username", "label", "creationTime");
-    
-    OffsetPageable pageRequest =
-        PagingUtils.buildPageRequest(count, startIndex, CERT_LINK_REQUEST_MAX_PAGE_SIZE, sort);
-    
-    return certLinkRequestService.listCertLinkRequests(username, label, status, pageRequest);
+    final Sort sort = Sort.by("account.username", "certificate.subjectDn", "creationTime");
+
+    OffsetPageable pageRequest = PagingUtils.buildPageRequest(count, startIndex, CERT_LINK_REQUEST_MAX_PAGE_SIZE, sort);
+
+    return certLinkRequestService.listCertLinkRequests(username, subject, status, pageRequest);
   }
 
   @RequestMapping(method = RequestMethod.GET, value = "/{requestId}")

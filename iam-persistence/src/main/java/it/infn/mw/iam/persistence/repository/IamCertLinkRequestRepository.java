@@ -31,7 +31,7 @@ public interface IamCertLinkRequestRepository
 
   Optional<IamCertLinkRequest> findByUuid(@Param("uuid") String uuid);
 
-  @Query("select r from IamCertLinkRequest r join r.account a join r.certificate c where a.uuid= :userUuid and c.subject= :subjectDn and c.issuer= :issuerDn")
+  @Query("select r from IamCertLinkRequest r join r.account a join r.certificate c where a.uuid= :userUuid and c.subjectDn= :subjectDn and c.issuerDn= :issuerDn")
   List<IamCertLinkRequest> findByAccountAndDns(@Param("userUuid") String userUuid,
       @Param("subjectDn") String subjectDn, @Param("issuerDn") String issuerDn);
 }

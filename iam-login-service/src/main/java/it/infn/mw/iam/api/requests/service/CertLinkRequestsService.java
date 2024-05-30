@@ -31,7 +31,7 @@ public interface CertLinkRequestsService {
 
   CertLinkRequestDto getCertLinkRequestDetails(String requestId);
 
-  ListResponseDTO<CertLinkRequestDto> listCertLinkRequests(String username, String certLinkName,
+  ListResponseDTO<CertLinkRequestDto> listCertLinkRequests(String username, String subject,
       String status, OffsetPageable pageRequest);
 
 }
