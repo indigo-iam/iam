@@ -47,15 +47,23 @@
           .then(
               function() {
                 AupService.signAupOnBehalf(self.user.id).then(function(result) {
-                  self.user.aupSignature = result.data;
-                  toaster.pop({ type: 'success', body: "AUP signature updated for " + result.data.account.name });
+                  if (result != null) {
+                    self.user.aupSignature = result.data;
+                    toaster.pop({ type: 'success', body: "AUP signature updated for " + result.data.account.name });
+                  } else {
+                    var message = "Unable to sign AUP on behalf";
+                    console.error(message);
+                    toaster.pop({
+                      type: 'error',
+                      body: message
+                    });
+                  }
                 }).catch(function(error) { 
                   console.error(error);
                   toaster.pop({
                     type: 'error',
                     body: error
                   });
-                  self.enabled = true;
                 });
                 self.enabled = true;
               });
