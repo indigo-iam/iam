@@ -15,15 +15,18 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 
 
-public class AccessTokenRefreshedEvent extends TokenEvent {
+public class RefreshTokenIssuedEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public AccessTokenRefreshedEvent(Object source, OAuth2AccessTokenEntity token) {
-    super(source, token, "Access token refreshed");
+  public RefreshTokenIssuedEvent(Object source, OAuth2RefreshTokenEntity token) {
+    super(IamEventCategory.TOKEN, source, "Refresh token issued");
   }
 
 }

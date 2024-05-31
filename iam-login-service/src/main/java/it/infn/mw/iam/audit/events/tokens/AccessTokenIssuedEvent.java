@@ -15,20 +15,50 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import java.text.ParseException;
+import java.util.Map;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
 import com.nimbusds.jose.JWSHeader;
 
+import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 
-public class AccessTokenIssuedEvent extends TokenEvent {
+
+public class AccessTokenIssuedEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = 1L;
+
+  public static final Logger LOG = LoggerFactory.getLogger(AccessTokenIssuedEvent.class);
+
   private final HeaderDTO header = new HeaderDTO();
+  private final Map<String, Object> body;
+
 
   public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token) {
-    super(source, token, "Access token issued");
+    super(IamEventCategory.TOKEN, source, "Access token issued");
+
+    Map<String, Object> parsedTokenMap = Maps.newHashMap();
+    try {
+      parsedTokenMap = token.getJwt().getJWTClaimsSet().getClaims();
+    } catch (ParseException e) {
+      LOG.warn(e.getMessage(), e);
+    }
+    this.body = parsedTokenMap;
+
     this.header.setAlg(token.getJwt().getHeader().getAlgorithm().getName());
     this.header.setKid(String.valueOf(((JWSHeader) token.getJwt().getHeader()).getKeyID()));
   }
 
+  public Map<String, Object> getBody() {
+    return body;
+  }
+
+  public HeaderDTO getHeader() {
+    return header;
+  }
 }
