@@ -22,27 +22,30 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
+
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
 
 public abstract class TokenEvent extends IamAuditApplicationEvent {
+
   private static final long serialVersionUID = 1L;
-  private Map<String, Object> body;
+  private final Map<String, Object> body;
 
   public static final Logger LOG = LoggerFactory.getLogger(TokenEvent.class);
 
   public TokenEvent(Object source, OAuth2AccessTokenEntity token, String message) {
     super(IamEventCategory.TOKEN, source, message);
+    Map<String, Object> parsedTokenMap = Maps.newHashMap();
     try {
-      this.body = token.getJwt().getJWTClaimsSet().getClaims();
+      parsedTokenMap = token.getJwt().getJWTClaimsSet().getClaims();
     } catch (ParseException e) {
       LOG.warn(e.getMessage(), e);
     }
-
+    this.body = parsedTokenMap;
   }
 
   public Map<String, Object> getBody() {
     return body;
   }
-
 }

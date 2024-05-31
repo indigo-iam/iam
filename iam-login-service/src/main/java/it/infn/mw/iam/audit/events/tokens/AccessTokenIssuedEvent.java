@@ -31,8 +31,4 @@ public class AccessTokenIssuedEvent extends TokenEvent {
     this.header.setKid(String.valueOf(((JWSHeader) token.getJwt().getHeader()).getKeyID()));
   }
 
-  public HeaderDTO getHeader() {
-    return header;
-  }
-
 }

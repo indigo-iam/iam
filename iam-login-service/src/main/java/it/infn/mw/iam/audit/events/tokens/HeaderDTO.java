@@ -15,7 +15,11 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-public class HeaderDTO {
+import java.io.Serializable;
+
+public class HeaderDTO implements Serializable {
+
+  private static final long serialVersionUID = 667519758148079876L;
 
   private String kid;
   private String alg;
