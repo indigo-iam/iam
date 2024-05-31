@@ -29,23 +29,13 @@ public class AupSignedOnBehalfEvent extends IamAuditApplicationEvent {
    * 
    */
   private static final long serialVersionUID = 1L;
-  
-  @JsonSerialize(using=IamAupSignatureSerializer.class)
+
+  @JsonSerialize(using = IamAupSignatureSerializer.class)
   final IamAupSignature signature;
-  final String signedBy;
-  
+
   public AupSignedOnBehalfEvent(Object source, IamAupSignature signature, String signedBy) {
-    super(IamEventCategory.AUP, source, format("VO admin %s signed the AUP on behalf of %s",
+    super(IamEventCategory.AUP, source, format("Administrator %s signed the AUP on behalf of %s",
         signedBy, signature.getAccount().getUsername()));
     this.signature = signature;
-    this.signedBy = signedBy;
-  }
-  
-  public IamAupSignature getSignature() {
-    return signature;
-  }
-
-  public String getSignedBy() {
-    return signedBy;
   }
 }

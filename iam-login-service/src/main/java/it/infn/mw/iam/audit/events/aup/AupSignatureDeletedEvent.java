@@ -29,24 +29,15 @@ public class AupSignatureDeletedEvent extends IamAuditApplicationEvent {
    * 
    */
   private static final long serialVersionUID = 1L;
-  
-  @JsonSerialize(using=IamAupSignatureSerializer.class)
-  final IamAupSignature signature;
-  final String actor;
-  
-  public AupSignatureDeletedEvent(Object source, String actor, IamAupSignature signature) {
-    super(IamEventCategory.AUP, source, format("Signature for user %s deleted by %s", 
-        signature.getAccount().getUsername(), actor));
-    this.signature = signature;
-    this.actor = actor;
-  }
-  
-  public IamAupSignature getSignature() {
-    return signature;
-  }
 
-  public String getActor() {
-    return actor;
+  @JsonSerialize(using = IamAupSignatureSerializer.class)
+  final IamAupSignature signature;
+
+  public AupSignatureDeletedEvent(Object source, String actor, IamAupSignature signature) {
+    super(IamEventCategory.AUP, source,
+        format("Administrator %s requested AUP signature to the user %s", actor,
+            signature.getAccount().getUsername()));
+    this.signature = signature;
   }
 
 }
