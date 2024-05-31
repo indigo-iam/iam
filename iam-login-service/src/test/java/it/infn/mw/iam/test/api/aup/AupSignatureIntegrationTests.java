@@ -27,7 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Date;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,16 +42,19 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.aup.model.AccountDTO;
+import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupSignatureDTO;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -64,10 +70,16 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   private IamAupRepository aupRepo;
 
   @Autowired
+  private IamAupSignatureRepository aupSignatureRepo;
+
+  @Autowired
   private IamAccountService accountService;
 
   @Autowired
   private IamAccountRepository accountRepo;
+
+  @Autowired
+  private AupConverter aupConverter;
 
   @Autowired
   private MockMvc mvc;
@@ -100,10 +112,10 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getAupSignatureWithDefaultAupReturns404() throws Exception {
+  public void getAupSignatureWithUndefinedAupReturns404() throws Exception {
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
+      .andExpect(jsonPath("$.error", equalTo("AUP is not defined for this organization")));
   }
 
   @Test
@@ -164,6 +176,72 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void signatureOnBehalfWorks() throws Exception, NoSuchElementException {
+
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    Optional<IamAupSignature> signature =
+        aupSignatureRepo.findSignatureForAccount(aup, testAccount);
+    assertThat(signature.isEmpty(), equalTo(true));
+
+    AupSignatureDTO dto = new AupSignatureDTO();
+    dto.setAup(aupConverter.dtoFromEntity(aup));
+    AccountDTO accountDto = new AccountDTO();
+    accountDto.setName(testAccount.getUserInfo().getName());
+    accountDto.setUsername(testAccount.getUsername());
+    accountDto.setUuid(testAccount.getUuid());
+    dto.setAccount(accountDto);
+    dto.setSignatureTime(new Date());
+
+    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
+      .content(mapper.writeValueAsString(dto))
+      .contentType(APPLICATION_JSON)).andExpect(status().isCreated());
+
+    assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isEmpty(),
+        equalTo(false));
+
+    mvc.perform(get("/iam/aup/signature/{accountId}", testAccount.getUuid()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.aup").exists())
+      .andExpect(jsonPath("$.account.uuid").exists())
+      .andExpect(jsonPath("$.account.username", equalTo("test")))
+      .andExpect(jsonPath("$.account.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.signatureTime").exists());
+
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupRemovalForSingleUser() throws Exception {
+    IamAup aup = buildDefaultAup();
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isCreated());
+
+
+    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+
+    IamAccount account = accountRepo.findByUsername("admin")
+      .orElseThrow(() -> new AssertionError("Expected admin account not found"));
+
+    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
+      .andExpect(status().isNoContent());
+    mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
+      .andExpect(status().isNoContent());
+    mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
+
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupRemovalRemovesSignatureRecords() throws Exception {
     IamAup aup = buildDefaultAup();
 
@@ -175,9 +253,15 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
     mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
     mvc.perform(delete("/iam/aup")).andExpect(status().isNoContent());
+
+    IamAccount adminAccount = accountRepo.findByUsername("admin").orElseThrow();
+    Optional<IamAupSignature> signature =
+        aupSignatureRepo.findSignatureForAccount(aup, adminAccount);
+    assertThat(signature.isEmpty(), equalTo(true));
+
     mvc.perform(get("/iam/aup/signature"))
       .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
+      .andExpect(jsonPath("$.error", equalTo("AUP is not defined for this organization")));
 
   }
 
@@ -239,41 +323,63 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = "ROLE_ADMIN", scopes = {"iam:admin.read", "iam:admin.write"})
-  public void updateAupWithRightScope() throws Exception {
+  @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
+  public void signAupOnBehalfOfUserThatHasAlreadyASignature() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    IamAupSignature signature = aupSignatureRepo.createSignatureForAccount(aup, testAccount, now);
+
+    mockTimeProvider.setTime(DateUtils.addMilliseconds(now, 1000).getTime());
+
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+      .andExpect(status().isOk());
+
+    AupSignatureDTO resignedSignature =
+        mapper.readValue(mvc.perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+          .andExpect(CREATED)
+          .andReturn()
+          .getResponse()
+          .getContentAsString(), AupSignatureDTO.class);
+
+    assertThat(signature.getSignatureTime().compareTo(resignedSignature.getSignatureTime()) < 0, equalTo(true));
+
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.aup").exists())
+      .andExpect(jsonPath("$.account.uuid").exists())
+      .andExpect(jsonPath("$.account.username", equalTo("test")))
+      .andExpect(jsonPath("$.account.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.signatureTime").exists());
+  }
+  
+  @Test
+  @WithMockUser(username = "admin", roles = {"USER", "ADMIN"})
+  public void signAupOnBehalfOfUserThatHasNoSignature() throws Exception {
     IamAup aup = buildDefaultAup();
     aupRepo.save(aup);
 
     mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
-        .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
-
-    Date newEndTime = new Date();
-    AupSignatureDTO dto = new AupSignatureDTO();
-    dto.setSignatureTime(newEndTime);
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'test'")));
 
     mvc
-    .perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID).content(mapper.writeValueAsString(dto))
-      .contentType(APPLICATION_JSON))
-    .andExpect(OK);
+      .perform(patch("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+      .andExpect(CREATED);
 
-    String sigString = mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.aup").exists())
-        .andExpect(jsonPath("$.account.uuid").exists())
-        .andExpect(jsonPath("$.account.username", equalTo("test")))
-        .andExpect(jsonPath("$.account.name", equalTo("Test User")))
-        .andExpect(jsonPath("$.signatureTime").exists())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.aup").exists())
+      .andExpect(jsonPath("$.account.uuid").exists())
+      .andExpect(jsonPath("$.account.username", equalTo("test")))
+      .andExpect(jsonPath("$.account.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.signatureTime").exists());
 
-    AupSignatureDTO sig = mapper.readValue(sigString, AupSignatureDTO.class);
-    assertThat(sig.getSignatureTime(), new DateEqualModulo1Second(newEndTime));
-
-    mvc.perform(get("/iam/aup/signature/{accountId}", "1234"))
-      .andExpect(status().isNotFound())
-      .andExpect(jsonPath("$.error", equalTo("Account not found for id: 1234")));
+    mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID))
+      .andExpect(status().isOk());
 
   }
 

@@ -133,7 +133,7 @@ public class IamAccount implements Serializable {
   @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)
   private Set<IamScopePolicy> scopePolicies = new HashSet<>();
 
-  @OneToOne(cascade = CascadeType.REMOVE, mappedBy = "account")
+  @OneToOne(cascade = CascadeType.ALL, mappedBy = "account")
   private IamAupSignature aupSignature;
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)

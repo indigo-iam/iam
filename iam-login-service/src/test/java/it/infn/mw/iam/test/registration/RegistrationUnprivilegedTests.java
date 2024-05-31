@@ -118,7 +118,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     IamAccount account = accountRepo.findByUuid(reg.getAccountId())
       .orElseThrow(() -> new AssertionError("Expected account not found!"));
 
-    aupSignatureRepo.findSignatureForAccount(account)
+    aupSignatureRepo.findSignatureForAccount(aup, account)
       .orElseThrow(() -> new AssertionError("Expected signature not found!"));
   }
 

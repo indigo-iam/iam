@@ -29,57 +29,62 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryCustom {
 
   @Autowired
-  IamAupSignatureRepository repo;
+  IamAupSignatureRepository signatureRepo;
 
   @Autowired
-  IamAupRepository aupRepo;
-  
+  IamAccountRepository accountRepo;
+
   @Override
-  public Optional<IamAupSignature> findSignatureForAccount(IamAccount account) {
+  public Optional<IamAupSignature> findSignatureForAccount(IamAup aup, IamAccount account) {
 
-    Optional<IamAup> aup = aupRepo.findDefaultAup();
-
-    if (!aup.isPresent()) {
-      return Optional.empty();
-    }
-
-    return repo.findByAupAndAccount(aup.get(), account);
+    return signatureRepo.findByAupAndAccount(aup, account);
   }
 
-  private IamAupSignature createSignatureForAccount(IamAup aup, IamAccount account) {
+  private IamAupSignature createSignature(IamAup aup, IamAccount account, Date currentTime) {
+
     IamAupSignature newSignature = new IamAupSignature();
     newSignature.setAccount(account);
     newSignature.setAup(aup);
+    newSignature.setSignatureTime(currentTime);
     account.setAupSignature(newSignature);
+    accountRepo.save(account);
     return newSignature;
   }
 
-  @Override
-  public IamAupSignature createSignatureForAccount(IamAccount account, Date currentTime) {
-    IamAup aup = aupRepo.findDefaultAup()
-      .orElseThrow(() -> new IllegalStateException(
-          "Default AUP not found in database, cannot create signature"));
+  private IamAupSignature updateSignature(IamAccount account, Date currentTime) {
 
-    IamAupSignature signature = repo.findSignatureForAccount(account)
-      .orElseGet(() -> createSignatureForAccount(aup, account));
+    account.getAupSignature().setSignatureTime(currentTime);
+    accountRepo.save(account);
+    return account.getAupSignature();
+  }
 
-    signature.setSignatureTime(currentTime);
-    
-    repo.save(signature);
-    return signature;
+  private void deleteSignature(IamAccount account) {
+
+    signatureRepo.delete(account.getAupSignature());
+    account.setAupSignature(null);
+    accountRepo.save(account);
   }
 
   @Override
-  public IamAupSignature updateSignatureForAccount(IamAccount account, Date currentTime) {
+  public IamAupSignature createSignatureForAccount(IamAup aup, IamAccount account,
+      Date currentTime) {
 
-    IamAupSignature signature = findSignatureForAccount(account)
-      .orElseThrow(() -> new IamAupSignatureNotFoundError(account));
+    Optional<IamAupSignature> signature = signatureRepo.findByAupAndAccount(aup, account);
 
+    if (signature.isEmpty()) {
+      return createSignature(aup, account, currentTime);
+    }
+    return updateSignature(account, currentTime);
+  }
 
-    signature.setSignatureTime(currentTime);
-    repo.save(signature);
+  @Override
+  public void deleteSignatureForAccount(IamAup aup, IamAccount account) {
 
-    return signature;
+    if (signatureRepo.findByAupAndAccount(aup, account).isPresent()) {
+      deleteSignature(account);
+      return;
+    }
+    throw new IamAupSignatureNotFoundError(account);
   }
 
 }
