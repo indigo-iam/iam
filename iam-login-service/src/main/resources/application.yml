@@ -188,7 +188,9 @@ iam:
     external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
 cache:
-  redis.enabled: ${CACHE_REDIS_ENABLED:false}
+  enabled: ${CACHE_ENABLED:true}
+  redis:
+    enabled: ${CACHE_REDIS_ENABLED:false}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
