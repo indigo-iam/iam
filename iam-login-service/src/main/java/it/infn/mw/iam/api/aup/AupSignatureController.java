@@ -135,13 +135,16 @@ public class AupSignatureController {
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
 
+    IamAccount updaterAccount = accountUtils.getAuthenticatedUserAccount()
+        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
+
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     Date now = new Date(timeProvider.currentTimeMillis());
 
     IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
-    eventPublisher.publishEvent(new AupSignedOnBehalfEvent(this, signature, account.getUsername()));
+    eventPublisher.publishEvent(new AupSignedOnBehalfEvent(this, signature, updaterAccount.getUsername()));
 
     return signatureConverter.dtoFromEntity(signature);
   }
