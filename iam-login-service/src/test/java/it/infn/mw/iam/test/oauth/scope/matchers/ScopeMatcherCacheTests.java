@@ -54,9 +54,9 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
 
   @Autowired
   private CacheConfig cacheConfig;
-  
+
   @Autowired
-  private CacheProperties redisCacheProperties;
+  private CacheProperties cacheProperties;
 
   private String getAccessTokenForClient(String scopes) throws Exception {
 
@@ -69,7 +69,7 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
 
   @Test
   public void ensureRedisCashIsDisabled() {
-    assertFalse(redisCacheProperties.isEnabled());
+    assertFalse(cacheProperties.getRedisProperties().isEnabled());
     assertThat(cacheConfig.localCacheManager(), instanceOf(CacheManager.class));
   }
 

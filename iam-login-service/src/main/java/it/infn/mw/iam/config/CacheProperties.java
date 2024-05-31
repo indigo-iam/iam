@@ -43,6 +43,17 @@ public class CacheProperties {
     public void setEnabled(boolean enable) {
       this.enabled = enable;
     }
+
+  }
+
+  private RedisProperties redisPropetries = new RedisProperties();
+
+  public RedisProperties getRedisProperties() {
+    return redisPropetries;
+  }
+
+  public void setRedisProperties(RedisProperties redisPropetries) {
+    this.redisPropetries = redisPropetries;
   }
 
 }
