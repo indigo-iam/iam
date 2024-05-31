@@ -36,11 +36,10 @@
 
       var modalOptions = {
         closeButtonText: 'Cancel',
-        // templateUrl: '/resources/iam/apps/dashboard-app/templates/home/signonbehalf.html',
-        actionButtonText: 'Sign on behalf',
+        actionButtonText: 'Sign AUP',
         headerText: 'Sign AUP on behalf of this user',
         bodyText:
-            `Are you sure you want to sign AUP on behalf of this user?`
+            `Are you sure you want to sign the AUP on behalf of this user?`
       };
 
       ModalService.showModal({}, modalOptions)

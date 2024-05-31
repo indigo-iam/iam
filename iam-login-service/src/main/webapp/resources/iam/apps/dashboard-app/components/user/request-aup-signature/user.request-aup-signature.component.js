@@ -36,9 +36,9 @@
       var modalOptions = {
         closeButtonText: 'Cancel',
         actionButtonText: 'Request AUP signature',
-        headerText: 'Do you want to request user to sign AUP?',
+        headerText: 'Request AUP signature',
         bodyText:
-            `Note that user MUST sign it again in order to get new tokens.`
+            `Do you want this user to (re)sign the AUP?`
       };
 
       ModalService.showModal({}, modalOptions)
