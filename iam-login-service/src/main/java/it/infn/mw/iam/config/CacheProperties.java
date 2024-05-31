@@ -22,16 +22,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CacheProperties {
 
-  private boolean enabled = true;
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(boolean enable) {
-    this.enabled = enable;
-  }
-
   public class RedisProperties {
 
     private boolean enabled = false;
@@ -46,14 +36,25 @@ public class CacheProperties {
 
   }
 
-  private RedisProperties redisPropetries = new RedisProperties();
+  private boolean enabled = true;
 
-  public RedisProperties getRedisProperties() {
-    return redisPropetries;
+  private RedisProperties redis = new RedisProperties();
+
+  public boolean isEnabled() {
+    return enabled;
   }
 
-  public void setRedisProperties(RedisProperties redisPropetries) {
-    this.redisPropetries = redisPropetries;
+  public void setEnabled(boolean enable) {
+    this.enabled = enable;
   }
+
+  public RedisProperties getRedis() {
+    return redis;
+  }
+
+  public void setRedis(RedisProperties redis) {
+    this.redis = redis;
+  }
+
 
 }

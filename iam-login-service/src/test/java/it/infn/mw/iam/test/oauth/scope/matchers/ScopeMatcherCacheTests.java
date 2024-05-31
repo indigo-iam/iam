@@ -69,7 +69,7 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
 
   @Test
   public void ensureRedisCashIsDisabled() {
-    assertFalse(cacheProperties.getRedisProperties().isEnabled());
+    assertFalse(cacheProperties.getRedis().isEnabled());
     assertThat(cacheConfig.localCacheManager(), instanceOf(CacheManager.class));
   }
 
