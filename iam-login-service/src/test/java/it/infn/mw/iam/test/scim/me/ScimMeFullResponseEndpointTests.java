@@ -52,7 +52,7 @@ public class ScimMeFullResponseEndpointTests {
   private MockMvc mvc;
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 

@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
@@ -32,6 +34,7 @@ import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.config.scim.ScimProperties.AttributeDescriptor;
 import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
@@ -98,11 +101,14 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     if (scimUser.hasAupSignature()) {
-
+      Optional<IamAup> aup = aupRepository.findDefaultAup();
+      if (aup.isEmpty()) {
+        throw new ScimException("Found signature of an unknown AUP");
+      }
       IamAupSignature aupSignature = new IamAupSignature();
       aupSignature.setSignatureTime(scimUser.getIndigoUser().getAupSignatureTime());
       aupSignature.setAccount(account);
-      aupSignature.setAup(aupRepository.findDefaultAup().get());
+      aupSignature.setAup(aup.get());
       account.setAupSignature(aupSignature);
     }
 
@@ -163,9 +169,13 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     if (scimUser.hasAttributes()) {
-      scimUser.getIndigoUser().getAttributes().forEach(c -> {
-        account.getAttributes().add(attributeConverter.entityFromDto(c));
-      });
+      scimUser.getIndigoUser()
+        .getAttributes()
+        .forEach(c -> account.getAttributes().add(attributeConverter.entityFromDto(c)));
+    }
+
+    if (scimUser.hasEndTime()) {
+      account.setEndTime(scimUser.getIndigoUser().getEndTime());
     }
 
     IamUserInfo userInfo = new IamUserInfo();
@@ -220,14 +230,11 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     entity.getGroups().forEach(group -> builder.addGroupRef(getScimGroupRef(group.getGroup())));
 
-    entity.getOidcIds()
-      .forEach(oidcId -> builder.addOidcId(oidcIdConverter.dtoFromEntity(oidcId)));
+    entity.getOidcIds().forEach(oidcId -> builder.addOidcId(oidcIdConverter.dtoFromEntity(oidcId)));
 
-    entity.getSshKeys()
-      .forEach(sshKey -> builder.addSshKey(sshKeyConverter.dtoFromEntity(sshKey)));
+    entity.getSshKeys().forEach(sshKey -> builder.addSshKey(sshKeyConverter.dtoFromEntity(sshKey)));
 
-    entity.getSamlIds()
-      .forEach(samlId -> builder.addSamlId(samlIdConverter.dtoFromEntity(samlId)));
+    entity.getSamlIds().forEach(samlId -> builder.addSamlId(samlIdConverter.dtoFromEntity(samlId)));
 
     entity.getX509Certificates()
       .forEach(cert -> builder.addX509Certificate(x509CertificateIamConverter.dtoFromEntity(cert)));
@@ -264,13 +271,13 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     }
 
     if (properties.isIncludeManagedGroups()) {
-      groupManagerService.getManagedGroupInfoForAccount(entity).getManagedGroups().forEach(mg -> {
-        builder.addManagedGroup(ScimGroupRef.builder()
+      groupManagerService.getManagedGroupInfoForAccount(entity)
+        .getManagedGroups()
+        .forEach(mg -> builder.addManagedGroup(ScimGroupRef.builder()
           .display(mg.getName())
           .value(mg.getId())
           .ref(resourceLocationProvider.groupLocation(mg.getId()))
-          .build());
-      });
+          .build()));
     }
 
     return builder.build();

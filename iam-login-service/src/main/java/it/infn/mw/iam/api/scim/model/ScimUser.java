@@ -247,6 +247,11 @@ public class ScimUser extends ScimResource {
     return indigoUser != null && indigoUser.getAupSignatureTime() != null;
   }
 
+  public boolean hasEndTime() {
+
+    return indigoUser != null && indigoUser.getEndTime() != null;
+  }
+
   public boolean hasX509Certificates() {
 
     return indigoUser != null && indigoUser.getCertificates() != null
@@ -271,22 +276,10 @@ public class ScimUser extends ScimResource {
         && !indigoUser.getSamlIds().isEmpty();
   }
 
-  public boolean hasAuthorities() {
-
-    return indigoUser != null && indigoUser.getAuthorities() != null
-        && !indigoUser.getAuthorities().isEmpty();
-  }
-
   public boolean hasAttributes() {
 
     return indigoUser != null && indigoUser.getAttributes() != null
         && !indigoUser.getAttributes().isEmpty();
-  }
-
-  public boolean hasManagedGroups() {
-
-    return indigoUser != null && indigoUser.getManagedGroups() != null
-        && !indigoUser.getManagedGroups().isEmpty();
   }
 
   public boolean hasEmails() {
