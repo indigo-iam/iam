@@ -50,6 +50,7 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
@@ -117,8 +118,11 @@ public class RegistrationApiController {
   public RegistrationRequestDto createRegistrationRequest(
       @RequestBody @Validated RegistrationRequestDto request, final BindingResult validationResult) {
     handleValidationError(validationResult);
-    return service.createRequest(request, getExternalAuthenticationInfo());
 
+    return service.createRequest(
+        request,
+        getExternalAuthenticationInfo(),
+        registrationProperties.getFields());
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")

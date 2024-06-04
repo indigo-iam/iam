@@ -193,7 +193,30 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testCreateRequestWithoutNotes() throws Exception {
+  public void testCreateRequestWithMandatoryNotesField() throws Exception {
+
+    String username = "user_with_empty_notes";
+    String email = username + "@example.org";
+
+    RegistrationRequestDto request = new RegistrationRequestDto();
+    request.setGivenname("Test");
+    request.setFamilyname("User");
+    request.setEmail(email);
+    request.setUsername(username);
+    request.setPassword("password");
+    // `Notes` field is mandatory
+    request.setNotes("Notes is mandatory");
+
+    // @formatter:off
+    mvc.perform(post("/registration/create")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isOk());
+    // @formatter:on
+  }
+
+  @Test
+  public void testCreateRequestWithoutNotesOptionalCase() throws Exception {
 
     String username = "user_with_empty_notes";
     String email = username + "@example.org";
@@ -209,12 +232,12 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     mvc.perform(post("/registration/create")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isBadRequest());
+      .andExpect(status().isOk());
     // @formatter:on
   }
 
   @Test
-  public void testCreateRequestBlankNotes() throws Exception {
+  public void testCreateRequestWithNotesBeingOptionalBlankCase() throws Exception {
 
     String username = "user_with_empty_notes";
     String email = username + "@example.org";
@@ -225,13 +248,14 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setPassword("password");
+    // `Notes` field set to optional.
     request.setNotes(" ");
 
     // @formatter:off
     mvc.perform(post("/registration/create")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isBadRequest());
+      .andExpect(status().isOk());
     // @formatter:on
   }
 
