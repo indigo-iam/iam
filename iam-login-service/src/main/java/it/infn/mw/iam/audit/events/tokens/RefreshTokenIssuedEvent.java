@@ -15,7 +15,14 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
+import java.text.ParseException;
+import java.util.Map;
+
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
@@ -23,10 +30,25 @@ import it.infn.mw.iam.audit.events.IamEventCategory;
 
 public class RefreshTokenIssuedEvent extends IamAuditApplicationEvent {
 
+  public static final Logger LOG = LoggerFactory.getLogger(RefreshTokenIssuedEvent.class);
+
   private static final long serialVersionUID = 1L;
+  private final transient Map<String, Object> body;
 
   public RefreshTokenIssuedEvent(Object source, OAuth2RefreshTokenEntity token) {
     super(IamEventCategory.TOKEN, source, "Refresh token issued");
+
+    Map<String, Object> parsedTokenMap = Maps.newHashMap();
+    try {
+      parsedTokenMap = token.getJwt().getJWTClaimsSet().getClaims();
+    } catch (ParseException e) {
+      LOG.warn(e.getMessage(), e);
+    }
+    this.body = parsedTokenMap;
+  }
+
+  public Map<String, Object> getBody() {
+    return body;
   }
 
 }
