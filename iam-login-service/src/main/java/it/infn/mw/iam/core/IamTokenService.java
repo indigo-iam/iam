@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -103,9 +104,10 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
-  public OAuth2RefreshTokenEntity getRefreshToken(String refreshTokenValue) {
+  public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
+      AuthenticationHolderEntity authHolder) {
 
-    OAuth2RefreshTokenEntity token = super.getRefreshToken(refreshTokenValue);
+    OAuth2RefreshTokenEntity token = super.createRefreshToken(client, authHolder);
 
     eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, token));
     return token;

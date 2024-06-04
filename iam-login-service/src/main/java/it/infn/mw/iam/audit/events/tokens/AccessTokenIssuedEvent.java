@@ -36,7 +36,7 @@ public class AccessTokenIssuedEvent extends IamAuditApplicationEvent {
   public static final Logger LOG = LoggerFactory.getLogger(AccessTokenIssuedEvent.class);
 
   private final HeaderDTO header = new HeaderDTO();
-  private final Map<String, Object> body;
+  private final transient Map<String, Object> body;
 
 
   public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token) {
