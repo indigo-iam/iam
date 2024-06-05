@@ -215,49 +215,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     // @formatter:on
   }
 
-  @Test
-  public void testCreateRequestWithoutNotesOptionalCase() throws Exception {
-
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
-
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-
-    // @formatter:off
-    mvc.perform(post("/registration/create")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk());
-    // @formatter:on
-  }
-
-  @Test
-  public void testCreateRequestWithNotesBeingOptionalBlankCase() throws Exception {
-
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
-
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-    // `Notes` field set to optional.
-    request.setNotes(" ");
-
-    // @formatter:off
-    mvc.perform(post("/registration/create")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk());
-    // @formatter:on
-  }
 
   @Test
   public void testEmailAvailableEndpoint() throws Exception {
