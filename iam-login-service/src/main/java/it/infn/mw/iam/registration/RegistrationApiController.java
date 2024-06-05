@@ -50,7 +50,6 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;

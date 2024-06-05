@@ -413,13 +413,4 @@ public class DefaultRegistrationRequestService
 
     return handleApprove(request);
   }
-
-  public void setValidationService(RegistrationRequestValidationService validationService) {
-    this.validationService = validationService;
-  }
-
-  public RegistrationRequestValidationService getValidationService() {
-    return validationService;
-  }
-
 }
