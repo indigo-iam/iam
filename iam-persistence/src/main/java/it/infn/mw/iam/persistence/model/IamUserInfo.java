@@ -91,6 +91,9 @@ public class IamUserInfo implements Serializable {
 
   private String birthdate;
 
+  @Column(length = 4096)
+  private String affiliation;
+
   private transient JsonObject src;
 
   public IamAddress getAddress() {
@@ -350,6 +353,7 @@ public class IamUserInfo implements Serializable {
       obj.addProperty("locale", this.getLocale());
       obj.addProperty("updated_at", this.getUpdatedTime());
       obj.addProperty("birthdate", this.getBirthdate());
+      obj.addProperty("affiliation", this.getAffiliation());
 
       obj.addProperty("email", this.getEmail());
       obj.addProperty("email_verified", this.getEmailVerified());
@@ -411,6 +415,14 @@ public class IamUserInfo implements Serializable {
 
     // NO-OP
 
+  }
+
+  public String getAffiliation() {
+    return affiliation;
+  }
+
+  public void setAffiliation(String affiliation) {
+    this.affiliation = affiliation;
   }
 
   @Override
