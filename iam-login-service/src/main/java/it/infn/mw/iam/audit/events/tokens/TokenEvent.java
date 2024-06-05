@@ -35,7 +35,7 @@ public class TokenEvent extends IamAuditApplicationEvent {
 
   public static final Logger LOG = LoggerFactory.getLogger(TokenEvent.class);
 
-  private Map<String, Object> body;
+  private transient Map<String, Object> body;
 
   public TokenEvent(Object source, OAuth2AccessTokenEntity token, String message) {
     super(IamEventCategory.TOKEN, source, message);
@@ -63,10 +63,6 @@ public class TokenEvent extends IamAuditApplicationEvent {
 
   public Map<String, Object> getBody() {
     return body;
-  }
-
-  public void setBody(Map<String, Object> body) {
-    this.body = body;
   }
 
 }
