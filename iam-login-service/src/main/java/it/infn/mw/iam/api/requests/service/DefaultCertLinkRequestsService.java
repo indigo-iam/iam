@@ -81,16 +81,17 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
   @Autowired
   private IamX509CertificateRepository x509CertificateRepository;
 
-  private static final Table<IamRequestStatus, IamRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS = new ImmutableTable.Builder<IamRequestStatus, IamRequestStatus, Boolean>()
-      .put(PENDING, APPROVED, true)
-      .put(PENDING, REJECTED, true)
-      .build();
+  private static final Table<IamRequestStatus, IamRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS =
+      new ImmutableTable.Builder<IamRequestStatus, IamRequestStatus, Boolean>()
+        .put(PENDING, APPROVED, true)
+        .put(PENDING, REJECTED, true)
+        .build();
 
   @Override
   public CertLinkRequestDto createCertLinkRequest(CertLinkRequestDto requestDto) {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(() -> new IllegalStateException("No authenticated user found"));
+      .orElseThrow(() -> new IllegalStateException("No authenticated user found"));
 
     requestDto.setUserUuid(account.getUuid());
     requestDto.setUsername(account.getUsername());
@@ -100,14 +101,8 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     certLinkRequestUtils.checkCertNotLinkedToSomeoneElse(requestDto, account);
 
     IamX509Certificate cert = x509CertificateRepository
-        .findBySubjectDnAndIssuerDn(requestDto.getSubjectDn(), requestDto.getIssuerDn())
-        .orElseGet(() -> {
-          IamX509Certificate newCert = new IamX509Certificate();
-          newCert.setSubjectDn(requestDto.getSubjectDn());
-          newCert.setIssuerDn(requestDto.getIssuerDn());
-          x509CertificateRepository.save(newCert);
-          return newCert;
-        });
+      .findBySubjectDnAndIssuerDn(requestDto.getSubjectDn(), requestDto.getIssuerDn())
+      .orElseGet(() -> x509CertificateRepository.save(converter.certificateFromRequest(requestDto)));
 
     IamCertLinkRequest request = new IamCertLinkRequest();
     request.setUuid(UUID.randomUUID().toString());
@@ -123,7 +118,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     notificationFactory.createAdminHandleCertLinkRequestMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestCreatedEvent(this, request));
 
-    return converter.fromEntity(request);
+    return converter.dtoFromEntity(request);
   }
 
   @Override
@@ -147,7 +142,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     notificationFactory.createCertLinkApprovedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestApprovedEvent(this, request));
 
-    return converter.fromEntity(request);
+    return converter.dtoFromEntity(request);
   }
 
   @Override
@@ -160,28 +155,28 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     notificationFactory.createCertLinkRejectedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestRejectedEvent(this, request));
 
-    return converter.fromEntity(request);
+    return converter.dtoFromEntity(request);
   }
 
   @Override
   public CertLinkRequestDto getCertLinkRequestDetails(String requestId) {
     IamCertLinkRequest request = certLinkRequestUtils.getCertLinkRequest(requestId);
-    return converter.fromEntity(request);
+    return converter.dtoFromEntity(request);
   }
 
   @Override
-  public ListResponseDTO<CertLinkRequestDto> listCertLinkRequests(String username,
-      String subject, String status, OffsetPageable pageRequest) {
+  public ListResponseDTO<CertLinkRequestDto> listCertLinkRequests(String username, String subject,
+      String status, OffsetPageable pageRequest) {
     Optional<String> usernameFilter = Optional.ofNullable(username);
     Optional<String> subjectFilter = Optional.ofNullable(subject);
     Optional<String> statusFilter = Optional.ofNullable(status);
 
     List<CertLinkRequestDto> results = Lists.newArrayList();
 
-    Page<IamCertLinkRequest> pagedResults = lookupCertLinkRequests(usernameFilter,
-        subjectFilter, statusFilter, pageRequest);
+    Page<IamCertLinkRequest> pagedResults =
+        lookupCertLinkRequests(usernameFilter, subjectFilter, statusFilter, pageRequest);
 
-    pagedResults.getContent().forEach(request -> results.add(converter.fromEntity(request)));
+    pagedResults.getContent().forEach(request -> results.add(converter.dtoFromEntity(request)));
 
     ListResponseDTO.Builder<CertLinkRequestDto> builder = ListResponseDTO.builder();
     return builder.resources(results).fromPage(pagedResults, pageRequest).build();
@@ -192,7 +187,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
 
     if (!ALLOWED_STATE_TRANSITIONS.contains(request.getStatus(), status)) {
       throw new InvalidIamRequestStatusError(String
-          .format("Invalid certLink request transition: %s -> %s", request.getStatus(), status));
+        .format("Invalid certLink request transition: %s -> %s", request.getStatus(), status));
     }
     request.setStatus(status);
     request.setLastUpdateTime(new Date(timeProvider.currentTimeMillis()));
@@ -216,8 +211,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
   }
 
   private Page<IamCertLinkRequest> lookupCertLinkRequests(Optional<String> usernameFilter,
-      Optional<String> subjectFilter, Optional<String> statusFilter,
-      OffsetPageable pageRequest) {
+      Optional<String> subjectFilter, Optional<String> statusFilter, OffsetPageable pageRequest) {
 
     Specification<IamCertLinkRequest> spec = baseSpec();
 

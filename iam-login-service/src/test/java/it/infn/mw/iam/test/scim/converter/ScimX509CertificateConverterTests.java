@@ -25,15 +25,13 @@ import org.junit.Test;
 
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
-import it.infn.mw.iam.authn.x509.PEMX509CertificateChainParser;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 
 
 public class ScimX509CertificateConverterTests extends X509TestSupport {
 
-  X509CertificateConverter converter =
-      new X509CertificateConverter(new PEMX509CertificateChainParser());
+  X509CertificateConverter converter = new X509CertificateConverter();
 
   @Test
   public void testScimToEntityConversion() {

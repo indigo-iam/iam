@@ -15,17 +15,23 @@
  */
 package it.infn.mw.iam.api.requests;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.requests.model.CertLinkRequestDto;
+import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
 import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 @Service
 public class CertLinkRequestConverter {
 
-  public CertLinkRequestDto fromEntity(IamCertLinkRequest entity) {
+  @Autowired
+  private X509CertificateParser parser;
+
+  public CertLinkRequestDto dtoFromEntity(IamCertLinkRequest entity) {
     CertLinkRequestDto dto = new CertLinkRequestDto();
-    
+
     dto.setUuid(entity.getUuid());
     dto.setUsername(entity.getAccount().getUsername());
     dto.setUserUuid(entity.getAccount().getUuid());
@@ -38,7 +44,24 @@ public class CertLinkRequestConverter {
     dto.setMotivation(entity.getMotivation());
     dto.setCreationTime(entity.getCreationTime());
     dto.setLastUpdateTime(entity.getLastUpdateTime());
-    
+
     return dto;
+  }
+
+  public IamX509Certificate certificateFromRequest(CertLinkRequestDto requestDto) {
+
+    IamX509Certificate cert;
+
+    if (requestDto.getPemEncodedCertificate() != null) {
+      cert = parser.parseCertificateFromString(requestDto.getPemEncodedCertificate());
+    } else {
+      cert = new IamX509Certificate();
+      cert.setCertificate(requestDto.getPemEncodedCertificate());
+      cert.setSubjectDn(requestDto.getSubjectDn());
+      cert.setIssuerDn(requestDto.getIssuerDn());
+    }
+
+    cert.setLabel(requestDto.getLabel());
+    return cert;
   }
 }
