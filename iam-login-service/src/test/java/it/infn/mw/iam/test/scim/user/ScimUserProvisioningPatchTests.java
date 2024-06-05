@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.Base64;
@@ -149,7 +150,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     scimUtils.patchUser(lennon.getId(), remove, updateOidcId);
 
     updatedUser = scimUtils.getUser(lennon.getId());
-    assertNull(updatedUser.getIndigoUser());
+    assertTrue(updatedUser.getIndigoUser().getOidcIds().isEmpty());
   }
 
   @Test
@@ -174,7 +175,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
 
     updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getId(), equalTo(lennon.getId()));
-    assertNull(updatedUser.getIndigoUser());
+    assertTrue(updatedUser.getIndigoUser().getSamlIds().isEmpty());
   }
 
   @Test
@@ -240,7 +241,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     scimUtils.patchUser(lennon.getId(), remove, lennon_remove);
 
     updatedUser = scimUtils.getUser(lennon.getId());
-    assertNull(updatedUser.getIndigoUser());
+    assertTrue(updatedUser.getIndigoUser().getCertificates().isEmpty());
   }
 
   @Test
@@ -299,7 +300,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     scimUtils.patchUser(lennon.getId(), remove, updateSshKey);
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
-    assertNull(updatedUser.getIndigoUser());
+    assertTrue(updatedUser.getIndigoUser().getSshKeys().isEmpty());
   }
 
   @Test

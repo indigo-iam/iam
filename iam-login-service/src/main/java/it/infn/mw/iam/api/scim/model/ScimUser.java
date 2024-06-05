@@ -473,6 +473,14 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
+    public Builder isAdmin(Boolean isAdmin) {
+
+      Preconditions.checkNotNull(isAdmin, "Null isAdmin");
+
+      indigoUserBuilder.isAdmin(isAdmin);
+      return this;
+    }
+
     public Builder endTime(Date endTime) {
 
       Preconditions.checkNotNull(endTime, "Null membership end-time");
@@ -552,19 +560,6 @@ public class ScimUser extends ScimResource {
     public Builder addAttribute(String name, String value) {
 
       return addAttribute(ScimAttribute.builder().withName(name).withVaule(value).build());
-    }
-
-    public Builder addAuthority(ScimAuthority authority) {
-
-      Preconditions.checkNotNull(authority, "Null authority");
-
-      indigoUserBuilder.addAuthority(authority);
-      return this;
-    }
-
-    public Builder addAuthority(String authority) {
-
-      return addAuthority(ScimAuthority.builder().withAuthority(authority).build());
     }
 
     public Builder addManagedGroup(ScimGroupRef groupRef) {

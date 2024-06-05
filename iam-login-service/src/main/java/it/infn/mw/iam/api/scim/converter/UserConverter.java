@@ -15,7 +15,8 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
-import java.util.Optional;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,6 @@ import it.infn.mw.iam.api.account.group_manager.AccountGroupManagerService;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimAddress;
 import it.infn.mw.iam.api.scim.model.ScimAttribute;
-import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimLabel;
 import it.infn.mw.iam.api.scim.model.ScimMeta;
@@ -34,15 +34,12 @@ import it.infn.mw.iam.config.scim.ScimProperties;
 import it.infn.mw.iam.config.scim.ScimProperties.AttributeDescriptor;
 import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
-import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
 
@@ -57,18 +54,14 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
   private final SshKeyConverter sshKeyConverter;
   private final SamlIdConverter samlIdConverter;
   private final X509CertificateConverter x509CertificateIamConverter;
-  private final AttributeConverter attributeConverter;
 
   private final AccountGroupManagerService groupManagerService;
-
-  private final IamAupRepository aupRepository;
 
   private final ScimProperties properties;
 
   public UserConverter(ScimProperties properties, ScimResourceLocationProvider rlp,
       AddressConverter ac, OidcIdConverter oidc, SshKeyConverter sshc, SamlIdConverter samlc,
-      X509CertificateConverter x509Iamcc, AttributeConverter attributeConverter,
-      AccountGroupManagerService groupManagerService, IamAupRepository aupRepository) {
+      X509CertificateConverter x509Iamcc, AccountGroupManagerService groupManagerService) {
 
     this.resourceLocationProvider = rlp;
     this.properties = properties;
@@ -77,13 +70,16 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     this.sshKeyConverter = sshc;
     this.samlIdConverter = samlc;
     this.x509CertificateIamConverter = x509Iamcc;
-    this.attributeConverter = attributeConverter;
     this.groupManagerService = groupManagerService;
-    this.aupRepository = aupRepository;
   }
 
   @Override
   public IamAccount entityFromDto(ScimUser scimUser) {
+
+    checkNotNull(scimUser);
+    checkNotNull(scimUser.getEmails(), "Missing mandatory e-mail");
+    checkArgument(scimUser.getEmails().size() > 0, "Missing mandatory e-mail");
+    checkNotNull(scimUser.getName(), "Missing mandatory user given and family name");
 
     IamAccount account = new IamAccount();
 
@@ -98,18 +94,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
     if (scimUser.getPassword() != null) {
 
       account.setPassword(scimUser.getPassword());
-    }
-
-    if (scimUser.hasAupSignature()) {
-      Optional<IamAup> aup = aupRepository.findDefaultAup();
-      if (aup.isEmpty()) {
-        throw new ScimException("Found signature of an unknown AUP");
-      }
-      IamAupSignature aupSignature = new IamAupSignature();
-      aupSignature.setSignatureTime(scimUser.getIndigoUser().getAupSignatureTime());
-      aupSignature.setAccount(account);
-      aupSignature.setAup(aup.get());
-      account.setAupSignature(aupSignature);
     }
 
     if (scimUser.hasOidcIds()) {
@@ -168,21 +152,16 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       });
     }
 
-    if (scimUser.hasAttributes()) {
-      scimUser.getIndigoUser()
-        .getAttributes()
-        .forEach(c -> account.getAttributes().add(attributeConverter.entityFromDto(c)));
-    }
-
-    if (scimUser.hasEndTime()) {
-      account.setEndTime(scimUser.getIndigoUser().getEndTime());
-    }
-
     IamUserInfo userInfo = new IamUserInfo();
 
-    userInfo.setEmail(scimUser.getEmails().get(0).getValue());
-    userInfo.setGivenName(scimUser.getName().getGivenName());
-    userInfo.setFamilyName(scimUser.getName().getFamilyName());
+    if (!scimUser.getEmails().isEmpty()) {
+      userInfo.setEmail(scimUser.getEmails().get(0).getValue());
+    }
+
+    if (scimUser.getName() != null) {
+      userInfo.setGivenName(scimUser.getName().getGivenName());
+      userInfo.setFamilyName(scimUser.getName().getFamilyName());
+    }
 
     if (scimUser.hasPhotos()) {
       userInfo.setPicture(scimUser.getPhotos().get(0).getValue());
@@ -264,11 +243,11 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    if (properties.isIncludeAuthorities()) {
-      entity.getAuthorities()
-        .forEach(authority -> builder
-          .addAuthority(ScimAuthority.builder().withAuthority(authority.getAuthority()).build()));
-    }
+    builder.isAdmin(entity.getAuthorities()
+      .stream()
+      .filter(a -> a.isAdminAuthority())
+      .findAny()
+      .isPresent());
 
     if (properties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_SSH_KEY;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_OIDC_ID;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_PICTURE;
@@ -25,6 +26,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -33,7 +35,6 @@ import java.util.List;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,9 +43,10 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -56,7 +58,6 @@ import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
-import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -127,7 +128,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
   }
 
   @PreAuthorize("#iam.hasScope('scim:read') or hasRole('ROLE_USER')")
-  @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(produces = SCIM_CONTENT_TYPE)
   public ScimUser whoami() {
 
     IamAccount account = getCurrentUserAccount();
@@ -135,9 +136,9 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   }
 
-  @PreAuthorize("#iam.hasScope('scim:write') or hasRole('USER')")
-  @RequestMapping(method = RequestMethod.PATCH, consumes = ScimConstants.SCIM_CONTENT_TYPE)
-  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize("#iam.hasScope('scim:write') or hasRole('ROLE_USER')")
+  @PatchMapping(consumes = SCIM_CONTENT_TYPE)
+  @ResponseStatus(NO_CONTENT)
   public void updateUser(
       @RequestBody @Validated(ScimUser.UpdateUserValidation.class) final ScimUserPatchRequest patchRequest,
       final BindingResult validationResult) {

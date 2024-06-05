@@ -36,15 +36,17 @@ public class ScimIndigoUser {
 
   public enum INDIGO_USER_SCHEMA {
 
+    // @formatter:off
     SSH_KEYS(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys"),
     OIDC_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".oidcIds"),
     SAML_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".samlIds"),
     X509_CERTS(ScimConstants.INDIGO_USER_SCHEMA + ".x509Certificates"),
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
     LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
-    AUTHORITIES(ScimConstants.INDIGO_USER_SCHEMA + ".authorities"),
+    IS_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isAdmin"),
     ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
     MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");
+    // @formatter:on
 
     private final String text;
 
@@ -75,8 +77,8 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
-  @Valid
-  private final List<ScimAuthority> authorities;
+  @JsonProperty(value = "isAdmin")
+  private final Boolean isAdmin;
 
   @Valid
   private final List<ScimAttribute> attributes;
@@ -99,9 +101,9 @@ public class ScimIndigoUser {
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
     this.labels = null;
-    this.authorities = null;
     this.attributes = null;
     this.managedGroups = null;
+    this.isAdmin = null;
   }
 
   private ScimIndigoUser(Builder b) {
@@ -112,15 +114,16 @@ public class ScimIndigoUser {
     this.aupSignatureTime = b.aupSignatureTime;
     this.endTime = b.endTime;
     this.labels = b.labels;
-    this.authorities = b.authorities;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
+    this.isAdmin = b.isAdmin;
   }
 
   @JsonIgnore
   public boolean isEmpty() {
 
-    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && certificates.isEmpty() && endTime==null;
+    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && certificates.isEmpty()
+        && endTime == null;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -150,8 +153,8 @@ public class ScimIndigoUser {
     return labels;
   }
 
-  public List<ScimAuthority> getAuthorities() {
-    return authorities;
+  public Boolean isAdmin() {
+    return isAdmin;
   }
 
   public List<ScimAttribute> getAttributes() {
@@ -182,7 +185,7 @@ public class ScimIndigoUser {
     private Date aupSignatureTime;
     private Date endTime;
 
-    private List<ScimAuthority> authorities = Lists.newLinkedList();
+    private Boolean isAdmin;
     private List<ScimAttribute> attributes = Lists.newLinkedList();
     private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
 
@@ -229,8 +232,8 @@ public class ScimIndigoUser {
       return this;
     }
 
-    public Builder addAuthority(ScimAuthority authority) {
-      authorities.add(authority);
+    public Builder isAdmin(Boolean isAdmin) {
+      this.isAdmin = isAdmin;
       return this;
     }
 
@@ -250,7 +253,7 @@ public class ScimIndigoUser {
 
     @Override
     public int hashCode() {
-      return Objects.hash(attributes, aupSignatureTime, authorities, certificates, endTime, labels,
+      return Objects.hash(attributes, aupSignatureTime, certificates, endTime, isAdmin, labels,
           managedGroups, oidcIds, samlIds, sshKeys);
     }
 
@@ -265,9 +268,9 @@ public class ScimIndigoUser {
       Builder other = (Builder) obj;
       return Objects.equals(attributes, other.attributes)
           && Objects.equals(aupSignatureTime, other.aupSignatureTime)
-          && Objects.equals(authorities, other.authorities)
           && Objects.equals(certificates, other.certificates)
-          && Objects.equals(endTime, other.endTime) && Objects.equals(labels, other.labels)
+          && Objects.equals(endTime, other.endTime) && Objects.equals(isAdmin, other.isAdmin)
+          && Objects.equals(labels, other.labels)
           && Objects.equals(managedGroups, other.managedGroups)
           && Objects.equals(oidcIds, other.oidcIds) && Objects.equals(samlIds, other.samlIds)
           && Objects.equals(sshKeys, other.sshKeys);

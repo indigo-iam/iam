@@ -43,11 +43,12 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimAccountAuthoritiesConverterTests {
 
   private static final ScimAuthority SCIM_ROLE_USER_AUTHORITY =
       ScimAuthority.builder().withAuthority("ROLE_USER").build();
+  private static final ScimAuthority SCIM_ROLE_ADMIN_AUTHORITY =
+      ScimAuthority.builder().withAuthority("ROLE_ADMIN").build();
   private static final ScimAuthority SCIM_ROLE_GM_AUTHORITY =
       ScimAuthority.builder().withAuthority("ROLE_GM" + UUID.randomUUID()).build();
 
@@ -86,20 +87,17 @@ public class ScimAccountAuthoritiesConverterTests {
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
   public void testAuthoritiesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
+    IamAccount testAccount = accountRepo.findByUsername("test_106")
         .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
     ScimUser user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(1));
-    assertThat(user.getIndigoUser().getAuthorities().get(0), equalTo(SCIM_ROLE_USER_AUTHORITY));
+    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
 
-    authorityService.addAuthorityToAccount(testAccount, SCIM_ROLE_GM_AUTHORITY.getAuthority());
+    authorityService.addAuthorityToAccount(testAccount, SCIM_ROLE_ADMIN_AUTHORITY.getAuthority());
 
-    ScimUser updatedUser = scimUtils.getUser(testAccount.getUuid());
+    user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(updatedUser.getIndigoUser().getAuthorities().size(), equalTo(2));
-    assertThat(updatedUser.getIndigoUser().getAuthorities().contains(SCIM_ROLE_USER_AUTHORITY), equalTo(true));
-    assertThat(updatedUser.getIndigoUser().getAuthorities().contains(SCIM_ROLE_GM_AUTHORITY), equalTo(true));
+    assertThat(user.getIndigoUser().isAdmin(), equalTo(true));
   }
 }

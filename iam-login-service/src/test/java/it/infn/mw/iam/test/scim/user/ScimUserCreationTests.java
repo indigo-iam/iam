@@ -75,7 +75,6 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
@@ -453,9 +452,6 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
     ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
       .endTime(expTime)
-      .addAuthority("ROLE_USER")
-      .addAuthority("ROLE_ADMIN")
-      .addAuthority("ROLE_GM:" + getRandomUUid())
       .build();
     ScimUser createdUser = scimUtils.postUser(user);
 
@@ -463,16 +459,13 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(user.getEmails(), hasSize(equalTo(1)));
     assertThat(user.getEmails().get(0).getValue(),
         equalTo(createdUser.getEmails().get(0).getValue()));
-    assertThat(user.getIndigoUser().getEndTime(),
-        equalTo(createdUser.getIndigoUser().getEndTime()));
-    assertThat(createdUser.getIndigoUser().getAuthorities().size(), equalTo(1));
-    assertThat(createdUser.getIndigoUser().getAuthorities().get(0),
-        equalTo(ScimAuthority.builder().withAuthority("ROLE_USER").build()));
+    assertNull(createdUser.getIndigoUser().getEndTime());
+    assertThat(createdUser.getIndigoUser().isAdmin(), equalTo(false));
   }
 
   @Test
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testUserCreationWithAupSignature() throws Exception {
+  public void testUserCreationWithAupSignatureIsIgnored() throws Exception {
 
     final String AUP_URL = "https://valid.test.url.com/";
     final String AUP_DESCRIPTION = "Test AUP";
@@ -486,7 +479,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     cal.add(Calendar.HOUR_OF_DAY, 1);
     Date signatureTime = cal.getTime();
 
-    ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
+    ScimUser user = buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
       .aupSignatureTime(signatureTime)
       .build();
     ScimUser createdUser = scimUtils.postUser(user);
@@ -495,8 +488,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(user.getEmails(), hasSize(equalTo(1)));
     assertThat(user.getEmails().get(0).getValue(),
         equalTo(createdUser.getEmails().get(0).getValue()));
-    assertThat(user.getIndigoUser().getAupSignatureTime(),
-        equalTo(createdUser.getIndigoUser().getAupSignatureTime()));
+    assertNull(createdUser.getIndigoUser().getAupSignatureTime());
 
     aupService.deleteAup();
   }
