@@ -242,16 +242,6 @@ public class ScimUser extends ScimResource {
     return groups;
   }
 
-  public boolean hasAupSignature() {
-
-    return indigoUser != null && indigoUser.getAupSignatureTime() != null;
-  }
-
-  public boolean hasEndTime() {
-
-    return indigoUser != null && indigoUser.getEndTime() != null;
-  }
-
   public boolean hasX509Certificates() {
 
     return indigoUser != null && indigoUser.getCertificates() != null

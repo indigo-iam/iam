@@ -23,7 +23,6 @@ import java.util.Objects;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -117,13 +116,6 @@ public class ScimIndigoUser {
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
     this.isAdmin = b.isAdmin;
-  }
-
-  @JsonIgnore
-  public boolean isEmpty() {
-
-    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && certificates.isEmpty()
-        && endTime == null;
   }
 
   public List<ScimSshKey> getSshKeys() {

@@ -46,8 +46,7 @@ public class ScimAttribute {
   }
 
   private ScimAttribute(Builder builder) {
-    this.name = builder.name;
-    this.value = builder.value;
+    this(builder.name, builder.value);
   }
 
   public static Builder builder() {
