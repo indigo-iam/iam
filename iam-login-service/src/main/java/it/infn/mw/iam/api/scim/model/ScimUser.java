@@ -276,12 +276,6 @@ public class ScimUser extends ScimResource {
         && !indigoUser.getSamlIds().isEmpty();
   }
 
-  public boolean hasAttributes() {
-
-    return indigoUser != null && indigoUser.getAttributes() != null
-        && !indigoUser.getAttributes().isEmpty();
-  }
-
   public boolean hasEmails() {
 
     return emails != null && !emails.isEmpty();

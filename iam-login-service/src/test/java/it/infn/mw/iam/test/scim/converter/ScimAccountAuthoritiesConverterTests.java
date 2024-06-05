@@ -26,11 +26,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.api.account.authority.AccountAuthorityService;
-import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
@@ -45,12 +43,8 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @IamMockMvcIntegrationTest
 public class ScimAccountAuthoritiesConverterTests {
 
-  private static final ScimAuthority SCIM_ROLE_USER_AUTHORITY =
-      ScimAuthority.builder().withAuthority("ROLE_USER").build();
-  private static final ScimAuthority SCIM_ROLE_ADMIN_AUTHORITY =
-      ScimAuthority.builder().withAuthority("ROLE_ADMIN").build();
-  private static final ScimAuthority SCIM_ROLE_GM_AUTHORITY =
-      ScimAuthority.builder().withAuthority("ROLE_GM" + UUID.randomUUID()).build();
+  private static final String GM_AUTHORITY = "ROLE_GM" + UUID.randomUUID();
+  private static final String ADMIN_AUTHORITY = "ROLE_ADMIN";
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -73,7 +67,7 @@ public class ScimAccountAuthoritiesConverterTests {
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
     gmAuthority = new IamAuthority();
-    gmAuthority.setAuthority(SCIM_ROLE_GM_AUTHORITY.getAuthority());
+    gmAuthority.setAuthority(GM_AUTHORITY);
     authRepo.save(gmAuthority);
   }
 
@@ -85,16 +79,23 @@ public class ScimAccountAuthoritiesConverterTests {
 
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "admin")
-  public void testAuthoritiesReturnedIfAllowedByConfigurationSerializedByDefault() throws Exception {
+  public void testAuthoritiesReturnedIfAllowedByConfigurationSerializedByDefault()
+      throws Exception {
 
     IamAccount testAccount = accountRepo.findByUsername("test_106")
-        .orElseThrow(() -> new AssertionError("Expected test account not found"));
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
     ScimUser user = scimUtils.getUser(testAccount.getUuid());
 
     assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
 
-    authorityService.addAuthorityToAccount(testAccount, SCIM_ROLE_ADMIN_AUTHORITY.getAuthority());
+    authorityService.addAuthorityToAccount(testAccount, GM_AUTHORITY);
+
+    user = scimUtils.getUser(testAccount.getUuid());
+
+    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
+
+    authorityService.addAuthorityToAccount(testAccount, ADMIN_AUTHORITY);
 
     user = scimUtils.getUser(testAccount.getUuid());
 

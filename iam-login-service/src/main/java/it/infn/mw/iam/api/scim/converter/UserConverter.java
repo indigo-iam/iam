@@ -78,7 +78,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     checkNotNull(scimUser);
     checkNotNull(scimUser.getEmails(), "Missing mandatory e-mail");
-    checkArgument(scimUser.getEmails().size() > 0, "Missing mandatory e-mail");
+    checkArgument(!scimUser.getEmails().isEmpty(), "Missing mandatory e-mail");
     checkNotNull(scimUser.getName(), "Missing mandatory user given and family name");
 
     IamAccount account = new IamAccount();
@@ -243,11 +243,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    builder.isAdmin(entity.getAuthorities()
-      .stream()
-      .filter(a -> a.isAdminAuthority())
-      .findAny()
-      .isPresent());
+    builder.isAdmin(entity.getAuthorities().stream().anyMatch(a -> a.isAdminAuthority()));
 
     if (properties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)

@@ -46,7 +46,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -55,7 +54,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.aup.AupService;
 import it.infn.mw.iam.api.aup.model.AupDTO;
-import it.infn.mw.iam.api.scim.model.ScimAuthority;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
