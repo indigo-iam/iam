@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.scim.converter;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
@@ -29,15 +28,18 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 @Component
 public class X509CertificateParser {
     
-    @Autowired
-    private X509CertificateChainParser parser;
+    private final X509CertificateChainParser chainParser;
+
+    public X509CertificateParser(X509CertificateChainParser chainParser) {
+        this.chainParser = chainParser;
+    }
 
     private String principalAsRfc2253String(Principal principal) {
         return X500NameUtils.getPortableRFC2253Form(principal.getName());
     }
 
     public IamX509Certificate parseCertificateFromString(String pemString) {
-        X509CertificateChainParsingResult result = parser.parseChainFromString(pemString);
+        X509CertificateChainParsingResult result = chainParser.parseChainFromString(pemString);
 
         IamX509Certificate cert = new IamX509Certificate();
         X509Certificate leafCert = result.getChain()[0];

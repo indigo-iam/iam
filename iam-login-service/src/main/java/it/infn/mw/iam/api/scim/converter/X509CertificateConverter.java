@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -25,8 +24,11 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 public class X509CertificateConverter
     implements Converter<ScimX509Certificate, IamX509Certificate> {
 
-  @Autowired
   private X509CertificateParser parser;
+
+  public X509CertificateConverter(X509CertificateParser parser) {
+    this.parser = parser;
+  }
 
   @Override
   public IamX509Certificate entityFromDto(ScimX509Certificate scim) {
