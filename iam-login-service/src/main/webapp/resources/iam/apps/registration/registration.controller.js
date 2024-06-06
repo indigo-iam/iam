@@ -41,6 +41,72 @@ function RegistrationController(
 
   $scope.config = undefined;
 
+  // Form `fields` with necessary properties and validations.
+  $scope.fields = {
+    name: {
+      name: "name",
+      label: "Given Name",
+      ngModelName: "givenname",
+      articleToUse: "a",
+      placeholder: "Enter your first name",
+      type: "text",
+      minlength: 2,
+      required: true,
+      validators: "",
+      showField: true,
+    },
+    surname: {
+      name: "surname",
+      label: "Family Name",
+      ngModelName: "familyname",
+      articleToUse: "a",
+      placeholder: "Enter your family name",
+      type: "text",
+      minlength: 2,
+      required: true,
+      validators: "",
+      showField: true,
+    },
+    email: {
+      name: "email",
+      label: "Email",
+      ngModelName: "email",
+      articleToUse: "an",
+      placeholder: "Enter a valid email address",
+      type: "email",
+      required: true,
+      validators: "iam-email-available-validator",
+      showField: true,
+      debounceTime: 500
+    },
+    username: {
+      name: "username",
+      label: "Username",
+      ngModelName: "username",
+      articleToUse: "a",
+      placeholder: "Choose a username for your account",
+      type: "text",
+      minlength: 2,
+      required: true,
+      validators: "iam-username-available-validator",
+      showField: true,
+      debounceTime: 500
+    },
+    notes: {
+      name: "notes",
+      label: "Notes",
+      ngModelName: "notes",
+      articleToUse: "a",
+      placeholder:
+        "Providing a clear explanation on the motivation behind this request will likely speed up the approval process",
+      type: "textarea",
+      rows: 5,
+      required: true,
+      validators: "",
+      showField: true,
+    },
+  };
+
   vm.createRequest = createRequest;
   vm.populateRequest = populateRequest;
   vm.resetRequest = resetRequest;
@@ -52,20 +118,23 @@ function RegistrationController(
   vm.fieldInvalid = fieldInvalid;
   vm.fieldReadonly = fieldReadonly;
   vm.clearSessionCookies = clearSessionCookies;
+  vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
+  vm.getFieldErrorMessage = getFieldErrorMessage;
 
   vm.activate();
 
   function activate() {
     RegistrationRequestService.getConfig()
-      .then(function (res) {
+      .then(function(res) {
         $scope.config = res.data;
         vm.resetRequest();
+        vm.populateFieldsWithAdminPreference();
         vm.populateRequest();
       })
-      .catch(function (err) {
+      .catch(function(err) {
         console.error(
-          'Error fetching registration config: ' + res.status + ' ' +
-          res.statusText);
+            'Error fetching registration config: ' + res.status + ' ' +
+            res.statusText);
       });
 
     Aup.getAup()
@@ -197,13 +266,53 @@ function RegistrationController(
   }
 
   function fieldReadonly(name) {
-    if ($scope.config) {
-      if (!$scope.config.fields) {
-        return false;
+    return $scope.config?.fields?.[name]?.readOnly === true;
+  }
+
+  function populateFieldsWithAdminPreference() {
+    if ($scope.config.fields) {
+      for (let field in $scope.config.fields) {
+        if (
+          $scope.config.fields[field]["fieldBehaviour"].toLowerCase() == "mandatory"
+        ) {
+          $scope.fields[field].showField = true;
+          $scope.fields[field].required = true;
+        } else if (
+          $scope.config.fields[field]["fieldBehaviour"].toLowerCase() === "optional"
+        ) {
+          $scope.fields[field].showField = true;
+          $scope.fields[field].required = false;
+        } else {
+          $scope.fields[field].showField = false;
+          $scope.fields[field].required = false;
+        }
       }
-      var field = $scope.config.fields[name];
-      return field.readOnly === true;
     }
-    return false;
+  }
+
+  function getFieldErrorMessage(fieldName) {
+    let field = $scope.registrationForm[fieldName];
+    let fieldInfo = $scope.fields[fieldName];
+
+    if (!fieldInfo) {
+        return null;
+    }
+
+    if (field.$error.required) {
+        if (fieldName === 'notes') {
+            return 'Please provide a reason for your registration request';
+        }
+        return 'Please provide ' + fieldInfo.articleToUse + ' ' + fieldInfo.label.toLowerCase();
+    } else if (field.$error.minlength) {
+        return fieldInfo.label + ' must be at least ' + fieldInfo.minlength + ' characters long';
+    } else if (field.$error.email) {
+        return 'This is not a valid email';
+    } else if (field.$error.emailAvailable) {
+        return 'This email is already linked to another user';
+    } else if (field.$error.usernameAvailable) {
+        return 'This username is already linked to another user';
+    }
+
+    return null;
   }
 }
