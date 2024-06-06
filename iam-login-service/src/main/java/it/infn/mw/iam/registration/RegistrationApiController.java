@@ -116,12 +116,15 @@ public class RegistrationApiController {
   }
 
   @RequestMapping(value = "/registration/create", method = RequestMethod.POST,
-  consumes = "application/json")
-  @JsonView({RegistrationViews.RegistrationDetail.class})
-  public RegistrationRequestDto createRegistrationRequest(@Valid
-    @RequestBody @JsonView(value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request, final BindingResult validationResult) {
-    return service.createRequest(request, getExternalAuthenticationInfo());
+      consumes = "application/json")
+  public RegistrationRequestDto createRegistrationRequest(
+      @RequestBody @Validated RegistrationRequestDto request, final BindingResult validationResult) {
+    handleValidationError(validationResult);
 
+    return service.createRequest(
+        request,
+        getExternalAuthenticationInfo(),
+        registrationProperties.getFields());
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")

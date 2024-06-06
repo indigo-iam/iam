@@ -16,15 +16,18 @@
 package it.infn.mw.iam.registration;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 
 public interface RegistrationRequestService {
 
   RegistrationRequestDto createRequest(RegistrationRequestDto request,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo);
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo,
+      Map<String, RegistrationFieldProperties> fields);
 
   List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
 

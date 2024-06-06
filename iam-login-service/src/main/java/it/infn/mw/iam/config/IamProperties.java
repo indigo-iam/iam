@@ -57,6 +57,12 @@ public class IamProperties {
     HIDDEN_WITH_LINK
   }
 
+  public enum ExternalAuthAttributeSectionBehaviour {
+    MANDATORY,
+    OPTIONAL,
+    HIDDEN
+  }
+
   public static class AccountLinkingProperties {
     boolean enable = true;
 
@@ -197,6 +203,7 @@ public class IamProperties {
   public static class RegistrationFieldProperties {
     boolean readOnly = false;
     String externalAuthAttribute;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -212,6 +219,14 @@ public class IamProperties {
 
     public void setExternalAuthAttribute(String externalAuthAttribute) {
       this.externalAuthAttribute = externalAuthAttribute;
+    }
+
+    public ExternalAuthAttributeSectionBehaviour getFieldBehaviour() {
+      return fieldBehaviour;
+    }
+
+    public void setFieldBehaviour(ExternalAuthAttributeSectionBehaviour fieldBehaviour) {
+      this.fieldBehaviour = fieldBehaviour;
     }
   }
 
