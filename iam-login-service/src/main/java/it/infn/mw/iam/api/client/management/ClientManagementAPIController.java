@@ -25,11 +25,13 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
+import javax.validation.Valid;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +56,7 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.scim.controller.utils.ValidationErrorMessageHelper;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -74,8 +77,13 @@ public class ClientManagementAPIController {
   @PostMapping
   @ResponseStatus(CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public RegisteredClientDTO saveNewClient(@RequestBody RegisteredClientDTO client)
+  public RegisteredClientDTO saveNewClient(@RequestBody @Valid RegisteredClientDTO client, BindingResult validationResults)
       throws ParseException {
+
+    if (validationResults.hasErrors()) {
+      throw new RuntimeException(ValidationErrorMessageHelper
+        .buildValidationErrorMessage("Invalid client", validationResults));
+    }
     return managementService.saveNewClient(client);
   }
 

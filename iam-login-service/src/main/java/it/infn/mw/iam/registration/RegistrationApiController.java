@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.api.common.RegistrationViews;
+import it.infn.mw.iam.api.common.RegistrationViews;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
@@ -87,13 +92,11 @@ public class RegistrationApiController {
     if (authn instanceof AbstractExternalAuthenticationToken<?>) {
 
       return Optional.of(((AbstractExternalAuthenticationToken<?>) authn)
-        .toExernalAuthenticationRegistrationInfo());
+          .toExernalAuthenticationRegistrationInfo());
     }
 
     return Optional.empty();
   }
-
-
 
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @RequestMapping(value = "/registration/list", method = RequestMethod.GET)
@@ -112,11 +115,11 @@ public class RegistrationApiController {
     return service.listPendingRequests();
   }
 
-  @RequestMapping(value = "/registration/create", method = RequestMethod.POST,
-      consumes = "application/json")
+  @RequestMapping(value = "/registration/create", method = RequestMethod.POST, consumes = "application/json")
+  @JsonView({ RegistrationViews.RegistrationDetail.class })
   public RegistrationRequestDto createRegistrationRequest(
-      @RequestBody @Validated RegistrationRequestDto request, final BindingResult validationResult) {
-    handleValidationError(validationResult);
+      @Valid @RequestBody @JsonView(value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
+      final BindingResult validationResult) {
     return service.createRequest(request, getExternalAuthenticationInfo());
 
   }
@@ -134,7 +137,6 @@ public class RegistrationApiController {
 
     return service.rejectRequest(uuid, Optional.ofNullable(motivation));
   }
-
 
   @RequestMapping(value = "/registration/confirm/{token}", method = RequestMethod.GET)
   public RegistrationRequestDto confirmRequest(@PathVariable("token") String token) {
@@ -160,11 +162,11 @@ public class RegistrationApiController {
 
   @RequestMapping(value = "/registration/insufficient-auth", method = RequestMethod.GET)
   public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request, final Authentication auth) {
-    
+
     if (auth.isAuthenticated() && auth.getAuthorities().contains(USER_AUTHORITY)) {
       return new ModelAndView("redirect:/dashboard");
     }
-    
+
     model.addAttribute("authError", request.getAttribute("authError"));
     return new ModelAndView("iam/insufficient-auth");
   }
@@ -189,7 +191,7 @@ public class RegistrationApiController {
   private void handleValidationError(BindingResult result) {
     if (result.hasErrors()) {
       throw new RegistrationRequestValidatorError(
-              format(INVALID_REGISTRATION_TEMPLATE, stringifyValidationError(result)));
+          format(INVALID_REGISTRATION_TEMPLATE, stringifyValidationError(result)));
     }
   }
 }
