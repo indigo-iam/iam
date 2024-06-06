@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.requests;
 
+import java.util.Date;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -61,6 +63,9 @@ public class CertLinkRequestConverter {
       cert.setIssuerDn(requestDto.getIssuerDn());
     }
 
+    Date now = new Date();
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
     cert.setLabel(requestDto.getLabel());
     return cert;
   }
