@@ -254,6 +254,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
+    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put("notes", certLinkRequest.getNotes());
     model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));

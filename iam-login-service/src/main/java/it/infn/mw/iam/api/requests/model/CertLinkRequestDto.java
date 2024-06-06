@@ -54,7 +54,7 @@ public class CertLinkRequestDto {
   // @CertificationAuthority
   private String issuerDn;
 
-  private String notes;
+  private String notes = "";
 
   private String status;
 
