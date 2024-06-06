@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.nimbusds.jose.JWSHeader;
 
 
-@JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "header", "body", "source"})
+@JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "header", "payload", "source"})
 public class AccessTokenIssuedEvent extends TokenEvent {
 
   private static final long serialVersionUID = -2089634827584887622L;
