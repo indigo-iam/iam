@@ -15,21 +15,25 @@
  */
 package it.infn.mw.iam.test.registration;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
@@ -39,25 +43,27 @@ import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.DefaultRegistrationRequestService;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
+import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest
 public class DefaultRegistrationRequestServiceTests {
 
     @InjectMocks
     @Spy
     private DefaultRegistrationRequestService service;
 
-
     @Mock
     private IamRegistrationRequestRepository iamRegistrationRequestRepository;
 
-    @BeforeEach
-    void init() {
+    @Before
+    public void init() {
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testCreateRequestWithNotesBeingMandatoryField() {
+    public void testCreateRequestWithNotesBeingMandatoryField() {
         String username = "user_with_empty_notes";
         String email = username + "@example.org";
 
@@ -81,7 +87,7 @@ public class DefaultRegistrationRequestServiceTests {
     }
 
     @Test
-    void testCreateRequestWithNotesBeingMandatoryFieldCase2() {
+    public void testCreateRequestWithNotesBeingMandatoryBlankData() {
         String username = "user_with_empty_notes";
         String email = username + "@example.org";
 
@@ -109,11 +115,11 @@ public class DefaultRegistrationRequestServiceTests {
         assertTrue(exception.getMessage().contains("Notes field cannot be the empty string"));
     }
 
-
     @Test
-    void testRejectRequestException() {
+    public void testRejectRequestException() {
         String requestUuid = "some-uuid";
         IamRegistrationRequest request = new IamRegistrationRequest();
+
         // ONLY used `status` because it is being used in `rejectRequest`.
         request.setStatus(IamRegistrationRequestStatus.APPROVED);
 
@@ -128,12 +134,27 @@ public class DefaultRegistrationRequestServiceTests {
     }
 
     @Test
-    void testListRequestsStatusNotFoundCase() {
+    public void testListRequestsStatusNotFound() {
         IamRegistrationRequestStatus status = IamRegistrationRequestStatus.NEW;
         when(iamRegistrationRequestRepository.findByStatus(status)).thenReturn(Optional.empty());
+
         Exception exception = assertThrows(IllegalStateException.class, () -> {
             service.listRequests(status);
         });
+
         assertTrue(exception.getMessage().contains("No request found with status: " + status.name()));
+    }
+
+    @Test
+    public void testRejectRequestWithNoValidUUID() {
+        String requestWithNoUUID = "no-id";
+
+        when(iamRegistrationRequestRepository.findByUuid(requestWithNoUUID)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(ScimResourceNotFoundException.class, () -> {
+            service.rejectRequest(requestWithNoUUID, Optional.of("No ID"));
+        });
+
+        assertTrue(exception.getMessage().contains("No request mapped to uuid"));
     }
 }
