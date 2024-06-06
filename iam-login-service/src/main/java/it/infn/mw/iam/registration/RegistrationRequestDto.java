@@ -55,7 +55,7 @@ public class RegistrationRequestDto {
   private Date lastUpdateTime;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @Size(min = 3, max = 32, message = "username cannot be longer than 32 chars and less than 3 chars")
+  @Size(min = 2, max = 32, message = "username cannot be longer than 32 chars and less than 2 chars")
   @UsernameRegExp
   private String username;
 
@@ -65,12 +65,12 @@ public class RegistrationRequestDto {
   private String password;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @Size(min = 3, max = 128, groups = {OnRegistrationCreation.class})
+  @Size(min = 2, max = 128, groups = {OnRegistrationCreation.class})
   @NotBlank(message = "givenname cannot be blank")
   private String givenname;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @Size(min = 3, max = 128, groups = {OnRegistrationCreation.class})
+  @Size(min = 2, max = 128, groups = {OnRegistrationCreation.class})
   @NotBlank(message = "familyname cannot be blank")
   private String familyname;
 
