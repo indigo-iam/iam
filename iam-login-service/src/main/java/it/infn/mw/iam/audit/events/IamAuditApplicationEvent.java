@@ -32,20 +32,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 @JsonTypeInfo(use=Id.NAME, property="@type")
 public abstract class IamAuditApplicationEvent extends ApplicationEvent {
 
-  public enum IamEventCategory {
-    NONE,
-    ACCOUNT,
-    GROUP,
-    REGISTRATION,
-    AUTHENTICATION,
-    AUTHORIZATION,
-    SCOPE_POLICY,
-    AUP,
-    MEMBERSHIP,
-    CLIENT,
-    TOKEN
-  }
-
   private static final long serialVersionUID = -6276169409979227109L;
   
   public static final String NULL_PRINCIPAL = "<unknown>";

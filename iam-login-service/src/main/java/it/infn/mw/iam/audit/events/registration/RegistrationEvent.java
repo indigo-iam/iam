@@ -18,6 +18,7 @@ package it.infn.mw.iam.audit.events.registration;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 import it.infn.mw.iam.audit.utils.IamRegistrationRequestSerializer;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 

@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.auth;
+package it.infn.mw.iam.audit.events.tokens;
 
-import org.springframework.security.authentication.event.AbstractAuthenticationEvent;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 
-import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
-import it.infn.mw.iam.audit.events.IamEventCategory;
 
-public abstract class IamAuthenticationEvent extends IamAuditApplicationEvent {
+public class RefreshTokenIssuedEvent extends TokenEvent {
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 7801697305119146714L;
 
-  public IamAuthenticationEvent(AbstractAuthenticationEvent authEvent, String message) {
-    super(IamEventCategory.AUTHENTICATION, authEvent.getSource(), message);
+  public RefreshTokenIssuedEvent(Object source, OAuth2RefreshTokenEntity token) {
+    super(source, token.getJwt(), token.getAuthenticationHolder(), "Issue refresh token");
   }
 
 }
