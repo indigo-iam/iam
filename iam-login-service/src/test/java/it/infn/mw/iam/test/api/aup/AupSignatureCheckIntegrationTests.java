@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -41,7 +41,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.api.aup.model.AupConverter;
 import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.service.aup.DefaultAupSignatureCheckService;
 import it.infn.mw.iam.test.util.MockTimeProvider;
@@ -62,6 +64,9 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
   @Autowired
   private IamAccountRepository accountRepo;
+
+  @Autowired
+  private IamAupRepository aupRepo;
 
   @Autowired
   private AupConverter converter;
@@ -99,16 +104,12 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupDefinedSignatureChecksTest() throws JsonProcessingException, Exception {
-    AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
+    IamAup defaultAup = buildDefaultAup();
+    aupRepo.save(defaultAup);
+    AupDTO aup = converter.dtoFromEntity(defaultAup);
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
-
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isCreated());
-
 
     IamAccount testAccount = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
@@ -118,7 +119,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     assertThat(service.needsAupSignature(testAccount), is(true));
 
-    signatureRepo.createSignatureForAccount(testAccount,
+    signatureRepo.createSignatureForAccount(defaultAup, testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
     assertThat(service.needsAupSignature(testAccount), is(false));
@@ -141,7 +142,7 @@ public class AupSignatureCheckIntegrationTests extends AupTestSupport {
 
     mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(20));
 
-    signatureRepo.createSignatureForAccount(testAccount,
+    signatureRepo.createSignatureForAccount(defaultAup, testAccount,
         new Date(mockTimeProvider.currentTimeMillis()));
 
     assertThat(service.needsAupSignature(testAccount), is(false));

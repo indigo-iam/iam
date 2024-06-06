@@ -52,6 +52,7 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationApproveEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationConfirmEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
@@ -63,6 +64,8 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -160,9 +163,11 @@ public class DefaultRegistrationRequestService
   }
 
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
-    iamAupRepo.findDefaultAup()
-      .ifPresent(
-          a -> iamAupSignatureRepo.createSignatureForAccount(account, Date.from(clock.instant())));
+    Optional<IamAup> aup = iamAupRepo.findDefaultAup();
+    if (aup.isPresent()) {
+      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account, Date.from(clock.instant()));
+      eventPublisher.publishEvent(new AupSignedEvent(this, signature));
+    }
   }
 
 
