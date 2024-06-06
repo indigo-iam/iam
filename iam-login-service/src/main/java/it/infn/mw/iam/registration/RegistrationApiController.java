@@ -114,7 +114,7 @@ public class RegistrationApiController {
   }
 
   @RequestMapping(value = "/registration/create", method = RequestMethod.POST, consumes = "application/json")
-  @JsonView({ RegistrationViews.RegistrationDetail.class })
+  @JsonView({ RegistrationViews.RegistrationInternalDetail.class })
   public RegistrationRequestDto createRegistrationRequest(
       @Valid @RequestBody @JsonView(value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult) {
