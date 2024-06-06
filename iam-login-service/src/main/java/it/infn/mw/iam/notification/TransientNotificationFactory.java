@@ -249,7 +249,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createAdminHandleCertLinkRequestMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate link request";
+    String subject = "New certificate linking request";
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -268,11 +268,13 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createCertLinkApprovedMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate link request approved";
+    String subject = "Certificate linking request approved";
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
+    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put(ORGANISATION_NAME, organisationName);
 
@@ -283,11 +285,13 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate link request rejected";
+    String subject = "Certificate linking request rejected";
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
+    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
+    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put("motivation", certLinkRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
