@@ -83,11 +83,17 @@
                 </td>
             </tr>
             <tr ng-if="$ctrl.aupIsEnabled()">
-                <td class="text-bold text-left">
+                <td class="text-bold text-left" ng-if="!$ctrl.user.aupSignatureExpiryDate">
                     Signed AUP
                 </td>
-                <td class="text-right" ng-if="$ctrl.hasAupSignatureTime()">
+                <td class="text-bold text-left" ng-if="$ctrl.user.aupSignatureExpiryDate">
+                    AUP signature expire in
+                </td>
+                <td class="text-right" ng-if="$ctrl.hasAupSignatureTime() && !$ctrl.user.aupSignatureExpiryDate">
                     {{$ctrl.user.aupSignature.signatureTime | relativeDate }}
+                </td>
+                <td class="text-right" ng-if="$ctrl.hasAupSignatureTime() && $ctrl.user.aupSignatureExpiryDate">
+                    {{$ctrl.user.aupSignatureExpiryDate | relativeDate }}
                 </td>
                 <td class="text-right" ng-if="!$ctrl.hasAupSignatureTime()">
                     No AUP signature found
