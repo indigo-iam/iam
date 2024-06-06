@@ -87,7 +87,7 @@
                     Signed AUP
                 </td>
                 <td class="text-bold text-left" ng-if="$ctrl.user.aupSignatureExpiryDate">
-                    AUP signature expire in
+                    AUP expiration
                 </td>
                 <td class="text-right" ng-if="$ctrl.hasAupSignatureTime() && !$ctrl.user.aupSignatureExpiryDate">
                     {{$ctrl.user.aupSignature.signatureTime | relativeDate }}
