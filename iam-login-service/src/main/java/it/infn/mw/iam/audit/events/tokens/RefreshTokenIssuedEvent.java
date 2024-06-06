@@ -23,8 +23,7 @@ public class RefreshTokenIssuedEvent extends TokenEvent {
   private static final long serialVersionUID = 7801697305119146714L;
 
   public RefreshTokenIssuedEvent(Object source, OAuth2RefreshTokenEntity token) {
-    super(source, token, "Refresh token issued");
-    
+    super(source, token.getJwt(), token.getAuthenticationHolder(), "Issue refresh token");
   }
 
 }
