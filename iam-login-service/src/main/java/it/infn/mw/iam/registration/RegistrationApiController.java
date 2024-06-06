@@ -34,7 +34,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,7 +48,6 @@ import org.springframework.web.servlet.ModelAndView;
 import com.fasterxml.jackson.annotation.JsonView;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.api.common.RegistrationViews;
 import it.infn.mw.iam.api.common.RegistrationViews;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
@@ -120,8 +118,8 @@ public class RegistrationApiController {
   public RegistrationRequestDto createRegistrationRequest(
       @Valid @RequestBody @JsonView(value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult) {
+    handleValidationError(validationResult);
     return service.createRequest(request, getExternalAuthenticationInfo());
-
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")

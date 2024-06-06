@@ -23,21 +23,22 @@ import java.util.List;
 
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import it.infn.mw.iam.api.client.management.validation.OnRegistrationCreation;
-import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.common.RegistrationViews;
 import it.infn.mw.iam.registration.validation.UsernameRegExp;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@ValidGrantType(groups = {OnRegistrationCreation.class})
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
 public class RegistrationRequestDto {
 
@@ -54,7 +55,7 @@ public class RegistrationRequestDto {
   private Date lastUpdateTime;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @Size(max = 32, message = "username cannot be longer than 32 chars")
+  @Size(min = 3, max = 32, message = "username cannot be longer than 32 chars and less than 3 chars")
   @UsernameRegExp
   private String username;
 
@@ -65,12 +66,12 @@ public class RegistrationRequestDto {
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
   @Size(min = 3, max = 128, groups = {OnRegistrationCreation.class})
-  @NotEmpty
+  @NotBlank(message = "givenname cannot be blank")
   private String givenname;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
   @Size(min = 3, max = 128, groups = {OnRegistrationCreation.class})
-  @NotEmpty
+  @NotBlank(message = "familyname cannot be blank")
   private String familyname;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
@@ -85,7 +86,7 @@ public class RegistrationRequestDto {
   private String accountId;
 
   @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @NotEmpty(message="Test Notes")
+  @NotEmpty(message="notes cannot be empty")
   private String notes;
 
   @JsonView(RegistrationViews.RegistrationInternalDetail.class)
@@ -95,10 +96,10 @@ public class RegistrationRequestDto {
 
   @JsonCreator
   public RegistrationRequestDto(
-      @JsonProperty("username") String username,
-      @JsonProperty("givename") String givenname,
-      @JsonProperty("familyname") String familyname,
-      @JsonProperty("email") String email,
+      @JsonProperty(value="username", required = true) String username,
+      @JsonProperty(value="givenname", required = true) String givenname,
+      @JsonProperty(value="familyname", required = true) String familyname,
+      @JsonProperty(value="email", required = true) String email,
       @JsonProperty("notes") String notes,
       @JsonProperty("password") String password,
       @JsonProperty("uuid") String uuid,
