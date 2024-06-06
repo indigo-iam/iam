@@ -46,9 +46,8 @@ public class ScimApiAuthzTests {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test
@@ -57,9 +56,8 @@ public class ScimApiAuthzTests {
 
     mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test
@@ -68,9 +66,8 @@ public class ScimApiAuthzTests {
 
     mvc.perform(get(GROUP_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test
@@ -79,9 +76,8 @@ public class ScimApiAuthzTests {
 
     mvc.perform(get(USER_URI).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test
@@ -93,9 +89,8 @@ public class ScimApiAuthzTests {
 
     mvc.perform(get(USER_URI + "/" + uuid).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("scim:read")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
 }

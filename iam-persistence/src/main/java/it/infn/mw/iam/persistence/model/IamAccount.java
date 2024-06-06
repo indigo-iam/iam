@@ -576,6 +576,15 @@ public class IamAccount implements Serializable {
     return label;
   }
 
+  public Optional<IamAttribute> getAttributeByName(String name) {
+    for (IamAttribute a : getAttributes()) {
+      if (a.getName().equals(name)) {
+        return Optional.of(a);
+      }
+    }
+    return Optional.empty();
+  }
+
   @Override
   public String toString() {
     return "IamAccount [id=" + id + ", uuid=" + uuid + ", username=" + username + ", active="

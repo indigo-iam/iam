@@ -18,14 +18,15 @@ package it.infn.mw.iam.api.scim.model;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 
@@ -34,12 +35,17 @@ public class ScimIndigoUser {
 
   public enum INDIGO_USER_SCHEMA {
 
+    // @formatter:off
     SSH_KEYS(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys"),
     OIDC_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".oidcIds"),
     SAML_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".samlIds"),
     X509_CERTS(ScimConstants.INDIGO_USER_SCHEMA + ".x509Certificates"),
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
-    LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels");
+    LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
+    IS_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isAdmin"),
+    ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
+    MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");
+    // @formatter:on
 
     private final String text;
 
@@ -70,6 +76,15 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
+  @JsonProperty(value = "isAdmin")
+  private final Boolean isAdmin;
+
+  @Valid
+  private final List<ScimAttribute> attributes;
+
+  @Valid
+  private final List<ScimGroupRef> managedGroups;
+
   @JsonCreator
   private ScimIndigoUser(@JsonProperty("oidcIds") List<ScimOidcId> oidcIds,
       @JsonProperty("sshKeys") List<ScimSshKey> sshKeys,
@@ -85,6 +100,9 @@ public class ScimIndigoUser {
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
     this.labels = null;
+    this.attributes = null;
+    this.managedGroups = null;
+    this.isAdmin = null;
   }
 
   private ScimIndigoUser(Builder b) {
@@ -95,12 +113,9 @@ public class ScimIndigoUser {
     this.aupSignatureTime = b.aupSignatureTime;
     this.endTime = b.endTime;
     this.labels = b.labels;
-  }
-
-  @JsonIgnore
-  public boolean isEmpty() {
-
-    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && certificates.isEmpty() && endTime==null;
+    this.attributes = b.attributes;
+    this.managedGroups = b.managedGroups;
+    this.isAdmin = b.isAdmin;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -130,6 +145,22 @@ public class ScimIndigoUser {
     return labels;
   }
 
+  public Boolean isAdmin() {
+    return isAdmin;
+  }
+
+  public List<ScimAttribute> getAttributes() {
+    return attributes;
+  }
+
+  public List<ScimGroupRef> getManagedGroups() {
+    return managedGroups;
+  }
+
+  public Date getEndTime() {
+    return endTime;
+  }
+
   public static Builder builder() {
 
     return new Builder();
@@ -137,14 +168,18 @@ public class ScimIndigoUser {
 
   public static class Builder {
 
-    private List<ScimSshKey> sshKeys = new LinkedList<>();
-    private List<ScimOidcId> oidcIds = new LinkedList<>();
-    private List<ScimSamlId> samlIds = new LinkedList<>();
-    private List<ScimX509Certificate> certificates = new LinkedList<>();
-    private List<ScimLabel> labels = new LinkedList<>();
+    private List<ScimSshKey> sshKeys = Lists.newLinkedList();
+    private List<ScimOidcId> oidcIds = Lists.newLinkedList();
+    private List<ScimSamlId> samlIds = Lists.newLinkedList();
+    private List<ScimX509Certificate> certificates = Lists.newLinkedList();
+    private List<ScimLabel> labels = Lists.newLinkedList();
 
     private Date aupSignatureTime;
     private Date endTime;
+
+    private Boolean isAdmin;
+    private List<ScimAttribute> attributes = Lists.newLinkedList();
+    private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
 
     public Builder addSshKey(ScimSshKey sshKey) {
 
@@ -152,7 +187,7 @@ public class ScimIndigoUser {
       return this;
     }
 
-    public Builder addOidcid(ScimOidcId oidcId) {
+    public Builder addOidcId(ScimOidcId oidcId) {
 
       oidcIds.add(oidcId);
       return this;
@@ -189,9 +224,50 @@ public class ScimIndigoUser {
       return this;
     }
 
+    public Builder isAdmin(Boolean isAdmin) {
+      this.isAdmin = isAdmin;
+      return this;
+    }
+
+    public Builder addAttribute(ScimAttribute attribute) {
+      attributes.add(attribute);
+      return this;
+    }
+
+    public Builder addManagedGroup(ScimGroupRef groupRef) {
+      managedGroups.add(groupRef);
+      return this;
+    }
+
     public ScimIndigoUser build() {
       return new ScimIndigoUser(this);
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(attributes, aupSignatureTime, certificates, endTime, isAdmin, labels,
+          managedGroups, oidcIds, samlIds, sshKeys);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Builder other = (Builder) obj;
+      return Objects.equals(attributes, other.attributes)
+          && Objects.equals(aupSignatureTime, other.aupSignatureTime)
+          && Objects.equals(certificates, other.certificates)
+          && Objects.equals(endTime, other.endTime) && Objects.equals(isAdmin, other.isAdmin)
+          && Objects.equals(labels, other.labels)
+          && Objects.equals(managedGroups, other.managedGroups)
+          && Objects.equals(oidcIds, other.oidcIds) && Objects.equals(samlIds, other.samlIds)
+          && Objects.equals(sshKeys, other.sshKeys);
+    }
+
   }
 
 }

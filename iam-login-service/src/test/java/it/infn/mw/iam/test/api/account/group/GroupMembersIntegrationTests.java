@@ -212,9 +212,8 @@ public class GroupMembersIntegrationTests {
 
     mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), group.getUuid()))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("iam:admin.write")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test

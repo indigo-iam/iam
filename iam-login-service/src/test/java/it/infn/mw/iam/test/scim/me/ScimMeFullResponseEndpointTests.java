@@ -16,13 +16,13 @@
 package it.infn.mw.iam.test.scim.me;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.IS_ADMIN;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.Date;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,44 +30,30 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.infn.mw.iam.api.aup.model.AupConverter;
-import it.infn.mw.iam.api.aup.model.AupDTO;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
-import it.infn.mw.iam.test.api.aup.AupTestSupport;
-import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @IamMockMvcIntegrationTest
-public class ScimMeAupTests extends AupTestSupport {
+@TestPropertySource(properties = {"scim.include_attributes[0].name=affiliation",
+    "scim.include_managed_groups=true"})
+public class ScimMeFullResponseEndpointTests {
 
   private final static String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
-  
-  @Autowired
-  private AupConverter aupConverter;
-  
-  @Autowired
-  private MockTimeProvider mockTimeProvider;
-  
-  @Autowired
-  private ObjectMapper mapper;
 
   @Autowired
   private MockMvc mvc;
 
-
-
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -77,30 +63,25 @@ public class ScimMeAupTests extends AupTestSupport {
   }
 
   @Test
-  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void meEndpointAupSignatureTests() throws Exception {
-
-    mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
+  @WithMockUser(username = "manager", roles = {"USER", "GM:c617d586-54e6-411d-8e38-64967798fa8a"})
+  public void meEndpointFullUserInfo() throws Exception {
+    //@formatter:off
+    mvc.perform(get(ME_ENDPOINT)
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
-      .andExpect(
-          jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).doesNotExist());
-
-    AupDTO aup = aupConverter.dtoFromEntity(buildDefaultAup());
-    
-    Date now = new Date();
-    mockTimeProvider.setTime(now.getTime());
-
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isCreated());
-    
-    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
-    mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
-    .andExpect(status().isOk())
-    .andExpect(
-        jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME).exists());
-    
+      .andExpect(jsonPath("$." + ATTRIBUTES).exists())
+      .andExpect(jsonPath("$." + ATTRIBUTES).isArray())
+      .andExpect(jsonPath("$." + ATTRIBUTES, hasSize(1)))
+      .andExpect(jsonPath("$." + ATTRIBUTES + "[0].name").value("affiliation"))
+      .andExpect(jsonPath("$." + ATTRIBUTES + "[0].value").value("INFN-CNAF"))
+      .andExpect(jsonPath("$." + IS_ADMIN).exists())
+      .andExpect(jsonPath("$." + IS_ADMIN).value("false"))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS).exists())
+      .andExpect(jsonPath("$." + MANAGED_GROUPS).isArray())
+      .andExpect(jsonPath("$." + MANAGED_GROUPS, hasSize(1)))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].display").value("Production"))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].value").value("c617d586-54e6-411d-8e38-64967798fa8a"));
+    //@formatter:on
   }
 
 }
