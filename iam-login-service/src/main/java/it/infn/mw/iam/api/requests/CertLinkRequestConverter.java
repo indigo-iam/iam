@@ -20,7 +20,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDto;
+import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
 import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
@@ -31,8 +31,8 @@ public class CertLinkRequestConverter {
   @Autowired
   private X509CertificateParser parser;
 
-  public CertLinkRequestDto dtoFromEntity(IamCertLinkRequest entity) {
-    CertLinkRequestDto dto = new CertLinkRequestDto();
+  public CertLinkRequestDTO dtoFromEntity(IamCertLinkRequest entity) {
+    CertLinkRequestDTO dto = new CertLinkRequestDTO();
 
     dto.setUuid(entity.getUuid());
     dto.setUsername(entity.getAccount().getUsername());
@@ -50,7 +50,7 @@ public class CertLinkRequestConverter {
     return dto;
   }
 
-  public IamX509Certificate certificateFromRequest(CertLinkRequestDto requestDto) {
+  public IamX509Certificate certificateFromRequest(CertLinkRequestDTO requestDto) {
 
     IamX509Certificate cert;
 

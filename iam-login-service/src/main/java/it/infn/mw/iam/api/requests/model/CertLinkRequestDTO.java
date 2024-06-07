@@ -30,7 +30,7 @@ import javax.validation.constraints.Pattern;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @CertLinkRequest
-public class CertLinkRequestDto {
+public class CertLinkRequestDTO {
 
   private String uuid;
 
@@ -64,12 +64,12 @@ public class CertLinkRequestDto {
 
   private Date lastUpdateTime;
 
-  public CertLinkRequestDto() {
+  public CertLinkRequestDTO() {
     // empty constructor
   }
 
   @JsonCreator
-  public CertLinkRequestDto(@JsonProperty("uuid") String uuid,
+  public CertLinkRequestDTO(@JsonProperty("uuid") String uuid,
       @JsonProperty("userUuid") String userUuid, @JsonProperty("userFullName") String userFullName,
       @JsonProperty("username") String username, @JsonProperty("label") String label,
       @JsonProperty("pemEncodedCertificate") String pemEncodedCertificate,

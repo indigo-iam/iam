@@ -17,21 +17,21 @@ package it.infn.mw.iam.api.requests.service;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDto;
+import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 
 public interface CertLinkRequestsService {
 
-  CertLinkRequestDto createCertLinkRequest(CertLinkRequestDto certLinkRequest);
+  CertLinkRequestDTO createCertLinkRequest(CertLinkRequestDTO certLinkRequest);
 
   void deleteCertLinkRequest(String requestId);
 
-  CertLinkRequestDto approveCertLinkRequest(String requestId);
+  CertLinkRequestDTO approveCertLinkRequest(String requestId);
 
-  CertLinkRequestDto rejectCertLinkRequest(String requestId, String motivation);
+  CertLinkRequestDTO rejectCertLinkRequest(String requestId, String motivation);
 
-  CertLinkRequestDto getCertLinkRequestDetails(String requestId);
+  CertLinkRequestDTO getCertLinkRequestDetails(String requestId);
 
-  ListResponseDTO<CertLinkRequestDto> listCertLinkRequests(String username, String subject,
+  ListResponseDTO<CertLinkRequestDTO> listCertLinkRequests(String username, String subject,
       String status, OffsetPageable pageRequest);
 
 }

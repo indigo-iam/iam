@@ -20,10 +20,10 @@ import javax.validation.ConstraintValidatorContext;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDto;
+import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 
 public class CertLinkRequestValidator
-        implements ConstraintValidator<CertLinkRequest, CertLinkRequestDto> {
+        implements ConstraintValidator<CertLinkRequest, CertLinkRequestDTO> {
 
     public CertLinkRequestValidator() {
         // empty
@@ -35,7 +35,7 @@ public class CertLinkRequestValidator
     }
 
     @Override
-    public boolean isValid(CertLinkRequestDto value, ConstraintValidatorContext context) {
+    public boolean isValid(CertLinkRequestDTO value, ConstraintValidatorContext context) {
 
         return value != null && (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())
                 || (!Strings.isNullOrEmpty(value.getSubjectDn())

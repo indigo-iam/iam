@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.requests.exception.IamRequestValidationError;
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDto;
+import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.authn.error.AccountAlreadyLinkedError;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -55,7 +55,7 @@ public class CertLinkRequestUtils {
             String.format("CertLink request with UUID [%s] does not exist", requestId)));
   }
 
-  public void checkRequestAlreadyExist(CertLinkRequestDto requestDto) {
+  public void checkRequestAlreadyExist(CertLinkRequestDTO requestDto) {
 
     List<IamCertLinkRequest> results = certLinkRequestRepository
         .findByAccountAndDns(requestDto.getUserUuid(), requestDto.getSubjectDn(), requestDto.getIssuerDn());
@@ -82,7 +82,7 @@ public class CertLinkRequestUtils {
     }
   }
 
-  public void checkCertAlreadyLinked(CertLinkRequestDto requestDto, IamAccount userAccount) {
+  public void checkCertAlreadyLinked(CertLinkRequestDTO requestDto, IamAccount userAccount) {
     Optional<IamX509Certificate> linkedCerts = userAccount.getX509Certificates()
         .stream()
         .filter(
@@ -96,7 +96,7 @@ public class CertLinkRequestUtils {
     }
   }
 
-  public void checkCertNotLinkedToSomeoneElse(CertLinkRequestDto request, IamAccount userAccount) {
+  public void checkCertNotLinkedToSomeoneElse(CertLinkRequestDTO request, IamAccount userAccount) {
     accountRepository.findByCertificateSubject(request.getSubjectDn()).ifPresent(linkedAccount -> {
       if (!linkedAccount.getUuid().equals(userAccount.getUuid())) {
         throw new AccountAlreadyLinkedError(
