@@ -26,7 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +35,11 @@ import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.api.requests.service.CertLinkRequestsService;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+
+
 
 @RestController
 @RequestMapping("/iam/cert_link_requests")
@@ -47,13 +51,13 @@ public class CertLinkRequestsController {
   @Autowired
   private CertLinkRequestsService certLinkRequestService;
 
-  @RequestMapping(method = RequestMethod.POST, value = { "", "/" })
+  @PostMapping({ "", "/" })
   @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
   public CertLinkRequestDTO createCertLinkRequest(@RequestBody @Valid CertLinkRequestDTO certLinkRequest) {
     return certLinkRequestService.createCertLinkRequest(certLinkRequest);
   }
 
-  @RequestMapping(method = RequestMethod.GET, value = { "", "/" })
+  @GetMapping({ "", "/" })
   @PreAuthorize("hasAnyRole('ADMIN','USER')")
   public ListResponseDTO<CertLinkRequestDTO> listCertLinkRequest(
       @RequestParam(required = false) String username,
@@ -69,28 +73,28 @@ public class CertLinkRequestsController {
     return certLinkRequestService.listCertLinkRequests(username, subject, status, pageRequest);
   }
 
-  @RequestMapping(method = RequestMethod.GET, value = "/{requestId}")
+  @GetMapping("/{requestId}")
   @PreAuthorize("hasScope('iam:admin:read')")
   public CertLinkRequestDTO getCertLinkRequestDetails(
       @Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.getCertLinkRequestDetails(requestId);
   }
 
-  @RequestMapping(method = RequestMethod.DELETE, value = "/{requestId}")
+  @DeleteMapping("/{requestId}")
   @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
     certLinkRequestService.deleteCertLinkRequest(requestId);
   }
 
-  @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/approve")
+  @PostMapping("/{requestId}/approve")
   @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.OK)
   public CertLinkRequestDTO approveCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.approveCertLinkRequest(requestId);
   }
 
-  @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/reject")
+  @PostMapping("/{requestId}/reject")
   @PreAuthorize("hasScope('iam:admin:write')")
   @ResponseStatus(HttpStatus.OK)
   public CertLinkRequestDTO rejectCertLinkRequest(@Valid @PathVariable("requestId") String requestId,
