@@ -89,7 +89,7 @@ public class RegistrationRequestDto {
   @NotEmpty(message="notes cannot be empty")
   private String notes;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
   private List<LabelDTO> labels;
 
   public RegistrationRequestDto() {}
