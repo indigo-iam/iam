@@ -51,37 +51,39 @@ public class CertLinkRequestsController {
   @Autowired
   private CertLinkRequestsService certLinkRequestService;
 
-  @PostMapping({ "", "/" })
+  @PostMapping({"", "/"})
   @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-  public CertLinkRequestDTO createCertLinkRequest(@RequestBody @Valid CertLinkRequestDTO certLinkRequest) {
+  public CertLinkRequestDTO createCertLinkRequest(
+      @RequestBody @Valid CertLinkRequestDTO certLinkRequest) {
     return certLinkRequestService.createCertLinkRequest(certLinkRequest);
   }
 
-  @GetMapping({ "", "/" })
+  @GetMapping({"", "/"})
   @PreAuthorize("hasAnyRole('ADMIN','USER')")
   public ListResponseDTO<CertLinkRequestDTO> listCertLinkRequest(
       @RequestParam(required = false) String username,
-      @RequestParam(required = false) String subject,
+      @RequestParam(required = false) String subject, 
       @RequestParam(required = false) String status,
       @RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex) {
 
     final Sort sort = Sort.by("account.username", "certificate.subjectDn", "creationTime");
 
-    OffsetPageable pageRequest = PagingUtils.buildPageRequest(count, startIndex, CERT_LINK_REQUEST_MAX_PAGE_SIZE, sort);
+    OffsetPageable pageRequest =
+        PagingUtils.buildPageRequest(count, startIndex, CERT_LINK_REQUEST_MAX_PAGE_SIZE, sort);
 
     return certLinkRequestService.listCertLinkRequests(username, subject, status, pageRequest);
   }
 
   @GetMapping("/{requestId}")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.userCanAccessCertLinkRequest(#requestId)")
   public CertLinkRequestDTO getCertLinkRequestDetails(
       @Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.getCertLinkRequestDetails(requestId);
   }
 
   @DeleteMapping("/{requestId}")
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.userCanDeleteCertLinkRequest(#requestId)")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
     certLinkRequestService.deleteCertLinkRequest(requestId);
@@ -90,14 +92,16 @@ public class CertLinkRequestsController {
   @PostMapping("/{requestId}/approve")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(HttpStatus.OK)
-  public CertLinkRequestDTO approveCertLinkRequest(@Valid @PathVariable("requestId") String requestId) {
+  public CertLinkRequestDTO approveCertLinkRequest(
+      @Valid @PathVariable("requestId") String requestId) {
     return certLinkRequestService.approveCertLinkRequest(requestId);
   }
 
   @PostMapping("/{requestId}/reject")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(HttpStatus.OK)
-  public CertLinkRequestDTO rejectCertLinkRequest(@Valid @PathVariable("requestId") String requestId,
+  public CertLinkRequestDTO rejectCertLinkRequest(
+      @Valid @PathVariable("requestId") String requestId,
       @RequestParam @NotEmpty String motivation) {
     return certLinkRequestService.rejectCertLinkRequest(requestId, motivation);
   }
