@@ -20,7 +20,7 @@ public class RegistrationViews {
   public static interface RegistrationDetail {
   }
 
-  public static interface RegistrationInternalDetail extends RegistrationDetail {
+  public static interface RegistrationExtendDetail extends RegistrationDetail {
   }
 
 }

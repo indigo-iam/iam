@@ -39,77 +39,80 @@ import it.infn.mw.iam.registration.validation.UsernameRegExp;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
+@JsonView({RegistrationViews.RegistrationExtendDetail.class,
+    RegistrationViews.RegistrationDetail.class})
 public class RegistrationRequestDto {
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private String uuid;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private Date creationTime;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private String status;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private Date lastUpdateTime;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @Size(min = 2, max = 32, message = "username cannot be longer than 32 chars and less than 2 chars")
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
+  @Size(min = 2, max = 32,
+      message = "username cannot be longer than 32 chars and less than 2 chars")
   @UsernameRegExp
   private String username;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
-  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR, groups = {OnRegistrationCreation.class})
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
+  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR,
+      groups = {OnRegistrationCreation.class})
   @Size(min = 8, message = "password should have at least 8 characters")
   private String password;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   @Size(min = 2, max = 128, groups = {OnRegistrationCreation.class})
   @NotBlank(message = "givenname cannot be blank")
   private String givenname;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   @Size(min = 2, max = 128, groups = {OnRegistrationCreation.class})
   @NotBlank(message = "familyname cannot be blank")
   private String familyname;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   @Email(message = "must be a valid email address")
   @NotEmpty()
   private String email;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private String birthdate;
 
-  @JsonView(RegistrationViews.RegistrationInternalDetail.class)
+  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private String accountId;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
-  @NotEmpty(message="notes cannot be empty")
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
+  @NotEmpty(message = "notes cannot be empty")
   private String notes;
 
-  @JsonView({RegistrationViews.RegistrationInternalDetail.class, RegistrationViews.RegistrationDetail.class})
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   private List<LabelDTO> labels;
 
   public RegistrationRequestDto() {}
 
   @JsonCreator
-  public RegistrationRequestDto(
-      @JsonProperty(value="username", required = true) String username,
-      @JsonProperty(value="givenname", required = true) String givenname,
-      @JsonProperty(value="familyname", required = true) String familyname,
-      @JsonProperty(value="email", required = true) String email,
-      @JsonProperty("notes") String notes,
-      @JsonProperty("password") String password,
-      @JsonProperty("uuid") String uuid,
-      @JsonProperty("birthdate") String birthdate,
-      @JsonProperty("accountId") String accountId,
-      @JsonProperty("creationTime") Date creationTime,
-      @JsonProperty("status") String status,
-      @JsonProperty("lastUpdateTime") Date lastUpdateTime,
-      @JsonProperty("labels") List<LabelDTO> labels
-      ) {
+  public RegistrationRequestDto(@JsonProperty(value = "username", required = true) String username,
+      @JsonProperty(value = "givenname", required = true) String givenname,
+      @JsonProperty(value = "familyname", required = true) String familyname,
+      @JsonProperty(value = "email", required = true) String email,
+      @JsonProperty("notes") String notes, @JsonProperty("password") String password,
+      @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
+      @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
+      @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
+      @JsonProperty("labels") List<LabelDTO> labels) {
     super();
     this.username = username;
     this.password = password;

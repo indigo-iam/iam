@@ -90,7 +90,7 @@ public class RegistrationApiController {
     if (authn instanceof AbstractExternalAuthenticationToken<?>) {
 
       return Optional.of(((AbstractExternalAuthenticationToken<?>) authn)
-          .toExernalAuthenticationRegistrationInfo());
+        .toExernalAuthenticationRegistrationInfo());
     }
 
     return Optional.empty();
@@ -113,10 +113,11 @@ public class RegistrationApiController {
     return service.listPendingRequests();
   }
 
-  @RequestMapping(value = "/registration/create", method = RequestMethod.POST, consumes = "application/json")
-  // @JsonView({ RegistrationViews.RegistrationInternalDetail.class })
+  @RequestMapping(value = "/registration/create", method = RequestMethod.POST,
+      consumes = "application/json")
   public RegistrationRequestDto createRegistrationRequest(
-      @Valid @RequestBody @JsonView(value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
+      @Valid @RequestBody @JsonView(
+          value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult) {
     handleValidationError(validationResult);
     return service.createRequest(request, getExternalAuthenticationInfo());
@@ -159,7 +160,8 @@ public class RegistrationApiController {
   }
 
   @RequestMapping(value = "/registration/insufficient-auth", method = RequestMethod.GET)
-  public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request, final Authentication auth) {
+  public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request,
+      final Authentication auth) {
 
     if (auth.isAuthenticated() && auth.getAuthorities().contains(USER_AUTHORITY)) {
       return new ModelAndView("redirect:/dashboard");

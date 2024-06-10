@@ -61,7 +61,8 @@ public class PasswordResetController {
     }
   }
 
-  @RequestMapping(value = "/token", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
+  @RequestMapping(value = "/token", method = RequestMethod.POST,
+      produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void createPasswordResetToken(@Valid EmailDTO emailDTO, BindingResult validationResult) {
 
@@ -99,12 +100,13 @@ public class PasswordResetController {
     return "iam/resetPassword";
   }
 
-  @RequestMapping(value = { "", "/" }, method = RequestMethod.POST)
-  public void resetPassword(@RequestBody @Valid ResetPasswordDTO password, BindingResult validationResult) {
+  @RequestMapping(value = {"", "/"}, method = RequestMethod.POST)
+  public void resetPassword(@RequestBody @Valid ResetPasswordDTO password,
+      BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
-      throw new InvalidPasswordError(
-          ValidationErrorMessageHelper.buildValidationErrorMessage("Invalid reset password", validationResult));
+      throw new InvalidPasswordError(ValidationErrorMessageHelper
+        .buildValidationErrorMessage("Invalid reset password", validationResult));
     }
     service.resetPassword(password.getToken(), password.getUpdatedPassword());
   }

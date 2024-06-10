@@ -26,7 +26,7 @@ public class PasswordDTO {
   @NotEmpty
   private String currentPassword;
 
-  @NotEmpty
+  @NotEmpty(message = "The password cannot be empty")
   @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
   private String updatedPassword;
 
