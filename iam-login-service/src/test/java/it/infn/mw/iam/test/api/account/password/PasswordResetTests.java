@@ -45,8 +45,8 @@ import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = { IamLoginService.class, NotificationTestConfig.class,
-    CoreControllerTestSupport.class }, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class, NotificationTestConfig.class,
+    CoreControllerTestSupport.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
 public class PasswordResetTests {
 
@@ -80,7 +80,7 @@ public class PasswordResetTests {
     String newPassword = "Secure_P@ssw0rd!";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-        .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
 
@@ -91,12 +91,12 @@ public class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-        .perform(
-            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-        .andExpect(status().isOk());
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().isOk());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
-        .andExpect(status().isNotFound());
+      .andExpect(status().isNotFound());
   }
 
   @Test
@@ -106,7 +106,7 @@ public class PasswordResetTests {
     String newPassword = "weakpassword";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-        .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
 
@@ -117,11 +117,12 @@ public class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-        .perform(
-            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-        .andExpect(status().isBadRequest()).andExpect(MockMvcResultMatchers.content().string(
-            "Invalid reset password: [resetPasswordDTO.updatedPassword : " + PASSWORD_REGEX_MESSAGE_ERROR + "]"));
-    ;
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().isBadRequest())
+      .andExpect(MockMvcResultMatchers.content()
+        .string("Invalid reset password: [resetPasswordDTO.updatedPassword : "
+            + PASSWORD_REGEX_MESSAGE_ERROR + "]"));;
   }
 
   @Test
@@ -131,7 +132,7 @@ public class PasswordResetTests {
     String newPassword = "Secure_P@ssw0rd!";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-        .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
     String resetToken = tokenGenerator.getLastToken();
 
@@ -142,14 +143,14 @@ public class PasswordResetTests {
     jsonBody.addProperty("token", resetToken);
 
     mvc
-        .perform(
-            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-        .andExpect(status().isOk());
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().isOk());
 
     mvc
-        .perform(
-            post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-        .andExpect(status().is4xxClientError());
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().is4xxClientError());
   }
 
   @Test
@@ -157,7 +158,8 @@ public class PasswordResetTests {
 
     String resetToken = "abcdefghilmnopqrstuvz";
 
-    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isNotFound());
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
+      .andExpect(status().isNotFound());
 
   }
 
@@ -167,7 +169,7 @@ public class PasswordResetTests {
     String testEmail = "test@foo.bar";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-        .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
   }
 
@@ -176,8 +178,9 @@ public class PasswordResetTests {
     String invalidEmailAddress = "this_is_not_an_email";
 
     mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))
-        .andExpect(status().isBadRequest())
-        .andExpect(MockMvcResultMatchers.content().string("validation error: please specify a valid email address"));
+      .andExpect(status().isBadRequest())
+      .andExpect(MockMvcResultMatchers.content()
+        .string("validation error: please specify a valid email address"));
 
   }
 
