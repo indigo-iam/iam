@@ -64,6 +64,7 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -122,6 +123,8 @@ public class DefaultRegistrationRequestService
   private Clock clock;
 
   private ApplicationEventPublisher eventPublisher;
+  
+  private static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
@@ -199,6 +202,7 @@ public class DefaultRegistrationRequestService
         accountService.createAccount(userConverter.entityFromDto(userBuilder.build()));
     accountEntity.setConfirmationKey(tokenGenerator.generateToken());
     accountEntity.setActive(false);
+    accountEntity.getAttributes().add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
 
     createAupSignatureForAccountIfNeeded(accountEntity);
 
