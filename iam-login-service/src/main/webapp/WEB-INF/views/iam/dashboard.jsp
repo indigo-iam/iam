@@ -129,6 +129,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/requests.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/registration/requests.registration.component.js"></script>
    <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/group/requests.group.component.js"></script>
+   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/requests/certificate/requests.cert.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/group-requests/join-group.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/group-requests/pending-requests.component.js"></script>
