@@ -7,5 +7,4 @@ be able to obtain JWT tokens/VOMS proxies anymore.
 
 Please contact your VO administrators for any questions.
 
-Your sincerely,
 The ${organisationName} registration service

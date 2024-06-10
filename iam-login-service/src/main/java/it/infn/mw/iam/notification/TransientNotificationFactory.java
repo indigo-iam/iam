@@ -352,6 +352,25 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
+  @Override
+  public IamEmailNotification createAccountRestoredMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account restored";
+
+    IamEmailNotification notification = createMessage("accountRestored.ftl", model,
+        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created restoration message for the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 

@@ -417,6 +417,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
+    notificationFactory.createAccountRestoredMessage(account);
     return account;
   }
 

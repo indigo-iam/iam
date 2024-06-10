@@ -49,4 +49,6 @@ public interface NotificationFactory {
   IamEmailNotification createAupSignatureRequestMessage(IamAccount account, IamAccount deleterAccount);
 
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
+
+  IamEmailNotification createAccountRestoredMessage(IamAccount account);
 }
