@@ -334,6 +334,24 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
+  @Override
+  public IamEmailNotification createAccountSuspendedMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account suspended";
+
+    IamEmailNotification notification = createMessage("accountSuspended.ftl", model,
+        IamNotificationType.ACCOUNT_SUSPENDED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created suspension message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
