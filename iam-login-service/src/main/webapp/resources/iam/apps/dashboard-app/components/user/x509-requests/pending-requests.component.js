@@ -21,7 +21,7 @@
         .component('userCertLinkPendingRequests', userCertLinkPendingRequests());
 
 
-    function AbortRequest(requestsService, $uibModalInstance, toaster, request) {
+    function AbortRequest(CertLinkRequestsService, $uibModalInstance, toaster, request) {
         var self = this;
 
         self.request = request;
@@ -49,7 +49,7 @@
         }
 
         self.abortRequest = function () {
-            requestsService.abortRequest(self.request).then(handleSuccess, handleError);
+            CertLinkRequestsService.abortRequest(self.request).then(handleSuccess, handleError);
         };
 
         self.cancel = function () {
