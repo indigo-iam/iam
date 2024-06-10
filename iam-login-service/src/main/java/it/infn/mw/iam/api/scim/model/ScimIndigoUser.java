@@ -42,7 +42,7 @@ public class ScimIndigoUser {
     X509_CERTS(ScimConstants.INDIGO_USER_SCHEMA + ".x509Certificates"),
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
     LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
-    IS_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isAdmin"),
+    IS_VO_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isVoAdmin"),
     ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
     MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");
     // @formatter:on
@@ -76,8 +76,7 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
-  @JsonProperty(value = "isAdmin")
-  private final Boolean isAdmin;
+  private final Boolean isVoAdmin;
 
   @Valid
   private final List<ScimAttribute> attributes;
@@ -102,7 +101,7 @@ public class ScimIndigoUser {
     this.labels = null;
     this.attributes = null;
     this.managedGroups = null;
-    this.isAdmin = null;
+    this.isVoAdmin = null;
   }
 
   private ScimIndigoUser(Builder b) {
@@ -115,7 +114,7 @@ public class ScimIndigoUser {
     this.labels = b.labels;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
-    this.isAdmin = b.isAdmin;
+    this.isVoAdmin = b.isAdmin;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -145,8 +144,8 @@ public class ScimIndigoUser {
     return labels;
   }
 
-  public Boolean isAdmin() {
-    return isAdmin;
+  public Boolean isVoAdmin() {
+    return isVoAdmin;
   }
 
   public List<ScimAttribute> getAttributes() {

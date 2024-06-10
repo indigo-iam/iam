@@ -87,18 +87,18 @@ public class ScimAccountAuthoritiesConverterTests {
 
     ScimUser user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
+    assertThat(user.getIndigoUser().isVoAdmin(), equalTo(false));
 
     authorityService.addAuthorityToAccount(testAccount, GM_AUTHORITY);
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
+    assertThat(user.getIndigoUser().isVoAdmin(), equalTo(false));
 
     authorityService.addAuthorityToAccount(testAccount, ADMIN_AUTHORITY);
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(true));
+    assertThat(user.getIndigoUser().isVoAdmin(), equalTo(true));
   }
 }

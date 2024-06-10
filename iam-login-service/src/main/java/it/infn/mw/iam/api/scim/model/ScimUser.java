@@ -457,7 +457,7 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
-    public Builder isAdmin(Boolean isAdmin) {
+    public Builder setAdmin(Boolean isAdmin) {
 
       Preconditions.checkNotNull(isAdmin, "Null isAdmin");
 

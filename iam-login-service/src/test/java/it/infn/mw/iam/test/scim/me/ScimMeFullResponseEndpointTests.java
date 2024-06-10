@@ -17,7 +17,7 @@ package it.infn.mw.iam.test.scim.me;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
-import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.IS_ADMIN;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.IS_VO_ADMIN;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -74,8 +74,8 @@ public class ScimMeFullResponseEndpointTests {
       .andExpect(jsonPath("$." + ATTRIBUTES, hasSize(1)))
       .andExpect(jsonPath("$." + ATTRIBUTES + "[0].name").value("affiliation"))
       .andExpect(jsonPath("$." + ATTRIBUTES + "[0].value").value("INFN-CNAF"))
-      .andExpect(jsonPath("$." + IS_ADMIN).exists())
-      .andExpect(jsonPath("$." + IS_ADMIN).value("false"))
+      .andExpect(jsonPath("$." + IS_VO_ADMIN).exists())
+      .andExpect(jsonPath("$." + IS_VO_ADMIN).value("false"))
       .andExpect(jsonPath("$." + MANAGED_GROUPS).exists())
       .andExpect(jsonPath("$." + MANAGED_GROUPS).isArray())
       .andExpect(jsonPath("$." + MANAGED_GROUPS, hasSize(1)))
