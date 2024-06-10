@@ -1,6 +1,6 @@
 Dear ${recipient},
 
-your certificate linking request for following certificate has been ${status}.
+your certificate linking request for the following certificate has been ${status}.
 
 Certificate:
 Subject: ${subject}

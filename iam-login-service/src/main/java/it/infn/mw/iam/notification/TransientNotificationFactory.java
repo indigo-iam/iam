@@ -275,6 +275,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
     model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
     model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
+    model.put("status", certLinkRequest.getStatus().name());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put(ORGANISATION_NAME, organisationName);
 
@@ -292,6 +293,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
     model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
     model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
+    model.put("status", certLinkRequest.getStatus().name());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put("motivation", certLinkRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
