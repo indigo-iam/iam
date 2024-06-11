@@ -31,9 +31,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.notification.NotificationTestConfig;
@@ -62,6 +64,9 @@ public class PasswordResetTests {
   @Autowired
   private MockMvc mvc;
 
+  @Autowired
+  private ObjectMapper mapper;
+
   @Before
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -86,13 +91,13 @@ public class PasswordResetTests {
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
 
-    JsonObject jsonBody = new JsonObject();
-    jsonBody.addProperty("updatedPassword", newPassword);
-    jsonBody.addProperty("token", resetToken);
+    ResetPasswordDTO request = new ResetPasswordDTO();
+    request.setUpdatedPassword(newPassword);
+    request.setToken(resetToken);
 
     mvc
-      .perform(
-          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .perform(post("/iam/password-reset").contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
