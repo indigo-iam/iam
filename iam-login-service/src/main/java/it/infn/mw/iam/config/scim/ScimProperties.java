@@ -61,6 +61,7 @@ public class ScimProperties {
 
   List<LabelDescriptor> includeLabels = Lists.newArrayList();
   List<AttributeDescriptor> includeAttributes = Lists.newArrayList();
+  boolean includeAuthorities = false;
   boolean includeManagedGroups = false;
 
   public List<LabelDescriptor> getIncludeLabels() {
@@ -77,6 +78,14 @@ public class ScimProperties {
 
   public void setIncludeAttributes(List<AttributeDescriptor> includeAttributes) {
     this.includeAttributes = includeAttributes;
+  }
+
+  public boolean isIncludeAuthorities() {
+    return includeAuthorities;
+  }
+
+  public void setIncludeAuthorities(boolean includeAuthorities) {
+    this.includeAuthorities = includeAuthorities;
   }
 
   public boolean isIncludeManagedGroups() {

@@ -243,7 +243,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    builder.setAdmin(entity.getAuthorities().stream().anyMatch(a -> a.isAdminAuthority()));
+    builder.voAdmin(entity.getAuthorities().stream().anyMatch(a -> a.isAdminAuthority()));
 
     if (properties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)
@@ -253,6 +253,10 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .value(mg.getId())
           .ref(resourceLocationProvider.groupLocation(mg.getId()))
           .build()));
+    }
+
+    if (properties.isIncludeAuthorities()) {
+      entity.getAuthorities().forEach(a -> builder.addAuthority(a.getAuthority()));
     }
 
     return builder.build();

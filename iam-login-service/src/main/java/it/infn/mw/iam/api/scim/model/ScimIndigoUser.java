@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.scim.model;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 import javax.validation.Valid;
 
@@ -43,6 +42,7 @@ public class ScimIndigoUser {
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
     LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
     IS_VO_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isVoAdmin"),
+    AUTHORITIES(ScimConstants.INDIGO_USER_SCHEMA + ".authorities"),
     ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
     MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");
     // @formatter:on
@@ -76,7 +76,10 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
+  @JsonProperty("isVoAdmin")
   private final Boolean isVoAdmin;
+
+  private final List<String> authorities;
 
   @Valid
   private final List<ScimAttribute> attributes;
@@ -99,6 +102,7 @@ public class ScimIndigoUser {
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
     this.labels = null;
+    this.authorities = null;
     this.attributes = null;
     this.managedGroups = null;
     this.isVoAdmin = null;
@@ -114,7 +118,8 @@ public class ScimIndigoUser {
     this.labels = b.labels;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
-    this.isVoAdmin = b.isAdmin;
+    this.isVoAdmin = b.isVoAdmin;
+    this.authorities = b.authorities;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -148,6 +153,10 @@ public class ScimIndigoUser {
     return isVoAdmin;
   }
 
+  public List<String> getAuthorities() {
+    return authorities;
+  }
+
   public List<ScimAttribute> getAttributes() {
     return attributes;
   }
@@ -176,7 +185,8 @@ public class ScimIndigoUser {
     private Date aupSignatureTime;
     private Date endTime;
 
-    private Boolean isAdmin;
+    private Boolean isVoAdmin;
+    private List<String> authorities = Lists.newLinkedList();
     private List<ScimAttribute> attributes = Lists.newLinkedList();
     private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
 
@@ -223,8 +233,13 @@ public class ScimIndigoUser {
       return this;
     }
 
-    public Builder isAdmin(Boolean isAdmin) {
-      this.isAdmin = isAdmin;
+    public Builder isVoAdmin(Boolean isVoAdmin) {
+      this.isVoAdmin = isVoAdmin;
+      return this;
+    }
+
+    public Builder addAuthority(String authority) {
+      authorities.add(authority);
       return this;
     }
 
@@ -240,31 +255,6 @@ public class ScimIndigoUser {
 
     public ScimIndigoUser build() {
       return new ScimIndigoUser(this);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(attributes, aupSignatureTime, certificates, endTime, isAdmin, labels,
-          managedGroups, oidcIds, samlIds, sshKeys);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      Builder other = (Builder) obj;
-      return Objects.equals(attributes, other.attributes)
-          && Objects.equals(aupSignatureTime, other.aupSignatureTime)
-          && Objects.equals(certificates, other.certificates)
-          && Objects.equals(endTime, other.endTime) && Objects.equals(isAdmin, other.isAdmin)
-          && Objects.equals(labels, other.labels)
-          && Objects.equals(managedGroups, other.managedGroups)
-          && Objects.equals(oidcIds, other.oidcIds) && Objects.equals(samlIds, other.samlIds)
-          && Objects.equals(sshKeys, other.sshKeys);
     }
 
   }
