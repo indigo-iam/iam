@@ -90,7 +90,6 @@ public class ScimAccountAuthoritiesConverterTests {
 
     ScimUser user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isVoAdmin().booleanValue(), equalTo(false));
     assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(1));
     assertThat(user.getIndigoUser().getAuthorities().get(0), equalTo(USER_AUTHORITY));
 
@@ -98,7 +97,6 @@ public class ScimAccountAuthoritiesConverterTests {
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isVoAdmin().booleanValue(), equalTo(false));
     assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(2));
     assertThat(user.getIndigoUser().getAuthorities().contains(USER_AUTHORITY), equalTo(true));
     assertThat(user.getIndigoUser().getAuthorities().contains(GM_AUTHORITY), equalTo(true));
@@ -107,7 +105,6 @@ public class ScimAccountAuthoritiesConverterTests {
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isVoAdmin().booleanValue(), equalTo(true));
     assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(3));
     assertThat(user.getIndigoUser().getAuthorities().contains(USER_AUTHORITY), equalTo(true));
     assertThat(user.getIndigoUser().getAuthorities().contains(GM_AUTHORITY), equalTo(true));

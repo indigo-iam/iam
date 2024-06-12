@@ -458,7 +458,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(user.getEmails().get(0).getValue(),
         equalTo(createdUser.getEmails().get(0).getValue()));
     assertNull(createdUser.getIndigoUser().getEndTime());
-    assertThat(createdUser.getIndigoUser().isVoAdmin(), equalTo(false));
+    assertThat(createdUser.getIndigoUser().getAuthorities().contains("ROLE_ADMIN"), equalTo(false));
   }
 
   @Test

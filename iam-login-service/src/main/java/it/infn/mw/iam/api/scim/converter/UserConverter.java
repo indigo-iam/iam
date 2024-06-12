@@ -243,8 +243,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
           .build()));
     }
 
-    builder.voAdmin(entity.getAuthorities().stream().anyMatch(a -> a.isAdminAuthority()));
-
     if (properties.isIncludeManagedGroups()) {
       groupManagerService.getManagedGroupInfoForAccount(entity)
         .getManagedGroups()

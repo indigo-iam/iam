@@ -457,14 +457,6 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
-    public Builder voAdmin(Boolean isVoAdmin) {
-
-      Preconditions.checkNotNull(isVoAdmin, "Null isAdmin");
-
-      indigoUserBuilder.isVoAdmin(isVoAdmin);
-      return this;
-    }
-
     public Builder endTime(Date endTime) {
 
       Preconditions.checkNotNull(endTime, "Null membership end-time");

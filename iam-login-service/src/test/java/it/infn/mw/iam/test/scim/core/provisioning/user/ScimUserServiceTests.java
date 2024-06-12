@@ -191,7 +191,6 @@ public class ScimUserServiceTests {
       .addEmail(TESTUSER_EMAIL) // mandatory
       .name(TESTUSER_NAME) // mandatory
       .addAttribute(TESTUSER_ATTRIBUTE) // not writable
-      .voAdmin(true) // not writable
       .addLabel(TESTUSER_LABEL) // not writable
       .addManagedGroup(TESTUSER_GROUP_REF) // not writable
       .addAuthority("ROLE_ADMIN")

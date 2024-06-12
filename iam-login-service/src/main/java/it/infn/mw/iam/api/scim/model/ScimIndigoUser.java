@@ -76,9 +76,6 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
-  @JsonProperty("isVoAdmin")
-  private final Boolean isVoAdmin;
-
   private final List<String> authorities;
 
   @Valid
@@ -105,7 +102,6 @@ public class ScimIndigoUser {
     this.authorities = null;
     this.attributes = null;
     this.managedGroups = null;
-    this.isVoAdmin = null;
   }
 
   private ScimIndigoUser(Builder b) {
@@ -118,7 +114,6 @@ public class ScimIndigoUser {
     this.labels = b.labels;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
-    this.isVoAdmin = b.isVoAdmin;
     this.authorities = b.authorities;
   }
 
@@ -147,10 +142,6 @@ public class ScimIndigoUser {
 
   public List<ScimLabel> getLabels() {
     return labels;
-  }
-
-  public Boolean isVoAdmin() {
-    return isVoAdmin;
   }
 
   public List<String> getAuthorities() {
@@ -185,7 +176,6 @@ public class ScimIndigoUser {
     private Date aupSignatureTime;
     private Date endTime;
 
-    private Boolean isVoAdmin;
     private List<String> authorities = Lists.newLinkedList();
     private List<ScimAttribute> attributes = Lists.newLinkedList();
     private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
@@ -230,11 +220,6 @@ public class ScimIndigoUser {
 
     public Builder addLabel(ScimLabel label) {
       labels.add(label);
-      return this;
-    }
-
-    public Builder isVoAdmin(Boolean isVoAdmin) {
-      this.isVoAdmin = isVoAdmin;
       return this;
     }
 
