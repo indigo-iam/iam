@@ -309,6 +309,31 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
+  @Override
+  public IamEmailNotification createAupSignatureRequestMessage(IamAccount account,
+      IamAccount deleterAccount) {
+    String recipient = account.getUserInfo().getName();
+    String admin = deleterAccount.getUserInfo().getName();
+    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put("aupUrl", aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("admin", admin);
+
+    String subject = "AUP signature request";
+
+    IamEmailNotification notification =
+        createMessage("aupSignatureRequest.ftl", model, IamNotificationType.AUP_SIGNATURE_REQUEST,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created AUP signature request message for the account {}. AUP signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 

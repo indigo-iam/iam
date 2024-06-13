@@ -45,4 +45,7 @@ public interface NotificationFactory {
   IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup);
 
   IamEmailNotification createAupSignatureExpMessage(IamAccount account);
+
+  IamEmailNotification createAupSignatureRequestMessage(IamAccount account, IamAccount deleterAccount);
+
 }
