@@ -128,7 +128,7 @@ public class DefaultRegistrationRequestService
 
   private ApplicationEventPublisher eventPublisher;
 
-  private static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
+  public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
