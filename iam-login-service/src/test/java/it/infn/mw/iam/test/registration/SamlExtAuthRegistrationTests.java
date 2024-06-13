@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
@@ -150,8 +150,8 @@ public class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport 
 
     IamAccount account = iamAccountRepo.findBySamlId(id)
       .orElseThrow(() -> new AssertionError("Expected account not found"));
-    assertFalse(
-        account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).get().getValue().equals(username));
+    assertTrue(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).isEmpty());
+
 
     iamAccountRepo.delete(account);
   }
