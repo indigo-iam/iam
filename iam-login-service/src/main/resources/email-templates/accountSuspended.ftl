@@ -1,9 +1,8 @@
 Dear ${recipient},
 
-this mail is to inform that your membership in ${organisationName} has expired. 
+this mail is to inform that your account in ${organisationName} has been suspended.
 
-In a short time you will be suspended from the VO and you will not
-be able to obtain JWT tokens/VOMS proxies anymore.
+You will not be able to obtain JWT tokens/VOMS proxies anymore.
 
 Please contact your VO administrators for any questions.
 
