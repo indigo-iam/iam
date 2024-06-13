@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.test.registration;
 
+import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
+import static org.junit.Assert.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,8 +31,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.api.TestSupport;
+import it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -47,6 +52,9 @@ public class RegistrationUsernameTests extends TestSupport {
 
   @Autowired
   private MockMvc mvc;
+  
+  @Autowired
+  private IamAccountRepository iamAccountRepo;
 
   @Before
   public void setup() {
@@ -84,6 +92,12 @@ public class RegistrationUsernameTests extends TestSupport {
           .content(objectMapper.writeValueAsString(r)))
         .andExpect(status().isOk());
     }
+    
+    IamAccount account = iamAccountRepo.findByUsername("bob")
+        .orElseThrow(() -> new AssertionError("Expected account not found"));
+      assertFalse(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).get().getValue().equals("bob"));
+
+      iamAccountRepo.delete(account);
 
   }
 
