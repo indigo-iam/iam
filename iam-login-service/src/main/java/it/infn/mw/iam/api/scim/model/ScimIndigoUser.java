@@ -41,7 +41,6 @@ public class ScimIndigoUser {
     X509_CERTS(ScimConstants.INDIGO_USER_SCHEMA + ".x509Certificates"),
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
     LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
-    IS_VO_ADMIN(ScimConstants.INDIGO_USER_SCHEMA + ".isVoAdmin"),
     AUTHORITIES(ScimConstants.INDIGO_USER_SCHEMA + ".authorities"),
     ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
     MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");

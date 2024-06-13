@@ -17,8 +17,9 @@ package it.infn.mw.iam.test.scim.me;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
-import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.IS_VO_ADMIN;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,7 +42,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @RunWith(SpringJUnit4ClassRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"scim.include_attributes[0].name=affiliation",
-    "scim.include_managed_groups=true"})
+    "scim.include_managed_groups=true", "scim.include_authorities=true"})
 public class ScimMeFullResponseEndpointTests {
 
   private final static String ME_ENDPOINT = "/scim/Me";
@@ -74,8 +75,11 @@ public class ScimMeFullResponseEndpointTests {
       .andExpect(jsonPath("$." + ATTRIBUTES, hasSize(1)))
       .andExpect(jsonPath("$." + ATTRIBUTES + "[0].name").value("affiliation"))
       .andExpect(jsonPath("$." + ATTRIBUTES + "[0].value").value("INFN-CNAF"))
-      .andExpect(jsonPath("$." + IS_VO_ADMIN).exists())
-      .andExpect(jsonPath("$." + IS_VO_ADMIN).value("false"))
+      .andExpect(jsonPath("$." + AUTHORITIES).exists())
+      .andExpect(jsonPath("$." + AUTHORITIES).isArray())
+      .andExpect(jsonPath("$." + AUTHORITIES, hasSize(2)))
+      .andExpect(jsonPath("$." + AUTHORITIES, hasItem("ROLE_USER")))
+      .andExpect(jsonPath("$." + AUTHORITIES, hasItem("ROLE_GM:c617d586-54e6-411d-8e38-64967798fa8a")))
       .andExpect(jsonPath("$." + MANAGED_GROUPS).exists())
       .andExpect(jsonPath("$." + MANAGED_GROUPS).isArray())
       .andExpect(jsonPath("$." + MANAGED_GROUPS, hasSize(1)))
