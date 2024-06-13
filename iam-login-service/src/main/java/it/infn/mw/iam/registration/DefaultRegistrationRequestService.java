@@ -59,6 +59,7 @@ import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -122,8 +123,11 @@ public class DefaultRegistrationRequestService
   @Autowired
   private Clock clock;
 
+  @Autowired
+  private IamProperties iamProperties;
+
   private ApplicationEventPublisher eventPublisher;
-  
+
   private static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
@@ -168,7 +172,8 @@ public class DefaultRegistrationRequestService
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
     Optional<IamAup> aup = iamAupRepo.findDefaultAup();
     if (aup.isPresent()) {
-      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account, Date.from(clock.instant()));
+      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account,
+          Date.from(clock.instant()));
       eventPublisher.publishEvent(new AupSignedEvent(this, signature));
     }
   }
@@ -202,7 +207,11 @@ public class DefaultRegistrationRequestService
         accountService.createAccount(userConverter.entityFromDto(userBuilder.build()));
     accountEntity.setConfirmationKey(tokenGenerator.generateToken());
     accountEntity.setActive(false);
-    accountEntity.getAttributes().add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
+
+    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
+      accountEntity.getAttributes()
+        .add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
+    }
 
     createAupSignatureForAccountIfNeeded(accountEntity);
 
