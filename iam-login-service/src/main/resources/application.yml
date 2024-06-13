@@ -282,4 +282,5 @@ lifecycle:
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
 
 scim:
+  include_authorities: ${IAM_SCIM_INCLUDE_AUTHORITIES:false}
   include_managed_groups: ${IAM_SCIM_INCLUDE_MANAGED_GROUPS:false}

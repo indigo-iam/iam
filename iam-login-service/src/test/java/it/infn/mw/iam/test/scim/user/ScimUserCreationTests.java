@@ -46,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -73,6 +74,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
+@TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
@@ -450,6 +452,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
     ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
       .endTime(expTime)
+      .addAuthority("ROLE_ADMIN")
       .build();
     ScimUser createdUser = scimUtils.postUser(user);
 
@@ -458,7 +461,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     assertThat(user.getEmails().get(0).getValue(),
         equalTo(createdUser.getEmails().get(0).getValue()));
     assertNull(createdUser.getIndigoUser().getEndTime());
-    assertThat(createdUser.getIndigoUser().isAdmin(), equalTo(false));
+    assertThat(createdUser.getIndigoUser().getAuthorities().contains("ROLE_ADMIN"), equalTo(false));
   }
 
   @Test

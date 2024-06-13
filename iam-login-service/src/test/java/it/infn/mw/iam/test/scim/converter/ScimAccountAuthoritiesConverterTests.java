@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.api.account.authority.AccountAuthorityService;
@@ -41,8 +42,10 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimAccountAuthoritiesConverterTests {
 
+  private static final String USER_AUTHORITY = "ROLE_USER";
   private static final String GM_AUTHORITY = "ROLE_GM" + UUID.randomUUID();
   private static final String ADMIN_AUTHORITY = "ROLE_ADMIN";
 
@@ -87,18 +90,25 @@ public class ScimAccountAuthoritiesConverterTests {
 
     ScimUser user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
+    assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(1));
+    assertThat(user.getIndigoUser().getAuthorities().get(0), equalTo(USER_AUTHORITY));
 
     authorityService.addAuthorityToAccount(testAccount, GM_AUTHORITY);
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(false));
+    assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(2));
+    assertThat(user.getIndigoUser().getAuthorities().contains(USER_AUTHORITY), equalTo(true));
+    assertThat(user.getIndigoUser().getAuthorities().contains(GM_AUTHORITY), equalTo(true));
 
     authorityService.addAuthorityToAccount(testAccount, ADMIN_AUTHORITY);
 
     user = scimUtils.getUser(testAccount.getUuid());
 
-    assertThat(user.getIndigoUser().isAdmin(), equalTo(true));
+    assertThat(user.getIndigoUser().getAuthorities().size(), equalTo(3));
+    assertThat(user.getIndigoUser().getAuthorities().contains(USER_AUTHORITY), equalTo(true));
+    assertThat(user.getIndigoUser().getAuthorities().contains(GM_AUTHORITY), equalTo(true));
+    assertThat(user.getIndigoUser().getAuthorities().contains(ADMIN_AUTHORITY), equalTo(true));
+
   }
 }

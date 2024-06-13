@@ -56,8 +56,6 @@ public class ScimRestUtilsMvc extends RestUtils {
     return doPost(getUsersLocation(), user, SCIM_CONTENT_TYPE, expectedStatus);
   }
 
-
-
   public ScimUser getUser(String uuid) throws Exception {
 
     return mapper.readValue(getUser(uuid, OK).andReturn().getResponse().getContentAsString(),
