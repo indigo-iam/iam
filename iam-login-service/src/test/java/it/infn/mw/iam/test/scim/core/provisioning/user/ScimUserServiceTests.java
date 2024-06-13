@@ -193,7 +193,7 @@ public class ScimUserServiceTests {
       .addAttribute(TESTUSER_ATTRIBUTE) // not writable
       .addLabel(TESTUSER_LABEL) // not writable
       .addManagedGroup(TESTUSER_GROUP_REF) // not writable
-      .addAuthority("ROLE_ADMIN")
+      .addAuthority("ROLE_ADMIN") // not writable
       .build();
 
     userService.create(scimUser);
