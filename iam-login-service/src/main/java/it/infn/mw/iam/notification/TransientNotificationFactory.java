@@ -59,6 +59,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String GROUPNAME_FIELD = "groupName";
   private static final String MOTIVATION_FIELD = "motivation";
   private static final String AUP_PATH = "%s/iam/aup/sign";
+  private static final String AUP_URL = "aupUrl";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -273,7 +274,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("aupUrl", aupUrl);
+    model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
     model.put("missingDays", missingDays);
 
@@ -295,7 +296,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("aupUrl", aupUrl);
+    model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = "AUP signature expiration";
@@ -319,7 +320,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("aupUrl", aupUrl);
+    model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
     model.put("admin", admin);
 
