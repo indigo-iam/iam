@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.core;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.core.UserCount;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
@@ -42,6 +44,13 @@ public class IamStatisticalEndpointTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.numberOfUsers", equalTo(255)));
+  }
+
+  @Test
+  public void testSetNumberOfUsers() {
+    UserCount userCount = new UserCount(0);
+    userCount.setNumberOfUsers(255);
+    assertEquals(255, userCount.getNumberOfUsers());
   }
 
 }
