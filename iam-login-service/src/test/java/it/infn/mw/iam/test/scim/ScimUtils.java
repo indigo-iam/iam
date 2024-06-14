@@ -56,30 +56,28 @@ public class ScimUtils {
     return getGroupsLocation() + "/" + uuid;
   }
 
-  public static ScimUser buildUser(String username, String email, String givenName,
+  public static ScimUser.Builder buildUser(String username, String email, String givenName,
       String familyName) {
 
-    return ScimUser.builder(username).buildEmail(email).buildName(givenName, familyName).build();
+    return ScimUser.builder(username).buildEmail(email).buildName(givenName, familyName);
   }
 
-  public static ScimUser buildUserWithUUID(String uuid, String username, String email,
+  public static ScimUser.Builder buildUserWithUUID(String uuid, String username, String email,
       String givenName, String familyName) {
 
     return ScimUser.builder(username)
       .id(uuid)
       .buildEmail(email)
-      .buildName(givenName, familyName)
-      .build();
+      .buildName(givenName, familyName);
   }
 
-  public static ScimUser buildUserWithPassword(String username, String password, String email,
+  public static ScimUser.Builder buildUserWithPassword(String username, String password, String email,
       String givenName, String familyName) {
 
     return ScimUser.builder(username)
       .password(password)
       .buildEmail(email)
-      .buildName(givenName, familyName)
-      .build();
+      .buildName(givenName, familyName);
   }
 
   public static class ParamsBuilder {

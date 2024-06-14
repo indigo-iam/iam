@@ -15,37 +15,61 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import java.util.Date;
+import java.text.ParseException;
+import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
+import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 
-public abstract class TokenEvent extends IamAuditApplicationEvent {
-  private static final long serialVersionUID = 1L;
-  private final Date expiration;
-  private final String clientId;
+@SuppressWarnings("deprecation")
+public class TokenEvent extends IamAuditApplicationEvent {
+
+  private static final long serialVersionUID = -1843180591267883819L;
+
+  public static final Logger LOG = LoggerFactory.getLogger(TokenEvent.class);
+
+  private final String subject;
   private final Set<String> scopes;
+  private final String grantType;
+  private transient Map<String, Object> payload;
 
-  public TokenEvent(Object source, OAuth2AccessTokenEntity token, String message) {
+  public TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
     super(IamEventCategory.TOKEN, source, message);
-    this.expiration = token.getExpiration();
-    this.clientId = token.getClient().getClientId();
-    this.scopes = token.getScope();
+
+    // subject will contains user-name or client name
+    this.subject = authenticationHolder.getAuthentication().getName();
+    this.scopes = authenticationHolder.getScope();
+    this.grantType = authenticationHolder.getAuthentication().getOAuth2Request().getGrantType();
+
+    try {
+      this.payload = token.getJWTClaimsSet().getClaims();
+    } catch (ParseException e) {
+      LOG.warn(e.getMessage(), e);
+      this.payload = Maps.newHashMap();
+    }
   }
 
-  public Date getExpiration() {
-    return expiration;
-  }
-
-  public String getClientId() {
-    return clientId;
+  public String getSubject() {
+    return subject;
   }
 
   public Set<String> getScopes() {
     return scopes;
   }
 
+  public String getGrantType() {
+    return grantType;
+  }
 
+  public Map<String, Object> getPayload() {
+    return payload;
+  }
 }

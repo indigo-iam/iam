@@ -17,11 +17,10 @@ package it.infn.mw.iam.test.scim.me;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
-import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.AUP_SIGNATURE_TIME;
-import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS;
+import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
-import static java.lang.String.valueOf;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,17 +31,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @IamMockMvcIntegrationTest
-public class ScimMeEndpointTests {
+@TestPropertySource(properties = {"scim.include_attributes[0].name=affiliation",
+    "scim.include_managed_groups=true", "scim.include_authorities=true"})
+public class ScimMeFullResponseEndpointTests {
 
   private final static String ME_ENDPOINT = "/scim/Me";
 
@@ -53,7 +54,7 @@ public class ScimMeEndpointTests {
   private MockMvc mvc;
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -62,53 +63,29 @@ public class ScimMeEndpointTests {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  private void getScimMeAsUserIsOk() throws Exception {
+  @Test
+  @WithMockUser(username = "manager", roles = {"USER", "GM:c617d586-54e6-411d-8e38-64967798fa8a"})
+  public void meEndpointFullUserInfo() throws Exception {
     //@formatter:off
     mvc.perform(get(ME_ENDPOINT)
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$." + AUP_SIGNATURE_TIME).doesNotExist())
-      .andExpect(jsonPath("$." + ATTRIBUTES).doesNotExist())
-      .andExpect(jsonPath("$." + LABELS).doesNotExist())
-      .andExpect(jsonPath("$." + MANAGED_GROUPS).doesNotExist());
+      .andExpect(jsonPath("$." + ATTRIBUTES).exists())
+      .andExpect(jsonPath("$." + ATTRIBUTES).isArray())
+      .andExpect(jsonPath("$." + ATTRIBUTES, hasSize(1)))
+      .andExpect(jsonPath("$." + ATTRIBUTES + "[0].name").value("affiliation"))
+      .andExpect(jsonPath("$." + ATTRIBUTES + "[0].value").value("INFN-CNAF"))
+      .andExpect(jsonPath("$." + AUTHORITIES).exists())
+      .andExpect(jsonPath("$." + AUTHORITIES).isArray())
+      .andExpect(jsonPath("$." + AUTHORITIES, hasSize(2)))
+      .andExpect(jsonPath("$." + AUTHORITIES, hasItem("ROLE_USER")))
+      .andExpect(jsonPath("$." + AUTHORITIES, hasItem("ROLE_GM:c617d586-54e6-411d-8e38-64967798fa8a")))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS).exists())
+      .andExpect(jsonPath("$." + MANAGED_GROUPS).isArray())
+      .andExpect(jsonPath("$." + MANAGED_GROUPS, hasSize(1)))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].display").value("Production"))
+      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].value").value("c617d586-54e6-411d-8e38-64967798fa8a"));
     //@formatter:on
   }
 
-  private void getScimMeAsUserIsError(int statusCode, String message) throws Exception {
-
-    mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.status", equalTo(valueOf(statusCode))))
-      .andExpect(jsonPath("$.detail", equalTo(message)));
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"scim:read"},
-      authorities = {"ROLE_USER"})
-  public void meEndpointUserInfoWithTokenAndScimReadScope() throws Exception {
-
-    getScimMeAsUserIsOk();
-  }
-
-  @Test
-  @WithMockUser(username = "test", roles = {"USER"})
-  public void meEndpointUserInfoNoToken() throws Exception {
-
-    getScimMeAsUserIsOk();
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = "registration-client", scopes = {"scim:read"})
-  public void meEndpointFailsWithClientCredentials() throws Exception {
-
-    getScimMeAsUserIsError(400, "No user linked to the current OAuth token");
-  }
-
-  @Test
-  @WithMockOAuthUser(clientId = "password-grant", user = "test", scopes = {"opeind", "profile"},
-      authorities = {"ROLE_USER"})
-  public void meEndpointSuccessWithTokenButNoScimScopes() throws Exception {
-
-    getScimMeAsUserIsOk();
-  }
 }

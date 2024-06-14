@@ -79,6 +79,7 @@ public class ScimMeAupTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void meEndpointAupSignatureTests() throws Exception {
+
     mvc.perform(get(ME_ENDPOINT).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
       .andExpect(

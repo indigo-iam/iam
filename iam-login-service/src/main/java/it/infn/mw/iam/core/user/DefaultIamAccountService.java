@@ -32,7 +32,6 @@ import java.util.UUID;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -83,7 +82,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final OAuth2TokenEntityService tokenService;
   private final IamAccountClientRepository accountClientRepo;
 
-  @Autowired
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
@@ -154,6 +152,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
       .orElseThrow(
           () -> new IllegalStateException("ROLE_USER not found in database. This is a bug"));
 
+    /* Administrators accounts cannot be created through API. */
+    account.getAuthorities().clear();
     account.getAuthorities().add(roleUserAuthority);
 
     // Credentials sanity checks
