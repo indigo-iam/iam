@@ -30,6 +30,6 @@ public class IamStatisticalEndpoint {
   @GetMapping("/stats")
   public UserCount getStats() {
     long count = accountRepo.count();
-    return new UserCount(String.valueOf(count));
+    return new UserCount(count);
   }
 }

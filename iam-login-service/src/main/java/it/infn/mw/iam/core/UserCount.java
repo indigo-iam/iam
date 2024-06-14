@@ -17,17 +17,17 @@ package it.infn.mw.iam.core;
 
 public class UserCount {
 
-  private String numberOfUsers;
+  private long numberOfUsers;
 
-  public UserCount(String numberOfUsers) {
+  public UserCount(long numberOfUsers) {
     this.numberOfUsers = numberOfUsers;
   }
 
-  public String getNumberOfUsers() {
+  public long getNumberOfUsers() {
     return numberOfUsers;
   }
 
-  public void setNumberOfUsers(String numberOfUsers) {
+  public void setNumberOfUsers(long numberOfUsers) {
     this.numberOfUsers = numberOfUsers;
   }
 }
