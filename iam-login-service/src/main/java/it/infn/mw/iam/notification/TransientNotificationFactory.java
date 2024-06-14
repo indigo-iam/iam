@@ -58,6 +58,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String USERNAME_FIELD = "username";
   private static final String GROUPNAME_FIELD = "groupName";
   private static final String MOTIVATION_FIELD = "motivation";
+  private static final String AUP_PATH = "%s/iam/aup/sign";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -258,7 +259,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup) {
     String recipient = account.getUserInfo().getName();
-    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+    String aupUrl = String.format(AUP_PATH, baseUrl);
 
     LocalDate now = LocalDate.now();
     long signatureValidityInDays = aup.getSignatureValidityInDays();
@@ -290,7 +291,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createAupSignatureExpMessage(IamAccount account) {
     String recipient = account.getUserInfo().getName();
-    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+    String aupUrl = String.format(AUP_PATH, baseUrl);
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -314,7 +315,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       IamAccount deleterAccount) {
     String recipient = account.getUserInfo().getName();
     String admin = deleterAccount.getUserInfo().getName();
-    String aupUrl = String.format("%s/iam/aup/sign", baseUrl);
+    String aupUrl = String.format(AUP_PATH, baseUrl);
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);

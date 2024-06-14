@@ -33,8 +33,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -80,14 +78,14 @@ public class AupReminderTaskTests extends AupTestSupport {
   private IamAupRepository aupRepo;
 
   @After
-  public void tearDown() throws InterruptedException {
+  public void tearDown() {
     notificationDelivery.clearDeliveredNotifications();
     aupRepo.deleteAll();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailWorks() throws JsonProcessingException, Exception {
+  public void aupReminderEmailWorks() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);
@@ -118,7 +116,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupExpirationEmailWorks() throws JsonProcessingException, Exception {
+  public void aupExpirationEmailWorks() {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(2L);
 

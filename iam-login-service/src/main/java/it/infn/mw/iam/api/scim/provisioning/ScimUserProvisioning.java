@@ -269,15 +269,19 @@ public class ScimUserProvisioning
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
         u.publishUpdateEvent(this, eventPublisher);
-        if (u.getType().equals(ACCOUNT_REPLACE_ACTIVE)) {
-          if (!account.isActive()) {
-            notificationFactory.createAccountSuspendedMessage(account);
-          } else {
-            notificationFactory.createAccountRestoredMessage(account);
-          }
-        }
+        handleSpecificUpdateType(account, u);
       }
 
+    }
+  }
+
+  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u) {
+    if (u.getType().equals(ACCOUNT_REPLACE_ACTIVE)) {
+      if (!account.isActive()) {
+        notificationFactory.createAccountSuspendedMessage(account);
+      } else {
+        notificationFactory.createAccountRestoredMessage(account);
+      }
     }
   }
 

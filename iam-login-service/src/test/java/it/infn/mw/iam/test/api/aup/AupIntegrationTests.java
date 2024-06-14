@@ -263,7 +263,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresAupRemindersInDays() throws JsonProcessingException, Exception {
+  public void aupCreationRequiresAupRemindersInDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, null);
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -277,8 +277,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresValidAupRemindersInDays()
-      throws JsonProcessingException, Exception {
+  public void aupCreationRequiresValidAupRemindersInDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "30,15,7,1");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
