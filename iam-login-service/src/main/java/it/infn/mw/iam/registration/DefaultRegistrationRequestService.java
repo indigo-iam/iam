@@ -59,11 +59,13 @@ import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -121,7 +123,12 @@ public class DefaultRegistrationRequestService
   @Autowired
   private Clock clock;
 
+  @Autowired
+  private IamProperties iamProperties;
+
   private ApplicationEventPublisher eventPublisher;
+
+  public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
@@ -165,7 +172,8 @@ public class DefaultRegistrationRequestService
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
     Optional<IamAup> aup = iamAupRepo.findDefaultAup();
     if (aup.isPresent()) {
-      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account, Date.from(clock.instant()));
+      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account,
+          Date.from(clock.instant()));
       eventPublisher.publishEvent(new AupSignedEvent(this, signature));
     }
   }
@@ -199,6 +207,11 @@ public class DefaultRegistrationRequestService
         accountService.createAccount(userConverter.entityFromDto(userBuilder.build()));
     accountEntity.setConfirmationKey(tokenGenerator.generateToken());
     accountEntity.setActive(false);
+
+    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
+      accountEntity.getAttributes()
+        .add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
+    }
 
     createAupSignatureForAccountIfNeeded(accountEntity);
 
@@ -397,14 +410,6 @@ public class DefaultRegistrationRequestService
     }
 
     return handleApprove(request);
-  }
-
-  public void setValidationService(RegistrationRequestValidationService validationService) {
-    this.validationService = validationService;
-  }
-
-  public RegistrationRequestValidationService getValidationService() {
-    return validationService;
   }
 
 }

@@ -221,6 +221,8 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
+    
+    boolean addNicknameAsAttribute = false;
 
     ExternalAuthenticationType authenticationType;
 
@@ -244,6 +246,14 @@ public class IamProperties {
 
     public void setRequireExternalAuthentication(boolean requireExternalAuthentication) {
       this.requireExternalAuthentication = requireExternalAuthentication;
+    }
+    
+    public boolean isAddNicknameAsAttribute() {
+      return addNicknameAsAttribute;
+    }
+
+    public void setAddNicknameAsAttribute(boolean addNicknameAsAttribute) {
+      this.addNicknameAsAttribute = addNicknameAsAttribute;
     }
 
     public ExternalAuthenticationType getAuthenticationType() {

@@ -16,10 +16,12 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
+import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
@@ -148,6 +150,8 @@ public class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport 
 
     IamAccount account = iamAccountRepo.findBySamlId(id)
       .orElseThrow(() -> new AssertionError("Expected account not found"));
+    assertTrue(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).isEmpty());
+
 
     iamAccountRepo.delete(account);
   }
