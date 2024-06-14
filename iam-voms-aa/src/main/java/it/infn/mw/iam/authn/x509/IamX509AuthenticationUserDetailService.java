@@ -15,12 +15,13 @@
  */
 package it.infn.mw.iam.authn.x509;
 
+import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
+
 import java.util.Arrays;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
 import org.springframework.security.core.userdetails.User;
@@ -44,7 +45,6 @@ public class IamX509AuthenticationUserDetailService
   IamAccountRepository accountRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
 
-  @Autowired
   public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
       InactiveAccountAuthenticationHander handler) {
     this.accountRepository = accountRepository;
@@ -63,7 +63,7 @@ public class IamX509AuthenticationUserDetailService
   @Override
   public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token) {
 
-    String principal = (String) token.getPrincipal();
+    String principal = getPortableRFC2253Form((String) token.getPrincipal());
 
     LOG.debug("Loading IAM account for X.509 principal '{}'", principal);
 

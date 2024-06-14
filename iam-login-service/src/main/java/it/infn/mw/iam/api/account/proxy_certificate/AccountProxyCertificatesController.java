@@ -17,20 +17,18 @@ package it.infn.mw.iam.api.account.proxy_certificate;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
 import static java.lang.String.format;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,7 +45,6 @@ import it.infn.mw.iam.api.proxy.ProxyCertificateDTO;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.rcauth.x509.ProxyGenerationError;
 import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
 
@@ -60,10 +57,8 @@ public class AccountProxyCertificatesController {
   private final AccountLinkingService linkingService;
   private final ProxyHelperService proxyHelperService;
 
-  @Autowired
   public AccountProxyCertificatesController(AccountUtils accountUtils,
-      IamAccountRepository accountRepo, AccountLinkingService linkingService,
-      ProxyHelperService proxyHelperService) {
+      AccountLinkingService linkingService, ProxyHelperService proxyHelperService) {
     this.accountUtils = accountUtils;
     this.linkingService = linkingService;
     this.proxyHelperService = proxyHelperService;
@@ -76,7 +71,7 @@ public class AccountProxyCertificatesController {
     }
   }
 
-  @RequestMapping(value = "/iam/account/me/proxycert", method = PUT)
+  @PutMapping(value = "/iam/account/me/proxycert")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_USER')")
   public void addProxyCertificate(
       @RequestBody @Validated(

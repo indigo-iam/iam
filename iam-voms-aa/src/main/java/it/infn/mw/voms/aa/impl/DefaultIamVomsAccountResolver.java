@@ -15,6 +15,8 @@
  */
 package it.infn.mw.voms.aa.impl;
 
+import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
+
 import java.util.Optional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -34,7 +36,7 @@ public class DefaultIamVomsAccountResolver implements IamVOMSAccountResolver {
     
     String certificateSubject = requestContext.getRequest().getRequesterSubject();
     
-    return accountRepo.findByCertificateSubject(certificateSubject);
+    return accountRepo.findByCertificateSubject(getPortableRFC2253Form(certificateSubject));
     
   }
 
