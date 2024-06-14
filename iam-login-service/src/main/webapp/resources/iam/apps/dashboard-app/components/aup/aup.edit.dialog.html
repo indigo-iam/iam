@@ -52,6 +52,18 @@
                 If set to zero, the AUP signature will be asked only at registration time.
             </span>
         </div>
+        <div class="form-group" ng-class="{'has-error': $ctrl.error || createAup.aupReminder.$dirty && !createAup.aupReminder.$valid}">
+            <label>AUP signature reminders (in days)</label>
+            <input name="aupReminder" class="form-control" type="text" pattern="\d+,\d+,\d+" ng-model="$ctrl.aupVal.aupRemindersInDays" placeholder="1,15,30" required="true">
+            <span class="help-block">
+                Indicate a sequence of three days representing how many days before the AUP expiration reminder messages must be sent.
+            </span>
+            <span class="help-block" ng-if="createAup.aupReminder.$dirty && createAup.aupReminder.$error.required">
+                Required input
+            </span>
+            <span class="help-block" ng-show="createAup.aupReminder.$dirty && createAup.aupReminder.$error.pattern">
+                Please provide a sequence of three numbers comma-separated </span>
+        </div>
         <div class="form-group">
             <div class="bs-callout bs-callout-primary">
                 <h4>Editing the AUP will <strong>not</strong> trigger an AUP signature

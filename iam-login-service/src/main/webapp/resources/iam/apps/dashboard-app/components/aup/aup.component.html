@@ -67,6 +67,15 @@
                             If set to zero, the AUP signature will be asked only at registration time.
                         </span>
                     </div>
+                    <div class="form-group">
+                        <label>AUP reminders (in days)</label>
+                        <p class="aup-text">
+                            {{$ctrl.aup.data.aupRemindersInDays}}
+                        </p>
+                        <span class="help-block">
+                            Indicate a sequence of three days representing how many days before the AUP expiration reminder messages must be sent.
+                        </span>
+                    </div>
                 </div>
 
                 <div ng-if="$ctrl.aup == null">

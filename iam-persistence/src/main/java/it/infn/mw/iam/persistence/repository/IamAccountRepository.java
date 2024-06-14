@@ -141,7 +141,6 @@ public interface IamAccountRepository
   @Query("select a from IamAccount a where a.active = TRUE")
   Page<IamAccount> findActiveAccounts(Pageable op);
 
-
   @Modifying
   @Query("delete from IamAccountGroupMembership")
   void deleteAllAccountGroupMemberships();
