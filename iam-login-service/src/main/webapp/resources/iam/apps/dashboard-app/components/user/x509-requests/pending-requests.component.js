@@ -89,8 +89,10 @@
 
             if (err.data) {
                 msg = err.data.error;
-            } else {
+            } else if (err.statusText) {
                 msg = err.statusText;
+            } else {
+                msg = 'Invalid request';
             }
 
             toaster.pop({
@@ -120,7 +122,6 @@
                 req.issuerDn = self.certReq.issuerDn;
             }
 
-            console.log('Submitting certificate request', req);
             CertLinkRequestsService.submit(req)
                 .then(handleSuccess)
                 .catch(handleError);
