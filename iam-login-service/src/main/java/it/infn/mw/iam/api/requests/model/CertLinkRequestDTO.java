@@ -22,11 +22,10 @@ import javax.validation.constraints.NotEmpty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 //import it.infn.mw.iam.api.validators.CertificationAuthority;
-
-import javax.validation.constraints.Pattern;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @CertLinkRequest
@@ -45,12 +44,8 @@ public class CertLinkRequestDTO {
 
   private String pemEncodedCertificate;
 
-  @Pattern(regexp = "^(?:[A-Za-z0-9]+=[^,]+,)*(?:[A-Za-z0-9]+=[^,]+)$",
-      message = "Invalid subjectDn format")
   private String subjectDn;
 
-  @Pattern(regexp = "^(?:[A-Za-z0-9]+=[^,]+,)*(?:[A-Za-z0-9]+=[^,]+)$",
-      message = "Invalid issuerDn format")
   // @CertificationAuthority
   private String issuerDn;
 
@@ -85,8 +80,8 @@ public class CertLinkRequestDTO {
     this.userFullName = userFullName;
     this.label = label;
     this.pemEncodedCertificate = pemEncodedCertificate;
-    this.subjectDn = subjectDn;
-    this.issuerDn = issuerDn;
+    this.subjectDn = getPortableRFC2253Form(subjectDn);
+    this.issuerDn = getPortableRFC2253Form(issuerDn);
     this.notes = notes;
     this.status = status;
     this.motivation = motivation;
