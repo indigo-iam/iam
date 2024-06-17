@@ -198,13 +198,13 @@
                     certificationAuthorities: () => ['CN=CA1, O=INFN, C=IT', 'CN=CA2, O=INFN, C=IT']
                 }
             });
-            console.log('modalInstance', modalInstance);
 
             modalInstance.result.then(function (r) {
                 toaster.pop({
                     type: 'success',
                     body: `Certificate linking request submitted.`
                 });
+                loadCertLinkRequests();
             });
         }
     }
