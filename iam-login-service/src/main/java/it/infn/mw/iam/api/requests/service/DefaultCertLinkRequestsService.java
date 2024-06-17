@@ -51,6 +51,7 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamCertLinkRequestRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
@@ -80,6 +81,9 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
 
   @Autowired
   private IamX509CertificateRepository x509CertificateRepository;
+
+  @Autowired
+  private IamAccountRepository accountRepository;
 
   private static final Table<IamRequestStatus, IamRequestStatus, Boolean> ALLOWED_STATE_TRANSITIONS =
       new ImmutableTable.Builder<IamRequestStatus, IamRequestStatus, Boolean>()
@@ -137,6 +141,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     IamX509Certificate cert = request.getCertificate();
 
     account.linkX509Certificates(List.of(cert));
+    accountRepository.save(account);
 
     request = updateCertLinkRequestStatus(request, APPROVED);
     notificationFactory.createCertLinkApprovedMessage(request);
