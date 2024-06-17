@@ -110,7 +110,7 @@
             self.enabled = false;
 
             const req = {
-                notes: $sanitize(self.certReq.note),
+                notes: $sanitize(self.certReq.notes),
                 label: self.certReq.label,
             }
             if (self.inputMode == "pem") {
