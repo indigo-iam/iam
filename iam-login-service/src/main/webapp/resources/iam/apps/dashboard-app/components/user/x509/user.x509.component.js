@@ -34,7 +34,7 @@
 
     function AddRemoveCertificateController(
         $scope, scimFactory, $uibModalInstance, action, cert, user,
-        successHandler) {
+        successHandler, certificationAuthorities) {
         var self = this;
         self.enabled = true;
         self.action = action;
@@ -42,20 +42,26 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
-        self.inputMode = 0;
+        self.certificationAuthorities = certificationAuthorities;
+        self.inputMode = "pem";
 
         self.certVal = {};
 
         self.doAdd = function () {
             self.error = undefined;
             self.enabled = false;
-            if (self.inputMode == 0) {
-                delete self.certVal.subject;
-                delete self.certVal.issuer;
-            } else if (self.inputMode == 1) {
-                delete self.certVal.pemEncodedCertificate;
+
+            const req = {
+                label: self.certVal.label,
             }
-            scimFactory.addX509Certificate(self.user.id, self.certVal)
+            if (self.inputMode == "pem") {
+                req.pemEncodedCertificate = self.certVal.pemEncodedCertificate;
+            } else if (self.inputMode == "dn") {
+                req.subjectDn = self.certVal.subjectDn;
+                req.issuerDn = self.certVal.issuerDn;
+            }
+
+            scimFactory.addX509Certificate(self.user.id, req)
                 .then(function (response) {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate added`);
@@ -93,11 +99,11 @@
                 label: '',
                 primary: false,
                 pemEncodedCertificate: '',
-                subject: '',
-                issuer: '',
+                subjectDn: '',
+                issuerDn: '',
             };
             self.error = undefined;
-            self.inputMode = 0;
+            self.inputMode = "pem";
         };
 
         self.certLabelValid = function () {
@@ -300,7 +306,8 @@
                     cert: undefined,
                     successHandler: function () {
                         return self.handleSuccess;
-                    }
+                    },
+                    certificationAuthorities: () => ['CN=CA1, O=INFN, C=IT', 'CN=CA2, O=INFN, C=IT']
                 }
             });
         };

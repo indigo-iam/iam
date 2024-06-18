@@ -63,7 +63,7 @@
 
         self.user = user;
         self.enabled = true;
-        self.certReq = {};
+        self.certVal = {};
         self.inputMode = "pem";
         self.error = undefined;
 
@@ -75,7 +75,7 @@
         self.certificationAuthorities = certificationAuthorities;
 
         function canSubmit() {
-            return self.certReq.notes && self.enabled;
+            return self.certVal.notes && self.enabled;
         }
 
         function handleSuccess(res) {
@@ -112,14 +112,14 @@
             self.enabled = false;
 
             const req = {
-                notes: $sanitize(self.certReq.notes),
-                label: self.certReq.label,
+                notes: $sanitize(self.certVal.notes),
+                label: self.certVal.label,
             }
             if (self.inputMode == "pem") {
-                req.pemEncodedCertificate = self.certReq.pemEncodedCertificate;
+                req.pemEncodedCertificate = self.certVal.pemEncodedCertificate;
             } else if (self.inputMode == "dn") {
-                req.subjectDn = self.certReq.subjectDn;
-                req.issuerDn = self.certReq.issuerDn;
+                req.subjectDn = self.certVal.subjectDn;
+                req.issuerDn = self.certVal.issuerDn;
             }
 
             CertLinkRequestsService.submit(req)
@@ -128,7 +128,7 @@
         }
 
         function reset() {
-            self.certReq = {
+            self.certVal = {
                 label: '',
                 pemEncodedCertificate: '',
                 subjectDn: '',
