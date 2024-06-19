@@ -30,6 +30,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.CascadeType;
 
 import it.infn.mw.iam.core.IamRequestStatus;
 
@@ -50,7 +51,7 @@ public class IamCertLinkRequest implements Serializable {
   @JoinColumn(name = "account_id")
   private IamAccount account;
 
-  @OneToOne
+  @OneToOne(cascade = CascadeType.PERSIST)
   @JoinColumn(name = "iam_x509_cert_id")
   private IamX509Certificate certificate;
 

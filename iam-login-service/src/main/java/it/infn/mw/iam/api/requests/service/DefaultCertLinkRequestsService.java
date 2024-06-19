@@ -103,7 +103,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
 
     IamX509Certificate cert = x509CertificateRepository
       .findBySubjectDnAndIssuerDn(requestDto.getSubjectDn(), requestDto.getIssuerDn())
-      .orElseGet(() -> x509CertificateRepository.save(converter.certificateFromRequest(requestDto)));
+      .orElseGet(() -> converter.certificateFromRequest(requestDto));
 
     IamCertLinkRequest request = new IamCertLinkRequest();
     request.setUuid(UUID.randomUUID().toString());
