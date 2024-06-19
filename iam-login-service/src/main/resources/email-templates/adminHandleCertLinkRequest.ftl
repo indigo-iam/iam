@@ -5,7 +5,7 @@ Username: ${username}
 Certificate subject: ${subject}
 Certificate issuer: ${issuer}
 
-<#if notes??>Notes:
+<#if notes?has_content>Notes:
 ${notes}</#if>
 	
 You can approve or reject this request by following the link below:
