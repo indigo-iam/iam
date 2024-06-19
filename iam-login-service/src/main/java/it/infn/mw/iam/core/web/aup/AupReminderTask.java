@@ -17,10 +17,9 @@ package it.infn.mw.iam.core.web.aup;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -93,10 +92,13 @@ public class AupReminderTask {
     });
   }
 
-  private List<Integer> parseReminderIntervals(String aupRemindersInDays) {
-    return Arrays.stream(aupRemindersInDays.split(","))
-      .map(Integer::valueOf)
-      .collect(Collectors.toList());
+  private static List<Integer> parseReminderIntervals(String aupRemindersInDays) {
+    List<Integer> result = new ArrayList<>();
+    String[] parts = aupRemindersInDays.split("\\s*,\\s*");
+    for (String part : parts) {
+      result.add(Integer.parseInt(part.trim()));
+    }
+    return result;
   }
 
 }

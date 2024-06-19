@@ -272,13 +272,27 @@ public class AupIntegrationTests extends AupTestSupport {
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays is required"));
+      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty"));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresValidAupRemindersInDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "30,15,7,1");
+  public void aupCreationRequiresAupRemindersInDaysNotEmpty() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresNoZeroInAupRemindersInDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "0");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
@@ -287,13 +301,88 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be a sequence of three comma-separated numbers"));
+          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresPositiveAupRemindersInDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "-22");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value(
+          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresNoLettersInAupRemindersInDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "ciao");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value(
+          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresNoDuplicationInAupRemindersInDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "30,15,15");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value(
+          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupCreationWorks() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isCreated());
+
+
+    String aupJson = mvc.perform(get("/iam/aup"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
+
+    DateEqualModulo1Second creationAndLastUpdateTimeMatcher = new DateEqualModulo1Second(now);
+    assertThat(createdAup.getUrl(), equalTo(aup.getUrl()));
+    assertThat(createdAup.getDescription(), equalTo(aup.getDescription()));
+    assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
+    assertThat(createdAup.getCreationTime(), creationAndLastUpdateTimeMatcher);
+    assertThat(createdAup.getLastUpdateTime(), creationAndLastUpdateTimeMatcher);
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void whiteSpacesAllowedAmongAupRemindersDays() throws JsonProcessingException, Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, " 30, 15, 7 ");
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
