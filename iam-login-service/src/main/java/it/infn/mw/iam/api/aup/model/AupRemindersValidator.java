@@ -34,18 +34,15 @@ public class AupRemindersValidator implements ConstraintValidator<AupRemindersRe
     }
 
     try {
-      // Split the string by commas and convert to a list of integers
       List<Integer> numbers = Arrays.stream(value.split(","))
         .map(String::trim)
         .map(Integer::parseInt)
         .collect(Collectors.toList());
 
-      // Check that all integers are greater than 0
       if (numbers.stream().anyMatch(i -> i <= 0)) {
         return false;
       }
 
-      // Check for duplicates by comparing sizes
       Set<Integer> uniqueNumbers = new HashSet<>(numbers);
       return uniqueNumbers.size() == numbers.size();
     } catch (NumberFormatException e) {
