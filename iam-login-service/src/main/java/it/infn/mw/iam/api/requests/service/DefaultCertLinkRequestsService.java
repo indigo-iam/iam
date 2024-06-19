@@ -127,6 +127,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     IamCertLinkRequest request = certLinkRequestUtils.getCertLinkRequest(requestId);
 
     certLinkRequestRepository.deleteById(request.getId());
+    x509CertificateRepository.delete(request.getCertificate());
     eventPublisher.publishEvent(new CertLinkRequestDeletedEvent(this, request));
   }
 
@@ -136,6 +137,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     request = updateCertLinkRequestStatus(request, APPROVED);
     notificationFactory.createCertLinkApprovedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestApprovedEvent(this, request));
+    certLinkRequestRepository.delete(request);
 
     IamAccount account = request.getAccount();
     IamX509Certificate cert = request.getCertificate();
@@ -155,6 +157,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     request = updateCertLinkRequestStatus(request, REJECTED);
     notificationFactory.createCertLinkRejectedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestRejectedEvent(this, request));
+    certLinkRequestRepository.delete(request);
 
     return converter.dtoFromEntity(request);
   }
@@ -192,7 +195,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     }
     request.setStatus(status);
     request.setLastUpdateTime(new Date(timeProvider.currentTimeMillis()));
-    return certLinkRequestRepository.save(request);
+    return request;
   }
 
   static Specification<IamCertLinkRequest> baseSpec() {
