@@ -41,6 +41,7 @@ import it.infn.mw.iam.api.requests.CertLinkRequestConverter;
 import it.infn.mw.iam.api.requests.CertLinkRequestUtils;
 import it.infn.mw.iam.api.requests.exception.InvalidIamRequestStatusError;
 import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
+import it.infn.mw.iam.audit.events.account.x509.X509CertificateAddedEvent;
 import it.infn.mw.iam.audit.events.cert_link.request.CertLinkRequestApprovedEvent;
 import it.infn.mw.iam.audit.events.cert_link.request.CertLinkRequestCreatedEvent;
 import it.infn.mw.iam.audit.events.cert_link.request.CertLinkRequestDeletedEvent;
@@ -132,16 +133,15 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
   @Override
   public CertLinkRequestDTO approveCertLinkRequest(String requestId) {
     IamCertLinkRequest request = certLinkRequestUtils.getCertLinkRequest(requestId);
-
-    IamAccount account = request.getAccount();
-    IamX509Certificate cert = request.getCertificate();
-
-    account.linkX509Certificates(List.of(cert));
-    x509CertificateRepository.save(cert);
-
     request = updateCertLinkRequestStatus(request, APPROVED);
     notificationFactory.createCertLinkApprovedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestApprovedEvent(this, request));
+
+    IamAccount account = request.getAccount();
+    IamX509Certificate cert = request.getCertificate();
+    account.linkX509Certificates(List.of(cert));
+    x509CertificateRepository.save(cert);
+    eventPublisher.publishEvent(new X509CertificateAddedEvent(this, account, List.of(cert)));
 
     return converter.dtoFromEntity(request);
   }
