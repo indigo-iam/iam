@@ -232,6 +232,8 @@ public class IamProperties {
 
     Map<String, RegistrationFieldProperties> fields;
 
+    List<Map<String, String>> defaultGroups;
+
     public boolean isShowRegistrationButtonInLoginPage() {
       return showRegistrationButtonInLoginPage;
     }
@@ -286,6 +288,14 @@ public class IamProperties {
 
     public void setFields(Map<String, RegistrationFieldProperties> fields) {
       this.fields = fields;
+    }
+
+    public List<Map<String, String>> getDefaultGroups() {
+      return defaultGroups;
+    }
+
+    public void setDefaultGroups(List<Map<String, String>> defaultGroups) {
+      this.defaultGroups = defaultGroups;
     }
   }
 

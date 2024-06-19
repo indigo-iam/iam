@@ -59,6 +59,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
@@ -106,6 +108,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   private DefaultIamAccountService accountService;
+  private DefaultIamGroupService iamGroupService;
+  private IamProperties iamProperties;
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -128,7 +132,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo);
+        passwordEncoder, eventPublisher, tokenService, accountClientRepo, iamProperties, iamGroupService);
   }
 
   @Test(expected = NullPointerException.class)

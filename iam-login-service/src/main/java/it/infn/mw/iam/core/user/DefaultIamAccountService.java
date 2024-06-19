@@ -25,6 +25,7 @@ import java.time.Clock;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +52,8 @@ import it.infn.mw.iam.audit.events.account.group.GroupMembershipAddedEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
@@ -81,11 +84,14 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private ApplicationEventPublisher eventPublisher;
   private final OAuth2TokenEntityService tokenService;
   private final IamAccountClientRepository accountClientRepo;
+  private final IamProperties iamProperties;
+  private final DefaultIamGroupService iamGroupService;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo) {
+      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      IamProperties iamProperties, DefaultIamGroupService iamGroupService) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -95,6 +101,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.eventPublisher = eventPublisher;
     this.tokenService = tokenService;
     this.accountClientRepo = accountClientRepo;
+    this.iamProperties = iamProperties;
+    this.iamGroupService = iamGroupService;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -177,8 +185,19 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     eventPublisher.publishEvent(new AccountCreatedEvent(this, account,
         "Account created for user " + account.getUsername()));
-
+    
+    addToDefaultGroups(account);
     return account;
+  }
+
+  private void addToDefaultGroups(IamAccount account) {
+    List<Map<String, String>> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
+    if(defaultGroups != null){
+      defaultGroups.forEach(group ->{
+        if("INSERT".equalsIgnoreCase(group.get("enrollment"))){
+          iamGroupService.findByName(group.get("name")).ifPresent(iamGroup -> addToGroup(account, iamGroup));
+        }});
+    }    
   }
 
   protected void removeClientLinks(IamAccount account) {
