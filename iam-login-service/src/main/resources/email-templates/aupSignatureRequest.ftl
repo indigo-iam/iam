@@ -1,9 +1,8 @@
 Dear ${recipient},
 
-Administrator ${admin} requested to re-sign the AUP.
+an administrator requested that you re-sign the Acceptable Usage Policy (AUP).
 
-To sign the AUP, point your browser to the following 
-URL:
+To sign the AUP, point your browser to the following URL:
 
 ${aupUrl}
 
