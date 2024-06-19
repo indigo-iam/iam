@@ -25,7 +25,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
@@ -120,7 +124,6 @@ public class FindAccountController {
   }
 
   @GetMapping(value = FIND_BY_UUID_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or hasRole('USER')")
   public ListResponseDTO<ScimUser> findByUuid(@PathVariable String accountUuid) {
     return service.findAccountByUuid(accountUuid);
   }

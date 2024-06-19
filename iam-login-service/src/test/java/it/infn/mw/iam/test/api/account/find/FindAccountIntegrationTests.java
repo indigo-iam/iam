@@ -293,7 +293,6 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
-  @WithMockUser(username = "test", roles = "USER")
   public void findByUUIDWorks() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
@@ -308,10 +307,27 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void totalResultDoesNotExistForUnknownUUID() throws Exception {
+  public void findByUUIDForbiddenForUsers() throws Exception {
+
+    IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
+      .andExpect(FORBIDDEN);
+  }
+
+  @Test
+  public void emptyResultForUnknownUUIDIfAdmin() throws Exception {
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
        .andExpect(OK)
        .andExpect(jsonPath("$.totalResults").doesNotExist())
        .andExpect(jsonPath("$.Resources", emptyIterable()));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  public void forbiddenForUnknownUUIDIfUser() throws Exception {
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
+       .andExpect(FORBIDDEN);
   }
 }
