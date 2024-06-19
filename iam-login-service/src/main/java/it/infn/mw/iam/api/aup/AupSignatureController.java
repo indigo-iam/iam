@@ -170,7 +170,7 @@ public class AupSignatureController {
     if (signature.isPresent()) {
       signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
       eventPublisher.publishEvent(new AupSignatureDeletedEvent(this, deleterAccount.getUsername(), signature.get()));
-      notificationFactory.createAupSignatureRequestMessage(signatureAccount, deleterAccount);
+      notificationFactory.createAupSignatureRequestMessage(signatureAccount);
     }
   }
 
