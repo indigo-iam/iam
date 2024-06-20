@@ -188,7 +188,7 @@
         };
     }
 
-    function UserX509Controller(toaster, $uibModal, Utils, $state) {
+    function UserX509Controller(toaster, $uibModal, Utils, $state, TrustsService) {
         var self = this;
 
         self.accountLinkingEnabled = getAccountLinkingEnabled();
@@ -307,7 +307,7 @@
                     successHandler: function () {
                         return self.handleSuccess;
                     },
-                    certificationAuthorities: () => ['CN=CA1, O=INFN, C=IT', 'CN=CA2, O=INFN, C=IT']
+                    certificationAuthorities: () => TrustsService.getTrusts()
                 }
             });
         };
@@ -381,7 +381,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/user.x509.component.html',
         controller: [
-            'toaster', '$uibModal', 'Utils', '$state', UserX509Controller
+            'toaster', '$uibModal', 'Utils', '$state', 'TrustsService', UserX509Controller
         ]
     });
 })();

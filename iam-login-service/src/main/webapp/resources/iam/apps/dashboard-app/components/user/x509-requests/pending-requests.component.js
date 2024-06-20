@@ -145,7 +145,7 @@
 
     }
 
-    function PendingCertLinkRequestsController(Utils, CertLinkRequestsService, toaster, $uibModal) {
+    function PendingCertLinkRequestsController(Utils, CertLinkRequestsService, toaster, $uibModal, TrustsService) {
         var self = this;
 
         self.certLinkRequests = [];
@@ -195,7 +195,7 @@
                 controllerAs: '$ctrl',
                 resolve: {
                     user: () => self.user,
-                    certificationAuthorities: () => ['CN=CA1, O=INFN, C=IT', 'CN=CA2, O=INFN, C=IT']
+                    certificationAuthorities: () => TrustsService.getTrusts()
                 }
             });
 
@@ -217,7 +217,7 @@
                 user: "<"
             },
             controller: [
-                'Utils', 'CertLinkRequestsService', 'toaster', '$uibModal',
+                'Utils', 'CertLinkRequestsService', 'toaster', '$uibModal', 'TrustsService',
                 PendingCertLinkRequestsController
             ],
             controllerAs: '$ctrl'
