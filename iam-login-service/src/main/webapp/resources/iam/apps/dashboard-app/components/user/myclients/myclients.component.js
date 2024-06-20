@@ -121,11 +121,7 @@
         }
 
         function getClientStatusMessage(client){
-            FindService.findAccountByUuid(client.status_changed_by).then(function(res){
-                self.clientStatusMessage = "Suspended by " + res.userName + " on " + getFormatedDate(client.status_changed_on);                                            
-            }).catch(function (res) {
-                console.debug("Error retrieving user account!", res);
-            });           
+            self.clientStatusMessage = "Suspended by a VO admin on " + getFormatedDate(client.status_changed_on);
         }
 
         function getFormatedDate(dateToFormat){
