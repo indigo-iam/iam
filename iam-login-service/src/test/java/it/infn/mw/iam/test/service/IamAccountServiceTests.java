@@ -83,6 +83,8 @@ import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 @RunWith(MockitoJUnitRunner.class)
 public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
+  private static final String TEST_GROUP_1 = "Test-group-1";
+
   public static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
   @Mock
@@ -112,10 +114,14 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   private DefaultIamAccountService accountService;
+
   @Mock
   private DefaultIamGroupService iamGroupService;
+
   @Mock
   private IamProperties iamProperties;
+
+  private IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -136,6 +142,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
+    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
         passwordEncoder, eventPublisher, tokenService, accountClientRepo, iamProperties, iamGroupService);
@@ -858,29 +865,30 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     IamAccount account = cloneAccount(CICCIO_ACCOUNT);
 
     IamGroup testGroup = new IamGroup();
-    testGroup.setName("Test-group-1");
-    Map<String, String> groupProperty = Map.of("name", testGroup.getName(), "enrollment", "INSERT");
+    testGroup.setName(TEST_GROUP_1);
+    Map<String, String> groupProperty = Map.of("name", TEST_GROUP_1, "enrollment", "INSERT");
     List<Map<String, String>> defaultGroups = Arrays.asList(groupProperty);
 
-    IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
-    registrationProperties.setDefaultGroups(defaultGroups);
-    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
-    when(iamGroupService.findByName(testGroup.getName())).thenReturn(Optional.of(testGroup));
+    
+    registrationProperties.setDefaultGroups(defaultGroups);   
+    when(iamGroupService.findByName(TEST_GROUP_1)).thenReturn(Optional.of(testGroup));
 
     account = accountService.createAccount(account);
 
+    assertTrue(getGroup(account).equals(testGroup));
+  }
+
+  private IamGroup getGroup(IamAccount account) {
     Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
     if(groupMembershipOptional.isPresent()){
-      IamAccountGroupMembership groupMembership = groupMembershipOptional.get();
-      assertTrue(groupMembership.getGroup().equals(testGroup));
+      return groupMembershipOptional.get().getGroup();      
     }
+    return null;
   }
 
   @Test
   public void testNoDefaultGroupsAddedWhenDefaultGroupsNotGiven() {
     IamAccount account = cloneAccount(CICCIO_ACCOUNT);
-    IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
-    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     account = accountService.createAccount(account);
 
