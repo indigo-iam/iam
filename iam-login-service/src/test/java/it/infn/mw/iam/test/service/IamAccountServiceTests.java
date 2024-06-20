@@ -39,6 +39,8 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -67,6 +69,8 @@ import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
@@ -108,7 +112,9 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   private DefaultIamAccountService accountService;
+  @Mock
   private DefaultIamGroupService iamGroupService;
+  @Mock
   private IamProperties iamProperties;
 
   @Captor
@@ -845,6 +851,41 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     AccountEndTimeUpdatedEvent e = (AccountEndTimeUpdatedEvent) event;
     assertThat(e.getPreviousEndTime(), nullValue());
     assertThat(e.getAccount().getEndTime(), is(newEndTime));
+  }
+
+  @Test
+  public void testNewAccountAddedToDefaultGroups() {
+    IamAccount account = cloneAccount(CICCIO_ACCOUNT);
+
+    IamGroup testGroup = new IamGroup();
+    testGroup.setName("Test-group-1");
+    Map<String, String> groupProperty = Map.of("name", testGroup.getName(), "enrollment", "INSERT");
+    List<Map<String, String>> defaultGroups = Arrays.asList(groupProperty);
+
+    IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
+    registrationProperties.setDefaultGroups(defaultGroups);
+    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
+    when(iamGroupService.findByName(testGroup.getName())).thenReturn(Optional.of(testGroup));
+
+    account = accountService.createAccount(account);
+
+    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    if(groupMembershipOptional.isPresent()){
+      IamAccountGroupMembership groupMembership = groupMembershipOptional.get();
+      assertTrue(groupMembership.getGroup().equals(testGroup));
+    }
+  }
+
+  @Test
+  public void testNoDefaultGroupsAddedWhenDefaultGroupsNotGiven() {
+    IamAccount account = cloneAccount(CICCIO_ACCOUNT);
+    IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
+    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
+
+    account = accountService.createAccount(account);
+
+    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    assertFalse(groupMembershipOptional.isPresent());
   }
 
 }
