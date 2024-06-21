@@ -17,7 +17,7 @@
 -->
 <div class="modal-header">
     <h3 class="modal-title">
-        Add an X.509 certificate to <strong>{{$ctrl.user.name.formatted}}</strong> IAM account?
+        {{$ctrl.titleMessage}}
     </h3>
 </div>
 
@@ -98,6 +98,12 @@
                 Please provide the issuer of the certificate
             </span>
         </div>
+
+        <div class="form-group" ng-show="$ctrl.isRequest">
+            <label>Optional request note</label>
+            <textarea name="issuer" class="form-control" type="text" placeholder="Send a note to the administrator..."
+                ng-model="$ctrl.certVal.notes" ng-required=false></textarea>
+        </div>
     </form>
 </div>
 
@@ -106,7 +112,7 @@
                      $ctrl.inputMode === undefined || 
                      ($ctrl.inputMode == 'pem' && !$ctrl.certVal.pemEncodedCertificate) || 
                      ($ctrl.inputMode == 'dn' && !($ctrl.certVal.subjectDn && $ctrl.certVal.issuerDn)) || 
-                     !$ctrl.enabled" ng-click="$ctrl.doAdd()">Add Certificate</button>
+                     !$ctrl.enabled" ng-click="$ctrl.doAdd()">{{$ctrl.submitMessage}}</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>
 

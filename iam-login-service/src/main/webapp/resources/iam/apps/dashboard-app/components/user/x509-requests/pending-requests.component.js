@@ -66,10 +66,13 @@
         self.certVal = {};
         self.inputMode = "pem";
         self.error = undefined;
+        self.isRequest = true;
+        self.titleMessage = "Request linking an X.509 certificate to your IAM account?";
+        self.submitMessage = "Submit request";
 
         self.canSubmit = canSubmit;
         self.cancel = cancel;
-        self.submit = submit;
+        self.doAdd = doAdd;
         self.reset = reset;
         self.certLabelValid = certLabelValid;
         self.certificationAuthorities = certificationAuthorities;
@@ -107,7 +110,7 @@
             $uibModalInstance.dismiss('Dismissed');
         }
 
-        function submit() {
+        function doAdd() {
             self.error = undefined;
             self.enabled = false;
 
@@ -190,7 +193,7 @@
 
         function openRequestCertLinkDialog() {
             var modalInstance = $uibModal.open({
-                templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509-requests/cert-link.dialog.html',
+                templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/cert.add.dialog.html',
                 controller: CertLinkRequest,
                 controllerAs: '$ctrl',
                 resolve: {

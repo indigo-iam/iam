@@ -44,6 +44,9 @@
         self.successHandler = successHandler;
         self.certificationAuthorities = certificationAuthorities;
         self.inputMode = "pem";
+        self.isRequest = false;
+        self.titleMessage = "Add an X.509 certificate to "+user.name.formatted+" IAM account?";
+        self.submitMessage = "Add certificate";
 
         self.certVal = {};
 
