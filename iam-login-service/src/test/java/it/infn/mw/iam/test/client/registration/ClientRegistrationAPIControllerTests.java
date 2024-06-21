@@ -105,6 +105,7 @@ class ClientRegistrationAPIControllerTests {
       .andExpect(jsonPath("$.grant_types", hasItem("urn:ietf:params:oauth:grant-type:device_code")))
       .andExpect(jsonPath("$.token_endpoint_auth_method", is("client_secret_basic")))
       .andExpect(jsonPath("$.dynamically_registered", is(true)))
+      .andExpect(jsonPath("$.active", is(true)))
       .andExpect(jsonPath("$.registration_access_token").exists())
       .andExpect(jsonPath("$.allow_introspection").doesNotExist())
       .andExpect(jsonPath("$.access_token_validity_seconds").doesNotExist())

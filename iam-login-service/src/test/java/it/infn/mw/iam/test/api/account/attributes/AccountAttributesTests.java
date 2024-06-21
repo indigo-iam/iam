@@ -246,9 +246,8 @@ public class AccountAttributesTests {
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(FORBIDDEN)
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("iam:admin.write")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test
@@ -314,9 +313,8 @@ public class AccountAttributesTests {
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(FORBIDDEN)
-      .andExpect(jsonPath("$.error", equalTo("insufficient_scope")))
-      .andExpect(jsonPath("$.error_description", equalTo("Insufficient scope for this resource")))
-      .andExpect(jsonPath("$.scope", equalTo("iam:admin.write")));
+      .andExpect(jsonPath("$.error", equalTo("access_denied")))
+      .andExpect(jsonPath("$.error_description", equalTo("Access is denied")));
   }
 
   @Test

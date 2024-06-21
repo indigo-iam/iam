@@ -92,14 +92,12 @@ public class IamProperties {
 
   }
 
-
   public static class ExternalConnectivityProbeProperties {
 
     private boolean enabled = true;
 
     private String endpoint = "https://www.google.com";
     private int timeoutInSecs = 10;
-
 
     public boolean isEnabled() {
       return enabled;
@@ -223,6 +221,8 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
+    
+    boolean addNicknameAsAttribute = false;
 
     ExternalAuthenticationType authenticationType;
 
@@ -246,6 +246,14 @@ public class IamProperties {
 
     public void setRequireExternalAuthentication(boolean requireExternalAuthentication) {
       this.requireExternalAuthentication = requireExternalAuthentication;
+    }
+    
+    public boolean isAddNicknameAsAttribute() {
+      return addNicknameAsAttribute;
+    }
+
+    public void setAddNicknameAsAttribute(boolean addNicknameAsAttribute) {
+      this.addNicknameAsAttribute = addNicknameAsAttribute;
     }
 
     public ExternalAuthenticationType getAuthenticationType() {
@@ -291,7 +299,6 @@ public class IamProperties {
     public void setAllowCompleteVerificationUri(Boolean allowCompleteVerificationUri) {
       this.allowCompleteVerificationUri = allowCompleteVerificationUri;
     }
-
 
   }
 
@@ -540,6 +547,18 @@ public class IamProperties {
     }
   }
 
+  public static class ClientProperties {
+    private boolean trackLastUsed;
+
+    public boolean isTrackLastUsed() {
+      return trackLastUsed;
+    }
+
+    public void setTrackLastUsed(boolean trackLastUsed) {
+      this.trackLastUsed = trackLastUsed;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -588,13 +607,13 @@ public class IamProperties {
 
   private CustomizationProperties customization = new CustomizationProperties();
 
-  private VersionedStaticResourcesProperties versionedStaticResources =
-      new VersionedStaticResourcesProperties();
+  private VersionedStaticResourcesProperties versionedStaticResources = new VersionedStaticResourcesProperties();
 
-  private ExternalConnectivityProbeProperties externalConnectivityProbe =
-      new ExternalConnectivityProbeProperties();
+  private ExternalConnectivityProbeProperties externalConnectivityProbe = new ExternalConnectivityProbeProperties();
 
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
+
+  private ClientProperties client = new ClientProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -812,6 +831,14 @@ public class IamProperties {
 
   public void setAccountLinking(AccountLinkingProperties accountLinking) {
     this.accountLinking = accountLinking;
+  }
+
+  public void setClient(ClientProperties client) {
+    this.client = client;
+  }
+
+  public ClientProperties getClient(){
+    return client;    
   }
 
 }

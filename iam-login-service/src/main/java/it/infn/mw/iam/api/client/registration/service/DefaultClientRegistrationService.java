@@ -48,6 +48,7 @@ import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
+import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -320,6 +321,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return Optional.empty();
   }
 
+  private void checkUserUpdatingSuspendedClient(Authentication authentication, ClientDetailsEntity oldClient) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if(!oldClient.isActive()){
+      throw new ClientSuspended("Client " + oldClient.getClientId() + " is suspended!");
+    }
+  }
+
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
@@ -330,6 +340,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
+    client.setActive(true);
 
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
@@ -395,9 +406,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity oldClient =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
+    checkUserUpdatingSuspendedClient(authentication, oldClient);    
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
-
+       
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
     newClient.setClientSecret(oldClient.getClientSecret());
@@ -410,6 +422,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
+    newClient.setActive(oldClient.isActive());
 
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
@@ -421,8 +434,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
       response.setRegistrationAccessToken(t);
     });
-
-    return response;
+    return response;      
   }
 
   @Override

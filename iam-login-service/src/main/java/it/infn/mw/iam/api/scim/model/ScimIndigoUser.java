@@ -22,10 +22,10 @@ import java.util.List;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 
@@ -34,12 +34,17 @@ public class ScimIndigoUser {
 
   public enum INDIGO_USER_SCHEMA {
 
+    // @formatter:off
     SSH_KEYS(ScimConstants.INDIGO_USER_SCHEMA + ".sshKeys"),
     OIDC_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".oidcIds"),
     SAML_IDS(ScimConstants.INDIGO_USER_SCHEMA + ".samlIds"),
     X509_CERTS(ScimConstants.INDIGO_USER_SCHEMA + ".x509Certificates"),
     AUP_SIGNATURE_TIME(ScimConstants.INDIGO_USER_SCHEMA + ".aupSignatureTime"),
-    LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels");
+    LABELS(ScimConstants.INDIGO_USER_SCHEMA + ".labels"),
+    AUTHORITIES(ScimConstants.INDIGO_USER_SCHEMA + ".authorities"),
+    ATTRIBUTES(ScimConstants.INDIGO_USER_SCHEMA + ".attributes"),
+    MANAGED_GROUPS(ScimConstants.INDIGO_USER_SCHEMA + ".managedGroups");
+    // @formatter:on
 
     private final String text;
 
@@ -70,6 +75,14 @@ public class ScimIndigoUser {
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date endTime;
 
+  private final List<String> authorities;
+
+  @Valid
+  private final List<ScimAttribute> attributes;
+
+  @Valid
+  private final List<ScimGroupRef> managedGroups;
+
   @JsonCreator
   private ScimIndigoUser(@JsonProperty("oidcIds") List<ScimOidcId> oidcIds,
       @JsonProperty("sshKeys") List<ScimSshKey> sshKeys,
@@ -85,6 +98,9 @@ public class ScimIndigoUser {
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
     this.labels = null;
+    this.authorities = null;
+    this.attributes = null;
+    this.managedGroups = null;
   }
 
   private ScimIndigoUser(Builder b) {
@@ -95,12 +111,9 @@ public class ScimIndigoUser {
     this.aupSignatureTime = b.aupSignatureTime;
     this.endTime = b.endTime;
     this.labels = b.labels;
-  }
-
-  @JsonIgnore
-  public boolean isEmpty() {
-
-    return sshKeys.isEmpty() && oidcIds.isEmpty() && samlIds.isEmpty() && certificates.isEmpty() && endTime==null;
+    this.attributes = b.attributes;
+    this.managedGroups = b.managedGroups;
+    this.authorities = b.authorities;
   }
 
   public List<ScimSshKey> getSshKeys() {
@@ -130,6 +143,22 @@ public class ScimIndigoUser {
     return labels;
   }
 
+  public List<String> getAuthorities() {
+    return authorities;
+  }
+
+  public List<ScimAttribute> getAttributes() {
+    return attributes;
+  }
+
+  public List<ScimGroupRef> getManagedGroups() {
+    return managedGroups;
+  }
+
+  public Date getEndTime() {
+    return endTime;
+  }
+
   public static Builder builder() {
 
     return new Builder();
@@ -137,14 +166,18 @@ public class ScimIndigoUser {
 
   public static class Builder {
 
-    private List<ScimSshKey> sshKeys = new LinkedList<>();
-    private List<ScimOidcId> oidcIds = new LinkedList<>();
-    private List<ScimSamlId> samlIds = new LinkedList<>();
-    private List<ScimX509Certificate> certificates = new LinkedList<>();
-    private List<ScimLabel> labels = new LinkedList<>();
+    private List<ScimSshKey> sshKeys = Lists.newLinkedList();
+    private List<ScimOidcId> oidcIds = Lists.newLinkedList();
+    private List<ScimSamlId> samlIds = Lists.newLinkedList();
+    private List<ScimX509Certificate> certificates = Lists.newLinkedList();
+    private List<ScimLabel> labels = Lists.newLinkedList();
 
     private Date aupSignatureTime;
     private Date endTime;
+
+    private List<String> authorities = Lists.newLinkedList();
+    private List<ScimAttribute> attributes = Lists.newLinkedList();
+    private List<ScimGroupRef> managedGroups = Lists.newLinkedList();
 
     public Builder addSshKey(ScimSshKey sshKey) {
 
@@ -152,7 +185,7 @@ public class ScimIndigoUser {
       return this;
     }
 
-    public Builder addOidcid(ScimOidcId oidcId) {
+    public Builder addOidcId(ScimOidcId oidcId) {
 
       oidcIds.add(oidcId);
       return this;
@@ -189,9 +222,25 @@ public class ScimIndigoUser {
       return this;
     }
 
+    public Builder addAuthority(String authority) {
+      authorities.add(authority);
+      return this;
+    }
+
+    public Builder addAttribute(ScimAttribute attribute) {
+      attributes.add(attribute);
+      return this;
+    }
+
+    public Builder addManagedGroup(ScimGroupRef groupRef) {
+      managedGroups.add(groupRef);
+      return this;
+    }
+
     public ScimIndigoUser build() {
       return new ScimIndigoUser(this);
     }
+
   }
 
 }

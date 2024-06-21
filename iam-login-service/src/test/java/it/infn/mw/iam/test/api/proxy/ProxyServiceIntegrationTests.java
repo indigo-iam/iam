@@ -115,7 +115,7 @@ public class ProxyServiceIntegrationTests extends ProxyCertificateTestSupport {
 
     mvc.perform(post(PROXY_API_PATH).params(CLIENT_AUTH_PARAMS))
       .andExpect(status().isForbidden())
-      .andExpect(jsonPath("$.error").value("insufficient_scope"));
+      .andExpect(jsonPath("$.error").value("access_denied"));
   }
 
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER", "ROLE_CLIENT"},

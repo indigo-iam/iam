@@ -27,13 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -55,7 +54,6 @@ public class AupSignaturePageController {
   final TimeProvider timeProvider;
   final ApplicationEventPublisher publisher;
 
-  @Autowired
   public AupSignaturePageController(IamAupRepository aupRepo,
       IamAupSignatureRepository aupSignatureRepo, AccountUtils accountUtils,
       TimeProvider timeProvider, ApplicationEventPublisher publisher) {
@@ -67,7 +65,7 @@ public class AupSignaturePageController {
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/iam/aup/sign", method = {RequestMethod.GET})
+  @GetMapping(value = "/iam/aup/sign")
   public ModelAndView signAupPage() {
     ModelAndView view;
 
@@ -97,7 +95,7 @@ public class AupSignaturePageController {
 
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST, value = "/iam/aup/sign")
+  @PostMapping(value = "/iam/aup/sign")
   public ModelAndView signAup(HttpServletRequest request, HttpServletResponse response,
       HttpSession session) {
 
@@ -113,7 +111,7 @@ public class AupSignaturePageController {
       IamAccount account = accountUtils.getAuthenticatedUserAccount().orElseThrow(
           () -> new IllegalStateException("No iam account found for authenticated user"));
 
-      IamAupSignature signature = signatureRepo.createSignatureForAccount(account, now);
+      IamAupSignature signature = signatureRepo.createSignatureForAccount(aup.get(), account, now);
 
       publisher.publishEvent(new AupSignedEvent(this, signature));
       if (!isNull(session.getAttribute(REQUESTING_SIGNATURE))) {

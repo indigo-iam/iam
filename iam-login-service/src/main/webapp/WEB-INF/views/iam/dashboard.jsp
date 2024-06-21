@@ -147,6 +147,8 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/ssh-keys/user.ssh-keys.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/labels/user.labels.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/attributes/user.attributes.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/sign-on-behalf/user.sign-on-behalf.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/request-aup-signature/user.request-aup-signature.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/end-time/user.end-time.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/myclients/myclients.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/myclients/myclient/myclient.component.js"></script>
@@ -169,6 +171,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/tokens/tokens.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/aup/aup.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/aup/aup.resign.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.description.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/group/group.component.js"></script>
@@ -199,7 +202,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/othersettings/othersettings.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientowners/clientowners.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/confirmclientremoval/confirmclientremoval.component.js"></script>
-  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/status/client.status.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/inputlist/inputlist.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/finduserdialog/finduserdialog.component.js"></script>

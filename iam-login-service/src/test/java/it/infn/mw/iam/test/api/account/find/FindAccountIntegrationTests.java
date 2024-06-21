@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_EMAI
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_GROUP_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_LABEL_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_USERNAME_RESOURCE;
+import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_UUID_RESOURCE;
 import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_NOT_IN_GROUP_RESOURCE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -99,6 +100,7 @@ public class FindAccountIntegrationTests extends TestSupport {
     mvc.perform(get(FIND_BY_USERNAME_RESOURCE).param("username", "test")).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_BY_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, TEST_USER_UUID)).andExpect(UNAUTHORIZED);
 
   }
 
@@ -290,4 +292,42 @@ public class FindAccountIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.Resources[1].id", is("bffc67b7-47fe-410c-a6a0-cf00173a8fbb")));
   }
 
+  @Test
+  public void findByUUIDWorks() throws Exception {
+
+    IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.Resources[0].id", is(testAccount.getUuid())))
+      .andExpect(jsonPath("$.Resources[0].userName", is(testAccount.getUsername())))
+      .andExpect(jsonPath("$.Resources[0].active", is(testAccount.isActive())));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  public void findByUUIDForbiddenForUsers() throws Exception {
+
+    IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
+      .andExpect(FORBIDDEN);
+  }
+
+  @Test
+  public void emptyResultForUnknownUUIDIfAdmin() throws Exception {
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
+       .andExpect(OK)
+       .andExpect(jsonPath("$.totalResults").doesNotExist())
+       .andExpect(jsonPath("$.Resources", emptyIterable()));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  public void forbiddenForUnknownUUIDIfUser() throws Exception {
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
+       .andExpect(FORBIDDEN);
+  }
 }

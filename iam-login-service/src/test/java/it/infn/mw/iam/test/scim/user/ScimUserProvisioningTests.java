@@ -104,7 +104,8 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   public void testUpdateUserNotFoundResponse() throws Exception {
 
     String randomUuid = getRandomUUid();
-    ScimUser user = ScimUtils.buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser user =
+        ScimUtils.buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
     mvc
       .perform(put(ScimUtils.getUsersLocation() + "/" + randomUuid)
@@ -163,7 +164,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testEmptyUsernameValidationError() throws Exception {
 
-    ScimUser user = buildUser("", "test@email.test", "Paul", "McCartney");
+    ScimUser user = buildUser("", "test@email.test", "Paul", "McCartney").build();
 
     mvc
       .perform(post(ScimUtils.getUsersLocation()).content(mapper.writeValueAsBytes(user))
@@ -191,7 +192,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testInvalidEmailValidationError() throws Exception {
 
-    ScimUser user = buildUser("paul", "this_is_not_an_email", "Paul", "McCartney");
+    ScimUser user = buildUser("paul", "this_is_not_an_email", "Paul", "McCartney").build();
 
 
     mvc
@@ -206,14 +207,14 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testUserUpdateChangeUsername() throws Exception {
 
-    ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
     ScimUser createdUser = scimUtils.postUser(user);
     long creationTimeMs = createdUser.getMeta().getCreated().getTime();
 
     ScimUser userWithUpdates =
         buildUserWithUUID(createdUser.getId(), "j.lennon", user.getEmails().get(0).getValue(),
-            user.getName().getGivenName(), user.getName().getFamilyName());
+            user.getName().getGivenName(), user.getName().getFamilyName()).build();
 
     ScimUser updatedUser = scimUtils.putUser(userWithUpdates.getId(), userWithUpdates);
 
@@ -228,7 +229,7 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testUpdateUserValidation() throws Exception {
 
-    ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser user = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
     scimUtils.postUser(user);
 
@@ -253,17 +254,18 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testReplaceUserWithAlreadyUsedUsername() throws Exception {
 
-    ScimUser lennon = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
+    ScimUser lennon = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
 
     ScimUser lennonCreationResult = scimUtils.postUser(lennon);
 
-    ScimUser mccartney = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney");
+    ScimUser mccartney =
+        buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
 
     scimUtils.postUser(mccartney);
 
     ScimUser lennonWantsToBeMcCartney = buildUserWithUUID(lennonCreationResult.getId(),
         mccartney.getUserName(), mccartney.getEmails().get(0).getValue(),
-        mccartney.getName().getGivenName(), mccartney.getName().getFamilyName());
+        mccartney.getName().getGivenName(), mccartney.getName().getFamilyName()).build();
 
 
     mvc
@@ -280,8 +282,9 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testUniqueUsernameCreationCheck() throws Exception {
 
-    ScimUser user1 = buildUser("john_lennon", "lennon@email.test", "John", "Lennon");
-    ScimUser user2 = buildUser("john_lennon", "another_lennon@email.test", "John", "Lennon");
+    ScimUser user1 = buildUser("john_lennon", "lennon@email.test", "John", "Lennon").build();
+    ScimUser user2 =
+        buildUser("john_lennon", "another_lennon@email.test", "John", "Lennon").build();
 
     scimUtils.postUser(user1);
 
@@ -299,8 +302,10 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testEmailIsNotAlreadyLinkedOnCreate() throws Exception {
 
-    ScimUser user0 = buildUser("test_same_email_0", "same_email@test.org", "Test", "Same Email 0");
-    ScimUser user1 = buildUser("test_same_email_1", "same_email@test.org", "Test", "Same Email 1");
+    ScimUser user0 =
+        buildUser("test_same_email_0", "same_email@test.org", "Test", "Same Email 0").build();
+    ScimUser user1 =
+        buildUser("test_same_email_1", "same_email@test.org", "Test", "Same Email 1").build();
 
     user0 = scimUtils.postUser(user0);
 
@@ -317,14 +322,14 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testEmailIsNotAlreadyLinkedOnUpdate() throws Exception {
 
-    ScimUser user0 = buildUser("user0", "user0@test.org", "Test", "User 0");
-    ScimUser user1 = buildUser("user1", "user1@test.org", "Test", "User 1");
+    ScimUser user0 = buildUser("user0", "user0@test.org", "Test", "User 0").build();
+    ScimUser user1 = buildUser("user1", "user1@test.org", "Test", "User 1").build();
 
     user0 = scimUtils.postUser(user0);
     user1 = scimUtils.postUser(user1);
 
     ScimUser updatedUser0 =
-        buildUserWithUUID(user0.getId(), "user0", "user1@test.org", "Test", "User 0");
+        buildUserWithUUID(user0.getId(), "user0", "user1@test.org", "Test", "User 0").build();
 
     mvc
       .perform(put(ScimUtils.getUsersLocation() + "/" + user0.getId())

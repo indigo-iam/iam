@@ -90,6 +90,7 @@ public class ScimUserTestSupport {
 
     return provider.create(lincoln);
   }
+
   protected ScimUser createLennonTestUser() {
     ScimUser lennon = ScimUser.builder("john_lennon")
       .buildEmail("lennon@email.test")
@@ -177,7 +178,7 @@ public class ScimUserTestSupport {
 
   protected ScimUser createScimUser(String username, String email, String givenName,
       String familyName) {
-    ScimUser user = ScimUtils.buildUser(username, email, givenName, familyName);
+    ScimUser user = ScimUtils.buildUser(username, email, givenName, familyName).build();
     return provider.create(user);
   }
 

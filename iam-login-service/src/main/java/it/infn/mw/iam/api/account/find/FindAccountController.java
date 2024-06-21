@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,6 +45,7 @@ public class FindAccountController {
   public static final String FIND_BY_LABEL_RESOURCE = "/iam/account/find/bylabel";
   public static final String FIND_BY_EMAIL_RESOURCE = "/iam/account/find/byemail";
   public static final String FIND_BY_USERNAME_RESOURCE = "/iam/account/find/byusername";
+  public static final String FIND_BY_UUID_RESOURCE = "/iam/account/find/byuuid/{accountUuid}";
   public static final String FIND_BY_CERT_SUBJECT_RESOURCE = "/iam/account/find/bycertsubject";
   public static final String FIND_BY_GROUP_RESOURCE = "/iam/account/find/bygroup/{groupUuid}";
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
@@ -121,4 +123,8 @@ public class FindAccountController {
     }
   }
 
+  @GetMapping(value = FIND_BY_UUID_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  public ListResponseDTO<ScimUser> findByUuid(@PathVariable String accountUuid) {
+    return service.findAccountByUuid(accountUuid);
+  }
 }

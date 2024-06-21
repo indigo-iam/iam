@@ -29,7 +29,7 @@ import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
 
 public class TestUtils {
 
-  public static final int TOTAL_USERS_COUNT = 254;
+  public static final int TOTAL_USERS_COUNT = 255;
   public static final String CLIENT_CRED_GRANT_CLIENT_ID = "client-cred";
   public static final String CLIENT_CRED_GRANT_CLIENT_SECRET = "secret";
   public static final String PASSWORD_GRANT_CLIENT_ID = "password-grant";

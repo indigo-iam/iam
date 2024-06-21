@@ -153,6 +153,7 @@ iam:
     authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
+    add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
@@ -214,6 +215,7 @@ task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
+  wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
@@ -223,6 +225,9 @@ client-registration:
     default-device-code-validity-seconds: ${DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
     default-id-token-validity-seconds: ${DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
     default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
+
+client:
+  track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:true}
 
 management:
   health:
@@ -276,3 +281,7 @@ lifecycle:
     expired-accounts-task:
       cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
+
+scim:
+  include_authorities: ${IAM_SCIM_INCLUDE_AUTHORITIES:false}
+  include_managed_groups: ${IAM_SCIM_INCLUDE_MANAGED_GROUPS:false}

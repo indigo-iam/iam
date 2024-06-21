@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
@@ -36,6 +37,8 @@ import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,6 +55,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@TestPropertySource(properties = "task.wellKnownCacheCleanupPeriodSecs=1")
+@ActiveProfiles({"h2-test", "dev"})
 public class WellKnownConfigurationEndpointTests {
 
   private String endpoint = "/" + IamDiscoveryEndpoint.OPENID_CONFIGURATION_URL;
@@ -64,6 +69,9 @@ public class WellKnownConfigurationEndpointTests {
   private static final String IAM_ORGANISATION_NAME_CLAIM = "organisation_name";
   private static final String IAM_GROUPS_CLAIM = "groups";
   private static final String IAM_EXTERNAL_AUTHN_CLAIM = "external_authn";
+
+  private static final String SYSTEM_SCOPE_0 = "new-scope0";
+  private static final String SYSTEM_SCOPE_1 = "new-scope1";
 
   @Autowired
   private MockMvc mvc;
@@ -152,6 +160,40 @@ public class WellKnownConfigurationEndpointTests {
     }
 
     assertTrue(returnedScopes.containsAll(unrestrictedScopes));
+
+  }
+
+  @Test
+  public void testWellKnownCacheEviction() throws Exception {
+
+    SystemScope scope = new SystemScope(SYSTEM_SCOPE_0);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_0)));
+
+    scope = new SystemScope(SYSTEM_SCOPE_1);
+    scopeService.save(scope);
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", not(SYSTEM_SCOPE_1)));
+
+    try {
+      Thread.sleep(1100);
+    } catch (InterruptedException e) {
+    }
+
+    mvc.perform(get(endpoint))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scopes_supported", notNullValue()))
+      .andExpect(jsonPath("$.scopes_supported").isArray())
+      .andExpect(jsonPath("$.scopes_supported", hasItem(SYSTEM_SCOPE_1)));
 
   }
 

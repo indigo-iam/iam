@@ -127,6 +127,9 @@ public class ClientConverter {
     clientDTO.setTosUri(entity.getTosUri());
 
     clientDTO.setCreatedAt(entity.getCreatedAt());
+    if (entity.getClientLastUsed() != null) {
+      clientDTO.setLastUsed(entity.getClientLastUsed().getLastUsed());
+    }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
     clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());
@@ -161,6 +164,10 @@ public class ClientConverter {
     } else {
       clientDTO.setRequireAuthTime(false);
     }
+
+    clientDTO.setActive(entity.isActive());
+    clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
+    clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
 
     return clientDTO;
   }

@@ -18,6 +18,7 @@ package it.infn.mw.iam.audit.events.auth;
 import org.springframework.security.authentication.event.AbstractAuthenticationEvent;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
+import it.infn.mw.iam.audit.events.IamEventCategory;
 
 public abstract class IamAuthenticationEvent extends IamAuditApplicationEvent {
 

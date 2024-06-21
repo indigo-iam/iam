@@ -25,7 +25,7 @@ public class VOMSWarningMessage {
 
     this.warning = warning;
     this.vo = vo;
-    this.message = null;
+    this.message = warning.getDefaultMessage();
   }
 
   /**
@@ -41,8 +41,6 @@ public class VOMSWarningMessage {
    */
   public String getMessage() {
 
-    if (message == null)
-      return warning.getDefaultMessage();
     return message;
   }
 
@@ -54,19 +52,11 @@ public class VOMSWarningMessage {
     return warning;
   }
 
-  public static VOMSWarningMessage orderingNotSatisfied(String vo) {
+  public static VOMSWarningMessage shortenedAttributeValidity(String vo,
+      long maxAcValidityInSeconds) {
 
-    return new VOMSWarningMessage(VOMSWarning.OrderNotSatisfied, vo);
-  }
-
-  public static VOMSWarningMessage shortenedAttributeValidity(String vo) {
-
-    return new VOMSWarningMessage(VOMSWarning.ShortenedAttributeValidity, vo);
-  }
-
-  public static VOMSWarningMessage attributeSubset(String vo) {
-
-    return new VOMSWarningMessage(VOMSWarning.AttributeSubset, vo);
+    return new VOMSWarningMessage(VOMSWarning.shortenedAttributeValidity(maxAcValidityInSeconds),
+        vo);
   }
 
 }

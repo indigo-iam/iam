@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.common.client;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -47,6 +49,7 @@ import it.infn.mw.iam.api.client.registration.validation.ValidGrantType;
 import it.infn.mw.iam.api.client.registration.validation.ValidRedirectURIs;
 import it.infn.mw.iam.api.client.registration.validation.ValidTokenEndpointAuthMethod;
 import it.infn.mw.iam.api.common.ClientViews;
+
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -81,7 +84,8 @@ public class RegisteredClientDTO {
   private String clientSecret;
 
   @Size(min = 4, max = 256,
-      groups = {OnDynamicClientRegistration.class, OnClientCreation.class, OnClientUpdate.class, OnDynamicClientUpdate.class},
+      groups = {OnDynamicClientRegistration.class, OnClientCreation.class, OnClientUpdate.class,
+          OnDynamicClientUpdate.class},
       message = "Invalid length: must be between 4 and 256 characters")
   @NotBlank(groups = {OnDynamicClientRegistration.class, OnClientCreation.class},
       message = "should not be blank")
@@ -234,6 +238,11 @@ public class RegisteredClientDTO {
       ClientViews.DynamicRegistration.class})
   private Date createdAt;
 
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
+  private LocalDate lastUsed;
+
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   @Size(max = 2048, groups = {OnClientCreation.class, OnClientUpdate.class})
@@ -243,9 +252,21 @@ public class RegisteredClientDTO {
       ClientViews.DynamicRegistration.class})
   @Pattern(regexp = "^$|none|plain|S256",
       message = "must be either an empty string, none, plain or S256",
-      groups = {OnClientCreation.class,
-      OnClientUpdate.class, OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
+      groups = {OnClientCreation.class, OnClientUpdate.class, OnDynamicClientRegistration.class,
+          OnDynamicClientUpdate.class})
   private String codeChallengeMethod;
+
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  private boolean active;
+
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  private Date statusChangedOn;
+
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+    ClientViews.DynamicRegistration.class})
+  private String statusChangedBy;
 
   public String getClientId() {
     return clientId;
@@ -472,6 +493,14 @@ public class RegisteredClientDTO {
     this.createdAt = createdAt;
   }
 
+  public LocalDate getLastUsed() {
+    return lastUsed;
+  }
+
+  public void setLastUsed(LocalDate lastUsed) {
+    this.lastUsed = lastUsed;
+  }
+
   public String getJwk() {
     return jwk;
   }
@@ -496,4 +525,27 @@ public class RegisteredClientDTO {
     this.defaultMaxAge = defaultMaxAge;
   }
 
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
+  public Date getStatusChangedOn() {
+    return statusChangedOn;
+  }
+
+  public void setStatusChangedOn(Date statusChangedOn) {
+    this.statusChangedOn = statusChangedOn;
+  }
+
+  public void setStatusChangedBy(String statusChangedBy) {
+    this.statusChangedBy = statusChangedBy;
+  }
+
+  public String getStatusChangedBy() {
+    return statusChangedBy;
+  }
 }

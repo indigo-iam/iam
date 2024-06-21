@@ -133,7 +133,7 @@ public class IamAccount implements Serializable {
   @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)
   private Set<IamScopePolicy> scopePolicies = new HashSet<>();
 
-  @OneToOne(cascade = CascadeType.REMOVE, mappedBy = "account")
+  @OneToOne(cascade = CascadeType.ALL, mappedBy = "account")
   private IamAupSignature aupSignature;
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.REMOVE)
@@ -574,6 +574,15 @@ public class IamAccount implements Serializable {
       getLabels().remove(label.get());
     }
     return label;
+  }
+
+  public Optional<IamAttribute> getAttributeByName(String name) {
+    for (IamAttribute a : getAttributes()) {
+      if (a.getName().equals(name)) {
+        return Optional.of(a);
+      }
+    }
+    return Optional.empty();
   }
 
   @Override
