@@ -42,20 +42,23 @@
         </div>
 
         <div class="form-group">
-            <label>Choose how you want to add the certificate</label>
+            <label>How would you like to specify the certificate?</label>
             <div class="radio">
                 <label>
-                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="pem" ng-checked="true"> From PEM content
+                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="pem" ng-checked="true">
+                    As PEM content
                 </label>
             </div>
             <div class="radio">
                 <label>
-                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="dn"> Add subject and issuer
+                    <input type="radio" name="options" ng-model="$ctrl.inputMode" value="dn">
+                    From subject and issuer
                 </label>
             </div>
         </div>
 
-        <div class="form-group" ng-class="{'has-error': $ctrl.error || certValForm.cert.$dirty && !certValForm.cert.$valid}"
+        <div class="form-group"
+            ng-class="{'has-error': $ctrl.error || certValForm.cert.$dirty && !certValForm.cert.$valid}"
             ng-show="$ctrl.inputMode == 'pem'">
             <label>Certificate</label>
             <textarea class="form-control" name="cert" type="text" placeholder="Insert PEM-encoded certificate here..."
@@ -81,10 +84,13 @@
         <div class="form-group" ng-class="{'has-error': certValForm.issuer.$dirty && !certValForm.issuer.$valid}"
             ng-show="$ctrl.inputMode == 'dn'">
             <label>Issuer</label>
-            <ui-select ng-model="$ctrl.certVal.issuerDn" sortable="true" close-on-select="true" ng-required="$ctrl.inputMode == 'dn'">
-                <ui-select-match allow-clear="true" placeholder="Certificate issuer...">{{$ctrl.certVal.issuerDn}}</ui-select-match>
-                <ui-select-choices repeat="ca in $ctrl.certificationAuthorities">
-                    <small> {{ ca }} </small>
+            <ui-select ng-model="$ctrl.certVal.issuerDn" sortable="true" close-on-select="true"
+                ng-required="$ctrl.inputMode == 'dn'">
+                <ui-select-match allow-clear="true" placeholder="Certificate issuer...">
+                    <p class="ca-selected">{{$ctrl.certVal.issuerDn}}</p>
+                </ui-select-match>
+                <ui-select-choices repeat="ca in $ctrl.certificationAuthorities | filter: $select.search">
+                    <small class="ca-choices"> {{ ca }} </small>
                 </ui-select-choices>
                 <ui-select-no-choice> No certification authorities available</ui-select-no-choice>
             </ui-select>
@@ -96,13 +102,11 @@
 </div>
 
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm"
-        ng-disabled="!$ctrl.certVal.label || 
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.certVal.label || 
                      $ctrl.inputMode === undefined || 
                      ($ctrl.inputMode == 'pem' && !$ctrl.certVal.pemEncodedCertificate) || 
                      ($ctrl.inputMode == 'dn' && !($ctrl.certVal.subjectDn && $ctrl.certVal.issuerDn)) || 
-                     !$ctrl.enabled"
-        ng-click="$ctrl.doAdd()">Add Certificate</button>
+                     !$ctrl.enabled" ng-click="$ctrl.doAdd()">Add Certificate</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>
 
