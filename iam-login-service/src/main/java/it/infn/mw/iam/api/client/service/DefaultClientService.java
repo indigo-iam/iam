@@ -101,7 +101,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
+  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}", condition = "@environment.getProperty('cache.enabled')")
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     return clientRepo.save(client);

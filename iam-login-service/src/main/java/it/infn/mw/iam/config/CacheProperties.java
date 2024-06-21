@@ -18,11 +18,27 @@ package it.infn.mw.iam.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties("redis-cache")
+@ConfigurationProperties("cache")
 @Configuration
-public class RedisCacheProperties {
+public class CacheProperties {
 
-  private boolean enabled = false;
+  public class RedisProperties {
+
+    private boolean enabled = false;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enable) {
+      this.enabled = enable;
+    }
+
+  }
+
+  private boolean enabled = true;
+
+  private RedisProperties redis = new RedisProperties();
 
   public boolean isEnabled() {
     return enabled;
@@ -31,5 +47,14 @@ public class RedisCacheProperties {
   public void setEnabled(boolean enable) {
     this.enabled = enable;
   }
+
+  public RedisProperties getRedis() {
+    return redis;
+  }
+
+  public void setRedis(RedisProperties redis) {
+    this.redis = redis;
+  }
+
 
 }
