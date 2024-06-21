@@ -65,7 +65,7 @@ public class CertLinkRequestUtils {
 
       if (PENDING.equals(status)) {
         throw new IamRequestValidationError(
-            String.format("CertLink request already exists for [%s | %s | %s]",
+            String.format("CertLink request already exists for user %s and certificate [%s | %s]",
                 requestDto.getUsername(), requestDto.getSubjectDn(), requestDto.getIssuerDn()));
       }
     }
@@ -91,7 +91,7 @@ public class CertLinkRequestUtils {
 
     if (linkedCerts.isPresent()) {
       throw new IamRequestValidationError(
-          String.format("User [%s] is already linekd to the certificate [%s | %s]", requestDto.getUsername(),
+          String.format("User %s is already linekd to the certificate [%s | %s]", requestDto.getUsername(),
               requestDto.getSubjectDn(), requestDto.getIssuerDn()));
     }
   }
