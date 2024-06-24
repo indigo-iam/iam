@@ -52,17 +52,18 @@ public class AupReminderTask {
 
   public void sendAupReminders() {
     aupRepo.findDefaultAup().ifPresent(aup -> {
-      LocalDate now = LocalDate.now();
-      LocalDate sign = now.minusDays(aup.getSignatureValidityInDays());
-      Date signDate = Date.from(sign.atStartOfDay(ZoneId.systemDefault()).toInstant());
-      LocalDate signPlusOne = sign.plusDays(1);
-      Date signPlusOneDay = Date.from(signPlusOne.atStartOfDay(ZoneId.systemDefault()).toInstant());
-      List<Integer> intervals = parseReminderIntervals(aup.getAupRemindersInDays());
+      LocalDate currentDate = LocalDate.now();
+      LocalDate expirationDate = currentDate.minusDays(aup.getSignatureValidityInDays());
+      Date expirationDateAsDate = toDate(expirationDate);
+      Date expirationDatePlusOneDayAsDate = toDate(expirationDate.plusDays(1));
+      List<Integer> reminderIntervals = parseReminderIntervals(aup.getAupRemindersInDays());
 
-      intervals.forEach(interval -> processRemindersForInterval(aup, now, interval, sign));
+      reminderIntervals.forEach(
+          interval -> processRemindersForInterval(aup, currentDate, interval, expirationDate));
 
-      List<IamAupSignature> expiredSignatures =
-          aupSignatureRepo.findByAupAndSignatureTime(aup, signDate, signPlusOneDay);
+      List<IamAupSignature> expiredSignatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
+          expirationDateAsDate, expirationDatePlusOneDayAsDate);
+
       expiredSignatures.forEach(s -> {
         if (emailNotificationRepo
           .countAupExpirationMessPerAccount(s.getAccount().getUserInfo().getEmail()) == 0) {
@@ -73,20 +74,22 @@ public class AupReminderTask {
 
   }
 
-  private void processRemindersForInterval(IamAup aup, LocalDate now, Integer interval,
-      LocalDate sign) {
-    LocalDate signature = sign.plusDays(interval);
-    LocalDate plusOne = signature.plusDays(1);
-    Date expected = Date.from(signature.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    Date plusOneDate = Date.from(plusOne.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    LocalDate tomorrow = now.plusDays(1);
-    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+  private Date toDate(LocalDate localDate) {
+    return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+  }
 
-    List<IamAupSignature> signatures =
-        aupSignatureRepo.findByAupAndSignatureTime(aup, expected, plusOneDate);
+  private void processRemindersForInterval(IamAup aup, LocalDate currentDate, Integer interval,
+      LocalDate expirationDate) {
+    LocalDate reminderDate = expirationDate.plusDays(interval);
+    Date reminderDateAsDate = toDate(reminderDate);
+    Date reminderDatePlusOneAsDate = toDate(reminderDate.plusDays(1));
+    Date tomorrowAsDate = toDate(currentDate.plusDays(1));
+
+    List<IamAupSignature> signatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
+        reminderDateAsDate, reminderDatePlusOneAsDate);
     signatures.forEach(s -> {
       if (emailNotificationRepo.countAupRemindersPerAccount(s.getAccount().getUserInfo().getEmail(),
-          tomorrowDate) == 0) {
+          tomorrowAsDate) == 0) {
         notification.createAupReminderMessage(s.getAccount(), aup);
       }
     });
