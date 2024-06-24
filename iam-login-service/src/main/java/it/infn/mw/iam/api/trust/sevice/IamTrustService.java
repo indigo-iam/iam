@@ -13,31 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.trust;
+package it.infn.mw.iam.api.trust.sevice;
 
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-
 import it.infn.mw.iam.api.common.ListResponseDTO;
-import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 
+public interface IamTrustService {
 
+    public static final String TRUST_CACHE_KEY = "trusts";
 
-@RestController
-@RequestMapping("/iam/api/trusts")
-public class IamTrustController {
-
-    @Autowired
-    IamTrustService trustService;
-
-    @GetMapping
-    public ListResponseDTO<String> getTrusts() throws NoSuchAlgorithmException, KeyStoreException {
-        return trustService.getTrusts();
-    }
+    ListResponseDTO<String> getTrusts() throws NoSuchAlgorithmException, KeyStoreException;
 
 }

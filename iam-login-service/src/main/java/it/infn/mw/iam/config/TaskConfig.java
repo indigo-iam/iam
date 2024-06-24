@@ -34,7 +34,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
-import it.infn.mw.iam.api.trust.IamTrustController;
+import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -106,7 +106,7 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Scheduled(fixedRateString = "${task.trustCacheCleanupPeriodSecs:3600}",
       timeUnit = TimeUnit.SECONDS)
-  @CacheEvict(allEntries = true, cacheNames = IamTrustController.TRUST_CACHE_KEY)
+  @CacheEvict(allEntries = true, cacheNames = IamTrustService.TRUST_CACHE_KEY)
   public void logTrustCacheEviction() {
     LOG.debug("trust config cache evicted");
   }
