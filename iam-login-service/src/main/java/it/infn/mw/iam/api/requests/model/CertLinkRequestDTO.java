@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
-import it.infn.mw.iam.api.common.validator.RFC2253Formatted;
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 //import it.infn.mw.iam.api.validators.CertificationAuthority;
+import it.infn.mw.iam.api.validators.RFC2253Formatted;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @CertLinkRequest

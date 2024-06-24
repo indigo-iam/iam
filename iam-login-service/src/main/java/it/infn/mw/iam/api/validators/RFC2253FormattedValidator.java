@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.common.validator;
+package it.infn.mw.iam.api.validators;
 
 import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
