@@ -40,7 +40,7 @@ public class RFC2253FormattedValidator implements ConstraintValidator<RFC2253For
     public boolean isValid(String value, ConstraintValidatorContext context) {
         try {
             getPortableRFC2253Form(value);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return false;
         }
         return true;

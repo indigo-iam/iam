@@ -45,11 +45,11 @@ public class CertLinkRequestDTO {
 
   private String pemEncodedCertificate;
 
-  @RFC2253Formatted
+  @RFC2253Formatted(message = "Invalid subject DN format")
   private String subjectDn;
 
-  @RFC2253Formatted
-  @KnownCertificationAuthority
+  @RFC2253Formatted(message = "Invalid issuer DN format")
+  @KnownCertificationAuthority(message = "Certification authority not recognized")
   private String issuerDn;
 
   private String notes = "";

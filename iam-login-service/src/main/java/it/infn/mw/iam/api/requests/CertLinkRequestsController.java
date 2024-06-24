@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.api.requests;
 
+
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 
 import javax.validation.constraints.NotEmpty;
@@ -22,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.common.PagingUtils;
@@ -37,6 +42,7 @@ import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.api.requests.service.CertLinkRequestsService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 
 
@@ -47,6 +53,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class CertLinkRequestsController {
 
   private static final Integer CERT_LINK_REQUEST_MAX_PAGE_SIZE = 10;
+  public static final String INVALID_REQUEST_TEMPLATE = "Invalid request: %s";
 
   @Autowired
   private CertLinkRequestsService certLinkRequestService;
@@ -54,7 +61,9 @@ public class CertLinkRequestsController {
   @PostMapping({"", "/"})
   @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
   public CertLinkRequestDTO createCertLinkRequest(
-      @RequestBody @Valid CertLinkRequestDTO certLinkRequest) {
+      @RequestBody @Valid CertLinkRequestDTO certLinkRequest,
+      final BindingResult validationResult) {
+
     return certLinkRequestService.createCertLinkRequest(certLinkRequest);
   }
 
@@ -62,8 +71,7 @@ public class CertLinkRequestsController {
   @PreAuthorize("hasAnyRole('ADMIN','USER')")
   public ListResponseDTO<CertLinkRequestDTO> listCertLinkRequest(
       @RequestParam(required = false) String username,
-      @RequestParam(required = false) String subject, 
-      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String subject, @RequestParam(required = false) String status,
       @RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex) {
 
@@ -104,6 +112,12 @@ public class CertLinkRequestsController {
       @Valid @PathVariable("requestId") String requestId,
       @RequestParam @NotEmpty String motivation) {
     return certLinkRequestService.rejectCertLinkRequest(requestId, motivation);
+  }
+
+  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ErrorDTO constraintValidationError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(String.format(INVALID_REQUEST_TEMPLATE, ex.getMessage()));
   }
 
 }

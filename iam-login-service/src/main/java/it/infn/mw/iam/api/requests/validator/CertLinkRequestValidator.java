@@ -37,8 +37,13 @@ public class CertLinkRequestValidator
     @Override
     public boolean isValid(CertLinkRequestDTO value, ConstraintValidatorContext context) {
 
-        return value != null && (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())
-                || (!Strings.isNullOrEmpty(value.getSubjectDn())
-                        && !Strings.isNullOrEmpty(value.getIssuerDn())));
+        try {
+            return value != null && (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+                    || (!Strings.isNullOrEmpty(value.getSubjectDn())
+                            && !Strings.isNullOrEmpty(value.getIssuerDn())));
+        } catch (Exception e) {
+            return false;
+        }
+
     }
 }

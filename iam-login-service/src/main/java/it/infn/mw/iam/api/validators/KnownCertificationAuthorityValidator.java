@@ -17,8 +17,6 @@ package it.infn.mw.iam.api.validators;
 
 import static eu.emi.security.authn.x509.impl.X500NameUtils.equal;
 
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import javax.validation.ConstraintValidator;
@@ -52,7 +50,7 @@ public class KnownCertificationAuthorityValidator
         try {
             List<String> knownCertificationAuthorities = trustService.getTrusts().getResources();
             return knownCertificationAuthorities.stream().anyMatch(ca -> equal(ca, value));
-        } catch (KeyStoreException | NoSuchAlgorithmException | IllegalArgumentException e) {
+        } catch (Exception e) {
             return false;
         }
     }
