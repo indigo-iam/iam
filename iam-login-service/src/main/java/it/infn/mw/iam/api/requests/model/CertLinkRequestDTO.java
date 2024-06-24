@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
+import it.infn.mw.iam.api.common.validator.RFC2253Formatted;
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 //import it.infn.mw.iam.api.validators.CertificationAuthority;
 
@@ -44,9 +45,11 @@ public class CertLinkRequestDTO {
 
   private String pemEncodedCertificate;
 
+  @RFC2253Formatted
   private String subjectDn;
 
   // @CertificationAuthority
+  @RFC2253Formatted
   private String issuerDn;
 
   private String notes = "";
@@ -80,8 +83,8 @@ public class CertLinkRequestDTO {
     this.userFullName = userFullName;
     this.label = label;
     this.pemEncodedCertificate = pemEncodedCertificate;
-    this.subjectDn = getPortableRFC2253Form(subjectDn);
-    this.issuerDn = getPortableRFC2253Form(issuerDn);
+    this.subjectDn = subjectDn;
+    this.issuerDn = issuerDn;
     this.notes = notes;
     this.status = status;
     this.motivation = motivation;
@@ -122,7 +125,7 @@ public class CertLinkRequestDTO {
   }
 
   public String getSubjectDn() {
-    return subjectDn;
+    return getPortableRFC2253Form(subjectDn);
   }
 
   public void setSubjectDn(String subjectDn) {
@@ -130,7 +133,7 @@ public class CertLinkRequestDTO {
   }
 
   public String getIssuerDn() {
-    return issuerDn;
+    return getPortableRFC2253Form(issuerDn);
   }
 
   public void setIssuerDn(String issuerDn) {
