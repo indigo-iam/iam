@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
-//import it.infn.mw.iam.api.validators.CertificationAuthority;
+import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -48,8 +48,8 @@ public class CertLinkRequestDTO {
   @RFC2253Formatted
   private String subjectDn;
 
-  // @CertificationAuthority
   @RFC2253Formatted
+  @KnownCertificationAuthority
   private String issuerDn;
 
   private String notes = "";
