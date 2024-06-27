@@ -24,13 +24,14 @@ import java.util.stream.Collectors;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class AupRemindersValidator implements ConstraintValidator<AupRemindersRegExp, String> {
+public class AupRemindersValidator implements ConstraintValidator<AupReminders, String> {
 
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {
 
     if (value == null || value.isEmpty()) {
-      return true;
+      context.buildConstraintViolationWithTemplate("");
+      return false;
     }
 
     try {

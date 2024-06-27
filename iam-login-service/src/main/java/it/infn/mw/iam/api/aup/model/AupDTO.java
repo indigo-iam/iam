@@ -48,8 +48,8 @@ public class AupDTO {
   @Min(value = 0L, message = "Invalid AUP: signatureValidityInDays must be >= 0")
   Long signatureValidityInDays;
 
-  @NotEmpty(message = "Invalid AUP: aupRemindersInDays cannot be empty")
-  @AupRemindersRegExp(message = "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates")
+  //@NotEmpty(message = "Invalid AUP: aupRemindersInDays cannot be empty")
+  @AupReminders(message = "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates")
   String aupRemindersInDays;
 
   @JsonSerialize(using = JsonDateSerializer.class)

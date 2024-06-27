@@ -27,7 +27,7 @@ import javax.validation.Payload;
 @Retention(RUNTIME)
 @Target({FIELD})
 @Constraint(validatedBy = AupRemindersValidator.class)
-public @interface AupRemindersRegExp {
+public @interface AupReminders {
 
   String message() default "invalid sequence of numbers";
 
