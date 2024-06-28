@@ -25,6 +25,15 @@
       <artifactId>iam-persistence</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-joda</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.italiangrid</groupId>
+      <artifactId>voms-clients</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>

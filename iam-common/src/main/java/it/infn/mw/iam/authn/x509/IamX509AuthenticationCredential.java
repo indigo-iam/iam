@@ -20,7 +20,7 @@ import java.security.cert.X509Certificate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import eu.emi.security.authn.x509.impl.X500NameUtils;
 
 public class IamX509AuthenticationCredential implements Serializable {
 
@@ -32,8 +32,6 @@ public class IamX509AuthenticationCredential implements Serializable {
   private final String subject;
   private final String issuer;
 
-  private final boolean isProxy;
-
   @JsonIgnore
   private final X509Certificate[] certificateChain;
 
@@ -42,13 +40,12 @@ public class IamX509AuthenticationCredential implements Serializable {
   @JsonIgnore
   private final X509CertificateVerificationResult verificationResult;
 
-  protected IamX509AuthenticationCredential(Builder builder) {
+  private IamX509AuthenticationCredential(Builder builder) {
     this.subject = builder.subject;
     this.issuer = builder.issuer;
     this.certificateChain = builder.certificateChain;
     this.verificationResult = builder.verificationResult;
     this.certificateChainPemString = builder.certificateChainPemString;
-    this.isProxy = builder.isProxy;
   }
 
   public static class Builder {
@@ -57,15 +54,14 @@ public class IamX509AuthenticationCredential implements Serializable {
     private X509Certificate[] certificateChain;
     private String certificateChainPemString;
     private X509CertificateVerificationResult verificationResult;
-    private boolean isProxy = false;
 
     public Builder subject(String subject) {
-      this.subject = subject;
+      this.subject = X500NameUtils.getPortableRFC2253Form(subject);
       return this;
     }
 
     public Builder issuer(String issuer) {
-      this.issuer = issuer;
+      this.issuer = X500NameUtils.getPortableRFC2253Form(issuer);
       return this;
     }
 
@@ -84,22 +80,9 @@ public class IamX509AuthenticationCredential implements Serializable {
       return this;
     }
 
-    public Builder isProxy(boolean isProxy) {
-      this.isProxy = isProxy;
-      return this;
-    }
-
     public IamX509AuthenticationCredential build() {
       return new IamX509AuthenticationCredential(this);
     }
-  }
-
-  public IamX509Certificate asIamX509Certificate() {
-    IamX509Certificate cert = new IamX509Certificate();
-    cert.setSubjectDn(getSubject());
-    cert.setIssuerDn(getIssuer());
-    cert.setCertificate(getCertificateChainPemString());
-    return cert;
   }
 
   public String getSubject() {
@@ -130,17 +113,11 @@ public class IamX509AuthenticationCredential implements Serializable {
     return verificationResult.error().orElse("X.509 credential is valid");
   }
 
-  public boolean isProxy() {
-    return isProxy;
-  }
+
 
   public static Builder builder() {
     return new Builder();
   }
 
-  @Override
-  public String toString() {
-    return "IamX509AuthenticationCredential [subject=" + subject + ", issuer=" + issuer
-        + ", isProxy=" + isProxy + "]";
-  }
+
 }

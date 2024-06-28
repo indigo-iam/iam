@@ -15,19 +15,19 @@
  */
 package it.infn.mw.iam.api.account.find;
 
-import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
+import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 import static it.infn.mw.iam.api.utils.FindUtils.responseFromOptional;
+import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
 
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import it.infn.mw.iam.api.scim.converter.UserConverter;
-import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -43,7 +43,6 @@ public class DefaultFindAccountService implements FindAccountService {
   private final IamGroupRepository groupRepo;
   private final UserConverter converter;
 
-  @Autowired
   public DefaultFindAccountService(IamAccountRepository repo, IamGroupRepository groupRepo,
       UserConverter converter) {
     this.repo = repo;
@@ -108,7 +107,13 @@ public class DefaultFindAccountService implements FindAccountService {
 
   @Override
   public ScimListResponse<ScimUser> findAccountByCertificateSubject(String certSubject) {
-    Optional<IamAccount> account = repo.findByCertificateSubject(certSubject);
+    Optional<IamAccount> account;
+    try {
+      String formattedCertSubject = getPortableRFC2253Form(certSubject);
+      account = repo.findByCertificateSubject(formattedCertSubject);
+    } catch (IllegalArgumentException e) {
+      account = Optional.empty();
+    }
     return responseFromOptional(account, converter);
   }
 

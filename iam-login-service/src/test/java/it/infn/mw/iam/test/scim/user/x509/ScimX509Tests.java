@@ -15,10 +15,13 @@
  */
 package it.infn.mw.iam.test.scim.user.x509;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,6 +42,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.emi.security.authn.x509.impl.X500NameUtils;
+import it.infn.mw.iam.api.account.find.FindAccountService;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -62,8 +67,11 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   private IamAccountRepository iamAccountRepo;
 
   @Autowired
+  private FindAccountService findAccountService;
+
+  @Autowired
   private ObjectMapper mapper;
-  
+
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
@@ -74,7 +82,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-  
+
   @After
   public void teardown() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -85,8 +93,9 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    mvc.perform(get("/scim/Users/{id}", user.getUuid())).andExpect(status().isOk()).andExpect(
-        jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
+    mvc.perform(get("/scim/Users/{id}", user.getUuid()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
 
   }
 
@@ -305,17 +314,16 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().add(user).build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     testUser = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
     assertThat(testUser.getUsername(), equalTo(TEST_USERNAME));
   }
-  
+
   @Test
   public void testScimAddCertificateFailureInvalidCertificate() throws Exception {
 
@@ -333,7 +341,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     mvc
       .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("400")))
@@ -360,8 +369,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(post("/scim/Users")
-        .content(mapper.writeValueAsString(user))
+      .perform(post("/scim/Users").content(mapper.writeValueAsString(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
 
@@ -375,7 +383,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     mvc
       .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("409")))
@@ -416,10 +425,9 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", account.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", account.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     iamAccountRepo.findByCertificate(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError("Found unexpected account bound to '" + TEST_0_SUBJECT
@@ -447,9 +455,71 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
+  }
+
+  @Test
+  public void testCaseInsensitiveSearch() throws Exception {
+
+    final String TEST_109_USERNAME = "test_109";
+    final String SUBJECT_X500 = "DC=RO,DC=RomanianGRID,O=ISS,CN=Mario ROSSI";
+    final String SUBJECT_ALT1 = "DC=ro,DC=romaniangrid,O=ISS,CN=Mario ROSSI";
+    final String SUBJECT_ALT2 = "DC=RO, DC=RomanianGRID, O=ISS, CN=Mario ROSSI";
+    final String ISSUER =
+        "DC=RO,DC=RomanianGRID,O=ROSA,OU=Certification Authority,CN=RomanianGRID CA";
+    final String SUBJECT_ERR = "DC=RomanianGRID, DC=RO, O=ISS, CN=Mario ROSSI";
+
+    assertTrue(
+        findAccountService.findAccountByCertificateSubject(SUBJECT_X500).getResources().isEmpty());
+
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .display("Wrong Personal Certificate")
+      .subjectDn(SUBJECT_X500)
+      .issuerDn(ISSUER)
+      .build();
+
+    ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder()
+      .add(ScimUser.builder().addX509Certificate(cert).build())
+      .build();
+
+    IamAccount testUser = iamAccountRepo.findByUsername(TEST_109_USERNAME)
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
+
+    testUser = iamAccountRepo.findByUsername(TEST_109_USERNAME)
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    LOG.info("Test user certificate subject: {}",
+        testUser.getX509Certificates().iterator().next().getSubjectDn());
+    LOG.info("Test user certificate issuer: {}",
+        testUser.getX509Certificates().iterator().next().getIssuerDn());
+
+    assertTrue(
+        findAccountService.findAccountByCertificateSubject(SUBJECT_ERR).getResources().isEmpty());
+    assertFalse(
+        findAccountService.findAccountByCertificateSubject(SUBJECT_ALT1).getResources().isEmpty());
+    assertFalse(
+        findAccountService.findAccountByCertificateSubject(SUBJECT_ALT2).getResources().isEmpty());
+
+  }
+
+  @Test
+  public void testEmptyResponseWithInvalidDNSearch() {
+
+    final String INVALID_SUBJECT = "/DC=RO/DC=RomanianGRID/O=ISS/CN=Mario ROSSI";
+    assertTrue(findAccountService.findAccountByCertificateSubject(INVALID_SUBJECT)
+      .getResources()
+      .isEmpty());
+
+    try {
+      X500NameUtils.getPortableRFC2253Form(INVALID_SUBJECT);
+      fail();
+    } catch (IllegalArgumentException e) {
+    }
   }
 }

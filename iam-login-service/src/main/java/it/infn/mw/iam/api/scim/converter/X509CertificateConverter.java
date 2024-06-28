@@ -15,10 +15,8 @@
  */
 package it.infn.mw.iam.api.scim.converter;
 
-import java.security.Principal;
 import java.security.cert.X509Certificate;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
@@ -33,16 +31,13 @@ public class X509CertificateConverter
 
   private final X509CertificateChainParser parser;
 
-
-  @Autowired
   public X509CertificateConverter(X509CertificateChainParser parser) {
     this.parser = parser;
   }
 
-  private String principalAsRfc2253String(Principal principal) {
-    return X500NameUtils.getPortableRFC2253Form(principal.getName());
+  private String principalAsRfc2253String(String principal) {
+    return X500NameUtils.getPortableRFC2253Form(principal);
   }
-
 
   private IamX509Certificate parseCertificateFromString(String pemString) {
     X509CertificateChainParsingResult result = parser.parseChainFromString(pemString);
@@ -50,8 +45,8 @@ public class X509CertificateConverter
     IamX509Certificate cert = new IamX509Certificate();
     X509Certificate leafCert = result.getChain()[0];
 
-    cert.setSubjectDn(principalAsRfc2253String(leafCert.getSubjectX500Principal()));
-    cert.setIssuerDn(principalAsRfc2253String(leafCert.getIssuerX500Principal()));
+    cert.setSubjectDn(principalAsRfc2253String(leafCert.getSubjectX500Principal().getName()));
+    cert.setIssuerDn(principalAsRfc2253String(leafCert.getIssuerX500Principal().getName()));
 
     cert.setCertificate(pemString);
     return cert;
@@ -66,9 +61,8 @@ public class X509CertificateConverter
       cert = parseCertificateFromString(scim.getPemEncodedCertificate());
     } else {
       cert = new IamX509Certificate();
-      cert.setCertificate(scim.getPemEncodedCertificate());
-      cert.setSubjectDn(scim.getSubjectDn());
-      cert.setIssuerDn(scim.getIssuerDn());
+      cert.setSubjectDn(principalAsRfc2253String(scim.getSubjectDn()));
+      cert.setIssuerDn(principalAsRfc2253String(scim.getIssuerDn()));
     }
 
     cert.setLabel(scim.getDisplay());
