@@ -29,7 +29,7 @@ import javax.validation.Payload;
 @Constraint(validatedBy = AupRemindersValidator.class)
 public @interface AupReminders {
 
-  String message() default "invalid sequence of numbers";
+  String message() default "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates";
 
   Class<?>[] groups() default {};
 

@@ -30,7 +30,9 @@ public class AupRemindersValidator implements ConstraintValidator<AupReminders, 
   public boolean isValid(String value, ConstraintValidatorContext context) {
 
     if (value == null || value.isEmpty()) {
-      context.buildConstraintViolationWithTemplate("");
+      context.disableDefaultConstraintViolation();
+      context.buildConstraintViolationWithTemplate("Invalid AUP: aupRemindersInDays cannot be empty or null")
+        .addConstraintViolation();
       return false;
     }
 
@@ -41,12 +43,26 @@ public class AupRemindersValidator implements ConstraintValidator<AupReminders, 
         .collect(Collectors.toList());
 
       if (numbers.stream().anyMatch(i -> i <= 0)) {
+        context.disableDefaultConstraintViolation();
+        context.buildConstraintViolationWithTemplate("Invalid AUP: zero or negative values are not allowed")
+          .addConstraintViolation();
         return false;
       }
 
       Set<Integer> uniqueNumbers = new HashSet<>(numbers);
-      return uniqueNumbers.size() == numbers.size();
+      if (uniqueNumbers.size() != numbers.size()) {
+        context.disableDefaultConstraintViolation();
+        context
+          .buildConstraintViolationWithTemplate("Invalid AUP: duplicate values are not allowed")
+          .addConstraintViolation();
+        return false;
+      }
+
+      return true;
     } catch (NumberFormatException e) {
+      context.disableDefaultConstraintViolation();
+      context.buildConstraintViolationWithTemplate("Invalid AUP: non-integer value found")
+        .addConstraintViolation();
       return false;
     }
   }

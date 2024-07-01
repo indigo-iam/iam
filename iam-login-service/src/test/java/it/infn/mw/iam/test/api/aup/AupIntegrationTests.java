@@ -272,7 +272,7 @@ public class AupIntegrationTests extends AupTestSupport {
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty"));
+      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty or null"));
   }
 
   @Test
@@ -286,7 +286,7 @@ public class AupIntegrationTests extends AupTestSupport {
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty"));
+      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty or null"));
   }
 
   @Test
@@ -301,7 +301,7 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+          "Invalid AUP: zero or negative values are not allowed"));
   }
 
   @Test
@@ -316,7 +316,7 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+          "Invalid AUP: zero or negative values are not allowed"));
   }
 
   @Test
@@ -331,7 +331,7 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+          "Invalid AUP: non-integer value found"));
   }
 
   @Test
@@ -346,7 +346,7 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates"));
+          "Invalid AUP: duplicate values are not allowed"));
   }
 
   @Test

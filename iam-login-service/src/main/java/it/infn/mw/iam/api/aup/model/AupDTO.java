@@ -19,7 +19,6 @@ import java.util.Date;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
@@ -48,8 +47,7 @@ public class AupDTO {
   @Min(value = 0L, message = "Invalid AUP: signatureValidityInDays must be >= 0")
   Long signatureValidityInDays;
 
-  //@NotEmpty(message = "Invalid AUP: aupRemindersInDays cannot be empty")
-  @AupReminders(message = "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates")
+  @AupReminders
   String aupRemindersInDays;
 
   @JsonSerialize(using = JsonDateSerializer.class)
