@@ -68,6 +68,7 @@ public class ScimUser extends ScimResource {
   private final String locale;
   private final String timezone;
   private final Boolean active;
+  private final String affiliation;
 
   @NotEmpty(groups = {NewUserValidation.class})
   @Valid
@@ -93,7 +94,8 @@ public class ScimUser extends ScimResource {
       @JsonProperty("userType") String userType,
       @JsonProperty("preferredLanguage") String preferredLanguage,
       @JsonProperty("locale") String locale, @JsonProperty("timezone") String timezone,
-      @JsonProperty("active") Boolean active, @JsonProperty("emails") List<ScimEmail> emails,
+      @JsonProperty("active") Boolean active, @JsonProperty("affiliation") String affiliation,
+      @JsonProperty("emails") List<ScimEmail> emails,
       @JsonProperty("addresses") List<ScimAddress> addresses,
       @JsonProperty("photos") List<ScimPhoto> photos,
       @JsonProperty("groups") Set<ScimGroupRef> groups,
@@ -116,6 +118,7 @@ public class ScimUser extends ScimResource {
     this.timezone = timezone;
     this.emails = emails;
     this.active = active;
+    this.affiliation = affiliation;
     this.groups = groups;
     this.addresses = addresses;
     this.indigoUser = indigoUser;
@@ -135,6 +138,7 @@ public class ScimUser extends ScimResource {
     this.locale = b.locale;
     this.timezone = b.timezone;
     this.active = b.active;
+    this.affiliation = b.affiliation;
     this.emails = b.emails;
     this.addresses = b.addresses;
     /* build indigoUserBuilder only if it has been touched */
@@ -214,6 +218,10 @@ public class ScimUser extends ScimResource {
   public Boolean getActive() {
 
     return active;
+  }
+
+  public String getAffiliation() {
+    return affiliation;
   }
 
   public List<ScimEmail> getEmails() {
@@ -300,6 +308,7 @@ public class ScimUser extends ScimResource {
     private String locale;
     private String timezone;
     private Boolean active;
+    private String affiliation;
 
     private List<ScimEmail> emails = new ArrayList<>();
     private Set<ScimGroupRef> groups = new LinkedHashSet<>();
@@ -398,6 +407,11 @@ public class ScimUser extends ScimResource {
     public Builder active(Boolean active) {
 
       this.active = active;
+      return this;
+    }
+
+    public Builder affiliation(String affiliation) {
+      this.affiliation = affiliation;
       return this;
     }
 

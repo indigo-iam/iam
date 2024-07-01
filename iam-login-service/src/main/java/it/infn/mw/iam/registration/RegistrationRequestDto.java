@@ -44,6 +44,7 @@ public class RegistrationRequestDto {
   private String birthdate;
   private String accountId;
   private String notes;
+  private String affiliation;
 
   private List<LabelDTO> labels;
 
@@ -57,7 +58,7 @@ public class RegistrationRequestDto {
       @JsonProperty("givename") String givenname, @JsonProperty("familyname") String familyname,
       @JsonProperty("email") String email, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountid") String accountId, @JsonProperty("notes") String notes,
-      @JsonProperty("labels") List<LabelDTO> labels) {
+      @JsonProperty("affiliation") String affiliation, @JsonProperty("labels") List<LabelDTO> labels) {
 
     this.username = username;
     this.password = password;
@@ -71,6 +72,7 @@ public class RegistrationRequestDto {
     this.lastUpdateTime = lastUpdateTime;
     this.accountId = accountId;
     this.notes = notes;
+    this.affiliation = affiliation;
     this.labels = labels;
   }
 
@@ -190,6 +192,14 @@ public class RegistrationRequestDto {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public String getAffiliation() {
+    return affiliation;
+  }
+
+  public void setAffiliation(String affiliation) {
+    this.affiliation = affiliation;
   }
 
   public List<LabelDTO> getLabels() {
