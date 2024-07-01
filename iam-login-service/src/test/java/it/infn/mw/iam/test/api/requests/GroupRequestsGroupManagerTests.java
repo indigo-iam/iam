@@ -35,7 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
@@ -145,7 +145,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.APPROVED.name())))
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.APPROVED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
@@ -165,7 +165,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
 
     mvc.perform(post(REJECT_URL, request.getUuid()).param("motivation", TEST_REJECT_MOTIVATION))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())))
+      .andExpect(jsonPath("$.status", equalTo(IamRequestStatus.REJECTED.name())))
       .andExpect(jsonPath("$.username", equalTo(TEST_100_USERNAME)))
       .andExpect(jsonPath("$.groupName", equalTo(TEST_001_GROUPNAME)))
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))

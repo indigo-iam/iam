@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.api.requests.exception;
 
-public enum IamGroupRequestStatus {
-  PENDING, APPROVED, REJECTED
+public class InvalidIamRequestStatusError extends IllegalArgumentException {
+
+  private static final long serialVersionUID = 1L;
+
+  public InvalidIamRequestStatusError(String message) {
+    super(message);
+  }
 }

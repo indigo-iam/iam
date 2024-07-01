@@ -38,7 +38,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.core.IamGroupRequestStatus;
+import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -117,7 +117,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
     // @formatter:off
     String response = mvc.perform(get(LIST_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)
-        .param("status", IamGroupRequestStatus.PENDING.name()))
+        .param("status", IamRequestStatus.PENDING.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", equalTo(2)))
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
@@ -132,7 +132,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
         mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
 
     for (GroupRequestDto elem : result.getResources()) {
-      assertThat(elem.getStatus(), equalTo(IamGroupRequestStatus.PENDING.name()));
+      assertThat(elem.getStatus(), equalTo(IamRequestStatus.PENDING.name()));
     }
   }
 
@@ -219,7 +219,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"}, username = TEST_ADMIN)
   public void filterByUsernameAndStatusAsAdmin() throws Exception {
-    String testStatus = IamGroupRequestStatus.PENDING.name();
+    String testStatus = IamRequestStatus.PENDING.name();
     // @formatter:off
     String response = mvc.perform(get(LIST_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -247,7 +247,7 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"}, username = TEST_ADMIN)
   public void filterByGroupAndStatusAsAdmin() throws Exception {
-    String testStatus = IamGroupRequestStatus.PENDING.name();
+    String testStatus = IamRequestStatus.PENDING.name();
     // @formatter:off
     String response = mvc.perform(get(LIST_REQUESTS_URL)
         .contentType(MediaType.APPLICATION_JSON)

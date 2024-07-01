@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.requests.exception;
+package it.infn.mw.iam.audit.events.cert_link.request;
 
-public class InvalidGroupRequestStatusError extends IllegalArgumentException {
+import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
+
+public class CertLinkRequestRejectedEvent extends CertLinkRequestEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public InvalidGroupRequestStatusError(String message) {
-    super(message);
+  public CertLinkRequestRejectedEvent(Object source, IamCertLinkRequest certLinkRequest) {
+    super(source, certLinkRequest, "Certificate linking request rejected");
   }
 }

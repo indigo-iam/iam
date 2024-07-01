@@ -56,6 +56,7 @@ public class X509TrustConfig {
   @Value("${x509.tlsVersion}")
   String tlsVersion;
 
+  @Bean
   X509CertChainValidatorExt certificateValidator() {
 
     return new CertificateValidatorBuilder().lazyAnchorsLoading(false)
@@ -64,12 +65,13 @@ public class X509TrustConfig {
       .build();
   }
 
-  SSLContext sslContext() {
+  @Bean
+  SSLContext sslContext(X509CertChainValidatorExt certificateValidator) {
 
     try {
       SSLContext context = SSLContext.getInstance(tlsVersion);
 
-      X509TrustManager tm = SocketFactoryCreator.getSSLTrustManager(certificateValidator());
+      X509TrustManager tm = SocketFactoryCreator.getSSLTrustManager(certificateValidator);
       SecureRandom r = new SecureRandom();
       context.init(null, new TrustManager[] {tm}, r);
 
@@ -82,9 +84,9 @@ public class X509TrustConfig {
   }
 
   @Bean(name="canlHttpClient")
-  public HttpClient httpClient() {
+  public HttpClient httpClient(SSLContext sslContext) {
 
-    SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(sslContext());
+    SSLConnectionSocketFactory sf = new SSLConnectionSocketFactory(sslContext);
 
     Registry<ConnectionSocketFactory> socketFactoryRegistry =
         RegistryBuilder.<ConnectionSocketFactory>create()
@@ -104,9 +106,9 @@ public class X509TrustConfig {
   }
 
   @Bean(name = "canlRequestFactory")
-  public ClientHttpRequestFactory httpRequestFactory() {
+  public ClientHttpRequestFactory httpRequestFactory(HttpClient httpClient) {
 
-    return new HttpComponentsClientHttpRequestFactory(httpClient());
+    return new HttpComponentsClientHttpRequestFactory(httpClient);
   }
 
 }

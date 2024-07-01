@@ -34,7 +34,7 @@
 
     function AddRemoveCertificateController(
         $scope, scimFactory, $uibModalInstance, action, cert, user,
-        successHandler) {
+        successHandler, certificationAuthorities) {
         var self = this;
         self.enabled = true;
         self.action = action;
@@ -42,13 +42,29 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
+        self.certificationAuthorities = certificationAuthorities;
+        self.inputMode = "pem";
+        self.isRequest = false;
+        self.titleMessage = "Add an X.509 certificate to "+user.name.formatted+" IAM account?";
+        self.submitMessage = "Add certificate";
 
         self.certVal = {};
 
         self.doAdd = function () {
             self.error = undefined;
             self.enabled = false;
-            scimFactory.addX509Certificate(self.user.id, self.certVal)
+
+            const req = {
+                label: self.certVal.label,
+            }
+            if (self.inputMode == "pem") {
+                req.pemEncodedCertificate = self.certVal.pemEncodedCertificate;
+            } else if (self.inputMode == "dn") {
+                req.subjectDn = self.certVal.subjectDn;
+                req.issuerDn = self.certVal.issuerDn;
+            }
+
+            scimFactory.addX509Certificate(self.user.id, req)
                 .then(function (response) {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate added`);
@@ -86,8 +102,11 @@
                 label: '',
                 primary: false,
                 pemEncodedCertificate: '',
+                subjectDn: '',
+                issuerDn: '',
             };
             self.error = undefined;
+            self.inputMode = "pem";
         };
 
         self.certLabelValid = function () {
@@ -172,7 +191,7 @@
         };
     }
 
-    function UserX509Controller(toaster, $uibModal, Utils, $state) {
+    function UserX509Controller(toaster, $uibModal, Utils, $state, TrustsService) {
         var self = this;
 
         self.accountLinkingEnabled = getAccountLinkingEnabled();
@@ -290,7 +309,8 @@
                     cert: undefined,
                     successHandler: function () {
                         return self.handleSuccess;
-                    }
+                    },
+                    certificationAuthorities: () => TrustsService.getTrusts()
                 }
             });
         };
@@ -364,7 +384,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/user.x509.component.html',
         controller: [
-            'toaster', '$uibModal', 'Utils', '$state', UserX509Controller
+            'toaster', '$uibModal', 'Utils', '$state', 'TrustsService', UserX509Controller
         ]
     });
 })();

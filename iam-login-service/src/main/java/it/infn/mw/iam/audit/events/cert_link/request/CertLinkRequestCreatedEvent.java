@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.requests.exception;
+package it.infn.mw.iam.audit.events.cert_link.request;
 
-public class GroupRequestValidationError extends IllegalArgumentException {
+import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
+
+public class CertLinkRequestCreatedEvent extends CertLinkRequestEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public GroupRequestValidationError(String message) {
-    super(message);
+  public CertLinkRequestCreatedEvent(Object source, IamCertLinkRequest certLinkRequest) {
+    super(source, certLinkRequest, "Certificate linking request created");
   }
 }
