@@ -15,10 +15,11 @@
  */
 package it.infn.mw.iam.core;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
-import java.time.LocalDate;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -26,7 +27,6 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
-import it.infn.mw.iam.audit.events.tokens.AccessTokenRefreshedEvent;
+import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
@@ -53,7 +53,6 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamProperties iamProperties;
 
 
-  @Autowired
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
       IamProperties iamProperties) {
@@ -105,6 +104,16 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
+  public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
+      AuthenticationHolderEntity authHolder) {
+
+    OAuth2RefreshTokenEntity token = super.createRefreshToken(client, authHolder);
+
+    eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, token));
+    return token;
+  }
+
+  @Override
   @SuppressWarnings("deprecation")
   public OAuth2AccessTokenEntity refreshAccessToken(String refreshTokenValue,
       TokenRequest authRequest) {
@@ -115,7 +124,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
       updateClientLastUsed(token);
     }
 
-    eventPublisher.publishEvent(new AccessTokenRefreshedEvent(this, token));
+    eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
   }
 

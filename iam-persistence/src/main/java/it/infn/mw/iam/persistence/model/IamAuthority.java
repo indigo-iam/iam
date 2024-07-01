@@ -69,11 +69,15 @@ public class IamAuthority implements Serializable{
   }
   
   public boolean isGroupManagerAuthority() {
-    return this.authority.startsWith("ROLE_GM:");
+    return authority.startsWith("ROLE_GM:");
   }
-  
+
+  public boolean isAdminAuthority() {
+    return "ROLE_ADMIN".equals(authority);
+  }
+
   public String getManagedGroupId() {
-    return this.authority.substring(8);
+    return authority.substring(8);
   }
 
   @Override

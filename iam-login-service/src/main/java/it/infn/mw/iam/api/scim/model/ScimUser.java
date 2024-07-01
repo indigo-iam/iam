@@ -18,16 +18,17 @@ package it.infn.mw.iam.api.scim.model;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.groups.Default;
 
 import org.hibernate.validator.constraints.Length;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
@@ -140,7 +141,12 @@ public class ScimUser extends ScimResource {
     this.affiliation = b.affiliation;
     this.emails = b.emails;
     this.addresses = b.addresses;
-    this.indigoUser = b.indigoUser;
+    /* build indigoUserBuilder only if it has been touched */
+    if (!b.indigoUserBuilder.equals(ScimIndigoUser.builder())) {
+      this.indigoUser = b.indigoUserBuilder.build();
+    } else {
+      this.indigoUser = null;
+    }
     this.groups = b.groups;
     this.password = b.password;
   }
@@ -308,16 +314,16 @@ public class ScimUser extends ScimResource {
     private Set<ScimGroupRef> groups = new LinkedHashSet<>();
     private List<ScimAddress> addresses = new ArrayList<>();
     private List<ScimPhoto> photos = new ArrayList<>();
-    private ScimIndigoUser indigoUser;
+    private ScimIndigoUser.Builder indigoUserBuilder = ScimIndigoUser.builder();
 
     public Builder() {
       super();
+      schemas.add(USER_SCHEMA);
+      schemas.add(INDIGO_USER_SCHEMA);
     }
 
     public Builder(String userName) {
       this();
-      schemas.add(USER_SCHEMA);
-      schemas.add(INDIGO_USER_SCHEMA);
       this.userName = userName;
     }
 
@@ -451,15 +457,33 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
-    public Builder indigoUserInfo(ScimIndigoUser indigoUser) {
-
-      this.indigoUser = indigoUser;
-      return this;
-    }
-
     public Builder addAddress(ScimAddress scimAddress) {
 
       addresses.add(scimAddress);
+      return this;
+    }
+
+    public Builder aupSignatureTime(Date signatureTime) {
+
+      Preconditions.checkNotNull(signatureTime, "Null signature time");
+
+      indigoUserBuilder.aupSignatureTime(signatureTime);
+      return this;
+    }
+
+    public Builder endTime(Date endTime) {
+
+      Preconditions.checkNotNull(endTime, "Null membership end-time");
+
+      indigoUserBuilder.endTime(endTime);
+      return this;
+    }
+
+    public Builder addAuthority(String authority) {
+
+      Preconditions.checkNotNull(authority, "Null authority");
+
+      indigoUserBuilder.addAuthority(authority);
       return this;
     }
 
@@ -467,12 +491,7 @@ public class ScimUser extends ScimResource {
 
       Preconditions.checkNotNull(scimX509Certificate, "Null x509 certificate");
 
-      if (indigoUser == null) {
-        indigoUser = ScimIndigoUser.builder().addCertificate(scimX509Certificate).build();
-      } else {
-        indigoUser.getCertificates().add(scimX509Certificate);
-      }
-
+      indigoUserBuilder.addCertificate(scimX509Certificate);
       return this;
     }
 
@@ -480,11 +499,7 @@ public class ScimUser extends ScimResource {
 
       Preconditions.checkNotNull(oidcId, "Null OpenID Connect ID");
 
-      if (indigoUser == null) {
-        this.indigoUser = ScimIndigoUser.builder().build();
-      }
-
-      indigoUser.getOidcIds().add(oidcId);
+      indigoUserBuilder.addOidcId(oidcId);
       return this;
     }
 
@@ -497,11 +512,7 @@ public class ScimUser extends ScimResource {
 
       Preconditions.checkNotNull(sshKey, "Null ssh key");
 
-      if (indigoUser == null) {
-        this.indigoUser = ScimIndigoUser.builder().build();
-      }
-
-      indigoUser.getSshKeys().add(sshKey);
+      indigoUserBuilder.addSshKey(sshKey);
       return this;
     }
 
@@ -519,17 +530,42 @@ public class ScimUser extends ScimResource {
 
       Preconditions.checkNotNull(samlId, "Null saml id");
 
-      if (indigoUser == null) {
-        this.indigoUser = ScimIndigoUser.builder().build();
-      }
-
-      indigoUser.getSamlIds().add(samlId);
+      indigoUserBuilder.addSamlId(samlId);
       return this;
     }
 
     public Builder buildSamlId(String idpId, String userId) {
 
       return addSamlId(ScimSamlId.builder().idpId(idpId).userId(userId).build());
+    }
+
+    public Builder addLabel(ScimLabel label) {
+
+      Preconditions.checkNotNull(label, "Null label");
+
+      indigoUserBuilder.addLabel(label);
+      return this;
+    }
+
+    public Builder addAttribute(ScimAttribute attribute) {
+
+      Preconditions.checkNotNull(attribute, "Null attribute");
+
+      indigoUserBuilder.addAttribute(attribute);
+      return this;
+    }
+
+    public Builder addAttribute(String name, String value) {
+
+      return addAttribute(ScimAttribute.builder().withName(name).withVaule(value).build());
+    }
+
+    public Builder addManagedGroup(ScimGroupRef groupRef) {
+
+      Preconditions.checkNotNull(groupRef, "Null group reference");
+
+      indigoUserBuilder.addManagedGroup(groupRef);
+      return this;
     }
 
     public ScimUser build() {

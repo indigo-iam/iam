@@ -153,6 +153,7 @@ iam:
     authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
+    add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
@@ -280,3 +281,7 @@ lifecycle:
     expired-accounts-task:
       cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
+
+scim:
+  include_authorities: ${IAM_SCIM_INCLUDE_AUTHORITIES:false}
+  include_managed_groups: ${IAM_SCIM_INCLUDE_MANAGED_GROUPS:false}

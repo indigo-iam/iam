@@ -20,13 +20,9 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 import java.util.Collection;
 import java.util.Optional;
 
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.common.exceptions.InsufficientScopeException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
@@ -111,15 +107,9 @@ public class IamSecurityExpressionMethods {
 
     if (authentication instanceof OAuth2Authentication) {
       OAuth2Authentication oauth = (OAuth2Authentication) authentication;
-      boolean result = scopeResolver.resolveScope(oauth).stream().anyMatch(s -> s.equals(scope));
-      if (!result) {
-        Throwable failure = new InsufficientScopeException("Insufficient scope for this resource",
-            Sets.newHashSet(scope));
-        throw new AccessDeniedException(failure.getMessage(), failure);
-      }
-      return result;
-    } else
-      return false;
+      return scopeResolver.resolveScope(oauth).stream().anyMatch(s -> s.equals(scope));
+    }
+    return false;
   }
 
   public boolean isRequestWithoutToken() {

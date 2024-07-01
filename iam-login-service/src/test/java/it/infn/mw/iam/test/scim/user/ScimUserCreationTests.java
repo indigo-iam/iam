@@ -21,6 +21,8 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithPassword;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -32,9 +34,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,13 +50,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
+import it.infn.mw.iam.api.aup.AupService;
+import it.infn.mw.iam.api.aup.model.AupDTO;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
@@ -70,6 +78,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
     webEnvironment = WebEnvironment.MOCK)
+@TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
@@ -80,7 +89,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
-  
+
   @Autowired
   private MockMvc mvc;
 
@@ -89,7 +98,10 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
-  
+
+  @Autowired
+  private AupService aupService;
+
   @Before
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -104,7 +116,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
   @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
   public void testUserCreationAccessDeletion() throws Exception {
 
-    ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney");
+    ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
     ScimUser createdUser = scimUtils.postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
@@ -118,7 +130,8 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
   public void testUserCreationWithPassword() throws Exception {
 
     ScimUser user =
-        buildUserWithPassword("john_lennon", "password", "lennon@email.test", "John", "Lennon");
+        buildUserWithPassword("john_lennon", "password", "lennon@email.test", "John", "Lennon")
+          .build();
 
     ScimUser createdUser = scimUtils.postUser(user);
 
@@ -230,9 +243,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     ScimUser user = ScimUser.builder("user_with_sshkey")
       .buildEmail("test_user@test.org")
       .buildName("User", "With ssh key Account")
-      .indigoUserInfo(ScimIndigoUser.builder()
-        .addSshKey(ScimSshKey.builder().value(SshKeyUtils.sshKeys.get(0).key).build())
-        .build())
+      .addSshKey(ScimSshKey.builder().value(SshKeyUtils.sshKeys.get(0).key).build())
       .active(true)
       .build();
 
@@ -380,19 +391,28 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    List<ScimX509Certificate> userCertList = user.getIndigoUser().getCertificates();
-
     ScimUser createdUser = scimUtils.postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
-    assertThat(createdUserCertList, hasSize(equalTo(2)));
-    assertThat(createdUserCertList.get(0).getDisplay(), equalTo(userCertList.get(0).getDisplay()));
-    assertThat(createdUserCertList.get(0).getPemEncodedCertificate(),
-        equalTo(userCertList.get(0).getPemEncodedCertificate()));
-    assertThat(createdUserCertList.get(0).getPrimary(), equalTo(userCertList.get(0).getPrimary()));
-    assertThat(createdUserCertList.get(1).getDisplay(), equalTo(userCertList.get(1).getDisplay()));
-    assertThat(createdUserCertList.get(1).getPrimary(), equalTo(userCertList.get(1).getPrimary()));
+    assertThat(createdUserCertList.stream().map(c -> c.getDisplay()).collect(Collectors.toList()),
+        IsIterableContainingInAnyOrder.containsInAnyOrder("Personal1", "Personal2"));
+    ScimX509Certificate createdCert1 = createdUserCertList.stream()
+      .filter(cert -> "Personal1".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+    ScimX509Certificate createdCert2 = createdUserCertList.stream()
+      .filter(cert -> "Personal2".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+
+    assertThat(createdCert1.getPrimary(), equalTo(FALSE));
+    assertThat(createdCert2.getPrimary(), equalTo(TRUE));
+    assertThat(createdCert1.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(0).certificate));
+    assertThat(createdCert2.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(1).certificate));
+
   }
 
   @Test
@@ -419,18 +439,81 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    List<ScimX509Certificate> userCertList = user.getIndigoUser().getCertificates();
-
     ScimUser createdUser = scimUtils.postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
-    assertThat(createdUserCertList, hasSize(equalTo(2)));
-    assertThat(createdUserCertList.get(0).getDisplay(), equalTo(userCertList.get(0).getDisplay()));
-    assertThat(createdUserCertList.get(0).getPemEncodedCertificate(),
-        equalTo(userCertList.get(0).getPemEncodedCertificate()));
-    assertThat(createdUserCertList.get(0).getPrimary(), equalTo(true));
-    assertThat(createdUserCertList.get(1).getDisplay(), equalTo(userCertList.get(1).getDisplay()));
-    assertThat(createdUserCertList.get(1).getPrimary(), equalTo(false));
+    assertThat(createdUserCertList.stream().map(c -> c.getDisplay()).collect(Collectors.toList()),
+        IsIterableContainingInAnyOrder.containsInAnyOrder("Personal1", "Personal2"));
+    ScimX509Certificate createdCert1 = createdUserCertList.stream()
+      .filter(cert -> "Personal1".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+    ScimX509Certificate createdCert2 = createdUserCertList.stream()
+      .filter(cert -> "Personal2".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+
+    assertThat(createdCert1.getPrimary(), equalTo(TRUE));
+    assertThat(createdCert2.getPrimary(), equalTo(FALSE));
+    assertThat(createdCert1.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(0).certificate));
+    assertThat(createdCert2.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(1).certificate));
+
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  public void testUserCreationWithEndTimeAndBasicAuthorities() throws Exception {
+
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(new Date());
+    cal.add(Calendar.HOUR_OF_DAY, 1);
+    Date expTime = cal.getTime();
+
+    ScimUser user = buildUser("user_with_exp_time", "userwithexptime@email.test", "User", "Test")
+      .endTime(expTime)
+      .addAuthority("ROLE_ADMIN")
+      .build();
+    ScimUser createdUser = scimUtils.postUser(user);
+
+    assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
+    assertThat(user.getEmails(), hasSize(equalTo(1)));
+    assertThat(user.getEmails().get(0).getValue(),
+        equalTo(createdUser.getEmails().get(0).getValue()));
+    assertNull(createdUser.getIndigoUser().getEndTime());
+    assertThat(createdUser.getIndigoUser().getAuthorities().contains("ROLE_ADMIN"), equalTo(false));
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  public void testUserCreationWithAupSignatureIsIgnored() throws Exception {
+
+    final String AUP_URL = "https://valid.test.url.com/";
+    final String AUP_DESCRIPTION = "Test AUP";
+    final Date currentDate = new Date();
+
+    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate);
+    aupService.saveAup(aup);
+
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(currentDate);
+    cal.add(Calendar.HOUR_OF_DAY, 1);
+    Date signatureTime = cal.getTime();
+
+    ScimUser user =
+        buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
+          .aupSignatureTime(signatureTime)
+          .build();
+    ScimUser createdUser = scimUtils.postUser(user);
+
+    assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
+    assertThat(user.getEmails(), hasSize(equalTo(1)));
+    assertThat(user.getEmails().get(0).getValue(),
+        equalTo(createdUser.getEmails().get(0).getValue()));
+    assertNull(createdUser.getIndigoUser().getAupSignatureTime());
+
+    aupService.deleteAup();
   }
 }
