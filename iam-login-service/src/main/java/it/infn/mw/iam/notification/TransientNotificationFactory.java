@@ -265,9 +265,9 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("clientStatus", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("Changed client status");
+    String subject = "Changed client status";
 
-    List<String> contacts = new ArrayList<String>(recipients);
+    List<String> contacts = new ArrayList<>(recipients);
 
     IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
         IamNotificationType.CLIENT_STATUS, subject, contacts);
@@ -287,7 +287,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("clientStatus", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("Changed client status");
+    String subject = "Changed client status";
 
     IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
         IamNotificationType.CLIENT_STATUS, subject, asList(email));
