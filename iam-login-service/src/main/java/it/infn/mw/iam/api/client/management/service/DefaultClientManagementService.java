@@ -23,6 +23,7 @@ import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,7 @@ import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -78,7 +80,8 @@ public class DefaultClientManagementService implements ClientManagementService {
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
       IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep,  NotificationFactory notificationFactory) {
+      IamTokenService tokenService, ApplicationEventPublisher aep,
+      NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
@@ -142,12 +145,20 @@ public class DefaultClientManagementService implements ClientManagementService {
   public void updateClientStatus(String clientId, boolean status, String userId) {
 
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
-        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     client = clientService.updateClientStatus(client, status, userId);
-    String message = "Client " + (status?"enabled":"disabled");
+    String message = "Client " + (status ? "enabled" : "disabled");
     eventPublisher.publishEvent(new ClientStatusChangedEvent(this, client, message));
     if (!client.getContacts().isEmpty()) {
       notificationFactory.createClientStatusChangedMessage(client);
+    }
+    List<ScimUser> owners =
+        getClientOwners(client.getClientId(), PagingUtils.buildUnpagedPageRequest()).getResources();
+    if (!owners.isEmpty()) {
+      for (ScimUser owner : owners) {
+        notificationFactory.createClientStatusChangedMessageForClientOwners(client,
+            owner.getEmails().get(0).getValue());
+      }
     }
   }
 

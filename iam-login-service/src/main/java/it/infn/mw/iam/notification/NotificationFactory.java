@@ -43,4 +43,7 @@ public interface NotificationFactory {
   IamEmailNotification createGroupMembershipRejectedMessage(IamGroupRequest groupRequest);
 
   IamEmailNotification createClientStatusChangedMessage(ClientDetailsEntity client);
+
+  IamEmailNotification createClientStatusChangedMessageForClientOwners(ClientDetailsEntity client,
+      String email);
 }

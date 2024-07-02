@@ -71,7 +71,8 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final Configuration freeMarkerConfiguration;
 
   @Autowired
-  public TransientNotificationFactory(Configuration fm, NotificationProperties np, AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
+  public TransientNotificationFactory(Configuration fm, NotificationProperties np,
+      AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
     this.freeMarkerConfiguration = fm;
     this.properties = np;
     this.adminNotificationDeliveryStrategy = ands;
@@ -203,7 +204,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     LOG.debug("Create group membership admin notification for request {}", groupRequest.getUuid());
     return createMessage("adminHandleGroupRequest.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
-        subject, groupManagerDeliveryStrategy.resolveGroupManagersEmailAddresses(groupRequest.getGroup()));
+        subject,
+        groupManagerDeliveryStrategy.resolveGroupManagersEmailAddresses(groupRequest.getGroup()));
   }
 
   @Override
@@ -263,16 +265,35 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("clientStatus", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject =
-        String.format("Changed client status");
+    String subject = String.format("Changed client status");
 
     List<String> contacts = new ArrayList<String>(recipients);
 
-    IamEmailNotification notification =
-        createMessage("clientStatusChanged.ftl", model, IamNotificationType.CLIENT_STATUS,
-            subject, contacts);
+    IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
+        IamNotificationType.CLIENT_STATUS, subject, contacts);
 
-    LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(), client.isActive());
+    LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(),
+        client.isActive());
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createClientStatusChangedMessageForClientOwners(
+      ClientDetailsEntity client, String email) {
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("clientId", client.getClientId());
+    model.put("clientName", client.getClientName());
+    model.put("clientStatus", client.isActive());
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = String.format("Changed client status");
+
+    IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
+        IamNotificationType.CLIENT_STATUS, subject, asList(email));
+
+    LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(),
+        client.isActive());
     return notification;
   }
 
@@ -292,8 +313,8 @@ public class TransientNotificationFactory implements NotificationFactory {
       message.setCreationTime(new Date());
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
       message.setReceivers(receiverAddress.stream()
-              .map(a -> IamNotificationReceiver.forAddress(message, a))
-              .collect(Collectors.toList()));
+        .map(a -> IamNotificationReceiver.forAddress(message, a))
+        .collect(Collectors.toList()));
 
       return message;
     } catch (IOException | TemplateException e) {
