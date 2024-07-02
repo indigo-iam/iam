@@ -55,6 +55,7 @@ import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
 import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -72,11 +73,12 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final OIDCTokenService oidcTokenService;
   private final IamTokenService tokenService;
   private final ApplicationEventPublisher eventPublisher;
+  private final NotificationFactory notificationFactory;
 
   public DefaultClientManagementService(Clock clock, ClientService clientService,
       ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
       IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep) {
+      IamTokenService tokenService, ApplicationEventPublisher aep,  NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
@@ -86,6 +88,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     this.oidcTokenService = oidcTokenService;
     this.tokenService = tokenService;
     this.eventPublisher = aep;
+    this.notificationFactory = notificationFactory;
   }
 
   @Override
@@ -143,6 +146,9 @@ public class DefaultClientManagementService implements ClientManagementService {
     client = clientService.updateClientStatus(client, status, userId);
     String message = "Client " + (status?"enabled":"disabled");
     eventPublisher.publishEvent(new ClientStatusChangedEvent(this, client, message));
+    if (!client.getContacts().isEmpty()) {
+      notificationFactory.createClientStatusChangedMessage(client);
+    }
   }
 
   @Validated(OnClientUpdate.class)

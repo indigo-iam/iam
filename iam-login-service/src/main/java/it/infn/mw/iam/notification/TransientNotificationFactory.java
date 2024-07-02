@@ -18,16 +18,20 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
+
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -246,6 +250,29 @@ public class TransientNotificationFactory implements NotificationFactory {
             subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createClientStatusChangedMessage(ClientDetailsEntity client) {
+    Set<String> recipients = client.getContacts();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("clientId", client.getClientId());
+    model.put("clientName", client.getClientName());
+    model.put("clientStatus", client.isActive());
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject =
+        String.format("Changed client status");
+
+    List<String> contacts = new ArrayList<String>(recipients);
+
+    IamEmailNotification notification =
+        createMessage("clientStatusChanged.ftl", model, IamNotificationType.CLIENT_STATUS,
+            subject, contacts);
+
+    LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(), client.isActive());
     return notification;
   }
 
