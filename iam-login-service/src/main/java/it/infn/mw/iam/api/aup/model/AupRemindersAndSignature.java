@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.aup.model;
 
-import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -25,11 +25,11 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({FIELD})
-@Constraint(validatedBy = AupRemindersValidator.class)
-public @interface AupReminders {
+@Target({TYPE})
+@Constraint(validatedBy = AupRemindersAndSignatureValidator.class)
+public @interface AupRemindersAndSignature {
 
-  String message() default "Invalid AUP: aupRemindersInDays must be a comma-separated list of positive integers with no duplicates";
+  String message() default "Invalid AUP";
 
   Class<?>[] groups() default {};
 

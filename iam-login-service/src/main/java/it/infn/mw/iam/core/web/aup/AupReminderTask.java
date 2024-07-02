@@ -64,6 +64,7 @@ public class AupReminderTask {
       List<IamAupSignature> expiredSignatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
           expirationDateAsDate, expirationDatePlusOneDayAsDate);
 
+      // check if an email of type AUP_EXPIRATION does not already exist, because it is never deleted
       expiredSignatures.forEach(s -> {
         if (emailNotificationRepo
           .countAupExpirationMessPerAccount(s.getAccount().getUserInfo().getEmail()) == 0) {
@@ -87,6 +88,8 @@ public class AupReminderTask {
 
     List<IamAupSignature> signatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
         reminderDateAsDate, reminderDatePlusOneAsDate);
+
+    // check if an email of type AUP_REMINDER does not already exist, because it is never deleted
     signatures.forEach(s -> {
       if (emailNotificationRepo.countAupRemindersPerAccount(s.getAccount().getUserInfo().getEmail(),
           tomorrowAsDate) == 0) {

@@ -228,7 +228,6 @@ public class AupIntegrationTests extends AupTestSupport {
 
   }
 
-
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupCreationRequiresSignatureValidityDays() throws JsonProcessingException, Exception {
@@ -337,7 +336,7 @@ public class AupIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupCreationRequiresNoDuplicationInAupRemindersInDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "30,15,15");
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, "30,15,15");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
@@ -347,6 +346,21 @@ public class AupIntegrationTests extends AupTestSupport {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value(
           "Invalid AUP: duplicate values are not allowed"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresAupRemindersInDaysSmallerThanAupExpirationDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "4");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value(
+          "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays"));
   }
 
   @Test
@@ -382,7 +396,7 @@ public class AupIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void whiteSpacesAllowedAmongAupRemindersDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, " 30, 15, 7 ");
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, " 30, 15, 7 ");
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
@@ -520,7 +534,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
     aup.setUrl(UPDATED_AUP_URL);
     aup.setDescription(UPDATED_AUP_DESC);
-    aup.setSignatureValidityInDays(18L);
+    aup.setSignatureValidityInDays(31L);
 
     // Time travel 1 minute in the future
     Date then = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(1));
@@ -540,7 +554,7 @@ public class AupIntegrationTests extends AupTestSupport {
     assertThat(updatedAup.getDescription(), equalTo(UPDATED_AUP_DESC));
     assertThat(updatedAup.getCreationTime(), new DateEqualModulo1Second(now));
     assertThat(updatedAup.getLastUpdateTime(), new DateEqualModulo1Second(now));
-    assertThat(updatedAup.getSignatureValidityInDays(), equalTo(18L));
+    assertThat(updatedAup.getSignatureValidityInDays(), equalTo(31L));
   }
 
 }

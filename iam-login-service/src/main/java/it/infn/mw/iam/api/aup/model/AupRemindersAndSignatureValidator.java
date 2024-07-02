@@ -24,27 +24,66 @@ import java.util.stream.Collectors;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class AupRemindersValidator implements ConstraintValidator<AupReminders, String> {
+public class AupRemindersAndSignatureValidator implements ConstraintValidator<AupRemindersAndSignature, Object> {
 
   @Override
-  public boolean isValid(String value, ConstraintValidatorContext context) {
+  public boolean isValid(Object value, ConstraintValidatorContext context) {
 
-    if (value == null || value.isEmpty()) {
+    if (!(value instanceof AupDTO)) {
+      throw new IllegalArgumentException("@AupReminders only applies to AupDTO");
+    }
+
+    AupDTO aup = (AupDTO) value;
+    Long signatureValidityInDays = aup.getSignatureValidityInDays();
+    String aupRemindersInDays = aup.getAupRemindersInDays();
+
+    if (signatureValidityInDays == null) {
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate("Invalid AUP: aupRemindersInDays cannot be empty or null")
+      context
+        .buildConstraintViolationWithTemplate("Invalid AUP: signatureValidityInDays is required")
+        .addPropertyNode("signatureValidityInDays")
+        .addConstraintViolation();
+      return false;
+    }
+
+    if (signatureValidityInDays < 0) {
+      context.disableDefaultConstraintViolation();
+      context
+        .buildConstraintViolationWithTemplate("Invalid AUP: signatureValidityInDays must be >= 0")
+        .addPropertyNode("signatureValidityInDays")
+        .addConstraintViolation();
+      return false;
+    }
+
+    if (aupRemindersInDays == null || aupRemindersInDays.isEmpty()) {
+      context.disableDefaultConstraintViolation();
+      context
+        .buildConstraintViolationWithTemplate(
+            "Invalid AUP: aupRemindersInDays cannot be empty or null")
         .addConstraintViolation();
       return false;
     }
 
     try {
-      List<Integer> numbers = Arrays.stream(value.split(","))
+      List<Integer> numbers = Arrays.stream(aupRemindersInDays.split(","))
         .map(String::trim)
         .map(Integer::parseInt)
         .collect(Collectors.toList());
 
       if (numbers.stream().anyMatch(i -> i <= 0)) {
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("Invalid AUP: zero or negative values are not allowed")
+        context
+          .buildConstraintViolationWithTemplate(
+              "Invalid AUP: zero or negative values are not allowed")
+          .addConstraintViolation();
+        return false;
+      }
+
+      if (numbers.stream().anyMatch(i -> i >= signatureValidityInDays)) {
+        context.disableDefaultConstraintViolation();
+        context
+          .buildConstraintViolationWithTemplate(
+              "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays")
           .addConstraintViolation();
         return false;
       }
