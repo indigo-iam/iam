@@ -419,12 +419,8 @@ public class ClientManagementServiceTests {
 
   @Test
   public void testClientStatusChangeWithContacts() throws ParseException {
-    managementService.updateClientStatus("client", false, "userUUID");
-    RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
-    Set<String> contacts = new HashSet<String>();
-    contacts.add("test@example.com");
-    client.setContacts(contacts);
-    managementService.updateClient(client.getClientId(), client);
+    managementService.updateClientStatus("device-code-client", false, "userUUID");
+    RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
 
     assertFalse(client.isActive());
     assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
