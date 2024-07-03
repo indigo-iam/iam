@@ -37,8 +37,6 @@ import static org.mockito.Mockito.when;
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.validation.ConstraintViolationException;
 
@@ -418,7 +416,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientStatusChangeWithContacts() throws ParseException {
+  public void testClientStatusChangeWithContacts() {
     managementService.updateClientStatus("device-code-client", false, "userUUID");
     RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
 
