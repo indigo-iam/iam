@@ -47,7 +47,22 @@ public class ScimProperties {
     }
   }
 
+  public static class AttributeDescriptor {
+    String name;
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+  }
+
   List<LabelDescriptor> includeLabels = Lists.newArrayList();
+  List<AttributeDescriptor> includeAttributes = Lists.newArrayList();
+  boolean includeAuthorities = false;
+  boolean includeManagedGroups = false;
 
   public List<LabelDescriptor> getIncludeLabels() {
     return includeLabels;
@@ -55,5 +70,29 @@ public class ScimProperties {
 
   public void setIncludeLabels(List<LabelDescriptor> includeLabels) {
     this.includeLabels = includeLabels;
+  }
+
+  public List<AttributeDescriptor> getIncludeAttributes() {
+    return includeAttributes;
+  }
+
+  public void setIncludeAttributes(List<AttributeDescriptor> includeAttributes) {
+    this.includeAttributes = includeAttributes;
+  }
+
+  public boolean isIncludeAuthorities() {
+    return includeAuthorities;
+  }
+
+  public void setIncludeAuthorities(boolean includeAuthorities) {
+    this.includeAuthorities = includeAuthorities;
+  }
+
+  public boolean isIncludeManagedGroups() {
+    return includeManagedGroups;
+  }
+
+  public void setIncludeManagedGroups(boolean includeManagedGroups) {
+    this.includeManagedGroups = includeManagedGroups;
   }
 }

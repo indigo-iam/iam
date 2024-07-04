@@ -51,8 +51,6 @@ import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.redis.RedisContainer;
 
-
-
 @Testcontainers
 @IamMockMvcIntegrationTest
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,

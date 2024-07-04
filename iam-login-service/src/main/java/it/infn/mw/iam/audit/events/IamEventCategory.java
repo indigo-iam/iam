@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.tokens;
+package it.infn.mw.iam.audit.events;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-
-
-public class AccessTokenRefreshedEvent extends TokenEvent {
-
-  private static final long serialVersionUID = 1L;
-
-  public AccessTokenRefreshedEvent(Object source, OAuth2AccessTokenEntity token) {
-    super(source, token, "Access token refreshed");
-  }
-
+public enum IamEventCategory {
+  NONE,
+  ACCOUNT,
+  GROUP,
+  REGISTRATION,
+  AUTHENTICATION,
+  AUTHORIZATION,
+  SCOPE_POLICY,
+  AUP,
+  MEMBERSHIP,
+  CLIENT,
+  TOKEN
 }

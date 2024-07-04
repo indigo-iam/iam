@@ -13,22 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.auth;
+package it.infn.mw.iam.audit.events.tokens;
 
-import org.springframework.security.authentication.event.AbstractAuthenticationEvent;
+import java.io.Serializable;
 
-import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
-import it.infn.mw.iam.audit.events.IamEventCategory;
+public class HeaderDTO implements Serializable {
 
-public abstract class IamAuthenticationEvent extends IamAuditApplicationEvent {
+  private static final long serialVersionUID = 667519758148079876L;
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
+  private String kid;
+  private String alg;
 
-  public IamAuthenticationEvent(AbstractAuthenticationEvent authEvent, String message) {
-    super(IamEventCategory.AUTHENTICATION, authEvent.getSource(), message);
+  public String getKid() {
+    return kid;
   }
+
+  public void setKid(String kid) {
+    this.kid = kid;
+  }
+
+  public String getAlg() {
+    return alg;
+  }
+
+  public void setAlg(String alg) {
+    this.alg = alg;
+  }
+
 
 }

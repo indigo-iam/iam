@@ -16,11 +16,13 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
+import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT_ID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -114,34 +116,31 @@ public class OidcExtAuthRegistrationTests {
     // If the user tries to authenticate with his external account, he's redirected to the
     // login page with an account disabled error
 
-    MockHttpSession session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").with(
-              SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
-          .andExpect(status().isFound())
-          .andExpect(MockMvcResultMatchers
-            .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get("/openid_connect_login")
+        .with(SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
+      .andExpect(status().isFound())
+      .andExpect(MockMvcResultMatchers
+        .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").param("state", state)
-            .param("code", "1234")
-            .session(session))
-          .andExpect(status().isFound())
-          .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
-          .andExpect(
-              MockMvcResultMatchers.request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(
+          get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
+      .andExpect(status().isFound())
+      .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
+      .andExpect(
+          MockMvcResultMatchers.request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     assertThat(session.getAttribute(EXT_AUTH_ERROR_KEY), instanceOf(DisabledException.class));
 
@@ -152,33 +151,30 @@ public class OidcExtAuthRegistrationTests {
     // the same happens after having confirmed the request
     mvc.perform(get("/registration/confirm/{token}", token)).andExpect(status().isOk());
 
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").with(
-              SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
-          .andExpect(status().isFound())
-          .andExpect(MockMvcResultMatchers
-            .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(get("/openid_connect_login")
+        .with(SecurityMockMvcRequestPostProcessors.authentication(anonymousAuthenticationToken())))
+      .andExpect(status().isFound())
+      .andExpect(MockMvcResultMatchers
+        .redirectedUrlPattern(OidcTestConfig.TEST_OIDC_AUTHORIZATION_ENDPOINT_URI + "**"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     state = (String) session.getAttribute("state");
     nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
-    session =
-        (MockHttpSession) mvc
-          .perform(get("/openid_connect_login").param("state", state)
-            .param("code", "1234")
-            .session(session))
-          .andExpect(status().isFound())
-          .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
-          .andExpect(request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
-          .andReturn()
-          .getRequest()
-          .getSession();
+    session = (MockHttpSession) mvc
+      .perform(
+          get("/openid_connect_login").param("state", state).param("code", "1234").session(session))
+      .andExpect(status().isFound())
+      .andExpect(MockMvcResultMatchers.redirectedUrlPattern("/login**"))
+      .andExpect(request().sessionAttribute(EXT_AUTH_ERROR_KEY, notNullValue()))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     assertThat(session.getAttribute(EXT_AUTH_ERROR_KEY), instanceOf(DisabledException.class));
     err = (DisabledException) session.getAttribute(EXT_AUTH_ERROR_KEY);
@@ -187,6 +183,7 @@ public class OidcExtAuthRegistrationTests {
 
     IamAccount account = iamAccountRepo.findByOidcId(OidcTestConfig.TEST_OIDC_ISSUER, TEST_100_USER)
       .orElseThrow(() -> new AssertionError("Expected account not found"));
+    assertTrue(account.getAttributeByName(NICKNAME_ATTRIBUTE_KEY).isEmpty());
 
     iamAccountRepo.delete(account);
   }
