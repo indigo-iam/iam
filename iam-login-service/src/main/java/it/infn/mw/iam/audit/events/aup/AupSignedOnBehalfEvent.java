@@ -34,9 +34,15 @@ public class AupSignedOnBehalfEvent extends IamAuditApplicationEvent {
   @JsonSerialize(using = IamAupSignatureSerializer.class)
   final IamAupSignature signature;
 
-  public AupSignedOnBehalfEvent(Object source, IamAupSignature signature, String signedBy) {
-    super(IamEventCategory.AUP, source, format("Administrator %s signed the AUP on behalf of %s",
-        signedBy, signature.getAccount().getUsername()));
+  public AupSignedOnBehalfEvent(Object source, IamAupSignature signature, String signedBy,
+      boolean isClient) {
+    super(IamEventCategory.AUP, source,
+        isClient
+            ? format("Client %s signed the AUP on behalf of %s user", signedBy,
+                signature.getAccount().getUsername())
+            : format("User %s signed the AUP on behalf of %s user", signedBy,
+                signature.getAccount().getUsername()),
+        isClient ? "client: " + signedBy : "user: " + signedBy);
     this.signature = signature;
   }
 }
