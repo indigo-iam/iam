@@ -54,6 +54,7 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 
+@SuppressWarnings("deprecation")
 @RestController
 @Transactional
 public class AupSignatureController {
@@ -168,11 +169,10 @@ public class AupSignatureController {
   @DeleteMapping(value = "/iam/aup/signature/{accountId}")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void deleteSignatureForAccount(@PathVariable String accountId)
-      throws AccountNotFoundException {
+  public void deleteSignatureForAccount(@PathVariable String accountId,
+      Authentication authentication) throws AccountNotFoundException {
 
-    IamAccount deleterAccount = accountUtils.getAuthenticatedUserAccount()
-      .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
+    Optional<IamAccount> deleterAccount = accountUtils.getAuthenticatedUserAccount();
     IamAccount signatureAccount = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
 
@@ -183,8 +183,19 @@ public class AupSignatureController {
 
     if (signature.isPresent()) {
       signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
-      eventPublisher.publishEvent(
-          new AupSignatureDeletedEvent(this, deleterAccount.getUsername(), signature.get()));
+      if (deleterAccount.isPresent()) {
+        eventPublisher.publishEvent(
+            new AupSignatureDeletedEvent(this, deleterAccount.get().getUuid(), signature.get(), false));
+      } else {
+        String clientId = null;
+
+        if (authentication instanceof OAuth2Authentication) {
+          OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
+          clientId = oauth2Auth.getOAuth2Request().getClientId();
+        }
+        eventPublisher.publishEvent(
+            new AupSignatureDeletedEvent(this, clientId, signature.get(), true));
+      }
     }
   }
 

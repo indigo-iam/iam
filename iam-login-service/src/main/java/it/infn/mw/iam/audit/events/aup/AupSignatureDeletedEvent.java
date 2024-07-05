@@ -34,10 +34,15 @@ public class AupSignatureDeletedEvent extends IamAuditApplicationEvent {
   @JsonSerialize(using = IamAupSignatureSerializer.class)
   final IamAupSignature signature;
 
-  public AupSignatureDeletedEvent(Object source, String actor, IamAupSignature signature) {
+  public AupSignatureDeletedEvent(Object source, String actor, IamAupSignature signature,
+      boolean isClient) {
     super(IamEventCategory.AUP, source,
-        format("Administrator %s requested AUP signature to the user %s", actor,
-            signature.getAccount().getUsername()));
+        isClient
+            ? format("Client %s deleted the AUP signature of %s user", actor,
+                signature.getAccount().getUsername())
+            : format("User %s deleted the AUP signature of %s user", actor,
+                signature.getAccount().getUsername()),
+        isClient ? "client: " + actor : "user: " + actor);
     this.signature = signature;
   }
 
