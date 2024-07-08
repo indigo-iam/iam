@@ -172,6 +172,10 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       userInfo.setAddress(addressConverter.entityFromDto(scimUser.getAddresses().get(0)));
     }
 
+    if (scimUser.getAffiliation() != null) {
+      userInfo.setAffiliation(scimUser.getAffiliation());
+    }
+
     account.setUserInfo(userInfo);
     userInfo.setIamAccount(account);
 
@@ -195,7 +199,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .nickName(entity.getUserInfo().getNickname())
       .profileUrl(entity.getUserInfo().getProfile())
       .timezone(entity.getUserInfo().getZoneinfo())
-      .buildEmail(entity.getUserInfo().getEmail());
+      .buildEmail(entity.getUserInfo().getEmail())
+      .affiliation(entity.getUserInfo().getAffiliation());
 
     if (address != null) {
 
