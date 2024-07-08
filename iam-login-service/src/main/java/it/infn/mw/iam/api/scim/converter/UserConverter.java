@@ -200,7 +200,6 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .profileUrl(entity.getUserInfo().getProfile())
       .timezone(entity.getUserInfo().getZoneinfo())
       .buildEmail(entity.getUserInfo().getEmail())
-      .indigoUserInfo(indigoUser)
       .affiliation(entity.getUserInfo().getAffiliation());
 
     if (address != null) {
