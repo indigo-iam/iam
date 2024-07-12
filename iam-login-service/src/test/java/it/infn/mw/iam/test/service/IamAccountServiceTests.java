@@ -62,6 +62,7 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
@@ -866,11 +867,12 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     IamGroup testGroup = new IamGroup();
     testGroup.setName(TEST_GROUP_1);
-    Map<String, String> groupProperty = Map.of("name", TEST_GROUP_1, "enrollment", "INSERT");
-    List<Map<String, String>> defaultGroups = Arrays.asList(groupProperty);
+    DefaultGroup defaultGroup = new DefaultGroup();
+    defaultGroup.setName(TEST_GROUP_1);
+    defaultGroup.setEnrollment("INSERT");
+    List<DefaultGroup> defaultGroups = Arrays.asList(defaultGroup);
 
-    
-    registrationProperties.setDefaultGroups(defaultGroups);   
+    registrationProperties.setDefaultGroups(defaultGroups);
     when(iamGroupService.findByName(TEST_GROUP_1)).thenReturn(Optional.of(testGroup));
 
     account = accountService.createAccount(account);
@@ -880,8 +882,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
   private IamGroup getGroup(IamAccount account) {
     Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
-    if(groupMembershipOptional.isPresent()){
-      return groupMembershipOptional.get().getGroup();      
+    if (groupMembershipOptional.isPresent()) {
+      return groupMembershipOptional.get().getGroup();
     }
     return null;
   }

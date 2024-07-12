@@ -232,7 +232,7 @@ public class IamProperties {
 
     Map<String, RegistrationFieldProperties> fields;
 
-    List<Map<String, String>> defaultGroups;
+    List<DefaultGroup> defaultGroups;
 
     public boolean isShowRegistrationButtonInLoginPage() {
       return showRegistrationButtonInLoginPage;
@@ -290,11 +290,11 @@ public class IamProperties {
       this.fields = fields;
     }
 
-    public List<Map<String, String>> getDefaultGroups() {
+    public List<DefaultGroup> getDefaultGroups() {
       return defaultGroups;
     }
 
-    public void setDefaultGroups(List<Map<String, String>> defaultGroups) {
+    public void setDefaultGroups(List<DefaultGroup> defaultGroups) {
       this.defaultGroups = defaultGroups;
     }
   }
@@ -566,6 +566,27 @@ public class IamProperties {
 
     public void setTrackLastUsed(boolean trackLastUsed) {
       this.trackLastUsed = trackLastUsed;
+    }
+  }
+
+  public static class DefaultGroup {
+    private String name;
+    private String enrollment = "INSERT";
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public String getEnrollment() {
+      return enrollment;
+    }
+
+    public void setEnrollment(String enrollment) {
+      this.enrollment = enrollment;
     }
   }
 

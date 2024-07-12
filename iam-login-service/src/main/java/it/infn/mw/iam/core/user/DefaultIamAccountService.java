@@ -53,6 +53,7 @@ import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
@@ -191,13 +192,14 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   private void addToDefaultGroups(IamAccount account) {
-    List<Map<String, String>> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
-    if(defaultGroups != null){
-      defaultGroups.forEach(group ->{
-        if("INSERT".equalsIgnoreCase(group.get("enrollment"))){
-          iamGroupService.findByName(group.get("name")).ifPresent(iamGroup -> addToGroup(account, iamGroup));
-        }});
-    }    
+    List<DefaultGroup> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
+    if (defaultGroups != null) {
+      defaultGroups.forEach(group -> {
+        if ("INSERT".equalsIgnoreCase(group.getEnrollment())) {
+          iamGroupService.findByName(group.getName()).ifPresent(iamGroup -> addToGroup(account, iamGroup));
+        }
+      });
+    }
   }
 
   protected void removeClientLinks(IamAccount account) {
