@@ -28,15 +28,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import freemarker.template.Configuration;
-import freemarker.template.TemplateException;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
@@ -47,8 +48,6 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-import freemarker.template.Template;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -256,41 +255,31 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
-  public IamEmailNotification createClientStatusChangedMessage(ClientDetailsEntity client) {
+  public IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
+      List<IamAccount> accounts) {
     Set<String> recipients = client.getContacts();
 
     Map<String, Object> model = new HashMap<>();
     model.put("clientId", client.getClientId());
     model.put("clientName", client.getClientName());
-    model.put("clientStatus", client.isActive());
+    model.put("isClientActive", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = "Changed client status";
 
-    List<String> contacts = new ArrayList<>(recipients);
+    for (IamAccount a : accounts) {
+      recipients.add(a.getUserInfo().getEmail());
+    }
+
+    List<String> emails = new ArrayList<>(recipients);
+
+    if (emails.isEmpty()) {
+      LOG.warn("No emails to send notification to for client id {}", client.getClientId());
+      return null;
+    }
 
     IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
-        IamNotificationType.CLIENT_STATUS, subject, contacts);
-
-    LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(),
-        client.isActive());
-    return notification;
-  }
-
-  @Override
-  public IamEmailNotification createClientStatusChangedMessageForClientOwners(
-      ClientDetailsEntity client, String email) {
-
-    Map<String, Object> model = new HashMap<>();
-    model.put("clientId", client.getClientId());
-    model.put("clientName", client.getClientName());
-    model.put("clientStatus", client.isActive());
-    model.put(ORGANISATION_NAME, organisationName);
-
-    String subject = "Changed client status";
-
-    IamEmailNotification notification = createMessage("clientStatusChanged.ftl", model,
-        IamNotificationType.CLIENT_STATUS, subject, asList(email));
+        IamNotificationType.CLIENT_STATUS, subject, emails);
 
     LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(),
         client.isActive());

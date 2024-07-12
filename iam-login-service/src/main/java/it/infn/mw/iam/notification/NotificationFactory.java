@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.notification;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -42,8 +43,7 @@ public interface NotificationFactory {
 
   IamEmailNotification createGroupMembershipRejectedMessage(IamGroupRequest groupRequest);
 
-  IamEmailNotification createClientStatusChangedMessage(ClientDetailsEntity client);
+  IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
+      List<IamAccount> accounts);
 
-  IamEmailNotification createClientStatusChangedMessageForClientOwners(ClientDetailsEntity client,
-      String email);
 }

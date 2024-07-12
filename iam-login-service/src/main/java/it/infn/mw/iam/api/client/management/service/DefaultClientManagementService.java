@@ -149,17 +149,15 @@ public class DefaultClientManagementService implements ClientManagementService {
     client = clientService.updateClientStatus(client, status, userId);
     String message = "Client " + (status ? "enabled" : "disabled");
     eventPublisher.publishEvent(new ClientStatusChangedEvent(this, client, message));
-    if (!client.getContacts().isEmpty()) {
-      notificationFactory.createClientStatusChangedMessage(client);
-    }
-    List<ScimUser> owners =
-        getClientOwners(client.getClientId(), PagingUtils.buildUnpagedPageRequest()).getResources();
-    if (!owners.isEmpty()) {
-      for (ScimUser owner : owners) {
-        notificationFactory.createClientStatusChangedMessageForClientOwners(client,
-            owner.getEmails().get(0).getValue());
-      }
-    }
+    notificationFactory.createClientStatusChangedMessageFor(client, getClientOwners(clientId));
+  }
+
+  private List<IamAccount> getClientOwners(String clientId) {
+    return clientService.findClientOwners(clientId, PagingUtils.buildUnpagedPageRequest())
+      .getContent()
+      .stream()
+      .map(IamAccountClient::getAccount)
+      .collect(Collectors.toList());
   }
 
   @Validated(OnClientUpdate.class)
