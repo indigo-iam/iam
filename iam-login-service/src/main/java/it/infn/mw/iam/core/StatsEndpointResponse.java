@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.core;
 
-public class UserCount {
+public class StatsEndpointResponse {
 
   private long numberOfUsers;
 
-  public UserCount(long numberOfUsers) {
+  public StatsEndpointResponse(long numberOfUsers) {
     this.numberOfUsers = numberOfUsers;
   }
 

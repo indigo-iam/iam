@@ -28,8 +28,8 @@ public class IamStatisticalEndpoint {
   IamAccountRepository accountRepo;
 
   @GetMapping("/stats")
-  public UserCount getStats() {
+  public StatsEndpointResponse getStats() {
     long count = accountRepo.count();
-    return new UserCount(count);
+    return new StatsEndpointResponse(count);
   }
 }

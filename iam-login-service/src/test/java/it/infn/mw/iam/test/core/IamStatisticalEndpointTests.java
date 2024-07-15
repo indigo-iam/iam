@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.core.UserCount;
+import it.infn.mw.iam.core.StatsEndpointResponse;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
@@ -48,7 +48,7 @@ public class IamStatisticalEndpointTests {
 
   @Test
   public void testSetNumberOfUsers() {
-    UserCount userCount = new UserCount(0);
+    StatsEndpointResponse userCount = new StatsEndpointResponse(0);
     userCount.setNumberOfUsers(255);
     assertEquals(255, userCount.getNumberOfUsers());
   }
