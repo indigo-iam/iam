@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.audit.events.aup;
 
-import static java.lang.String.format;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
@@ -34,15 +32,23 @@ public class AupSignedOnBehalfEvent extends IamAuditApplicationEvent {
   @JsonSerialize(using = IamAupSignatureSerializer.class)
   final IamAupSignature signature;
 
-  public AupSignedOnBehalfEvent(Object source, IamAupSignature signature, String signedBy,
-      boolean isClient) {
-    super(IamEventCategory.AUP, source,
-        isClient
-            ? format("Client %s signed the AUP on behalf of %s user", signedBy,
-                signature.getAccount().getUsername())
-            : format("User %s signed the AUP on behalf of %s user", signedBy,
-                signature.getAccount().getUsername()),
-        isClient ? "client: " + signedBy : "user: " + signedBy);
+  public AupSignedOnBehalfEvent(Object source, String message, IamAupSignature signature) {
+    super(IamEventCategory.AUP, source, message);
     this.signature = signature;
   }
+
+  public static AupSignedOnBehalfEvent signedByClient(Object source, String clientId,
+      IamAupSignature signature) {
+    String message = String.format("Client %s signed the AUP on behalf of %s user", clientId,
+        signature.getAccount().getUsername());
+    return new AupSignedOnBehalfEvent(source, message, signature);
+  }
+
+  public static AupSignedOnBehalfEvent signedByUser(Object source, String userId,
+      IamAupSignature signature) {
+    String message = String.format("User %s signed the AUP on behalf of %s user", userId,
+        signature.getAccount().getUsername());
+    return new AupSignedOnBehalfEvent(source, message, signature);
+  }
+
 }

@@ -149,18 +149,17 @@ public class AupSignatureController {
     Date now = new Date(timeProvider.currentTimeMillis());
 
     IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
+
+    String principal = null;
+
     if (updaterAccount.isPresent()) {
-      eventPublisher.publishEvent(
-          new AupSignedOnBehalfEvent(this, signature, updaterAccount.get().getUuid(), false));
-    } else {
-      String clientId = null;
-
-      if (authentication instanceof OAuth2Authentication) {
-        OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
-        clientId = oauth2Auth.getOAuth2Request().getClientId();
-      }
-
-      eventPublisher.publishEvent(new AupSignedOnBehalfEvent(this, signature, clientId, true));
+      principal = updaterAccount.get().getUuid();
+      eventPublisher.publishEvent(AupSignedOnBehalfEvent.signedByUser(this, principal, signature));
+    } else if (authentication instanceof OAuth2Authentication) {
+      OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
+      principal = oauth2Auth.getOAuth2Request().getClientId();
+      eventPublisher
+        .publishEvent(AupSignedOnBehalfEvent.signedByClient(this, principal, signature));
     }
 
     return signatureConverter.dtoFromEntity(signature);
@@ -183,18 +182,18 @@ public class AupSignatureController {
 
     if (signature.isPresent()) {
       signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
-      if (deleterAccount.isPresent()) {
-        eventPublisher.publishEvent(
-            new AupSignatureDeletedEvent(this, deleterAccount.get().getUuid(), signature.get(), false));
-      } else {
-        String clientId = null;
 
-        if (authentication instanceof OAuth2Authentication) {
-          OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
-          clientId = oauth2Auth.getOAuth2Request().getClientId();
-        }
-        eventPublisher.publishEvent(
-            new AupSignatureDeletedEvent(this, clientId, signature.get(), true));
+      String principal = null;
+
+      if (deleterAccount.isPresent()) {
+        principal = deleterAccount.get().getUuid();
+        eventPublisher
+          .publishEvent(AupSignatureDeletedEvent.deletedByUser(this, principal, signature.get()));
+      } else if (authentication instanceof OAuth2Authentication) {
+        OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
+        principal = oauth2Auth.getOAuth2Request().getClientId();
+        eventPublisher
+          .publishEvent(AupSignatureDeletedEvent.deletedByClient(this, principal, signature.get()));
       }
     }
   }

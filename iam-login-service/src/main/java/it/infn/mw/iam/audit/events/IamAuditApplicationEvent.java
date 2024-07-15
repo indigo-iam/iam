@@ -45,26 +45,16 @@ public abstract class IamAuditApplicationEvent extends ApplicationEvent {
   @JsonInclude
   private final String message;
 
-
   public IamAuditApplicationEvent(IamEventCategory category, Object source, String message) {
-    super(source);
-    this.message = message;
-    this.category = category;
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-    if (auth == null) {
-      this.principal = NULL_PRINCIPAL;
-    } else {
-      this.principal = auth.getName();
-    }
+    this(category, source, message, SecurityContextHolder.getContext().getAuthentication());
   }
 
   public IamAuditApplicationEvent(IamEventCategory category, Object source, String message,
-      String principal) {
+      Authentication auth) {
     super(source);
-    this.message = message;
     this.category = category;
-    this.principal = principal != null ? principal : NULL_PRINCIPAL;
+    this.message = message;
+    this.principal = (auth != null) ? auth.getName() : NULL_PRINCIPAL;
   }
 
   protected IamAuditApplicationEvent(IamEventCategory category, Object source) {
