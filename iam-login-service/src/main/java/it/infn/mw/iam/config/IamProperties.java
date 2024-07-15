@@ -548,7 +548,7 @@ public class IamProperties {
   }
 
   public static class ClientProperties {
-    private boolean trackLastUsed;
+    private boolean trackLastUsed = true;
 
     public boolean isTrackLastUsed() {
       return trackLastUsed;
