@@ -153,7 +153,7 @@ public class AupSignatureController {
     String principal = null;
 
     if (updaterAccount.isPresent()) {
-      principal = updaterAccount.get().getUuid();
+      principal = updaterAccount.get().getUsername();
       eventPublisher.publishEvent(AupSignedOnBehalfEvent.signedByUser(this, principal, signature));
     } else if (authentication instanceof OAuth2Authentication) {
       OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
@@ -186,7 +186,7 @@ public class AupSignatureController {
       String principal = null;
 
       if (deleterAccount.isPresent()) {
-        principal = deleterAccount.get().getUuid();
+        principal = deleterAccount.get().getUsername();
         eventPublisher
           .publishEvent(AupSignatureDeletedEvent.deletedByUser(this, principal, signature.get()));
       } else if (authentication instanceof OAuth2Authentication) {
