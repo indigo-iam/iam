@@ -274,7 +274,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     List<String> emails = new ArrayList<>(recipients);
 
     if (emails.isEmpty()) {
-      LOG.warn("No emails to send notification to for client id {}", client.getClientId());
+      LOG.warn("No email to send notification to for client {}", client.getClientId());
       return null;
     }
 
