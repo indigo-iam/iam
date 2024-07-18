@@ -19,7 +19,6 @@ import static java.util.Objects.isNull;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,7 +34,6 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class AccountUtils {
   IamAccountRepository accountRepo;
 
-  @Autowired
   public AccountUtils(IamAccountRepository accountRepo) {
     this.accountRepo = accountRepo;
   }
