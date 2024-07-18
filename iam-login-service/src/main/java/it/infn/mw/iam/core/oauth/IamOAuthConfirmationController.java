@@ -78,9 +78,6 @@ public class IamOAuthConfirmationController {
   private ClientDetailsEntityService clientDetailsService;
 
   @Autowired
-  private ClientService clientService;
-
-  @Autowired
   private SystemScopeService scopeService;
 
   @Autowired
