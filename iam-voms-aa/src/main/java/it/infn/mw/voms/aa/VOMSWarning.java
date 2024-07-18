@@ -15,17 +15,20 @@
  */
 package it.infn.mw.voms.aa;
 
-public enum VOMSWarning {
+import static java.lang.String.format;
 
-  OrderNotSatisfied(1, "The requested order could not be satisfied."),
-  ShortenedAttributeValidity(
-      2,
-      "The validity period of the issued attributes has been shortened to the maximum allowed by "
-      + "this VOMS server configuration."),
-  AttributeSubset(3, "Only a subset of the requested attributes has been returned.");
+public class VOMSWarning {
+
+  public static final String SHORTENED_ATTRIBUTE_VALIDITY_MESSAGE =
+      "The validity of this VOMS AC in your proxy is shortened to %d seconds, "
+          + "which is the maximum allowed by this VOMS server configuration.";
 
   private int code;
   private String message;
+
+  public static VOMSWarning shortenedAttributeValidity(long maxAcValidityInSeconds) {
+    return new VOMSWarning(1, format(SHORTENED_ATTRIBUTE_VALIDITY_MESSAGE, maxAcValidityInSeconds));
+  }
 
   private VOMSWarning(int legacyCode, String message) {
 

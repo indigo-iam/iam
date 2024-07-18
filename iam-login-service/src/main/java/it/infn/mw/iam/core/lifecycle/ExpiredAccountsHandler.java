@@ -45,7 +45,8 @@ public class ExpiredAccountsHandler implements Runnable {
   public enum AccountLifecycleStatus {
     OK,
     PENDING_SUSPENSION,
-    PENDING_REMOVAL
+    PENDING_REMOVAL,
+    SUSPENDED
   }
 
   public static final String LIFECYCLE_TIMESTAMP_LABEL = "lifecycle.timestamp";
@@ -114,7 +115,12 @@ public class ExpiredAccountsHandler implements Runnable {
         expiredAccount.getEndTime(),
         ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
     accountService.disableAccount(expiredAccount);
-    addStatusLabel(expiredAccount, AccountLifecycleStatus.PENDING_REMOVAL);
+    if (properties.getAccount().getExpiredAccountPolicy().isRemoveExpiredAccounts()) {
+      addStatusLabel(expiredAccount, AccountLifecycleStatus.PENDING_REMOVAL);
+    }
+    else {
+      addStatusLabel(expiredAccount, AccountLifecycleStatus.SUSPENDED);
+    }
     addLastCheckedLabel(expiredAccount);
   }
 
@@ -140,7 +146,8 @@ public class ExpiredAccountsHandler implements Runnable {
 
   private void handleExpiredAccount(IamAccount expiredAccount) {
 
-    if (pastRemovalGracePeriod(expiredAccount)) {
+    if (pastRemovalGracePeriod(expiredAccount)
+        && properties.getAccount().getExpiredAccountPolicy().isRemoveExpiredAccounts()) {
       scheduleAccountRemoval(expiredAccount);
     } else if (pastSuspensionGracePeriod(expiredAccount)) {
       suspendAccount(expiredAccount);

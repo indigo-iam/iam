@@ -42,7 +42,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @RestController
 @RequestMapping(value = AccountLifecycleController.BASE_RESOURCE)
-@PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+@PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
 public class AccountLifecycleController {
 
   public static final String BASE_RESOURCE = "/iam/account/{id}/endTime";

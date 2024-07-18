@@ -44,7 +44,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 public class DefaultPagedAccountsServiceTests extends AccountServiceUtils {
 
   public static final int ITEMS_PER_PAGE = 10;
-  public static final long TOTAL_TEST_ACCOUNTS = 254L;
+  public static final long TOTAL_TEST_ACCOUNTS = 255L;
   private static final int LAST_PAGE_NUMBER = (int) Math.ceil(TOTAL_TEST_ACCOUNTS / ITEMS_PER_PAGE);
   private static final int LAST_PAGE_SIZE = (int) (long) TOTAL_TEST_ACCOUNTS % ITEMS_PER_PAGE;
   private static final int LAST_PAGE_OFFSET =

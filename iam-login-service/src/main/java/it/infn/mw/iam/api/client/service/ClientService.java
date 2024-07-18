@@ -45,6 +45,7 @@ public interface ClientService {
 
   ClientDetailsEntity updateClient(ClientDetailsEntity client);
 
-  void deleteClient(ClientDetailsEntity client);
+  ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId);
 
+  void deleteClient(ClientDetailsEntity client);
 }

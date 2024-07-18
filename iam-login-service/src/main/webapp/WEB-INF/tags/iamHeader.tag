@@ -43,6 +43,10 @@
   rel="stylesheet"
   href="${resourcesPrefix}/iam/css/iam.css"></link>
 
+<link
+  rel="stylesheet"
+  href="${resourcesPrefix}/iam/css/tooltip.css"></link>  
+
 </head>
 
 <script>
@@ -81,19 +85,11 @@ function getRegistrationEnabled() {
 }
 
 function getAccountLinkingEnabled() {
-    return ${loginPageConfiguration.accountLinkingEnabled};
+  return ${loginPageConfiguration.accountLinkingEnabled};
 }
 
 function getOrganisationName() {
  return '${iamOrganisationName}'; 
-}
-
-function getAccessTokenValiditySeconds() {
-  return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
-}
-
-function getRefreshTokenValiditySeconds() {
-  return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
 }
 
 function getOidcEnabled() {
@@ -109,6 +105,18 @@ function getRcauthEnabled() {
 }
 
 function getExternalAuthenticationEnabled() {
-    return ${loginPageConfiguration.externalAuthenticationEnabled};
+  return ${loginPageConfiguration.externalAuthenticationEnabled};
+}
+
+function getAccessTokenValiditySeconds() {
+  return ${clientDefaultsProperties.defaultAccessTokenValiditySeconds};
+}
+
+function getRefreshTokenValiditySeconds() {
+  return ${clientDefaultsProperties.defaultRefreshTokenValiditySeconds};
+}
+
+function getClientTrackLastUsed() {
+  return ${clientTrackLastUsed};
 }
 </script>

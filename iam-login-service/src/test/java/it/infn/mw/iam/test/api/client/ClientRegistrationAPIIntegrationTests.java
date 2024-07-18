@@ -53,7 +53,8 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
   @WithAnonymousUser
   public void dynamicRegistrationWorksForAnonymousUser() throws Exception {
 
-    String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
 
     mvc
       .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
@@ -67,6 +68,20 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.dynamically_registered").value(true))
       .andExpect(jsonPath("$.registration_access_token").exists());
 
+  }
+
+  @Test
+  @WithAnonymousUser
+  public void dynamicRegistrationNotWorksForAnonymousUserWithGrantTypeClientCredentials()
+      throws Exception {
+
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").grantTypes("client_credentials").build();
+
+    mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(BAD_REQUEST);
   }
 
   @Test
@@ -113,6 +128,35 @@ public class ClientRegistrationAPIIntegrationTests extends TestSupport {
         String.format("%s/%s", ClientRegistrationApiController.ENDPOINT, client.getClientId());
 
     mvc.perform(delete(url)).andExpect(NO_CONTENT);
+
+    mvc.perform(get(url))
+      .andExpect(NOT_FOUND)
+      .andExpect(jsonPath("$.error", containsString("Client not found")));
+  }
+
+  @Test
+  @WithAnonymousUser
+  public void clientRemovalWorksWithRatAuthentication() throws Exception {
+
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").grantTypes("authorization_code").build();
+
+    String responseJson = mvc
+      .perform(post(ClientRegistrationApiController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    final String url =
+        String.format("%s/%s", ClientRegistrationApiController.ENDPOINT, client.getClientId());
+
+    mvc.perform(delete(url).header(org.apache.http.HttpHeaders.AUTHORIZATION,
+        "Bearer " + client.getRegistrationAccessToken()))
+      .andExpect(NO_CONTENT);
 
     mvc.perform(get(url))
       .andExpect(NOT_FOUND)

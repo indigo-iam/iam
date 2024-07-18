@@ -67,9 +67,6 @@
 					</c:otherwise>
 				</c:choose>
 			</h2>
-			<c:if test="${ not empty client.logoUri }">
-				<img src="api/clients/${ client.id }/logo" width="60" height="60" />
-			</c:if>
 
 			<c:if
 				test="${ (not empty client.clientDescription) || (not empty client.clientUri) || (not empty client.policyUri) || (not empty client.tosUri) || (not empty contacts) }">

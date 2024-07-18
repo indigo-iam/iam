@@ -45,5 +45,6 @@ public interface FindAccountService {
 
   ScimListResponse<ScimUser> findAccountNotInGroupWithFilter(String groupUuid, String filter,
       Pageable pageable);
-
+      
+  ScimListResponse<ScimUser> findAccountByUuid(String uuid);
 }

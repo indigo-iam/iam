@@ -1,0 +1,1 @@
+ALTER TABLE refresh_token ADD CONSTRAINT rt_tvh_idx UNIQUE (token_value);

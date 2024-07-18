@@ -42,7 +42,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 
 @RestController
 @Transactional
-@PreAuthorize("hasAnyRole('ADMIN', 'USER') or #oauth2.hasScope('iam:admin.read')")
+@PreAuthorize("hasAnyRole('ADMIN', 'USER') or #iam.hasScope('iam:admin.read')")
 @RequestMapping(GroupSearchController.GROUP_SEARCH_ENDPOINT)
 public class GroupSearchController extends AbstractSearchController<ScimGroup, IamGroup> {
 

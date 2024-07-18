@@ -1,0 +1,8 @@
+[mysqld]
+server-id = 3
+log_bin = mysql-bin
+read_only = 1
+relay_log = f7467c4a9aac-relay-bin
+
+general_log = 1
+general_log_file = /var/log/mysql/remote.log

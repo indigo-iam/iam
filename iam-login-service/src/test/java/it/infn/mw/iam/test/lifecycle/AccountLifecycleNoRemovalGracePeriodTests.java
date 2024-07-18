@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
         "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=0"})
-public class AccountLifecycleTestsNoRemovalGracePeriod implements LifecycleTestSupport {
+public class AccountLifecycleNoRemovalGracePeriodTests implements LifecycleTestSupport {
 
   @TestConfiguration
   public static class TestConfig {

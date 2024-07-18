@@ -122,6 +122,7 @@ public class IamTestClientConfiguration {
     cde.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
     cde.setClientId(iamClientConfig.getClient().getClientId());
     cde.setClientSecret(iamClientConfig.getClient().getClientSecret());
+    cde.setCodeChallengeMethod(iamClientConfig.getClient().getCodeChallengeMethod());
 
     if (Strings.isNotBlank(iamClientConfig.getClient().getScope())) {
       cde.setScope(

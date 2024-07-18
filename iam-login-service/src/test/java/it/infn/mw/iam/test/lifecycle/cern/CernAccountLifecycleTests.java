@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +72,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     CernAccountLifecycleTests.TestConfig.class})
 @TestPropertySource(properties = {
-    // @formatter:off
+// @formatter:off
         "lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=0",
         "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
         "cern.task.pageSize=5"
@@ -109,7 +110,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
   @Autowired
   Clock clock;
-  
+
   @After
   public void teardown() {
     reset(hrDb);
@@ -155,7 +156,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   @Test
   public void testNoActionLifecycleWorksForValidAccounts() {
     VOPersonDTO voPerson = voPerson("988211");
-    
+
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(true);
     when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(voPerson);
 
@@ -175,7 +176,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(testAccount.getUserInfo().getGivenName(), is(voPerson.getFirstName()));
     assertThat(testAccount.getUserInfo().getFamilyName(), is(voPerson.getName()));
     assertThat(testAccount.getUserInfo().getEmail(), is(voPerson.getEmail()));
-    
+
     assertThat(testAccount.isActive(), is(true));
     Optional<IamLabel> statusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
@@ -193,9 +194,9 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
   }
-  
+
   @Test
-  public void testNoActionLifecycleWorksForInValidAccounts() {
+  public void testActionNotSetForDisabledInValidAccounts() {
 
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
 
@@ -206,7 +207,40 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     testAccount.setActive(false);
     service.setLabel(testAccount, cernPersonIdLabel());
-    
+
+    handler.run();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+    Optional<IamLabel> statusLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    Optional<IamLabel> actionLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_ACTION);
+    Optional<IamLabel> timestampLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
+
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
+
+    assertThat(actionLabel.isPresent(), is(false));
+
+    assertThat(timestampLabel.isPresent(), is(true));
+    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+  }
+
+  @Test
+  public void testLifecycleStates() {
+
+    when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
+
+    IamAccount testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    testAccount.setActive(true);
+    service.setLabel(testAccount, cernPersonIdLabel());
+
     handler.run();
 
     testAccount =
@@ -224,10 +258,56 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
 
     assertThat(actionLabel.isPresent(), is(true));
-    assertThat(actionLabel.get().getValue(), is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
+    assertThat(actionLabel.get().getValue(),
+        is(CernHrLifecycleHandler.Action.DISABLE_ACCOUNT.name()));
 
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+
+    handler.run();
+
+    statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    actionLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_ACTION);
+
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
+
+    assertThat(actionLabel.isPresent(), is(true));
+    assertThat(actionLabel.get().getValue(),
+        is(CernHrLifecycleHandler.Action.DISABLE_ACCOUNT.name()));
+
+    when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(true);
+    when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(voPerson("988211"));
+
+    assertThat(testAccount.isActive(), is(false));
+
+    handler.run();
+
+    statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    actionLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_ACTION);
+
+    assertThat(testAccount.isActive(), is(true));
+
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
+
+    assertThat(actionLabel.isPresent(), is(true));
+    assertThat(actionLabel.get().getValue(),
+        is(CernHrLifecycleHandler.Action.RESTORE_ACCOUNT.name()));
+
+    handler.run();
+
+    assertThat(testAccount.isActive(), is(true));
+
+    statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    actionLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_ACTION);
+
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
+
+    assertThat(actionLabel.isPresent(), is(true));
+    assertThat(actionLabel.get().getValue(), is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
+
   }
 
   @Test
@@ -268,20 +348,22 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
   }
-  
+
   @Test
   public void testApiErrorIsHandled() {
-    when(hrDb.hasValidExperimentParticipation(anyString())).thenThrow(new CernHrDbApiError("API is unreachable"));
-    
+
+    when(hrDb.hasValidExperimentParticipation(anyString()))
+      .thenThrow(new CernHrDbApiError("API is unreachable"));
+
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
     service.setLabel(testAccount, cernPersonIdLabel());
-    
+
     handler.run();
-    
+
     testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-    
+
     assertThat(testAccount.isActive(), is(true));
     Optional<IamLabel> statusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
@@ -293,18 +375,18 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(actionLabel.isPresent(), is(false));
-    
+
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ERROR.name()));
-    
+
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-    
+
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(HR_DB_API_ERROR));
-    
+
   }
-  
+
   @Test
   public void testRestoreLifecycleDoesNotTouchSuspendedAccount() {
 
@@ -336,27 +418,26 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
 
     assertThat(actionLabel.isPresent(), is(true));
-    assertThat(actionLabel.get().getValue(),
-        is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
+    assertThat(actionLabel.get().getValue(), is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
 
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
   }
-  
+
   @Test
   public void testIgnoreAccount() {
-    
+
     when(hrDb.hasValidExperimentParticipation(anyString())).thenReturn(false);
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-    
+
     assertThat(testAccount.isActive(), is(true));
-    
+
     service.setLabel(testAccount, cernPersonIdLabel());
     service.setLabel(testAccount, cernIgnoreLabel());
-    
+
     handler.run();
-    
+
     testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
@@ -369,17 +450,16 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
     Optional<IamLabel> messageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
-    
+
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.OK.name()));
 
     assertThat(actionLabel.isPresent(), is(true));
-    assertThat(actionLabel.get().getValue(),
-        is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
+    assertThat(actionLabel.get().getValue(), is(CernHrLifecycleHandler.Action.NO_ACTION.name()));
 
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-    
+
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(IGNORE_MESSAGE));
   }
@@ -400,7 +480,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     accountPage = repo.findAll(pageRequest);
 
     for (IamAccount account : accountPage.getContent()) {
-      
+
       assertThat(account.isActive(), is(false));
       Optional<IamLabel> statusLabel =
           account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
@@ -418,8 +498,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
       assertThat(timestampLabel.isPresent(), is(true));
       assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-      
-      
+
     }
   }
 

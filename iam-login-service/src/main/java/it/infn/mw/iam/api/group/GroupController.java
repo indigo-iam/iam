@@ -86,7 +86,7 @@ public class GroupController {
   
   @RequestMapping(value = "/iam/group", method = POST)
   @ResponseStatus(value = HttpStatus.CREATED)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public GroupDTO createGroup(@RequestBody @Validated(CreateGroup.class) GroupDTO group, final BindingResult validationResult) {
     
     handleValidationError(INVALID_GROUP,validationResult);
@@ -97,7 +97,7 @@ public class GroupController {
   }
   
   @RequestMapping(value = "/iam/group/{id}", method = PUT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
   public GroupDTO updateGroup(@PathVariable String id, @RequestBody @Validated(UpdateGroup.class) GroupDTO group, final BindingResult validationResult) {
     handleValidationError(INVALID_GROUP, validationResult);
     
@@ -107,7 +107,7 @@ public class GroupController {
   }
   
   @RequestMapping(value = "/iam/group/{id}/attributes", method=RequestMethod.GET)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
   public List<AttributeDTO> getAttributes(@PathVariable String id){
     
     IamGroup entity = groupService.findByUuid(id).orElseThrow(()->NoSuchGroupError.forUuid(id));
@@ -119,7 +119,7 @@ public class GroupController {
   }
   
   @RequestMapping(value = "/iam/group/{id}/attributes", method= PUT)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute, final BindingResult validationResult) {
     handleValidationError(INVALID_ATTRIBUTE,validationResult);
     IamGroup entity = groupService.findByUuid(id).orElseThrow(()->NoSuchGroupError.forUuid(id));
@@ -130,7 +130,7 @@ public class GroupController {
   }
   
   @RequestMapping(value = "/iam/group/{id}/attributes", method=DELETE)
-  @PreAuthorize("#oauth2.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void deleteAttribute(@PathVariable String id, @Validated AttributeDTO attribute, final BindingResult validationResult) {
     handleValidationError(INVALID_ATTRIBUTE, validationResult);

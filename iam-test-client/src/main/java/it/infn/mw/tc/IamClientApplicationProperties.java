@@ -2,6 +2,7 @@ package it.infn.mw.tc;
 
 import java.util.List;
 
+import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ public class IamClientApplicationProperties {
     String clientSecret;
     List<String> redirectUris;
     String scope;
+    PKCEAlgorithm codeChallengeMethod;
 
     public String getClientId() {
       return clientId;
@@ -45,6 +47,14 @@ public class IamClientApplicationProperties {
 
     public void setScope(String scope) {
       this.scope = scope;
+    }
+
+    public PKCEAlgorithm getCodeChallengeMethod() {
+      return codeChallengeMethod;
+    }
+
+    public void setCodeChallengeMethod(PKCEAlgorithm codeChallengeMethod) {
+      this.codeChallengeMethod = codeChallengeMethod;
     }
   }
 

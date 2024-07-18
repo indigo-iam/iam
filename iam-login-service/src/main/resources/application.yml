@@ -90,13 +90,14 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: "ant-path-matcher"
+
 iam:
-  
   host: ${IAM_HOST:localhost}
   baseUrl: ${IAM_BASE_URL:http://${iam.host}:8080}
   issuer: ${IAM_ISSUER:http://${iam.host}:8080}
   topbarTitle: ${IAM_TOPBAR_TITLE:INDIGO IAM for ${iam.organisation.name}}
-  
+  showSql: ${IAM_DATABASE_SHOW_SQL:false}
+
   jwk:
     keystore-location: ${IAM_KEY_STORE_LOCATION:classpath:keystore.jwks}
     default-key-id: ${IAM_JWK_DEFAULT_KEY_ID:rsa1}
@@ -104,7 +105,7 @@ iam:
     default-jwe-encrypt-key-id: ${IAM_JWK_DEFAULT_JWE_ENCRYPT_KEY_ID:${iam.jwk.default-key-id}}
     default-jws-algorithm: ${IAM_JWK_DEFAULT_JWS_ALGORITHM:RS256}
     default-jwe-algorithm: ${IAM_JWT_DEFAULT_JWE_ALGORITHM:RSA_OAEP_256} 
-    
+
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}
   
@@ -152,6 +153,7 @@ iam:
     authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
+    add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
@@ -181,6 +183,10 @@ iam:
     
   account-linking:
     enable: ${IAM_ACCOUNT_LINKING_ENABLE:true}
+    
+  login-page-layout:
+    section-to-be-displayed-first: ${IAM_LOGIN_PAGE_LAYOUT_SECTION_TO_DISPLAY_FIRST:LOGIN_FORM}
+    external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
 redis-cache:
   enabled: ${IAM_REDIS_CACHE_ENABLED:false}
@@ -209,14 +215,19 @@ task:
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
+  wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
   client-defaults:
     default-access-token-validity-seconds: ${DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
-    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:108000}
+    default-device-code-validity-seconds: ${DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
+    default-id-token-validity-seconds: ${DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
+    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
 
+client:
+  track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:true}
 
 management:
   health:
@@ -270,3 +281,7 @@ lifecycle:
     expired-accounts-task:
       cron-schedule:  ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_CRON_SCHEDULE:0 */5 * * * *}
       enabled: ${IAM_LIFECYCLE_EXPIRED_ACCOUNT_TASK_ENABLED:true}
+
+scim:
+  include_authorities: ${IAM_SCIM_INCLUDE_AUTHORITIES:false}
+  include_managed_groups: ${IAM_SCIM_INCLUDE_MANAGED_GROUPS:false}

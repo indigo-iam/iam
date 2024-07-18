@@ -55,7 +55,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
     AccountLifecycleTests.TestConfig.class})
 @TestPropertySource(
     properties = {"lifecycle.account.expiredAccountPolicy.suspensionGracePeriodDays=7",
-        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30"})
+        "lifecycle.account.expiredAccountPolicy.removalGracePeriodDays=30",
+        "lifecycle.account.expiredAccountPolicy.removeExpiredAccounts=true"})
 public class AccountLifecycleTests extends TestSupport implements LifecycleTestSupport {
 
   @TestConfiguration
@@ -139,7 +140,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
 
     handler.handleExpiredAccounts();
 
-    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);;
+    Optional<IamAccount> account = repo.findByUuid(TEST_USER_UUID);
 
     assertThat(account.isPresent(), is(false));
   }
@@ -164,9 +165,9 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     Page<IamAccount> accountsPage = repo.findAll(PageRequest.of(0, 20));
 
     long touchedAccounts = 0;
-    
+
     if (accountsPage.hasContent()) {
-      for (IamAccount a: accountsPage.getContent()) {
+      for (IamAccount a : accountsPage.getContent()) {
         a.setEndTime(Date.from(THIRTY_ONE_DAYS_AGO));
         repo.save(a);
         touchedAccounts++;
@@ -174,7 +175,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     }
 
     assertThat(touchedAccounts, is(20L));
-    
+
     handler.handleExpiredAccounts();
 
     long accountAfter = repo.count();

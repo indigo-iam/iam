@@ -18,8 +18,8 @@ package it.infn.mw.iam.test.core;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -69,22 +70,43 @@ public class MeControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = TESTUSER_USERNAME, authorities = {})
+  @WithMockOAuthUser(user = TESTUSER_USERNAME, scopes = {})
   public void insufficientScopeUser() throws Exception {
 
     restUtils.getMe(FORBIDDEN);
   }
 
   @Test
-  @WithMockOAuthUser(user = NOT_FOUND_USERNAME, authorities = {"ROLE_USER"})
+  @WithMockUser(username = TESTUSER_USERNAME, roles = {})
+  public void insufficientAuthoritiesUser() throws Exception {
+
+    restUtils.getMe(FORBIDDEN);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = NOT_FOUND_USERNAME, scopes = {SCIM_READ_SCOPE})
+  public void notFoundUserWithToken() throws Exception {
+
+    restUtils.getMe(NOT_FOUND);
+  }
+
+  @Test
+  @WithMockUser(username = NOT_FOUND_USERNAME, roles = {"USER"})
   public void notFoundUser() throws Exception {
 
     restUtils.getMe(NOT_FOUND);
   }
 
   @Test
-  @WithMockOAuthUser(user = TESTUSER_USERNAME, authorities = {"ROLE_USER"})
-  public void authenticatedUser() throws Exception {
+  @WithMockOAuthUser(user = TESTUSER_USERNAME, scopes = {SCIM_READ_SCOPE})
+  public void authenticatedUserWithToken() throws Exception {
+
+    assertThat(restUtils.getMe().getUserName(), equalTo(TESTUSER_USERNAME));
+  }
+
+  @Test
+  @WithMockUser(username = TESTUSER_USERNAME, roles = {"USER"})
+  public void authenticatedUserNoToken() throws Exception {
 
     assertThat(restUtils.getMe().getUserName(), equalTo(TESTUSER_USERNAME));
   }

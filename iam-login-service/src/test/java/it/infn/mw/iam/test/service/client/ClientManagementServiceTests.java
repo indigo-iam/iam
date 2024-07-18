@@ -28,11 +28,15 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.text.ParseException;
+import java.time.Clock;
+import java.util.Date;
 
 import javax.validation.ConstraintViolationException;
 
@@ -85,6 +89,9 @@ public class ClientManagementServiceTests {
   @Autowired
   private IamAccountRepository accountRepo;
 
+  @Autowired
+  private Clock clock;
+
   private Authentication userAuth;
 
   private OAuth2Authentication ratAuth;
@@ -101,10 +108,10 @@ public class ClientManagementServiceTests {
     
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(16L));
+    assertThat(clients.getTotalResults(), is(19L));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
-    assertThat(clients.getResources().get(0).getClientId(), is("client"));
+    assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));
 
   }
 
@@ -401,4 +408,13 @@ public class ClientManagementServiceTests {
     }
   }
 
+  @Test
+  public void testClientStatusChange() {
+    managementService.updateClientStatus("client", false, "userUUID");
+    RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
+
+    assertFalse(client.isActive());
+    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals("userUUID", client.getStatusChangedBy());
+  }
 }

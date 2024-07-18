@@ -36,7 +36,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -49,6 +48,7 @@ import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
+import it.infn.mw.iam.api.client.error.ClientSuspended;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -61,7 +61,6 @@ import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy;
 import it.infn.mw.iam.core.IamTokenService;
@@ -83,8 +82,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   public static final String GRANT_TYPE_NOT_ALLOWED_ERROR_STR = "Grant type not allowed: %s";
 
-  private static final EnumSet<AuthorizationGrantType> PRIVILEGED_ALLOWED_GRANT_TYPES =
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER =
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS =
+      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS);
 
   private final Clock clock;
   private final ClientService clientService;
@@ -99,13 +100,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ApplicationEventPublisher eventPublisher;
 
 
-  @Autowired
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
       OIDCTokenService clientTokenService, IamTokenService tokenService,
       SystemScopeService scopeService, ClientRegistrationProperties registrationProperties,
-      IamProperties iamProperties, ScopeMatcherRegistry scopeMatcherRegistry,
-      ApplicationEventPublisher aep) {
+      ScopeMatcherRegistry scopeMatcherRegistry, ApplicationEventPublisher aep) {
 
     this.clock = clock;
     this.clientService = clientService;
@@ -140,25 +139,44 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   private void checkAllowedGrantTypes(RegisteredClientDTO request, Authentication authentication) {
 
-    if (!accountUtils.isAdmin(authentication)) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-        .stream()
-        .filter(PRIVILEGED_ALLOWED_GRANT_TYPES::contains)
-        .findFirst()
-        .ifPresent(this::throwGrantTypeNotAllowed);
+      .stream()
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
+    } else {
+      request.getGrantTypes()
+      .stream()
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
   private void checkAllowedGrantTypesOnUpdate(RegisteredClientDTO request,
       Authentication authentication, ClientDetailsEntity oldClient) {
 
-    if (!accountUtils.isAdmin(authentication)) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-        .stream()
-        .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-        .filter(PRIVILEGED_ALLOWED_GRANT_TYPES::contains)
-        .findFirst()
-        .ifPresent(this::throwGrantTypeNotAllowed);
+      .stream()
+      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
+    } else {
+      request.getGrantTypes()
+      .stream()
+      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+      .findFirst()
+      .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
@@ -303,6 +321,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return Optional.empty();
   }
 
+  private void checkUserUpdatingSuspendedClient(Authentication authentication, ClientDetailsEntity oldClient) {
+    if (accountUtils.isAdmin(authentication)) {
+      return;
+    }
+    if(!oldClient.isActive()){
+      throw new ClientSuspended("Client " + oldClient.getClientId() + " is suspended!");
+    }
+  }
+
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
@@ -313,6 +340,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity client = converter.entityFromRegistrationRequest(request);
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
+    client.setActive(true);
 
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
@@ -378,9 +406,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity oldClient =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
+    checkUserUpdatingSuspendedClient(authentication, oldClient);    
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
-
+       
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
     newClient.setClientSecret(oldClient.getClientSecret());
@@ -393,6 +422,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
+    newClient.setActive(oldClient.isActive());
 
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
@@ -404,8 +434,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
       response.setRegistrationAccessToken(t);
     });
-
-    return response;
+    return response;      
   }
 
   @Override
@@ -439,7 +468,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     final IamAccount account =
         accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
-    
+
     client = clientService.linkClientToAccount(client, account);
 
     eventPublisher.publishEvent(new AccountClientOwnerAssigned(this, account, client));

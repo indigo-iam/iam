@@ -1,430 +1,428 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <!-- Update this in sync with the spring-boot version below -->
-    <version>2.6.15</version>
-    <relativePath />
-    <!-- lookup parent from repository -->
-  </parent>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<!-- Update this in sync with the spring-boot version below -->
+		<version>2.6.15</version>
+		<relativePath />
+		<!-- lookup parent from repository -->
+	</parent>
 
-  <groupId>it.infn.mw.iam-parent</groupId>
-  <artifactId>iam-parent</artifactId>
-  <version>1.8.3</version>
-  <packaging>pom</packaging>
+	<groupId>it.infn.mw.iam-parent</groupId>
+	<artifactId>iam-parent</artifactId>
+	<version>1.10.0</version>
+	<packaging>pom</packaging>
 
-  <name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
+	<name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
 
-  <modules>
-    <module>iam-common</module>
-    <module>iam-persistence</module>
-    <module>iam-voms-aa</module>
-    <module>iam-login-service</module>
-    <module>iam-test-client</module>
-  </modules>
+	<modules>
+		<module>iam-common</module>
+		<module>iam-persistence</module>
+		<module>iam-voms-aa</module>
+		<module>iam-login-service</module>
+		<module>iam-test-client</module>
+	</modules>
 
-  <distributionManagement>
-    <repository>
-      <id>cnaf-releases</id>
-      <name>CNAF releases</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
-    </repository>
+	<distributionManagement>
+		<repository>
+			<id>cnaf-releases</id>
+			<name>CNAF releases</name>
+			<url>https://repo.cloud.cnaf.infn.it/repository/cnaf-releases/</url>
+		</repository>
 
-    <snapshotRepository>
-      <id>cnaf-snapshots</id>
-      <name>CNAF snapshots</name>
-      <url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
+		<snapshotRepository>
+			<id>cnaf-snapshots</id>
+			<name>CNAF snapshots</name>
+			<url>https://repo.cloud.cnaf.infn.it/repository/cnaf-snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 
-  <properties>
-    <iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
-    
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+	<properties>
+		<iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
 
-    <java.version>17</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <testcontainers.version>1.16.2</testcontainers.version>
+		<java.version>17</java.version>
 
-    <mitreid.version>1.3.6.cnaf-20230914</mitreid.version>
-    <spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
+		<testcontainers.version>1.16.2</testcontainers.version>
 
-    <voms.version>3.3.2</voms.version>
-    <spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
+		<mitreid.version>1.3.6.cnaf-20240604</mitreid.version>
+		<spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
-    <!-- Update this in sync with the parent project version -->
-    <spring-boot.version>2.6.15</spring-boot.version>
+		<voms.version>3.3.2</voms.version>
+		<spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
-    <angularjs.version>1.6.1</angularjs.version>
-    <angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
-    <angular-ui-router.version>1.0.20</angular-ui-router.version>
-    <angular-ui-select.version>0.19.8</angular-ui-select.version>
-    <angular-sanitize.version>1.3.11</angular-sanitize.version>
-    <font-awesome.version>4.7.0</font-awesome.version>
-    <jquery.version>3.6.0</jquery.version>
-    <bootstrap.version>3.4.1</bootstrap.version>
-    <jquery-ui.version>1.13.2</jquery-ui.version>
+		<!-- Update this in sync with the parent project version -->
+		<spring-boot.version>2.6.15</spring-boot.version>
 
-    <rest-assured.version>4.4.0</rest-assured.version>
-    <json-path.version>2.2.0</json-path.version>
+		<angularjs.version>1.6.1</angularjs.version>
+		<angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
+		<angular-ui-router.version>1.0.20</angular-ui-router.version>
+		<angular-ui-select.version>0.19.8</angular-ui-select.version>
+		<angular-sanitize.version>1.3.11</angular-sanitize.version>
+		<font-awesome.version>4.7.0</font-awesome.version>
+		<jquery.version>3.6.0</jquery.version>
+		<bootstrap.version>3.4.1</bootstrap.version>
+		<jquery-ui.version>1.13.2</jquery-ui.version>
 
-    <flyway.version>7.15.0</flyway.version>
+		<rest-assured.version>4.4.0</rest-assured.version>
+		<json-path.version>2.9.0</json-path.version>
 
-    <license-maven-plugin.version>3.0</license-maven-plugin.version>
-    <jacoco-plugin.version>0.8.7</jacoco-plugin.version>
-    <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
+		<flyway.version>7.15.0</flyway.version>
 
-
-    <jsr250-api.version>1.0</jsr250-api.version>
-    <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
-    <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
-
-    <resource.delimiter>@</resource.delimiter>
-
-    <jvm.test.args>-Xmx2500m</jvm.test.args>
-    <sonar.coverage.exclusions>iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*,iam-common/**</sonar.coverage.exclusions>
-  </properties>
-
-  <dependencyManagement>
-    <dependencies>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
-        <version>${testcontainers.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${testcontainers.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>mysql</artifactId>
-        <version>${testcontainers.version}</version>
-        <scope>runtime</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>mariadb</artifactId>
-        <version>${testcontainers.version}</version>
-        <scope>runtime</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.security.oauth</groupId>
-        <artifactId>spring-security-oauth2</artifactId>
-        <version>${spring-security-oauth2.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>angularjs</artifactId>
-        <version>${angularjs.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars.npm</groupId>
-        <artifactId>angular-ui-bootstrap</artifactId>
-        <version>${angular-ui-bootstrap.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>angular-ui-router</artifactId>
-        <version>${angular-ui-router.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>angular-sanitize</artifactId>
-        <version>${angular-sanitize.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>angular-ui-select</artifactId>
-        <version>${angular-ui-select.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>jquery</artifactId>
-        <version>${jquery.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>jquery-ui</artifactId>
-        <version>${jquery-ui.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>bootstrap</artifactId>
-        <version>${bootstrap.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.webjars</groupId>
-        <artifactId>font-awesome</artifactId>
-        <version>${font-awesome.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.italiangrid</groupId>
-        <artifactId>voms-api-java</artifactId>
-        <version>${voms.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.italiangrid</groupId>
-        <artifactId>voms-clients</artifactId>
-        <version>${voms.version}</version>
-      </dependency>
-
-      <!-- Mitre -->
-      <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-common</artifactId>
-        <version>${mitreid.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-server</artifactId>
-        <version>${mitreid.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mitre</groupId>
-        <artifactId>openid-connect-client</artifactId>
-        <version>${mitreid.version}</version>
-      </dependency>
-
-    
-
-      <!-- SAML -->
-
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk18on</artifactId>
-        <version>1.75</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk18on</artifactId>
-        <version>1.75</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcutil-jdk18on</artifactId>
-        <version>1.75</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.jayway.jsonpath</groupId>
-        <artifactId>json-path</artifactId>
-        <version>${json-path.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.rest-assured</groupId>
-        <artifactId>rest-assured</artifactId>
-        <version>${rest-assured.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.security.extensions</groupId>
-        <artifactId>spring-security-saml2-core</artifactId>
-        <version>${spring-security-saml.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-core</artifactId>
-        <version>${flyway.version}</version>
-      </dependency>
-      
-      <!-- JSR APIs (for Java 11 compatibility) -->
-      <dependency>
-        <groupId>javax.annotation</groupId>
-        <artifactId>jsr250-api</artifactId>
-        <version>${jsr250-api.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind-api.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${jaxb-runtime.version}</version>
-      </dependency>
-
-    </dependencies>
-
-  </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <id>infn-cnaf</id>
-      <url>https://repo.cloud.cnaf.infn.it/repository/maven-public/</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${license-maven-plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>com.google.cloud.tools</groupId>
-          <artifactId>jib-maven-plugin</artifactId>
-          <version>${jib-maven-plugin.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-maven</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>17</version>
-                </requireJavaVersion>
-                <requireMavenVersion>
-                  <version>3.6.0</version>
-                </requireMavenVersion>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <version>2.9</version>
-        <configuration>
-          <useProjectReferences>false</useProjectReferences>
-          <downloadSources>true</downloadSources>
-          <downloadJavadocs>true</downloadJavadocs>
-        </configuration>
-      </plugin>
+		<license-maven-plugin.version>3.0</license-maven-plugin.version>
+		<jacoco-plugin.version>0.8.7</jacoco-plugin.version>
+		<jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
 
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <failOnMissingWebXml>false</failOnMissingWebXml>
-          <archive>
-            <manifest>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
+		<jsr250-api.version>1.0</jsr250-api.version>
+		<jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
+		<jaxb-runtime.version>2.3.2</jaxb-runtime.version>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <runOrder>alphabetical</runOrder>
-          <useSystemClassLoader>false</useSystemClassLoader>
-          <includes>
-            <include>**/*Tests.java</include>
-          </includes>
-          <excludes>
-            <exclude>**/Abstract*.java</exclude>
-          </excludes>
-          <systemPropertyVariables>
-            <java.security.egd>file:/dev/./urandom</java.security.egd>
-            <java.awt.headless>true</java.awt.headless>
-          </systemPropertyVariables>
-          <argLine>${jvm.test.args}</argLine>
-        </configuration>
-      </plugin>
+		<bouncycastle.version>1.58</bouncycastle.version>
 
-      <plugin>
-        <groupId>pl.project13.maven</groupId>
-        <artifactId>git-commit-id-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <verbose>false</verbose>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-        </configuration>
-      </plugin>
+		<resource.delimiter>@</resource.delimiter>
 
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>${jacoco-plugin.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+		<jvm.test.args>-Xmx2500m</jvm.test.args>
+		<sonar.coverage.exclusions>
+			iam-persistence/**/*,iam-test-client/**/*,iam-test-protected-resource/**/*,iam-common/**</sonar.coverage.exclusions>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>test</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>mysql</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>runtime</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>mariadb</artifactId>
+				<version>${testcontainers.version}</version>
+				<scope>runtime</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.security.oauth</groupId>
+				<artifactId>spring-security-oauth2</artifactId>
+				<version>${spring-security-oauth2.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>angularjs</artifactId>
+				<version>${angularjs.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars.npm</groupId>
+				<artifactId>angular-ui-bootstrap</artifactId>
+				<version>${angular-ui-bootstrap.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>angular-ui-router</artifactId>
+				<version>${angular-ui-router.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>angular-sanitize</artifactId>
+				<version>${angular-sanitize.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>angular-ui-select</artifactId>
+				<version>${angular-ui-select.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>jquery</artifactId>
+				<version>${jquery.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>jquery-ui</artifactId>
+				<version>${jquery-ui.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>bootstrap</artifactId>
+				<version>${bootstrap.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars</groupId>
+				<artifactId>font-awesome</artifactId>
+				<version>${font-awesome.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.italiangrid</groupId>
+				<artifactId>voms-api-java</artifactId>
+				<version>${voms.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.italiangrid</groupId>
+				<artifactId>voms-clients</artifactId>
+				<version>${voms.version}</version>
+			</dependency>
+
+			<!-- Mitre -->
+			<dependency>
+				<groupId>org.mitre</groupId>
+				<artifactId>openid-connect-common</artifactId>
+				<version>${mitreid.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.mitre</groupId>
+				<artifactId>openid-connect-server</artifactId>
+				<version>${mitreid.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.mitre</groupId>
+				<artifactId>openid-connect-client</artifactId>
+				<version>${mitreid.version}</version>
+			</dependency>
+
+			<!-- SAML -->
+
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk15on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk15on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.jayway.jsonpath</groupId>
+				<artifactId>json-path</artifactId>
+				<version>${json-path.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>io.rest-assured</groupId>
+				<artifactId>rest-assured</artifactId>
+				<version>${rest-assured.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.security.extensions</groupId>
+				<artifactId>spring-security-saml2-core</artifactId>
+				<version>${spring-security-saml.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-core</artifactId>
+				<version>${flyway.version}</version>
+			</dependency>
+
+			<!-- JSR APIs (for Java 11 compatibility) -->
+			<dependency>
+				<groupId>javax.annotation</groupId>
+				<artifactId>jsr250-api</artifactId>
+				<version>${jsr250-api.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>jakarta.xml.bind</groupId>
+				<artifactId>jakarta.xml.bind-api</artifactId>
+				<version>${jakarta.xml.bind-api.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.glassfish.jaxb</groupId>
+				<artifactId>jaxb-runtime</artifactId>
+				<version>${jaxb-runtime.version}</version>
+			</dependency>
+
+		</dependencies>
+
+	</dependencyManagement>
+
+	<repositories>
+		<repository>
+			<id>infn-cnaf</id>
+			<url>https://repo.cloud.cnaf.infn.it/repository/maven-public/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>com.mycila</groupId>
+					<artifactId>license-maven-plugin</artifactId>
+					<version>${license-maven-plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>com.google.cloud.tools</groupId>
+					<artifactId>jib-maven-plugin</artifactId>
+					<version>${jib-maven-plugin.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-maven</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>17</version>
+								</requireJavaVersion>
+								<requireMavenVersion>
+									<version>3.6.0</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<useProjectReferences>false</useProjectReferences>
+					<downloadSources>true</downloadSources>
+					<downloadJavadocs>true</downloadJavadocs>
+				</configuration>
+			</plugin>
+
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<failOnMissingWebXml>false</failOnMissingWebXml>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<runOrder>alphabetical</runOrder>
+					<useSystemClassLoader>false</useSystemClassLoader>
+					<includes>
+						<include>**/*Tests.java</include>
+					</includes>
+					<excludes>
+						<exclude>**/Abstract*.java</exclude>
+					</excludes>
+					<systemPropertyVariables>
+						<java.security.egd>file:/dev/./urandom</java.security.egd>
+						<java.awt.headless>true</java.awt.headless>
+					</systemPropertyVariables>
+					<argLine>${jvm.test.args}</argLine>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<verbose>false</verbose>
+					<failOnNoGitDirectory>false</failOnNoGitDirectory>
+					<dateFormat>yyyy-MM-dd'T'HH:mm:ssZ</dateFormat>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<generateGitPropertiesFilename>
+						${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco-plugin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

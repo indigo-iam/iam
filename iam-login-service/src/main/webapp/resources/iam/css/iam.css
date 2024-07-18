@@ -66,7 +66,7 @@
 }
 
 #login-form {
-    padding-top: 1em;
+    padding-top: 2em;
     margin: 0 auto;
     max-width: 250px;
 }
@@ -684,3 +684,6 @@ body.skin-blue {
     border-bottom-right-radius: 5px;
 }
 
+.container-spacer {
+    padding-top: 1em !important;
+}
