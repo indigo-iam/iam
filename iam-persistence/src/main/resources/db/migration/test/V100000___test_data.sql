@@ -145,7 +145,8 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (3, 'http://localhost:4000/callback'),
   (4, 'http://localhost:5000/callback'),
   (11, 'http://localhost:1234/callback'),
-  (13, 'http://localhost:9876/implicit');
+  (13, 'http://localhost:9876/implicit'),
+  (18, 'https://iam.local.io/iam-test-client/openid_connect_login');
 
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
@@ -188,6 +189,7 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (19, 'client_credentials');
 
 INSERT INTO client_contact (owner_id, contact) VALUES
+  (1, 'admin@example.com'),
   (12, 'test@example.com');
     
 INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
