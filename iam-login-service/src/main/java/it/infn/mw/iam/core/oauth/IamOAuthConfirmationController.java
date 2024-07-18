@@ -185,6 +185,12 @@ public class IamOAuthConfirmationController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
 
+    if (!account.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+        && scopeService.toStrings(scopes).stream().anyMatch(s -> s.startsWith("iam"))) {
+      throw new AdminScopeNotAllowedException(
+          "Clients approved by regular users are not permitted to have admin scopes");
+    }
+
     Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
 
     // sort scopes for display based on the inherent order of system scopes
@@ -239,7 +245,8 @@ public class IamOAuthConfirmationController {
     // warning
     // instead, tag as "Generally Recognized As Safe" (gras)
     Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression = count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
+    Boolean expression =
+        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
 
     return "iam/approveClient";
