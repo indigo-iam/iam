@@ -206,7 +206,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("New membership request for group %s", groupName);
+    String subject = String.format("[%s IAM] New membership request for group %s", organisationName, groupName);
 
     LOG.debug("Create group membership admin notification for request {}", groupRequest.getUuid());
     return createMessage("adminHandleGroupRequest.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
@@ -227,7 +227,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
-        String.format("Membership request for group %s has been %s", groupName, status);
+        String.format("[%s IAM] Membership request for group %s has been %s", organisationName, groupName, status);
 
     IamEmailNotification notification =
         createMessage("groupMembershipApproved.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
@@ -251,7 +251,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
-        String.format("Membership request for group %s has been %s", groupName, status);
+        String.format("[%s IAM] Membership request for group %s has been %s", organisationName, groupName, status);
 
     IamEmailNotification notification =
         createMessage("groupMembershipRejected.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
