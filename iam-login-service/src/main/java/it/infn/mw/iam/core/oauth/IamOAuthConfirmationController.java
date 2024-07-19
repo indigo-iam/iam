@@ -62,7 +62,6 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.api.client.service.ClientService;
 
 /**
  * @author jricher
