@@ -139,6 +139,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     addUpdater(updaters, Objects::nonNull, user::getUserName, add::username);
     addUpdater(updaters, Objects::nonNull, user::getPassword, add::password);
     addUpdater(updaters, Objects::nonNull, user::getActive, add::active);
+    //addUpdater(updaters, Objects::nonNull, user::getServiceAccount, add::serviceAccount);
 
     if (user.hasEmails()) {
       addUpdater(updaters, Objects::nonNull, user.getEmails().get(0)::getValue, add::email);
@@ -207,6 +208,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     addUpdater(updaters, Objects::nonNull, user::getUserName, replace::username);
     addUpdater(updaters, Objects::nonNull, user::getPassword, replace::password);
     addUpdater(updaters, Objects::nonNull, user::getActive, replace::active);
+    addUpdater(updaters, Objects::nonNull, user::getServiceAccount, replace::serviceAccount);
 
     if (user.hasEmails()) {
       addUpdater(updaters, Objects::nonNull, user.getEmails().get(0)::getValue, replace::email);
