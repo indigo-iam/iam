@@ -54,6 +54,7 @@ import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -81,11 +82,13 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private ApplicationEventPublisher eventPublisher;
   private final OAuth2TokenEntityService tokenService;
   private final IamAccountClientRepository accountClientRepo;
+  private final NotificationFactory notificationFactory;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo) {
+      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      NotificationFactory notificationFactory) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -95,6 +98,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.eventPublisher = eventPublisher;
     this.tokenService = tokenService;
     this.accountClientRepo = accountClientRepo;
+    this.notificationFactory = notificationFactory;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -403,6 +407,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));
+    notificationFactory.createAccountSuspendedMessage(account);
     return account;
   }
 
@@ -412,6 +417,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
+    notificationFactory.createAccountRestoredMessage(account);
     return account;
   }
 

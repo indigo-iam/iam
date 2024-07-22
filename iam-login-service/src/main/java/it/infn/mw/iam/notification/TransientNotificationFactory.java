@@ -18,7 +18,9 @@ package it.infn.mw.iam.notification;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import com.google.common.collect.Lists;
+
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -44,6 +48,7 @@ import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
@@ -57,6 +62,8 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String USERNAME_FIELD = "username";
   private static final String GROUPNAME_FIELD = "groupName";
   private static final String MOTIVATION_FIELD = "motivation";
+  private static final String AUP_PATH = "%s/iam/aup/sign";
+  private static final String AUP_URL = "aupUrl";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -271,7 +278,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       recipients.add(a.getUserInfo().getEmail());
     }
 
-    List<String> emails = new ArrayList<>(recipients);
+    List<String> emails = Lists.newArrayList(recipients);
 
     if (emails.isEmpty()) {
       LOG.warn("No email to send notification to for client {}", client.getClientId());
@@ -284,6 +291,119 @@ public class TransientNotificationFactory implements NotificationFactory {
     LOG.debug("Updated client status. Client id {}, active {}", client.getClientId(),
         client.isActive());
     return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup) {
+    String recipient = account.getUserInfo().getName();
+    String aupUrl = String.format(AUP_PATH, baseUrl);
+
+    LocalDate now = LocalDate.now();
+    long signatureValidityInDays = aup.getSignatureValidityInDays();
+    LocalDate signatureTime = account.getAupSignature()
+      .getSignatureTime()
+      .toInstant()
+      .atZone(ZoneId.systemDefault())
+      .toLocalDate();
+    LocalDate signatureValidTime = signatureTime.plusDays(signatureValidityInDays);
+    long missingDays = ChronoUnit.DAYS.between(now, signatureValidTime);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(AUP_URL, aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("missingDays", missingDays);
+
+    String subject = "AUP signature reminder";
+
+    IamEmailNotification notification = createMessage("signAupReminder.ftl", model,
+        IamNotificationType.AUP_REMINDER, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created reminder message for signing the account {} AUP. Signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAupSignatureExpMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+    String aupUrl = String.format(AUP_PATH, baseUrl);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(AUP_URL, aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "AUP signature expiration";
+
+    IamEmailNotification notification = createMessage("aupExpirationMessage.ftl", model,
+        IamNotificationType.AUP_EXPIRATION, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created AUP expiration message for the account {}. AUP signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+
+  }
+
+  @Override
+  public IamEmailNotification createAupSignatureRequestMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+    String aupUrl = String.format(AUP_PATH, baseUrl);
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(AUP_URL, aupUrl);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "AUP signature request";
+
+    IamEmailNotification notification =
+        createMessage("aupSignatureRequest.ftl", model, IamNotificationType.AUP_SIGNATURE_REQUEST,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created AUP signature request message for the account {}. AUP signing URL: {}",
+        account.getUuid(), aupUrl);
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAccountSuspendedMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account suspended";
+
+    IamEmailNotification notification = createMessage("accountSuspended.ftl", model,
+        IamNotificationType.ACCOUNT_SUSPENDED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created suspension message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createAccountRestoredMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account restored";
+
+    IamEmailNotification notification = createMessage("accountRestored.ftl", model,
+        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created restoration message for the account {}", account.getUuid());
+
+    return notification;
+
   }
 
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,

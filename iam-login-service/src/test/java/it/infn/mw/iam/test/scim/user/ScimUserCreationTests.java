@@ -494,7 +494,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     final String AUP_DESCRIPTION = "Test AUP";
     final Date currentDate = new Date();
 
-    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate);
+    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate, "30,15,1");
     aupService.saveAup(aup);
 
     Calendar cal = Calendar.getInstance();
