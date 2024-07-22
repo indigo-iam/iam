@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.audit.events.aup;
 
-import static java.lang.String.format;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
@@ -34,11 +32,23 @@ public class AupSignatureDeletedEvent extends IamAuditApplicationEvent {
   @JsonSerialize(using = IamAupSignatureSerializer.class)
   final IamAupSignature signature;
 
-  public AupSignatureDeletedEvent(Object source, String actor, IamAupSignature signature) {
-    super(IamEventCategory.AUP, source,
-        format("Administrator %s requested AUP signature to the user %s", actor,
-            signature.getAccount().getUsername()));
+  public AupSignatureDeletedEvent(Object source, String message, IamAupSignature signature) {
+    super(IamEventCategory.AUP, source, message);
     this.signature = signature;
+  }
+
+  public static AupSignatureDeletedEvent deletedByClient(Object source, String clientId,
+      IamAupSignature signature) {
+    String message = String.format("Client %s deleted the AUP signature of %s user", clientId,
+        signature.getAccount().getUsername());
+    return new AupSignatureDeletedEvent(source, message, signature);
+  }
+
+  public static AupSignatureDeletedEvent deletedByUser(Object source, String userId,
+      IamAupSignature signature) {
+    String message = String.format("User %s deleted the AUP signature of %s user", userId,
+        signature.getAccount().getUsername());
+    return new AupSignatureDeletedEvent(source, message, signature);
   }
 
 }

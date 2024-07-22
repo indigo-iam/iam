@@ -55,6 +55,7 @@ import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -215,6 +216,38 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   }
 
   @Test
+  @WithMockOAuthUser(scopes = "iam:admin.write", clientId = "client-cred")
+  public void signatureOnBehalfWithClientCredentialsWorks() throws Exception, NoSuchElementException {
+
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    Optional<IamAupSignature> signature =
+        aupSignatureRepo.findSignatureForAccount(aup, testAccount);
+    assertThat(signature.isEmpty(), equalTo(true));
+
+    AupSignatureDTO dto = new AupSignatureDTO();
+    dto.setAup(aupConverter.dtoFromEntity(aup));
+    AccountDTO accountDto = new AccountDTO();
+    accountDto.setName(testAccount.getUserInfo().getName());
+    accountDto.setUsername(testAccount.getUsername());
+    accountDto.setUuid(testAccount.getUuid());
+    dto.setAccount(accountDto);
+    dto.setSignatureTime(new Date());
+
+    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
+      .content(mapper.writeValueAsString(dto))
+      .contentType(APPLICATION_JSON)).andExpect(status().isCreated());
+
+    assertThat(aupSignatureRepo.findSignatureForAccount(aup, testAccount).isEmpty(),
+        equalTo(false));
+
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupRemovalForSingleUser() throws Exception {
     IamAup aup = buildDefaultAup();
@@ -237,6 +270,36 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
     mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
+
+  }
+
+  @Test
+  @WithMockOAuthUser(scopes = "iam:admin.write", clientId = "client-cred")
+  public void aupRemovalForSingleUserWithClientCredentialsWorks() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    Optional<IamAupSignature> signature =
+        aupSignatureRepo.findSignatureForAccount(aup, testAccount);
+    assertThat(signature.isEmpty(), equalTo(true));
+
+    AupSignatureDTO dto = new AupSignatureDTO();
+    dto.setAup(aupConverter.dtoFromEntity(aup));
+    AccountDTO accountDto = new AccountDTO();
+    accountDto.setName(testAccount.getUserInfo().getName());
+    accountDto.setUsername(testAccount.getUsername());
+    accountDto.setUuid(testAccount.getUuid());
+    dto.setAccount(accountDto);
+    dto.setSignatureTime(new Date());
+
+    mvc.perform(patch("/iam/aup/signature/{accountId}", testAccount.getUuid())
+      .content(mapper.writeValueAsString(dto))
+      .contentType(APPLICATION_JSON)).andExpect(status().isCreated());
+    mvc.perform(delete("/iam/aup/signature/" + testAccount.getUuid()))
+      .andExpect(status().isNoContent());
 
   }
 
