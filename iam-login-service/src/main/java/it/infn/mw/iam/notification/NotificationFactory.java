@@ -21,6 +21,7 @@ import java.util.Optional;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
@@ -31,7 +32,8 @@ public interface NotificationFactory {
 
   IamEmailNotification createAccountActivatedMessage(IamRegistrationRequest request);
 
-  IamEmailNotification createRequestRejectedMessage(IamRegistrationRequest request, Optional<String> motivation);
+  IamEmailNotification createRequestRejectedMessage(IamRegistrationRequest request,
+      Optional<String> motivation);
 
   IamEmailNotification createAdminHandleRequestMessage(IamRegistrationRequest request);
 
@@ -46,4 +48,13 @@ public interface NotificationFactory {
   IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
       List<IamAccount> accounts);
 
+  IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup);
+
+  IamEmailNotification createAupSignatureExpMessage(IamAccount account);
+
+  IamEmailNotification createAupSignatureRequestMessage(IamAccount account);
+
+  IamEmailNotification createAccountSuspendedMessage(IamAccount account);
+
+  IamEmailNotification createAccountRestoredMessage(IamAccount account);
 }

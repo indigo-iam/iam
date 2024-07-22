@@ -65,6 +65,7 @@ import it.infn.mw.iam.audit.events.account.AccountReplacedEvent;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -84,6 +85,7 @@ public class ScimUserProvisioning
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
+  private final NotificationFactory notificationFactory;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -91,12 +93,13 @@ public class ScimUserProvisioning
       OAuth2TokenEntityService tokenService, IamAccountRepository accountRepository,
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
-      X509CertificateConverter x509CertificateConverter,
-      UsernameValidator usernameValidator) {
+      X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
+      NotificationFactory notificationFactory) {
 
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
+    this.notificationFactory = notificationFactory;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
         x509CertificateConverter, usernameValidator);
@@ -266,8 +269,19 @@ public class ScimUserProvisioning
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
         u.publishUpdateEvent(this, eventPublisher);
+        handleSpecificUpdateType(account, u);
       }
 
+    }
+  }
+
+  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u) {
+    if (ACCOUNT_REPLACE_ACTIVE.equals(u.getType())) {
+      if (account.isActive()) {
+        notificationFactory.createAccountRestoredMessage(account);
+      } else {
+        notificationFactory.createAccountSuspendedMessage(account);
+      }
     }
   }
 
