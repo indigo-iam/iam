@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import java.util.Map;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
@@ -52,31 +50,13 @@ public class IamUserApprovalHandler extends TofuUserApprovalHandler {
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(request.getClientId());
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));;
+      .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));
 
-    if (client.getClientName().startsWith("oidc-agent")) {
+    if (client.getClientName().startsWith("oidc-agent:")) {
       clientService.linkClientToAccount(client, account);
     }
 
     return request;
-  }
-
-  @Override
-  public boolean isApproved(AuthorizationRequest authorizationRequest,
-      Authentication userAuthentication) {
-    return super.isApproved(authorizationRequest, userAuthentication);
-  }
-
-  @Override
-  public AuthorizationRequest checkForPreApproval(AuthorizationRequest authorizationRequest,
-      Authentication userAuthentication) {
-    return super.checkForPreApproval(authorizationRequest, userAuthentication);
-  }
-
-  @Override
-  public Map<String, Object> getUserApprovalRequest(AuthorizationRequest authorizationRequest,
-      Authentication userAuthentication) {
-    return super.getUserApprovalRequest(authorizationRequest, userAuthentication);
   }
 
 }
