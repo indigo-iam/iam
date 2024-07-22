@@ -26,6 +26,8 @@ import javax.security.auth.login.AccountNotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,12 +54,14 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 
+@SuppressWarnings("deprecation")
 @RestController
 @Transactional
 public class AupSignatureController {
 
   private static final String ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE = "Account not found for id: %s";
-  private static final String ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE = "Account not found for authenticated user";
+  private static final String ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE =
+      "Account not found for authenticated user";
 
   private final AupSignatureConverter signatureConverter;
   private final AccountUtils accountUtils;
@@ -108,7 +112,7 @@ public class AupSignatureController {
   public AupSignatureDTO getSignature() throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
+      .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
 
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
     IamAupSignature sig =
@@ -118,7 +122,8 @@ public class AupSignatureController {
 
   @GetMapping(value = "/iam/aup/signature/{accountId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
-  public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
+  public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId)
+      throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
@@ -133,10 +138,10 @@ public class AupSignatureController {
   @PatchMapping(value = "/iam/aup/signature/{accountId}")
   @ResponseStatus(value = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
+  public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId,
+      Authentication authentication) throws AccountNotFoundException {
 
-    IamAccount updaterAccount = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
+    Optional<IamAccount> updaterAccount = accountUtils.getAuthenticatedUserAccount();
 
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
@@ -144,7 +149,18 @@ public class AupSignatureController {
     Date now = new Date(timeProvider.currentTimeMillis());
 
     IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
-    eventPublisher.publishEvent(new AupSignedOnBehalfEvent(this, signature, updaterAccount.getUsername()));
+
+    String principal = null;
+
+    if (updaterAccount.isPresent()) {
+      principal = updaterAccount.get().getUsername();
+      eventPublisher.publishEvent(AupSignedOnBehalfEvent.signedByUser(this, principal, signature));
+    } else if (authentication instanceof OAuth2Authentication) {
+      OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
+      principal = oauth2Auth.getOAuth2Request().getClientId();
+      eventPublisher
+        .publishEvent(AupSignedOnBehalfEvent.signedByClient(this, principal, signature));
+    }
 
     return signatureConverter.dtoFromEntity(signature);
   }
@@ -152,10 +168,10 @@ public class AupSignatureController {
   @DeleteMapping(value = "/iam/aup/signature/{accountId}")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void deleteSignatureForAccount(@PathVariable String accountId) throws AccountNotFoundException {
+  public void deleteSignatureForAccount(@PathVariable String accountId,
+      Authentication authentication) throws AccountNotFoundException {
 
-    IamAccount deleterAccount = accountUtils.getAuthenticatedUserAccount()
-        .orElseThrow(accountNotFoundException(ACCOUNT_NOT_FOUND_FOR_AUTHENTICATED_USER_MESSAGE));
+    Optional<IamAccount> deleterAccount = accountUtils.getAuthenticatedUserAccount();
     IamAccount signatureAccount = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
 
@@ -166,7 +182,19 @@ public class AupSignatureController {
 
     if (signature.isPresent()) {
       signatureRepo.deleteSignatureForAccount(aup, signatureAccount);
-      eventPublisher.publishEvent(new AupSignatureDeletedEvent(this, deleterAccount.getUsername(), signature.get()));
+
+      String principal = null;
+
+      if (deleterAccount.isPresent()) {
+        principal = deleterAccount.get().getUsername();
+        eventPublisher
+          .publishEvent(AupSignatureDeletedEvent.deletedByUser(this, principal, signature.get()));
+      } else if (authentication instanceof OAuth2Authentication) {
+        OAuth2Authentication oauth2Auth = (OAuth2Authentication) authentication;
+        principal = oauth2Auth.getOAuth2Request().getClientId();
+        eventPublisher
+          .publishEvent(AupSignatureDeletedEvent.deletedByClient(this, principal, signature.get()));
+      }
     }
   }
 
