@@ -192,6 +192,7 @@ public class RefreshTokenGranterTests {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     client.setActive(false);
+    clientService.updateClient(client);
 
     // @formatter:off
     mvc.perform(post("/token")
@@ -204,6 +205,7 @@ public class RefreshTokenGranterTests {
     // @formatter:on
 
     client.setActive(true);
+    clientService.updateClient(client);
   }
 
 }
