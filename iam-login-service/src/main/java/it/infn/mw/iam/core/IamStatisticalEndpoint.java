@@ -15,6 +15,21 @@
  */
 package it.infn.mw.iam.core;
 
-public enum IamNotificationType {
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION, AUP_SIGNATURE_REQUEST, ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, CLIENT_STATUS
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+
+@RestController
+public class IamStatisticalEndpoint {
+
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @GetMapping("/stats")
+  public StatsEndpointResponse getStats() {
+    long count = accountRepo.count();
+    return new StatsEndpointResponse(count);
+  }
 }
