@@ -272,7 +272,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("isClientActive", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "Changed client status";
+    String subject = String.format("[%s IAM] Changed client status", organisationName);
 
     for (IamAccount a : accounts) {
       recipients.add(a.getUserInfo().getEmail());
@@ -314,7 +314,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
     model.put("missingDays", missingDays);
 
-    String subject = "AUP signature reminder";
+    String subject = String.format("[%s IAM] AUP signature reminder", organisationName);
 
     IamEmailNotification notification = createMessage("signAupReminder.ftl", model,
         IamNotificationType.AUP_REMINDER, subject, asList(account.getUserInfo().getEmail()));
@@ -335,7 +335,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "AUP signature expiration";
+    String subject = String.format("[%s IAM] AUP signature expiration", organisationName);
 
     IamEmailNotification notification = createMessage("aupExpirationMessage.ftl", model,
         IamNotificationType.AUP_EXPIRATION, subject, asList(account.getUserInfo().getEmail()));
@@ -357,7 +357,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "AUP signature request";
+    String subject = String.format("[%s IAM] AUP signature request", organisationName);
 
     IamEmailNotification notification =
         createMessage("aupSignatureRequest.ftl", model, IamNotificationType.AUP_SIGNATURE_REQUEST,
@@ -377,7 +377,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "Account suspended";
+    String subject = String.format("[%s IAM] Account suspended", organisationName);
 
     IamEmailNotification notification = createMessage("accountSuspended.ftl", model,
         IamNotificationType.ACCOUNT_SUSPENDED, subject, asList(account.getUserInfo().getEmail()));
@@ -395,7 +395,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "Account restored";
+    String subject = String.format("[%s IAM] Account restored", organisationName);
 
     IamEmailNotification notification = createMessage("accountRestored.ftl", model,
         IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
