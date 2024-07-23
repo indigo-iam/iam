@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
@@ -192,7 +193,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   private void addToDefaultGroups(IamAccount account) {
     List<DefaultGroup> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
-    if (defaultGroups != null) {
+    if (Objects.nonNull(defaultGroups)) {
       defaultGroups.forEach(group -> {
         if ("INSERT".equalsIgnoreCase(group.getEnrollment())) {
           iamGroupService.findByName(group.getName()).ifPresent(iamGroup -> addToGroup(account, iamGroup));
