@@ -47,13 +47,15 @@ public class IamUserApprovalHandler extends TofuUserApprovalHandler {
     AuthorizationRequest request =
         super.updateAfterApproval(authorizationRequest, userAuthentication);
 
-    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(request.getClientId());
+    if (super.isApproved(authorizationRequest, userAuthentication)) {
+      ClientDetailsEntity client = clientDetailsService.loadClientByClientId(request.getClientId());
 
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));
+      IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication)
+        .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));
 
-    if (client.getClientName().startsWith("oidc-agent:")) {
-      clientService.linkClientToAccount(client, account);
+      if (client.getClientName().startsWith("oidc-agent:")) {
+        clientService.linkClientToAccount(client, account);
+      }
     }
 
     return request;
