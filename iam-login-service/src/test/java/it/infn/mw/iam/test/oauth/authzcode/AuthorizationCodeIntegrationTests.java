@@ -113,7 +113,7 @@ public class AuthorizationCodeIntegrationTests {
 
       // @formatter:off
       ValidatableResponse resp2 = RestAssured.given()
-        .formParam("username", "test")
+        .formParam("username", "admin")
         .formParam("password", "password")
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
@@ -217,7 +217,7 @@ public class AuthorizationCodeIntegrationTests {
 
     // @formatter:off
       ValidatableResponse resp2 = RestAssured.given()
-        .formParam("username", "test")
+        .formParam("username", "admin")
         .formParam("password", "password")
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
