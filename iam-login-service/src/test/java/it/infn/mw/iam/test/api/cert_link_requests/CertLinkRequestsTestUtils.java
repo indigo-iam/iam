@@ -38,6 +38,7 @@ import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
 public class CertLinkRequestsTestUtils {
 
+  protected final static String TEST_LABEL = "some label";
   protected final static String TEST_ADMIN = "admin";
   protected final static String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
   protected final static String TEST_ADMIN_FULL_NAME = "Admin User";
