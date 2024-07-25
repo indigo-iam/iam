@@ -404,7 +404,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createAdminHandleCertLinkRequestMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "New certificate linking request";
+    String subject = String.format("[%s IAM] New certificate linking request", organisationName);
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -423,7 +423,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createCertLinkApprovedMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate linking request approved";
+    String subject = String.format("[%s IAM] Certificate linking request approved", organisationName);
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -441,7 +441,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   @Override
   public IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate linking request rejected";
+    String subject = String.format("[%s IAM] Certificate linking request rejected", organisationName);
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
