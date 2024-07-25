@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -30,6 +31,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -897,4 +899,153 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(status().isForbidden());
 
   }
+
+  @Test
+  public void testNormalClientNotLinkedToUser() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
+
+
+  }
+
+  @Test
+  public void testOidcAgentClientIsLinkedToUser() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:device-code-client");
+    clientRepo.save(entity);
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andExpect(jsonPath("$.Resources[0].client_id", is(DEVICE_CODE_CLIENT_ID)));
+
+    entity.setClientName("Device code client");
+    clientRepo.save(entity);
+  }
+
+
 }
