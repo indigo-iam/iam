@@ -15,12 +15,19 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +36,13 @@ import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -50,14 +63,15 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
   @Autowired
   private ConfigurationPropertiesBean config;
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testDeviceCodeReturnsBadRequestForEmptyClientIdQueryParam() throws Exception {
+  @Test
+  public void testDeviceCodeReturnsBadRequestForEmptyClientId() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("", DEVICE_CODE_CLIENT_ID))
-      .andExpect(status().isBadRequest());
+        .param("client_id", ""))
+      .andExpect(status().isBadRequest())
+      .andExpect(view().name("httpCodeView"));
 
   }
 
@@ -103,6 +117,19 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
   }
 
   @Test
+  public void testDeviceCodeWithParenthesisInRequestedScopesFails() throws Exception {
+
+    mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("scope", "op [en ]id"))
+      .andExpect(status().isBadRequest())
+      .andExpect(view().name("jsonErrorView"));
+
+  }
+
+  @Test
   public void testDeviceCodeFailsWhenVerificationUriHasSyntaxErrors() throws Exception {
 
     config.setIssuer("local host");
@@ -111,10 +138,12 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", DEVICE_CODE_CLIENT_ID))
-      .andExpect(status().isInternalServerError());
+      .andExpect(status().isInternalServerError())
+      .andExpect(view().name("httpCodeView"));
 
     config.setIssuer("http://localhost:8080/");
 
-  } 
+  }
 
+  
 }
