@@ -99,13 +99,14 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     requestDto.setUserUuid(account.getUuid());
     requestDto.setUsername(account.getUsername());
 
-    certLinkRequestUtils.checkRequestAlreadyExist(requestDto);
-    certLinkRequestUtils.checkCertAlreadyLinked(requestDto, account);
-    certLinkRequestUtils.checkCertNotLinkedToSomeoneElse(requestDto, account);
-
+    IamX509Certificate newCert = converter.certificateFromRequest(requestDto);
     IamX509Certificate cert = x509CertificateRepository
-        .findBySubjectDnAndIssuerDn(requestDto.getSubjectDn(), requestDto.getIssuerDn())
-        .orElseGet(() -> converter.certificateFromRequest(requestDto));
+        .findBySubjectDnAndIssuerDn(newCert.getSubjectDn(),
+            newCert.getIssuerDn())
+        .orElse(newCert);
+
+    certLinkRequestUtils.checkCertAlreadyLinked(cert, account);
+    certLinkRequestUtils.checkCertNotLinkedToSomeoneElse(cert, account);
 
     IamCertLinkRequest request = new IamCertLinkRequest();
     request.setUuid(UUID.randomUUID().toString());
@@ -116,6 +117,8 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     Date creationTime = new Date(timeProvider.currentTimeMillis());
     request.setCreationTime(creationTime);
     request.setLastUpdateTime(creationTime);
+
+    certLinkRequestUtils.checkRequestAlreadyExist(request);
 
     request = certLinkRequestRepository.save(request);
     notificationFactory.createAdminHandleCertLinkRequestMessage(request);

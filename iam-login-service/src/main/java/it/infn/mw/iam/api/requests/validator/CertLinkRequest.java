@@ -26,10 +26,10 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({TYPE, ANNOTATION_TYPE})
+@Target({ TYPE, ANNOTATION_TYPE })
 @Constraint(validatedBy = CertLinkRequestValidator.class)
 public @interface CertLinkRequest {
-  String message() default "Invalid certificate linking request: either subject and issuer DN or the PEM content is required!";
+  String message() default "Invalid certificate linking request: either subject and issuer DN or the PEM content is required! When both are provided, the PEM must be coherent with the DNs";
 
   Class<?>[] groups() default {};
 

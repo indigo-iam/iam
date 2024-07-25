@@ -51,7 +51,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = { "ADMIN" })
   public void getCertLinkRequestDetailsAsAdmin() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
@@ -68,7 +68,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void getCertLinkRequestDetailsAsUser() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
@@ -84,7 +84,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void getCertLinkRequestDetailsOfAnotherUser() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_101_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_101_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isForbidden());
@@ -94,7 +94,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void getCertLinkRequestDetailsAsAnonymous() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
@@ -118,7 +118,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN", "USER" })
   public void getCertLinkRequestDetailsAsUserWithBothRoles() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())

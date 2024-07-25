@@ -54,10 +54,11 @@ public class CertLinkRequestUtils {
             String.format("CertLink request with UUID [%s] does not exist", requestId)));
   }
 
-  public void checkRequestAlreadyExist(CertLinkRequestDTO requestDto) {
+  public void checkRequestAlreadyExist(IamCertLinkRequest request) {
 
     List<IamCertLinkRequest> results = certLinkRequestRepository
-        .findByAccountAndDns(requestDto.getUserUuid(), requestDto.getSubjectDn(), requestDto.getIssuerDn());
+        .findByAccountAndDns(request.getAccount().getUuid(), request.getCertificate().getSubjectDn(),
+            request.getCertificate().getIssuerDn());
 
     for (IamCertLinkRequest r : results) {
       IamRequestStatus status = r.getStatus();
@@ -65,7 +66,8 @@ public class CertLinkRequestUtils {
       if (PENDING.equals(status)) {
         throw new IamRequestValidationError(
             String.format("CertLink request already exists for user %s and certificate [%s | %s]",
-                requestDto.getUsername(), requestDto.getSubjectDn(), requestDto.getIssuerDn()));
+                request.getAccount().getUsername(), request.getCertificate().getSubjectDn(),
+                request.getCertificate().getIssuerDn()));
       }
     }
   }
@@ -81,26 +83,27 @@ public class CertLinkRequestUtils {
     }
   }
 
-  public void checkCertAlreadyLinked(CertLinkRequestDTO requestDto, IamAccount userAccount) {
+  public void checkCertAlreadyLinked(IamX509Certificate requestCert, IamAccount userAccount) {
     Optional<IamX509Certificate> linkedCerts = userAccount.getX509Certificates()
         .stream()
         .filter(
-            c -> c.getSubjectDn().equals(requestDto.getSubjectDn()) && c.getIssuerDn().equals(requestDto.getIssuerDn()))
+            c -> c.getSubjectDn().equals(requestCert.getSubjectDn())
+                && c.getIssuerDn().equals(requestCert.getIssuerDn()))
         .findAny();
 
     if (linkedCerts.isPresent()) {
       throw new IamRequestValidationError(
-          String.format("User %s is already linked to the certificate [%s | %s]", requestDto.getUsername(),
-              requestDto.getSubjectDn(), requestDto.getIssuerDn()));
+          String.format("User %s is already linked to the certificate [%s | %s]", userAccount.getUsername(),
+              requestCert.getSubjectDn(), requestCert.getIssuerDn()));
     }
   }
 
-  public void checkCertNotLinkedToSomeoneElse(CertLinkRequestDTO request, IamAccount userAccount) {
-    accountRepository.findByCertificateSubject(request.getSubjectDn()).ifPresent(linkedAccount -> {
+  public void checkCertNotLinkedToSomeoneElse(IamX509Certificate requestCert, IamAccount userAccount) {
+    accountRepository.findByCertificateSubject(requestCert.getSubjectDn()).ifPresent(linkedAccount -> {
       if (!linkedAccount.getUuid().equals(userAccount.getUuid())) {
         throw new IamRequestValidationError(
             format("X.509 credential with subject '%s' is already linked to another user",
-                request.getSubjectDn()));
+                requestCert.getSubjectDn()));
       }
     });
   }

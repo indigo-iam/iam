@@ -23,6 +23,8 @@ import javax.validation.ConstraintValidatorContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Strings;
+
 @Component
 @Scope("prototype")
 public class RFC2253FormattedValidator implements ConstraintValidator<RFC2253Formatted, String> {
@@ -38,6 +40,7 @@ public class RFC2253FormattedValidator implements ConstraintValidator<RFC2253For
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (Strings.isNullOrEmpty(value)) return true;
         try {
             getPortableRFC2253Form(value);
         } catch (Exception e) {

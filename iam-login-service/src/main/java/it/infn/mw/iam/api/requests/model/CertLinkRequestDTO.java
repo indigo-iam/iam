@@ -22,7 +22,6 @@ import javax.validation.constraints.NotEmpty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import static eu.emi.security.authn.x509.impl.X500NameUtils.getPortableRFC2253Form;
 
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
@@ -125,7 +124,7 @@ public class CertLinkRequestDTO {
   }
 
   public String getSubjectDn() {
-    return getPortableRFC2253Form(subjectDn);
+    return subjectDn;
   }
 
   public void setSubjectDn(String subjectDn) {
@@ -133,7 +132,7 @@ public class CertLinkRequestDTO {
   }
 
   public String getIssuerDn() {
-    return getPortableRFC2253Form(issuerDn);
+    return issuerDn;
   }
 
   public void setIssuerDn(String issuerDn) {

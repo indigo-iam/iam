@@ -26,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Strings;
+
 import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 
 @Component
@@ -47,6 +49,8 @@ public class KnownCertificationAuthorityValidator
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (Strings.isNullOrEmpty(value))
+            return true;
         try {
             List<String> knownCertificationAuthorities = trustService.getTrusts().getResources();
             return knownCertificationAuthorities.stream().anyMatch(ca -> equal(ca, value));

@@ -113,7 +113,7 @@ public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void rejectCertLinkRequestAsUser() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -126,7 +126,7 @@ public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void rejectCertLinkRequestAsAnonymous() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)
@@ -138,7 +138,7 @@ public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN" })
   public void rejectNotExitingCertLinkRequest() throws Exception {
-    savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     String fakeRequestUuid = UUID.randomUUID().toString();
 
@@ -182,7 +182,7 @@ public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN" })
   public void rejectRequestWithoutMotivation() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -200,7 +200,7 @@ public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = { "ADMIN", "USER" })
   public void rejectCertLinkRequestAsUserWithBothRoles() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)

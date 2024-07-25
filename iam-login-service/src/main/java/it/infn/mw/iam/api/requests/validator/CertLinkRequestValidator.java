@@ -18,12 +18,20 @@ package it.infn.mw.iam.api.requests.validator;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.google.common.base.Strings;
 
+import eu.emi.security.authn.x509.impl.X500NameUtils;
 import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
+import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class CertLinkRequestValidator
         implements ConstraintValidator<CertLinkRequest, CertLinkRequestDTO> {
+
+    @Autowired
+    private X509CertificateParser parser;
 
     public CertLinkRequestValidator() {
         // empty
@@ -38,9 +46,30 @@ public class CertLinkRequestValidator
     public boolean isValid(CertLinkRequestDTO value, ConstraintValidatorContext context) {
 
         try {
-            return value != null && (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())
-                    || (!Strings.isNullOrEmpty(value.getSubjectDn())
-                            && !Strings.isNullOrEmpty(value.getIssuerDn())));
+            if (value == null) {
+                return false;
+            }
+            if (Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+                    && (Strings.isNullOrEmpty(value.getSubjectDn())
+                            || Strings.isNullOrEmpty(value.getIssuerDn()))) {
+                return false;
+            }
+            if (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())) {
+                IamX509Certificate cert = parser.parseCertificateFromString(value.getPemEncodedCertificate());
+                if (!Strings.isNullOrEmpty(value.getSubjectDn())) {
+                    if (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getSubjectDn()),
+                            X500NameUtils.getComparableForm(cert.getSubjectDn()))) {
+                        return false;
+                    }
+                }
+                if (!Strings.isNullOrEmpty(value.getIssuerDn())) {
+                    if (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getIssuerDn()),
+                            X500NameUtils.getComparableForm(cert.getIssuerDn()))) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         } catch (Exception e) {
             return false;
         }

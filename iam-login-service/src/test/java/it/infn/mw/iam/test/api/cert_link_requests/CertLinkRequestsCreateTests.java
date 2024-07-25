@@ -81,7 +81,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN" }, username = TEST_ADMIN)
   public void createCertLinkRequestAsAdmin() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(post(CREATE_URL)
@@ -110,7 +110,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestAsUser() throws Exception {
 
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(post(CREATE_URL)
@@ -136,7 +136,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void createCertLinkRequestAsAnonymous() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(CREATE_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestWitInvalidLabel() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest(null, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest(null, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(post(CREATE_URL)
@@ -169,8 +169,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestWithInvalidSubject() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
-    request.setSubjectDn("");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", "", TEST_ISSUERDN_OK, null);
     String body = mapper.writeValueAsString(request);
     JSONObject jsonBody = new JSONObject(body);
 
@@ -193,7 +192,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestWithInvalidIssuer() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, "", "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, "", null);
     String body = mapper.writeValueAsString(request);
     JSONObject jsonBody = new JSONObject(body);
 
@@ -224,7 +223,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestWithPem() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, TEST0_PEM_STRING);
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", null, null, TEST0_PEM_STRING);
 
     // @formatter:off
     mvc.perform(post(CREATE_URL)
@@ -253,9 +252,22 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  public void createCertLinkRequestWithInconsistentSubjectAndPem() throws Exception {
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", "CN=Inconsistent,O=IGI,C=IT", TEST_ISSUERDN_OK, TEST0_PEM_STRING);
+
+    // @formatter:off
+    mvc.perform(post(CREATE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(request)))
+      .andExpect(status().isBadRequest());
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestAlreadyExists() throws Exception {
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
-    savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(CREATE_URL)
         .contentType(MediaType.APPLICATION_JSON)
@@ -301,7 +313,7 @@ public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_100_USERNAME)
   public void createCertLinkRequestAsUserWithBothRoles() throws Exception {
 
-    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = buildCertLinkRequest("mylabel", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(CREATE_URL)
         .contentType(MediaType.APPLICATION_JSON)

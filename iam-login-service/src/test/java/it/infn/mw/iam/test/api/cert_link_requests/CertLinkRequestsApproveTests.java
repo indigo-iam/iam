@@ -71,7 +71,7 @@ public class CertLinkRequestsApproveTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN" })
   public void approveCertLinkRequestAsAdmin() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())
@@ -101,7 +101,7 @@ public class CertLinkRequestsApproveTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "USER" })
   public void approveCertLinkRequestAsUser() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isForbidden());
@@ -111,7 +111,7 @@ public class CertLinkRequestsApproveTests extends CertLinkRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void approveCertLinkRequestAsAnonymous() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
@@ -159,7 +159,7 @@ public class CertLinkRequestsApproveTests extends CertLinkRequestsTestUtils {
   @Test
   @WithMockUser(roles = { "ADMIN", "USER" })
   public void approveCertLinkRequestAsUserWithBothRoles() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
+    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())

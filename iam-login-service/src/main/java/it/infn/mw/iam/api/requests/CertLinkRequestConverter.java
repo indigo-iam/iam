@@ -20,6 +20,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import eu.emi.security.authn.x509.impl.X500NameUtils;
 import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
 import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
@@ -58,9 +59,8 @@ public class CertLinkRequestConverter {
       cert = parser.parseCertificateFromString(requestDto.getPemEncodedCertificate());
     } else {
       cert = new IamX509Certificate();
-      cert.setCertificate(requestDto.getPemEncodedCertificate());
-      cert.setSubjectDn(requestDto.getSubjectDn());
-      cert.setIssuerDn(requestDto.getIssuerDn());
+      cert.setSubjectDn(X500NameUtils.getPortableRFC2253Form(requestDto.getSubjectDn()));
+      cert.setIssuerDn(X500NameUtils.getPortableRFC2253Form(requestDto.getIssuerDn()));
     }
 
     Date now = new Date();
