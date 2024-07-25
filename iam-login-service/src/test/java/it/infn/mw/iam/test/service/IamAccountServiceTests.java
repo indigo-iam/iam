@@ -39,6 +39,7 @@ import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -59,6 +60,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
@@ -66,6 +70,8 @@ import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
@@ -77,6 +83,8 @@ import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 
 @RunWith(MockitoJUnitRunner.class)
 public class IamAccountServiceTests extends IamAccountServiceTestSupport {
+
+  private static final String TEST_GROUP_1 = "Test-group-1";
 
   public static final Instant NOW = Instant.parse("2021-01-01T00:00:00.00Z");
 
@@ -111,6 +119,14 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
   private DefaultIamAccountService accountService;
 
+  @Mock
+  private DefaultIamGroupService iamGroupService;
+
+  @Mock
+  private IamProperties iamProperties;
+
+  private IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
+
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
 
@@ -130,9 +146,10 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
+    when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory);
+        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory, iamProperties, iamGroupService);
   }
 
   @Test(expected = NullPointerException.class)
@@ -845,6 +862,43 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     AccountEndTimeUpdatedEvent e = (AccountEndTimeUpdatedEvent) event;
     assertThat(e.getPreviousEndTime(), nullValue());
     assertThat(e.getAccount().getEndTime(), is(newEndTime));
+  }
+
+  @Test
+  public void testNewAccountAddedToDefaultGroups() {
+    IamAccount account = cloneAccount(CICCIO_ACCOUNT);
+
+    IamGroup testGroup = new IamGroup();
+    testGroup.setName(TEST_GROUP_1);
+    DefaultGroup defaultGroup = new DefaultGroup();
+    defaultGroup.setName(TEST_GROUP_1);
+    defaultGroup.setEnrollment("INSERT");
+    List<DefaultGroup> defaultGroups = Arrays.asList(defaultGroup);
+
+    registrationProperties.setDefaultGroups(defaultGroups);
+    when(iamGroupService.findByName(TEST_GROUP_1)).thenReturn(Optional.of(testGroup));
+
+    account = accountService.createAccount(account);
+
+    assertTrue(getGroup(account).equals(testGroup));
+  }
+
+  private IamGroup getGroup(IamAccount account) {
+    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    if (groupMembershipOptional.isPresent()) {
+      return groupMembershipOptional.get().getGroup();
+    }
+    return null;
+  }
+
+  @Test
+  public void testNoDefaultGroupsAddedWhenDefaultGroupsNotGiven() {
+    IamAccount account = cloneAccount(CICCIO_ACCOUNT);
+
+    account = accountService.createAccount(account);
+
+    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    assertFalse(groupMembershipOptional.isPresent());
   }
 
 }
