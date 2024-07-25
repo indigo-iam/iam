@@ -48,7 +48,7 @@ public class CertLinkRequestsPaginationTests extends CertLinkRequestsTestUtils {
 
   void saveNPendingCertLinkRequests(String username, int numRequests) {
     for (int i = 1; i <= numRequests; i++) {
-      savePendingCertLinkRequest(TEST_100_USERNAME, String.format(SUBJECT_TEMPLATE, i), TEST_ISSUERDN_OK, null);
+      savePendingCertLinkRequest(username, String.format(SUBJECT_TEMPLATE, i), TEST_ISSUERDN_OK, null);
     }
   }
 
