@@ -246,6 +246,51 @@ public class AuthorizationCodeTests {
   }
 
   @Test
+  public void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:test-client");
+    clientRepo.save(entity);
+
+    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
+        commaSeparatedStringToAuthorityList("ROLE_USER"));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+        .param("client_id", TEST_CLIENT_ID)
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("nonce", "1")
+        .param("state", "1")
+        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post("/authorize").session(session)
+        .param("user_oauth_approval", "false")
+        .param("scope_openid", "openid")
+        .param("scope_profile", "profile")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .with(csrf()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
+
+    entity.setClientName("Test Client");
+    clientRepo.save(entity);
+
+  }
+  
+  @Test
   public void testOidcAgentClientIsLinkedToUser() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
