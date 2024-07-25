@@ -16,6 +16,8 @@
 package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
+
+import static java.lang.String.valueOf;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_CONSENT;
@@ -75,10 +77,9 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     if (authorizationRequest.isApproved()) {
       return true;
-    } else {
-      return Boolean
-        .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
     }
+    return Boolean
+      .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
   }
 
   @Override
@@ -107,8 +108,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
         ap.setAccessDate(new Date());
         approvedSiteService.save(ap);
 
-        String apId = ap.getId().toString();
-        authorizationRequest.getExtensions().put(APPROVED_SITE, apId);
+        authorizationRequest.getExtensions().put(APPROVED_SITE, valueOf(ap.getId()));
         authorizationRequest.setApproved(true);
         alreadyApproved = true;
 
@@ -142,20 +142,21 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     Set<String> requestedScopes = authorizationRequest.getScope();
-    Set<String> allowedScopes = Sets.newHashSet();
+    Set<String> approvedScopes = Sets.newHashSet();
 
-    // why filtering again?
+    // The scope filtering is done by the caller. No more scope filtering is necessary here
     requestedScopes.forEach(rs -> {
       if (systemScopeService.scopesMatch(client.getScope(), Sets.newHashSet(rs))) {
-        allowedScopes.add(rs);
+        approvedScopes.add(rs);
       }
     });
 
     boolean approved = true;
-    if (allowedScopes.isEmpty() && !requestedScopes.isEmpty()) {
+    if (approvedScopes.isEmpty() && !requestedScopes.isEmpty()) {
       approved = false;
     }
     authorizationRequest.setApproved(approved);
+    authorizationRequest.setScope(approvedScopes);
 
     String remember = approvalParams.get(REMEMBER_PARAMETER_KEY);
     if (!Strings.isNullOrEmpty(remember) && !remember.equals("none")) {
@@ -168,7 +169,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       }
 
       ApprovedSite newSite =
-          approvedSiteService.createApprovedSite(clientId, userId, timeout, allowedScopes);
+          approvedSiteService.createApprovedSite(clientId, userId, timeout, approvedScopes);
       String newSiteId = newSite.getId().toString();
       authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
     }
@@ -176,21 +177,25 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     setAuthTime(authorizationRequest);
 
     return authorizationRequest;
-
   }
 
   private void setAuthTime(AuthorizationRequest authorizationRequest) {
     ServletRequestAttributes attr =
         (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-    HttpSession session = attr.getRequest().getSession();
-    if (session != null) {
-      Date authTime = (Date) session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP);
-      if (authTime != null) {
-        String authTimeString = Long.toString(authTime.getTime());
-        authorizationRequest.getExtensions()
-          .put(AuthenticationTimeStamper.AUTH_TIMESTAMP, authTimeString);
-      }
+
+    if (attr == null) {
+      return;
     }
+    HttpSession session = attr.getRequest().getSession();
+    if (session == null) {
+      return;
+    }
+    Date authTime = (Date) session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP);
+    if (authTime == null) {
+      return;
+    }
+    authorizationRequest.getExtensions()
+      .put(AuthenticationTimeStamper.AUTH_TIMESTAMP, Long.toString(authTime.getTime()));
   }
 
   @Override

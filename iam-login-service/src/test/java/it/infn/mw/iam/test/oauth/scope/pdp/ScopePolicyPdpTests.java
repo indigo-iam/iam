@@ -19,6 +19,7 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -43,7 +44,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -66,7 +67,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   IamAccountRepository accountRepo;
 
   @Autowired
-  ScopePolicyPDP pdp;
+  ScopeFilter pdp;
 
   @Autowired
   private MockMvc mvc;
@@ -130,7 +131,8 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     Set<String> filteredScopes =
         pdp.filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount);
-    assertThat(filteredScopes, hasSize(0));
+    assertThat(filteredScopes, hasSize(1));
+    assertThat(filteredScopes, hasItem(OPENID));
 
   }
 
