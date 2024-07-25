@@ -45,10 +45,20 @@
                 If set to zero, the AUP signature will be asked only at registration time.
             </span>
         </div>
+        <div class="form-group" ng-class="{'has-error': $ctrl.error || createAup.aupReminder.$dirty && !createAup.aupReminder.$valid}">
+            <label>AUP signature reminders (in days)</label>
+            <input name="aupReminder" class="form-control" type="text" ng-model="$ctrl.aupVal.aupRemindersInDays" placeholder="30,15,1" required="true">
+            <span class="help-block">
+                Indicate a sequence of comma-separated numbers representing how many days before the AUP expiration reminder messages must be sent.
+            </span>
+            <span class="help-block" ng-if="createAup.aupReminder.$dirty && createAup.aupReminder.$error.required">
+                Required input
+            </span>
+        </div>
     </form>
 </div>
 <div class="modal-footer">
-    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.aupVal.url || !$ctrl.enabled" ng-click="$ctrl.doCreateAup()">Create AUP</button>
+    <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.aupVal.url || !$ctrl.aupVal.aupRemindersInDays || !$ctrl.enabled" ng-click="$ctrl.doCreateAup()">Create AUP</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>
 

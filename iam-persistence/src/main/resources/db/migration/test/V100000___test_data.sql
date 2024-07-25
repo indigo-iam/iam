@@ -186,6 +186,9 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (18, 'urn:ietf:params:oauth:grant-type:device_code'),
   (18, 'authorization_code'),
   (19, 'client_credentials');
+
+INSERT INTO client_contact (owner_id, contact) VALUES
+  (12, 'test@example.com');
     
 INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
   (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test'),

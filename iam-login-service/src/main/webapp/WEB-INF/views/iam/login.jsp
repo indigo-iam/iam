@@ -48,7 +48,6 @@
             <c:if test="${ param.externalAuthenticationError != null }">
                 <div class="alert alert-danger">
                     <strong>External authentication error</strong>
-                    <div>${param.externalAuthenticationError}</div>
                 </div>
             </c:if>
 

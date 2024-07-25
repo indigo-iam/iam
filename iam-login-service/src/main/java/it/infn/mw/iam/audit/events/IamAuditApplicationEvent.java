@@ -29,34 +29,32 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 @JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message"})
-@JsonTypeInfo(use=Id.NAME, property="@type")
+@JsonTypeInfo(use = Id.NAME, property = "@type")
 public abstract class IamAuditApplicationEvent extends ApplicationEvent {
 
   private static final long serialVersionUID = -6276169409979227109L;
-  
+
   public static final String NULL_PRINCIPAL = "<unknown>";
 
   @JsonInclude
   private final IamEventCategory category;
-  
+
   @JsonInclude
   private final String principal;
-  
+
   @JsonInclude
   private final String message;
-  
 
   public IamAuditApplicationEvent(IamEventCategory category, Object source, String message) {
-    super(source);
-    this.message = message;
-    this.category = category;
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    this(category, source, message, SecurityContextHolder.getContext().getAuthentication());
+  }
 
-    if (auth == null) {
-      this.principal = NULL_PRINCIPAL;
-    } else {
-      this.principal = auth.getName();
-    }
+  public IamAuditApplicationEvent(IamEventCategory category, Object source, String message,
+      Authentication auth) {
+    super(source);
+    this.category = category;
+    this.message = message;
+    this.principal = (auth != null) ? auth.getName() : NULL_PRINCIPAL;
   }
 
   protected IamAuditApplicationEvent(IamEventCategory category, Object source) {
@@ -80,9 +78,9 @@ public abstract class IamAuditApplicationEvent extends ApplicationEvent {
   public Object getSource() {
     return super.getSource();
   }
-  
+
   @JsonProperty("source")
-  public String getSourceClass(){
+  public String getSourceClass() {
     return super.getSource().getClass().getSimpleName();
   }
 }

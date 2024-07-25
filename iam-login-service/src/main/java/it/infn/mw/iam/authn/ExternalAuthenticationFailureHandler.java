@@ -48,7 +48,6 @@ public class ExternalAuthenticationFailureHandler extends ExternalAuthentication
 
     return UriComponentsBuilder.fromPath("/login")
       .queryParam("error", "true")
-      .queryParam("externalAuthenticationError", errorMessage)
       .build(true)
       .toString();
   }

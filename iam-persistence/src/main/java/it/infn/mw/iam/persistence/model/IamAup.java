@@ -50,6 +50,9 @@ public class IamAup implements Serializable {
   @Column(name = "sig_validity_days", nullable = false)
   Long signatureValidityInDays;
 
+  @Column(name = "aup_reminders_days", nullable = false)
+  String aupRemindersInDays;
+
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "creation_time", nullable = false)
   Date creationTime;
@@ -135,6 +138,14 @@ public class IamAup implements Serializable {
 
   public void setSignatureValidityInDays(Long signatureValidityInDays) {
     this.signatureValidityInDays = signatureValidityInDays;
+  }
+
+  public String getAupRemindersInDays() {
+    return aupRemindersInDays;
+  }
+
+  public void setAupRemindersInDays(String aupRemindersInDays) {
+    this.aupRemindersInDays = aupRemindersInDays;
   }
 
 

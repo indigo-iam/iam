@@ -37,6 +37,7 @@ public class AupTestSupport extends TestSupport{
     aup.setCreationTime(now);
     aup.setLastUpdateTime(now);
     aup.setSignatureValidityInDays(365L);
+    aup.setAupRemindersInDays("30,15,1");
     
     return aup;
   }

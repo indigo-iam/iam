@@ -15,6 +15,19 @@
  */
 package it.infn.mw.iam.core;
 
-public enum IamNotificationType {
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION, AUP_SIGNATURE_REQUEST, ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, CLIENT_STATUS
+public class StatsEndpointResponse {
+
+  private long numberOfUsers;
+
+  public StatsEndpointResponse(long numberOfUsers) {
+    this.numberOfUsers = numberOfUsers;
+  }
+
+  public long getNumberOfUsers() {
+    return numberOfUsers;
+  }
+
+  public void setNumberOfUsers(long numberOfUsers) {
+    this.numberOfUsers = numberOfUsers;
+  }
 }

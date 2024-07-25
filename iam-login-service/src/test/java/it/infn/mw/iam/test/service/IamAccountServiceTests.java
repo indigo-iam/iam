@@ -64,6 +64,7 @@ import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -103,6 +104,9 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Mock
   private OAuth2TokenEntityService tokenService;
 
+  @Mock
+  private NotificationFactory notificationFactory;
+
   private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   private DefaultIamAccountService accountService;
@@ -128,7 +132,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo);
+        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory);
   }
 
   @Test(expected = NullPointerException.class)

@@ -105,8 +105,8 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
         UriComponentsBuilder.fromUri(response.getHeaders().getLocation()).build();
 
     assertThat(locationUri.getPath(), equalTo("/login"));
-    assertThat(locationUri.getQueryParams().keySet(), hasItem("externalAuthenticationError"));
-    assertThat(locationUri.getQueryParams().getFirst("externalAuthenticationError"), is("always%20fails"));
+    assertThat(locationUri.getQueryParams().keySet(), hasItem("error"));
+    assertThat(locationUri.getQueryParams().getFirst("error"), is("true"));
   }
   
   

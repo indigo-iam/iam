@@ -105,7 +105,7 @@ public class ClientManagementServiceTests {
 
     Sort sort = Sort.by(Direction.ASC, "clientId");
     Pageable pageable = PagingUtils.buildPageRequest(10, 1, 100, sort);
-    
+
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
     assertThat(clients.getTotalResults(), is(19L));
@@ -249,8 +249,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testDynamicallyRegisteredClientCanBeUpdated()
-      throws ParseException {
+  public void testDynamicallyRegisteredClientCanBeUpdated() throws ParseException {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
@@ -261,7 +260,7 @@ public class ClientManagementServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
     RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
 
-    
+
     String clientId = response.getClientId();
     ClientDetailsEntity entity = clientService.findClientByClientId(clientId).orElseThrow();
     assertThat(entity.isDynamicallyRegistered(), is(true));
@@ -296,8 +295,7 @@ public class ClientManagementServiceTests {
     RegisteredClientDTO updatedClient =
         managementService.retrieveClientByClientId(client.getClientId()).orElseThrow();
 
-    assertThat(updatedClient.getClientSecret(),
-        not(equalTo(savedClient.getClientSecret())));
+    assertThat(updatedClient.getClientSecret(), not(equalTo(savedClient.getClientSecret())));
   }
 
   @Test
@@ -333,9 +331,8 @@ public class ClientManagementServiceTests {
     RegisteredClientDTO savedClient = managementService.saveNewClient(client);
     assertThat(savedClient.getClientId(), is(client.getClientId()));
     assertThat(savedClient.getClientSecret(), notNullValue());
-    
-    ListResponseDTO<ScimUser> owners =
-    managementService.getClientOwners(savedClient.getClientId(),
+
+    ListResponseDTO<ScimUser> owners = managementService.getClientOwners(savedClient.getClientId(),
         PagingUtils.buildUnpagedPageRequest());
 
     assertThat(owners.getTotalResults(), is(0L));
@@ -412,6 +409,26 @@ public class ClientManagementServiceTests {
   public void testClientStatusChange() {
     managementService.updateClientStatus("client", false, "userUUID");
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
+
+    assertFalse(client.isActive());
+    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals("userUUID", client.getStatusChangedBy());
+  }
+
+  @Test
+  public void testClientStatusChangeWithContacts() {
+    managementService.updateClientStatus("device-code-client", false, "userUUID");
+    RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
+
+    assertFalse(client.isActive());
+    assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
+    assertEquals("userUUID", client.getStatusChangedBy());
+  }
+
+  @Test
+  public void testClientStatusChangeWithoutOwners() {
+    managementService.updateClientStatus("client-cred", false, "userUUID");
+    RegisteredClientDTO client = managementService.retrieveClientByClientId("client-cred").get();
 
     assertFalse(client.isActive());
     assertTrue(client.getStatusChangedOn().equals(Date.from(clock.instant())));
