@@ -64,6 +64,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import static it.infn.mw.iam.core.oauth.IamUserApprovalHandler.OIDC_AGENT_PREFIX_NAME;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -256,7 +257,7 @@ public class IamDeviceEndpointController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
       .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
 
-    if (client.getClientName().startsWith("oidc-agent:")) {
+    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
       clientService.linkClientToAccount(client, account);
     }
 

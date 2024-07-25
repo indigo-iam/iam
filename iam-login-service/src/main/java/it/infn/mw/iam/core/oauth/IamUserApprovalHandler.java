@@ -30,6 +30,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler extends TofuUserApprovalHandler {
+  
+  public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   @Autowired
   private ClientDetailsEntityService clientDetailsService;
@@ -53,7 +55,7 @@ public class IamUserApprovalHandler extends TofuUserApprovalHandler {
       IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication)
         .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));
 
-      if (client.getClientName().startsWith("oidc-agent:")) {
+      if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
         clientService.linkClientToAccount(client, account);
       }
     }
