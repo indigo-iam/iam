@@ -79,7 +79,7 @@
           actionButtonText: 'Set as service account',
           headerText: 'Set ' + self.user.name.formatted + ' as service account',
           bodyText:
-              `Are you sure you want set user '${self.user.name.formatted}' as service account?`
+              `Are you sure you want to set user '${self.user.name.formatted}' as service account?`
         };
         updateServiceAccountStatusFunc = self.setServiceAccountStatus;
       }
