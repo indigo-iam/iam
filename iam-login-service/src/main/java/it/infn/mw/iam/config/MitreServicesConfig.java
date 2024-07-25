@@ -59,7 +59,6 @@ import org.mitre.openid.connect.service.impl.MITREidDataService_1_2;
 import org.mitre.openid.connect.service.impl.MatchLoginHintsAgainstUsers;
 import org.mitre.openid.connect.service.impl.UUIDPairwiseIdentiferService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
-import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.mitre.uma.service.ResourceSetService;
@@ -83,6 +82,7 @@ import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.client.IAMClientUserDetailsService;
 import it.infn.mw.iam.core.jwk.IamJWKSetCacheService;
 import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
+import it.infn.mw.iam.core.oauth.IamUserApprovalHandler;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
@@ -129,8 +129,9 @@ public class MitreServicesConfig {
 
     config.setForceHttps(false);
     config.setLocale(Locale.ENGLISH);
-    
-    config.setAllowCompleteDeviceCodeUri(properties.getDeviceCode().getAllowCompleteVerificationUri());
+
+    config
+      .setAllowCompleteDeviceCodeUri(properties.getDeviceCode().getAllowCompleteVerificationUri());
 
     return config;
   }
@@ -162,10 +163,10 @@ public class MitreServicesConfig {
     return new ScopeMatcherOAuthRequestValidator(registry);
   }
 
-  @Bean
+  @Bean("iamUserApprovalHandler")
   UserApprovalHandler tofuApprovalHandler() {
 
-    return new TofuUserApprovalHandler();
+    return new IamUserApprovalHandler();
   }
 
   @Bean
@@ -203,8 +204,7 @@ public class MitreServicesConfig {
   public FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
       AuthorizationRequestFilter f) {
 
-    FilterRegistrationBean<AuthorizationRequestFilter> b =
-        new FilterRegistrationBean<>(f);
+    FilterRegistrationBean<AuthorizationRequestFilter> b = new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }
