@@ -878,4 +878,15 @@ public class AccountUpdatersTests extends X509TestSupport {
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
   }
+
+  @Test
+  public void testServiceAccountReplacerWorks() {
+
+    account.setServiceAccount(false);
+    accountRepo.save(account);
+
+    Updater u = accountReplacers().serviceAccount(true);
+    assertThat(u.update(), is(true));
+    assertThat(u.update(), is(false));
+  }
 }
