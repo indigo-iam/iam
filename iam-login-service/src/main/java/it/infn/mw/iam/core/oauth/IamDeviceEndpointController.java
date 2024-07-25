@@ -72,6 +72,9 @@ public class IamDeviceEndpointController {
 
   public static final String URL = "devicecode";
   public static final String USER_URL = "device";
+  
+  private static final String REQUEST_USER_CODE_STRING = "requestUserCode";
+  private static final String ERROR_STRING = "error";
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
@@ -118,7 +121,7 @@ public class IamDeviceEndpointController {
     Set<String> allowedScopes = client.getScope();
 
     if (!scopeService.scopesMatch(allowedScopes, requestedScopes)) {
-      logger.error("Client asked for " + requestedScopes + " but is allowed " + allowedScopes);
+      logger.error("Client asked for {} but is allowed {}", requestedScopes, allowedScopes);
       model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
       model.put(JsonErrorView.ERROR, "invalid_scope");
       return JsonErrorView.VIEWNAME;
@@ -171,7 +174,7 @@ public class IamDeviceEndpointController {
       HttpSession session) {
 
     if (!config.isAllowCompleteDeviceCodeUri() || userCode == null) {
-      return "requestUserCode";
+      return REQUEST_USER_CODE_STRING;
     } else {
 
       return readUserCode(userCode, model, session);
@@ -186,18 +189,18 @@ public class IamDeviceEndpointController {
     DeviceCode dc = deviceCodeService.lookUpByUserCode(userCode);
 
     if (dc == null) {
-      model.addAttribute("error", "noUserCode");
-      return "requestUserCode";
+      model.addAttribute(ERROR_STRING, "noUserCode");
+      return REQUEST_USER_CODE_STRING;
     }
 
     if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
-      model.addAttribute("error", "expiredUserCode");
-      return "requestUserCode";
+      model.addAttribute(ERROR_STRING, "expiredUserCode");
+      return REQUEST_USER_CODE_STRING;
     }
 
     if (dc.isApproved()) {
-      model.addAttribute("error", "userCodeAlreadyApproved");
-      return "requestUserCode";
+      model.addAttribute(ERROR_STRING, "userCodeAlreadyApproved");
+      return REQUEST_USER_CODE_STRING;
     }
 
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
@@ -227,13 +230,13 @@ public class IamDeviceEndpointController {
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
 
     if (!dc.getUserCode().equals(userCode)) {
-      model.addAttribute("error", "userCodeMismatch");
-      return "requestUserCode";
+      model.addAttribute(ERROR_STRING, "userCodeMismatch");
+      return REQUEST_USER_CODE_STRING;
     }
 
     if (dc.getExpiration() != null && dc.getExpiration().before(new Date())) {
-      model.addAttribute("error", "expiredUserCode");
-      return "requestUserCode";
+      model.addAttribute(ERROR_STRING, "expiredUserCode");
+      return REQUEST_USER_CODE_STRING;
     }
 
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());

@@ -28,6 +28,7 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler extends TofuUserApprovalHandler {
   
