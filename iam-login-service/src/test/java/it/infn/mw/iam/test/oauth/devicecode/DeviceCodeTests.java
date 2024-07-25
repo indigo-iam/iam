@@ -42,6 +42,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.openid.connect.web.ApprovedSiteAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -161,7 +162,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -254,7 +255,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -364,7 +365,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -372,12 +373,18 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
         .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
         .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"))
       .andReturn()
       .getRequest()
       .getSession();
+
+    mvc.perform(get("/" + ApprovedSiteAPI.URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
+      .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)));
 
 
     String tokenResponse = mvc
@@ -406,8 +413,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 
@@ -564,7 +569,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -602,7 +607,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 
@@ -687,7 +691,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -723,7 +727,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
   }
@@ -797,7 +800,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -842,7 +845,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 
@@ -896,4 +898,5 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(status().isForbidden());
 
   }
+
 }

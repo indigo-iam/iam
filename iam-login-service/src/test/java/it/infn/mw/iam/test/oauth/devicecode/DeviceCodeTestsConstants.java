@@ -37,5 +37,7 @@ public interface DeviceCodeTestsConstants {
   public static final String LOGIN_URL = "/login";
   public static final String TEST_USERNAME = "test";
   public static final String TEST_PASSWORD = "password";
+  
+  public static final String WRONG_VERIFICATION_URI_COMPLETE = "/device?user_code=";
 
 }

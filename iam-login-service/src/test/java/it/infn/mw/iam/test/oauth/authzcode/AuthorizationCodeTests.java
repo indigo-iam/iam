@@ -16,9 +16,16 @@
 package it.infn.mw.iam.test.oauth.authzcode;
 
 import static java.lang.String.format;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.security.core.authority.AuthorityUtils.commaSeparatedStringToAuthorityList;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -31,6 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponents;
@@ -189,6 +198,44 @@ public class AuthorizationCodeTests {
       .andReturn()
       .getRequest()
       .getSession();
+
+  }
+
+  @Test
+  public void testNormalClientNotLinkedToUser() throws Exception {
+
+    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
+        commaSeparatedStringToAuthorityList("ROLE_USER"));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+        .param("client_id", TEST_CLIENT_ID)
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("nonce", "1")
+        .param("state", "1")
+        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post("/authorize").session(session)
+        .param("user_oauth_approval", "true")
+        .param("scope_openid", "openid")
+        .param("scope_profile", "profile")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .with(csrf()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
 
   }
 

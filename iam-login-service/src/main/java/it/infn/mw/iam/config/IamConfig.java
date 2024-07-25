@@ -47,6 +47,7 @@ import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
+import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -56,6 +57,7 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
+import it.infn.mw.iam.core.oauth.IamUserApprovalHandler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
@@ -307,6 +309,11 @@ public class IamConfig {
   @Bean
   UsernameValidator usernameRegExpValidator() {
     return new UsernameValidator();
+  }
+  
+  @Bean
+  UserApprovalHandler iamUserApprovalHandler() {
+    return new IamUserApprovalHandler();
   }
 
   @Bean(destroyMethod = "shutdown")
