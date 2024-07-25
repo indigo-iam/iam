@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.requests.exception.IamRequestValidationError;
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
