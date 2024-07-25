@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.util.HtmlUtils;
 
 import it.infn.mw.iam.api.account.password_reset.error.InvalidEmailAddressError;
 import it.infn.mw.iam.api.account.password_reset.error.InvalidPasswordError;
@@ -78,7 +79,7 @@ public class PasswordResetController {
   @RequestMapping(value = "/token/{token}", method = RequestMethod.HEAD)
   @ResponseBody
   public String validateResetToken(@PathVariable("token") String token) {
-    service.validateResetToken(token);
+    service.validateResetToken(sanitizeToken(token));
     return "ok";
   }
 
@@ -86,16 +87,15 @@ public class PasswordResetController {
   public String resetPasswordPage(Model model, @PathVariable("token") String token) {
     String message = null;
 
+    String sanitizedToken = sanitizeToken(token);
     try {
 
-      service.validateResetToken(token);
-
+      service.validateResetToken(sanitizedToken);
+      model.addAttribute("resetKey", sanitizedToken);
     } catch (InvalidPasswordResetTokenError e) {
       message = e.getMessage();
+      model.addAttribute("errorMessage", message);
     }
-
-    model.addAttribute("statusMessage", message);
-    model.addAttribute("resetKey", token);
 
     return "iam/resetPassword";
   }
@@ -132,4 +132,7 @@ public class PasswordResetController {
     return ex.getMessage();
   }
 
+  private String sanitizeToken(String token) {
+    return HtmlUtils.htmlEscape(token);
+  }
 }

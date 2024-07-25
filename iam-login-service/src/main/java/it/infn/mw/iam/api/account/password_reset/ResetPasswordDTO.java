@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.account.password_reset;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
@@ -29,6 +30,7 @@ public class ResetPasswordDTO {
   private String updatedPassword;
 
   @NotEmpty
+  @Size(max = 36, min = 36)
   private String token;
 
   public String getToken() {
