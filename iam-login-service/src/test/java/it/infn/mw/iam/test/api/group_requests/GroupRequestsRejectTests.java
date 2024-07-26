@@ -40,7 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
@@ -75,7 +75,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   public void rejectGroupRequestAsAdmin() throws Exception {
     
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
     // @formatter:off
     String response = mvc.perform(post(REJECT_URL, request.getUuid())
@@ -94,7 +94,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
+    GroupRequestDTO result = mapper.readValue(response, GroupRequestDTO.class);
     assertThat(result.getLastUpdateTime(), greaterThanOrEqualTo(result.getCreationTime()));
 
     int mailCount = notificationService.countPendingNotifications();
@@ -113,7 +113,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void rejectGroupRequestAsUser() throws Exception {
     
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -126,7 +126,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void rejectGroupRequestAsAnonymous() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)
@@ -153,7 +153,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void rejectAlreadyRejectedRequest() throws Exception {
-    GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -167,7 +167,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN"})
   public void rejectAlreadyApprovedRequest() throws Exception {
 
-    GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -180,7 +180,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void rejectRequestWithoutMotivation() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
@@ -198,7 +198,7 @@ public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void rejectGroupRequestAsUserWithBothRoles() throws Exception {
     
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(REJECT_URL, request.getUuid())
         .param("motivation", TEST_REJECT_MOTIVATION)

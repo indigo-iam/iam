@@ -43,7 +43,7 @@ import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.requests.GroupRequestConverter;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.exception.InvalidIamRequestStatusError;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestApprovedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestCreatedEvent;
 import it.infn.mw.iam.audit.events.group.request.GroupRequestDeletedEvent;
@@ -95,7 +95,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
         .build();
 
   @Override
-  public GroupRequestDto createGroupRequest(GroupRequestDto groupRequest) {
+  public GroupRequestDTO createGroupRequest(GroupRequestDTO groupRequest) {
 
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     Optional<IamGroup> group = groupRepository.findByName(groupRequest.getGroupName());
@@ -137,7 +137,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   @Override
-  public GroupRequestDto approveGroupRequest(String requestId) {
+  public GroupRequestDTO approveGroupRequest(String requestId) {
     IamGroupRequest request = groupRequestUtils.getGroupRequest(requestId);
 
     IamAccount account = request.getAccount();
@@ -153,7 +153,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   @Override
-  public GroupRequestDto rejectGroupRequest(String requestId, String motivation) {
+  public GroupRequestDTO rejectGroupRequest(String requestId, String motivation) {
     IamGroupRequest request = groupRequestUtils.getGroupRequest(requestId);
     groupRequestUtils.validateRejectMotivation(motivation);
 
@@ -166,13 +166,13 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   @Override
-  public GroupRequestDto getGroupRequestDetails(String requestId) {
+  public GroupRequestDTO getGroupRequestDetails(String requestId) {
     IamGroupRequest request = groupRequestUtils.getGroupRequest(requestId);
     return converter.fromEntity(request);
   }
 
   @Override
-  public ListResponseDTO<GroupRequestDto> listGroupRequests(String username, String groupName,
+  public ListResponseDTO<GroupRequestDTO> listGroupRequests(String username, String groupName,
       String status, OffsetPageable pageRequest) {
     Optional<String> usernameFilter = Optional.ofNullable(username);
     Optional<String> groupNameFilter = Optional.ofNullable(groupName);
@@ -191,14 +191,14 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       }
     }
 
-    List<GroupRequestDto> results = Lists.newArrayList();
+    List<GroupRequestDTO> results = Lists.newArrayList();
 
     Page<IamGroupRequest> pagedResults = lookupGroupRequests(usernameFilter, groupNameFilter,
         statusFilter, managedGroups, pageRequest);
 
     pagedResults.getContent().forEach(request -> results.add(converter.fromEntity(request)));
 
-    ListResponseDTO.Builder<GroupRequestDto> builder = ListResponseDTO.builder();
+    ListResponseDTO.Builder<GroupRequestDTO> builder = ListResponseDTO.builder();
     return builder.resources(results).fromPage(pagedResults, pageRequest).build();
   }
 

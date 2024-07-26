@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.requests.GroupRequestConverter;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -66,27 +66,27 @@ public class GroupRequestsTestUtils {
   @Autowired
   protected ObjectMapper mapper;
 
-  protected GroupRequestDto buildGroupRequest(String groupName) {
-    GroupRequestDto request = new GroupRequestDto();
+  protected GroupRequestDTO buildGroupRequest(String groupName) {
+    GroupRequestDTO request = new GroupRequestDTO();
     request.setGroupName(groupName);
     request.setNotes(TEST_NOTES);
 
     return request;
   }
 
-  protected GroupRequestDto savePendingGroupRequest(String username, String groupName) {
+  protected GroupRequestDTO savePendingGroupRequest(String username, String groupName) {
     return saveGroupRequest(username, groupName, PENDING);
   }
 
-  protected GroupRequestDto saveApprovedGroupRequest(String username, String groupName) {
+  protected GroupRequestDTO saveApprovedGroupRequest(String username, String groupName) {
     return saveGroupRequest(username, groupName, APPROVED);
   }
 
-  protected GroupRequestDto saveRejectedGroupRequest(String username, String groupName) {
+  protected GroupRequestDTO saveRejectedGroupRequest(String username, String groupName) {
     return saveGroupRequest(username, groupName, REJECTED);
   }
 
-  private GroupRequestDto saveGroupRequest(String username, String groupName,
+  private GroupRequestDTO saveGroupRequest(String username, String groupName,
       IamRequestStatus status) {
 
     IamGroupRequest iamGroupRequest = new IamGroupRequest();

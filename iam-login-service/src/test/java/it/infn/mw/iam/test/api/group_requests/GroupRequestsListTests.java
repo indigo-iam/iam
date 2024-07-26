@@ -37,7 +37,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.ListResponseDTO;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -103,10 +103,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getUsername(), equalTo(USER_101));
     }
   }
@@ -128,10 +128,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getStatus(), equalTo(IamRequestStatus.PENDING.name()));
     }
   }
@@ -153,10 +153,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getGroupName(), equalTo(GROUP_02));
     }
   }
@@ -177,10 +177,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getUsername(), equalTo(USER_100));
     }
   }
@@ -198,10 +198,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getUsername(), equalTo(USER_100));
     }
   }
@@ -235,10 +235,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getUsername(), equalTo(USER_100));
       assertThat(elem.getStatus(), equalTo(testStatus));
     }
@@ -263,10 +263,10 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    ListResponseDTO<GroupRequestDto> result =
-        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDto>>() {});
+    ListResponseDTO<GroupRequestDTO> result =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<GroupRequestDTO>>() {});
 
-    for (GroupRequestDto elem : result.getResources()) {
+    for (GroupRequestDTO elem : result.getResources()) {
       assertThat(elem.getGroupName(), equalTo(GROUP_01));
       assertThat(elem.getStatus(), equalTo(testStatus));
     }

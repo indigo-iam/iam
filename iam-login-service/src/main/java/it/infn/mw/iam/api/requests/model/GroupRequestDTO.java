@@ -29,7 +29,7 @@ import it.infn.mw.iam.api.validators.IamGroupRequestNotes;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @GroupRequest
-public class GroupRequestDto extends IamRequestDTO {
+public class GroupRequestDTO extends IamRequestDTO {
 
   @NotEmpty
   @IamGroupName(message = "Invalid membership request: group does not exist")
@@ -41,12 +41,12 @@ public class GroupRequestDto extends IamRequestDTO {
   @IamGroupRequestNotes(message = "Invalid membership request: notes cannot be empty")
   private String notes;
 
-  public GroupRequestDto() {
+  public GroupRequestDTO() {
     // empty constructor
   }
 
   @JsonCreator
-  public GroupRequestDto(@JsonProperty("uuid") String uuid,
+  public GroupRequestDTO(@JsonProperty("uuid") String uuid,
       @JsonProperty("userUuid") String userUuid, @JsonProperty("userFullName") String userFullName,
       @JsonProperty("username") String username, @JsonProperty("group_name") String groupName,
       @JsonProperty("group_uuid") String groupUuid, @JsonProperty("status") String status,

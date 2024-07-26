@@ -39,7 +39,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
@@ -73,7 +73,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void approveGroupRequestAsAdmin() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     String response = mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())
@@ -88,7 +88,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    GroupRequestDto result = mapper.readValue(response, GroupRequestDto.class);
+    GroupRequestDTO result = mapper.readValue(response, GroupRequestDTO.class);
     assertThat(result.getLastUpdateTime(), greaterThanOrEqualTo(result.getCreationTime()));
 
     int mailCount = notificationService.countPendingNotifications();
@@ -105,7 +105,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"USER"})
   public void approveGroupRequestAsUser() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isForbidden());
@@ -115,7 +115,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void approveGroupRequestAsAnonymous() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
@@ -139,7 +139,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void approveAlreadyApprovedRequest() throws Exception {
-    GroupRequestDto request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = saveApprovedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
     .andExpect(status().isBadRequest())
@@ -150,7 +150,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN"})
   public void approveRejectedRequest() throws Exception {
-    GroupRequestDto request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = saveRejectedGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
     .andExpect(status().isBadRequest())
@@ -161,7 +161,7 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void approveGroupRequestAsUserWithBothRoles() throws Exception {
-    GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
+    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
     // @formatter:off
     mvc.perform(post(APPROVE_URL, request.getUuid()))
       .andExpect(status().isOk())

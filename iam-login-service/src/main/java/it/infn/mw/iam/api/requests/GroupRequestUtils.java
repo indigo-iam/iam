@@ -31,7 +31,7 @@ import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.exception.IamRequestValidationError;
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.core.IamRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
@@ -65,7 +65,7 @@ public class GroupRequestUtils {
           String.format("Group request with UUID [%s] does not exist", requestId)));
   }
 
-  public void checkRequestAlreadyExist(GroupRequestDto request) {
+  public void checkRequestAlreadyExist(GroupRequestDTO request) {
     
     List<IamGroupRequest> results = groupRequestRepository
       .findByUsernameAndGroup(request.getUsername(), request.getGroupName());
@@ -92,7 +92,7 @@ public class GroupRequestUtils {
     }
   }
 
-  public void checkUserMembership(GroupRequestDto request) {
+  public void checkUserMembership(GroupRequestDTO request) {
     Optional<IamAccount> userAccount = accountRepository.findByUsername(request.getUsername());
     if (userAccount.isPresent()) {
       Optional<IamGroup> group = userAccount.get()
