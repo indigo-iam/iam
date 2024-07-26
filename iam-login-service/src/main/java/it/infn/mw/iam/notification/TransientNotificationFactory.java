@@ -206,7 +206,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] New membership request for group %s", organisationName, groupName);
+    String subject = String.format("New membership request for group %s", groupName);
 
     LOG.debug("Create group membership admin notification for request {}", groupRequest.getUuid());
     return createMessage("adminHandleGroupRequest.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
@@ -227,7 +227,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
-        String.format("[%s IAM] Membership request for group %s has been %s", organisationName, groupName, status);
+        String.format("Membership request for group %s has been %s", groupName, status);
 
     IamEmailNotification notification =
         createMessage("groupMembershipApproved.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
@@ -251,7 +251,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
-        String.format("[%s IAM] Membership request for group %s has been %s", organisationName, groupName, status);
+        String.format("Membership request for group %s has been %s", groupName, status);
 
     IamEmailNotification notification =
         createMessage("groupMembershipRejected.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
@@ -272,7 +272,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put("isClientActive", client.isActive());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] Changed client status", organisationName);
+    String subject = "Changed client status";
 
     for (IamAccount a : accounts) {
       recipients.add(a.getUserInfo().getEmail());
@@ -314,7 +314,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
     model.put("missingDays", missingDays);
 
-    String subject = String.format("[%s IAM] AUP signature reminder", organisationName);
+    String subject = "AUP signature reminder";
 
     IamEmailNotification notification = createMessage("signAupReminder.ftl", model,
         IamNotificationType.AUP_REMINDER, subject, asList(account.getUserInfo().getEmail()));
@@ -335,7 +335,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] AUP signature expiration", organisationName);
+    String subject = "AUP signature expiration";
 
     IamEmailNotification notification = createMessage("aupExpirationMessage.ftl", model,
         IamNotificationType.AUP_EXPIRATION, subject, asList(account.getUserInfo().getEmail()));
@@ -357,7 +357,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(AUP_URL, aupUrl);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] AUP signature request", organisationName);
+    String subject = "AUP signature request";
 
     IamEmailNotification notification =
         createMessage("aupSignatureRequest.ftl", model, IamNotificationType.AUP_SIGNATURE_REQUEST,
@@ -377,7 +377,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] Account suspended", organisationName);
+    String subject = "Account suspended";
 
     IamEmailNotification notification = createMessage("accountSuspended.ftl", model,
         IamNotificationType.ACCOUNT_SUSPENDED, subject, asList(account.getUserInfo().getEmail()));
@@ -410,6 +410,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
     try {
+      String formattedSubject = String.format("[%s IAM] %s", organisationName, subject);
       Template template = freeMarkerConfiguration.getTemplate(templateName);
       String body = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
 
@@ -417,7 +418,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
       message.setUuid(UUID.randomUUID().toString());
       message.setType(messageType);
-      message.setSubject(subject);
+      message.setSubject(formattedSubject);
       message.setBody(body);
       message.setCreationTime(new Date());
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
