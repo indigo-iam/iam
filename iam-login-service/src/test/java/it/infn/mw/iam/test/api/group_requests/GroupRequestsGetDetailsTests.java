@@ -76,7 +76,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
       .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
       .andExpect(jsonPath("$.username", equalTo(request.getUsername())))
       .andExpect(jsonPath("$.groupName", equalTo(request.getGroupName())))
-      .andExpect(jsonPath("$.status", equalTo(request.getStatus())));;
+      .andExpect(jsonPath("$.status", equalTo(request.getStatus())));
     // @formatter:on
   }
 

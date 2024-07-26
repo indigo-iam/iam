@@ -18,7 +18,6 @@ package it.infn.mw.iam.config;
 import javax.net.ssl.X509TrustManager;
 
 import org.italiangrid.voms.util.CertificateValidatorBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import eu.emi.security.authn.x509.X509CertChainValidatorExt;

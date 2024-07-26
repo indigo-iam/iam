@@ -36,20 +36,20 @@ import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 
 public class GroupRequestsTestUtils {
 
-  protected final static String TEST_ADMIN = "admin";
-  protected final static String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
-  protected final static String TEST_ADMIN_FULL_NAME = "Admin User";
-  protected final static String TEST_100_USERNAME = "test_100";
-  protected final static String TEST_101_USERNAME = "test_101";
-  protected final static String TEST_102_USERNAME = "test_102";
-  protected final static String TEST_103_USERNAME = "test_103";
-  protected final static String TEST_001_GROUPNAME = "Test-001";
-  protected final static String TEST_002_GROUPNAME = "Test-002";
-  protected final static String TEST_001_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980001";
-  protected final static String TEST_002_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980002";
+  protected static final String TEST_ADMIN = "admin";
+  protected static final String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
+  protected static final String TEST_ADMIN_FULL_NAME = "Admin User";
+  protected static final String TEST_100_USERNAME = "test_100";
+  protected static final String TEST_101_USERNAME = "test_101";
+  protected static final String TEST_102_USERNAME = "test_102";
+  protected static final String TEST_103_USERNAME = "test_103";
+  protected static final String TEST_001_GROUPNAME = "Test-001";
+  protected static final String TEST_002_GROUPNAME = "Test-002";
+  protected static final String TEST_001_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980001";
+  protected static final String TEST_002_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980002";
   
-  protected final static String TEST_NOTES = "Test group request membership";
-  protected final static String TEST_REJECT_MOTIVATION = "You are not welcome!";
+  protected static final String TEST_NOTES = "Test group request membership";
+  protected static final String TEST_REJECT_MOTIVATION = "You are not welcome!";
 
   @Autowired
   protected IamGroupRequestRepository groupRequestRepository;

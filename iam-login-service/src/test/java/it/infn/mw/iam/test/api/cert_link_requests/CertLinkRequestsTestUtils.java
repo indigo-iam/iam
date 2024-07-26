@@ -38,20 +38,20 @@ import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
 public class CertLinkRequestsTestUtils {
 
-  protected final static String TEST_LABEL = "some label";
-  protected final static String TEST_ADMIN = "admin";
-  protected final static String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
-  protected final static String TEST_ADMIN_FULL_NAME = "Admin User";
-  protected final static String TEST_100_USERNAME = "test_100";
-  protected final static String TEST_101_USERNAME = "test_101";
-  protected final static String TEST_102_USERNAME = "test_102";
-  protected final static String TEST_103_USERNAME = "test_103";
-  protected final static String TEST_SUBJECTDN_OK = "CN=Test100,O=Test";
-  protected final static String TEST_ISSUERDN_OK = "CN=Test CA,O=IGI,C=IT";
+  protected static final String TEST_LABEL = "some label";
+  protected static final String TEST_ADMIN = "admin";
+  protected static final String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
+  protected static final String TEST_ADMIN_FULL_NAME = "Admin User";
+  protected static final String TEST_100_USERNAME = "test_100";
+  protected static final String TEST_101_USERNAME = "test_101";
+  protected static final String TEST_102_USERNAME = "test_102";
+  protected static final String TEST_103_USERNAME = "test_103";
+  protected static final String TEST_SUBJECTDN_OK = "CN=Test100,O=Test";
+  protected static final String TEST_ISSUERDN_OK = "CN=Test CA,O=IGI,C=IT";
 
-  protected final static String TEST_NOTES = "Test certLink request membership";
-  protected final static String TEST_REJECT_MOTIVATION = "You are not welcome!";
-  protected final static String TEST0_PEM_STRING = "-----BEGIN CERTIFICATE-----\n" + //
+  protected static final String TEST_NOTES = "Test certLink request membership";
+  protected static final String TEST_REJECT_MOTIVATION = "You are not welcome!";
+  protected static final String TEST0_PEM_STRING = "-----BEGIN CERTIFICATE-----\n" + //
       "MIIDnjCCAoagAwIBAgIBCDANBgkqhkiG9w0BAQUFADAtMQswCQYDVQQGEwJJVDEM\n" + //
       "MAoGA1UECgwDSUdJMRAwDgYDVQQDDAdUZXN0IENBMB4XDTIyMTAwMTEzMTYzMloX\n" + //
       "DTMyMDkyODEzMTYzMlowKzELMAkGA1UEBhMCSVQxDDAKBgNVBAoMA0lHSTEOMAwG\n" + //

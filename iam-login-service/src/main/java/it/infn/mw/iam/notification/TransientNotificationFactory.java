@@ -66,7 +66,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String AUP_PATH = "%s/iam/aup/sign";
   private static final String AUP_URL = "aupUrl";
   private static final String DASHBOARD_FIELD = "indigoDashboardUrl";
-  private static final String DASHBOARD_URL_TEMPLATE ="%s/dashboard#!/requests";
+  private static final String DASHBOARD_URL_TEMPLATE = "%s/dashboard#!/requests";
   private static final String NAME_FIELD = "name";
   private static final String NOTES_FIELD = "notes";
   private static final String STATUS_FIELD = "status";
@@ -169,7 +169,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(NAME_FIELD, name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put(DASHBOARD_FIELD, String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
     model.put(NOTES_FIELD, request.getNotes());
 
@@ -191,8 +191,9 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ORGANISATION_NAME, organisationName);
     model.put(USERNAME_FIELD, account.getUsername());
 
-    IamEmailNotification notification = createMessage("resetPassword.ftl", model, IamNotificationType.RESETPASSWD,
-        properties.getSubject().get("resetPassword"), asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification =
+        createMessage("resetPassword.ftl", model, IamNotificationType.RESETPASSWD,
+            properties.getSubject().get("resetPassword"), asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created reset password message for account {}. Reset password URL: {}",
         account.getUsername(), resetPasswordUrl);
@@ -232,11 +233,12 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(STATUS_FIELD, status);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("Membership request for group %s has been %s", groupName, status);
+    String subject =
+        String.format("Membership request for group %s has been %s", groupName, status);
 
-    IamEmailNotification notification = createMessage("groupMembershipApproved.ftl", model,
-        IamNotificationType.GROUP_MEMBERSHIP,
-        subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
+    IamEmailNotification notification =
+        createMessage("groupMembershipApproved.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
+            subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
     return notification;
@@ -255,11 +257,12 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(MOTIVATION_FIELD, groupRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("Membership request for group %s has been %s", groupName, status);
+    String subject =
+        String.format("Membership request for group %s has been %s", groupName, status);
 
-    IamEmailNotification notification = createMessage("groupMembershipRejected.ftl", model,
-        IamNotificationType.GROUP_MEMBERSHIP,
-        subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
+    IamEmailNotification notification =
+        createMessage("groupMembershipRejected.ftl", model, IamNotificationType.GROUP_MEMBERSHIP,
+            subject, asList(groupRequest.getAccount().getUserInfo().getEmail()));
 
     LOG.debug("Create group membership approved message for request {}", groupRequest.getUuid());
     return notification;
@@ -410,7 +413,8 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
-  public IamEmailNotification createAdminHandleCertLinkRequestMessage(IamCertLinkRequest certLinkRequest) {
+  public IamEmailNotification createAdminHandleCertLinkRequestMessage(
+      IamCertLinkRequest certLinkRequest) {
     String recipient = certLinkRequest.getAccount().getUserInfo().getName();
     String subject = "New certificate linking request";
 
@@ -421,11 +425,12 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put(NOTES_FIELD, certLinkRequest.getNotes());
-    model.put(DASHBOARD_FIELD, String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
-    return createMessage("adminHandleCertLinkRequest.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-        subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+    return createMessage("adminHandleCertLinkRequest.ftl", model,
+        IamNotificationType.CERTIFICATE_LINK, subject,
+        adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
   }
 
   @Override

@@ -77,7 +77,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
       .andExpect(jsonPath("$.username", equalTo(request.getUsername())))
       .andExpect(jsonPath("$.subjectDn", equalTo(request.getSubjectDn())))
       .andExpect(jsonPath("$.issuerDn", equalTo(request.getIssuerDn())))
-      .andExpect(jsonPath("$.status", equalTo(request.getStatus())));;
+      .andExpect(jsonPath("$.status", equalTo(request.getStatus())));
     // @formatter:on
   }
 
