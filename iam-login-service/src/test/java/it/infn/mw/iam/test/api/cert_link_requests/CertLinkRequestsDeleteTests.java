@@ -36,19 +36,20 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
 
-  private final static String DELETE_URL = "/iam/cert_link_requests/{uuid}";
+  private static final String DELETE_URL = "/iam/cert_link_requests/{uuid}";
 
   @Autowired
   private MockMvc mvc;
 
   @Test
-  @WithMockUser(roles = { "ADMIN" })
+  @WithMockUser(roles = {"ADMIN"})
   public void deletePendingCertLinkRequestAsAdmin() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
@@ -57,10 +58,10 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN" })
+  @WithMockUser(roles = {"ADMIN"})
   public void deleteApprovedCertLinkRequestAsAdmin() throws Exception {
-    CertLinkRequestDTO request = saveApprovedCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK,
-        "");
+    CertLinkRequestDTO request =
+        saveApprovedCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
@@ -68,10 +69,11 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void deletePendingCertLinkRequestAsUser() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
@@ -80,10 +82,10 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void deleteApprovedCertLinkRequestAsUser() throws Exception {
-    CertLinkRequestDTO request = saveApprovedCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK,
-        "");
+    CertLinkRequestDTO request =
+        saveApprovedCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, "");
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
@@ -92,10 +94,11 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void deleteCertLinkRequestOfAnotherUser() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest("test_101", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest("test_101", TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
@@ -107,7 +110,8 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   @WithAnonymousUser
   public void deleteCertLinkRequestAsAnonymous() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
@@ -116,7 +120,7 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN" })
+  @WithMockUser(roles = {"ADMIN"})
   public void deleteNotExitingCertLinkRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
@@ -128,18 +132,15 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN", "USER" })
+  @WithMockUser(roles = {"ADMIN", "USER"})
   public void deletePendingCertLinkRequestAsUserWithBothRoles() throws Exception {
 
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
     // @formatter:on
   }
-
-  // TODO: what happens if the admin manually links the certificate to the account
-  // before the request is approved?
-
 }

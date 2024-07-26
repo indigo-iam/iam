@@ -53,7 +53,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   private static final String REJECT_URL = "/iam/group_requests/{uuid}/reject";
   private static final String GET_DETAILS_URL = "/iam/group_requests/{uuid}";
   private static final String LIST_REQUESTS_URL = "/iam/group_requests";
-  private final static String DELETE_URL = "/iam/group_requests/{uuid}";
+  private static final String DELETE_URL = "/iam/group_requests/{uuid}";
 
   @Autowired
   private MockMvc mvc;

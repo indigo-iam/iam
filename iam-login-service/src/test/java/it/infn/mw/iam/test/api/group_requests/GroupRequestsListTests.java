@@ -47,17 +47,17 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsListTests extends GroupRequestsTestUtils {
 
-  private final static String LIST_REQUESTS_URL = "/iam/group_requests/";
+  private static final String LIST_REQUESTS_URL = "/iam/group_requests/";
 
   @Autowired
   private MockMvc mvc;
 
-  private final static String USER_100 = TEST_100_USERNAME;
-  private final static String USER_101 = "test_101";
+  private static final String USER_100 = TEST_100_USERNAME;
+  private static final String USER_101 = "test_101";
 
-  private final static String GROUP_01 = TEST_001_GROUPNAME;
-  private final static String GROUP_02 = "Test-002";
-  private final static String GROUP_03 = "Test-003";
+  private static final String GROUP_01 = TEST_001_GROUPNAME;
+  private static final String GROUP_02 = "Test-002";
+  private static final String GROUP_03 = "Test-003";
 
   @Before
   public void setup() {

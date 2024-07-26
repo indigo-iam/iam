@@ -28,17 +28,15 @@ import it.infn.mw.iam.authn.x509.DummyX509TrustManager;
 @Configuration
 public class X509CommonTrustConfig {
 
-  @Autowired
-  X509Properties x509Properties;
-
   @Bean
-  X509TrustManager trustManager() {
+  X509TrustManager trustManager(X509Properties x509Properties) {
     X509TrustManager tm;
     try {
-      X509CertChainValidatorExt certificateValidator = new CertificateValidatorBuilder().lazyAnchorsLoading(false)
-          .trustAnchorsDir(x509Properties.getTrustAnchorsDir())
-          .trustAnchorsUpdateInterval(x509Properties.getTrustAnchorsRefreshMsec().longValue())
-          .build();
+      X509CertChainValidatorExt certificateValidator =
+          new CertificateValidatorBuilder().lazyAnchorsLoading(false)
+            .trustAnchorsDir(x509Properties.getTrustAnchorsDir())
+            .trustAnchorsUpdateInterval(x509Properties.getTrustAnchorsRefreshMsec().longValue())
+            .build();
       tm = SocketFactoryCreator.getSSLTrustManager(certificateValidator);
     } catch (Exception e) {
       tm = DummyX509TrustManager.INSTANCE;

@@ -54,7 +54,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
 public class CertLinkRequestsRejectTests extends CertLinkRequestsTestUtils {
 
-  private final static String REJECT_URL = "/iam/cert_link_requests/{uuid}/reject";
+  private static final String REJECT_URL = "/iam/cert_link_requests/{uuid}/reject";
 
   @Autowired
   private NotificationStoreService notificationService;

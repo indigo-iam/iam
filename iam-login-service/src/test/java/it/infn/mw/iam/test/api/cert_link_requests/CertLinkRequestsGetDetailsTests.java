@@ -42,7 +42,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
 public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
 
-  private final static String GET_DETAILS_URL = "/iam/cert_link_requests/{uuid}";
+  private static final String GET_DETAILS_URL = "/iam/cert_link_requests/{uuid}";
 
   @Autowired
   private MockMvc mvc;

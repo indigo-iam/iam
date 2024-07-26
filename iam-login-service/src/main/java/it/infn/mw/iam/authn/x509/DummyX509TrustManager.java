@@ -20,7 +20,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 public final class DummyX509TrustManager implements X509TrustManager {
-    static public final X509TrustManager INSTANCE = new DummyX509TrustManager();
+    public static final X509TrustManager INSTANCE = new DummyX509TrustManager();
 
     private DummyX509TrustManager() {
     }

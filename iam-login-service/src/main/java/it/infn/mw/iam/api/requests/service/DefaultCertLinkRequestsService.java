@@ -139,7 +139,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
   @Override
   public CertLinkRequestDTO approveCertLinkRequest(String requestId) {
     IamCertLinkRequest request = certLinkRequestUtils.getCertLinkRequest(requestId);
-    request = updateCertLinkRequestStatus(request, APPROVED);
+    updateCertLinkRequestStatus(request, APPROVED);
     notificationFactory.createCertLinkApprovedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestApprovedEvent(this, request));
     certLinkRequestRepository.delete(request);
@@ -159,7 +159,7 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     certLinkRequestUtils.validateRejectMotivation(motivation);
 
     request.setMotivation(motivation);
-    request = updateCertLinkRequestStatus(request, REJECTED);
+    updateCertLinkRequestStatus(request, REJECTED);
     notificationFactory.createCertLinkRejectedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestRejectedEvent(this, request));
     certLinkRequestRepository.delete(request);
@@ -180,11 +180,11 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
     Optional<String> subjectFilter = Optional.ofNullable(subject);
     Optional<String> statusFilter = Optional.ofNullable(status);
 
-    Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
-    Boolean isAdmin = userAccount.isPresent() && userAccount.get().getAuthorities().contains(ROLE_ADMIN);
-    if (!isAdmin) {
-      usernameFilter = Optional.of(userAccount.get().getUsername());
-    }
+    IamAccount userAccount = accountUtils.getAuthenticatedUserAccount()
+        .orElseThrow(() -> new IllegalStateException("No authenticated user found"));
+    if (!userAccount.getAuthorities().contains(ROLE_ADMIN)) {
+      usernameFilter = Optional.of(userAccount.getUsername());
+    }    
 
     List<CertLinkRequestDTO> results = Lists.newArrayList();
 

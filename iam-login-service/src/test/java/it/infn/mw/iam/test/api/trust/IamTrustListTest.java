@@ -46,7 +46,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
         properties = {"x509.trustAnchorsDir=src/test/resources/test-ca"})
 public class IamTrustListTest {
 
-    private final static String TRUST_URL = "/iam/api/trusts";
+    private static final String TRUST_URL = "/iam/api/trusts";
 
     @Autowired
     private MockMvc mvc;

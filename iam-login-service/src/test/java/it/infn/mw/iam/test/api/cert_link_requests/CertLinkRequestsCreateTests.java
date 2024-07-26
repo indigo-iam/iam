@@ -56,7 +56,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
     "x509.trustAnchorsDir=src/test/resources/test-ca" })
 public class CertLinkRequestsCreateTests extends CertLinkRequestsTestUtils {
 
-  private final static String CREATE_URL = "/iam/cert_link_requests";
+  private static final String CREATE_URL = "/iam/cert_link_requests";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;

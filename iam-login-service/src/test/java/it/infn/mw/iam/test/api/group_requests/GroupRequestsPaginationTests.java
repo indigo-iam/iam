@@ -39,7 +39,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsPaginationTests extends GroupRequestsTestUtils{
   
-  private final static String LIST_REQUESTS_URL = "/iam/group_requests/";
+  private static final String LIST_REQUESTS_URL = "/iam/group_requests/";
   
   public static final String GROUP_NAME_TEMPLATE = "Test-%03d";
 

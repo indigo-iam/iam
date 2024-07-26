@@ -54,7 +54,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsRejectTests extends GroupRequestsTestUtils {
 
-  private final static String REJECT_URL = "/iam/group_requests/{uuid}/reject";
+  private static final String REJECT_URL = "/iam/group_requests/{uuid}/reject";
 
 
   @Autowired

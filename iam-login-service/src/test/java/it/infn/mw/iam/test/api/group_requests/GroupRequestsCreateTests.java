@@ -56,7 +56,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsCreateTests extends GroupRequestsTestUtils {
 
-  private final static String CREATE_URL = "/iam/group_requests";
+  private static final String CREATE_URL = "/iam/group_requests";
 
   @Value("${iam.baseUrl}")
   private String baseUrl;

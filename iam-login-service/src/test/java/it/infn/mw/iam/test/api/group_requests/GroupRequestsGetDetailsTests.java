@@ -43,7 +43,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
 
-  private final static String GET_DETAILS_URL = "/iam/group_requests/{uuid}";
+  private static final String GET_DETAILS_URL = "/iam/group_requests/{uuid}";
 
   @Autowired
   private MockMvc mvc;

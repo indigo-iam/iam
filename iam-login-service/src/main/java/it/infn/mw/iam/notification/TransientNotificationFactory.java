@@ -65,6 +65,14 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String MOTIVATION_FIELD = "motivation";
   private static final String AUP_PATH = "%s/iam/aup/sign";
   private static final String AUP_URL = "aupUrl";
+  private static final String DASHBOARD_FIELD = "indigoDashboardUrl";
+  private static final String DASHBOARD_URL_TEMPLATE ="%s/dashboard#!/requests";
+  private static final String NAME_FIELD = "name";
+  private static final String NOTES_FIELD = "notes";
+  private static final String STATUS_FIELD = "status";
+  private static final String SUBJECT_FIELD = "subject";
+  private static final String ISSUER_FIELD = "issuer";
+
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -158,12 +166,12 @@ public class TransientNotificationFactory implements NotificationFactory {
     String email = request.getAccount().getUserInfo().getEmail();
 
     Map<String, Object> model = new HashMap<>();
-    model.put("name", name);
+    model.put(NAME_FIELD, name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(DASHBOARD_FIELD, String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
-    model.put("notes", request.getNotes());
+    model.put(NOTES_FIELD, request.getNotes());
 
     return createMessage("adminHandleRequest.ftl", model, IamNotificationType.CONFIRMATION,
         properties.getSubject().get("adminHandleRequest"),
@@ -197,11 +205,11 @@ public class TransientNotificationFactory implements NotificationFactory {
     String groupName = groupRequest.getGroup().getName();
 
     Map<String, Object> model = new HashMap<>();
-    model.put("name", groupRequest.getAccount().getUserInfo().getName());
+    model.put(NAME_FIELD, groupRequest.getAccount().getUserInfo().getName());
     model.put(USERNAME_FIELD, groupRequest.getAccount().getUsername());
     model.put(GROUPNAME_FIELD, groupName);
-    model.put("notes", groupRequest.getNotes());
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(NOTES_FIELD, groupRequest.getNotes());
+    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("New membership request for group %s", groupName);
@@ -221,7 +229,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(GROUPNAME_FIELD, groupName);
-    model.put("status", status);
+    model.put(STATUS_FIELD, status);
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("Membership request for group %s has been %s", groupName, status);
@@ -243,8 +251,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(GROUPNAME_FIELD, groupName);
-    model.put("status", status);
-    model.put("motivation", groupRequest.getMotivation());
+    model.put(STATUS_FIELD, status);
+    model.put(MOTIVATION_FIELD, groupRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("Membership request for group %s has been %s", groupName, status);
@@ -408,12 +416,12 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
-    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
-    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
+    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
+    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
-    model.put("notes", certLinkRequest.getNotes());
-    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
+    model.put(NOTES_FIELD, certLinkRequest.getNotes());
+    model.put(DASHBOARD_FIELD, String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
     return createMessage("adminHandleCertLinkRequest.ftl", model, IamNotificationType.CERTIFICATE_LINK,
@@ -427,10 +435,10 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
-    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
-    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
-    model.put("status", certLinkRequest.getStatus().name());
+    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
+    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
+    model.put(STATUS_FIELD, certLinkRequest.getStatus().name());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put(ORGANISATION_NAME, organisationName);
 
@@ -445,12 +453,12 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put("name", certLinkRequest.getAccount().getUserInfo().getName());
-    model.put("subject", certLinkRequest.getCertificate().getSubjectDn());
-    model.put("issuer", certLinkRequest.getCertificate().getIssuerDn());
-    model.put("status", certLinkRequest.getStatus().name());
+    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
+    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
+    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
+    model.put(STATUS_FIELD, certLinkRequest.getStatus().name());
     model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
-    model.put("motivation", certLinkRequest.getMotivation());
+    model.put(MOTIVATION_FIELD, certLinkRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
 
     return createMessage("certLinkRejected.ftl", model, IamNotificationType.CERTIFICATE_LINK,

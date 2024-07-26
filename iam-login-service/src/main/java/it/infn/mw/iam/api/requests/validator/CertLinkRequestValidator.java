@@ -42,6 +42,24 @@ public class CertLinkRequestValidator
         // empty
     }
 
+    private boolean missingPemAndDn(CertLinkRequestDTO value) {
+        return Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+                && (Strings.isNullOrEmpty(value.getSubjectDn())
+                        || Strings.isNullOrEmpty(value.getIssuerDn()));
+    }
+
+    private boolean inconsistentSubject(CertLinkRequestDTO value, IamX509Certificate cert) {
+        return !Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+                && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getSubjectDn()),
+                        X500NameUtils.getComparableForm(cert.getSubjectDn())));
+    }
+
+    private boolean inconsistentIssuer(CertLinkRequestDTO value, IamX509Certificate cert) {
+        return !Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+                && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getIssuerDn()),
+                        X500NameUtils.getComparableForm(cert.getIssuerDn())));
+    }
+
     @Override
     public boolean isValid(CertLinkRequestDTO value, ConstraintValidatorContext context) {
 
@@ -49,28 +67,20 @@ public class CertLinkRequestValidator
             if (value == null) {
                 return false;
             }
-            if (Strings.isNullOrEmpty(value.getPemEncodedCertificate())
-                    && (Strings.isNullOrEmpty(value.getSubjectDn())
-                            || Strings.isNullOrEmpty(value.getIssuerDn()))) {
+            if (missingPemAndDn(value)) {
                 return false;
             }
             if (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())) {
-                IamX509Certificate cert = parser.parseCertificateFromString(value.getPemEncodedCertificate());
-                if (!Strings.isNullOrEmpty(value.getSubjectDn())) {
-                    if (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getSubjectDn()),
-                            X500NameUtils.getComparableForm(cert.getSubjectDn()))) {
-                        return false;
-                    }
-                }
-                if (!Strings.isNullOrEmpty(value.getIssuerDn())) {
-                    if (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getIssuerDn()),
-                            X500NameUtils.getComparableForm(cert.getIssuerDn()))) {
-                        return false;
-                    }
+                IamX509Certificate cert =
+                        parser.parseCertificateFromString(value.getPemEncodedCertificate());
+                if (inconsistentSubject(value, cert) || inconsistentIssuer(value, cert)) {
+                    return false;
                 }
             }
             return true;
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             return false;
         }
 

@@ -49,7 +49,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
 
-  private final static String DELETE_URL = "/iam/group_requests/{uuid}";
+  private static final String DELETE_URL = "/iam/group_requests/{uuid}";
   private static final String EXPECTED_USER_NOT_FOUND = "expected user not found";
   private static final String EXPECTED_GROUP_NOT_FOUND = "expected group not found";
 
