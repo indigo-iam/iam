@@ -49,13 +49,13 @@ public class CertLinkRequestValidator
     }
 
     private boolean inconsistentSubject(CertLinkRequestDTO value, IamX509Certificate cert) {
-        return !Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+        return !Strings.isNullOrEmpty(value.getSubjectDn())
                 && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getSubjectDn()),
                         X500NameUtils.getComparableForm(cert.getSubjectDn())));
     }
 
     private boolean inconsistentIssuer(CertLinkRequestDTO value, IamX509Certificate cert) {
-        return !Strings.isNullOrEmpty(value.getPemEncodedCertificate())
+        return !Strings.isNullOrEmpty(value.getIssuerDn())
                 && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getIssuerDn()),
                         X500NameUtils.getComparableForm(cert.getIssuerDn())));
     }
