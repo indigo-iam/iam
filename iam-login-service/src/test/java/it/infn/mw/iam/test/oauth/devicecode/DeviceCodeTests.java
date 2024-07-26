@@ -1047,5 +1047,60 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     clientRepo.save(entity);
   }
 
+  @Test
+  public void testDeviceCodeVerificationUriCompleteWorks() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("scope", "openid profile"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri_complete").exists())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+
+    String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(verificationUriComplete))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+  }
+
 
 }
