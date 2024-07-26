@@ -20,7 +20,6 @@ import java.util.Date;
 import javax.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
@@ -28,17 +27,8 @@ import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
 import it.infn.mw.iam.api.validators.PemContent;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @CertLinkRequest
-public class CertLinkRequestDTO {
-
-  private String uuid;
-
-  private String username;
-
-  private String userUuid;
-
-  private String userFullName;
+public class CertLinkRequestDTO extends IamRequestDTO {
 
   @NotEmpty
   private String label;
@@ -52,16 +42,6 @@ public class CertLinkRequestDTO {
   @RFC2253Formatted(message = "Invalid issuer DN format")
   @KnownCertificationAuthority(message = "Certification authority not recognized")
   private String issuerDn;
-
-  private String notes = "";
-
-  private String status;
-
-  private String motivation;
-
-  private Date creationTime;
-
-  private Date lastUpdateTime;
 
   public CertLinkRequestDTO() {
     // empty constructor
@@ -78,35 +58,11 @@ public class CertLinkRequestDTO {
       @JsonProperty("creation_time") Date creationTime,
       @JsonProperty("last_update_time") Date lastUpdateTime) {
 
-    this.uuid = uuid;
-    this.userUuid = userUuid;
-    this.username = username;
-    this.userFullName = userFullName;
+    super(uuid, userUuid, userFullName, username, notes, status, motivation, creationTime, lastUpdateTime);
     this.label = label;
     this.pemEncodedCertificate = pemEncodedCertificate;
     this.subjectDn = subjectDn;
     this.issuerDn = issuerDn;
-    this.notes = notes;
-    this.status = status;
-    this.motivation = motivation;
-    this.creationTime = creationTime;
-    this.lastUpdateTime = lastUpdateTime;
-  }
-
-  public String getUuid() {
-    return uuid;
-  }
-
-  public void setUuid(String uuid) {
-    this.uuid = uuid;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(String username) {
-    this.username = username;
   }
 
   public String getLabel() {
@@ -139,62 +95,6 @@ public class CertLinkRequestDTO {
 
   public void setIssuerDn(String issuerDn) {
     this.issuerDn = issuerDn;
-  }
-
-  public String getNotes() {
-    return notes;
-  }
-
-  public void setNotes(String notes) {
-    this.notes = notes;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
-  }
-
-  public String getMotivation() {
-    return motivation;
-  }
-
-  public void setMotivation(String motivation) {
-    this.motivation = motivation;
-  }
-
-  public Date getCreationTime() {
-    return creationTime;
-  }
-
-  public void setCreationTime(Date creationTime) {
-    this.creationTime = creationTime;
-  }
-
-  public Date getLastUpdateTime() {
-    return lastUpdateTime;
-  }
-
-  public void setLastUpdateTime(Date lastUpdateTime) {
-    this.lastUpdateTime = lastUpdateTime;
-  }
-
-  public String getUserUuid() {
-    return userUuid;
-  }
-
-  public void setUserUuid(String userUuid) {
-    this.userUuid = userUuid;
-  }
-
-  public String getUserFullName() {
-    return userFullName;
-  }
-
-  public void setUserFullName(String userFullName) {
-    this.userFullName = userFullName;
   }
 
 }
