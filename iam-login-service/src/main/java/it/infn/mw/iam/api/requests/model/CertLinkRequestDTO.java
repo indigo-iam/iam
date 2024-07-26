@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
+import it.infn.mw.iam.api.validators.PemContent;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @CertLinkRequest
@@ -42,6 +43,7 @@ public class CertLinkRequestDTO {
   @NotEmpty
   private String label;
 
+  @PemContent(message = "Invalid PEM encoded certificate")
   private String pemEncodedCertificate;
 
   @RFC2253Formatted(message = "Invalid subject DN format")
