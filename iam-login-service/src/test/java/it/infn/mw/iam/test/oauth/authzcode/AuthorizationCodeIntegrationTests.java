@@ -113,7 +113,7 @@ public class AuthorizationCodeIntegrationTests {
 
       // @formatter:off
       ValidatableResponse resp2 = RestAssured.given()
-        .formParam("username", "admin")
+        .formParam("username", "test")
         .formParam("password", "password")
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
@@ -217,7 +217,7 @@ public class AuthorizationCodeIntegrationTests {
 
     // @formatter:off
       ValidatableResponse resp2 = RestAssured.given()
-        .formParam("username", "admin")
+        .formParam("username", "test")
         .formParam("password", "password")
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
@@ -444,28 +444,28 @@ public class AuthorizationCodeIntegrationTests {
     .when()
         .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
     .then()
-        .statusCode(HttpStatus.OK.value());
+        .statusCode(HttpStatus.FORBIDDEN.value());
 
     RestAssured.given()
         .header("Authorization", "Bearer " + refreshedToken)
     .when()
         .get("/iam/me/authorities")
     .then()
-        .statusCode(HttpStatus.OK.value());
+        .statusCode(HttpStatus.FORBIDDEN.value());
 
     RestAssured.given()
         .header("Authorization", "Bearer " + refreshedToken)
     .when()
         .get("/iam/api/clients")
     .then()
-        .statusCode(HttpStatus.OK.value());
+        .statusCode(HttpStatus.FORBIDDEN.value());
 
     RestAssured.given()
         .header("Authorization", "Bearer " + refreshedToken)
     .when()
         .get("/iam/scope_policies")
     .then()
-        .statusCode(HttpStatus.OK.value());    
+        .statusCode(HttpStatus.FORBIDDEN.value());
         // @formatter:on
 
 

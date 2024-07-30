@@ -191,10 +191,8 @@ public class IamOAuthConfirmationController {
     boolean isAdmin =
         account.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-    boolean hasIamScope = filteredScopes.stream().anyMatch(s -> s.startsWith("iam"));
-
     // admin scopes are not allowed to clients approved by regular users
-    if (!isAdmin && hasIamScope) {
+    if (!isAdmin) {
       filteredScopes =
           filteredScopes.stream().filter(s -> !s.startsWith("iam")).collect(Collectors.toSet());
     }
