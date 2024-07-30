@@ -16,28 +16,28 @@
 
 --%>
 <%@ taglib prefix="authz" uri="http://www.springframework.org/security/tags"%>
-    <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
-        <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
-            <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 
-                <t:page title="Register">
-                    <jsp:attribute name="footer">
-                        <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
-                        <script type="text/javascript" src="/webjars/angularjs/angular-animate.js"></script>
-                        <script type="text/javascript" src="/webjars/angularjs/angular-cookies.js"></script>
-                        <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.app.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.controller.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.directive.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.service.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/authn-info.service.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/aup.service.js"></script>
-                        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/privacy-policy.service.js"></script>
-                    </jsp:attribute>
-                    <jsp:body>
-                        <div ng-app="registrationApp">
-                            <div ng-include src="'${resourcesPrefix}/iam/apps/registration/registration.html'">
-                            </div>
-                        </div>
-                    </jsp:body>
-                </t:page>
+<t:page title="Register">
+    <jsp:attribute name="footer">
+        <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
+        <script type="text/javascript" src="/webjars/angular-animate/angular-animate.min.js"></script>
+        <script type="text/javascript" src="/webjars/angular-cookies/angular-cookies.min.js'"></script>
+        <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.app.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.controller.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.directive.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/registration.service.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/authn-info.service.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/aup.service.js"></script>
+        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/privacy-policy.service.js"></script>
+    </jsp:attribute>
+    <jsp:body>
+        <div ng-app="registrationApp">
+            <div ng-include src="'${resourcesPrefix}/iam/apps/registration/registration.html'">
+            </div>
+        </div>
+    </jsp:body>
+</t:page>

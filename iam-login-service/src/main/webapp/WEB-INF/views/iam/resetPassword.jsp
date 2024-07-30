@@ -20,8 +20,8 @@
 <t:page title="Reset password">
   <jsp:attribute name="footer">
     <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
-    <script type="text/javascript" src="/webjars/angularjs/angular-animate.js"></script>
-    <script type="text/javascript" src="/webjars/angularjs/angular-cookies.js"></script>
+    <script type="text/javascript" src="/webjars/angular-animate/angular-animate.min.js"></script>
+    <script type="text/javascript" src="/webjars/angular-cookies/angular-cookies.min.js"></script>
     <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
     <script type="text/javascript" src="${resourcesPrefix}/iam/js/passwordreset.app.js"></script>
     <script type="text/javascript" src="${resourcesPrefix}/iam/js/service/passwordreset.service.js"></script>

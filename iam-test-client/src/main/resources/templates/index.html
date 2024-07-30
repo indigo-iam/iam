@@ -8,106 +8,12 @@
   <meta name="description" content="" />
   <meta name="viewport" content="width=device-width" />
   <base href="/iam-test-client" th:href="@{/}" />
-  <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"
-    th:href="@{webjars/bootstrap/css/bootstrap.min.css}" />
-  <script type="text/javascript" th:src="@{webjars/jquery/jquery.min.js}"></script>
-  <script type="text/javascript" th:src="@{webjars/bootstrap/js/bootstrap.min.js}"></script>
-  <style>
-    [ng\:cloak],
-    [ng-cloak],
-    [data-ng-cloak],
-    [x-ng-cloak],
-    .ng-cloak,
-    .x-ng-cloak {
-      display: none !important;
-
-    }
-  </style>
-</head>
-
-<body ng-app="app" ng-controller="home as home" ng-cloak="">
-  <div class="container">
-    <h1>INDIGO IAM Test Client Application</h1>
-    <div class="alert alert-danger" th:if="${error != null}">
-      <div th:text="${error}"></div>
-    </div>
-  </div>
-
-
-
-  <div class="container" ng-show="!home.authenticated">
-    <p>This is an example OpenID Connect client application for IAM hosted at:
-      <pre th:text="${iamIssuer}"></pre>
-    </p>
-    <p th:if="${hidesTokens}">
-    	This IAM test client application has been configured
-    	to not disclose access, id and refresh tokens. 
-    	
-    	After a successful login you will only see the claims contained in the tokens returned to the test client application.
-    	
-    	To get direct access to 
-    	tokens, consider <a href="https://indigo-iam.github.io/v/current/docs/tasks/user/client-registration/">registering a client application</a>. 
-    </p>
-    <form th:action="@{/openid_connect_login}">
-    
-    <div class="form-group">
-    	<label for="scope">Requested scopes</label>
-    	<input class="form-control" type="text" th:value="${scopes}" id="scope" name="scope"/>
-    	<p class="help-block">
-    	  Select, among the above scopes, which ones will be included in the authorization request. Note
-      	  that an empty scope value will be replaced by the full list of allowed scopes.
-      	</p>			
-    </div>
-    
-   	<div class="form-group">
-   	  <input type="submit" class="form-control btn btn-primary" value="Login"/>
-    </div>
-    </form>    
-  </div>
-
-  <div class="container" ng-show="home.authenticated">
-    <p>You're now logged in as: {{home.user}}</p>
-    
-    <p>This application has received the following information:</p>
-    <ul>
-      <li ng-if="home.access_token_jwt">access_token (JWT):
-        <pre>{{home.access_token_jwt}}</pre>
-      </li>
-
-      <li>access_token (claims):
-        <pre>{{home.access_token_claims | prettyJSON }}</pre>
-      </li>
-      
-      <li ng-show="home.has_introspect_result">OAuth2 token introspection endpoint response (invoked on access_token,
-        authorized by client credentials):
-        <pre>{{home.introspect_result | prettyJSON}}</pre>
-      </li>
-      
-      <li ng-if="home.id_token_jwt">id_token (JWT):
-        <pre>{{home.id_token_jwt}}</pre>
-      </li>
-      
-      <li>id_token (claims):
-        <pre>{{home.id_token_claims | prettyJSON }}</pre>
-      </li>
-      
-      <li>OpenID-Connect user info endpoint response (authorized via access_token):
-        <pre>{{home.user_info | prettyJSON }}</pre>
-      </li>
-      
-      <li ng-show="home.refresh_token_jwt">refresh_token:
-        <pre>{{home.refresh_token_jwt}}</pre>
-      </li>
-    </ul>
-
-    <div>
-      <button ng-click="home.logout()" class="btn btn-primary">Logout</button>
-    </div>
-  </div>
-  <script type="text/javascript" src="/webjars/angularjs/angular.min.js" th:src="@{webjars/angularjs/angular.min.js}">
-  </script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/angular-jwt@0.1.11/dist/angular-jwt.min.js"></script>
-
+  <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/dist/css/bootstrap.min.css"
+    th:href="@{webjars/bootstrap/dist/css/bootstrap.min.css}" />
+  <script type="text/javascript" src="/webjars/jquery/dist/jquery.min.js" th:src="@{webjars/jquery/dist/jquery.min.js}"></script>
+  <script type="text/javascript" src="/webjars/bootstrap/dist/js/bootstrap.min.js" th:src="@{webjars/bootstrap/dist/js/bootstrap.min.js}"></script>
+  <script type="text/javascript" src="/webjars/angularjs/angular.js" th:src="@{webjars/angularjs/angular.js}"></script>
+  <script type="text/javascript" src="/iam-test-client/webjars/angular-jwt/dist/angular-jwt.min.js" ></script>
   <script type="text/javascript">
     angular
       .module("app", ['angular-jwt'])
@@ -179,6 +85,96 @@
         };
       });
   </script>
+  <style>
+    [ng\:cloak],
+    [ng-cloak],
+    [data-ng-cloak],
+    [x-ng-cloak],
+    .ng-cloak,
+    .x-ng-cloak {
+      display: none !important;
+
+    }
+  </style>
+</head>
+
+<body ng-app="app" ng-controller="home as home" ng-cloak="">
+  <div class="container">
+    <h1>INDIGO IAM Test Client Application</h1>
+    <div class="alert alert-danger" th:if="${error != null}">
+      <div th:text="${error}"></div>
+    </div>
+  </div>
+
+  <div class="container" ng-show="!home.authenticated">
+    <p>This is an example OpenID Connect client application for IAM hosted at:
+      <pre th:text="${iamIssuer}"></pre>
+    </p>
+    <p th:if="${hidesTokens}">
+    	This IAM test client application has been configured
+    	to not disclose access, id and refresh tokens. 
+    	
+    	After a successful login you will only see the claims contained in the tokens returned to the test client application.
+    	
+    	To get direct access to 
+    	tokens, consider <a href="https://indigo-iam.github.io/v/current/docs/tasks/user/client-registration/">registering a client application</a>. 
+    </p>
+    <form th:action="@{/openid_connect_login}">
+    
+    <div class="form-group">
+    	<label for="scope">Requested scopes</label>
+    	<input class="form-control" type="text" th:value="${scopes}" id="scope" name="scope"/>
+    	<p class="help-block">
+    	  Select, among the above scopes, which ones will be included in the authorization request. Note
+      	  that an empty scope value will be replaced by the full list of allowed scopes.
+      	</p>			
+    </div>
+    
+   	<div class="form-group">
+   	  <input type="submit" class="form-control btn btn-primary" value="Login"/>
+    </div>
+    </form>    
+  </div>
+
+  <div class="container" ng-show="home.authenticated">
+    <p>You're now logged in as: {{home.user}}</p>
+    
+    <p>This application has received the following information:</p>
+    <ul>
+      <li ng-if="home.access_token_jwt">access_token (JWT):
+        <pre>{{home.access_token_jwt}}</pre>
+      </li>
+
+      <li>access_token (claims):
+        <pre>{{home.access_token_claims | prettyJSON }}</pre>
+      </li>
+      
+      <li ng-show="home.has_introspect_result">OAuth2 token introspection endpoint response (invoked on access_token,
+        authorized by client credentials):
+        <pre>{{home.introspect_result | prettyJSON}}</pre>
+      </li>
+      
+      <li ng-if="home.id_token_jwt">id_token (JWT):
+        <pre>{{home.id_token_jwt}}</pre>
+      </li>
+      
+      <li>id_token (claims):
+        <pre>{{home.id_token_claims | prettyJSON }}</pre>
+      </li>
+      
+      <li>OpenID-Connect user info endpoint response (authorized via access_token):
+        <pre>{{home.user_info | prettyJSON }}</pre>
+      </li>
+      
+      <li ng-show="home.refresh_token_jwt">refresh_token:
+        <pre>{{home.refresh_token_jwt}}</pre>
+      </li>
+    </ul>
+
+    <div>
+      <button ng-click="home.logout()" class="btn btn-primary">Logout</button>
+    </div>
+  </div>
 </body>
 
 </html>
