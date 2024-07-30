@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
 import java.util.List;
@@ -104,8 +104,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConsentPageReturnsFilteredScopes()
-      throws JsonProcessingException, IOException, ParseException {
+  public void testConsentPageReturnsFilteredScopes() {
 
     IamAccount testAccount = findTestAccount();
 
