@@ -63,6 +63,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   public static final String RESPONSE_TYPE_CODE = "code";
   public static final String EMAIL = "email";
   public static final String SCOPE = "openid email";
+  public static final String SCOPE_ADMIN = "openid iam:admin.write";
   public static final String LOCALHOST_URL_TEMPLATE = "http://localhost:%d";
   public static final String TEST_CLIENT_REDIRECT_URI =
       "https://iam.local.io/iam-test-client/openid_connect_login";
@@ -175,6 +176,62 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     } finally {
       policyScopeRepo.delete(up);
     }
+
+  }
+
+  @Test
+  public void testConsentPageDoesNotReturnAdminScopeToRegularUser()
+      throws JsonProcessingException, IOException, ParseException {
+
+    // @formatter:off
+    ValidatableResponse authzResponse = RestAssured.given()
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE_ADMIN)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects().follow(false)
+    .when()
+      .get(authorizeUrl)
+    .then()
+      .log().all()
+      .statusCode(HttpStatus.FOUND.value());
+    // @formatter:on
+
+    // @formatter:off
+    ValidatableResponse loginResponse = RestAssured.given()
+      .cookie(authzResponse.extract().detailedCookie(SESSION))
+      .formParam("username", "test")
+      .formParam("password", "password")
+      .formParam("submit", "Login")
+      .redirects().follow(false)
+    .when()
+      .post(loginUrl)
+    .then()
+      .log().all()
+      .statusCode(HttpStatus.FOUND.value());
+    // @formatter:on
+
+    // @formatter:off
+    String responseBody = RestAssured.given()
+      .cookie(loginResponse.extract().detailedCookie(SESSION))
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE_ADMIN)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects().follow(false)
+    .when()
+      .get(authorizeUrl)
+    .then()
+      .log().all()
+      .statusCode(HttpStatus.OK.value())
+      .extract().body().asString();
+    // @formatter:on
+
+    assertThat(responseBody, not(containsString("iam:admin.write")));
 
   }
 
