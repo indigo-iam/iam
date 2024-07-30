@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,17 +43,17 @@ public class IamPDPScopeFilter implements IamScopeFilter {
   }
 
   protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
-    
-    if (authn == null){
+
+    if (authn == null) {
       return Optional.empty();
     }
-    
+
     Authentication userAuthn = authn;
-    
-    if (authn instanceof OAuth2Authentication){
+
+    if (authn instanceof OAuth2Authentication) {
       userAuthn = ((OAuth2Authentication) authn).getUserAuthentication();
     }
-    
+
     if (userAuthn == null) {
       return Optional.empty();
     }
@@ -63,13 +64,24 @@ public class IamPDPScopeFilter implements IamScopeFilter {
 
   @Override
   public void filterScopes(Set<String> scopes, Authentication authn) {
-    
+
     Optional<IamAccount> maybeAccount = resolveIamAccount(authn);
 
     if (maybeAccount.isPresent()) {
-      Set<String> filteredScopes =
-          pdp.filterScopes(scopes, maybeAccount.get());
-      
+      Set<String> filteredScopes = pdp.filterScopes(scopes, maybeAccount.get());
+
+      boolean isAdmin = maybeAccount.get()
+        .getAuthorities()
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+      boolean hasIamScope = filteredScopes.stream().anyMatch(s -> s.startsWith("iam"));
+
+      if (!isAdmin && hasIamScope) {
+        filteredScopes =
+            filteredScopes.stream().filter(s -> !s.startsWith("iam")).collect(Collectors.toSet());
+      }
+
       scopes.retainAll(filteredScopes);
     }
 

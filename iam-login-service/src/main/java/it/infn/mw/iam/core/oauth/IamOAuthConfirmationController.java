@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -185,13 +186,18 @@ public class IamOAuthConfirmationController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
 
-    if (!account.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
-        && scopeService.toStrings(scopes).stream().anyMatch(s -> s.startsWith("iam"))) {
-      throw new AdminScopeNotAllowedException(
-          "Clients approved by regular users are not permitted to have admin scopes");
-    }
-
     Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+
+    boolean isAdmin =
+        account.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+    boolean hasIamScope = filteredScopes.stream().anyMatch(s -> s.startsWith("iam"));
+
+    // admin scopes are not allowed to clients approved by regular users
+    if (!isAdmin && hasIamScope) {
+      filteredScopes =
+          filteredScopes.stream().filter(s -> !s.startsWith("iam")).collect(Collectors.toSet());
+    }
 
     // sort scopes for display based on the inherent order of system scopes
     for (SystemScope s : systemScopes) {
@@ -201,7 +207,7 @@ public class IamOAuthConfirmationController {
     }
 
     // add in any scopes that aren't system scopes to the end of the list
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+    sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     model.put("scopes", sortedScopes);
 
