@@ -98,7 +98,7 @@ public class PasswordResetTests {
     mvc
       .perform(post("/iam/password-reset").contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
       .andExpect(status().isNotFound());
@@ -150,7 +150,7 @@ public class PasswordResetTests {
     mvc
       .perform(
           post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     mvc
       .perform(

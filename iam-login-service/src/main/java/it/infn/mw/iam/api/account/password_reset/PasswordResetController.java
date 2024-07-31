@@ -101,7 +101,7 @@ public class PasswordResetController {
   }
 
   @RequestMapping(value = {"", "/"}, method = RequestMethod.POST)
-  @ResponseBody
+  @ResponseStatus(value = HttpStatus.CREATED)
   public void resetPassword(@RequestBody @Valid ResetPasswordDTO password,
       BindingResult validationResult) {
 
