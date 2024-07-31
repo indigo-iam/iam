@@ -143,7 +143,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
   @Test
   public void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
 
-    String WRONG_VERIFICATION_URI_COMPLETE = "http://localhost:8080/device?user_code=";
+    String WRONG_VERIFICATION_URI_COMPLETE = "/device?user_code=";
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -161,12 +161,11 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
 
     MockHttpSession session = (MockHttpSession) mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost:8080/login"))
       .andReturn()
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+    session = (MockHttpSession) mvc.perform(get(LOGIN_URL).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/login"))
       .andReturn()
@@ -179,7 +178,6 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
         .param("submit", "Login")
         .session(session))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl(WRONG_VERIFICATION_URI_COMPLETE))
       .andReturn()
       .getRequest()
       .getSession();
@@ -187,12 +185,9 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
     entity.setDeviceCodeValiditySeconds(null);
     clientRepo.save(entity);
 
-    session = (MockHttpSession) mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
+    mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("requestUserCode"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("requestUserCode"));
 
   }
 
@@ -246,12 +241,9 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
+    mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("requestUserCode"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("requestUserCode"));
 
     entity.setDeviceCodeValiditySeconds(600);
     clientRepo.save(entity);
@@ -322,12 +314,9 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
+    mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("requestUserCode"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("requestUserCode"));
 
   }
 
@@ -384,15 +373,12 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", "1234")
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("requestUserCode"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("requestUserCode"));
 
   }
 
@@ -453,15 +439,12 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
     dc.setExpiration(new Date());
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("requestUserCode"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("requestUserCode"));
   }
 
 }

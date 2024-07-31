@@ -1093,12 +1093,9 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
+    mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("approveDevice"));
 
   }
 
