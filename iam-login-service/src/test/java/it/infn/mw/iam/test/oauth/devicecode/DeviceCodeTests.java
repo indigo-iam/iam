@@ -383,15 +383,10 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .getRequest()
       .getSession();
 
-    String APPROVED_SITE_URL = "http://localhost:8080/" + ApprovedSiteAPI.URL;
-
-    session = (MockHttpSession) mvc.perform(get(APPROVED_SITE_URL).session(session))
+    mvc.perform(get("/" + ApprovedSiteAPI.URL).session(session))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
-      .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)));
 
 
     String tokenResponse = mvc
