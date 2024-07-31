@@ -57,6 +57,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
   @Autowired
   private ConfigurationPropertiesBean config;
 
+
   @Test
   public void testDeviceCodeReturnsBadRequestForEmptyClientId() throws Exception {
 
