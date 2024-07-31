@@ -15,24 +15,17 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,9 +39,6 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -59,9 +49,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-
-public class DeviceCodeTestsFailures extends EndpointsTestUtils
-    implements DeviceCodeTestsConstants {
+public class DeviceCodeFailureTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -80,7 +68,7 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andExpect(view().name("httpCodeView"));
 
   }
-  
+
   @Test
   public void testParenthesisInRequestedScopesDoesNotMatchAllowedScopes() throws Exception {
 
@@ -153,7 +141,7 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
 
   @Test
   public void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
-    
+
     String WRONG_VERIFICATION_URI_COMPLETE = "http://localhost:8080/device?user_code=";
 
     mvc
@@ -169,7 +157,7 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getResponse()
       .getContentAsString();
-    
+
     MockHttpSession session = (MockHttpSession) mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost:8080/login"))
@@ -193,9 +181,10 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andExpect(redirectedUrl(WRONG_VERIFICATION_URI_COMPLETE))
       .andReturn()
       .getRequest()
-      .getSession();ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
-      entity.setDeviceCodeValiditySeconds(null);
-      clientRepo.save(entity);
+      .getSession();
+    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    entity.setDeviceCodeValiditySeconds(null);
+    clientRepo.save(entity);
 
     session = (MockHttpSession) mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
       .andExpect(status().isOk())
@@ -205,14 +194,14 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .getSession();
 
   }
-  
+
   @Test
   public void testDeviceCodeWithExpiredCodeFails() throws Exception {
-    
+
     ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
     entity.setDeviceCodeValiditySeconds(-1);
     clientRepo.save(entity);
-    
+
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -226,11 +215,11 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getResponse()
       .getContentAsString();
-    
+
     JsonNode responseJson = mapper.readTree(response);
 
     String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
-    
+
     MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost:8080/login"))
@@ -262,15 +251,15 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getRequest()
       .getSession();
-    
+
     entity.setDeviceCodeValiditySeconds(600);
     clientRepo.save(entity);
 
   }
-  
+
   @Test
   public void testAlreadyApprovedDeviceCodeFailsCodeVerification() throws Exception {
-    
+
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -284,12 +273,12 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getResponse()
       .getContentAsString();
-    
+
     JsonNode responseJson = mapper.readTree(response);
 
     String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
     String userCode = responseJson.get("user_code").asText();
-    
+
     MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost:8080/login"))
@@ -321,29 +310,29 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getRequest()
       .getSession();
-    
+
     session = (MockHttpSession) mvc
-        .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
-          .param("user_oauth_approval", "true")
-          .session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("deviceApproved"))
-        .andReturn()
-        .getRequest()
-        .getSession();
-    
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
     session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("requestUserCode"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
   }
 
   @Test
   public void testUserCodeMismatch() throws Exception {
-    
+
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -357,11 +346,11 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getResponse()
       .getContentAsString();
-    
+
     JsonNode responseJson = mapper.readTree(response);
 
     String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
-    
+
     MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost:8080/login"))
@@ -393,22 +382,22 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getRequest()
       .getSession();
-    
+
     session = (MockHttpSession) mvc
-        .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", "1234")
-          .param("user_oauth_approval", "true")
-          .session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("requestUserCode"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", "1234")
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
   }
-  
+
   @Test
   public void testExpiredDeviceCodeFailsUserApproval() throws Exception {
-    
+
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -422,12 +411,12 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getResponse()
       .getContentAsString();
-    
+
     JsonNode responseJson = mapper.readTree(response);
 
     String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
     String userCode = responseJson.get("user_code").asText();
-    
+
     MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost:8080/login"))
@@ -459,19 +448,19 @@ public class DeviceCodeTestsFailures extends EndpointsTestUtils
       .andReturn()
       .getRequest()
       .getSession();
-    
+
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
     dc.setExpiration(new Date());
-    
+
     session = (MockHttpSession) mvc
-        .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
-          .param("user_oauth_approval", "true")
-          .session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("requestUserCode"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
   }
 
 }
