@@ -249,8 +249,7 @@ public class IamOAuthConfirmationController {
     // warning
     // instead, tag as "Generally Recognized As Safe" (gras)
     Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression =
-        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
+    Boolean expression = count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
 
     return "iam/approveClient";
