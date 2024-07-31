@@ -36,6 +36,7 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.token.DeviceTokenGranter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
+import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
 import org.mitre.openid.connect.view.JsonErrorView;
@@ -72,7 +73,7 @@ public class IamDeviceEndpointController {
 
   public static final String URL = "devicecode";
   public static final String USER_URL = "device";
-  
+
   private static final String REQUEST_USER_CODE_STRING = "requestUserCode";
   private static final String ERROR_STRING = "error";
 
@@ -98,6 +99,9 @@ public class IamDeviceEndpointController {
 
   @Autowired
   private ClientService clientService;
+
+  @Autowired
+  private ApprovedSiteService approvedSiteService;
 
   @RequestMapping(value = "/" + URL, method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
@@ -256,6 +260,10 @@ public class IamDeviceEndpointController {
     sortScopesForApproval(dc, model);
 
     model.put("approved", true);
+
+    Date timeout = null;
+    approvedSiteService.createApprovedSite(client.getClientId(), auth.getName(), timeout,
+        dc.getScope());
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
       .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
