@@ -240,7 +240,7 @@ public class IamOAuthConfirmationController {
 
 
     // contacts
-    if (client.getContacts() != null) {
+    if (!client.getContacts().isEmpty()) {
       String contacts = Joiner.on(", ").join(client.getContacts());
       model.put("contacts", contacts);
     }

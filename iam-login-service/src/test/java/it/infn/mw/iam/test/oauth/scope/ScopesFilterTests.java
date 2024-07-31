@@ -63,7 +63,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   public static final String RESPONSE_TYPE_CODE = "code";
   public static final String EMAIL = "email";
   public static final String SCOPE = "openid email";
-  public static final String SCOPE_ADMIN = "openid iam:admin.write";
+  public static final String SCOPE_ADMIN = "iam:admin.write";
   public static final String LOCALHOST_URL_TEMPLATE = "http://localhost:%d";
   public static final String TEST_CLIENT_REDIRECT_URI =
       "https://iam.local.io/iam-test-client/openid_connect_login";
@@ -185,7 +185,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()
       .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("client_id", "admin-client-rw")
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
       .queryParam("scope", SCOPE_ADMIN)
       .queryParam("nonce", "1")
@@ -216,7 +216,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
     String responseBody = RestAssured.given()
       .cookie(loginResponse.extract().detailedCookie(SESSION))
       .queryParam("response_type", RESPONSE_TYPE_CODE)
-      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("client_id", "admin-client-rw")
       .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
       .queryParam("scope", SCOPE_ADMIN)
       .queryParam("nonce", "1")
