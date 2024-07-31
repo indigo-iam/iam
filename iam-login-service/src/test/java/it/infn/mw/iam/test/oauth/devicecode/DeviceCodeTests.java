@@ -44,6 +44,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.openid.connect.web.ApprovedSiteAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -378,6 +379,16 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
         .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    String APPROVED_SITE_URL = "http://localhost:8080/" + ApprovedSiteAPI.URL;
+
+    session = (MockHttpSession) mvc.perform(get(APPROVED_SITE_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0].clientId", equalTo(DEVICE_CODE_CLIENT_ID)))
+      .andExpect(jsonPath("$[0].userId", equalTo(TEST_USERNAME)))
       .andReturn()
       .getRequest()
       .getSession();
