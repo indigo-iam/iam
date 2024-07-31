@@ -18,10 +18,9 @@ package it.infn.mw.iam.test.oauth.scope;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -38,9 +37,6 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import freemarker.core.ParseException;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.IamLoginService;
@@ -179,8 +175,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConsentPageDoesNotReturnAdminScopeToRegularUser()
-      throws JsonProcessingException, IOException, ParseException {
+  public void testConsentPageDoesNotReturnAdminScopeToRegularUser() {
 
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()
@@ -235,8 +230,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testConsentPageReturnsAdminScopeToAdmins()
-      throws JsonProcessingException, IOException, ParseException {
+  public void testConsentPageReturnsAdminScopeToAdmins() {
 
     // @formatter:off
     ValidatableResponse authzResponse = RestAssured.given()
