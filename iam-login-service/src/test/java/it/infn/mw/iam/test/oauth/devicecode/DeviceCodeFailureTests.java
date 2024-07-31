@@ -84,7 +84,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
   }
 
   @Test
-  public void testDeviceCodeNotWorkForExpiredCode() throws Exception {
+  public void testDeviceCodeWithInfiniteLifetime() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
     entity.setDeviceCodeValiditySeconds(null);
@@ -143,8 +143,6 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
   @Test
   public void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
 
-    String WRONG_VERIFICATION_URI_COMPLETE = "/device?user_code=";
-
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -188,6 +186,9 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
     mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("requestUserCode"));
+
+    entity.setDeviceCodeValiditySeconds(600);
+    clientRepo.save(entity);
 
   }
 
