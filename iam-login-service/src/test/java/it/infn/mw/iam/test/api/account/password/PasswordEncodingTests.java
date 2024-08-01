@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
@@ -140,15 +141,15 @@ public class PasswordEncodingTests {
 
     String resetKey = tokenGenerator.getLastToken();
 
-    JsonObject jsonBody = new JsonObject();
-    jsonBody.addProperty("updatedPassword", newPassword);
-    jsonBody.addProperty("token", resetKey);
+    ResetPasswordDTO dto = new ResetPasswordDTO();
+    dto.setUpdatedPassword(newPassword);
+    dto.setToken(resetKey);
 
     mvc
-      .perform(post("/iam/password-reset").content(jsonBody.toString())
+      .perform(post("/iam/password-reset").content(mapper.writeValueAsString(dto))
         .with(authentication(adminAuthentication()))
         .contentType(MediaType.APPLICATION_JSON))
-      .andExpect(MockMvcResultMatchers.status().isOk());
+      .andExpect(MockMvcResultMatchers.status().isCreated());
 
     IamAccount account = iamAccountRepository.findByUuid(request.getAccountId())
       .orElseThrow(() -> new AssertionError("Expected account not found"));
