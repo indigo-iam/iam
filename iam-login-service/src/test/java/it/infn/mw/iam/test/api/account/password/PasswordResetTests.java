@@ -16,8 +16,10 @@
 package it.infn.mw.iam.test.api.account.password;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
@@ -156,6 +158,13 @@ public class PasswordResetTests {
       .perform(
           post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
       .andExpect(status().is4xxClientError());
+  }
+
+  @Test
+  public void testRedirectToResetPasswordPage() throws Exception {
+    String resetToken = tokenGenerator.getLastToken() + "<div>";
+    mvc.perform(get("/iam/password-reset/token/{token}", resetToken))
+      .andExpect(status().isOk());
   }
 
   @Test
