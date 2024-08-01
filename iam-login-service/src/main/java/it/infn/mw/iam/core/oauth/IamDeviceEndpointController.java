@@ -64,6 +64,7 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import static it.infn.mw.iam.core.oauth.IamUserApprovalHandler.OIDC_AGENT_PREFIX_NAME;
 
@@ -102,6 +103,9 @@ public class IamDeviceEndpointController {
 
   @Autowired
   private ApprovedSiteService approvedSiteService;
+
+  @Autowired
+  private ScopePolicyPDP pdp;
 
   @RequestMapping(value = "/" + URL, method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
@@ -175,20 +179,20 @@ public class IamDeviceEndpointController {
   @RequestMapping(value = "/" + USER_URL, method = RequestMethod.GET)
   public String requestUserCode(
       @RequestParam(value = "user_code", required = false) String userCode, ModelMap model,
-      HttpSession session) {
+      HttpSession session, Authentication authn) {
 
     if (!config.isAllowCompleteDeviceCodeUri() || userCode == null) {
       return REQUEST_USER_CODE_STRING;
     } else {
 
-      return readUserCode(userCode, model, session);
+      return readUserCode(userCode, model, session, authn);
     }
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
   @RequestMapping(value = "/" + USER_URL + "/verify", method = RequestMethod.POST)
   public String readUserCode(@RequestParam("user_code") String userCode, ModelMap model,
-      HttpSession session) {
+      HttpSession session, Authentication authn) {
 
     DeviceCode dc = deviceCodeService.lookUpByUserCode(userCode);
 
@@ -212,7 +216,10 @@ public class IamDeviceEndpointController {
     model.put("client", client);
     model.put("dc", dc);
 
-    sortScopesForApproval(dc, model);
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authn)
+        .orElseThrow(() -> NoSuchAccountError.forUsername(authn.getName()));
+
+    sortScopesForApproval(dc, model, account);
 
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
@@ -257,16 +264,16 @@ public class IamDeviceEndpointController {
 
     deviceCodeService.approveDeviceCode(dc, o2Auth);
 
-    sortScopesForApproval(dc, model);
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
+        .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
+
+    sortScopesForApproval(dc, model, account);
 
     model.put("approved", true);
 
     Date timeout = null;
     approvedSiteService.createApprovedSite(client.getClientId(), auth.getName(), timeout,
         dc.getScope());
-
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
 
     if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
       clientService.linkClientToAccount(client, account);
@@ -283,20 +290,22 @@ public class IamDeviceEndpointController {
     }
   }
 
-  private void sortScopesForApproval(DeviceCode dc, ModelMap model) {
+  private void sortScopesForApproval(DeviceCode dc, ModelMap model, IamAccount account) {
 
     Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
 
     Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
     Set<SystemScope> systemScopes = scopeService.getAll();
 
+    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+
     for (SystemScope s : systemScopes) {
-      if (scopes.contains(s)) {
+      if (scopeService.fromStrings(filteredScopes).contains(s)) {
         sortedScopes.add(s);
       }
     }
 
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+    sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     model.put("scopes", sortedScopes);
 
