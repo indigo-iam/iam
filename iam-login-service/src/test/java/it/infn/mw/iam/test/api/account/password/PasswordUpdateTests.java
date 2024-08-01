@@ -226,7 +226,7 @@ public class PasswordUpdateTests {
   }
 
   @Test
-  public void testUpdatePasswordWithWeakPasswordWithoutSpecialCharts() {
+  public void testUpdatePasswordWithWeakPasswordWithoutSpecialChars() {
 
     String currentPassword = "password";
     String newPassword = "Password1";
