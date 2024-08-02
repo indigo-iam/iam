@@ -151,4 +151,66 @@ public class AupReminderTaskTests extends AupTestSupport {
         equalTo(1));
 
   }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupExpirationEmailNotSentIfUserIsDisabled() {
+    IamAup aup = buildDefaultAup();
+    aup.setSignatureValidityInDays(2L);
+
+    LocalDate today = LocalDate.now();
+    LocalDate twoDaysAgo = today.minusDays(2);
+
+    Date date = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    aup.setCreationTime(date);
+    aup.setLastUpdateTime(date);
+
+    aupRepo.save(aup);
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+
+    assertThat(
+        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
+        equalTo(0));
+
+    testAccount.setActive(false);
+    accountRepo.save(testAccount);
+
+    aupReminderTask.sendAupReminders();
+    notificationDelivery.sendPendingNotifications();
+    assertThat(
+        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
+        equalTo(0));
+
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupExpirationEmailNotSentIfAupSignatureValidityIsZero() {
+    IamAup aup = buildDefaultAup();
+    aup.setSignatureValidityInDays(0L);
+
+    LocalDate today = LocalDate.now();
+    Date date = Date.from(today.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+    aup.setCreationTime(date);
+    aup.setLastUpdateTime(date);
+
+    aupRepo.save(aup);
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+
+    aupReminderTask.sendAupReminders();
+    notificationDelivery.sendPendingNotifications();
+    assertThat(
+        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
+        equalTo(0));
+
+  }
 }

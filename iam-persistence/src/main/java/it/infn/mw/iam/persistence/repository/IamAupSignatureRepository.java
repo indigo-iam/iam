@@ -30,7 +30,7 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 public interface IamAupSignatureRepository
     extends PagingAndSortingRepository<IamAupSignature, Long>, IamAupSignatureRepositoryCustom {
 
-  @Query("select ias from IamAupSignature ias where ias.aup = :aup and :signatureTime <= ias.signatureTime and ias.signatureTime < :plusOne")
+  @Query("select ias from IamAupSignature ias join ias.account a where a.active = TRUE and ias.aup = :aup and :signatureTime <= ias.signatureTime and ias.signatureTime < :plusOne")
   List<IamAupSignature> findByAupAndSignatureTime(@Param("aup") IamAup aup,
       @Param("signatureTime") Date signatureTime, @Param("plusOne") Date plusOne);
 
