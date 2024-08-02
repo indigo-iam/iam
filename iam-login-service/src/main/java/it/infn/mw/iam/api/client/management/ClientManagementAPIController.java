@@ -66,7 +66,8 @@ public class ClientManagementAPIController {
   private final ClientManagementService managementService;
   private final AccountUtils accountUtils;
 
-  public ClientManagementAPIController(ClientManagementService managementService, AccountUtils accountUtils) {
+  public ClientManagementAPIController(ClientManagementService managementService,
+      AccountUtils accountUtils) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
   }
@@ -83,13 +84,11 @@ public class ClientManagementAPIController {
   @GetMapping
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
-      @RequestParam final Optional<Integer> count,
-      @RequestParam final Optional<Integer> startIndex,
+      @RequestParam final Optional<Integer> count, @RequestParam final Optional<Integer> startIndex,
       @RequestParam(defaultValue = "false") final boolean drOnly) {
 
-    Pageable pageable =
-        PagingUtils.buildPageRequest(count, startIndex, Sort.by("clientId"));
-    
+    Pageable pageable = PagingUtils.buildPageRequest(count, startIndex, Sort.by("clientId"));
+
     if (drOnly) {
       return managementService.retrieveAllDynamicallyRegisteredClients(pageable);
     } else {
@@ -110,7 +109,7 @@ public class ClientManagementAPIController {
   public ListResponseDTO<ScimUser> retrieveClientOwners(@PathVariable String clientId,
       @RequestParam final Optional<Integer> count,
       @RequestParam final Optional<Integer> startIndex) {
-    
+
     return managementService.getClientOwners(clientId, buildPageRequest(count, startIndex));
   }
 
@@ -140,14 +139,13 @@ public class ClientManagementAPIController {
   @PutMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO updateClient(@PathVariable String clientId,
-      @RequestBody RegisteredClientDTO client)
-      throws ParseException {
+      @RequestBody RegisteredClientDTO client) throws ParseException {
     return managementService.updateClient(clientId, client);
   }
 
   @PatchMapping("/{clientId}/enable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void enableClient(@PathVariable String clientId) {   
+  public void enableClient(@PathVariable String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     account.ifPresent(a -> managementService.updateClientStatus(clientId, true, a.getUuid()));
   }
@@ -155,7 +153,7 @@ public class ClientManagementAPIController {
   @PatchMapping("/{clientId}/disable")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void disableClient(@PathVariable String clientId) {
-    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();     
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     account.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
   }
 

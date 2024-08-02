@@ -1,3 +1,4 @@
+
 /**
  * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
  *
@@ -15,27 +16,29 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Pattern;
-
-public class PasswordDTO {
+public class ResetPasswordDTO {
 
   @NotEmpty
-  private String currentPassword;
-
-  @NotEmpty(message = "The password cannot be empty")
   @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
   private String updatedPassword;
 
-  public String getCurrentPassword() {
-    return currentPassword;
+  @NotEmpty
+  @Size(max = 36, min = 36)
+  private String token;
+
+  public String getToken() {
+    return token;
   }
 
-  public void setCurrentPassword(String currentPassword) {
-    this.currentPassword = currentPassword;
+  public void setToken(String token) {
+    this.token = token;
   }
 
   public String getUpdatedPassword() {
@@ -45,5 +48,4 @@ public class PasswordDTO {
   public void setUpdatedPassword(String updatedPassword) {
     this.updatedPassword = updatedPassword;
   }
-
 }
