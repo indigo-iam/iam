@@ -85,7 +85,7 @@ public class AupReminderTaskTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupReminderEmailWorks() {
+  public void aupReminderEmailWorks() throws InterruptedException {
     IamAup aup = buildDefaultAup();
     aup.setSignatureValidityInDays(30L);
     aupRepo.save(aup);
@@ -101,6 +101,8 @@ public class AupReminderTaskTests extends AupTestSupport {
     assertThat(service.needsAupSignature(testAccount), is(true));
 
     signatureRepo.createSignatureForAccount(aup, testAccount, now);
+
+    Thread.sleep(5000);
 
     assertThat(service.needsAupSignature(testAccount), is(false));
 
