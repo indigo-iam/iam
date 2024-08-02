@@ -29,7 +29,29 @@ In case you are using Eclipse:
 - import the Java Google style
 formatter (available [here][formatter]) to format your code.
 
-Visual Studio Code has a similar extension that needs to be installed.
+In case you are using Visual Studio Code:
+
+- install `Spring Boot Extension Pack`
+- set `java.format.settings.url` to this url: [formatter] (or download the file and set the url to its local path)
+- set `java.format.settings.profile` to `GoogleStyle (CNAF)`
+- create a launch configuration in `.vscode/launch.json` like:
+```json
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "IamLoginService",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "it.infn.mw.iam.IamLoginService",
+            "projectName": "iam-login-service",
+            "args": "--spring.profiles.active=h2-test,dev",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
+```
+- use the Spring Boot Dashboard to run and debug the applications
 
 ### Run the app
 
@@ -41,6 +63,12 @@ The main package is __iam-login-service__, listening by default on http://localh
   - User Name: sa
   - Password: <empty>
 - the main class to be run is `it.infn.mw.iam.IamLoginService`.
+
+From the command line iam-login-service can be run with:
+
+```
+mvn -pl iam-login-service -am spring-boot:run -Dspring-boot.run.profiles=h2-test,dev
+```
 
 The __iam-test-client__ package is a simple web application used to showcase an authorization code flow where `iam-login-service` is the OAuth Authorization Server. It listens by default on http://localhost:9090/iam-test-client. The main class to be run is `it.infn.mw.tc.IamTestClientApplication`.
 
