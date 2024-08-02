@@ -395,7 +395,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "Account restored";
+    String subject = String.format("[%s IAM] Account restored", organisationName);
 
     IamEmailNotification notification = createMessage("accountRestored.ftl", model,
         IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
@@ -410,6 +410,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
     try {
+      String formattedSubject = String.format("[%s IAM] %s", organisationName, subject);
       Template template = freeMarkerConfiguration.getTemplate(templateName);
       String body = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
 
@@ -417,7 +418,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
       message.setUuid(UUID.randomUUID().toString());
       message.setType(messageType);
-      message.setSubject(subject);
+      message.setSubject(formattedSubject);
       message.setBody(body);
       message.setCreationTime(new Date());
       message.setDeliveryStatus(IamDeliveryStatus.PENDING);
