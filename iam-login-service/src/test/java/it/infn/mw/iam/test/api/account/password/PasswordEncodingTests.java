@@ -35,7 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -89,7 +88,7 @@ public class PasswordEncodingTests {
     request.setUsername(username);
     request.setNotes("Some short notes...");
 
-    String rs = mvc
+    mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(status().isOk())
@@ -97,12 +96,8 @@ public class PasswordEncodingTests {
       .getResponse()
       .getContentAsString();
 
-    request = mapper.readValue(rs, RegistrationRequestDto.class);
-
     String confirmationKey = "NoValidToken";
-    mvc
-      .perform(get("/registration/confirm/{token}", confirmationKey)
-        .contentType(APPLICATION_JSON))
+    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
       .andExpect(status().isNotFound());
 
   }
@@ -130,9 +125,7 @@ public class PasswordEncodingTests {
     request = mapper.readValue(rs, RegistrationRequestDto.class);
 
     String confirmationKey = tokenGenerator.getLastToken();
-    mvc
-      .perform(get("/registration/confirm/{token}", confirmationKey)
-        .contentType(APPLICATION_JSON))
+    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
       .andExpect(status().isOk());
 
     mvc.perform(post("/registration/approve/{uuid}", request.getUuid())

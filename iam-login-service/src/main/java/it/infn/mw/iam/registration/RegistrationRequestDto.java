@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.registration;
 
-import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_VALIDATION_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 import java.util.Date;
@@ -63,7 +63,7 @@ public class RegistrationRequestDto {
   private String username;
 
   @JsonView(RegistrationViews.RegistrationExtendDetail.class)
-  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR,
+  @Pattern(regexp = PASSWORD_VALIDATION_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR,
       groups = {OnRegistrationCreation.class})
   @Size(min = 8, message = "password should have at least 8 characters")
   private String password;

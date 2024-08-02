@@ -17,6 +17,8 @@ package it.infn.mw.iam.api.common;
 
 public class RegistrationViews {
 
+  private RegistrationViews() {}
+
   public static interface RegistrationDetail {
   }
 

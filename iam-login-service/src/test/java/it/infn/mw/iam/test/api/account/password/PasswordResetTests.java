@@ -15,11 +15,11 @@
  */
 package it.infn.mw.iam.test.api.account.password;
 
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
@@ -45,7 +45,6 @@ import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -129,7 +128,7 @@ public class PasswordResetTests {
       .andExpect(status().isBadRequest())
       .andExpect(MockMvcResultMatchers.content()
         .string("Invalid reset password: [resetPasswordDTO.updatedPassword : "
-            + PASSWORD_REGEX_MESSAGE_ERROR + "]"));;
+            + PASSWORD_REGEX_MESSAGE_ERROR + "]"));
   }
 
   @Test
@@ -163,8 +162,7 @@ public class PasswordResetTests {
   @Test
   public void testRedirectToResetPasswordPage() throws Exception {
     String resetToken = tokenGenerator.getLastToken() + "<div>";
-    mvc.perform(get("/iam/password-reset/token/{token}", resetToken))
-      .andExpect(status().isOk());
+    mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
   }
 
   @Test

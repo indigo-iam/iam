@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
-import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_VALIDATION_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
 import javax.validation.constraints.NotEmpty;
@@ -27,7 +27,7 @@ public class PasswordDTO {
   private String currentPassword;
 
   @NotEmpty(message = "The password cannot be empty")
-  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
+  @Pattern(regexp = PASSWORD_VALIDATION_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
   private String updatedPassword;
 
   public String getCurrentPassword() {
