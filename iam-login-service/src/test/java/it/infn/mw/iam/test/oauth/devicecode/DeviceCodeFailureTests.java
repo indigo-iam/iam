@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,6 +50,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+@ActiveProfiles("h2")
 public class DeviceCodeFailureTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
 
   @Autowired
@@ -179,16 +181,10 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
       .andReturn()
       .getRequest()
       .getSession();
-    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
-    entity.setDeviceCodeValiditySeconds(null);
-    clientRepo.save(entity);
 
     mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("requestUserCode"));
-
-    entity.setDeviceCodeValiditySeconds(600);
-    clientRepo.save(entity);
 
   }
 
