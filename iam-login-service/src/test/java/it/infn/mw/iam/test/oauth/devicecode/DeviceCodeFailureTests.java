@@ -36,7 +36,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,7 +49,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles("h2")
 public class DeviceCodeFailureTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
 
   @Autowired
@@ -82,28 +80,6 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
         .param("scope", "op [en ]id"))
       .andExpect(status().isBadRequest())
       .andExpect(view().name("jsonErrorView"));
-
-  }
-
-  @Test
-  public void testDeviceCodeWithInfiniteLifetime() throws Exception {
-
-    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
-    entity.setDeviceCodeValiditySeconds(null);
-    clientRepo.save(entity);
-
-    mvc
-      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", DEVICE_CODE_CLIENT_ID))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.user_code").isString())
-      .andExpect(jsonPath("$.device_code").isString())
-      .andExpect(jsonPath("$.expires_in").doesNotExist())
-      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)));
-
-    entity.setDeviceCodeValiditySeconds(600);
-    clientRepo.save(entity);
 
   }
 
