@@ -395,7 +395,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = String.format("[%s IAM] Account restored", organisationName);
+    String subject = "Account restored";
 
     IamEmailNotification notification = createMessage("accountRestored.ftl", model,
         IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
