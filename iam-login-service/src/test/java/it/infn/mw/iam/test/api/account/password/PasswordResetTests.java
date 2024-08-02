@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.api.account.password;
 
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
+import static java.lang.String.format;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
@@ -38,6 +39,9 @@ import com.google.gson.JsonObject;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.notification.NotificationTestConfig;
@@ -67,6 +71,9 @@ public class PasswordResetTests {
 
   @Autowired
   private ObjectMapper mapper;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
 
   @Before
   public void setup() {
@@ -162,6 +169,19 @@ public class PasswordResetTests {
   @Test
   public void testRedirectToResetPasswordPage() throws Exception {
     String resetToken = tokenGenerator.getLastToken() + "<div>";
+    mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+  }
+
+  @Test
+  public void testRedirectToResetPasswordPageWithValidResetKey() throws Exception {
+    String resetToken = tokenGenerator.generateToken();
+    String testEmail = "test@iam.test";
+    IamAccount account = accountRepo.findByEmail(testEmail)
+      .orElseThrow(
+          () -> new NoSuchAccountError(format("No account found for email '%s'", testEmail)));
+    account.setResetKey(resetToken);
+    accountRepo.save(account);
+
     mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
   }
 
