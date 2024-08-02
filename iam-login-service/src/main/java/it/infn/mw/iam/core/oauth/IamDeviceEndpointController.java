@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
@@ -36,10 +38,12 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.token.DeviceTokenGranter;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
+import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
 import org.mitre.openid.connect.view.JsonErrorView;
+import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +70,6 @@ import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import static it.infn.mw.iam.core.oauth.IamUserApprovalHandler.OIDC_AGENT_PREFIX_NAME;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -99,13 +102,16 @@ public class IamDeviceEndpointController {
   private AccountUtils accountUtils;
 
   @Autowired
-  private ClientService clientService;
-
-  @Autowired
   private ApprovedSiteService approvedSiteService;
 
   @Autowired
   private ScopePolicyPDP pdp;
+
+  @Autowired
+  private IamUserApprovalHandler iamUserApprovalHandler;
+
+  @Autowired
+  private SystemScopeService systemScopes;
 
   @RequestMapping(value = "/" + URL, method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
@@ -217,9 +223,9 @@ public class IamDeviceEndpointController {
     model.put("dc", dc);
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authn)
-        .orElseThrow(() -> NoSuchAccountError.forUsername(authn.getName()));
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authn.getName()));
 
-    sortScopesForApproval(dc, model, account);
+    sortScopesForApproval(dc, model, session, account);
 
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
@@ -227,13 +233,41 @@ public class IamDeviceEndpointController {
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
 
-    return "approveDevice";
+    // authorizationRequest.setExtensions(Collections.singletonMap("prompt",
+    // ConnectRequestParameters.PROMPT_NONE));
+
+    Collection<ApprovedSite> aps =
+        approvedSiteService.getByClientIdAndUserId(client.getClientId(), authn.getName());
+    for (ApprovedSite ap : aps) {
+
+      if (!ap.isExpired()) {
+
+        if (systemScopes.scopesMatch(ap.getAllowedScopes(), authorizationRequest.getScope())) {
+          ap.setAccessDate(new Date());
+          approvedSiteService.save(ap);
+
+          authorizationRequest.setApproved(true);
+          authorizationRequest.getExtensions().put(APPROVED_SITE, ap.getId().toString());
+          authorizationRequest.getExtensions()
+            .put(AuthenticationTimeStamper.AUTH_TIMESTAMP, Long.toString(
+                ((Date) session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP)).getTime()));
+          model.addAttribute("approved", true);
+
+          return "deviceApproved";
+        }
+      }
+    }
+
+    return "iam/approveDevice";
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_URL + "/approve", method = RequestMethod.POST)
+  @RequestMapping(value = "/" + USER_URL + "/approve", method = RequestMethod.POST,
+      consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public String approveDevice(@RequestParam("user_code") String userCode,
-      @RequestParam(value = "user_oauth_approval") Boolean approve, ModelMap model,
+      @RequestParam(value = "user_oauth_approval") Boolean approve,
+      @RequestParam(value = "remember", required = false) String remember, ModelMap model,
       Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
@@ -255,7 +289,7 @@ public class IamDeviceEndpointController {
     model.put("client", client);
 
     if (!approve) {
-      model.addAttribute("approved", false);
+      model.addAttribute("approved", true);
       return "deviceApproved";
     }
 
@@ -265,19 +299,24 @@ public class IamDeviceEndpointController {
     deviceCodeService.approveDeviceCode(dc, o2Auth);
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
-        .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
+      .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
 
-    sortScopesForApproval(dc, model, account);
+    Set<SystemScope> sortedScopes = sortScopesForApproval(dc, model, session, account);
 
     model.put("approved", true);
 
-    Date timeout = null;
-    approvedSiteService.createApprovedSite(client.getClientId(), auth.getName(), timeout,
-        dc.getScope());
+    Map<String, String> authRequestMap = new HashMap<>();
+    authRequestMap.put("remember", remember);
+    authRequestMap.put("user_oauth_approval", approve.toString());
 
-    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
-      clientService.linkClientToAccount(client, account);
+    for (SystemScope s : sortedScopes) {
+      authRequestMap.put("scope_" + s.getValue(), s.getValue());
     }
+
+    authorizationRequest.setClientId(client.getClientId());
+    authorizationRequest.setApprovalParameters(authRequestMap);
+
+    iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
 
     return "deviceApproved";
   }
@@ -290,7 +329,8 @@ public class IamDeviceEndpointController {
     }
   }
 
-  private void sortScopesForApproval(DeviceCode dc, ModelMap model, IamAccount account) {
+  private Set<SystemScope> sortScopesForApproval(DeviceCode dc, ModelMap model, HttpSession session,
+      IamAccount account) {
 
     Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
 
@@ -308,6 +348,8 @@ public class IamDeviceEndpointController {
     sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     model.put("scopes", sortedScopes);
+
+    return sortedScopes;
 
   }
 
