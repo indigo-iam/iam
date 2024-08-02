@@ -95,7 +95,7 @@ public class AupReminderTaskTests extends AupTestSupport {
     LocalDate tomorrow = today.plusDays(1);
     Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
-    IamAccount testAccount = accountRepo.findByUsername("test")
+    IamAccount testAccount = accountRepo.findByUsername("test_100")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
 
     assertThat(service.needsAupSignature(testAccount), is(true));
