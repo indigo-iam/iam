@@ -165,7 +165,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -175,7 +175,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
         .param("user_oauth_approval", "false")
         .session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("deviceApproved"))
+      .andExpect(view().name("iam/deviceApproved"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -258,7 +258,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -368,7 +368,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -573,7 +573,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -696,7 +696,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -806,7 +806,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -953,7 +953,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -1027,7 +1027,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -1101,7 +1101,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"));
+      .andExpect(view().name("iam/approveDevice"));
 
   }
 

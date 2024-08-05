@@ -272,7 +272,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
 
     session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -341,7 +341,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
 
     session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -404,7 +404,7 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
 
     session = (MockHttpSession) mvc.perform(get(verificationUriComplete).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
