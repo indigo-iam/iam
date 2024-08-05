@@ -175,7 +175,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
         .param("user_oauth_approval", "false")
         .session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("iam/deviceApproved"))
+      .andExpect(view().name("deviceApproved"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -375,7 +375,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
-        .param("user_oauth_approval", "true")
+        .param("user_oauth_approval", "true").param("remember", "until-revoked")
         .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"))
