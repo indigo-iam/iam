@@ -21,11 +21,11 @@
 
   EditPasswordController.$inject = [
     '$scope', '$state', '$uibModalInstance', 'Utils', 'ResetPasswordService',
-    'user'
+    'user','toaster'
   ];
 
   function EditPasswordController(
-      $scope, $state, $uibModalInstance, Utils, ResetPasswordService, user) {
+      $scope, $state, $uibModalInstance, Utils, ResetPasswordService, user, toaster) {
     var editPasswordCtrl = this;
 
     editPasswordCtrl.passwordMinlength = 8;
@@ -63,7 +63,8 @@
               editPasswordCtrl.user.password)
           .then(function() { return $uibModalInstance.close('Password updated'); })
           .catch(function(error) {
-            console.error(error);
+            console.error(error.data);
+            toaster.pop({ type: 'error', body: error.data });
             $scope.operationResult = Utils.buildErrorResult(error.data);
           });
     };
