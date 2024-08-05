@@ -131,7 +131,8 @@ public class TaskConfig implements SchedulingConfigurer {
     deviceCodeService.clearExpiredDeviceCodes();
   }
 
-  @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS)
+  @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS,
+      initialDelay = ONE_MINUTE_MSEC)
   public void scheduledAupRemindersTask() {
     aupReminderTask.sendAupReminders();
   }
