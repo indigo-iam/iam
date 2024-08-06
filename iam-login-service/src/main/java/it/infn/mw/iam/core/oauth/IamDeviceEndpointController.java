@@ -70,7 +70,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Controller
-public class IamDeviceEndpointController implements IamOauthRequestParameters {
+public class IamDeviceEndpointController extends IamOauthRequestParameters {
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 

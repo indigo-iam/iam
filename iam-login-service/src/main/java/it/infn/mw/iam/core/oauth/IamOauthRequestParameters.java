@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-public interface IamOauthRequestParameters {
+public class IamOauthRequestParameters {
 
   public static final String URL = "devicecode";
   public static final String USER_URL = "device";

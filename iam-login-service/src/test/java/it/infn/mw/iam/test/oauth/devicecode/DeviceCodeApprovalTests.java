@@ -15,16 +15,23 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertFalse;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
+import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 
 import org.junit.Test;
@@ -32,6 +39,8 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
+import org.mitre.openid.connect.model.ApprovedSite;
+import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -49,13 +58,17 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeFailureTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
+public class DeviceCodeApprovalTests extends EndpointsTestUtils
+    implements DeviceCodeTestsConstants {
 
   @Autowired
   private IamClientRepository clientRepo;
 
   @Autowired
   private ConfigurationPropertiesBean config;
+
+  @Autowired
+  private ApprovedSiteService approvedSiteService;
 
 
   @Test
@@ -161,6 +174,58 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
     mvc.perform(get(WRONG_VERIFICATION_URI_COMPLETE).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("requestUserCode"));
+
+  }
+
+  @Test
+  public void testDeviceCodeVerificationUriCompleteWorks() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("scope", "openid profile"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri_complete").exists())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+
+    String verificationUriComplete = responseJson.get("verification_uri_complete").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(verificationUriComplete))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(verificationUriComplete))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get(verificationUriComplete).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"));
 
   }
 
@@ -418,6 +483,224 @@ public class DeviceCodeFailureTests extends EndpointsTestUtils implements Device
         .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("requestUserCode"));
+  }
+
+  @Test
+  public void testNormalClientNotLinkedToUser() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
+
+
+  }
+
+  @Test
+  public void testOidcAgentClientIsLinkedToUser() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:device-code-client");
+    clientRepo.save(entity);
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andExpect(jsonPath("$.Resources[0].client_id", is(DEVICE_CODE_CLIENT_ID)));
+
+    entity.setClientName("Device code client");
+    clientRepo.save(entity);
+  }
+
+  @Test
+  public void testRememberParameterAllowsToAddAnApprovedSite() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    Collection<ApprovedSite> approvedSites =
+        approvedSiteService.getByClientIdAndUserId(DEVICE_CODE_CLIENT_ID, TEST_USERNAME);
+
+    assertFalse(approvedSites.isEmpty());
+
+
   }
 
 }
