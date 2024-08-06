@@ -78,6 +78,11 @@ public class IamDeviceEndpointController {
   private static final String REQUEST_USER_CODE_STRING = "requestUserCode";
   private static final String ERROR_STRING = "error";
 
+  private static final String APPROVAL_ATTRIBUTE_KEY = "approved";
+
+  private static final String APPROVE_DEVICE_PAGE = "iam/approveDevice";
+  private static final String DEVICE_APPROVED_PAGE = "deviceApproved";
+
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
   @Autowired
@@ -225,8 +230,8 @@ public class IamDeviceEndpointController {
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null) {
 
-      model.addAttribute("approved", true);
-      return "deviceApproved";
+      model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
+      return DEVICE_APPROVED_PAGE;
     }
 
     model.put("dc", dc);
@@ -235,7 +240,7 @@ public class IamDeviceEndpointController {
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
 
-    return "iam/approveDevice";
+    return APPROVE_DEVICE_PAGE;
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
@@ -260,8 +265,8 @@ public class IamDeviceEndpointController {
     }
 
     if (!approve) {
-      model.addAttribute("approved", false);
-      return "deviceApproved";
+      model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
+      return DEVICE_APPROVED_PAGE;
     }
 
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
@@ -281,9 +286,9 @@ public class IamDeviceEndpointController {
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve, sortedScopes);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
 
-    model.put("approved", true);
+    model.put(APPROVAL_ATTRIBUTE_KEY, true);
 
-    return "deviceApproved";
+    return DEVICE_APPROVED_PAGE;
   }
 
 
@@ -311,7 +316,7 @@ public class IamDeviceEndpointController {
   private void setAuthzRequestForPreApproval(AuthorizationRequest authorizationRequest,
       Set<SystemScope> scopes, String clientId) {
 
-    Collection<String> scopeCollection = new ArrayList<String>();
+    Collection<String> scopeCollection = new ArrayList<>();
     scopes.forEach(a -> scopeCollection.add(a.getValue()));
 
     authorizationRequest.setScope(scopeCollection);
