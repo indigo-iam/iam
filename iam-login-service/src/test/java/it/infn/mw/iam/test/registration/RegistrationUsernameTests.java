@@ -67,7 +67,7 @@ public class RegistrationUsernameTests extends TestSupport {
 
   private RegistrationRequestDto createRegistrationRequest(String username) {
 
-    String email = username + "@example.org";
+    String email = username.split("@")[0] + "@example.org";
     RegistrationRequestDto request = new RegistrationRequestDto();
     request.setGivenname("Test");
     request.setFamilyname("User");
@@ -81,8 +81,8 @@ public class RegistrationUsernameTests extends TestSupport {
 
   @Test
   public void validUsernames() throws Exception {
-    final String[] validUsernames = {"bob", "b", "test$", "root", "test1234", "test_", "_test",
-        "username@example.com", "username@domain"};
+    final String[] validUsernames = {"bob","test$", "root", "test1234", "test_", "_test",
+        "username1@example.com", "username2@domain"};
 
     for (String u : validUsernames) {
       RegistrationRequestDto r = createRegistrationRequest(u);
@@ -102,7 +102,7 @@ public class RegistrationUsernameTests extends TestSupport {
 
   @Test
   public void invalidUsernames() throws Exception {
-    final String[] invalidUsernames = {"£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
+    final String[] invalidUsernames = {"a","£$%^&*(", ".,", "-test", "1test", "test$$", "@domain",
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
 
     for (String u : invalidUsernames) {

@@ -110,6 +110,10 @@ public class RegistrationFlowNotificationTests {
     notificationDelivery.clearDeliveredNotifications();
   }
 
+  public String formatSubject(String key) {
+    return String.format("[%s IAM] %s", organisationName, properties.getSubject().get(key));
+  }
+
   @Test
   public void testSendWithEmptyQueue() {
 
@@ -145,7 +149,7 @@ public class RegistrationFlowNotificationTests {
 
     IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("confirmation")));
+    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
 
     notificationDelivery.clearDeliveredNotifications();
 
@@ -161,7 +165,7 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("adminHandleRequest")));
+    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
 
     assertThat(message.getReceivers(), hasSize(1));
     assertThat(message.getReceivers().get(0).getEmailAddress(),
@@ -180,7 +184,7 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("activated")));
+    assertThat(message.getSubject(), equalTo(formatSubject("activated")));
     assertThat(message.getBody(), containsString(request.getUsername()));
 
   }
@@ -212,7 +216,7 @@ public class RegistrationFlowNotificationTests {
 
     IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("confirmation")));
+    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
 
     notificationDelivery.clearDeliveredNotifications();
 
@@ -228,7 +232,7 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("adminHandleRequest")));
+    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
 
     assertThat(message.getReceivers(), hasSize(1));
     assertThat(message.getReceivers().get(0).getEmailAddress(),
@@ -247,7 +251,7 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("rejected")));
+    assertThat(message.getSubject(), equalTo(formatSubject("rejected")));
     assertThat(message.getBody(),
         not(containsString("The administrator has provided the following motivation")));
 
@@ -280,7 +284,7 @@ public class RegistrationFlowNotificationTests {
 
     IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("confirmation")));
+    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
 
     notificationDelivery.clearDeliveredNotifications();
 
@@ -296,7 +300,7 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("adminHandleRequest")));
+    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
 
     assertThat(message.getReceivers(), hasSize(1));
     assertThat(message.getReceivers().get(0).getEmailAddress(),
@@ -317,11 +321,10 @@ public class RegistrationFlowNotificationTests {
 
     message = notificationDelivery.getDeliveredNotifications().get(0);
 
-    assertThat(message.getSubject(), equalTo(properties.getSubject().get("rejected")));
+    assertThat(message.getSubject(), equalTo(formatSubject("rejected")));
     assertThat(message.getBody(),
         containsString("The administrator has provided the following motivation"));
-    assertThat(message.getBody(),
-        containsString("We hate you"));
+    assertThat(message.getBody(), containsString("We hate you"));
 
   }
 

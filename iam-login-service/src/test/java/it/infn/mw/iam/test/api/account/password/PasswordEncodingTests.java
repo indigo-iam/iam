@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
@@ -76,11 +77,35 @@ public class PasswordEncodingTests {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
+  @Test
+  public void testNoValidResetToken() throws Exception {
+    String username = "password_encoded";
+
+    RegistrationRequestDto request = new RegistrationRequestDto();
+    request.setGivenname("Password encoded");
+    request.setFamilyname("Test");
+    request.setEmail("password_encoded@example.org");
+    request.setUsername(username);
+    request.setNotes("Some short notes...");
+
+    mvc
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(request)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String confirmationKey = "NoValidToken";
+    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
+      .andExpect(status().isNotFound());
+
+  }
 
   @Test
   public void testPasswordEncoded() throws Exception {
     String username = "password_encoded";
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
 
     RegistrationRequestDto request = new RegistrationRequestDto();
     request.setGivenname("Password encoded");
@@ -100,9 +125,7 @@ public class PasswordEncodingTests {
     request = mapper.readValue(rs, RegistrationRequestDto.class);
 
     String confirmationKey = tokenGenerator.getLastToken();
-    mvc
-      .perform(get("/registration/confirm/{token}", confirmationKey)
-        .contentType(APPLICATION_JSON))
+    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
       .andExpect(status().isOk());
 
     mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
@@ -111,19 +134,20 @@ public class PasswordEncodingTests {
 
     String resetKey = tokenGenerator.getLastToken();
 
+    ResetPasswordDTO dto = new ResetPasswordDTO();
+    dto.setUpdatedPassword(newPassword);
+    dto.setToken(resetKey);
+
     mvc
-      .perform(post("/iam/password-reset").param("token", resetKey)
-        .param("password", newPassword)
+      .perform(post("/iam/password-reset").content(mapper.writeValueAsString(dto))
         .with(authentication(adminAuthentication()))
         .contentType(MediaType.APPLICATION_JSON))
-      .andExpect(MockMvcResultMatchers.status().isOk());
+      .andExpect(MockMvcResultMatchers.status().isCreated());
 
     IamAccount account = iamAccountRepository.findByUuid(request.getAccountId())
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
     Assert.assertTrue(passwordEncoder.matches(newPassword, account.getPassword()));
-
-
   }
 
 }

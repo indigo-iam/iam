@@ -54,7 +54,7 @@ public class DefaultPasswordResetService
       PasswordEncoder passwordEncoder) {
 
     this.accountRepository = accountRepository;
-    this.notificationFactory= notificationFactory;
+    this.notificationFactory = notificationFactory;
     this.tokenGenerator = tokenGenerator;
     this.passwordEncoder = passwordEncoder;
   }
@@ -67,8 +67,8 @@ public class DefaultPasswordResetService
   public void validateResetToken(String resetToken) {
 
     IamAccount account = accountRepository.findByResetKey(resetToken)
-      .orElseThrow(() -> new InvalidPasswordResetTokenError(
-          String.format("No account found for reset_key [%s]", resetToken)));
+        .orElseThrow(() -> new InvalidPasswordResetTokenError(
+            String.format("No account found for reset_key [%s]", resetToken)));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new InvalidPasswordResetTokenError(
@@ -80,40 +80,38 @@ public class DefaultPasswordResetService
   public void resetPassword(String resetToken, String password) {
 
     validateResetToken(resetToken);
-    // FIXME: we perform the lookup twice. if validateResetToken 
+    // FIXME: we perform the lookup twice. if validateResetToken
     // was modified to return the IamAccount we save one call to the DB
     IamAccount account = accountRepository.findByResetKey(resetToken)
-      .orElseThrow(() -> new InvalidPasswordResetTokenError(
-          String.format("No account found for reset_key [%s]", resetToken)));
-
-    eventPublisher.publishEvent(new PasswordResetEvent(this, account,
-        String.format("User %s reset its password", account.getUsername())));
+        .orElseThrow(() -> new InvalidPasswordResetTokenError(
+            String.format("No account found for reset_key [%s]", resetToken)));
 
     account.setPassword(passwordEncoder.encode(password));
     account.setResetKey(null);
 
     accountRepository.save(account);
-  }
 
+    eventPublisher.publishEvent(new PasswordResetEvent(this, account,
+        String.format("User %s reset its password", account.getUsername())));
+  }
 
   @Override
   public void createPasswordResetToken(String email) {
-      Optional<IamAccount> accountByMail = accountRepository.findByEmail(email);
-      
-      accountByMail.ifPresent(a -> {
-        if (accountActiveAndEmailVerified(a)) {
-          String resetKey = tokenGenerator.generateToken();
-          a.setResetKey(resetKey);
-          accountRepository.save(a);
-          notificationFactory.createResetPasswordMessage(a);
-        } 
-      });
-      
-      if (!accountByMail.isPresent()){
-        logger.warn("No account found linked to email: {}", email);
-      }
-  }
+    Optional<IamAccount> accountByMail = accountRepository.findByEmail(email);
 
+    accountByMail.ifPresent(a -> {
+      if (accountActiveAndEmailVerified(a)) {
+        String resetKey = tokenGenerator.generateToken();
+        a.setResetKey(resetKey);
+        accountRepository.save(a);
+        notificationFactory.createResetPasswordMessage(a);
+      }
+    });
+
+    if (!accountByMail.isPresent()) {
+      logger.warn("No account found linked to email: {}", email);
+    }
+  }
 
   private boolean accountActiveAndEmailVerified(IamAccount account) {
     return account.isActive() && (account.getUserInfo().getEmailVerified() != null
@@ -125,7 +123,7 @@ public class DefaultPasswordResetService
       throws UserNotActiveOrNotVerified, BadUserPasswordError {
 
     IamAccount account = accountRepository.findByUsername(username)
-      .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
+        .orElseThrow(() -> new UserNotFoundError("No user found linked to username " + username));
 
     if (!accountActiveAndEmailVerified(account)) {
       throw new UserNotActiveOrNotVerified("Account is not active or email is not verified");

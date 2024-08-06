@@ -15,6 +15,10 @@
  */
 package it.infn.mw.iam.test.api.account.password;
 
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
+import static java.lang.String.format;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +34,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
+
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.account.password_reset.ResetPasswordDTO;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.notification.NotificationTestConfig;
@@ -39,7 +50,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, NotificationTestConfig.class,
@@ -47,7 +57,6 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @WithAnonymousUser
 public class PasswordResetTests {
 
-  
   @Autowired
   private PersistentUUIDTokenGenerator tokenGenerator;
 
@@ -59,6 +68,12 @@ public class PasswordResetTests {
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  private ObjectMapper mapper;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
 
   @Before
   public void setup() {
@@ -75,7 +90,7 @@ public class PasswordResetTests {
   public void testChangePassword() throws Exception {
     String testEmail = "test@iam.test";
 
-    String newPassword = "secure_password";
+    String newPassword = "Secure_P@ssw0rd!";
 
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
       .andExpect(status().isOk());
@@ -84,14 +99,90 @@ public class PasswordResetTests {
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
 
+    ResetPasswordDTO request = new ResetPasswordDTO();
+    request.setUpdatedPassword(newPassword);
+    request.setToken(resetToken);
+
     mvc
-      .perform(
-          post("/iam/password-reset").param("token", resetToken).param("password", newPassword))
-      .andExpect(status().isOk());
+      .perform(post("/iam/password-reset").contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(request)))
+      .andExpect(status().isCreated());
 
     mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
       .andExpect(status().isNotFound());
+  }
 
+  @Test
+  public void testChangePasswordWeak() throws Exception {
+    String testEmail = "test@iam.test";
+
+    String newPassword = "weakpassword";
+
+    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+      .andExpect(status().isOk());
+
+    String resetToken = tokenGenerator.getLastToken();
+
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetToken);
+
+    mvc
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().isBadRequest())
+      .andExpect(MockMvcResultMatchers.content()
+        .string("Invalid reset password: [resetPasswordDTO.updatedPassword : "
+            + PASSWORD_REGEX_MESSAGE_ERROR + "]"));
+  }
+
+  @Test
+  public void testChangePasswordWithTokenJustUsed() throws Exception {
+    String testEmail = "test@iam.test";
+
+    String newPassword = "Secure_P@ssw0rd!";
+
+    mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
+      .andExpect(status().isOk());
+
+    String resetToken = tokenGenerator.getLastToken();
+
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+
+    JsonObject jsonBody = new JsonObject();
+    jsonBody.addProperty("updatedPassword", newPassword);
+    jsonBody.addProperty("token", resetToken);
+
+    mvc
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().isCreated());
+
+    mvc
+      .perform(
+          post("/iam/password-reset").contentType(APPLICATION_JSON).content(jsonBody.toString()))
+      .andExpect(status().is4xxClientError());
+  }
+
+  @Test
+  public void testRedirectToResetPasswordPage() throws Exception {
+    String resetToken = tokenGenerator.getLastToken() + "<div>";
+    mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
+  }
+
+  @Test
+  public void testRedirectToResetPasswordPageWithValidResetKey() throws Exception {
+    String resetToken = tokenGenerator.generateToken();
+    String testEmail = "test@iam.test";
+    IamAccount account = accountRepo.findByEmail(testEmail)
+      .orElseThrow(
+          () -> new NoSuchAccountError(format("No account found for email '%s'", testEmail)));
+    account.setResetKey(resetToken);
+    accountRepo.save(account);
+
+    mvc.perform(get("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isOk());
   }
 
   @Test
@@ -99,28 +190,30 @@ public class PasswordResetTests {
 
     String resetToken = "abcdefghilmnopqrstuvz";
 
-    mvc.perform(head("/iam/password-reset/token/{token}", resetToken)).andExpect(status().isNotFound());
-   
+    mvc.perform(head("/iam/password-reset/token/{token}", resetToken))
+      .andExpect(status().isNotFound());
+
   }
 
   @Test
   public void testCreatePasswordResetTokenReturnsOkForUnknownAddress() throws Exception {
 
     String testEmail = "test@foo.bar";
-   
+
     mvc.perform(post("/iam/password-reset/token").param("email", testEmail))
-    .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
   }
 
   @Test
   public void testEmailValidationForPasswordResetTokenCreation() throws Exception {
     String invalidEmailAddress = "this_is_not_an_email";
-    
+
     mvc.perform(post("/iam/password-reset/token").param("email", invalidEmailAddress))
-    .andExpect(status().isBadRequest())
-    .andExpect(MockMvcResultMatchers.content().string("validation error: please specify a valid email address"));
-     
+      .andExpect(status().isBadRequest())
+      .andExpect(MockMvcResultMatchers.content()
+        .string("validation error: please specify a valid email address"));
+
   }
 
 }

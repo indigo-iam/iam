@@ -189,7 +189,7 @@ iam:
     external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
   client:
-    track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:true}
+    track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
 redis-cache:
   enabled: ${IAM_REDIS_CACHE_ENABLED:false}

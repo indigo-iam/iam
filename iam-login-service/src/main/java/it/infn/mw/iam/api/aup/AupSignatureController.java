@@ -48,6 +48,7 @@ import it.infn.mw.iam.audit.events.aup.AupSignatureDeletedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedOnBehalfEvent;
 import it.infn.mw.iam.core.time.TimeProvider;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
@@ -70,15 +71,17 @@ public class AupSignatureController {
   private final IamAupRepository aupRepo;
   private final TimeProvider timeProvider;
   private final ApplicationEventPublisher eventPublisher;
+  private final NotificationFactory notificationFactory;
   public AupSignatureController(AupSignatureConverter conv, AccountUtils utils,
       IamAupSignatureRepository signatureRepo, IamAupRepository aupRepo, TimeProvider timeProvider,
-      ApplicationEventPublisher publisher) {
+      ApplicationEventPublisher publisher, NotificationFactory notificationFactory) {
     this.signatureConverter = conv;
     this.accountUtils = utils;
     this.signatureRepo = signatureRepo;
     this.aupRepo = aupRepo;
     this.timeProvider = timeProvider;
     this.eventPublisher = publisher;
+    this.notificationFactory = notificationFactory;
   }
 
   private Supplier<AupNotFoundError> aupNotFoundException() {
@@ -195,6 +198,7 @@ public class AupSignatureController {
         eventPublisher
           .publishEvent(AupSignatureDeletedEvent.deletedByClient(this, principal, signature.get()));
       }
+      notificationFactory.createAupSignatureRequestMessage(signatureAccount);
     }
   }
 

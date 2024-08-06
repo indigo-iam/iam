@@ -54,23 +54,25 @@ public class AupReminderTask {
   public void sendAupReminders() {
     aupRepo.findDefaultAup().ifPresent(aup -> {
       LocalDate currentDate = LocalDate.now();
-      LocalDate expirationDate = currentDate.minusDays(aup.getSignatureValidityInDays());
-      Date expirationDateAsDate = toDate(expirationDate);
-      Date expirationDatePlusOneDayAsDate = toDate(expirationDate.plusDays(1));
-      List<Integer> reminderIntervals = parseReminderIntervals(aup.getAupRemindersInDays());
+      if (aup.getSignatureValidityInDays() > 0) {
+        LocalDate expirationDate = currentDate.minusDays(aup.getSignatureValidityInDays());
+        Date expirationDateAsDate = toDate(expirationDate);
+        Date expirationDatePlusOneDayAsDate = toDate(expirationDate.plusDays(1));
+        List<Integer> reminderIntervals = parseReminderIntervals(aup.getAupRemindersInDays());
 
-      reminderIntervals.forEach(
-          interval -> processRemindersForInterval(aup, currentDate, interval, expirationDate));
+        reminderIntervals.forEach(
+            interval -> processRemindersForInterval(aup, currentDate, interval, expirationDate));
 
-      List<IamAupSignature> expiredSignatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
-          expirationDateAsDate, expirationDatePlusOneDayAsDate);
+        List<IamAupSignature> expiredSignatures = aupSignatureRepo.findByAupAndSignatureTime(aup,
+            expirationDateAsDate, expirationDatePlusOneDayAsDate);
 
-      // check if an email of type AUP_EXPIRATION does not already exist, because it is never deleted
-      expiredSignatures.forEach(s -> {
-        if (isExpiredSignatureEmailNotAlreadySentFor(s.getAccount())) {
-          notification.createAupSignatureExpMessage(s.getAccount());
-        }
-      });
+        // check if an email of type AUP_EXPIRATION does not already exist, because it is never deleted
+        expiredSignatures.forEach(s -> {
+          if (isExpiredSignatureEmailNotAlreadySentFor(s.getAccount())) {
+            notification.createAupSignatureExpMessage(s.getAccount());
+          }
+        });
+      }
     });
   }
 
