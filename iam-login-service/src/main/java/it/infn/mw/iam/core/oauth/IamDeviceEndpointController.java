@@ -70,18 +70,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Controller
-public class IamDeviceEndpointController {
-
-  public static final String URL = "devicecode";
-  public static final String USER_URL = "device";
-
-  private static final String REQUEST_USER_CODE_STRING = "requestUserCode";
-  private static final String ERROR_STRING = "error";
-
-  private static final String APPROVAL_ATTRIBUTE_KEY = "approved";
-
-  private static final String APPROVE_DEVICE_PAGE = "iam/approveDevice";
-  private static final String DEVICE_APPROVED_PAGE = "deviceApproved";
+public class IamDeviceEndpointController implements IamOauthRequestParameters {
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
@@ -246,8 +235,8 @@ public class IamDeviceEndpointController {
   @PreAuthorize("hasRole('ROLE_USER')")
   @RequestMapping(value = "/" + USER_URL + "/approve", method = RequestMethod.POST)
   public String approveDevice(@RequestParam("user_code") String userCode,
-      @RequestParam(value = "user_oauth_approval") Boolean approve,
-      @RequestParam(value = "remember", required = false) String remember, ModelMap model,
+      @RequestParam(value = APPROVAL_PARAMETER_KEY) Boolean approve,
+      @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember, ModelMap model,
       Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
@@ -336,8 +325,8 @@ public class IamDeviceEndpointController {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
-    approvalParameters.put("remember", remember);
-    approvalParameters.put("user_oauth_approval", approve.toString());
+    approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
+    approvalParameters.put(APPROVAL_PARAMETER_KEY, approve.toString());
 
     scopes.forEach(s -> approvalParameters.put("scope_" + s.getValue(), s.getValue()));
 

@@ -69,7 +69,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
-import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
@@ -161,12 +160,6 @@ public class MitreServicesConfig {
   OAuth2RequestValidator requestValidator(ScopeMatcherRegistry registry) {
 
     return new ScopeMatcherOAuthRequestValidator(registry);
-  }
-
-  @Bean("iamUserApprovalHandler")
-  UserApprovalHandler tofuApprovalHandler() {
-
-    return new IamUserApprovalHandler();
   }
 
   @Bean
