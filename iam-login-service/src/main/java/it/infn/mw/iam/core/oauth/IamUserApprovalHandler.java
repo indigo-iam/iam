@@ -15,17 +15,19 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_CONSENT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
+import static org.springframework.security.oauth2.common.util.OAuth2Utils.SCOPE_PREFIX;
+import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +45,9 @@ import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
+import org.springframework.security.oauth2.provider.approval.Approval;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
+import org.springframework.security.oauth2.provider.approval.Approval.ApprovalStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -54,13 +58,12 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
-  
+
   public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   @Autowired
@@ -88,9 +91,8 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     if (authorizationRequest.isApproved()) {
       return true;
     } else {
-      // TODO: make parameter name configurable?
       return Boolean
-        .parseBoolean(authorizationRequest.getApprovalParameters().get(APPROVAL_PARAMETER_KEY));
+        .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
     }
 
   }
@@ -151,34 +153,30 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     String clientId = authorizationRequest.getClientId();
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
 
-    // This must be re-parsed here because SECOAUTH forces us to call things in a strange order
     if (Boolean
-      .parseBoolean(authorizationRequest.getApprovalParameters().get(APPROVAL_PARAMETER_KEY))) {
+      .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL))) {
 
-      authorizationRequest.setApproved(true);
+      Set<String> requestedScopes = authorizationRequest.getScope();
 
       Set<String> allowedScopes = Sets.newHashSet();
       Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
-      Set<String> keys = approvalParams.keySet();
-
-      for (String key : keys) {
-        if (key.startsWith("scope_")) {
-
-          String scope = approvalParams.get(key);
-          Set<String> approveSet = Sets.newHashSet(scope);
-
-          if (systemScopes.scopesMatch(client.getScope(), approveSet)) {
-
-            allowedScopes.add(scope);
-          }
-
+      requestedScopes.forEach(rs -> {
+        if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
+            // always true right now, but allows future support to let users approve only single
+            // scope
+            && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
+          allowedScopes.add(rs);
         }
+      });
+
+      boolean approved = false;
+      if (allowedScopes.isEmpty() && !requestedScopes.isEmpty()) {
+        approved = false;
       }
+      authorizationRequest.setApproved(approved);
 
-      authorizationRequest.setScope(allowedScopes);
-
-      String remember = authorizationRequest.getApprovalParameters().get(REMEMBER_PARAMETER_KEY);
+      String remember = approvalParams.get(REMEMBER_PARAMETER_KEY);
       if (!Strings.isNullOrEmpty(remember) && !remember.equals("none")) {
 
         Date timeout = null;
@@ -196,14 +194,12 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       setAuthTime(authorizationRequest);
 
-      if (isApproved(authorizationRequest, userAuthentication)) {
 
-        IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication)
-          .orElseThrow(() -> NoSuchAccountError.forUsername(userAuthentication.getName()));
+      IamAccount account =
+          accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
 
-        if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
-          clientService.linkClientToAccount(client, account);
-        }
+      if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
+        clientService.linkClientToAccount(client, account);
       }
 
     }

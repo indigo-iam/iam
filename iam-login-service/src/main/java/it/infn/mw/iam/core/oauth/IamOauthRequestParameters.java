@@ -28,7 +28,6 @@ public interface IamOauthRequestParameters {
   public static final String APPROVE_DEVICE_PAGE = "iam/approveDevice";
   public static final String DEVICE_APPROVED_PAGE = "deviceApproved";
 
-  public static final String APPROVAL_PARAMETER_KEY = "user_oauth_approval";
   public static final String REMEMBER_PARAMETER_KEY = "remember";
 
 }

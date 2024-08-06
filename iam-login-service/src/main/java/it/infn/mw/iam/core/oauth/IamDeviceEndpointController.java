@@ -235,9 +235,9 @@ public class IamDeviceEndpointController implements IamOauthRequestParameters {
   @PreAuthorize("hasRole('ROLE_USER')")
   @RequestMapping(value = "/" + USER_URL + "/approve", method = RequestMethod.POST)
   public String approveDevice(@RequestParam("user_code") String userCode,
-      @RequestParam(value = APPROVAL_PARAMETER_KEY) Boolean approve,
-      @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember, ModelMap model,
-      Authentication auth, HttpSession session) {
+      @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
+      @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
+      ModelMap model, Authentication auth, HttpSession session) {
 
     AuthorizationRequest authorizationRequest =
         (AuthorizationRequest) session.getAttribute("authorizationRequest");
@@ -305,10 +305,10 @@ public class IamDeviceEndpointController implements IamOauthRequestParameters {
   private void setAuthzRequestForPreApproval(AuthorizationRequest authorizationRequest,
       Set<SystemScope> scopes, String clientId) {
 
-    Collection<String> scopeCollection = new ArrayList<>();
-    scopes.forEach(a -> scopeCollection.add(a.getValue()));
+    Collection<String> scopesToCollection = new ArrayList<>();
+    scopes.forEach(a -> scopesToCollection.add(a.getValue()));
 
-    authorizationRequest.setScope(scopeCollection);
+    authorizationRequest.setScope(scopesToCollection);
     authorizationRequest.setClientId(clientId);
   }
 
@@ -326,9 +326,14 @@ public class IamDeviceEndpointController implements IamOauthRequestParameters {
     Map<String, String> approvalParameters = new HashMap<>();
 
     approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
-    approvalParameters.put(APPROVAL_PARAMETER_KEY, approve.toString());
+    approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
+    // we can consider in future to let users approve only single scope
+    scopes.forEach(s -> approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s.getValue(), approve.toString()));
 
-    scopes.forEach(s -> approvalParameters.put("scope_" + s.getValue(), s.getValue()));
+    Collection<String> scopesToCollection = new ArrayList<>();
+    
+    scopes.forEach(a -> scopesToCollection.add(a.getValue()));
+    authorizationRequest.setScope(scopesToCollection);
 
     authorizationRequest.setClientId(authorizationRequest.getClientId());
     authorizationRequest.setApprovalParameters(approvalParameters);
