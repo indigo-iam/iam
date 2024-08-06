@@ -406,6 +406,44 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
+  @Override
+  public IamEmailNotification createSetAsServiceAccountMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account set as service account";
+
+    IamEmailNotification notification = createMessage("accountSetAsServiceAccount.ftl", model,
+        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created set as service account message for the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+  @Override
+  public IamEmailNotification createRevokeServiceAccountMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Account's service account status revoked";
+
+    IamEmailNotification notification = createMessage("accountRevokeServiceAccount.ftl", model,
+        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created service account revoke message for the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 

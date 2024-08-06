@@ -285,6 +285,13 @@ public class ScimUserProvisioning
         notificationFactory.createAccountSuspendedMessage(account);
       }
     }
+    if (ACCOUNT_REPLACE_SERVICE_ACCOUNT.equals(u.getType())) {
+      if (account.isServiceAccount()) {
+        notificationFactory.createSetAsServiceAccountMessage(account);
+      } else {
+        notificationFactory.createRevokeServiceAccountMessage(account);
+      }
+    }
   }
 
   @Override
