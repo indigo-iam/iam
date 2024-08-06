@@ -68,7 +68,9 @@ public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryC
   @Override
   public IamAupSignature createSignatureForAccount(IamAup aup, IamAccount account,
       Date currentTime) {
-
+    if (account.isServiceAccount()) {
+      throw new IamAupSignatureUpdateError(account, "As user '%s' is a service account, AUP signature operation not allowed");
+    }
     Optional<IamAupSignature> signature = signatureRepo.findByAupAndAccount(aup, account);
 
     if (signature.isEmpty()) {
@@ -79,7 +81,10 @@ public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryC
 
   @Override
   public void deleteSignatureForAccount(IamAup aup, IamAccount account) {
-
+    if (account.isServiceAccount()) {
+      throw new IamAupSignatureUpdateError(account, "As user '%s' is a service account, AUP signature operation not allowed");
+    }
+    
     if (signatureRepo.findByAupAndAccount(aup, account).isPresent()) {
       deleteSignature(account);
       return;

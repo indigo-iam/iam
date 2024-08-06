@@ -53,6 +53,7 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -138,7 +139,7 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId,
-      Authentication authentication) throws AccountNotFoundException {
+      Authentication authentication) throws AccountNotFoundException, IamAupSignatureUpdateError {
 
     Optional<IamAccount> updaterAccount = accountUtils.getAuthenticatedUserAccount();
 
