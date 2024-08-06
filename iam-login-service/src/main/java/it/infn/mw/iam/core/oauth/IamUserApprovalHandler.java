@@ -27,7 +27,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,9 +44,7 @@ import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.approval.Approval;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
-import org.springframework.security.oauth2.provider.approval.Approval.ApprovalStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -111,22 +108,26 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     if (!prompts.contains(PROMPT_CONSENT)) {
 
       Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
+
+      approvedSiteService.getByClientIdAndUserId(clientId, userId).forEach(ap -> {
+
+
+      });
       for (ApprovedSite ap : aps) {
 
-        if (!ap.isExpired()) {
+        if (!ap.isExpired()
+            && systemScopes.scopesMatch(ap.getAllowedScopes(), authorizationRequest.getScope())) {
 
-          if (systemScopes.scopesMatch(ap.getAllowedScopes(), authorizationRequest.getScope())) {
 
-            ap.setAccessDate(new Date());
-            approvedSiteService.save(ap);
+          ap.setAccessDate(new Date());
+          approvedSiteService.save(ap);
 
-            String apId = ap.getId().toString();
-            authorizationRequest.getExtensions().put(APPROVED_SITE, apId);
-            authorizationRequest.setApproved(true);
-            alreadyApproved = true;
+          String apId = ap.getId().toString();
+          authorizationRequest.getExtensions().put(APPROVED_SITE, apId);
+          authorizationRequest.setApproved(true);
+          alreadyApproved = true;
 
-            setAuthTime(authorizationRequest);
-          }
+          setAuthTime(authorizationRequest);
         }
       }
 
@@ -163,14 +164,14 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       requestedScopes.forEach(rs -> {
         if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
-            // always true right now, but allows future support to let users approve only single
-            // scope
+            // always true right now,
+            // but allows future support to let users approve only single scope
             && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
           allowedScopes.add(rs);
         }
       });
 
-      boolean approved = false;
+      boolean approved = true;
       if (allowedScopes.isEmpty() && !requestedScopes.isEmpty()) {
         approved = false;
       }
@@ -211,15 +212,13 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private void setAuthTime(AuthorizationRequest authorizationRequest) {
     ServletRequestAttributes attr =
         (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-    if (attr != null) {
-      HttpSession session = attr.getRequest().getSession();
-      if (session != null) {
-        Date authTime = (Date) session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP);
-        if (authTime != null) {
-          String authTimeString = Long.toString(authTime.getTime());
-          authorizationRequest.getExtensions()
-            .put(AuthenticationTimeStamper.AUTH_TIMESTAMP, authTimeString);
-        }
+    HttpSession session = attr.getRequest().getSession();
+    if (session != null) {
+      Date authTime = (Date) session.getAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP);
+      if (authTime != null) {
+        String authTimeString = Long.toString(authTime.getTime());
+        authorizationRequest.getExtensions()
+          .put(AuthenticationTimeStamper.AUTH_TIMESTAMP, authTimeString);
       }
     }
   }
