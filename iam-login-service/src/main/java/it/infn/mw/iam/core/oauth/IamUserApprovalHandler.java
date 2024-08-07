@@ -150,22 +150,20 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     String userId = userAuthentication.getName();
     String clientId = authorizationRequest.getClientId();
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
+    Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
-    if (!Boolean
-      .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL))) {
+    if (!Boolean.parseBoolean(approvalParams.get(USER_OAUTH_APPROVAL))) {
       return authorizationRequest;
     }
 
     Set<String> requestedScopes = authorizationRequest.getScope();
 
     Set<String> allowedScopes = Sets.newHashSet();
-    Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
     requestedScopes.forEach(rs -> {
-      if (systemScopeService.scopesMatch(client.getScope(), Sets.newHashSet(rs))
-          // always true right now, but allows for future
-          // support to let users approve only single scope
-          && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
+      // always true right now, but allows for future
+      // support to let users approve only single scope
+      if (Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
         allowedScopes.add(rs);
       }
     });
@@ -193,7 +191,6 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     setAuthTime(authorizationRequest);
-
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
 

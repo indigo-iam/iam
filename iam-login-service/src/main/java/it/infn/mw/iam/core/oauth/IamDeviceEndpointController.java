@@ -329,21 +329,18 @@ public class IamDeviceEndpointController {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
+    // likely there is a better way to take the request parameters,
+    // but looks like they are not available in the authorizationRequest
     approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
     approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
 
     Set<String> scopes = authorizationRequest.getScope();
-    Collection<String> scopesToCollection = new ArrayList<>();
 
-    // we can consider in future to let users approve only single scope
+    // we can consider in future to let users approve only single scopes
     scopes.forEach(s -> {
       approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, approve.toString());
-      scopesToCollection.add(s);
     });
 
-    authorizationRequest.setScope(scopesToCollection);
-
-    authorizationRequest.setClientId(authorizationRequest.getClientId());
     authorizationRequest.setApprovalParameters(approvalParameters);
   }
 
