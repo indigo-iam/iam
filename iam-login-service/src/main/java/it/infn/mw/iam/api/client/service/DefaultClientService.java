@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -55,7 +54,6 @@ public class DefaultClientService implements ClientService {
 
   private OAuth2TokenEntityService tokenService;
 
-  @Autowired
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
       IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher,
       OAuth2RequestValidator requestValidator, OAuth2TokenEntityService tokenService) {
@@ -101,7 +99,7 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}", condition = "@environment.getProperty('cache.enabled')")
+  @CacheEvict(cacheNames = DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, key = "{#client?.id}")
   public ClientDetailsEntity updateClient(ClientDetailsEntity client) {
 
     return clientRepo.save(client);
