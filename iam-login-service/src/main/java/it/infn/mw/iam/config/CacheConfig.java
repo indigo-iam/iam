@@ -31,20 +31,20 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 public class CacheConfig {
 
   @Bean
-  @ConditionalOnExpression("${cache.enabled:false}")
-  CacheManager fakeCacheManager() {
+  @ConditionalOnExpression("${cache.enabled} == false")
+  CacheManager fakeCacheManager(CacheProperties props) {
     return new NoOpCacheManager();
   }
 
   @Bean
-  @ConditionalOnExpression("${cache.enabled:true} && ${cache.redis.enabled:false}")
-  CacheManager localCacheManager() {
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
+  CacheManager localCacheManager(CacheProperties props) {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
         DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
   }
 
   @Bean
-  @ConditionalOnExpression("${cache.enabled:true} && ${cache.redis.enabled:true}")
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
   RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
     return builder -> builder
       .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
@@ -54,7 +54,7 @@ public class CacheConfig {
   }
 
   @Bean
-  @ConditionalOnExpression("${cache.enabled:true} && ${cache.redis.enabled:true}")
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
   RedisCacheConfiguration redisCacheConfiguration() {
 
     return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
