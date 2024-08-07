@@ -191,8 +191,10 @@ iam:
   client:
     track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
 
-redis-cache:
-  enabled: ${IAM_REDIS_CACHE_ENABLED:false}
+cache:
+  enabled: ${IAM_CACHE_ENABLED:true}
+  redis:
+    enabled: ${IAM_CACHE_REDIS_ENABLED:false}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}

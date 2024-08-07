@@ -164,7 +164,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   }
 
   @Override
-  @Cacheable(CACHE_KEY)
+  @Cacheable(value = CACHE_KEY)
   public Map<String, Object> getWellKnownInfo() {
 
     Map<String, Object> result = newHashMap();
