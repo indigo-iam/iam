@@ -27,11 +27,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
@@ -76,10 +76,7 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   ObjectMapper mapper;
 
   @Autowired
-  RedisCacheConfiguration redisCacheConfiguration;
-
-  @Autowired
-  RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer;
+  CacheManager cacheManager;
 
   @Container
   private static final RedisContainer REDIS = new RedisContainer();
@@ -95,9 +92,7 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
     TestUtils.initRestAssured();
     RestAssured.port = iamPort;
     assertTrue(redisCacheProperties.isEnabled());
-    assertThat(redisCacheConfiguration, instanceOf(RedisCacheConfiguration.class));
-    assertThat(redisCacheManagerBuilderCustomizer, instanceOf(RedisCacheManagerBuilderCustomizer.class));
-
+    assertThat(cacheManager, instanceOf(RedisCacheManager.class));
   }
 
   private String getAccessTokenForClient(String scopes) throws Exception {
@@ -107,7 +102,6 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
       .clientSecret(CLIENT_SECRET)
       .scope(scopes)
       .getAccessTokenValue();
-
   }
 
   @Test
