@@ -164,7 +164,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
   }
 
   @Override
-  @Cacheable(value = CACHE_KEY, condition = "@environment.getProperty('cache.enabled')")
+  @Cacheable(value = CACHE_KEY)
   public Map<String, Object> getWellKnownInfo() {
 
     Map<String, Object> result = newHashMap();

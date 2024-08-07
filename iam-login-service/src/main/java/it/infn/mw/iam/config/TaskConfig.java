@@ -102,7 +102,7 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Scheduled(fixedRateString = "${task.wellKnownCacheCleanupPeriodSecs:300}",
       timeUnit = TimeUnit.SECONDS)
-  @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY, condition = "@environment.getProperty('cache.enabled')")
+  @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
   public void logWellKnownCacheEviction() {
     LOG.debug("well-known config cache evicted");
   }

@@ -44,7 +44,6 @@ import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.config.CacheConfig;
 import it.infn.mw.iam.config.CacheProperties;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
@@ -68,9 +67,6 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
   private ClientService clientService;
 
   @Autowired
-  private CacheConfig cacheConfig;
-
-  @Autowired
   private CacheProperties redisCacheProperties;
 
   @LocalServerPort
@@ -78,6 +74,12 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
 
   @Autowired
   ObjectMapper mapper;
+
+  @Autowired
+  RedisCacheConfiguration redisCacheConfiguration;
+
+  @Autowired
+  RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer;
 
   @Container
   private static final RedisContainer REDIS = new RedisContainer();
@@ -93,9 +95,8 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
     TestUtils.initRestAssured();
     RestAssured.port = iamPort;
     assertTrue(redisCacheProperties.isEnabled());
-    assertThat(cacheConfig.redisCacheConfiguration(), instanceOf(RedisCacheConfiguration.class));
-    assertThat(cacheConfig.redisCacheManagerBuilderCustomizer(),
-        instanceOf(RedisCacheManagerBuilderCustomizer.class));
+    assertThat(redisCacheConfiguration, instanceOf(RedisCacheConfiguration.class));
+    assertThat(redisCacheManagerBuilderCustomizer, instanceOf(RedisCacheManagerBuilderCustomizer.class));
 
   }
 
