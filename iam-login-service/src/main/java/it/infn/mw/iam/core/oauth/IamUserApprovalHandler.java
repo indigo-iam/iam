@@ -85,9 +85,12 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public boolean isApproved(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    return Boolean
-      .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
-
+    if (authorizationRequest.isApproved()) {
+      return true;
+    } else {
+      return Boolean
+        .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
+    }
   }
 
   @Override
