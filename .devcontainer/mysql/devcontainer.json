@@ -1,9 +1,12 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/java
 {
-	"name": "IAM Dev Container",
+	"name": "IAM Dev Container - MySQL",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/java:1-17-bookworm",
+	"dockerComposeFile": "compose.yaml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/iam",
+	"shutdownAction": "stopCompose",
 	"features": {
 		"ghcr.io/devcontainers/features/java:1": {
 			"version": "none",

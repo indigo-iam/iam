@@ -1,0 +1,25 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/java:1-17-bookworm
+    volumes:
+      - ../..:/workspaces/iam:cached
+    network_mode: service:db
+    user: vscode
+    depends_on:
+      - db
+    environment:
+      IAM_DB_HOST: db
+      IAM_DB_NAME: iam
+      IAM_DB_USERNAME: iam
+      IAM_DB_PASSWORD: pwd
+      SPRING_PROFILES_ACTIVE: mysql-test,dev
+    command: sleep infinity
+
+  db:
+    image: mariadb:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: dev
+      MYSQL_DATABASE: iam
+      MYSQL_USER: iam
+      MYSQL_PASSWORD: pwd
