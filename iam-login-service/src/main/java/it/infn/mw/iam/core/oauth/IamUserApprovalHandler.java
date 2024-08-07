@@ -79,7 +79,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private WhitelistedSiteService whitelistedSiteService;
 
   @Autowired
-  private SystemScopeService systemScopes;
+  private SystemScopeService systemScopeService;
 
   @Override
   public boolean isApproved(AuthorizationRequest authorizationRequest,
@@ -101,42 +101,40 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     String prompt = (String) authorizationRequest.getExtensions().get(PROMPT);
     List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
-    if (!prompts.contains(PROMPT_CONSENT)) {
+    if (prompts.contains(PROMPT_CONSENT)) {
+      return authorizationRequest;
+    }
 
-      Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
+    Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
 
-      approvedSiteService.getByClientIdAndUserId(clientId, userId).forEach(ap -> {
+    for (ApprovedSite ap : aps) {
 
-
-      });
-      for (ApprovedSite ap : aps) {
-
-        if (!ap.isExpired()
-            && systemScopes.scopesMatch(ap.getAllowedScopes(), authorizationRequest.getScope())) {
+      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(),
+          authorizationRequest.getScope())) {
 
 
-          ap.setAccessDate(new Date());
-          approvedSiteService.save(ap);
+        ap.setAccessDate(new Date());
+        approvedSiteService.save(ap);
 
-          String apId = ap.getId().toString();
-          authorizationRequest.getExtensions().put(APPROVED_SITE, apId);
-          authorizationRequest.setApproved(true);
-          alreadyApproved = true;
+        String apId = ap.getId().toString();
+        authorizationRequest.getExtensions().put(APPROVED_SITE, apId);
+        authorizationRequest.setApproved(true);
+        alreadyApproved = true;
 
-          setAuthTime(authorizationRequest);
-        }
-      }
-
-      if (!alreadyApproved) {
-        WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
-        if (ws != null
-            && systemScopes.scopesMatch(ws.getAllowedScopes(), authorizationRequest.getScope())) {
-          authorizationRequest.setApproved(true);
-
-          setAuthTime(authorizationRequest);
-        }
+        setAuthTime(authorizationRequest);
       }
     }
+
+    if (!alreadyApproved) {
+      WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
+      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(),
+          authorizationRequest.getScope())) {
+        authorizationRequest.setApproved(true);
+
+        setAuthTime(authorizationRequest);
+      }
+    }
+
 
     return authorizationRequest;
 
@@ -161,7 +159,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
     requestedScopes.forEach(rs -> {
-      if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
+      if (systemScopeService.scopesMatch(client.getScope(), Sets.newHashSet(rs))
           // always true right now, but allows for future
           // support to let users approve only single scope
           && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {

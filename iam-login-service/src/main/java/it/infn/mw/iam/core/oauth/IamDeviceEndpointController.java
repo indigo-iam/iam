@@ -223,6 +223,7 @@ public class IamDeviceEndpointController {
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
     setAuthzRequestForPreApproval(authorizationRequest, sortedScopes, client.getClientId());
+
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null) {
@@ -275,12 +276,7 @@ public class IamDeviceEndpointController {
 
     deviceCodeService.approveDeviceCode(dc, o2Auth);
 
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(auth)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(auth.getName()));
-
-    Set<SystemScope> sortedScopes = sortScopesForApproval(dc, account);
-
-    setAuthzRequestAfterApproval(authorizationRequest, remember, approve, sortedScopes);
+    setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
 
     model.put(APPROVAL_ATTRIBUTE_KEY, true);
@@ -329,18 +325,22 @@ public class IamDeviceEndpointController {
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
-      String remember, Boolean approve, Set<SystemScope> scopes) {
+      String remember, Boolean approve) {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
     approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
     approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
-    // we can consider in future to let users approve only single scope
-    scopes.forEach(s -> approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s.getValue(), approve.toString()));
 
+    Set<String> scopes = authorizationRequest.getScope();
     Collection<String> scopesToCollection = new ArrayList<>();
-    
-    scopes.forEach(a -> scopesToCollection.add(a.getValue()));
+
+    // we can consider in future to let users approve only single scope
+    scopes.forEach(s -> {
+      approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, approve.toString());
+      scopesToCollection.add(s);
+    });
+
     authorizationRequest.setScope(scopesToCollection);
 
     authorizationRequest.setClientId(authorizationRequest.getClientId());
