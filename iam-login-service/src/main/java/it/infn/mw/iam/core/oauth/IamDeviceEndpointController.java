@@ -16,6 +16,14 @@
 package it.infn.mw.iam.core.oauth;
 
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.URL;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_URL;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -70,7 +78,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Controller
-public class IamDeviceEndpointController extends IamOauthRequestParameters {
+public class IamDeviceEndpointController {
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 

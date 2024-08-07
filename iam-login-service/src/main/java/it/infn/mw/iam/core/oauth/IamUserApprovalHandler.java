@@ -85,12 +85,8 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public boolean isApproved(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    if (authorizationRequest.isApproved()) {
-      return true;
-    } else {
-      return Boolean
-        .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
-    }
+    return Boolean
+      .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL));
 
   }
 
@@ -154,55 +150,54 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     String clientId = authorizationRequest.getClientId();
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(clientId);
 
-    if (Boolean
+    if (!Boolean
       .parseBoolean(authorizationRequest.getApprovalParameters().get(USER_OAUTH_APPROVAL))) {
+      return authorizationRequest;
+    }
 
-      Set<String> requestedScopes = authorizationRequest.getScope();
+    Set<String> requestedScopes = authorizationRequest.getScope();
 
-      Set<String> allowedScopes = Sets.newHashSet();
-      Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
+    Set<String> allowedScopes = Sets.newHashSet();
+    Map<String, String> approvalParams = authorizationRequest.getApprovalParameters();
 
-      requestedScopes.forEach(rs -> {
-        if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
-            // always true right now, but allows for future
-            // support to let users approve only single scope
-            && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
-          allowedScopes.add(rs);
-        }
-      });
-
-      boolean approved = true;
-      if (allowedScopes.isEmpty() && !requestedScopes.isEmpty()) {
-        approved = false;
+    requestedScopes.forEach(rs -> {
+      if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
+          // always true right now, but allows for future
+          // support to let users approve only single scope
+          && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
+        allowedScopes.add(rs);
       }
-      authorizationRequest.setApproved(approved);
+    });
 
-      String remember = approvalParams.get(REMEMBER_PARAMETER_KEY);
-      if (!Strings.isNullOrEmpty(remember) && !remember.equals("none")) {
+    boolean approved = true;
+    if (allowedScopes.isEmpty() && !requestedScopes.isEmpty()) {
+      approved = false;
+    }
+    authorizationRequest.setApproved(approved);
 
-        Date timeout = null;
-        if (remember.equals("one-hour")) {
-          Calendar cal = Calendar.getInstance();
-          cal.add(Calendar.HOUR, 1);
-          timeout = cal.getTime();
-        }
+    String remember = approvalParams.get(REMEMBER_PARAMETER_KEY);
+    if (!Strings.isNullOrEmpty(remember) && !remember.equals("none")) {
 
-        ApprovedSite newSite =
-            approvedSiteService.createApprovedSite(clientId, userId, timeout, allowedScopes);
-        String newSiteId = newSite.getId().toString();
-        authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
+      Date timeout = null;
+      if (remember.equals("one-hour")) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR, 1);
+        timeout = cal.getTime();
       }
 
-      setAuthTime(authorizationRequest);
+      ApprovedSite newSite =
+          approvedSiteService.createApprovedSite(clientId, userId, timeout, allowedScopes);
+      String newSiteId = newSite.getId().toString();
+      authorizationRequest.getExtensions().put(APPROVED_SITE, newSiteId);
+    }
+
+    setAuthTime(authorizationRequest);
 
 
-      IamAccount account =
-          accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
 
-      if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
-        clientService.linkClientToAccount(client, account);
-      }
-
+    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
+      clientService.linkClientToAccount(client, account);
     }
 
     return authorizationRequest;

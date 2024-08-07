@@ -30,4 +30,6 @@ public abstract class IamOauthRequestParameters {
 
   public static final String REMEMBER_PARAMETER_KEY = "remember";
 
+  private IamOauthRequestParameters() {}
+
 }
