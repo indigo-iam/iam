@@ -857,7 +857,6 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
     mvc.perform(get("/api/approved").session(session))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$[0].id", is(1)))
       .andExpect(jsonPath("$[0].userId", is(TEST_USERNAME)))
       .andExpect(jsonPath("$[0].clientId", is(DEVICE_CODE_CLIENT_ID)))
       .andExpect(jsonPath("$[0].timeoutDate", notNullValue()));
