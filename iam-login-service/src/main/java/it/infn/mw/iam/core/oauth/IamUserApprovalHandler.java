@@ -164,8 +164,8 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
       requestedScopes.forEach(rs -> {
         if (systemScopes.scopesMatch(client.getScope(), Sets.newHashSet(rs))
-            // always true right now,
-            // but allows future support to let users approve only single scope
+            // always true right now, but allows for future
+            // support to let users approve only single scope
             && Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
           allowedScopes.add(rs);
         }

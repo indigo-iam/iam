@@ -20,7 +20,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -31,7 +30,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -375,7 +373,8 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
-        .param("user_oauth_approval", "true").param("remember", "until-revoked")
+        .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
         .session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("deviceApproved"))
