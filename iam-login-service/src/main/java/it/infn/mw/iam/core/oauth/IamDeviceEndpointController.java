@@ -262,11 +262,6 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    if (!approve) {
-      model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
-      return DEVICE_APPROVED_PAGE;
-    }
-
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
 
     model.put("client", client);
@@ -275,6 +270,11 @@ public class IamDeviceEndpointController {
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
 
     deviceCodeService.approveDeviceCode(dc, o2Auth);
+
+    if (!approve) {
+      model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
+      return DEVICE_APPROVED_PAGE;
+    }
 
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
