@@ -77,7 +77,7 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       .clientId(CLIENT_ID)
       .clientSecret(CLIENT_SECRET)
       .scope(scopes)
-      .performTokenRequest(400);
+      .performTokenRequest(statusCode);
   }
 
   @Test

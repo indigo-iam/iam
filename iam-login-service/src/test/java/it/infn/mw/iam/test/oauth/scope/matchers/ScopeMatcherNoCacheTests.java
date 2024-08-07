@@ -72,7 +72,7 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void updatingClientScopesWithNoCache() throws ParseException, Exception {
+  public void updatingClientScopesWithNoCache() throws Exception {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);

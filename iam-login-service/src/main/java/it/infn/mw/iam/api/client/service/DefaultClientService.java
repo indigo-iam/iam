@@ -27,7 +27,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,7 +40,6 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 @Transactional
-@SuppressWarnings("deprecation")
 public class DefaultClientService implements ClientService {
 
   private final Clock clock;
@@ -55,8 +53,7 @@ public class DefaultClientService implements ClientService {
   private OAuth2TokenEntityService tokenService;
 
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher,
-      OAuth2RequestValidator requestValidator, OAuth2TokenEntityService tokenService) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher, OAuth2TokenEntityService tokenService) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
