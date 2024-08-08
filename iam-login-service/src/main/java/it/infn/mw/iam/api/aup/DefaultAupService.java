@@ -90,6 +90,7 @@ public class DefaultAupService implements AupService {
     aup.setDescription(aupDto.getDescription());
     aup.setUrl(aupDto.getUrl());
     aup.setSignatureValidityInDays(aupDto.getSignatureValidityInDays());
+    aup.setAupRemindersInDays(aupDto.getAupRemindersInDays());
     /*
      * Due to transition from text to URL, when updating the AUP only URL is considered while text
      * is ignored and set to null

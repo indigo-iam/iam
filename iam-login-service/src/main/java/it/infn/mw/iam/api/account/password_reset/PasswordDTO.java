@@ -15,17 +15,19 @@
  */
 package it.infn.mw.iam.api.account.password_reset;
 
-import javax.validation.constraints.NotEmpty;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
+import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
-import org.hibernate.validator.constraints.Length;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
 
 public class PasswordDTO {
 
   @NotEmpty
   private String currentPassword;
-  
+
   @NotEmpty(message = "The password cannot be empty")
-  @Length(min = 5, message = "The password must be at least 5 characters")
+  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR)
   private String updatedPassword;
 
   public String getCurrentPassword() {

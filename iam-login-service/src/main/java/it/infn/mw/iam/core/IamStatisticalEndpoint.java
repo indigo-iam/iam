@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.config;
+package it.infn.mw.iam.core;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@ConfigurationProperties("redis-cache")
-@Configuration
-public class RedisCacheProperties {
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-  private boolean enabled = false;
+@RestController
+public class IamStatisticalEndpoint {
 
-  public boolean isEnabled() {
-    return enabled;
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @GetMapping("/stats")
+  public StatsEndpointResponse getStats() {
+    long count = accountRepo.count();
+    return new StatsEndpointResponse(count);
   }
-
-  public void setEnabled(boolean enable) {
-    this.enabled = enable;
-  }
-
 }

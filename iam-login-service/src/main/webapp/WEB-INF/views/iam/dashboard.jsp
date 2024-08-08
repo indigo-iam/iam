@@ -78,6 +78,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/directives/registration.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/directives/operation-result.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/directives/isimage.directive.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/directives/password.directive.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/factory/gatewayerror.interceptor.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/factory/sessionexpired.interceptor.js"></script>
