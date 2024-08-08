@@ -82,28 +82,15 @@ public class IamOAuthConfirmationController {
   @Autowired
   private RedirectResolver redirectResolver;
 
-
-  /**
-   * Logger for this class
-   */
   private static final Logger logger =
       LoggerFactory.getLogger(IamOAuthConfirmationController.class);
 
-  public IamOAuthConfirmationController() {
-
-  }
-
-  public IamOAuthConfirmationController(ClientDetailsEntityService clientService) {
-    this.clientService = clientService;
-  }
 
   @PreAuthorize("hasRole('ROLE_USER')")
   @RequestMapping(path = "/oauth/confirm_access", method = RequestMethod.GET)
   public String confimAccess(Map<String, Object> model,
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {
-
-    // Check the "prompt" parameter to see if we need to do special processing
 
     String prompt = (String) authRequest.getExtensions().get(PROMPT);
     List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
@@ -138,8 +125,7 @@ public class IamOAuthConfirmationController {
 
         uriBuilder.addParameter("error", "interaction_required");
         if (!Strings.isNullOrEmpty(authRequest.getState())) {
-          uriBuilder.addParameter("state", authRequest.getState()); // copy the state parameter if
-                                                                    // one was given
+          uriBuilder.addParameter("state", authRequest.getState());
         }
 
         status.setComplete();
@@ -159,8 +145,8 @@ public class IamOAuthConfirmationController {
 
     model.put("redirect_uri", redirectUri);
 
-    // the authz request already contains PDP filtered scopes
-    // among the request parameters
+    // the authorization request already contains PDP
+    // filtered scopes among the request parameters
     Set<SystemScope> filteredScopes = scopeService
       .fromStrings(OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope")));
 
@@ -168,7 +154,6 @@ public class IamOAuthConfirmationController {
 
     authRequest.setScope(scopeService.toStrings(filteredScopes));
 
-    // get the userinfo claims for each scope
     UserInfo user = userInfoService.getByUsername(authUser.getName());
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
     if (user != null) {
@@ -191,40 +176,22 @@ public class IamOAuthConfirmationController {
 
     model.put("claims", claimsForScopes);
 
-    // client stats
+    // client statistics
     Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
     model.put("count", count);
 
 
-    // contacts
     if (client.getContacts() != null) {
       String contacts = Joiner.on(", ").join(client.getContacts());
       model.put("contacts", contacts);
     }
 
-    // if the client is over a week old and has more than one registration, don't give such a big
-    // warning
-    // instead, tag as "Generally Recognized As Safe" (gras)
     Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
     Boolean expression =
         count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
 
     return "iam/approveClient";
-  }
-
-  /**
-   * @return the clientService
-   */
-  public ClientDetailsEntityService getClientService() {
-    return clientService;
-  }
-
-  /**
-   * @param clientService the clientService to set
-   */
-  public void setClientService(ClientDetailsEntityService clientService) {
-    this.clientService = clientService;
   }
 
 
