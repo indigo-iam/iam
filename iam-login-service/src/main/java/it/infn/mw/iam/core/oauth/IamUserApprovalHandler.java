@@ -56,8 +56,6 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -84,8 +82,6 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   @Autowired
   private SystemScopeService systemScopeService;
 
-  @Autowired
-  private ScopePolicyPDP pdp;
 
   @Override
   public boolean isApproved(AuthorizationRequest authorizationRequest,
@@ -111,12 +107,11 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     String userId = userAuthentication.getName();
     String clientId = authorizationRequest.getClientId();
-    Set<String> requestedScopes = authorizationRequest.getScope();
+    Set<String> scopes = authorizationRequest.getScope();
 
-    Set<String> filteredScopes =
-        sortAndFilterScopes(systemScopeService.fromStrings(requestedScopes), userAuthentication);
+    Set<String> sortedScopes = sortScopes(systemScopeService.fromStrings(scopes));
 
-    authorizationRequest.setScope(filteredScopes);
+    authorizationRequest.setScope(sortedScopes);
 
     boolean alreadyApproved = false;
 
@@ -124,8 +119,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     for (ApprovedSite ap : aps) {
 
-      if (!ap.isExpired()
-          && systemScopeService.scopesMatch(ap.getAllowedScopes(), filteredScopes)) {
+      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), sortedScopes)) {
 
 
         ap.setAccessDate(new Date());
@@ -142,7 +136,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     if (!alreadyApproved) {
       WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
-      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), filteredScopes)) {
+      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), sortedScopes)) {
 
         authorizationRequest.setApproved(true);
         setAuthTime(authorizationRequest);
@@ -230,24 +224,18 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     return model;
   }
 
-  private Set<String> sortAndFilterScopes(Set<SystemScope> scopes, Authentication authentication) {
-
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
+  private Set<String> sortScopes(Set<SystemScope> scopes) {
 
     Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
     Set<SystemScope> systemScopes = systemScopeService.getAll();
 
-    Set<String> filteredScopes = pdp.filterScopes(systemScopeService.toStrings(scopes), account);
-
     systemScopes.forEach(s -> {
-      if (systemScopeService.fromStrings(filteredScopes).contains(s)) {
+      if (scopes.contains(s)) {
         sortedScopes.add(s);
       }
     });
 
-    sortedScopes
-      .addAll(Sets.difference(systemScopeService.fromStrings(filteredScopes), systemScopes));
+    sortedScopes.addAll(Sets.difference(sortedScopes, systemScopes));
 
     return systemScopeService.toStrings(sortedScopes);
   }

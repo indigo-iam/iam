@@ -39,6 +39,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
+import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -65,6 +66,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.persistence.model.IamAccount;
+
 @SuppressWarnings("deprecation")
 @Controller
 public class IamDeviceEndpointController {
@@ -88,6 +94,12 @@ public class IamDeviceEndpointController {
 
   @Autowired
   private IamUserApprovalHandler iamUserApprovalHandler;
+
+  @Autowired
+  private AccountUtils accountUtils;
+
+  @Autowired
+  private ScopePolicyPDP pdp;
 
   @RequestMapping(value = "/" + URL, method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
@@ -200,7 +212,9 @@ public class IamDeviceEndpointController {
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
-    authorizationRequest.setScope(dc.getScope());
+    Set<String> filteredScopes = filterScopes(scopeService.fromStrings(dc.getScope()), authn);
+
+    authorizationRequest.setScope(filteredScopes);
     authorizationRequest.setClientId(client.getClientId());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
@@ -269,6 +283,16 @@ public class IamDeviceEndpointController {
         && !authorizedGrantTypes.contains(DeviceTokenGranter.GRANT_TYPE)) {
       throw new InvalidClientException("Unauthorized grant type: " + DeviceTokenGranter.GRANT_TYPE);
     }
+  }
+
+  private Set<String> filterScopes(Set<SystemScope> scopes, Authentication authentication) {
+
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
+
+    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+
+    return filteredScopes;
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
