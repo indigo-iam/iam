@@ -290,9 +290,7 @@ public class IamDeviceEndpointController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
 
-    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
-
-    return filteredScopes;
+    return pdp.filterScopes(scopeService.toStrings(scopes), account);
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
