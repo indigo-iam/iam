@@ -25,15 +25,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,14 +55,13 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
 
-  @Autowired
   public AccountLinkingController(AccountLinkingService s) {
     linkingService = s;
   }
 
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/X509", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/X509")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void unlinkX509Certificate(Principal principal, @RequestParam String certificateSubject,
       RedirectAttributes attributes) {
@@ -72,7 +72,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
 
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/X509", method = RequestMethod.POST)
+  @PostMapping(value = "/X509")
   public String linkX509Certificate(HttpSession session, Principal principal,
       RedirectAttributes attributes) {
 
@@ -104,7 +104,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/{type}", method = RequestMethod.POST)
+  @PostMapping(value = "/{type}")
   public void linkAccount(@PathVariable ExternalAuthenticationType type,
       @RequestParam(value = "id", required = false) String externalIdpId, Authentication authn,
       final RedirectAttributes redirectAttributes, HttpServletRequest request,
@@ -163,7 +163,7 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   }
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = "/{type}", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/{type}")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void unlinkAccount(@PathVariable ExternalAuthenticationType type, Principal principal,
       @RequestParam("iss") String issuer, @RequestParam("sub") String subject,
