@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth.devicecode;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -696,31 +697,12 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
       .getRequest()
       .getSession();
 
-    Collection<ApprovedSite> approvedSites =
-        approvedSiteService.getByClientIdAndUserId(DEVICE_CODE_CLIENT_ID, TEST_USERNAME);
-
-    assertFalse(approvedSites.isEmpty());
-
-    response = mvc
-      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("client_id", "device-code-client")
-        .param("scope", "openid profile offline_access"))
+    mvc.perform(get("/api/approved").session(session))
+      .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.user_code").isString())
-      .andExpect(jsonPath("$.device_code").isString())
-      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    responseJson = mapper.readTree(response);
-    userCode = responseJson.get("user_code").asText();
-
-    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
-      .andExpect(status().isOk())
-      .andExpect(view().name("deviceApproved"));
-
+      .andExpect(jsonPath("$[0].userId", is(TEST_USERNAME)))
+      .andExpect(jsonPath("$[0].clientId", is(DEVICE_CODE_CLIENT_ID)))
+      .andExpect(jsonPath("$[0].timeoutDate", nullValue()));
 
   }
 
@@ -864,6 +846,91 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
+  public void testAlreadyApprovedSiteSkipsConsentPage() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    responseJson = mapper.readTree(response);
+    userCode = responseJson.get("user_code").asText();
+
+    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"));
+
+  }
+
+  @Test
   public void testNewRequestedScopePromptToConsentPage() throws Exception {
 
     String response = mvc
@@ -945,6 +1012,109 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
     mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"));
+
+  }
+
+  @Test
+  public void testASubsetOfApprovedScopesUpdatesApprovedSiteAccessDate() throws Exception {
+
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl(DEVICE_USER_URL))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
+        .param("user_oauth_approval", "true")
+        .param("remember", "until-revoked")
+        .session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    responseJson = mapper.readTree(response);
+    userCode = responseJson.get("user_code").asText();
+
+    Thread.sleep(1000);
+
+    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("deviceApproved"));
+
+    response = mvc.perform(get("/api/approved").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0].userId", is(TEST_USERNAME)))
+      .andExpect(jsonPath("$[0].clientId", is(DEVICE_CODE_CLIENT_ID)))
+      .andExpect(jsonPath("$[0].timeoutDate", nullValue()))
+      .andExpect(jsonPath("$[0].creationDate", notNullValue()))
+      .andExpect(jsonPath("$[0].accessDate", notNullValue()))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    responseJson = mapper.readTree(response);
+    assertFalse(
+        responseJson.get(0).get("accessDate").equals(responseJson.get(0).get("creationDate")));
 
   }
 
