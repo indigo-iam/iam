@@ -227,7 +227,8 @@ public class IamDeviceEndpointController {
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
 
-    if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null) {
+    if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
+        || authorizationRequest.isApproved()) {
 
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
       return DEVICE_APPROVED_PAGE;
@@ -263,11 +264,6 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
-    OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
-
-    deviceCodeService.approveDeviceCode(dc, o2Auth);
-
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
     model.put("client", client);
 
@@ -275,6 +271,11 @@ public class IamDeviceEndpointController {
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
       return DEVICE_APPROVED_PAGE;
     }
+    
+    OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
+    OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
+
+    deviceCodeService.approveDeviceCode(dc, o2Auth);
 
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
