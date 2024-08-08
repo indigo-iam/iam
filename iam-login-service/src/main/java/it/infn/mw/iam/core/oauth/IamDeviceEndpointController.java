@@ -271,7 +271,7 @@ public class IamDeviceEndpointController {
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
       return DEVICE_APPROVED_PAGE;
     }
-    
+
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
 
@@ -323,9 +323,7 @@ public class IamDeviceEndpointController {
 
     Set<String> scopes = authorizationRequest.getScope();
 
-    scopes.forEach(s -> {
-      approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, "true");
-    });
+    scopes.forEach(s -> approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, "true"));
 
     authorizationRequest.setApprovalParameters(approvalParameters);
   }
