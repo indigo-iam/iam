@@ -13,17 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.persistence.repository;
+package it.infn.mw.iam.audit.events.account.x509;
 
-import java.util.Optional;
+import it.infn.mw.iam.audit.events.account.AccountEvent;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+public class X509CertificateUnlinkedEvent extends AccountEvent {
 
-import it.infn.mw.iam.persistence.model.IamX509Certificate;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
 
-public interface IamX509CertificateRepository
-        extends PagingAndSortingRepository<IamX509Certificate, Long> {
 
-    public Optional<IamX509Certificate> findBySubjectDnAndIssuerDn(String subjectDn, String issuerDn);
+  private final String certificateSubject;
+
+  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
+      String certificateSubject) {
+    super(source, account, message);
+    this.certificateSubject = certificateSubject;
+  }
+
+  public String getCertificateSubject() {
+    return certificateSubject;
+  }
 
 }

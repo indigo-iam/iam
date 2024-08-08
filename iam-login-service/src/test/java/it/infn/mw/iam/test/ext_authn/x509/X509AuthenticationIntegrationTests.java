@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +62,7 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import junit.framework.AssertionFailedError;
 
@@ -72,6 +74,9 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
   @Autowired
   private IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  private IamX509CertificateRepository iamX509CertificateRepo;
 
   @Autowired
   private MockMvc mvc;
@@ -173,6 +178,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
         (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
 
     assertThat(credential.getSubject(), equalTo(TEST_0_SUBJECT));
+    assertThat(credential.getIssuer(), equalTo(TEST_0_ISSUER));
 
     String confirmationMessage =
         String.format("Certificate '%s' linked succesfully", credential.getSubject());
@@ -182,6 +188,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(redirectedUrl("/dashboard"))
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
+
+    Optional<IamAccount> linkedUser = iamX509CertificateRepo.findBySubject(TEST_0_SUBJECT).stream().findFirst();
+    assertThat(linkedUser.isPresent(), is(true));
+    assertThat(linkedUser.get().getUsername(), is("test"));
+
+    Optional<IamX509Certificate> test0Cert = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
+    assertThat(test0Cert.isPresent(), is(true));
 
     IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
@@ -219,10 +232,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     .andExpect(
         flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-    linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
-        .orElseThrow(() -> new AssertionFailedError("Expected user linked to certificate not found"));
-
-     assertThat(linkedAccount.getX509Certificates().size(), is(2));
+    Optional<IamX509Certificate> testCert1 = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
+    assertThat(testCert1.isPresent(), is(true));
+    assertThat(testCert1.get().getAccount().getUsername(), is("test"));
+    
+    Optional<IamX509Certificate> testCert2 = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_NEW_ISSUER);
+    assertThat(testCert2.isPresent(), is(true));
+    assertThat(testCert2.get().getAccount().getUsername(), is("test"));
 
   }
 
