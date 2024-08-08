@@ -227,7 +227,6 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       Authentication userAuthentication) {
     Map<String, Object> model = new HashMap<>();
     model.putAll(authorizationRequest.getRequestParameters());
-    model.put("scope", authorizationRequest.getScope());
     return model;
   }
 

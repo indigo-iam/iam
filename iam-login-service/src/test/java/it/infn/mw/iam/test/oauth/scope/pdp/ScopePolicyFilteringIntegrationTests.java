@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +38,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -71,6 +76,9 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  protected ObjectMapper mapper;
 
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
@@ -174,6 +182,65 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
+  public void deviceCodeFlowScopeFilteringByAccountWorks() throws Exception {
+
+    IamAccount testAccount = findTestAccount();
+
+    IamScopePolicy up = initDenyScopePolicy();
+    up.setAccount(testAccount);
+    up.setRule(PolicyRule.DENY);
+    up.setScopes(Sets.newHashSet("profile"));
+
+    scopePolicyRepo.save(up);
+
+    String response = mvc
+      .perform(post("/devicecode").contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic("device-code-client", "secret"))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile email"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get("/device"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").param("username", "test")
+        .param("password", "password")
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/device"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andExpect(model().attribute("scopes", hasSize(equalTo(2))));
+
+  }
+
+  @Test
   public void matchingPolicyFilteringWorks() throws Exception {
     IamScopePolicy up = initDenyScopePolicy();
     up.setRule(PolicyRule.DENY);
@@ -215,6 +282,5 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
   }
-
 
 }
