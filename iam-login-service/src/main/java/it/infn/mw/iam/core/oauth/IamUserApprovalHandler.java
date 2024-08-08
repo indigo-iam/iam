@@ -26,6 +26,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,7 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
@@ -54,6 +56,8 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -80,6 +84,9 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   @Autowired
   private SystemScopeService systemScopeService;
 
+  @Autowired
+  private ScopePolicyPDP pdp;
+
   @Override
   public boolean isApproved(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
@@ -96,23 +103,29 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   public AuthorizationRequest checkForPreApproval(AuthorizationRequest authorizationRequest,
       Authentication userAuthentication) {
 
-    String userId = userAuthentication.getName();
-    String clientId = authorizationRequest.getClientId();
-
-    boolean alreadyApproved = false;
-
     String prompt = (String) authorizationRequest.getExtensions().get(PROMPT);
     List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
     if (prompts.contains(PROMPT_CONSENT)) {
       return authorizationRequest;
     }
 
+    String userId = userAuthentication.getName();
+    String clientId = authorizationRequest.getClientId();
+    Set<String> requestedScopes = authorizationRequest.getScope();
+
+    Set<String> filteredScopes =
+        sortAndFilterScopes(systemScopeService.fromStrings(requestedScopes), userAuthentication);
+
+    authorizationRequest.setScope(filteredScopes);
+
+    boolean alreadyApproved = false;
+
     Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
 
     for (ApprovedSite ap : aps) {
 
-      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(),
-          authorizationRequest.getScope())) {
+      if (!ap.isExpired()
+          && systemScopeService.scopesMatch(ap.getAllowedScopes(), filteredScopes)) {
 
 
         ap.setAccessDate(new Date());
@@ -129,10 +142,9 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     if (!alreadyApproved) {
       WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
-      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(),
-          authorizationRequest.getScope())) {
-        authorizationRequest.setApproved(true);
+      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), filteredScopes)) {
 
+        authorizationRequest.setApproved(true);
         setAuthTime(authorizationRequest);
       }
     }
@@ -154,7 +166,6 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     Set<String> requestedScopes = authorizationRequest.getScope();
-
     Set<String> allowedScopes = Sets.newHashSet();
 
     requestedScopes.forEach(rs -> {
@@ -216,8 +227,29 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       Authentication userAuthentication) {
     Map<String, Object> model = new HashMap<>();
     model.putAll(authorizationRequest.getRequestParameters());
+    model.put("scope", authorizationRequest.getScope());
     return model;
   }
 
+  private Set<String> sortAndFilterScopes(Set<SystemScope> scopes, Authentication authentication) {
 
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
+
+    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
+    Set<SystemScope> systemScopes = systemScopeService.getAll();
+
+    Set<String> filteredScopes = pdp.filterScopes(systemScopeService.toStrings(scopes), account);
+
+    systemScopes.forEach(s -> {
+      if (systemScopeService.fromStrings(filteredScopes).contains(s)) {
+        sortedScopes.add(s);
+      }
+    });
+
+    sortedScopes
+      .addAll(Sets.difference(systemScopeService.fromStrings(filteredScopes), systemScopes));
+
+    return systemScopeService.toStrings(sortedScopes);
+  }
 }

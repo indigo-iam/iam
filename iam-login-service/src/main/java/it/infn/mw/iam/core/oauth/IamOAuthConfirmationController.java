@@ -21,7 +21,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_S
 import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +42,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
+import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.stereotype.Controller;
@@ -55,18 +55,9 @@ import org.springframework.web.bind.support.SessionStatus;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
-import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
-/**
- * @author jricher
- *
- */
 @SuppressWarnings("deprecation")
 @Controller
 @SessionAttributes("authorizationRequest")
@@ -90,12 +81,6 @@ public class IamOAuthConfirmationController {
 
   @Autowired
   private RedirectResolver redirectResolver;
-
-  @Autowired
-  private ScopePolicyPDP pdp;
-
-  @Autowired
-  private AccountUtils accountUtils;
 
 
   /**
@@ -174,32 +159,14 @@ public class IamOAuthConfirmationController {
 
     model.put("redirect_uri", redirectUri);
 
+    // the authz request already contains PDP filtered scopes
+    // among the request parameters
+    Set<SystemScope> filteredScopes = scopeService
+      .fromStrings(OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope")));
 
-    // pre-process the scopes
-    Set<SystemScope> scopes = scopeService.fromStrings(authRequest.getScope());
+    model.put("scopes", filteredScopes);
 
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-    Set<SystemScope> systemScopes = scopeService.getAll();
-
-    // filter requested scopes according to the scope policy
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
-
-    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
-
-    // sort scopes for display based on the inherent order of system scopes
-    for (SystemScope s : systemScopes) {
-      if (scopeService.fromStrings(filteredScopes).contains(s)) {
-        sortedScopes.add(s);
-      }
-    }
-
-    // add in any scopes that aren't system scopes to the end of the list
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
-
-    model.put("scopes", sortedScopes);
-
-    authRequest.setScope(scopeService.toStrings(sortedScopes));
+    authRequest.setScope(scopeService.toStrings(filteredScopes));
 
     // get the userinfo claims for each scope
     UserInfo user = userInfoService.getByUsername(authUser.getName());
@@ -207,7 +174,7 @@ public class IamOAuthConfirmationController {
     if (user != null) {
       JsonObject userJson = user.toJson();
 
-      for (SystemScope systemScope : sortedScopes) {
+      for (SystemScope systemScope : filteredScopes) {
         Map<String, String> claimValues = new HashMap<>();
 
         Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
@@ -239,7 +206,8 @@ public class IamOAuthConfirmationController {
     // warning
     // instead, tag as "Generally Recognized As Safe" (gras)
     Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression = count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
+    Boolean expression =
+        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
     model.put("gras", expression);
 
     return "iam/approveClient";

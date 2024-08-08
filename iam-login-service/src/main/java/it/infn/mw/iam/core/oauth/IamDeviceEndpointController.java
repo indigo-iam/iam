@@ -30,7 +30,6 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +39,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -61,19 +59,11 @@ import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import com.google.common.collect.Sets;
-
-import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -94,13 +84,7 @@ public class IamDeviceEndpointController {
   private DeviceCodeService deviceCodeService;
 
   @Autowired
-  private OAuth2RequestFactory oAuth2RequestFactory;
-
-  @Autowired
-  private AccountUtils accountUtils;
-
-  @Autowired
-  private ScopePolicyPDP pdp;
+  private IamOAuth2RequestFactory oAuth2RequestFactory;
 
   @Autowired
   private IamUserApprovalHandler iamUserApprovalHandler;
@@ -213,16 +197,10 @@ public class IamDeviceEndpointController {
 
     model.put("client", client);
 
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(authn)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(authn.getName()));
-
-    Set<SystemScope> sortedScopes =
-        sortScopesForApproval(scopeService.fromStrings(dc.getScope()), account);
-
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
-    authorizationRequest.setScope(scopeService.toStrings(sortedScopes));
+    authorizationRequest.setScope(dc.getScope());
     authorizationRequest.setClientId(client.getClientId());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
@@ -235,7 +213,7 @@ public class IamDeviceEndpointController {
     }
 
     model.put("dc", dc);
-    model.put("scopes", sortedScopes);
+    model.put("scopes", scopeService.fromStrings(authorizationRequest.getScope()));
 
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
@@ -283,26 +261,6 @@ public class IamDeviceEndpointController {
     model.put(APPROVAL_ATTRIBUTE_KEY, true);
 
     return DEVICE_APPROVED_PAGE;
-  }
-
-
-  private Set<SystemScope> sortScopesForApproval(Set<SystemScope> scopes, IamAccount account) {
-
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-    Set<SystemScope> systemScopes = scopeService.getAll();
-
-    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
-
-    systemScopes.forEach(s -> {
-      if (scopeService.fromStrings(filteredScopes).contains(s)) {
-        sortedScopes.add(s);
-      }
-    });
-
-    sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
-
-    return sortedScopes;
-
   }
 
   private void checkAuthzGrant(ClientDetailsEntity client) {
