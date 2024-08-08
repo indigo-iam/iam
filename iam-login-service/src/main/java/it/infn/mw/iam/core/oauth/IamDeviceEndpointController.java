@@ -15,19 +15,18 @@
  */
 package it.infn.mw.iam.core.oauth;
 
-import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.URL;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_URL;
+import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -217,12 +216,14 @@ public class IamDeviceEndpointController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authn)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authn.getName()));
 
-    Set<SystemScope> sortedScopes = sortScopesForApproval(dc, account);
+    Set<SystemScope> sortedScopes =
+        sortScopesForApproval(scopeService.fromStrings(dc.getScope()), account);
 
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
-    setAuthzRequestForPreApproval(authorizationRequest, sortedScopes, client.getClientId());
+    authorizationRequest.setScope(scopeService.toStrings(sortedScopes));
+    authorizationRequest.setClientId(client.getClientId());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
 
@@ -262,14 +263,13 @@ public class IamDeviceEndpointController {
       return REQUEST_USER_CODE_STRING;
     }
 
-    ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
-
-    model.put("client", client);
-
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
 
     deviceCodeService.approveDeviceCode(dc, o2Auth);
+
+    ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
+    model.put("client", client);
 
     if (!approve) {
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
@@ -285,35 +285,23 @@ public class IamDeviceEndpointController {
   }
 
 
-  private Set<SystemScope> sortScopesForApproval(DeviceCode dc, IamAccount account) {
-
-    Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
+  private Set<SystemScope> sortScopesForApproval(Set<SystemScope> scopes, IamAccount account) {
 
     Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
     Set<SystemScope> systemScopes = scopeService.getAll();
 
     Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
 
-    for (SystemScope s : systemScopes) {
+    systemScopes.forEach(s -> {
       if (scopeService.fromStrings(filteredScopes).contains(s)) {
         sortedScopes.add(s);
       }
-    }
+    });
 
     sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     return sortedScopes;
 
-  }
-
-  private void setAuthzRequestForPreApproval(AuthorizationRequest authorizationRequest,
-      Set<SystemScope> scopes, String clientId) {
-
-    Collection<String> scopesToCollection = new ArrayList<>();
-    scopes.forEach(a -> scopesToCollection.add(a.getValue()));
-
-    authorizationRequest.setScope(scopesToCollection);
-    authorizationRequest.setClientId(clientId);
   }
 
   private void checkAuthzGrant(ClientDetailsEntity client) {
@@ -329,16 +317,13 @@ public class IamDeviceEndpointController {
 
     Map<String, String> approvalParameters = new HashMap<>();
 
-    // likely there is a better way to take the request parameters,
-    // but looks like they are not available in the authorizationRequest
     approvalParameters.put(REMEMBER_PARAMETER_KEY, remember);
     approvalParameters.put(OAuth2Utils.USER_OAUTH_APPROVAL, approve.toString());
 
     Set<String> scopes = authorizationRequest.getScope();
 
-    // we can consider in future to let users approve only single scopes
     scopes.forEach(s -> {
-      approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, approve.toString());
+      approvalParameters.put(OAuth2Utils.SCOPE_PREFIX + s, "true");
     });
 
     authorizationRequest.setApprovalParameters(approvalParameters);

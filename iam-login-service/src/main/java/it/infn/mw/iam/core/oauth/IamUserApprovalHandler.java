@@ -20,7 +20,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_CONSENT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
-import static org.springframework.security.oauth2.common.util.OAuth2Utils.SCOPE_PREFIX;
 import static org.springframework.security.oauth2.common.util.OAuth2Utils.USER_OAUTH_APPROVAL;
 
 import java.util.Calendar;
@@ -138,9 +137,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       }
     }
 
-
     return authorizationRequest;
-
   }
 
   @Override
@@ -161,9 +158,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     Set<String> allowedScopes = Sets.newHashSet();
 
     requestedScopes.forEach(rs -> {
-      // always true right now, but allows for future
-      // support to let users approve only single scope
-      if (Boolean.parseBoolean(approvalParams.get(SCOPE_PREFIX + rs))) {
+      if (systemScopeService.scopesMatch(client.getScope(), Sets.newHashSet(rs))) {
         allowedScopes.add(rs);
       }
     });
