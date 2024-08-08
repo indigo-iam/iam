@@ -417,7 +417,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     String subject = "Account set as service account";
 
     IamEmailNotification notification = createMessage("accountSetAsServiceAccount.ftl", model,
-        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+        IamNotificationType.SET_SERVICE_ACCOUNT, subject, asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created set as service account message for the account {}", account.getUuid());
 
@@ -436,7 +436,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     String subject = "Account's service account status revoked";
 
     IamEmailNotification notification = createMessage("accountRevokeServiceAccount.ftl", model,
-        IamNotificationType.ACCOUNT_RESTORED, subject, asList(account.getUserInfo().getEmail()));
+        IamNotificationType.REVOKE_SERVICE_ACCOUNT, subject, asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created service account revoke message for the account {}", account.getUuid());
 
