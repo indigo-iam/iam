@@ -62,6 +62,7 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
     assertThat(testAccount.isActive(), is(true));
     testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
     repo.save(testAccount);
+    Date lastUpdateTime = testAccount.getLastUpdateTime();
 
     handler.handleExpiredAccounts();
 
@@ -69,6 +70,16 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
+    lastUpdateTime = testAccount.getLastUpdateTime();
+
+    handler.handleExpiredAccounts();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
 
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
