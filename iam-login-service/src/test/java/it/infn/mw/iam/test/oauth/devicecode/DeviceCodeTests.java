@@ -414,8 +414,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 
@@ -610,7 +608,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 
@@ -731,7 +728,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
   }
@@ -850,7 +846,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String authorizationHeader = String.format("Bearer %s", accessToken);
 
-    // Check that the token can be used for userinfo and introspection
     mvc.perform(get(USERINFO_ENDPOINT).header("Authorization", authorizationHeader))
       .andExpect(status().isOk());
 

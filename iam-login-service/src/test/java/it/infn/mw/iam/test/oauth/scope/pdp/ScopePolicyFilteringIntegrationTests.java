@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -236,7 +235,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
     mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
-      .andExpect(model().attribute("scopes", hasSize(equalTo(2))));
+      .andExpect(model().attribute("scope", "openid email"));
 
   }
 
@@ -282,5 +281,6 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
   }
+
 
 }

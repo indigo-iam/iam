@@ -60,6 +60,8 @@ import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
+import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -90,10 +92,10 @@ public class IamDeviceEndpointController {
   private DeviceCodeService deviceCodeService;
 
   @Autowired
-  private IamOAuth2RequestFactory oAuth2RequestFactory;
+  private DefaultOAuth2RequestFactory oAuth2RequestFactory;
 
   @Autowired
-  private IamUserApprovalHandler iamUserApprovalHandler;
+  private UserApprovalHandler iamUserApprovalHandler;
 
   @Autowired
   private AccountUtils accountUtils;
@@ -226,8 +228,10 @@ public class IamDeviceEndpointController {
       return DEVICE_APPROVED_PAGE;
     }
 
+    filteredScopes = authorizationRequest.getScope();
     model.put("dc", dc);
-    model.put("scopes", scopeService.fromStrings(authorizationRequest.getScope()));
+    model.put("scopes", scopeService.fromStrings(filteredScopes));
+    model.put("scope", OAuth2Utils.formatParameterList(filteredScopes));
 
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
