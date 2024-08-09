@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -67,7 +66,6 @@ public class ExpiredAccountsHandler implements Runnable {
 
   private Set<IamAccount> accountsScheduledForRemoval = newHashSet();
 
-  @Autowired
   public ExpiredAccountsHandler(Clock clock, LifecycleProperties properties,
       IamAccountRepository repo, IamAccountService service) {
     this.clock = clock;
@@ -150,7 +148,9 @@ public class ExpiredAccountsHandler implements Runnable {
         && properties.getAccount().getExpiredAccountPolicy().isRemoveExpiredAccounts()) {
       scheduleAccountRemoval(expiredAccount);
     } else if (pastSuspensionGracePeriod(expiredAccount)) {
-      suspendAccount(expiredAccount);
+      if (expiredAccount.isActive()) {
+        suspendAccount(expiredAccount);
+      }
     } else {
       markAsPendingSuspension(expiredAccount);
     }
