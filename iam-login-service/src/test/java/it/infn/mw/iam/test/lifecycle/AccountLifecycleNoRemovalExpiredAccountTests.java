@@ -16,8 +16,6 @@
 package it.infn.mw.iam.test.lifecycle;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
-import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_TIMESTAMP_LABEL;
-import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -64,6 +62,7 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
     assertThat(testAccount.isActive(), is(true));
     testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
     repo.save(testAccount);
+    Date lastUpdateTime = testAccount.getLastUpdateTime();
 
     handler.handleExpiredAccounts();
 
@@ -71,11 +70,16 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
+    lastUpdateTime = testAccount.getLastUpdateTime();
 
-    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
+    handler.handleExpiredAccounts();
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
 
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
@@ -98,11 +102,6 @@ public class AccountLifecycleNoRemovalExpiredAccountTests extends TestSupport im
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
-
-    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
-
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
 
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
