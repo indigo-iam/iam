@@ -235,7 +235,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
       }
     });
 
-    sortedScopes.addAll(Sets.difference(sortedScopes, systemScopes));
+    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
 
     return systemScopeService.toStrings(sortedScopes);
   }

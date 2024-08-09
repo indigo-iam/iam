@@ -123,6 +123,8 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (12, 'address'),
   (12, 'phone'),
   (12, 'offline_access'),
+  (12, 'storage.read:/'),
+  (12, 'storage.write:/'),
   (13, 'openid'),
   (13, 'profile'),
   (13, 'email'),

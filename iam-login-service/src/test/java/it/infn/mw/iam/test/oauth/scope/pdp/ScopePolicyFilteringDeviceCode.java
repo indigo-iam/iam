@@ -17,24 +17,27 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
-import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
@@ -46,29 +49,19 @@ import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
+@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(
-// @formatter:off
-    properties = {
-        "scope.matchers[0].name=read", 
-        "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=read", 
-        "scope.matchers[0].path=/",
-        "scope.matchers[1].name=write", 
-        "scope.matchers[1].type=path",
-        "scope.matchers[1].prefix=write", 
-        "scope.matchers[1].path=/"
-   // @formatter:on
-    })
-public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
+public class ScopePolicyFilteringDeviceCode extends ScopePolicyTestUtils {
 
   @Autowired
   private IamAccountRepository accountRepo;
 
   @Autowired
   private IamScopePolicyRepository scopePolicyRepo;
+
+  @Autowired
+  private SystemScopeService scopeService;
 
   @Autowired
   private MockMvc mvc;
@@ -81,121 +74,55 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
   }
 
-  @Test
-  public void passwordFlowScopeFilteringByAccountWorks() throws Exception {
-
-    IamAccount testAccount = findTestAccount();
-
-    IamScopePolicy up = initDenyScopePolicy();
-    up.setAccount(testAccount);
-    up.setRule(PolicyRule.DENY);
-    up.setScopes(Sets.newHashSet(SCIM_READ));
-
-    scopePolicyRepo.save(up);
-
-    String clientId = "password-grant";
-    String clientSecret = "secret";
-
-    mvc
-      .perform(post("/token").with(httpBasic(clientId, clientSecret))
-        .param("grant_type", "password")
-        .param("username", "test")
-        .param("password", "password")
-        .param("scope", "openid profile scim:read"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.scope", equalTo("openid profile")));
-  }
-
-  @Test
-  public void passwordFlowDenyAllScopesWorks() throws Exception {
-
-    IamAccount testAccount = findTestAccount();
-
-    IamScopePolicy up = initDenyScopePolicy();
-    up.setAccount(testAccount);
-    up.setRule(PolicyRule.DENY);
-
-    scopePolicyRepo.save(up);
-
-    String clientId = "password-grant";
-    String clientSecret = "secret";
-
-    mvc
-      .perform(post("/token").with(httpBasic(clientId, clientSecret))
-        .param("grant_type", "password")
-        .param("username", "test")
-        .param("password", "password")
-        .param("scope", "openid profile scim:read"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.scope").doesNotExist())
-      .andExpect(jsonPath("$.id_token").exists());
-  }
-
-  @Test
-  public void authzCodeFlowScopeFilteringByAccountWorks() throws Exception {
-
-    IamAccount testAccount = findTestAccount();
-
-    IamScopePolicy up = initDenyScopePolicy();
-    up.setAccount(testAccount);
-    up.setRule(PolicyRule.DENY);
-    up.setScopes(Sets.newHashSet("read-tasks"));
-
-    scopePolicyRepo.save(up);
-
-    String clientId = "client";
-
-    MockHttpSession session = (MockHttpSession) mvc
-      .perform(get("/authorize").param("scope", "openid profile read-tasks")
-        .param("response_type", "code")
-        .param("client_id", clientId)
-        .param("redirect_uri", "https://iam.local.io/iam-test-client/openid_connect_login")
-        .param("state", "1234567"))
-      .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/login"))
-      .andReturn()
-      .getRequest()
-      .getSession();
-
-    session = (MockHttpSession) mvc
-      .perform(post("/login").param("username", "test")
-        .param("password", "password")
-        .param("submit", "Login")
-        .session(session))
-      .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/authorize"))
-      .andReturn()
-      .getRequest()
-      .getSession();
-
-    session = (MockHttpSession) mvc.perform(get("/authorize").session(session))
-      .andExpect(status().isOk())
-      .andExpect(forwardedUrl("/oauth/confirm_access"))
-      .andExpect(model().attribute("scope", equalTo("openid profile")))
-      .andReturn()
-      .getRequest()
-      .getSession();
-  }
-
-  @Test
-  public void matchingPolicyFilteringWorks() throws Exception {
+  private void setupPolicyAndScopes() {
     IamScopePolicy up = initDenyScopePolicy();
     up.setRule(PolicyRule.DENY);
-    up.setScopes(newHashSet("read:/", "write:/"));
+    up.setScopes(newHashSet("storage.read:/", "storage.write:/"));
     up.setMatchingPolicy(PATH);
 
     scopePolicyRepo.save(up);
 
-    String clientId = "client";
+    scopeService.save(new SystemScope("storage.read:/"));
+    scopeService.save(new SystemScope("storage.write:/"));
+  }
 
-    MockHttpSession session = (MockHttpSession) mvc
-      .perform(get("/authorize").param("scope", "openid profile read:/ read:/that/thing write:/")
-        .param("response_type", "code")
-        .param("client_id", clientId)
-        .param("redirect_uri", "https://iam.local.io/iam-test-client/openid_connect_login")
-        .param("state", "1234567"))
+  @Test
+  public void deviceCodeFlowScopeFilteringByAccountWorks() throws Exception {
+
+    IamAccount testAccount = findTestAccount();
+
+    IamScopePolicy up = initDenyScopePolicy();
+    up.setAccount(testAccount);
+    up.setRule(PolicyRule.DENY);
+    up.setScopes(Sets.newHashSet("profile"));
+
+    scopePolicyRepo.save(up);
+
+    String response = mvc
+      .perform(post("/devicecode").contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic("device-code-client", "secret"))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile email"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get("/device"))
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -206,19 +133,66 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
         .param("submit", "Login")
         .session(session))
       .andExpect(status().is3xxRedirection())
-      .andExpect(redirectedUrl("http://localhost/authorize"))
+      .andExpect(redirectedUrl("http://localhost/device"))
       .andReturn()
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("/authorize").session(session))
+    mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(forwardedUrl("/oauth/confirm_access"))
-      .andExpect(model().attribute("scope", equalTo("openid profile")))
-      .andReturn()
-      .getRequest()
-      .getSession();
+      .andExpect(view().name("iam/approveDevice"))
+      .andExpect(model().attribute("scope", "openid email"));
+
   }
 
+  @Test
+  public void deviceCodeMatchingPolicyFilteringWorks() throws Exception {
+    setupPolicyAndScopes();
+
+    String response = mvc
+      .perform(post("/devicecode").contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic("device-code-client", "secret"))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile storage.read:/ storage.read:/that/thing storage.write:/"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get("/device"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").param("username", "test")
+        .param("password", "password")
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/device"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(post("/device/verify").param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"))
+      .andExpect(model().attribute("scope", "openid profile"));
+  }
 
 }
