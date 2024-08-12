@@ -54,7 +54,7 @@ public class ScimUserProvisioningTest extends TestSupport {
     private IamEmailNotificationRepository notificationRepo;
 
     @Test
-    public void testEmailSentForSettingServiceAccount() throws Exception {
+    public void testEmailSentForSettingServiceAccount() {
         IamAccount testUser = iamAccountRepo.findByUsername(TEST_USER)
                 .orElseThrow(() -> new AssertionError("Expected test user not found"));
         ScimUser user = ScimUser.builder().serviceAccount(true).build();
@@ -71,7 +71,7 @@ public class ScimUserProvisioningTest extends TestSupport {
     }
 
     @Test
-    public void testEmailSentForRevokingServiceAccount() throws Exception {
+    public void testEmailSentForRevokingServiceAccount() {
         IamAccount testUser = iamAccountRepo.findByUsername(TEST_USER)
                 .orElseThrow(() -> new AssertionError("Expected test user not found"));
         testUser.setServiceAccount(true);
