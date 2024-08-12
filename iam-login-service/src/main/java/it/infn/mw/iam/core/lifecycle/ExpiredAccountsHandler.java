@@ -111,7 +111,7 @@ public class ExpiredAccountsHandler implements Runnable {
   private void suspendAccount(IamAccount expiredAccount) {
 
     if (expiredAccount.isActive()) {
-      LOG.info("Suspeding account {} expired on {} ({} days ago)", expiredAccount.getUsername(),
+      LOG.info("Suspending account {} expired on {} ({} days ago)", expiredAccount.getUsername(),
         expiredAccount.getEndTime(),
         ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
       accountService.disableAccount(expiredAccount);
