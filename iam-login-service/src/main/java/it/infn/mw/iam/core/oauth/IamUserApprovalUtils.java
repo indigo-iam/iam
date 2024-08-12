@@ -80,7 +80,6 @@ public class IamUserApprovalUtils {
         Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
         for (String claim : claims) {
           if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            // TODO: this skips the address claim
             claimValues.put(claim, userJson.get(claim).getAsString());
           }
         }
@@ -91,9 +90,9 @@ public class IamUserApprovalUtils {
     return claimsForScopes;
   }
 
-  public Integer approvedSiteCount(String ClientId) {
+  public Integer approvedSiteCount(String clientId) {
 
-    return statsService.getCountForClientId(ClientId).getApprovedSiteCount();
+    return statsService.getCountForClientId(clientId).getApprovedSiteCount();
   }
 
   public Boolean isSafeClient(Integer count, Date clientCreatedAt) {

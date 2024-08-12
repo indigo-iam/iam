@@ -303,7 +303,6 @@ public class IamDeviceEndpointController {
 
     model.put("dc", dc);
     model.put("scopes", scopeService.fromStrings(scopes));
-    model.put("scope", OAuth2Utils.formatParameterList(scopes));
     model.put("claims", userApprovalUtils.claimsForScopes(authn, scopeService.fromStrings(scopes)));
 
     Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
@@ -311,6 +310,9 @@ public class IamDeviceEndpointController {
     model.put("count", count);
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
+
+    // just for tests validation
+    model.put("scope", OAuth2Utils.formatParameterList(scopes));
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
