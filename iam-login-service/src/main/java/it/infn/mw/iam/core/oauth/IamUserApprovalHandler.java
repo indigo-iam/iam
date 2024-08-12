@@ -26,7 +26,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +33,6 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.ApprovedSite;
@@ -109,17 +107,13 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     String clientId = authorizationRequest.getClientId();
     Set<String> scopes = authorizationRequest.getScope();
 
-    Set<String> sortedScopes = sortScopes(systemScopeService.fromStrings(scopes));
-
-    authorizationRequest.setScope(sortedScopes);
-
     boolean alreadyApproved = false;
 
     Collection<ApprovedSite> aps = approvedSiteService.getByClientIdAndUserId(clientId, userId);
 
     for (ApprovedSite ap : aps) {
 
-      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), sortedScopes)) {
+      if (!ap.isExpired() && systemScopeService.scopesMatch(ap.getAllowedScopes(), scopes)) {
 
 
         ap.setAccessDate(new Date());
@@ -136,7 +130,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     if (!alreadyApproved) {
       WhitelistedSite ws = whitelistedSiteService.getByClientId(clientId);
-      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), sortedScopes)) {
+      if (ws != null && systemScopeService.scopesMatch(ws.getAllowedScopes(), scopes)) {
 
         authorizationRequest.setApproved(true);
         setAuthTime(authorizationRequest);
@@ -162,6 +156,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     Set<String> requestedScopes = authorizationRequest.getScope();
     Set<String> allowedScopes = Sets.newHashSet();
 
+    // why filtering again?
     requestedScopes.forEach(rs -> {
       if (systemScopeService.scopesMatch(client.getScope(), Sets.newHashSet(rs))) {
         allowedScopes.add(rs);
@@ -224,19 +219,4 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     return model;
   }
 
-  private Set<String> sortScopes(Set<SystemScope> scopes) {
-
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
-    Set<SystemScope> systemScopes = systemScopeService.getAll();
-
-    systemScopes.forEach(s -> {
-      if (scopes.contains(s)) {
-        sortedScopes.add(s);
-      }
-    });
-
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
-
-    return systemScopeService.toStrings(sortedScopes);
-  }
 }

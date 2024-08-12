@@ -17,18 +17,22 @@ package it.infn.mw.iam.core.oauth;
 
 public abstract class IamOauthRequestParameters {
 
-  public static final String URL = "devicecode";
-  public static final String USER_URL = "device";
+  public static final String AUTHZ_CODE_URL = "/oauth/confirm_access";
+  public static final String DEVICE_CODE_URL = "devicecode";
+  public static final String USER_CODE_URL = "device";
 
   public static final String REQUEST_USER_CODE_STRING = "requestUserCode";
-  public static final String ERROR_STRING = "error";
 
-  public static final String APPROVAL_ATTRIBUTE_KEY = "approved";
-
+  public static final String APPROVE_AUTHZ_PAGE = "iam/approveClient";
   public static final String APPROVE_DEVICE_PAGE = "iam/approveDevice";
   public static final String DEVICE_APPROVED_PAGE = "deviceApproved";
 
+  public static final String STATE_PARAMETER_KEY = "state";
   public static final String REMEMBER_PARAMETER_KEY = "remember";
+
+  public static final String ERROR_STRING = "error";
+
+  public static final String APPROVAL_ATTRIBUTE_KEY = "approved";
 
   private IamOauthRequestParameters() {}
 

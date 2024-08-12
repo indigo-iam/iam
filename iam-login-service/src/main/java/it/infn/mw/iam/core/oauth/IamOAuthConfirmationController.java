@@ -15,25 +15,22 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_AUTHZ_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.AUTHZ_CODE_URL;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.STATE_PARAMETER_KEY;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_SEPARATOR;
 
 import java.net.URISyntaxException;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.mitre.openid.connect.service.StatsService;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.view.HttpCodeView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,17 +49,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.gson.JsonObject;
 
 
 @SuppressWarnings("deprecation")
 @Controller
 @SessionAttributes("authorizationRequest")
 public class IamOAuthConfirmationController {
-
 
   @Autowired
   private ClientDetailsEntityService clientService;
@@ -71,23 +65,17 @@ public class IamOAuthConfirmationController {
   private SystemScopeService scopeService;
 
   @Autowired
-  private ScopeClaimTranslationService scopeClaimTranslationService;
-
-  @Autowired
-  private UserInfoService userInfoService;
-
-  @Autowired
-  private StatsService statsService;
-
-  @Autowired
   private RedirectResolver redirectResolver;
+
+  @Autowired
+  private IamUserApprovalUtils userApprovalUtils;
 
   private static final Logger logger =
       LoggerFactory.getLogger(IamOAuthConfirmationController.class);
 
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(path = "/oauth/confirm_access", method = RequestMethod.GET)
+  @RequestMapping(path = AUTHZ_CODE_URL, method = RequestMethod.GET)
   public String confimAccess(Map<String, Object> model,
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {
@@ -116,16 +104,15 @@ public class IamOAuthConfirmationController {
     }
 
     if (prompts.contains("none")) {
-      // if we've got a redirect URI then we'll send it
 
       String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
 
       try {
         URIBuilder uriBuilder = new URIBuilder(url);
 
-        uriBuilder.addParameter("error", "interaction_required");
+        uriBuilder.addParameter(ERROR_STRING, "interaction_required");
         if (!Strings.isNullOrEmpty(authRequest.getState())) {
-          uriBuilder.addParameter("state", authRequest.getState());
+          uriBuilder.addParameter(STATE_PARAMETER_KEY, authRequest.getState());
         }
 
         status.setComplete();
@@ -138,61 +125,38 @@ public class IamOAuthConfirmationController {
       }
     }
 
-    model.put("auth_request", authRequest);
     model.put("client", client);
 
-    String redirectUri = authRequest.getRedirectUri();
+    // the authorization request already contains PDP filtered
+    // scopes among the request parameters due to the
+    // IamOAuth2RequestFactory.createAuthorizationRequest() object
+    Set<String> scopes =
+        OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope"));
+    scopes = userApprovalUtils.sortScopes(scopeService.fromStrings(scopes));
 
-    model.put("redirect_uri", redirectUri);
+    authRequest.setScope(scopes);
 
-    // the authorization request already contains PDP
-    // filtered scopes among the request parameters
-    Set<SystemScope> filteredScopes = scopeService
-      .fromStrings(OAuth2Utils.parseParameterList(authRequest.getRequestParameters().get("scope")));
+    setModelForConsentPage(model, authRequest, authUser, client);
 
-    model.put("scopes", filteredScopes);
-
-    authRequest.setScope(scopeService.toStrings(filteredScopes));
-
-    UserInfo user = userInfoService.getByUsername(authUser.getName());
-    Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
-    if (user != null) {
-      JsonObject userJson = user.toJson();
-
-      for (SystemScope systemScope : filteredScopes) {
-        Map<String, String> claimValues = new HashMap<>();
-
-        Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
-        for (String claim : claims) {
-          if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            // TODO: this skips the address claim
-            claimValues.put(claim, userJson.get(claim).getAsString());
-          }
-        }
-
-        claimsForScopes.put(systemScope.getValue(), claimValues);
-      }
-    }
-
-    model.put("claims", claimsForScopes);
-
-    // client statistics
-    Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
-    model.put("count", count);
-
-
-    if (client.getContacts() != null) {
-      String contacts = Joiner.on(", ").join(client.getContacts());
-      model.put("contacts", contacts);
-    }
-
-    Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression =
-        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
-    model.put("gras", expression);
-
-    return "iam/approveClient";
+    return APPROVE_AUTHZ_PAGE;
   }
 
+  private void setModelForConsentPage(Map<String, Object> model, AuthorizationRequest authRequest,
+      Authentication authUser, ClientDetailsEntity client) {
+
+    model.put("auth_request", authRequest);
+    model.put("redirect_uri", authRequest.getRedirectUri());
+    model.put("scopes", scopeService.fromStrings(authRequest.getScope()));
+    model.put("claims", userApprovalUtils.claimsForScopes(authUser,
+        scopeService.fromStrings(authRequest.getScope())));
+
+    Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
+
+    model.put("count", count);
+    model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
+
+    model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
+
+  }
 
 }

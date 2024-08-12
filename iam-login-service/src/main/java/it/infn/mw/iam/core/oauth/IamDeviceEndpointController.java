@@ -18,11 +18,11 @@ package it.infn.mw.iam.core.oauth;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.URL;
-import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_URL;
+import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
@@ -69,7 +69,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.api.common.error.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -98,12 +98,15 @@ public class IamDeviceEndpointController {
   private UserApprovalHandler iamUserApprovalHandler;
 
   @Autowired
+  private IamUserApprovalUtils userApprovalUtils;
+
+  @Autowired
   private AccountUtils accountUtils;
 
   @Autowired
   private ScopePolicyPDP pdp;
 
-  @RequestMapping(value = "/" + URL, method = RequestMethod.POST,
+  @RequestMapping(value = "/" + DEVICE_CODE_URL, method = RequestMethod.POST,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public String requestDeviceCode(@RequestParam("client_id") String clientId,
@@ -137,13 +140,13 @@ public class IamDeviceEndpointController {
       Map<String, Object> response = new HashMap<>();
       response.put("device_code", dc.getDeviceCode());
       response.put("user_code", dc.getUserCode());
-      response.put("verification_uri", config.getIssuer() + USER_URL);
+      response.put("verification_uri", config.getIssuer() + USER_CODE_URL);
       if (client.getDeviceCodeValiditySeconds() != null) {
         response.put("expires_in", client.getDeviceCodeValiditySeconds());
       }
 
       if (config.isAllowCompleteDeviceCodeUri()) {
-        URI verificationUriComplete = new URIBuilder(config.getIssuer() + USER_URL)
+        URI verificationUriComplete = new URIBuilder(config.getIssuer() + USER_CODE_URL)
           .addParameter("user_code", dc.getUserCode())
           .build();
 
@@ -172,7 +175,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_URL, method = RequestMethod.GET)
+  @RequestMapping(value = "/" + USER_CODE_URL, method = RequestMethod.GET)
   public String requestUserCode(
       @RequestParam(value = "user_code", required = false) String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
@@ -186,7 +189,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_URL + "/verify", method = RequestMethod.POST)
+  @RequestMapping(value = "/" + USER_CODE_URL + "/verify", method = RequestMethod.POST)
   public String readUserCode(@RequestParam("user_code") String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
 
@@ -215,6 +218,7 @@ public class IamDeviceEndpointController {
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
     Set<String> filteredScopes = filterScopes(scopeService.fromStrings(dc.getScope()), authn);
+    filteredScopes = userApprovalUtils.sortScopes(scopeService.fromStrings(filteredScopes));
 
     authorizationRequest.setScope(filteredScopes);
     authorizationRequest.setClientId(client.getClientId());
@@ -228,10 +232,7 @@ public class IamDeviceEndpointController {
       return DEVICE_APPROVED_PAGE;
     }
 
-    filteredScopes = authorizationRequest.getScope();
-    model.put("dc", dc);
-    model.put("scopes", scopeService.fromStrings(filteredScopes));
-    model.put("scope", OAuth2Utils.formatParameterList(filteredScopes));
+    setModelForConsentPage(model, authn, dc, filteredScopes, client);
 
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
@@ -240,7 +241,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_URL + "/approve", method = RequestMethod.POST)
+  @RequestMapping(value = "/" + USER_CODE_URL + "/approve", method = RequestMethod.POST)
   public String approveDevice(@RequestParam("user_code") String userCode,
       @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
       @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
@@ -295,6 +296,21 @@ public class IamDeviceEndpointController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
 
     return pdp.filterScopes(scopeService.toStrings(scopes), account);
+  }
+
+  private void setModelForConsentPage(ModelMap model, Authentication authn, DeviceCode dc,
+      Set<String> scopes, ClientDetailsEntity client) {
+
+    model.put("dc", dc);
+    model.put("scopes", scopeService.fromStrings(scopes));
+    model.put("scope", OAuth2Utils.formatParameterList(scopes));
+    model.put("claims", userApprovalUtils.claimsForScopes(authn, scopeService.fromStrings(scopes)));
+
+    Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
+
+    model.put("count", count);
+    model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
+    model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
