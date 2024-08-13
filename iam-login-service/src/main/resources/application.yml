@@ -191,8 +191,13 @@ iam:
     section-to-be-displayed-first: ${IAM_LOGIN_PAGE_LAYOUT_SECTION_TO_DISPLAY_FIRST:LOGIN_FORM}
     external-authn-order: ${IAM_LOGIN_EXTERNAL_AUTHN_ORDER:x509,oidc,saml}
 
-redis-cache:
-  enabled: ${IAM_REDIS_CACHE_ENABLED:false}
+  client:
+    track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:false}
+
+cache:
+  enabled: ${IAM_CACHE_ENABLED:true}
+  redis:
+    enabled: ${IAM_CACHE_REDIS_ENABLED:false}
 
 x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
@@ -224,13 +229,10 @@ client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
   client-defaults:
-    default-access-token-validity-seconds: ${DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
-    default-device-code-validity-seconds: ${DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
-    default-id-token-validity-seconds: ${DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
-    default-refresh-token-validity-seconds: ${DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
-
-client:
-  track-last-used: ${IAM_CLIENT_TRACK_LAST_USED:true}
+    default-access-token-validity-seconds: ${IAM_DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
+    default-device-code-validity-seconds: ${IAM_DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
+    default-id-token-validity-seconds: ${IAM_DEFAULT_ID_TOKEN_VALIDITY_SECONDS:600}
+    default-refresh-token-validity-seconds: ${IAM_DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS:2592000}
 
 management:
   health:

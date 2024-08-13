@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
@@ -51,9 +52,13 @@ import it.infn.mw.iam.audit.events.account.group.GroupMembershipAddedEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -81,11 +86,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private ApplicationEventPublisher eventPublisher;
   private final OAuth2TokenEntityService tokenService;
   private final IamAccountClientRepository accountClientRepo;
+  private final NotificationFactory notificationFactory;
+  private final IamProperties iamProperties;
+  private final DefaultIamGroupService iamGroupService;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo) {
+      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      NotificationFactory notificationFactory, IamProperties iamProperties,
+      DefaultIamGroupService iamGroupService) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -95,6 +105,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.eventPublisher = eventPublisher;
     this.tokenService = tokenService;
     this.accountClientRepo = accountClientRepo;
+    this.notificationFactory = notificationFactory;
+    this.iamProperties = iamProperties;
+    this.iamGroupService = iamGroupService;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -177,8 +190,20 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     eventPublisher.publishEvent(new AccountCreatedEvent(this, account,
         "Account created for user " + account.getUsername()));
-
+    
+    addToDefaultGroups(account);
     return account;
+  }
+
+  private void addToDefaultGroups(IamAccount account) {
+    List<DefaultGroup> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
+    if (Objects.nonNull(defaultGroups)) {
+      defaultGroups.forEach(group -> {
+        if ("INSERT".equalsIgnoreCase(group.getEnrollment())) {
+          iamGroupService.findByName(group.getName()).ifPresent(iamGroup -> addToGroup(account, iamGroup));
+        }
+      });
+    }
   }
 
   protected void removeClientLinks(IamAccount account) {
@@ -403,6 +428,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));
+    notificationFactory.createAccountSuspendedMessage(account);
     return account;
   }
 
@@ -412,6 +438,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
+    notificationFactory.createAccountRestoredMessage(account);
     return account;
   }
 

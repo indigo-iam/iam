@@ -21,6 +21,8 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
 import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithPassword;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,7 +38,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -387,19 +391,28 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    List<ScimX509Certificate> userCertList = user.getIndigoUser().getCertificates();
-
     ScimUser createdUser = scimUtils.postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
-    assertThat(createdUserCertList, hasSize(equalTo(2)));
-    assertThat(createdUserCertList.get(0).getDisplay(), equalTo(userCertList.get(0).getDisplay()));
-    assertThat(createdUserCertList.get(0).getPemEncodedCertificate(),
-        equalTo(userCertList.get(0).getPemEncodedCertificate()));
-    assertThat(createdUserCertList.get(0).getPrimary(), equalTo(userCertList.get(0).getPrimary()));
-    assertThat(createdUserCertList.get(1).getDisplay(), equalTo(userCertList.get(1).getDisplay()));
-    assertThat(createdUserCertList.get(1).getPrimary(), equalTo(userCertList.get(1).getPrimary()));
+    assertThat(createdUserCertList.stream().map(c -> c.getDisplay()).collect(Collectors.toList()),
+        IsIterableContainingInAnyOrder.containsInAnyOrder("Personal1", "Personal2"));
+    ScimX509Certificate createdCert1 = createdUserCertList.stream()
+      .filter(cert -> "Personal1".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+    ScimX509Certificate createdCert2 = createdUserCertList.stream()
+      .filter(cert -> "Personal2".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+
+    assertThat(createdCert1.getPrimary(), equalTo(FALSE));
+    assertThat(createdCert2.getPrimary(), equalTo(TRUE));
+    assertThat(createdCert1.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(0).certificate));
+    assertThat(createdCert2.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(1).certificate));
+
   }
 
   @Test
@@ -426,19 +439,28 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .active(true)
       .build();
 
-    List<ScimX509Certificate> userCertList = user.getIndigoUser().getCertificates();
-
     ScimUser createdUser = scimUtils.postUser(user);
     List<ScimX509Certificate> createdUserCertList = createdUser.getIndigoUser().getCertificates();
 
     assertNotNull(createdUserCertList);
-    assertThat(createdUserCertList, hasSize(equalTo(2)));
-    assertThat(createdUserCertList.get(0).getDisplay(), equalTo(userCertList.get(0).getDisplay()));
-    assertThat(createdUserCertList.get(0).getPemEncodedCertificate(),
-        equalTo(userCertList.get(0).getPemEncodedCertificate()));
-    assertThat(createdUserCertList.get(0).getPrimary(), equalTo(true));
-    assertThat(createdUserCertList.get(1).getDisplay(), equalTo(userCertList.get(1).getDisplay()));
-    assertThat(createdUserCertList.get(1).getPrimary(), equalTo(false));
+    assertThat(createdUserCertList.stream().map(c -> c.getDisplay()).collect(Collectors.toList()),
+        IsIterableContainingInAnyOrder.containsInAnyOrder("Personal1", "Personal2"));
+    ScimX509Certificate createdCert1 = createdUserCertList.stream()
+      .filter(cert -> "Personal1".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+    ScimX509Certificate createdCert2 = createdUserCertList.stream()
+      .filter(cert -> "Personal2".equals(cert.getDisplay()))
+      .findFirst()
+      .get();
+
+    assertThat(createdCert1.getPrimary(), equalTo(TRUE));
+    assertThat(createdCert2.getPrimary(), equalTo(FALSE));
+    assertThat(createdCert1.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(0).certificate));
+    assertThat(createdCert2.getPemEncodedCertificate(),
+        equalTo(X509Utils.x509Certs.get(1).certificate));
+
   }
 
   @Test
@@ -472,7 +494,7 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     final String AUP_DESCRIPTION = "Test AUP";
     final Date currentDate = new Date();
 
-    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate);
+    AupDTO aup = new AupDTO(AUP_URL, "", AUP_DESCRIPTION, 0L, currentDate, currentDate, "30,15,1");
     aupService.saveAup(aup);
 
     Calendar cal = Calendar.getInstance();
@@ -480,9 +502,10 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
     cal.add(Calendar.HOUR_OF_DAY, 1);
     Date signatureTime = cal.getTime();
 
-    ScimUser user = buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
-      .aupSignatureTime(signatureTime)
-      .build();
+    ScimUser user =
+        buildUser("user_with_aup_signature", "userwithaupsignature@email.test", "User", "Test")
+          .aupSignatureTime(signatureTime)
+          .build();
     ScimUser createdUser = scimUtils.postUser(user);
 
     assertThat(user.getUserName(), equalTo(createdUser.getUserName()));

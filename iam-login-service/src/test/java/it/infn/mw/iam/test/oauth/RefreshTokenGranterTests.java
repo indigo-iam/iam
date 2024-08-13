@@ -24,6 +24,7 @@ import java.util.Date;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -34,6 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
@@ -57,6 +60,9 @@ public class RefreshTokenGranterTests {
 
   @Autowired
   private IamAccountRepository accountRepo;
+
+  @Autowired
+  private ClientService clientService;
 
   @Autowired
   private MockMvc mvc;
@@ -93,6 +99,7 @@ public class RefreshTokenGranterTests {
     aup.setUrl("http://default-aup.org/");
     aup.setDescription("AUP description");
     aup.setSignatureValidityInDays(0L);
+    aup.setAupRemindersInDays("30,15,1");
 
     aupRepo.save(aup);
 
@@ -155,6 +162,50 @@ public class RefreshTokenGranterTests {
     // @formatter:on
 
     accountRepo.findByUsername("test").get().setActive(true);
+  }
+
+  @Test
+  public void testRefreshFlowNotAllowedIfClientIsSuspended() throws Exception {
+
+    String clientId = "password-grant";
+    String clientSecret = "secret";
+
+    // @formatter:off
+    String response = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "password")
+        .param("username", USERNAME)
+        .param("password", PASSWORD)
+        .param("scope", SCOPE))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+
+    DefaultOAuth2AccessToken tokenResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    String refreshToken = tokenResponse.getRefreshToken().toString();
+
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+
+    client.setActive(false);
+    clientService.updateClient(client);
+
+    // @formatter:off
+    mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "refresh_token")
+        .param("refresh_token", refreshToken))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error").value("invalid_client"))
+      .andExpect(jsonPath("$.error_description").value("Client is suspended: " + clientId));
+    // @formatter:on
+
+    client.setActive(true);
+    clientService.updateClient(client);
   }
 
 }
