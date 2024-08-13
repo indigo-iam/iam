@@ -118,10 +118,7 @@ public class RegistrationApiController {
       @RequestBody @Validated RegistrationRequestDto request, final BindingResult validationResult) {
     handleValidationError(validationResult);
 
-    return service.createRequest(
-        request,
-        getExternalAuthenticationInfo(),
-        registrationProperties.getFields());
+    return service.createRequest(request, getExternalAuthenticationInfo());
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")

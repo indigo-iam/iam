@@ -205,30 +205,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   }
 
   @Test
-  public void testCreateRequestWithMandatoryNotesField() throws Exception {
-
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
-
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-    // `Notes` field is mandatory
-    request.setNotes("Notes is mandatory");
-
-    // @formatter:off
-    mvc.perform(post("/registration/create")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk());
-    // @formatter:on
-  }
-
-
-  @Test
   public void testEmailAvailableEndpoint() throws Exception {
     mvc.perform(get("/registration/email-available/email@example.org"))
       .andExpect(status().isOk())

@@ -29,7 +29,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -60,7 +59,6 @@ import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
-import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
@@ -183,22 +181,7 @@ public class DefaultRegistrationRequestService
 
   @Override
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo,
-      Map<String, RegistrationFieldProperties> fields) {
-
-    /**
-     * Determine if the `notes` is mandatory or optional field.
-     *
-     * When the `notes` field is mandatory during registration, it will perform
-     * `notesSanityChecks`.
-     */
-    if (fields.containsKey("notes")) {
-      RegistrationFieldProperties notesFieldAttribute = fields.get("notes");
-
-      if ("mandatory".equalsIgnoreCase(notesFieldAttribute.getFieldBehaviour().name())) {
-        notesSanityChecks(dto.getNotes());
-      }
-    }
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
 
     if (!isNull(validationService)) {
       RegistrationRequestValidationResult result =
@@ -386,16 +369,7 @@ public class DefaultRegistrationRequestService
     return retval;
   }
 
-  private void notesSanityChecks(final String notes) {
 
-    if (notes == null) {
-      throw new RegistrationRequestValidatorError("Notes field cannot be null");
-    }
-
-    if (notes.trim().isEmpty()) {
-      throw new RegistrationRequestValidatorError("Notes field cannot be the empty string");
-    }
-  }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
