@@ -120,6 +120,7 @@ public class RegistrationApiController {
           value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult) {
     handleValidationError(validationResult);
+
     return service.createRequest(request, getExternalAuthenticationInfo());
   }
 

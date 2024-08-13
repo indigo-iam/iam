@@ -70,7 +70,7 @@ public class IamRegistrationRequest implements Serializable {
   @Column(name = "lastupdatetime", nullable = true)
   private Date lastUpdateTime;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String notes;
 
   @ElementCollection

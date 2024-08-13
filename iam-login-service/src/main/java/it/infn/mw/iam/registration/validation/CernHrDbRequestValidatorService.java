@@ -43,7 +43,7 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 
 @Service
 @Profile("cern")
-public class CernHrDbRequestValidatorService implements RegistrationRequestValidationService {
+public class CernHrDbRequestValidatorService extends RegistrationFieldsValidationService {
 
 
 
