@@ -23,15 +23,19 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +46,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -52,9 +57,15 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
+import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.NotificationProperties;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -103,6 +114,12 @@ public class RegistrationFlowNotificationTests {
 
   @Autowired
   private IamRegistrationRequestRepository requestRepository;
+
+  @Autowired
+  private IamAccountRepository iamAccountRepo;
+
+  @Autowired
+  private IamEmailNotificationRepository notificationRepo;
 
   private MockMvc mvc;
 
@@ -351,5 +368,74 @@ public class RegistrationFlowNotificationTests {
     assertThat(message.getBody(), containsString("We hate you"));
 
   }
+
+  @Test
+    @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
+    public void testEmailSentForSettingServiceAccount() throws Exception {
+        IamAccount testUser = iamAccountRepo.findByUsername("test")
+                .orElseThrow(() -> new AssertionError("Expected test user not found"));
+        ScimUser user = ScimUser.builder().serviceAccount(true).build();
+
+        ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(user).build();
+
+        mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+                .content(mapper.writeValueAsString(patchRequest))
+                .contentType("application/scim+json;charset=UTF-8"))
+                .andExpect(status().isNoContent());
+        List<IamEmailNotification> notifications = notificationRepo
+                .findByNotificationType(IamNotificationType.SET_SERVICE_ACCOUNT);
+
+        assertEquals(1, notifications.size());
+        assertEquals("[indigo-dc IAM] Account set as service account", notifications.get(0).getSubject());
+
+        notificationDelivery.sendPendingNotifications();
+
+        assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+        IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+
+        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Account set as service account"));
+
+        assertThat(message.getReceivers(), hasSize(1));
+        assertThat(message.getReceivers().get(0).getEmailAddress(),
+                equalTo(testUser.getUserInfo().getEmail()));
+
+        notificationDelivery.clearDeliveredNotifications();
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
+    public void testEmailSentForRevokingServiceAccount() throws Exception {
+        IamAccount testUser = iamAccountRepo.findByUsername("test")
+                .orElseThrow(() -> new AssertionError("Expected test user not found"));
+        testUser.setServiceAccount(true);
+        iamAccountRepo.save(testUser);
+
+        ScimUser user = ScimUser.builder().serviceAccount(false).build();
+
+        ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(user).build();
+
+        mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+                .content(mapper.writeValueAsString(patchRequest))
+                .contentType("application/scim+json;charset=UTF-8"))
+                .andExpect(status().isNoContent());
+        List<IamEmailNotification> notifications = notificationRepo
+                .findByNotificationType(IamNotificationType.REVOKE_SERVICE_ACCOUNT);
+
+        assertEquals(1, notifications.size());
+        assertEquals("[indigo-dc IAM] Account's service account status revoked", notifications.get(0).getSubject());
+
+        notificationDelivery.sendPendingNotifications();
+
+        assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+        IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+
+        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Account's service account status revoked"));
+
+        assertThat(message.getReceivers(), hasSize(1));
+        assertThat(message.getReceivers().get(0).getEmailAddress(),
+                equalTo(testUser.getUserInfo().getEmail()));
+
+        notificationDelivery.clearDeliveredNotifications();
+    }
 
 }
