@@ -16,7 +16,10 @@
 
 package it.infn.mw.iam.test.api.scim.controller;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.List;
 
@@ -32,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -41,6 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.notification.MockNotificationDelivery;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -57,11 +62,12 @@ import it.infn.mw.iam.test.notification.NotificationTestConfig;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
-    NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = { IamLoginService.class, CoreControllerTestSupport.class,
+        NotificationTestConfig.class }, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
+@TestPropertySource(properties = { "notification.disable=false" })
 public class ScimUserControllerTest extends TestSupport implements ScimConstants {
-
+    
     @Autowired
     private WebApplicationContext context;
     @Autowired
@@ -72,6 +78,8 @@ public class ScimUserControllerTest extends TestSupport implements ScimConstants
     private ObjectMapper mapper;
     @Autowired
     private IamEmailNotificationRepository notificationRepo;
+    @Autowired
+    private MockNotificationDelivery notificationDelivery;
 
     private MockMvc mvc;
 
@@ -104,6 +112,19 @@ public class ScimUserControllerTest extends TestSupport implements ScimConstants
 
         assertEquals(1, notifications.size());
         assertEquals("[indigo-dc IAM] Account set as service account", notifications.get(0).getSubject());
+
+        notificationDelivery.sendPendingNotifications();
+
+        assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+        IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+
+        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Account set as service account"));
+
+        assertThat(message.getReceivers(), hasSize(1));
+        assertThat(message.getReceivers().get(0).getEmailAddress(),
+                equalTo(testUser.getUserInfo().getEmail()));
+
+        notificationDelivery.clearDeliveredNotifications();
     }
 
     @Test
@@ -127,5 +148,18 @@ public class ScimUserControllerTest extends TestSupport implements ScimConstants
 
         assertEquals(1, notifications.size());
         assertEquals("[indigo-dc IAM] Account's service account status revoked", notifications.get(0).getSubject());
+
+        notificationDelivery.sendPendingNotifications();
+
+        assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+        IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+
+        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Account's service account status revoked"));
+
+        assertThat(message.getReceivers(), hasSize(1));
+        assertThat(message.getReceivers().get(0).getEmailAddress(),
+                equalTo(testUser.getUserInfo().getEmail()));
+
+        notificationDelivery.clearDeliveredNotifications();
     }
 }
