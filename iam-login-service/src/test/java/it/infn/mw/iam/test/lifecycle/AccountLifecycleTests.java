@@ -16,8 +16,6 @@
 package it.infn.mw.iam.test.lifecycle;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
-import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_TIMESTAMP_LABEL;
-import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -83,6 +81,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
 
     testAccount.setEndTime(Date.from(FOUR_DAYS_AGO));
     repo.save(testAccount);
+    Date lastUpdateTime = testAccount.getLastUpdateTime();
 
     handler.handleExpiredAccounts();
 
@@ -90,16 +89,22 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(true));
-
-    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
-
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
+    lastUpdateTime = testAccount.getLastUpdateTime();
 
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
         is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_SUSPENSION.name()));
+
+    handler.handleExpiredAccounts();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(true));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
+
   }
 
   @Test
@@ -110,6 +115,7 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     assertThat(testAccount.isActive(), is(true));
     testAccount.setEndTime(Date.from(EIGHT_DAYS_AGO));
     repo.save(testAccount);
+    Date lastUpdateTime = testAccount.getLastUpdateTime();
 
     handler.handleExpiredAccounts();
 
@@ -117,11 +123,16 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
+    lastUpdateTime = testAccount.getLastUpdateTime();
 
-    Optional<IamLabel> timestampLabel = testAccount.getLabelByName(LIFECYCLE_TIMESTAMP_LABEL);
+    handler.handleExpiredAccounts();
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(NOW.toEpochMilli())));
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
 
     Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(statusLabel.isPresent(), is(true));

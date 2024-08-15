@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,7 +104,14 @@ public class EndpointsTestUtils {
       return this;
     }
 
-    public String performTokenRequest() throws Exception {
+    public String performSuccessfulTokenRequest() throws Exception {
+
+      return performTokenRequest(200)
+        .getResponse()
+        .getContentAsString();
+    }
+
+    public MvcResult performTokenRequest(int statusCode) throws Exception {
       MockHttpServletRequestBuilder req = post("/token").param("grant_type", grantType)
         .param("client_id", clientId)
         .param("client_secret", clientSecret);
@@ -120,18 +128,14 @@ public class EndpointsTestUtils {
         req.param("aud", audience);
       }
 
-      String response = mvc.perform(req)
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-      return response;
+      return mvc.perform(req)
+        .andExpect(status().is(statusCode))
+        .andReturn();
     }
 
     public DefaultOAuth2AccessToken getTokenResponseObject() throws Exception {
 
-      String response = performTokenRequest();
+      String response = performSuccessfulTokenRequest();
 
       // This is incorrectly named in spring security OAuth, what they call OAuth2AccessToken
       // is a TokenResponse object

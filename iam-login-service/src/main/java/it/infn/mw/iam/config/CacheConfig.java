@@ -16,9 +16,10 @@
 package it.infn.mw.iam.config;
 
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -30,26 +31,31 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 public class CacheConfig {
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "false")
-  public CacheManager localCacheManager() {
+  @ConditionalOnExpression("${cache.enabled} == false")
+  CacheManager fakeCacheManager(CacheProperties props) {
+    return new NoOpCacheManager();
+  }
+
+  @Bean
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
+  CacheManager localCacheManager(CacheProperties props) {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
         DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
   }
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
-  public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
+  RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
     return builder -> builder
       .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
           RedisCacheConfiguration.defaultCacheConfig())
       .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
           RedisCacheConfiguration.defaultCacheConfig());
-
   }
 
   @Bean
-  @ConditionalOnProperty(name = "redis-cache.enabled", havingValue = "true")
-  public RedisCacheConfiguration redisCacheConfiguration() {
+  @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == true")
+  RedisCacheConfiguration redisCacheConfiguration() {
 
     return RedisCacheConfiguration.defaultCacheConfig().disableCachingNullValues();
   }
