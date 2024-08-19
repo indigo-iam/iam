@@ -53,8 +53,14 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
 
     Date now = new Date(timeProvider.currentTimeMillis());
 
-    if (!aup.isPresent() || account.isServiceAccount()) {
+    if (!aup.isPresent()) {
       LOG.debug("AUP signature not needed for account '{}': AUP is not defined",
+          account.getUsername());
+      return false;
+    }
+
+    if (account.isServiceAccount()) {
+      LOG.debug("AUP signature not needed for account '{}': Account is a service account",
           account.getUsername());
       return false;
     }

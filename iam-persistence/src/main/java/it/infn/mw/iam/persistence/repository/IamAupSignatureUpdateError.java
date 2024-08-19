@@ -24,7 +24,7 @@ public class IamAupSignatureUpdateError extends RuntimeException {
    */
   private static final long serialVersionUID = 1L;
 
-  public IamAupSignatureUpdateError(IamAccount account, String message) {
-    super(String.format(message, account.getUsername()));
+  public IamAupSignatureUpdateError(IamAccount account) {
+    super(String.format("As user '%s' is a service account, AUP signature operation not allowed", account.getUsername()));
   }
 }
