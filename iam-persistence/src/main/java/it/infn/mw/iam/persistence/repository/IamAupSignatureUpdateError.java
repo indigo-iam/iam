@@ -19,9 +19,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class IamAupSignatureUpdateError extends RuntimeException {
 
-  /**
-   * 
-   */
   private static final long serialVersionUID = 1L;
 
   public IamAupSignatureUpdateError(IamAccount account) {

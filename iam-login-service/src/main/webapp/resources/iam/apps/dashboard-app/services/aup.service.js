@@ -101,7 +101,7 @@
                     return null;
                 }
                 if (res.status == 405) {
-                    console.info("AUP operation not allowed for service account");
+                    console.info(res.data.error);                    
                     return null;
                 }
                 return $q.reject(res);
@@ -115,7 +115,7 @@
                     return null;
                 }
                 if (res.status == 405) {
-                    console.info("AUP operation not allowed for service account");
+                    console.info(res.data.error);
                     return null;
                 }
                 return $q.reject(res);

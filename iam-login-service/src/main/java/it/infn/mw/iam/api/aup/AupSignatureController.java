@@ -179,7 +179,7 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteSignatureForAccount(@PathVariable String accountId,
-      Authentication authentication) throws AccountNotFoundException {
+      Authentication authentication) throws AccountNotFoundException, IamAupSignatureUpdateError {
 
     Optional<IamAccount> deleterAccount = accountUtils.getAuthenticatedUserAccount();
     IamAccount signatureAccount = accountUtils.getByAccountId(accountId)
@@ -206,6 +206,8 @@ public class AupSignatureController {
           .publishEvent(AupSignatureDeletedEvent.deletedByClient(this, principal, signature.get()));
       }
       notificationFactory.createAupSignatureRequestMessage(signatureAccount);
+    } else {
+      throw new AupSignatureNotFoundError(signatureAccount);
     }
   }
 
@@ -224,6 +226,12 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(AupNotFoundError.class)
   public ErrorDTO aupNotFoundError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.METHOD_NOT_ALLOWED)
+  @ExceptionHandler(IamAupSignatureUpdateError.class)
+  public ErrorDTO aupSignatureUpdateError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }
