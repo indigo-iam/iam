@@ -206,8 +206,6 @@ public class AupSignatureController {
           .publishEvent(AupSignatureDeletedEvent.deletedByClient(this, principal, signature.get()));
       }
       notificationFactory.createAupSignatureRequestMessage(signatureAccount);
-    } else {
-      throw new AupSignatureNotFoundError(signatureAccount);
     }
   }
 

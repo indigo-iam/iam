@@ -303,7 +303,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
     mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNoContent());
     mvc.perform(delete("/iam/aup/signature/" + account.getUuid()))
-      .andExpect(status().isNotFound());
+      .andExpect(status().isNoContent());
     mvc.perform(get("/iam/aup/signature/" + account.getUuid()))
       .andExpect(status().isNotFound())
       .andExpect(jsonPath("$.error", equalTo("AUP signature not found for user 'admin'")));
@@ -436,6 +436,20 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
     mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID)).andExpect(status().isOk());
 
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSignAupThrowExceptionForServiceAccount() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    testAccount.setServiceAccount(true);
+    accountRepo.save(testAccount);
+
+    mvc.perform(post("/iam/aup/sign"))
+    .andExpect(status().isMethodNotAllowed());
   }
 
 }
