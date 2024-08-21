@@ -28,14 +28,18 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -43,6 +47,7 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 
 @Controller
 public class AupSignaturePageController {
@@ -97,7 +102,7 @@ public class AupSignaturePageController {
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = "/iam/aup/sign")
   public ModelAndView signAup(HttpServletRequest request, HttpServletResponse response,
-      HttpSession session) {
+      HttpSession session) throws IamAupSignatureUpdateError {
 
     Optional<IamAup> aup = repo.findDefaultAup();
 
@@ -125,6 +130,12 @@ public class AupSignaturePageController {
     }
 
     return new ModelAndView("redirect:/dashboard");
+  }
+
+  @ResponseStatus(value = HttpStatus.METHOD_NOT_ALLOWED)
+  @ExceptionHandler(IamAupSignatureUpdateError.class)
+  public ErrorDTO aupSignatureUpdateError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
   }
 }
 
