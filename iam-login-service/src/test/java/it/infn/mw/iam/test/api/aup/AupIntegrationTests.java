@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -258,6 +259,48 @@ public class AupIntegrationTests extends AupTestSupport {
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("Invalid AUP: signatureValidityInDays must be >= 0"));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationIgnoresRemindersIfSignatureValidityIsZero()
+      throws JsonProcessingException, Exception {
+    String reminders = "1,15,30";
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, reminders);
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isCreated());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationSetDefaultValueForRemindersIfSignatureValidityIsZero() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "ciao");
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isCreated());
+
+
+    String aupJson = mvc.perform(get("/iam/aup"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
+
+    assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
+    assertThat(createdAup.getAupRemindersInDays(), not(equalTo(aup.getAupRemindersInDays())));
+    assertThat(createdAup.getAupRemindersInDays(), equalTo("30,15,1"));
   }
 
   @Test

@@ -45,7 +45,7 @@
                 If set to zero, the AUP signature will be asked only at registration time.
             </span>
         </div>
-        <div class="form-group" ng-class="{'has-error': $ctrl.error || createAup.aupReminder.$dirty && !createAup.aupReminder.$valid}">
+        <div class="form-group" ng-if="$ctrl.aupVal.signatureValidityInDays > 0" ng-class="{'has-error': $ctrl.error || createAup.aupReminder.$dirty && !createAup.aupReminder.$valid}">
             <label>AUP signature reminders (in days)</label>
             <input name="aupReminder" class="form-control" type="text" ng-model="$ctrl.aupVal.aupRemindersInDays" placeholder="30,15,1" required="true">
             <span class="help-block">

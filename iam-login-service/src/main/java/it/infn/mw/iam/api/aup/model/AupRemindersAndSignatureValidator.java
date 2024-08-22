@@ -50,6 +50,11 @@ public class AupRemindersAndSignatureValidator implements ConstraintValidator<Au
       return false;
     }
 
+    if (signatureValidityInDays == 0) {
+      value.setAupRemindersInDays("30,15,1");
+      return true;
+  }
+
     if (aupRemindersInDays == null || aupRemindersInDays.isEmpty()) {
       context.disableDefaultConstraintViolation();
       context
