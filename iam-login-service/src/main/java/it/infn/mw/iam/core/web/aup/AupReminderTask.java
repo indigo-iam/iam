@@ -68,7 +68,7 @@ public class AupReminderTask {
 
         // check if an email of type AUP_EXPIRATION does not already exist, because it is never deleted
         expiredSignatures.forEach(s -> {
-          if (isExpiredSignatureEmailNotAlreadySentFor(s.getAccount())) {
+          if (isExpiredSignatureEmailNotAlreadySentFor(s.getAccount()) && !s.getAccount().isServiceAccount()) {
             notification.createAupSignatureExpMessage(s.getAccount());
           }
         });
@@ -88,7 +88,7 @@ public class AupReminderTask {
 
     // check if an email of type AUP_REMINDER does not already exist, because it is never deleted
     signatures.forEach(s -> {
-      if (isAupReminderEmailNotAlreadySentFor(s.getAccount(), tomorrowAsDate)) {
+      if (isAupReminderEmailNotAlreadySentFor(s.getAccount(), tomorrowAsDate) && !s.getAccount().isServiceAccount()) {
         notification.createAupReminderMessage(s.getAccount(), aup);
       }
     });
