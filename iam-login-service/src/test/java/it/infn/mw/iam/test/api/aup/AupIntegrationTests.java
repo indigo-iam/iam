@@ -263,8 +263,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationIgnoresRemindersIfSignatureValidityIsZero()
-      throws JsonProcessingException, Exception {
+  public void aupCreationIgnoresRemindersIfSignatureValidityIsZero() throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, reminders);
     Date now = new Date();
