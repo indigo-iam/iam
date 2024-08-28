@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class AupRemindersAndSignatureValidator implements ConstraintValidator<AupRemindersAndSignature, AupDTO> {
+public class AupRemindersAndSignatureValidator
+    implements ConstraintValidator<AupRemindersAndSignature, AupDTO> {
 
   @Override
   public boolean isValid(AupDTO value, ConstraintValidatorContext context) {
@@ -51,59 +52,61 @@ public class AupRemindersAndSignatureValidator implements ConstraintValidator<Au
     }
 
     if (signatureValidityInDays == 0) {
-      value.setAupRemindersInDays("30,15,1");
-      return true;
-  }
-
-    if (aupRemindersInDays == null || aupRemindersInDays.isEmpty()) {
-      context.disableDefaultConstraintViolation();
-      context
-        .buildConstraintViolationWithTemplate(
-            "Invalid AUP: aupRemindersInDays cannot be empty or null")
-        .addConstraintViolation();
-      return false;
-    }
-
-    try {
-      List<Integer> numbers = Arrays.stream(aupRemindersInDays.split(","))
-        .map(String::trim)
-        .map(Integer::parseInt)
-        .collect(Collectors.toList());
-
-      if (numbers.stream().anyMatch(i -> i <= 0)) {
+      if (aupRemindersInDays != null && !aupRemindersInDays.isEmpty()) {
         context.disableDefaultConstraintViolation();
         context
           .buildConstraintViolationWithTemplate(
-              "Invalid AUP: zero or negative values for reminders are not allowed")
+              "Invalid AUP: aupRemindersInDays cannot be set if signatureValidityInDays is 0")
           .addConstraintViolation();
         return false;
       }
-
-      if (numbers.stream().anyMatch(i -> i >= signatureValidityInDays)) {
-        context.disableDefaultConstraintViolation();
-        context
-          .buildConstraintViolationWithTemplate(
-              "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays")
-          .addConstraintViolation();
-        return false;
-      }
-
-      Set<Integer> uniqueNumbers = new HashSet<>(numbers);
-      if (uniqueNumbers.size() != numbers.size()) {
-        context.disableDefaultConstraintViolation();
-        context
-          .buildConstraintViolationWithTemplate("Invalid AUP: duplicate values for reminders are not allowed")
-          .addConstraintViolation();
-        return false;
-      }
-
       return true;
-    } catch (NumberFormatException e) {
-      context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate("Invalid AUP: non-integer value found")
-        .addConstraintViolation();
-      return false;
     }
+
+    if (aupRemindersInDays != null) {
+      try {
+        List<Integer> numbers = Arrays.stream(aupRemindersInDays.split(","))
+          .map(String::trim)
+          .map(Integer::parseInt)
+          .collect(Collectors.toList());
+
+        if (numbers.stream().anyMatch(i -> i <= 0)) {
+          context.disableDefaultConstraintViolation();
+          context
+            .buildConstraintViolationWithTemplate(
+                "Invalid AUP: zero or negative values for reminders are not allowed")
+            .addConstraintViolation();
+          return false;
+        }
+
+        if (numbers.stream().anyMatch(i -> i >= signatureValidityInDays)) {
+          context.disableDefaultConstraintViolation();
+          context
+            .buildConstraintViolationWithTemplate(
+                "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays")
+            .addConstraintViolation();
+          return false;
+        }
+
+        Set<Integer> uniqueNumbers = new HashSet<>(numbers);
+        if (uniqueNumbers.size() != numbers.size()) {
+          context.disableDefaultConstraintViolation();
+          context
+            .buildConstraintViolationWithTemplate(
+                "Invalid AUP: duplicate values for reminders are not allowed")
+            .addConstraintViolation();
+          return false;
+        }
+
+        return true;
+      } catch (NumberFormatException e) {
+        context.disableDefaultConstraintViolation();
+        context.buildConstraintViolationWithTemplate("Invalid AUP: non-integer value found for aupRemindersInDays")
+          .addConstraintViolation();
+        return false;
+      }
+    }
+    return true;
   }
 
 }
