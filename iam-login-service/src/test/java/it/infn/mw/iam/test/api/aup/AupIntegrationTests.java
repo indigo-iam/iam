@@ -122,8 +122,7 @@ public class AupIntegrationTests extends AupTestSupport {
     assertThat(createdAup.getAupRemindersInDays(), equalTo(""));
   }
 
-  private void aupCreationCausesBadRequest(AupDTO aup, String errorMessage)
-      throws JsonProcessingException, Exception {
+  private void aupCreationCausesBadRequest(AupDTO aup, String errorMessage) throws Exception {
     mvc
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
@@ -262,7 +261,8 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero() throws Exception {
+  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero()
+      throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, null);
 
     Date now = new Date();
@@ -295,8 +295,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationSetsEmptyRemindersWhenEmptyAndSignatureValidityIsZero()
-      throws Exception {
+  public void aupCreationSetsEmptyRemindersWhenEmptyAndSignatureValidityIsZero() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
