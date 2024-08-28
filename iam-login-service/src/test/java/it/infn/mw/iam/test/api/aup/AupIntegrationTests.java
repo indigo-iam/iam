@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.api.aup;
 
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -105,6 +104,32 @@ public class AupIntegrationTests extends AupTestSupport {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
+  private void aupSuccesfullyCreated(AupDTO aup) throws Exception {
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isCreated());
+
+    String aupJson = mvc.perform(get("/iam/aup"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
+
+    assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
+    assertThat(createdAup.getAupRemindersInDays(), equalTo(""));
+  }
+
+  private void aupCreationCausesBadRequest(AupDTO aup, String errorMessage)
+      throws JsonProcessingException, Exception {
+    mvc
+      .perform(
+          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo(errorMessage)));
+  }
 
   @Test
   public void noAupDefinedResultsin404() throws Exception {
@@ -120,7 +145,6 @@ public class AupIntegrationTests extends AupTestSupport {
     aupRepo.save(defaultAup);
 
     mvc.perform(get("/iam/aup")).andExpect(status().isOk());
-
   }
 
   @Test
@@ -134,7 +158,6 @@ public class AupIntegrationTests extends AupTestSupport {
       .perform(
           post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
       .andExpect(status().isUnauthorized());
-
   }
 
   @Test
@@ -156,46 +179,27 @@ public class AupIntegrationTests extends AupTestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupUrlIsRequired() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
-
     aup.setUrl(null);
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error", equalTo("Invalid AUP: the AUP URL cannot be blank")));
-
+    aupCreationCausesBadRequest(aup, "Invalid AUP: the AUP URL cannot be blank");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupUrlIsNotAValidUrl() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
-
     aup.setUrl("Not-a-URL");
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error", equalTo("Invalid AUP: the AUP URL is not valid")));
-
+    aupCreationCausesBadRequest(aup, "Invalid AUP: the AUP URL is not valid");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void aupUrlQueryNotAllowed() throws JsonProcessingException, Exception {
     AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
-
     aup.setUrl("http://aup-url.org/with?query=value");
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(
-          jsonPath("$.error", equalTo("Invalid AUP: query string not allowed in the AUP URL")));
-
+    aupCreationCausesBadRequest(aup, "Invalid AUP: query string not allowed in the AUP URL");
   }
 
   @Test
@@ -205,12 +209,7 @@ public class AupIntegrationTests extends AupTestSupport {
 
     aup.setUrl(INVALID_AUP_URL);
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error", equalTo("Invalid AUP: the AUP URL is not valid")));
-
+    aupCreationCausesBadRequest(aup, "Invalid AUP: the AUP URL is not valid");
   }
 
   @Test
@@ -220,13 +219,8 @@ public class AupIntegrationTests extends AupTestSupport {
     String longDescription = Strings.repeat("xxxx", 33);
     aup.setDescription(longDescription);
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error",
-          equalTo("Invalid AUP: the description string must be at most 128 characters long")));
-
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: the description string must be at most 128 characters long");
   }
 
   @Test
@@ -238,11 +232,7 @@ public class AupIntegrationTests extends AupTestSupport {
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: signatureValidityInDays is required"));
+    aupCreationCausesBadRequest(aup, "Invalid AUP: signatureValidityInDays is required");
   }
 
   @Test
@@ -254,155 +244,128 @@ public class AupIntegrationTests extends AupTestSupport {
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: signatureValidityInDays must be >= 0"));
+    aupCreationCausesBadRequest(aup, "Invalid AUP: signatureValidityInDays must be >= 0");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationIgnoresRemindersIfSignatureValidityIsZero() throws Exception {
+  public void aupCreationFailsIfRemindersAreNotEmptyOrNullAndfSignatureValidityIsZero()
+      throws Exception {
     String reminders = "1,15,30";
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, reminders);
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isCreated());
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: aupRemindersInDays cannot be set if signatureValidityInDays is 0");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationSetDefaultValueForRemindersIfSignatureValidityIsZero() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "ciao");
+  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsZero() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, null);
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isCreated());
-
-
-    String aupJson = mvc.perform(get("/iam/aup"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    AupDTO createdAup = mapper.readValue(aupJson, AupDTO.class);
-
-    assertThat(createdAup.getSignatureValidityInDays(), equalTo(aup.getSignatureValidityInDays()));
-    assertThat(createdAup.getAupRemindersInDays(), not(equalTo(aup.getAupRemindersInDays())));
-    assertThat(createdAup.getAupRemindersInDays(), equalTo("30,15,1"));
+    aupSuccesfullyCreated(aup);
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresAupRemindersInDays() throws Exception {
+  public void aupCreationSetsEmptyValueForRemindersIfNullAndSignatureValidityIsNotZero()
+      throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, null);
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty or null"));
+    aupSuccesfullyCreated(aup);
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresAupRemindersInDaysNotEmpty() throws Exception {
+  public void aupCreationSetsEmptyRemindersWhenEmptyAndSignatureValidityIsNonZero()
+      throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("Invalid AUP: aupRemindersInDays cannot be empty or null"));
+    aupCreationCausesBadRequest(aup, "Invalid AUP: non-integer value found for aupRemindersInDays");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoZeroInAupRemindersInDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "0");
+  public void aupCreationSetsEmptyRemindersWhenEmptyAndSignatureValidityIsZero()
+      throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: zero or negative values for reminders are not allowed"));
+    aupSuccesfullyCreated(aup);
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresPositiveAupRemindersInDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "-22");
+  public void aupCreationRequiresEmptyOrNullRemindersIfSignatureValidityIsZero() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 0L, null, null, "ciao");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: zero or negative values for reminders are not allowed"));
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: aupRemindersInDays cannot be set if signatureValidityInDays is 0");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoLettersInAupRemindersInDays() throws Exception {
+  public void aupCreationRequiresNoLettersInAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "ciao");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: non-integer value found"));
+    aupCreationCausesBadRequest(aup, "Invalid AUP: non-integer value found for aupRemindersInDays");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresNoDuplicationInAupRemindersInDays() throws Exception {
+  public void aupCreationRequiresNoZeroInAupRemindersDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "0");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: zero or negative values for reminders are not allowed");
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresPositiveAupRemindersDays() throws Exception {
+    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "-22");
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: zero or negative values for reminders are not allowed");
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupCreationRequiresNoDuplicationInAupRemindersDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, "30,15,15");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: duplicate values for reminders are not allowed"));
+    aupCreationCausesBadRequest(aup, "Invalid AUP: duplicate values for reminders are not allowed");
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void aupCreationRequiresAupRemindersInDaysSmallerThanAupExpirationDays() throws Exception {
+  public void aupCreationRequiresAupRemindersSmallerThanSignatureValidityDays() throws Exception {
     AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 3L, null, null, "4");
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    mvc
-      .perform(
-          post("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value(
-          "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays"));
+    aupCreationCausesBadRequest(aup,
+        "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays");
   }
 
   @Test
@@ -438,7 +401,8 @@ public class AupIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   public void whiteSpacesAllowedAmongAupRemindersDays() throws Exception {
-    AupDTO aup = new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, " 30, 15, 7 ");
+    AupDTO aup =
+        new AupDTO(DEFAULT_AUP_URL, DEFAULT_AUP_TEXT, null, 31L, null, null, " 30, 15, 7 ");
 
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
