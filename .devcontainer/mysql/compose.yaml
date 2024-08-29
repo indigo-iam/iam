@@ -2,7 +2,7 @@ services:
   devcontainer:
     image: mcr.microsoft.com/devcontainers/java:1-17-bookworm
     volumes:
-      - ../..:/workspaces/iam:cached
+      - ../..:/workspaces/iam
     network_mode: service:db
     user: vscode
     depends_on:
