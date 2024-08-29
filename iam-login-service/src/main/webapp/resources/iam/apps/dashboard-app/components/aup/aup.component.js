@@ -83,6 +83,9 @@
         self.doSaveAup = function() {
             self.error = undefined;
             self.enabled = false;
+            if(self.aupVal.signatureValidityInDays == 0 || !self.aupVal.aupRemindersInDays) {
+                self.aupVal.aupRemindersInDays = "";
+            }
             AupService.updateAup(self.aupVal)
                 .then(function(res) {
                     $uibModalInstance.close('AUP updated succesfully');
@@ -106,7 +109,7 @@
             self.aupVal = {
                 url: "",
                 signatureValidityInDays: 0,
-                aupRemindersInDays: "30,15,1"
+                aupRemindersInDays: ""
             };
         };
 
@@ -115,6 +118,9 @@
         self.doCreateAup = function() {
             self.error = undefined;
             self.enabled = false;
+            if(self.aupVal.signatureValidityInDays == 0 || !self.aupVal.aupRemindersInDays) {
+                self.aupVal.aupRemindersInDays = "";
+            }
             AupService.createAup(self.aupVal)
                 .then(function(res) {
                     $uibModalInstance.close('AUP created succesfully');
