@@ -296,7 +296,8 @@ public class AupIntegrationTests extends AupTestSupport {
     Date now = new Date();
     mockTimeProvider.setTime(now.getTime());
 
-    verifyAupCreationSuccess(aup);
+    verifyAupCreationFailureWithBadRequest(aup,
+        "Invalid AUP: aupRemindersInDays must be set when signatureValidityInDays is greater than 0");
   }
 
   @Test
@@ -684,6 +685,36 @@ public class AupIntegrationTests extends AupTestSupport {
 
     verifyAupUpdateFailureWithBadRequest(aup,
         "Invalid AUP: aupRemindersInDays must be smaller than signatureValidityInDays");
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupUpdateRequiresAupRemindersWhenSignatureValidityIsGreaterThanZero()
+      throws Exception {
+    AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
+
+    createAup(aup);
+
+    aup.setAupRemindersInDays(null);
+
+    verifyAupUpdateFailureWithBadRequest(aup,
+        "Invalid AUP: aupRemindersInDays must be set when signatureValidityInDays is greater than 0");
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupUpdateWorksIfRemindersAreNullAndSignatureValidityIsZero() throws Exception {
+    AupDTO aup = converter.dtoFromEntity(buildDefaultAup());
+
+    createAup(aup);
+
+    aup.setSignatureValidityInDays(0L);
+    aup.setAupRemindersInDays(null);
+
+    mvc
+      .perform(
+          patch("/iam/aup").contentType(APPLICATION_JSON).content(mapper.writeValueAsString(aup)))
+      .andExpect(status().isOk());
   }
 
   @Test
