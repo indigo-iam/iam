@@ -51,13 +51,12 @@
     <!-- /.content-wrapper -->
   </div>
   <!-- Libraries -->
-  <script type="text/javascript" src="<c:url value='/webjars/jquery/jquery.min.js'/>"></script>
+  <script type="text/javascript" src="<c:url value='/webjars/jquery/dist/jquery.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angularjs/angular.min.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/angularjs/angular-animate.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/angularjs/angular-resource.min.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/angularjs/angular-cookies.min.js'/>"></script>
-  <script type="text/javascript" src="<c:url value='/webjars/angular-ui-router/angular-ui-router.min.js'/>"></script>
+  <script type="text/javascript" src="<c:url value='/webjars/angular-ui-router/release/angular-ui-router.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angular-ui-select/select.min.js'/>"></script>
+  <script type="text/javascript" src="<c:url value='/webjars/angular-cookies/angular-cookies.min.js'/>"></script>
+  <script type="text/javascript" src="<c:url value='/webjars/angular-resource/angular-resource.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angular-sanitize/angular-sanitize.min.js'/>"></script>
   <script type="text/javascript" src="<c:url value='/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js'/>"></script>
   

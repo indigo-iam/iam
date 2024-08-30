@@ -22,7 +22,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.10.0</version>
+    <version>1.10.1</version>
   </parent>
 
   <groupId>it.infn.mw.iam-login-service</groupId>
@@ -106,7 +106,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>angular-ui-router</artifactId>
     </dependency>
 
@@ -116,27 +116,42 @@
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>angular-cookies</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>angular-resource</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>angular-animate</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>angular-sanitize</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>jquery</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>jquery-ui</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>bootstrap</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.webjars</groupId>
+      <groupId>org.webjars.npm</groupId>
       <artifactId>font-awesome</artifactId>
     </dependency>
     
