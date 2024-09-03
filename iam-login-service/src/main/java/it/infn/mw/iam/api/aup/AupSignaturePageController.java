@@ -29,13 +29,13 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -132,10 +132,10 @@ public class AupSignaturePageController {
     return new ModelAndView("redirect:/dashboard");
   }
 
-  @ResponseStatus(value = HttpStatus.METHOD_NOT_ALLOWED)
   @ExceptionHandler(IamAupSignatureUpdateError.class)
-  public ErrorDTO aupSignatureUpdateError(Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
+  public ResponseEntity<ErrorDTO> aupSignatureUpdateError(Exception ex) {
+    ErrorDTO errorResponse = ErrorDTO.fromString(ex.getMessage());
+    return new ResponseEntity<>(errorResponse, HttpStatus.METHOD_NOT_ALLOWED);
   }
 }
 
