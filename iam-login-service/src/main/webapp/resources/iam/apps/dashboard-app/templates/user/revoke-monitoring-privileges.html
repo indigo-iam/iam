@@ -15,16 +15,16 @@
     limitations under the License.
 
 -->
-<form class="form-horizontal" ng-submit="ctrl.revoke()" name="revokeVoAdminForm">
+<form class="form-horizontal" ng-submit="ctrl.revoke()" name="revokeMonitoringPrivilegesForm">
   <div class="modal-header">
-        <h3 class="modal-title">Revoke administrator privileges from <strong>{{ctrl.userName}}</strong>?</h3>
+        <h3 class="modal-title">Revoke monitoring privileges from <strong>{{ctrl.userName}}</strong>?</h3>
   </div>
     
   <div class="modal-body">
     <operationresult/>
     
     <p>  
-    {{ctrl.userName}} will lose administrative rights on this IAM instance.
+    {{ctrl.userName}} will lose monitoring privileges on this IAM instance.
     </p>
     
     <p>

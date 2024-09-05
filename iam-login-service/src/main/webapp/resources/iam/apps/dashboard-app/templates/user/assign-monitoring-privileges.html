@@ -15,16 +15,16 @@
     limitations under the License.
 
 -->
-<form class="form-horizontal" ng-submit="ctrl.revoke()" name="revokeVoAdminForm">
+<form class="form-horizontal" ng-submit="ctrl.assign()" name="assignMonitoringPrivilegesForm">
   <div class="modal-header">
-        <h3 class="modal-title">Revoke administrator privileges from <strong>{{ctrl.userName}}</strong>?</h3>
+        <h3 class="modal-title">Assign monitoring privileges to <strong>{{ctrl.userName}}</strong>?</h3>
   </div>
     
   <div class="modal-body">
     <operationresult/>
     
     <p>  
-    {{ctrl.userName}} will lose administrative rights on this IAM instance.
+    {{ctrl.userName}} will have read only access on this IAM instance.
     </p>
     
     <p>
@@ -34,8 +34,8 @@
   
    <div class="modal-footer">
         <button class="btn btn-primary" 
-          type="submit" name="revoke" id="modal-btn-confirm" 
-          ng-enabled="ctrl.enabled">
+          type="submit" name="assign" id="modal-btn-confirm" 
+          ng-disabled="!ctrl.enabled">
           Ok
         </button>
         
