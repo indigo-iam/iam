@@ -17,29 +17,29 @@
 -->
 <form class="form-horizontal" ng-submit="ctrl.revoke()" name="revokeMonitoringPrivilegesForm">
   <div class="modal-header">
-        <h3 class="modal-title">Revoke monitoring privileges from <strong>{{ctrl.userName}}</strong>?</h3>
+    <h3 class="modal-title">Revoke monitoring privileges from <strong>{{ctrl.userName}}</strong>?</h3>
   </div>
-    
+
   <div class="modal-body">
-    <operationresult/>
-    
-    <p>  
-    {{ctrl.userName}} will lose monitoring privileges on this IAM instance.
+    <operationresult />
+
+    <p>
+      {{ctrl.userName}} will lose monitoring privileges on this IAM instance.
     </p>
-    
+
     <p>
       Do you want to proceed?
-    </p>     
-   </div>
-  
-   <div class="modal-footer">
-        <button class="btn btn-primary" 
-          type="submit" name="revoke" id="modal-btn-confirm" 
-          ng-enabled="ctrl.enabled">
-          Ok
-        </button>
-        
-        <button class="btn btn-danger" type="button" 
-          name="cancel" id="modal-btn-cancel" ng-click="ctrl.cancel()">Cancel</button>
-    </div>
+    </p>
+     
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-primary" type="submit" name="revoke" id="modal-btn-confirm" ng-enabled="ctrl.enabled">
+      Ok
+    </button>
+
+    <button class="btn btn-danger" type="button" name="cancel" id="modal-btn-cancel" ng-click="ctrl.cancel()">
+      Cancel
+    </button>
+  </div>
 </form>
