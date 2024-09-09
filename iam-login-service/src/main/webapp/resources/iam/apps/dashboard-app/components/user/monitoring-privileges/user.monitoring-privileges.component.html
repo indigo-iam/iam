@@ -17,7 +17,7 @@
 -->
 <!-- Assign monitoring privileges -->
 <button 
-    ng-if="!$ctrl.userIsVoAdmin()" 
+    ng-if="!$ctrl.userIsReader()" 
     class="btn btn-primary btn-block"
     style="margin-top: 5px" 
     name="assign-monitoring-privileges"
@@ -29,7 +29,7 @@
 
 <!-- Revoke monitoring privileges -->
 <button 
-    ng-if="$ctrl.userIsVoAdmin() && !$ctrl.isMe()" 
+    ng-if="$ctrl.userIsReader() && !$ctrl.isMe()" 
     class="btn btn-primary btn-block" 
     name="revoke-monitoring-privileges"
     style="margin-top: 5px"

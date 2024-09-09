@@ -26,7 +26,7 @@
 
     self.isMe = function() { return Utils.isMe(self.user.id); };
 
-    self.userIsVoAdmin = function() { return self.userCtrl.userIsVoAdmin(); };
+    self.userIsReader = function() { return self.userCtrl.userIsReader(); };
 
     self.openAssignDialog = function() {
 
@@ -63,7 +63,7 @@
           toaster.pop({
             type: 'success',
             body:
-                `User '${user.name.formatted}' no longer has prilileges.`
+                `User '${user.name.formatted}' no longer has monitoring prilileges.`
           });
         });
       });

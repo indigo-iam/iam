@@ -37,6 +37,7 @@
             buildSuccessOperationResult: buildSuccessOperationResult,
             buildErrorResult: buildErrorResult,
             userIsVoAdmin: userIsVoAdmin,
+            userIsReader: userIsReader,
             isGroupManagerForGroup: isGroupManagerForGroup,
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
@@ -66,6 +67,15 @@
         function userIsVoAdmin(user) {
             if (user.authorities) {
                 if (user.authorities.indexOf('ROLE_ADMIN') > -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function userIsReader(user) {
+            if (user.authorities) {
+                if (user.authorities.indexOf('ROLE_READER') > -1) {
                     return true;
                 }
             }
