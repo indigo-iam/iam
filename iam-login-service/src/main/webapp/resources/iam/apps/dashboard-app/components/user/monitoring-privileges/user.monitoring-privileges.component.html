@@ -17,7 +17,7 @@
 -->
 <!-- Assign monitoring privileges -->
 <button 
-    ng-if="!$ctrl.userIsReader()" 
+    ng-if="!$ctrl.userIsReader() && !$ctrl.isMe()" 
     class="btn btn-primary btn-block"
     style="margin-top: 5px" 
     name="assign-monitoring-privileges"
