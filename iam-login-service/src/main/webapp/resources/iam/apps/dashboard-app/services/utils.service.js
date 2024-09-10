@@ -28,6 +28,7 @@
             uuid: uuid,
             isMe: isMe,
             isAdmin: isAdmin,
+            isReader: isReader,
             isUser: isUser,
             getLoggedUser: getLoggedUser,
             isRegistrationEnabled: isRegistrationEnabled,
@@ -91,6 +92,11 @@
             return (getUserAuthorities().indexOf("ROLE_ADMIN") != -1);
         }
 
+        function isReader() {
+
+            return (getUserAuthorities().indexOf("ROLE_READER") != -1);
+        }
+
         function isUser() {
 
             return (getUserAuthorities().indexOf("ROLE_USER") != -1);
@@ -107,7 +113,8 @@
         }
 
         function getLoggedUser() {
-            return { info: getUserInfo(), auth: getUserAuthorities(), isAdmin: isAdmin(), isGroupManager: isGroupManager(), isGroupManagerForGroup: isGroupManagerForGroup() };
+            return { info: getUserInfo(), auth: getUserAuthorities(), isAdmin: isAdmin(), isGroupManager: isGroupManager(), 
+                isGroupManagerForGroup: isGroupManagerForGroup(), isReader: isReader() };
         }
 
         function isRegistrationEnabled() {

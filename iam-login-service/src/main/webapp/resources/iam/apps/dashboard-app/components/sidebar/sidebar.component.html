@@ -50,7 +50,7 @@
             Organization Management
         </li>
 
-        <li ng-if="$root.loggedUser.isAdmin">
+        <li ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isReader">
             <a id="nav-users" ui-sref="users" ui-sref-opts="{reload: true}">
                 <i class="fa fa-user"></i>
                 <span>Users</span>
@@ -59,7 +59,7 @@
         </li>
 
         <li>
-            <a id="nav-groups" ui-sref="groups" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isAdmin">
+            <a id="nav-groups" ui-sref="groups" ui-sref-opts="{reload: true}" ng-show="$root.loggedUser.isAdmin || $root.loggedUser.isReader">
                 <i class="fa fa-users"></i>
                 <span>Groups</span>
                 <span class="badge pull-right" ng-show="$root.groupsCount>0">{{$root.groupsCount}}</span>

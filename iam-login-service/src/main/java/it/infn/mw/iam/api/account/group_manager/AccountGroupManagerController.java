@@ -105,7 +105,7 @@ public class AccountGroupManagerController {
   }
 
   @RequestMapping(value = "/iam/group/{groupId}/group-managers", method=RequestMethod.GET)
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#groupId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER') or #iam.isGroupManager(#groupId)")
   public List<ScimUser> getGroupManagersForGroup(@PathVariable String groupId) {
     IamGroup group = groupRepository.findByUuid(groupId)
       .orElseThrow(() -> InvalidManagedGroupError.groupNotFoundException(groupId));

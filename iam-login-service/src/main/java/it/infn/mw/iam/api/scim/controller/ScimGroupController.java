@@ -73,7 +73,7 @@ public class ScimGroupController extends ScimControllerSupport {
   @Autowired
   ScimGroupProvisioning groupProvisioningService;
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id)")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
   @RequestMapping(value = "/{id}", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimGroup getGroup(@PathVariable final String id) {
@@ -81,7 +81,7 @@ public class ScimGroupController extends ScimControllerSupport {
     return groupProvisioningService.getById(id);
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listGroups(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
@@ -150,7 +150,7 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id)")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
   @RequestMapping(value = "/{id}/members", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listMembers(@PathVariable final String id,
@@ -161,7 +161,7 @@ public class ScimGroupController extends ScimControllerSupport {
         buildPageRequest(count, startIndex, SCIM_MEMBERS_MAX_PAGE_SIZE));
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id)")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
   @RequestMapping(value = "/{id}/subgroups", method = RequestMethod.GET,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listSubgroups(@PathVariable final String id,
