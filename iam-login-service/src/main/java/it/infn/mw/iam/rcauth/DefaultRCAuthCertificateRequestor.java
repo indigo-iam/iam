@@ -60,12 +60,12 @@ public class DefaultRCAuthCertificateRequestor implements RCAuthCertificateReque
     HttpHeaders headers = new HttpHeaders();
 
     headers.add("Authorization", format("Bearer %s", accessToken));
-    
+
 
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
     params.add("client_id", properties.getClientId());
-    params.add("client_secret", properties.getClientSecret());
+    params.add("client_secret", properties.getClientSecretHash());
     params.add("certreq", certReq);
     params.add("certlifetime", Long.toString(properties.getCertLifetimeSeconds()));
 

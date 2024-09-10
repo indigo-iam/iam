@@ -52,7 +52,7 @@ public class IAMClientUserDetailsService implements ClientUserDetailsService {
       ClientDetailsEntity client = Optional.ofNullable(clientService.loadClientByClientId(clientId))
         .orElseThrow(unknownClientError(clientId));
 
-      final String password = Strings.nullToEmpty(client.getClientSecret());
+      final String password = Strings.nullToEmpty(client.getClientSecretHash());
 
       final boolean accountEnabled = true;
       final boolean accountNonExpired = true;

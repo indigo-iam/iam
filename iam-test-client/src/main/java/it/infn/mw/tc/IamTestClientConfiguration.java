@@ -121,12 +121,11 @@ public class IamTestClientConfiguration {
     ClientDetailsEntity cde = new ClientDetailsEntity();
     cde.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
     cde.setClientId(iamClientConfig.getClient().getClientId());
-    cde.setClientSecret(iamClientConfig.getClient().getClientSecret());
+    cde.setClientSecretHash(iamClientConfig.getClient().getClientSecretHash());
     cde.setCodeChallengeMethod(iamClientConfig.getClient().getCodeChallengeMethod());
 
     if (Strings.isNotBlank(iamClientConfig.getClient().getScope())) {
-      cde.setScope(
-          Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
+      cde.setScope(Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
     }
 
     clients.put(iamClientConfig.getIssuer(), new RegisteredClient(cde));

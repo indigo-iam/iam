@@ -25,7 +25,7 @@ public class IamClientApplicationProperties {
       this.clientId = clientId;
     }
 
-    public String getClientSecret() {
+    public String getClientSecretHash() {
       return clientSecret;
     }
 
@@ -64,13 +64,27 @@ public class IamClientApplicationProperties {
 
     boolean ignoreNamespaceChecks = false;
     boolean useGridTrustAnchors = true;
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
-    public boolean isIgnoreNamespaceChecks() { return ignoreNamespaceChecks; }
+
+    public String getVersion() {
+      return version;
+    }
+
+    public void setVersion(String version) {
+      this.version = version;
+    }
+
+    public boolean isIgnoreNamespaceChecks() {
+      return ignoreNamespaceChecks;
+    }
+
     public void setIgnoreNamespaceChecks(boolean ignoreNamespaceChecks) {
       this.ignoreNamespaceChecks = ignoreNamespaceChecks;
     }
-    public boolean isUseGridTrustAnchors() { return useGridTrustAnchors; }
+
+    public boolean isUseGridTrustAnchors() {
+      return useGridTrustAnchors;
+    }
+
     public void setUseGridTrustAnchors(boolean useGridTrustAnchors) {
       this.useGridTrustAnchors = useGridTrustAnchors;
     }
@@ -85,21 +99,33 @@ public class IamClientApplicationProperties {
 
   private boolean hideTokens = true;
 
-  public String getIssuer() { return issuer; }
+  public String getIssuer() {
+    return issuer;
+  }
 
-  public void setIssuer(String issuer) { this.issuer = issuer; }
+  public void setIssuer(String issuer) {
+    this.issuer = issuer;
+  }
 
-  public String getExtAuthnHint() { return extAuthnHint; }
+  public String getExtAuthnHint() {
+    return extAuthnHint;
+  }
 
   public void setExtAuthnHint(String extAuthnHint) {
     this.extAuthnHint = extAuthnHint;
   }
 
-  public TlsConfig getTls() { return tls; }
+  public TlsConfig getTls() {
+    return tls;
+  }
 
-  public void setTls(TlsConfig tls) { this.tls = tls; }
+  public void setTls(TlsConfig tls) {
+    this.tls = tls;
+  }
 
-  public String getOrganizationName() { return organizationName; }
+  public String getOrganizationName() {
+    return organizationName;
+  }
 
   public void setOrganizationName(String organizationName) {
     this.organizationName = organizationName;

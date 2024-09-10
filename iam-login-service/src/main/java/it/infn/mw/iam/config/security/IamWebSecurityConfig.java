@@ -68,8 +68,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @Configuration
 @EnableWebSecurity
 public class IamWebSecurityConfig {
-  
-  
 
   @Bean
   public SecurityEvaluationContextExtension contextExtension() {
@@ -101,9 +99,6 @@ public class IamWebSecurityConfig {
     private IamX509AuthenticationUserDetailService x509UserDetailsService;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private IamAccountRepository accountRepo;
 
     @Autowired
@@ -119,7 +114,8 @@ public class IamWebSecurityConfig {
     private IamProperties iamProperties;
 
     @Autowired
-    public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
+    public void configureGlobal(final AuthenticationManagerBuilder auth,
+        PasswordEncoder passwordEncoder) throws Exception {
       // @formatter:off
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder));
       // @formatter:on
@@ -202,7 +198,7 @@ public class IamWebSecurityConfig {
   @Configuration
   @Order(101)
   public static class RegistrationConfig extends WebSecurityConfigurerAdapter {
-    
+
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
     @Autowired

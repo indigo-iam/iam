@@ -169,11 +169,12 @@ public class OidcConfiguration {
   @Bean
   public OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
       OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator, SessionTimeoutHelper timeoutHelper) {
+      AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper) {
 
     OidcAuthenticationProvider provider =
         new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
-    
+
     provider.setUserInfoFetcher(userInfoFetcher);
 
     return provider;
@@ -212,7 +213,7 @@ public class OidcConfiguration {
     providers.getValidatedProviders().forEach(provider -> {
       RegisteredClient rc = new RegisteredClient();
       rc.setClientId(provider.getClient().getClientId());
-      rc.setClientSecret(provider.getClient().getClientSecret());
+      rc.setClientSecret(provider.getClient().getClientSecretHash());
       rc.setRedirectUris(
           Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getRedirectUris())));
       rc.setScope(Sets.newLinkedHashSet(Arrays.asList(provider.getClient().getScope().split(","))));

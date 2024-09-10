@@ -83,7 +83,7 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
       client.setTokenEndpointAuthMethod(AuthMethod.SECRET_BASIC);
     }
 
-    if (isNull(client.getClientSecret())
+    if (isNull(client.getClientSecretHash())
         && AUTH_METHODS_REQUIRING_SECRET.contains(client.getTokenEndpointAuthMethod())) {
       client.setClientSecret(generateClientSecret());
     }
@@ -94,9 +94,8 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
 
   @Override
   public String generateClientSecret() {
-    return
-        Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
-          .replace("=", "");
+    return Base64.encodeBase64URLSafeString(new BigInteger(SECRET_SIZE, RNG).toByteArray())
+      .replace("=", "");
   }
 
 }

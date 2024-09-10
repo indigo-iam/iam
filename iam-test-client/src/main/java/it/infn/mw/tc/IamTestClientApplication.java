@@ -146,9 +146,8 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
       }
 
       try {
-        auth.setAccessTokenClaims(JWTParser.parse(token.getAccessTokenValue())
-          .getJWTClaimsSet()
-          .toString());
+        auth.setAccessTokenClaims(
+            JWTParser.parse(token.getAccessTokenValue()).getJWTClaimsSet().toString());
 
         auth.setIdTokenClaims(token.getIdToken().getJWTClaimsSet().toString());
       } catch (ParseException e) {
@@ -181,9 +180,8 @@ public class IamTestClientApplication extends WebSecurityConfigurerAdapter {
     OIDCAuthenticationToken token = (OIDCAuthenticationToken) principal;
     String accessToken = token.getAccessTokenValue();
 
-    String plainCreds =
-        String.format("%s:%s", properties.getClient().getClientId(),
-            properties.getClient().getClientSecret());
+    String plainCreds = String.format("%s:%s", properties.getClient().getClientId(),
+        properties.getClient().getClientSecretHash());
 
     String base64Creds = new String(java.util.Base64.getEncoder().encode(plainCreds.getBytes()));
 

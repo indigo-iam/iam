@@ -55,7 +55,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
 
   private void basicAuthRequest(RegisteredClient clientConfig, HttpHeaders headers) {
 
-    String auth = clientConfig.getClientId() + ":" + clientConfig.getClientSecret();
+    String auth = clientConfig.getClientId() + ":" + clientConfig.getClientSecretHash();
     byte[] encodedAuth = org.apache.commons.codec.binary.Base64
       .encodeBase64(auth.getBytes(StandardCharsets.US_ASCII));
     String authHeader = "Basic " + new String(encodedAuth);
@@ -77,7 +77,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
       MultiValueMap<String, String> requestParams) {
 
     requestParams.add("client_id", clientConfig.getClientId());
-    requestParams.add("client_secret", clientConfig.getClientSecret());
+    requestParams.add("client_secret", clientConfig.getClientSecretHash());
 
   }
 
@@ -108,8 +108,7 @@ public class DefaultOidcTokenRequestor implements OidcTokenRequestor {
             "Unsupported token endpoint authentication method");
     }
 
-    return
-        new HttpEntity<>(tokenRequestParams, headers);
+    return new HttpEntity<>(tokenRequestParams, headers);
 
   }
 

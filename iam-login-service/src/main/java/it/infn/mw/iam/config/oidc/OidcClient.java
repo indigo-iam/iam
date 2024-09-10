@@ -18,11 +18,11 @@ package it.infn.mw.iam.config.oidc;
 public class OidcClient {
 
   private String clientId;
-  
+
   private String clientSecret;
-  
+
   private String redirectUris;
-  
+
   private String scope;
 
   public String getClientId() {
@@ -33,7 +33,7 @@ public class OidcClient {
     this.clientId = clientId;
   }
 
-  public String getClientSecret() {
+  public String getClientSecretHash() {
     return clientSecret;
   }
 

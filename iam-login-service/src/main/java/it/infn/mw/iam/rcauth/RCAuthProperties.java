@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Configuration;
 public class RCAuthProperties {
 
   boolean enabled = false;
-  
+
   String label;
 
   String clientId;
@@ -45,7 +45,7 @@ public class RCAuthProperties {
     this.clientId = clientId;
   }
 
-  public String getClientSecret() {
+  public String getClientSecretHash() {
     return clientSecret;
   }
 

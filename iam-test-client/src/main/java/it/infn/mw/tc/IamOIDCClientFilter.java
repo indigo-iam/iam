@@ -82,11 +82,12 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
       protected ClientHttpRequest createRequest(URI url, HttpMethod method) throws IOException {
 
         ClientHttpRequest httpRequest = super.createRequest(url, method);
-        httpRequest.getHeaders().add("Authorization",
-            String.format("Basic %s",
-                Base64.encode(String.format("%s:%s",
-                    UriUtils.encodePathSegment(clientConfig.getClientId(), "UTF-8"),
-                    UriUtils.encodePathSegment(clientConfig.getClientSecret(), "UTF-8")))));
+        httpRequest.getHeaders()
+          .add("Authorization",
+              String.format("Basic %s",
+                  Base64.encode(String.format("%s:%s",
+                      UriUtils.encodePathSegment(clientConfig.getClientId(), "UTF-8"),
+                      UriUtils.encodePathSegment(clientConfig.getClientSecretHash(), "UTF-8")))));
         return httpRequest;
       }
     };
@@ -123,7 +124,7 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
 
     String codeVerifier = getStoredCodeVerifier(request.getSession());
     if (codeVerifier != null) {
-        form.add("code_verifier", codeVerifier);
+      form.add("code_verifier", codeVerifier);
     }
 
     String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESION_VARIABLE);
