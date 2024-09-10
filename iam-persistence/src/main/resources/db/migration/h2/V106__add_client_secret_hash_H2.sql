@@ -1,0 +1,1 @@
+ALTER TABLE client_details ADD client_secret_hash varchar(64) DEFAULT NULL;

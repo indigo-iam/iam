@@ -1,0 +1,1 @@
+ALTER TABLE iam.client_details ADD client_secret_hash varchar(64) AS (SHA2(CONCAT(client_secret), 256)) STORED NULL;
