@@ -69,16 +69,20 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
     return () -> new AssertionError(message);
   }
 
-  @Test
-  @WithMockUser(roles = {"ADMIN"})
-  public void deletePendingGroupRequestAsAdmin() throws Exception {
-
+  private void deletePendingGroupRequest() throws Exception {
     GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
 
     // @formatter:off
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
     // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void deletePendingGroupRequestAsAdmin() throws Exception {
+
+    deletePendingGroupRequest();
   }
 
   @Test
@@ -95,12 +99,7 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void deletePendingGroupRequestAsUser() throws Exception {
 
-    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-
-    // @formatter:off
-    mvc.perform(delete(DELETE_URL, request.getUuid()))
-      .andExpect(status().isNoContent());
-    // @formatter:on
+    deletePendingGroupRequest();
   }
 
   @Test
@@ -154,12 +153,7 @@ public class GroupRequestsDeleteTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void deletePendingGroupRequestAsUserWithBothRoles() throws Exception {
 
-    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-
-    // @formatter:off
-    mvc.perform(delete(DELETE_URL, request.getUuid()))
-      .andExpect(status().isNoContent());
-    // @formatter:on
+    deletePendingGroupRequest();
   }
 
   @Test

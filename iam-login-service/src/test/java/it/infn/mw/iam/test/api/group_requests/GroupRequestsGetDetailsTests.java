@@ -48,12 +48,9 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Test
-  @WithMockUser(roles = {"ADMIN"})
-  public void getGroupRequestDetailsAsAdmin() throws Exception {
-    
+  private void getGroupRequestDetails() throws Exception {
     GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
@@ -66,10 +63,17 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void getGroupRequestDetailsAsAdmin() throws Exception {
+
+    getGroupRequestDetails();
+  }
+
+  @Test
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void getGroupRequestDetailsAsUser() throws Exception {
     GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())
@@ -117,16 +121,8 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void getGroupRequestDetailsAsUserWithBothRoles() throws Exception {
-    GroupRequestDTO request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    // @formatter:off
-    mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
-      .andExpect(jsonPath("$.username", equalTo(request.getUsername())))
-      .andExpect(jsonPath("$.groupName", equalTo(request.getGroupName())))
-      .andExpect(jsonPath("$.status", equalTo(request.getStatus())))
-      .andExpect(jsonPath("$.notes", equalTo(request.getNotes())));
-    // @formatter:on
+
+    getGroupRequestDetails();
   }
 
 }

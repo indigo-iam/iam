@@ -44,10 +44,7 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Test
-  @WithMockUser(roles = {"ADMIN"})
-  public void deletePendingCertLinkRequestAsAdmin() throws Exception {
-
+  private void deletePendingCertLinkRequest() throws Exception {
     CertLinkRequestDTO request =
         savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
@@ -55,6 +52,13 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
     mvc.perform(delete(DELETE_URL, request.getUuid()))
       .andExpect(status().isNoContent());
     // @formatter:on
+  }
+
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void deletePendingCertLinkRequestAsAdmin() throws Exception {
+
+    deletePendingCertLinkRequest();
   }
 
   @Test
@@ -72,13 +76,7 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void deletePendingCertLinkRequestAsUser() throws Exception {
 
-    CertLinkRequestDTO request =
-        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
-
-    // @formatter:off
-    mvc.perform(delete(DELETE_URL, request.getUuid()))
-      .andExpect(status().isNoContent());
-    // @formatter:on
+    deletePendingCertLinkRequest();
   }
 
   @Test
@@ -135,12 +133,6 @@ public class CertLinkRequestsDeleteTests extends CertLinkRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void deletePendingCertLinkRequestAsUserWithBothRoles() throws Exception {
 
-    CertLinkRequestDTO request =
-        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
-
-    // @formatter:off
-    mvc.perform(delete(DELETE_URL, request.getUuid()))
-      .andExpect(status().isNoContent());
-    // @formatter:on
+    deletePendingCertLinkRequest();
   }
 }

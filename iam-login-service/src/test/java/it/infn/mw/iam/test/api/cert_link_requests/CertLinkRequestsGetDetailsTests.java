@@ -39,7 +39,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = { IamLoginService.class }, webEnvironment = WebEnvironment.MOCK)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
 
   private static final String GET_DETAILS_URL = "/iam/cert_link_requests/{uuid}";
@@ -47,11 +47,9 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Autowired
   private MockMvc mvc;
 
-  @Test
-  @WithMockUser(roles = { "ADMIN" })
-  public void getCertLinkRequestDetailsAsAdmin() throws Exception {
-
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+  private void getCertLinkRequestDetails() throws Exception {
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
@@ -66,9 +64,17 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  @WithMockUser(roles = {"ADMIN"})
+  public void getCertLinkRequestDetailsAsAdmin() throws Exception {
+
+    getCertLinkRequestDetails();
+  }
+
+  @Test
+  @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void getCertLinkRequestDetailsAsUser() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
 
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
@@ -82,9 +88,10 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_100_USERNAME)
+  @WithMockUser(roles = {"USER"}, username = TEST_100_USERNAME)
   public void getCertLinkRequestDetailsOfAnotherUser() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_101_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_101_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isForbidden());
@@ -94,7 +101,8 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   @Test
   @WithAnonymousUser
   public void getCertLinkRequestDetailsAsAnonymous() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
+    CertLinkRequestDTO request =
+        savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isUnauthorized())
@@ -104,7 +112,7 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN" })
+  @WithMockUser(roles = {"ADMIN"})
   public void getDetailsOfNotExitingCertLinkRequest() throws Exception {
 
     String fakeRequestUuid = UUID.randomUUID().toString();
@@ -116,19 +124,10 @@ public class CertLinkRequestsGetDetailsTests extends CertLinkRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN", "USER" })
+  @WithMockUser(roles = {"ADMIN", "USER"})
   public void getCertLinkRequestDetailsAsUserWithBothRoles() throws Exception {
-    CertLinkRequestDTO request = savePendingCertLinkRequest(TEST_100_USERNAME, TEST_SUBJECTDN_OK, TEST_ISSUERDN_OK, null);
-    // @formatter:off
-    mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.uuid", equalTo(request.getUuid())))
-      .andExpect(jsonPath("$.username", equalTo(request.getUsername())))
-      .andExpect(jsonPath("$.subjectDn", equalTo(request.getSubjectDn())))
-      .andExpect(jsonPath("$.issuerDn", equalTo(request.getIssuerDn())))
-      .andExpect(jsonPath("$.status", equalTo(request.getStatus())))
-      .andExpect(jsonPath("$.notes", equalTo(request.getNotes())));
-    // @formatter:on
+
+    getCertLinkRequestDetails();
   }
 
 }
