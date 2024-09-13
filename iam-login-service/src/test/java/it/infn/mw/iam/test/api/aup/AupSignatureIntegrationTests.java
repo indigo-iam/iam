@@ -130,6 +130,22 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = { "READER" })
+  public void getSignatureWorkForReader() throws Exception {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+
+    Date now = new Date();
+
+    mockTimeProvider.setTime(now.getTime());
+
+    mvc.perform(post("/iam/aup/signature")).andExpect(status().isCreated());
+
+    mvc.perform(get("/iam/aup/signature"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
   @WithMockUser(username = "test", roles = {"USER"})
   public void signatureCreationReturns204() throws Exception {
     IamAup aup = buildDefaultAup();

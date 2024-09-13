@@ -189,6 +189,23 @@ public class AccountAttributesTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void gettingAttributesWorksForReaderUser() throws Exception {
+    IamAccount testAccount =
+        repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+
+    final String UUID = testAccount.getUuid();
+
+    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID)).andExpect(OK);
+
+    mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$").isArray())
+      .andExpect(jsonPath("$").isEmpty());
+  }
+
+  @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void setAttributeWorks() throws Exception {
 

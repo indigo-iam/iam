@@ -137,6 +137,18 @@ public class AccountLabelsTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void gettingLabelsWorksForReaderUser() throws Exception {
+
+    mvc.perform(get(RESOURCE, TEST_100_USER_UUID)).andExpect(OK);
+
+    mvc.perform(get(RESOURCE, TEST_100_USER_UUID))
+      .andExpect(OK)
+      .andExpect(jsonPath("$").isArray())
+      .andExpect(jsonPath("$").isEmpty());
+  }
+
+  @Test
   public void setLabelWorks() throws Exception {
 
     mvc

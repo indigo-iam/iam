@@ -242,6 +242,13 @@ public class AccountSearchControllerTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void getUsersAsReader() throws Exception {
+    mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
+        .andExpect(status().isOk());
+  }
+
+  @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
   public void getUsersAsAuthenticatedUser() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
