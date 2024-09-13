@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.oauth;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -262,7 +262,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
     String refreshTokenJti = accessToken.getRefreshToken().getJwt().getJWTClaimsSet().getJWTID();
 
     AccessTokenIssuedEvent event = new AccessTokenIssuedEvent(this, accessToken);
-    assertThat(event.getRefreshTokenJti().equals(refreshTokenJti));
+    assertTrue(event.getRefreshTokenJti().equals(refreshTokenJti));
 
   }
 
