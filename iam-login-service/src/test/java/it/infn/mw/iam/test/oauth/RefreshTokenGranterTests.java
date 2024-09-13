@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -53,17 +54,19 @@ import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class RefreshTokenGranterTests {
+public class RefreshTokenGranterTests extends TestTokensUtils {
 
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
   private static final String SCOPE = "openid profile offline_access";
+  public static final String[] SCOPES = {"openid", "profile", "offline_access"};
 
   @Autowired
   private ObjectMapper mapper;
@@ -223,6 +226,7 @@ public class RefreshTokenGranterTests {
 
   @Test
   public void testRefreshTokenParsingThrowsParseException() throws Exception {
+
     OAuth2AccessTokenEntity accessToken = Mockito.mock(OAuth2AccessTokenEntity.class);
     OAuth2RefreshTokenEntity refreshToken = Mockito.mock(OAuth2RefreshTokenEntity.class);
     AuthenticationHolderEntity authnHolder = Mockito.mock(AuthenticationHolderEntity.class);
@@ -244,6 +248,21 @@ public class RefreshTokenGranterTests {
     AccessTokenIssuedEvent event = new AccessTokenIssuedEvent(this, accessToken);
 
     assertNull(event.getRefreshTokenJti());
+
+  }
+
+  @Test
+  public void testRefreshTokenJtiInAccessTokenAuditLogs() throws Exception {
+
+    String clientId = "password-grant";
+    ClientDetailsEntity client = loadTestClient(clientId);
+
+    OAuth2AccessTokenEntity accessToken = buildAccessToken(client, USERNAME, SCOPES);
+
+    String refreshTokenJti = accessToken.getRefreshToken().getJwt().getJWTClaimsSet().getJWTID();
+
+    AccessTokenIssuedEvent event = new AccessTokenIssuedEvent(this, accessToken);
+    assertThat(event.getRefreshTokenJti().equals(refreshTokenJti));
 
   }
 
