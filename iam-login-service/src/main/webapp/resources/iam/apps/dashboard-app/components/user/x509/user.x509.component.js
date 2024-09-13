@@ -332,6 +332,9 @@
                     },
                     successHandler: function () {
                         return self.handleSuccess;
+                    },
+                    certificationAuthorities: function () {
+                        return [];
                     }
                 }
             });

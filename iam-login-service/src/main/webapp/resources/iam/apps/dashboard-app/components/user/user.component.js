@@ -47,7 +47,11 @@
         };
 
         self.canManageLinkedAccounts = function () {
-            return self.isVoAdmin();
+            if (!self.accountLinkingEnabled) {
+                return self.isVoAdmin();
+            }
+
+            return self.isVoAdmin() && !self.isMe();
         };
 
         self.canLinkAccounts = function () {

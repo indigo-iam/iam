@@ -239,7 +239,7 @@ public class CertLinkRequestsListTests extends CertLinkRequestsTestUtils {
 
   @Test
   @WithMockUser(roles = { "ADMIN" }, username = TEST_ADMIN)
-  public void filterByCertLinkAndStatusAsAdmin() throws Exception {
+  public void filterBySubjectAndStatusAsAdmin() throws Exception {
     String testStatus = IamRequestStatus.PENDING.name();
     // @formatter:off
     String response = mvc.perform(get(LIST_REQUESTS_URL)
