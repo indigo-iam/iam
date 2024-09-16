@@ -46,7 +46,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class ExpiredAccountsHandler implements Runnable {
 
   public enum AccountLifecycleStatus {
-    OK, PENDING_SUSPENSION, PENDING_REMOVAL, SUSPENDED
+    PENDING_SUSPENSION, PENDING_REMOVAL, SUSPENDED
   }
 
   public static final String LIFECYCLE_TIMESTAMP_LABEL = "lifecycle.timestamp";

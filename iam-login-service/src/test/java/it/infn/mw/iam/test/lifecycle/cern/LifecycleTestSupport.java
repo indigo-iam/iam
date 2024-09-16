@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.test.lifecycle.cern;
 
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_ACTION;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_IGNORE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_SKIP_EMAIL_SYNCH;
@@ -30,7 +30,8 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
-import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Action;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
 public interface LifecycleTestSupport {
@@ -68,11 +69,10 @@ public interface LifecycleTestSupport {
       .build();
   }
 
-  default IamLabel actionLabel(Action a) {
+  default IamLabel statusLabel(AccountLifecycleStatus s) {
     return IamLabel.builder()
-      .prefix(LABEL_CERN_PREFIX)
-      .name(LABEL_ACTION)
-      .value(a.name())
+      .name(LIFECYCLE_STATUS_LABEL)
+      .value(s.name())
       .build();
   }
 
@@ -89,6 +89,52 @@ public interface LifecycleTestSupport {
 
     p.setExperiment("test");
     p.setStartDate(Date.from(Instant.parse("2020-01-01T00:00:00.00Z")));
+
+    InstituteDTO i = new InstituteDTO();
+    i.setId("000001");
+    i.setName("INFN");
+    i.setCountry("IT");
+    i.setTown("Bologna");
+    p.setInstitute(i);
+
+    dto.getParticipations().add(p);
+
+    return dto;
+  }
+
+  default VOPersonDTO noParticipationsVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    dto.getParticipations().clear();
+    return dto;
+  }
+
+  default VOPersonDTO expiredVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    // Set endDate more than 7 days (suspension grace period) but less than 30 days (removal grace period)
+    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(20, ChronoUnit.DAYS)));
+    return dto;
+  }
+
+  default VOPersonDTO removedVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    // Set endDate more than 30 days (removal grace period)
+    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(40, ChronoUnit.DAYS)));
+    return dto;
+  }
+
+  default VOPersonDTO voPerson(String personId, IamAccount account, String experiment, Date endDate) {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
+    dto.setParticipations(Sets.newHashSet());
+
+    dto.setId(Long.parseLong(personId));
+
+    ParticipationDTO p = new ParticipationDTO();
+
+    p.setExperiment(experiment);
+    p.setStartDate(endDate);
 
     InstituteDTO i = new InstituteDTO();
     i.setId("000001");
