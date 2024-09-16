@@ -75,7 +75,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
-  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
