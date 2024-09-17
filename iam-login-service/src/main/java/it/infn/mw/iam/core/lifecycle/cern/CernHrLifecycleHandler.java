@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.lifecycle.cern;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Action.NO_ACTION;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.ERROR;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.EXPIRED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.IGNORED;
@@ -76,10 +75,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
 
-  public enum Action {
-    NO_ACTION, DISABLE_ACCOUNT, RESTORE_ACCOUNT
-  }
-
   public enum Status {
     MEMBER, EXPIRED, IGNORED, ERROR
   }
@@ -107,11 +102,10 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     this.hrDb = hrDb;
   }
 
-  private IamLabel buildActionLabel(Action action) {
+  private IamLabel buildActionLabel() {
     return IamLabel.builder()
       .prefix(LABEL_CERN_PREFIX)
       .name(LABEL_ACTION)
-      .value(action.name())
       .build();
   }
 
@@ -210,7 +204,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
 
     // Clear old IAM versions labels
-    accountService.deleteLabel(account, buildActionLabel(NO_ACTION));
+    accountService.deleteLabel(account, buildActionLabel());
 
     // 2. Retrieve VO person data from HR database
     Optional<VOPersonDTO> voPerson = Optional.empty();
