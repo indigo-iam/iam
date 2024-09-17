@@ -27,23 +27,21 @@ import org.junit.Test;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 
-public class X509AuthenticationCredentialTests {
+public class X509AuthenticationCredentialTests extends X509TestSupport {
 
-  public static final String TEST_SUBJECT = "Test subject";
-  public static final String TEST_ISSUER = "Test issuer";
   public static final String VERIFICATION_ERROR = "Verification error";
 
   @Test
   public void testCredentialCreation() {
     IamX509AuthenticationCredential.Builder builder = new IamX509AuthenticationCredential.Builder();
-    IamX509AuthenticationCredential cred = builder.subject(TEST_SUBJECT)
-      .issuer(TEST_ISSUER)
+    IamX509AuthenticationCredential cred = builder.subject(TEST_0_SUBJECT)
+      .issuer(TEST_0_ISSUER)
       .verificationResult(X509CertificateVerificationResult.failed(VERIFICATION_ERROR))
       .certificateChain(new X509Certificate[] {})
       .build();
 
-    assertThat(cred.getSubject(), equalTo(TEST_SUBJECT));
-    assertThat(cred.getIssuer(), equalTo(TEST_ISSUER));
+    assertThat(cred.getSubject(), equalTo(TEST_0_SUBJECT));
+    assertThat(cred.getIssuer(), equalTo(TEST_0_ISSUER));
     assertThat(cred.getVerificationResult().status(),
         is(X509CertificateVerificationResult.Status.FAILED));
 
