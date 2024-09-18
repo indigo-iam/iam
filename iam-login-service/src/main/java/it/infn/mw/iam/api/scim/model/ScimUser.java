@@ -68,7 +68,6 @@ public class ScimUser extends ScimResource {
   private final String locale;
   private final String timezone;
   private final Boolean active;
-  private final Boolean serviceAccount;
 
   @NotEmpty(groups = {NewUserValidation.class})
   @Valid
@@ -94,7 +93,7 @@ public class ScimUser extends ScimResource {
       @JsonProperty("userType") String userType,
       @JsonProperty("preferredLanguage") String preferredLanguage,
       @JsonProperty("locale") String locale, @JsonProperty("timezone") String timezone,
-      @JsonProperty("active") Boolean active, @JsonProperty("serviceAccount") Boolean serviceAccount,
+      @JsonProperty("active") Boolean active,
       @JsonProperty("emails") List<ScimEmail> emails,
       @JsonProperty("addresses") List<ScimAddress> addresses,
       @JsonProperty("photos") List<ScimPhoto> photos,
@@ -118,7 +117,6 @@ public class ScimUser extends ScimResource {
     this.timezone = timezone;
     this.emails = emails;
     this.active = active;
-    this.serviceAccount = serviceAccount;
     this.groups = groups;
     this.addresses = addresses;
     this.indigoUser = indigoUser;
@@ -138,7 +136,6 @@ public class ScimUser extends ScimResource {
     this.locale = b.locale;
     this.timezone = b.timezone;
     this.active = b.active;
-    this.serviceAccount = b.serviceAccount;
     this.emails = b.emails;
     this.addresses = b.addresses;
     /* build indigoUserBuilder only if it has been touched */
@@ -222,7 +219,7 @@ public class ScimUser extends ScimResource {
 
   public Boolean getServiceAccount() {
 
-    return serviceAccount;
+    return indigoUser != null && indigoUser.getServiceAccount();
   }
 
   public List<ScimEmail> getEmails() {
@@ -309,7 +306,6 @@ public class ScimUser extends ScimResource {
     private String locale;
     private String timezone;
     private Boolean active;
-    private Boolean serviceAccount;
 
     private List<ScimEmail> emails = new ArrayList<>();
     private Set<ScimGroupRef> groups = new LinkedHashSet<>();
@@ -411,12 +407,6 @@ public class ScimUser extends ScimResource {
       return this;
     }
 
-    public Builder serviceAccount(Boolean serviceAccount) {
-
-      this.serviceAccount = serviceAccount;
-      return this;
-    }
-
     public Builder addGroupRef(ScimGroupRef scimGroupRef) {
 
       Preconditions.checkNotNull(scimGroupRef, "Null group ref");
@@ -478,6 +468,11 @@ public class ScimUser extends ScimResource {
       Preconditions.checkNotNull(endTime, "Null membership end-time");
 
       indigoUserBuilder.endTime(endTime);
+      return this;
+    }
+
+    public Builder serviceAccount(Boolean serviceAccount) {
+      indigoUserBuilder.serviceAccount(serviceAccount);
       return this;
     }
 
