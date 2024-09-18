@@ -13,54 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
   'use strict';
 
   angular.module('iam-login-app', ['ui.bootstrap'])
-      .controller(
-          'idp-selection',
-          [
-            '$scope', '$http', '$uibModalInstance', '$log', '$window',
-			'$timeout',
-            function($scope, $http, $uibModalInstance, $log, $window, $timeout) {
+    .controller(
+      'idp-selection',
+      [
+        '$scope', '$http', '$uibModalInstance', '$log', '$window',
+        '$timeout',
+        function ($scope, $http, $uibModalInstance, $log, $window, $timeout) {
 
-              $scope.ok = function() {
-                $window.location.href =
-                    '/saml/login?idp=' + $scope.idpSelected.entityId;
-              };
+          $scope.ok = function () {
+            $window.location.href =
+              '/saml/login?idp=' + $scope.idpSelected.entityId;
+          };
 
-              $scope.cancel = function() { $uibModalInstance.close(); };
+          $scope.cancel = function () { $uibModalInstance.close(); };
 
-			  $scope.reset = function(){
-				  $scope.idpSelected = null;
-				  $timeout(function(){
-					  $window.document.getElementById("idp-selection-input").focus();
-				  },0);
-			  };
+          $scope.reset = function () {
+            $scope.idpSelected = null;
+            $timeout(function () {
+              $window.document.getElementById("idp-selection-input").focus();
+            }, 0);
+          };
 
-              $scope.lookupIdp = function(val) {
+          $scope.lookupIdp = function (val) {
 
-                var result =
-                    $http.get('/saml/idps', {params: {q: val}})
-                        .then(function(response) { return response.data; });
+            var result =
+              $http.get('/saml/idps', { params: { q: val } })
+                .then(function (response) { return response.data; });
 
-                return result;
-              };
-            }
-          ])
-      .controller('idp-selection-modal-ctrl', [
-        '$scope', '$uibModal',
-        function($scope, $uibModal) {
-
-          $scope.open = function() {
-            $uibModal.open({
-              templateUrl:
-                  '/resources/iam/template/idpSelectionModalContent.html',
-              controller: 'idp-selection',
-              size: 'lg',
-              animation: true
-            });
+            return result;
           };
         }
-      ]);
+      ])
+    .controller('idp-selection-modal-ctrl', [
+      '$scope', '$uibModal',
+      function ($scope, $uibModal) {
+
+        $scope.open = function () {
+          $uibModal.open({
+            templateUrl:
+              '/resources/iam/template/idpSelectionModalContent.html',
+            controller: 'idp-selection',
+            size: 'lg',
+            animation: true
+          });
+        };
+      }
+    ]);
 })();

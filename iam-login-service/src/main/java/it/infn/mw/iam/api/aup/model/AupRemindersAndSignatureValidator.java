@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class AupRemindersAndSignatureValidator implements ConstraintValidator<AupRemindersAndSignature, AupDTO> {
+public class AupRemindersAndSignatureValidator
+    implements ConstraintValidator<AupRemindersAndSignature, AupDTO> {
 
   @Override
   public boolean isValid(AupDTO value, ConstraintValidatorContext context) {
@@ -50,11 +51,22 @@ public class AupRemindersAndSignatureValidator implements ConstraintValidator<Au
       return false;
     }
 
-    if (aupRemindersInDays == null || aupRemindersInDays.isEmpty()) {
+    if (signatureValidityInDays == 0) {
+      if (aupRemindersInDays != null && !aupRemindersInDays.isEmpty()) {
+        context.disableDefaultConstraintViolation();
+        context
+          .buildConstraintViolationWithTemplate(
+              "Invalid AUP: aupRemindersInDays cannot be set if signatureValidityInDays is 0")
+          .addConstraintViolation();
+        return false;
+      }
+      return true;
+    }
+
+    if (aupRemindersInDays == null) {
       context.disableDefaultConstraintViolation();
-      context
-        .buildConstraintViolationWithTemplate(
-            "Invalid AUP: aupRemindersInDays cannot be empty or null")
+      context.buildConstraintViolationWithTemplate(
+          "Invalid AUP: aupRemindersInDays must be set when signatureValidityInDays is greater than 0")
         .addConstraintViolation();
       return false;
     }
@@ -87,7 +99,8 @@ public class AupRemindersAndSignatureValidator implements ConstraintValidator<Au
       if (uniqueNumbers.size() != numbers.size()) {
         context.disableDefaultConstraintViolation();
         context
-          .buildConstraintViolationWithTemplate("Invalid AUP: duplicate values for reminders are not allowed")
+          .buildConstraintViolationWithTemplate(
+              "Invalid AUP: duplicate values for reminders are not allowed")
           .addConstraintViolation();
         return false;
       }
@@ -95,7 +108,9 @@ public class AupRemindersAndSignatureValidator implements ConstraintValidator<Au
       return true;
     } catch (NumberFormatException e) {
       context.disableDefaultConstraintViolation();
-      context.buildConstraintViolationWithTemplate("Invalid AUP: non-integer value found")
+      context
+        .buildConstraintViolationWithTemplate(
+            "Invalid AUP: non-integer value found for aupRemindersInDays")
         .addConstraintViolation();
       return false;
     }
