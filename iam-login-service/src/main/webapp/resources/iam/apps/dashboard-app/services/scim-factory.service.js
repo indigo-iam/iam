@@ -596,7 +596,9 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 			operations: [{
 				op: "replace",
 				value: {
-					serviceAccount: status
+					"urn:indigo-dc:scim:schemas:IndigoUser": {
+						serviceAccount: status
+					}					
 				}
 			}]
 		};
