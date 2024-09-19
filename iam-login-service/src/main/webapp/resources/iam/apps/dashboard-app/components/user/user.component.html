@@ -85,7 +85,7 @@
                 <user-groups user="$ctrl.user"></user-groups>
                 <user-pending-requests ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-pending-requests>
                 <user-linked-accounts user="$ctrl.user"></user-linked-accounts>
-                <user-x509 ng-if="$ctrl.isMe()" user="$ctrl.user"></user-x509>
+                <user-x509 user="$ctrl.user"></user-x509>
                 <user-ssh-keys ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-ssh-keys>
                 <user-attributes user="$ctrl.user" attributes="$ctrl.attrs"></user-attributes>
             </section>

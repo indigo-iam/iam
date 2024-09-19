@@ -109,7 +109,7 @@
                             !$root.loggedUser.isReader" class="btn btn-danger btn-xs" ng-click="$ctrl.openDeleteUserDialog(user)">
                                 <i class="fa fa-times"></i>
                             </button>
-                            <button id="delete_user_{{user.id}}" ng-if="$root.loggedUser.isReader"
+                            <button disabled id="delete_user_{{user.id}}" ng-if="$root.loggedUser.isReader"
                                 class="btn btn-danger btn-xs" style="cursor: not-allowed;">
                                 <i class="fa fa-times"></i>
                             </button>
