@@ -16,13 +16,10 @@
 package it.infn.mw.iam.api.account.lifecycle;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
-import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
 
-import java.util.Date;
 import java.util.function.Supplier;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +35,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
-import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -55,13 +51,11 @@ public class AccountLifecycleController {
 
   private final IamAccountService service;
   private final LifecycleProperties properties;
-  private final ApplicationEventPublisher eventPublisher;
 
   public AccountLifecycleController(IamAccountService accountService,
-      LifecycleProperties properties, ApplicationEventPublisher eventPublisher) {
+      LifecycleProperties properties) {
     this.service = accountService;
     this.properties = properties;
-    this.eventPublisher = eventPublisher;
   }
 
   private Supplier<NoSuchAccountError> noSuchAccountError(String uuid) {
@@ -85,13 +79,7 @@ public class AccountLifecycleController {
 
     handleValidationError(validationResult);
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));
-    Date previousEndTime = account.getEndTime();
-    account.setEndTime(dto.getEndTime());
-    account.removeLabelByName(LIFECYCLE_STATUS_LABEL);
-    service.saveAccount(account);
-    eventPublisher
-      .publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime, format(
-          "Account endTime set to '%s' for user '%s'", dto.getEndTime(), account.getUsername())));
+    service.setAccountEndTime(account, dto.getEndTime());
   }
 
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)
