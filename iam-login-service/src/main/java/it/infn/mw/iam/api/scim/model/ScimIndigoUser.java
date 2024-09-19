@@ -91,7 +91,8 @@ public class ScimIndigoUser {
       @JsonProperty("samlIds") List<ScimSamlId> samlIds,
       @JsonProperty("x509Certificates") List<ScimX509Certificate> certs,
       @JsonProperty("aupSignatureTime") Date aupSignatureTime,
-      @JsonProperty("endTime") Date endTime, @JsonProperty("serviceAccount") Boolean serviceAccount) {
+      @JsonProperty("endTime") Date endTime, 
+      @JsonProperty("serviceAccount") Boolean serviceAccount) {
 
     this.oidcIds = oidcIds != null ? oidcIds : new LinkedList<>();
     this.sshKeys = sshKeys != null ? sshKeys : new LinkedList<>();
