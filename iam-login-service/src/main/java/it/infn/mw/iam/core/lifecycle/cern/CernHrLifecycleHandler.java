@@ -108,7 +108,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     this.hrDb = hrDb;
   }
 
-  private IamAccount syncAccountInformation(IamAccount a, VOPersonDTO p) {
+  private void syncAccountInformation(IamAccount a, VOPersonDTO p) {
 
     LOG.debug("Syncing IAM account '{}' with CERN HR record id '{}'", a.getUsername(), p.getId());
 
@@ -121,8 +121,10 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
         a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_SKIP_EMAIL_SYNCH);
 
     if (skipEmailSyncLabel.isPresent()) {
-      LOG.debug("Skipping email synchronization for '{}': label '{}' is present", a.getUsername(),
-          skipEmailSyncLabel.get().qualifiedName());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Skipping email synchronization for '{}': label '{}' is present", a.getUsername(),
+            skipEmailSyncLabel.get().qualifiedName());
+      }
     } else {
       LOG.debug("Updating Email for {} to {} ...", a.getUsername(), p.getEmail());
       try {
@@ -131,7 +133,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
         LOG.error(e.getMessage());
       }
     }
-    return a;
   }
 
   private boolean accountWasSuspendedByIamLifecycleJob(IamAccount a) {
@@ -158,7 +159,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
     // 0. Update time-stamp label
     Instant checkTime = clock.instant();
-    account = accountService.addLabel(account, buildCernTimestampLabel(checkTime));
+    accountService.addLabel(account, buildCernTimestampLabel(checkTime));
 
     // 1. Ignore account if label is set
     if (account.hasLabel(buildCernIgnoreLabel())) {
@@ -184,7 +185,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
 
     // 3a. Sync info: Given Name, Family Name and Email
-    account = syncAccountInformation(account, voPerson.get());
+    syncAccountInformation(account, voPerson.get());
 
     // 3b. Sync end-time
     Optional<ParticipationDTO> ep = getExperimentParticipation(voPerson.get(), experimentName);

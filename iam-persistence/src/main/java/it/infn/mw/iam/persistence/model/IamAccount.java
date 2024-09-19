@@ -541,11 +541,11 @@ public class IamAccount implements Serializable {
   }
 
   public boolean hasLabel(IamLabel label) {
-    return labels.stream().filter(l -> l.equals(label)).findFirst().isPresent();
+    return labels.stream().anyMatch(l -> l.equals(label));
   }
 
   public boolean hasLabelWithValue(IamLabel label) {
-    return labels.stream().filter(l -> l.equalsWithValue(label)).findFirst().isPresent();
+    return labels.stream().anyMatch(l -> l.equalsWithValue(label));
   }
 
   public Optional<IamLabel> getLabelByPrefixAndName(String prefix, String name) {

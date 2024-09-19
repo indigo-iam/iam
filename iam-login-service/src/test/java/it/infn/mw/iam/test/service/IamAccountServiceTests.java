@@ -60,12 +60,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
+import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
+import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
+import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
+import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
@@ -143,6 +147,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(accountRepo.findByEmail(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepo.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(TEST_ACCOUNT));
+    when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID)).thenThrow(EmailAlreadyBoundException.class);
+
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
@@ -832,6 +838,130 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
       assertThat(e.getMessage(), containsString("Cannot set endTime on a null account"));
       throw e;
     }
+  }
+
+  @Test
+  public void testSetSameGivenName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getGivenName(), is("Ciccio"));
+    accountService.setAccountGivenName(CICCIO_ACCOUNT, "Ciccio");
+    verify(accountRepo, times(0)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(0)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetNewGivenName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getGivenName(), is("Ciccio"));
+    accountService.setAccountGivenName(CICCIO_ACCOUNT, "Pasticcio");
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(GivenNameReplacedEvent.class));
+    GivenNameReplacedEvent e = (GivenNameReplacedEvent) event;
+    assertThat(e.getGivenName(), is("Pasticcio"));
+    assertThat(e.getAccount().getUserInfo().getGivenName(), is("Pasticcio"));
+  }
+
+  @Test
+  public void testSetNullGivenName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getGivenName(), is("Ciccio"));
+    accountService.setAccountGivenName(CICCIO_ACCOUNT, null);
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(GivenNameReplacedEvent.class));
+    GivenNameReplacedEvent e = (GivenNameReplacedEvent) event;
+    assertThat(e.getGivenName(), nullValue());
+    assertThat(e.getAccount().getUserInfo().getGivenName(), nullValue());
+
+    accountService.setAccountGivenName(CICCIO_ACCOUNT, null);
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetSameFamilyName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getFamilyName(), is("Paglia"));
+    accountService.setAccountFamilyName(CICCIO_ACCOUNT, "Paglia");
+    verify(accountRepo, times(0)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(0)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetNewFamilyName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getFamilyName(), is("Paglia"));
+    accountService.setAccountFamilyName(CICCIO_ACCOUNT, "Pasticcio");
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(FamilyNameReplacedEvent.class));
+    FamilyNameReplacedEvent e = (FamilyNameReplacedEvent) event;
+    assertThat(e.getFamilyName(), is("Pasticcio"));
+    assertThat(e.getAccount().getUserInfo().getFamilyName(), is("Pasticcio"));
+  }
+
+  @Test
+  public void testSetNullFamilyName() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getFamilyName(), is("Paglia"));
+    accountService.setAccountFamilyName(CICCIO_ACCOUNT, null);
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(FamilyNameReplacedEvent.class));
+    FamilyNameReplacedEvent e = (FamilyNameReplacedEvent) event;
+    assertThat(e.getFamilyName(), nullValue());
+    assertThat(e.getAccount().getUserInfo().getFamilyName(), nullValue());
+
+    accountService.setAccountFamilyName(CICCIO_ACCOUNT, null);
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetSameEmail() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getEmail(), is("ciccio@example.org"));
+    accountService.setAccountEmail(CICCIO_ACCOUNT, "ciccio@example.org");
+    verify(accountRepo, times(0)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(0)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetNewEmail() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getEmail(), is("ciccio@example.org"));
+    accountService.setAccountEmail(CICCIO_ACCOUNT, "pasticcio@example.org");
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(EmailReplacedEvent.class));
+    EmailReplacedEvent e = (EmailReplacedEvent) event;
+    assertThat(e.getEmail(), is("pasticcio@example.org"));
+    assertThat(e.getAccount().getUserInfo().getEmail(), is("pasticcio@example.org"));
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testSetNullEmail() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getEmail(), is("ciccio@example.org"));
+    accountService.setAccountEmail(CICCIO_ACCOUNT, null);
+  }
+
+  @Test(expected = EmailAlreadyBoundException.class)
+  public void testSetAlreadyBoundEmail() {
+
+    assertThat(CICCIO_ACCOUNT.getUserInfo().getEmail(), is("ciccio@example.org"));
+    accountService.setAccountEmail(CICCIO_ACCOUNT, "test@example.org");
   }
 
   @Test
