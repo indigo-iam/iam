@@ -219,7 +219,7 @@ public class ScimUser extends ScimResource {
 
   public Boolean getServiceAccount() {
 
-    return indigoUser != null && indigoUser.getServiceAccount();
+    return indigoUser != null && indigoUser.getServiceAccount() != null && indigoUser.getServiceAccount();
   }
 
   public List<ScimEmail> getEmails() {
