@@ -96,7 +96,7 @@ public class ExpiredAccountsHandler implements Runnable {
   }
 
   private void addStatusLabel(IamAccount expiredAccount, AccountLifecycleStatus status) {
-    accountService.setLabel(expiredAccount,
+    accountService.addLabel(expiredAccount,
         IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(status.name()).build());
   }
 

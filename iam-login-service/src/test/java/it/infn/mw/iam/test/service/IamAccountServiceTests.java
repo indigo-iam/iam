@@ -835,24 +835,39 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   }
 
   @Test
-  public void testSetEndTimeWorksForNullDate() {
+  public void testSetSameNullEndTime() {
+
+    assertThat(CICCIO_ACCOUNT.getEndTime(), nullValue());
     accountService.setAccountEndTime(CICCIO_ACCOUNT, null);
-    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
-    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
-
-    ApplicationEvent event = eventCaptor.getValue();
-    assertThat(event, instanceOf(AccountEndTimeUpdatedEvent.class));
-
-    AccountEndTimeUpdatedEvent e = (AccountEndTimeUpdatedEvent) event;
-    assertThat(e.getPreviousEndTime(), nullValue());
-    assertThat(e.getAccount().getEndTime(), nullValue());
+    verify(accountRepo, times(0)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(0)).publishEvent(eventCaptor.capture());
   }
 
   @Test
-  public void testSetEndTimeWorksForNonNullDate() {
+  public void testSetSameNotNullEndTime() {
 
-    Date newEndTime = new Date();
-    accountService.setAccountEndTime(CICCIO_ACCOUNT, newEndTime);
+    Date updatedEndTime = new Date();
+    accountService.setAccountEndTime(CICCIO_ACCOUNT, updatedEndTime);
+    assertThat(CICCIO_ACCOUNT.getEndTime(), is(updatedEndTime));
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+    ApplicationEvent event = eventCaptor.getValue();
+    assertThat(event, instanceOf(AccountEndTimeUpdatedEvent.class));
+
+    AccountEndTimeUpdatedEvent e = (AccountEndTimeUpdatedEvent) event;
+    assertThat(e.getPreviousEndTime(), nullValue());
+    assertThat(e.getAccount().getEndTime(), is(updatedEndTime));
+
+    accountService.setAccountEndTime(CICCIO_ACCOUNT, updatedEndTime);
+    verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+  }
+
+  @Test
+  public void testSetEndTimeWorks() {
+
+    Date updatedEndTime = new Date();
+    accountService.setAccountEndTime(CICCIO_ACCOUNT, updatedEndTime);
     verify(accountRepo, times(1)).save(CICCIO_ACCOUNT);
     verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
@@ -861,7 +876,18 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     AccountEndTimeUpdatedEvent e = (AccountEndTimeUpdatedEvent) event;
     assertThat(e.getPreviousEndTime(), nullValue());
-    assertThat(e.getAccount().getEndTime(), is(newEndTime));
+    assertThat(e.getAccount().getEndTime(), is(updatedEndTime));
+
+    accountService.setAccountEndTime(CICCIO_ACCOUNT, null);
+    verify(accountRepo, times(2)).save(CICCIO_ACCOUNT);
+    verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
+
+    event = eventCaptor.getValue();
+    assertThat(event, instanceOf(AccountEndTimeUpdatedEvent.class));
+
+    e = (AccountEndTimeUpdatedEvent) event;
+    assertThat(e.getPreviousEndTime(), is(updatedEndTime));
+    assertThat(e.getAccount().getEndTime(), nullValue());
   }
 
   @Test

@@ -16,12 +16,13 @@
 package it.infn.mw.iam.api.account.lifecycle;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
+import java.util.Date;
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +30,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -36,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -52,12 +55,13 @@ public class AccountLifecycleController {
 
   private final IamAccountService service;
   private final LifecycleProperties properties;
+  private final ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public AccountLifecycleController(IamAccountService accountService,
-      LifecycleProperties properties) {
+      LifecycleProperties properties, ApplicationEventPublisher eventPublisher) {
     this.service = accountService;
     this.properties = properties;
+    this.eventPublisher = eventPublisher;
   }
 
   private Supplier<NoSuchAccountError> noSuchAccountError(String uuid) {
@@ -71,7 +75,7 @@ public class AccountLifecycleController {
     }
   }
 
-  @RequestMapping(method = PUT)
+  @PutMapping
   public void setEndTime(@PathVariable String id, @RequestBody @Validated AccountLifecycleDTO dto,
       BindingResult validationResult) {
 
@@ -81,7 +85,13 @@ public class AccountLifecycleController {
 
     handleValidationError(validationResult);
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));
-    service.setAccountEndTime(account, dto.getEndTime());
+    Date previousEndTime = account.getEndTime();
+    account.setEndTime(dto.getEndTime());
+    account.removeLabelByName(LIFECYCLE_STATUS_LABEL);
+    service.saveAccount(account);
+    eventPublisher
+      .publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime, format(
+          "Account endTime set to '%s' for user '%s'", dto.getEndTime(), account.getUsername())));
   }
 
   @ResponseStatus(value = HttpStatus.BAD_REQUEST)

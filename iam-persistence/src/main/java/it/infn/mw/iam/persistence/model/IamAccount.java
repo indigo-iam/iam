@@ -540,6 +540,13 @@ public class IamAccount implements Serializable {
     this.labels = labels;
   }
 
+  public boolean hasLabel(IamLabel label) {
+    return labels.stream().filter(l -> l.equals(label)).findFirst().isPresent();
+  }
+
+  public boolean hasLabelWithValue(IamLabel label) {
+    return labels.stream().filter(l -> l.equalsWithValue(label)).findFirst().isPresent();
+  }
 
   public Optional<IamLabel> getLabelByPrefixAndName(String prefix, String name) {
     for (IamLabel l : getLabels()) {

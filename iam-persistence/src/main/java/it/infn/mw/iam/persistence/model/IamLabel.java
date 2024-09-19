@@ -112,7 +112,23 @@ public class IamLabel  implements Serializable{
       return false;
     return true;
   }
-  
+
+  public boolean equalsWithValue(Object obj) {
+
+    if (!this.equals(obj)) {
+      return false;
+    }
+    IamLabel other = (IamLabel) obj;
+    if (value == null) {
+      if (other.value != null) {
+        return false;
+      }
+    } else if (!value.equals(other.value)) {
+      return false;
+    }
+    return true;
+  }
+
   public static class Builder {
     String prefix;
     String name;

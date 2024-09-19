@@ -141,7 +141,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     cernUser.getUserInfo().setFamilyName("user");
     cernUser.getUserInfo().setEmailVerified(true);
     service.createAccount(cernUser);
-    service.setLabel(cernUser, cernPersonIdLabel(CERN_PERSON_ID));
+    service.addLabel(cernUser, cernPersonIdLabel(CERN_PERSON_ID));
   }
 
   @After
@@ -288,7 +288,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     // suspend testAccount
     service.disableAccount(testAccount);
-    service.setLabel(testAccount, statusLabel(SUSPENDED));
+    service.addLabel(testAccount, statusLabel(SUSPENDED));
 
     // run CERN account life-cycle handler
     cernHrLifecycleHandler.run();
@@ -392,7 +392,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ERROR.name()));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.NOT_FOUND.name()));
 
     assertThat(timestampLabel.isPresent(), is(true));
     assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
@@ -434,7 +434,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
 
-    service.setLabel(testAccount, cernIgnoreLabel());
+    service.addLabel(testAccount, cernIgnoreLabel());
 
     cernHrLifecycleHandler.run();
 
@@ -468,7 +468,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Page<IamAccount> accountPage = repo.findAll(pageRequest);
 
     for (IamAccount account : accountPage.getContent()) {
-      service.setLabel(account, cernPersonIdLabel(UUID.randomUUID().toString()));
+      service.addLabel(account, cernPersonIdLabel(UUID.randomUUID().toString()));
     }
 
     cernHrLifecycleHandler.run();
@@ -506,7 +506,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(voPerson.getEmail().equals(preSyncEmail), is(false));
     assertThat(testAccount.isActive(), is(true));
 
-    service.setLabel(testAccount, skipEmailSyncLabel());
+    service.addLabel(testAccount, skipEmailSyncLabel());
     repo.save(testAccount);
 
     cernHrLifecycleHandler.run();
