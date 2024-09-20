@@ -127,18 +127,16 @@ public class AccountLabelsTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
-
-    mvc.perform(get(RESOURCE, TEST_100_USER_UUID)).andExpect(OK);
-
-    mvc.perform(get(RESOURCE, TEST_100_USER_UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$").isEmpty());
+    gettingLabelsWorks();
   }
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
   public void gettingLabelsWorksForReaderUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_100_USER_UUID)).andExpect(OK);
 
@@ -361,7 +359,7 @@ public class AccountLabelsTests extends TestSupport {
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_REQUIRED_ERROR_MESSAGE);
 
-    final String SOME_INVALID_NAMES[] = {"-pippo", "/ciccio/paglia", ".starts-with-dot"};
+    final String[] SOME_INVALID_NAMES = {"-pippo", "/ciccio/paglia", ".starts-with-dot"};
 
     for (String in : SOME_INVALID_NAMES) {
       LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(in).build();

@@ -190,7 +190,7 @@ public class AccountAuthorityEndpointTests {
   public void AddEmptyAuthorityFails() throws Exception {
 
     String invalidAuthority = "";
-    String expectedErrorMessage = String.format("Authority cannot be an empty string");
+    String expectedErrorMessage = "Authority cannot be an empty string";
 
     mvc
       .perform(
@@ -213,7 +213,7 @@ public class AccountAuthorityEndpointTests {
     }
 
     String invalidAuthority = sb.toString();
-    String expectedErrorMessage = String.format("Invalid authority size");
+    String expectedErrorMessage = "Invalid authority size";
 
     mvc
       .perform(
@@ -387,7 +387,7 @@ public class AccountAuthorityEndpointTests {
   public void deleteEmptyAuthorityGetsBadRequest() throws Exception {
 
     String emptyAuthority = "";
-    String expectedErrorMessage = String.format("Authority cannot be an empty string");
+    String expectedErrorMessage = "Authority cannot be an empty string";
 
 
     mvc

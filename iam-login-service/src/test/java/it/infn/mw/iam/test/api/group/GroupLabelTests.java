@@ -122,18 +122,16 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
-
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
-
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$").isEmpty());
+    gettingLabelsWorks();
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"READER"})
   public void gettingLabelsWorksForReaderUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
