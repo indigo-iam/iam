@@ -29,6 +29,9 @@
     self.aupIsEnabled = function () {
       return self.aup !== null;
     };
+    self.indigoUser = function () {
+      return self.user['urn:indigo-dc:scim:schemas:IndigoUser'];
+    };
 
     self.openRequestAupSignatureModal = function() {
       self.enabled = false;

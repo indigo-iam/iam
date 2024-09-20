@@ -209,7 +209,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     addUpdater(updaters, Objects::nonNull, user::getActive, replace::active);
 
     if (user.hasServiceAccountStatus()) {
-      addUpdater(updaters, Objects::nonNull, user::getServiceAccount, replace::serviceAccount); 
+      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getServiceAccount, replace::serviceAccount); 
     }
 
     if (user.hasEmails()) {
