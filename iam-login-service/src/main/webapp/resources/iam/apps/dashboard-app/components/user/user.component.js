@@ -46,6 +46,10 @@
             return Utils.isMe(self.user.id);
         };
 
+        self.indigoUser = function () {
+            return self.user['urn:indigo-dc:scim:schemas:IndigoUser'];
+        };
+
         self.canManageLinkedAccounts = function () {
             if (!self.accountLinkingEnabled) {
                 return self.isVoAdmin();

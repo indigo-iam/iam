@@ -91,8 +91,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       account.setActive(scimUser.getActive());
     }
 
-    if (scimUser.getServiceAccount() != null) {
-      account.setServiceAccount(scimUser.getServiceAccount());
+    if (scimUser.hasServiceAccountStatus()) {
+      account.setServiceAccount(scimUser.getIndigoUser().getServiceAccount());
     }
 
     if (scimUser.getPassword() != null) {

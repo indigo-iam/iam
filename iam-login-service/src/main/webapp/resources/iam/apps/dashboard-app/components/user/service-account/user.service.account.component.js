@@ -31,7 +31,7 @@
     self.handleSuccess = function() {
       self.enabled = true;
       self.userCtrl.loadUser().then(function(user) {
-        if (user.serviceAccount) {
+        if (self.indigoUser().serviceAccount) {
           toaster.pop({
             type: 'success',
             body:
@@ -64,7 +64,7 @@
       var modalOptions = null;
       var updateServiceAccountStatusFunc = null;
 
-      if (self.user.serviceAccount) {
+      if (self.indigoUser().serviceAccount) {
         modalOptions = {
           closeButtonText: 'Cancel',
           actionButtonText: 'Revoke service account status',
@@ -94,6 +94,7 @@
 
 
     self.isMe = function() { return Utils.isMe(self.user.id); };
+    self.indigoUser = function() { return self.userCtrl.indigoUser(); };
   }
 
   angular.module('dashboardApp').component('userServiceAccount', {
