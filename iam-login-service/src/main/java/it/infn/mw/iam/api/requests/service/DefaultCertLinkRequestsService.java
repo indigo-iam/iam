@@ -139,13 +139,17 @@ public class DefaultCertLinkRequestsService implements CertLinkRequestsService {
   @Override
   public CertLinkRequestDTO approveCertLinkRequest(String requestId) {
     IamCertLinkRequest request = certLinkRequestUtils.getCertLinkRequest(requestId);
+    
+    IamAccount account = request.getAccount();
+    IamX509Certificate cert = request.getCertificate();
+    certLinkRequestUtils.checkCertAlreadyLinked(cert, account);
+    certLinkRequestUtils.checkCertNotLinkedToSomeoneElse(cert, account);
+    
     updateCertLinkRequestStatus(request, APPROVED);
     notificationFactory.createCertLinkApprovedMessage(request);
     eventPublisher.publishEvent(new CertLinkRequestApprovedEvent(this, request));
     certLinkRequestRepository.delete(request);
 
-    IamAccount account = request.getAccount();
-    IamX509Certificate cert = request.getCertificate();
     account.linkX509Certificates(List.of(cert));
     x509CertificateRepository.save(cert);
     eventPublisher.publishEvent(new X509CertificateAddedEvent(this, account, List.of(cert)));
