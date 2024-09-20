@@ -131,19 +131,14 @@ public class GroupLabelTests extends TestSupport {
     gettingLabelsWorks();
   }
 
-  private void gettingLabelsWorks() throws Exception {
-
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
-
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
-      .andExpect(OK)
-      .andExpect(jsonPath("$").isArray())
-      .andExpect(jsonPath("$").isEmpty());
-  }
-  
   @Test
   @WithMockOAuthUser(user="admin", authorities= {"ROLE_ADMIN", "ROLE_USER"})
   public void gettingLabelsWorksForAdminOAuthUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  private void gettingLabelsWorks() throws Exception {
+
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID))
@@ -330,7 +325,7 @@ public class GroupLabelTests extends TestSupport {
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_REQUIRED_ERROR_MESSAGE);
 
-    final String SOME_INVALID_NAMES[] = {"-pippo", "/ciccio/paglia", ".starts-with-dot"};
+    final String[] SOME_INVALID_NAMES = {"-pippo", "/ciccio/paglia", ".starts-with-dot"};
 
     for (String in : SOME_INVALID_NAMES) {
       LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(in).build();

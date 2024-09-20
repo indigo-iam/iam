@@ -26,8 +26,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.junit.After;
@@ -95,7 +93,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstPageOfAllUsers() throws IOException, Exception {
+  public void getFirstPageOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -111,7 +109,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getSecondPageOfAllUsers() throws IOException, Exception {
+  public void getSecondPageOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -128,7 +126,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithCustomStartIndexAndCount() throws IOException, Exception {
+  public void getUsersWithCustomStartIndexAndCount() throws Exception {
 
     long expectedSize = accountRepository.count();
     int startIndex = 3;
@@ -147,7 +145,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getCountOfAllUsers() throws IOException, Exception {
+  public void getCountOfAllUsers() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -164,7 +162,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getFirstFilteredPageOfUsers() throws IOException, Exception {
+  public void getFirstFilteredPageOfUsers() throws Exception {
 
     OffsetPageable op = new OffsetPageable(0, 10);
     Page<IamAccount> page = accountRepository.findByFilter("admin", op);
@@ -187,7 +185,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getCountOfFilteredUsers() throws IOException, Exception {
+  public void getCountOfFilteredUsers() throws Exception {
 
     long expectedSize = accountRepository.countByFilter("admin");
 
@@ -232,7 +230,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithNegativeStartIndex() throws IOException, Exception {
+  public void getUsersWithNegativeStartIndex() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -249,7 +247,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithStartIndexZero() throws IOException, Exception {
+  public void getUsersWithStartIndexZero() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -266,7 +264,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithCountBiggerThanPageSize() throws IOException, Exception {
+  public void getUsersWithCountBiggerThanPageSize() throws Exception {
 
     long expectedSize = accountRepository.count();
 
@@ -284,7 +282,7 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void getUsersWithNegativeCount() throws IOException, Exception {
+  public void getUsersWithNegativeCount() throws Exception {
 
     long expectedSize = accountRepository.count();
 
