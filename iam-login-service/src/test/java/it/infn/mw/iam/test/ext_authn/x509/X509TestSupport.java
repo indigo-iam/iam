@@ -67,7 +67,7 @@ public class X509TestSupport {
   public static final String TEST_1_SERIAL = "10";
   public static final String TEST_1_V_START = "Sep 26 15:39:36 2012 GMT";
   public static final String TEST_1_V_END = "Sep 24 15:39:36 2022 GMT";
-  
+
   public static final String TEST_NEW_ISSUER = "CN=Test1 CA,O=IGI,C=IT";
 
   public static final String RCAUTH_CA_CERT_PATH = "src/test/resources/x509/rcauth-mock-ca.p12";
@@ -93,6 +93,7 @@ public class X509TestSupport {
   protected String TEST_1_CERT_LABEL = "TEST 1 cert label";
 
   protected String TEST_USERNAME = "test";
+  protected String TEST_100_USERNAME = "test_100";
   protected String TEST_PASSWORD = "password";
 
   protected X509Credential RCAUTH_CA_CRED;
@@ -176,6 +177,33 @@ public class X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/"))
       .andExpect(authenticated().withUsername("test"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    return session;
+  }
+
+  protected MockHttpSession loginAsTest100UserWithTest0Cert(MockMvc mvc) throws Exception {
+
+    MockHttpSession session =
+        (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
+          .andExpect(status().isFound())
+          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(MockMvcResultMatchers.request()
+            .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
+          .andReturn()
+          .getRequest()
+          .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").session(session)
+        .param("username", TEST_100_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(authenticated().withUsername("test_100"))
       .andReturn()
       .getRequest()
       .getSession();
