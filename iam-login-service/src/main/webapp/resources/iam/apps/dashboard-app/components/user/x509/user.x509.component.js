@@ -66,7 +66,7 @@
             }
 
             scimFactory.addX509Certificate(self.user.id, req)
-                .then(function (response) {
+                .then(response => {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate added`);
                 })
@@ -80,15 +80,14 @@
             self.error = undefined;
             self.enabled = false;
             scimFactory.removeX509Certificate(self.user.id, self.cert)
-                .then(function (response) {
+                .then(response =>  {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate ${self.cert.subjectDn} removed`);
                     self.enabled = true;
                 })
-                .catch(function (error) {
-                    console.error(error);
-                    self.enabled = true;
-                    self.error = error;
+                .catch(response => {
+                    $uibModalInstance.close(response.data);
+                    self.errorHanlder(response);
                 });
         };
 
