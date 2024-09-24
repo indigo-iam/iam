@@ -380,7 +380,7 @@
                 }
             });
 
-            modalInstance.result.then(self.handleSuccess);
+            modalInstance.result.then(self.handleSuccess).catch(()=>{});
         };
 
         self.openUnlinkCertificateDialog = function (certificate) {
@@ -398,7 +398,7 @@
                 }
             });
 
-            modalInstance.result.then(self.handleSuccess);
+            modalInstance.result.then(self.handleSuccess).catch(()=>{});
         };
     }
 
