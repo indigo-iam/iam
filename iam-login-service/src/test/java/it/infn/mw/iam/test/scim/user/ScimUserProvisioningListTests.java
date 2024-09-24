@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -78,6 +79,12 @@ public class ScimUserProvisioningListTests {
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
       .andExpect(jsonPath("$.schemas", contains(ScimListResponse.SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void testReaderCanGetListOfUsers() throws Exception {
+    testNoParameterListRequest();
   }
 
   @Test
