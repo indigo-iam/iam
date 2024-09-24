@@ -353,6 +353,9 @@
                     successHandler: function () {
                         return self.handleSuccess;
                     },
+                    errorHanlder: function () {
+                        return self.handleError;
+                    },
                     certificationAuthorities: function () {
                         return [];
                     }
