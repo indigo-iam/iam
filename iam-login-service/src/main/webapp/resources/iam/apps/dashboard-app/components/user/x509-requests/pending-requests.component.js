@@ -208,7 +208,7 @@
                     body: `Certificate linking request submitted.`
                 });
                 loadCertLinkRequests();
-            });
+            }).catch(() => { });
         }
     }
 
