@@ -24,8 +24,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import it.infn.mw.iam.api.scim.validator.ScimCertificate;
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
+import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
+import it.infn.mw.iam.api.validators.PemContent;
+import it.infn.mw.iam.api.validators.RFC2253Formatted;
 
+@ScimCertificate
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ScimX509Certificate {
 
@@ -35,11 +40,15 @@ public class ScimX509Certificate {
   private final Boolean primary;
   
   @Length(max = 256)
+  @RFC2253Formatted(message = "Invalid subject DN format")
   private final String subjectDn;
 
   @Length(max = 256)
+  @RFC2253Formatted(message = "Invalid issuer DN format")
+  @KnownCertificationAuthority(message = "Certification authority not recognized")
   private final String issuerDn;
 
+  @PemContent(message = "Invalid PEM encoded certificate")
   private final String pemEncodedCertificate;
 
   @JsonSerialize(using = JsonDateSerializer.class)
