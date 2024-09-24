@@ -34,7 +34,7 @@
 
     function AddRemoveCertificateController(
         $scope, scimFactory, $uibModalInstance, action, cert, user,
-        successHandler, certificationAuthorities) {
+        successHandler, errorHanlder, certificationAuthorities) {
         var self = this;
         self.enabled = true;
         self.action = action;
@@ -42,6 +42,7 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
+        self.errorHanlder = errorHanlder;
         self.certificationAuthorities = certificationAuthorities;
         self.inputMode = "pem";
         self.isRequest = false;
@@ -68,12 +69,10 @@
                 .then(function (response) {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate added`);
-                    self.enabled = true;
                 })
-                .catch(function (error) {
-                    console.error(error);
-                    self.error = error;
-                    self.enabled = true;
+                .catch(response => {
+                    $uibModalInstance.close(response.data);
+                    self.errorHanlder(response);
                 });
         };
 
@@ -249,6 +248,24 @@
             });
         };
 
+        self.handleError = function (err) {
+            self.enabled = true;
+            var msg;
+
+            if (err.data) {
+                msg = err.data.detail;
+            } else if (err.statusText) {
+                msg = err.statusText;
+            } else {
+                msg = 'Invalid request';
+            }
+
+            toaster.pop({
+                type: 'error',
+                body: msg
+            });
+        };
+
         function addProxyCertificate(){
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/proxy-cert.add.dialog.html',
@@ -309,6 +326,9 @@
                     cert: undefined,
                     successHandler: function () {
                         return self.handleSuccess;
+                    },
+                    errorHanlder: function () {
+                        return self.handleError;
                     },
                     certificationAuthorities: () => TrustsService.getTrusts()
                 }
