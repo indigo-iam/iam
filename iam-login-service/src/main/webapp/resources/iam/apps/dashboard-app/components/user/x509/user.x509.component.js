@@ -46,7 +46,7 @@
         self.certificationAuthorities = certificationAuthorities;
         self.inputMode = "pem";
         self.isRequest = false;
-        self.titleMessage = "Add an X.509 certificate to "+user.name.formatted+" IAM account?";
+        self.titleMessage = "Add an X.509 certificate to " + user.name.formatted + " IAM account?";
         self.submitMessage = "Add certificate";
 
         self.certVal = {};
@@ -67,11 +67,11 @@
 
             scimFactory.addX509Certificate(self.user.id, req)
                 .then(response => {
-                    $uibModalInstance.close(response.data);
+                    $uibModalInstance.close(false);
                     self.successHandler(`Certificate added`);
                 })
                 .catch(response => {
-                    $uibModalInstance.close(response.data);
+                    $uibModalInstance.close(false);
                     self.errorHanlder(response);
                 });
         };
@@ -80,7 +80,7 @@
             self.error = undefined;
             self.enabled = false;
             scimFactory.removeX509Certificate(self.user.id, self.cert)
-                .then(response =>  {
+                .then(response => {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate ${self.cert.subjectDn} removed`);
                     self.enabled = true;
@@ -112,10 +112,10 @@
         };
     }
 
-    function AddProxyCertController ($uibModalInstance, ProxyCertService) {
-        
+    function AddProxyCertController($uibModalInstance, ProxyCertService) {
+
         var self = this;
-        
+
         self.enabled = true;
         self.certVal = {
             certificate_chain: ""
@@ -126,14 +126,14 @@
         self.cancel = cancel;
         self.addProxy = addProxy;
 
-        function reset(){
+        function reset() {
             self.certVal = {
                 certificate_chain: ""
             }
             self.error = undefined;
         }
-        
-        function cancel(){
+
+        function cancel() {
             $uibModalInstance.dismiss('Dismissed');
         }
 
@@ -150,7 +150,7 @@
             self.enabled = true;
         }
 
-        function addProxy(){
+        function addProxy() {
             self.enabled = false;
             ProxyCertService.addProxyCertificate(self.certVal).then(handleSuccess).catch(handleFailure);
         }
@@ -265,7 +265,7 @@
             });
         };
 
-        function addProxyCertificate(){
+        function addProxyCertificate() {
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/proxy-cert.add.dialog.html',
                 controller: AddProxyCertController,
@@ -276,7 +276,7 @@
                     }
                 }
             });
-            
+
             modalInstance.result.then(function (r) {
                 $state.reload();
                 toaster.pop({
@@ -332,6 +332,7 @@
                     certificationAuthorities: () => TrustsService.getTrusts()
                 }
             });
+            modalInstance.result.catch(()=>{}); // ignore dismiss
         };
 
         self.openRemoveCertificateDialog = function (cert) {
@@ -360,6 +361,7 @@
                     }
                 }
             });
+            modalInstance.result.catch(()=>{}); // ignore dismiss
         };
 
         self.openLinkCertificateDialog = function () {
