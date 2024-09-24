@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.requests.validator;
+package it.infn.mw.iam.api.validators;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.TYPE;
@@ -27,8 +27,8 @@ import javax.validation.Payload;
 
 @Retention(RUNTIME)
 @Target({ TYPE, ANNOTATION_TYPE })
-@Constraint(validatedBy = CertLinkRequestValidator.class)
-public @interface CertLinkRequest {
+@Constraint(validatedBy = ValidCertificateDTOValidator.class)
+public @interface ValidCertificateDTO {
   String message() default "Invalid certificate linking request: either subject and issuer DN or the PEM content is required! When both are provided, the PEM must be coherent with the DNs";
 
   Class<?>[] groups() default {};

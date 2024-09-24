@@ -22,13 +22,13 @@ import javax.validation.constraints.NotEmpty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.infn.mw.iam.api.requests.validator.CertLinkRequest;
 import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
+import it.infn.mw.iam.api.validators.ValidCertificateDTO;
 import it.infn.mw.iam.api.validators.PemContent;
 
-@CertLinkRequest
-public class CertLinkRequestDTO extends IamRequestDTO {
+@ValidCertificateDTO
+public class CertLinkRequestDTO extends IamRequestDTO implements CertificateDTO {
 
   @NotEmpty
   private String label;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.requests.validator;
+package it.infn.mw.iam.api.validators;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -23,45 +23,45 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.google.common.base.Strings;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
-import it.infn.mw.iam.api.requests.model.CertLinkRequestDTO;
+import it.infn.mw.iam.api.requests.model.CertificateDTO;
 import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
-public class CertLinkRequestValidator
-        implements ConstraintValidator<CertLinkRequest, CertLinkRequestDTO> {
+public class ValidCertificateDTOValidator
+        implements ConstraintValidator<ValidCertificateDTO, CertificateDTO> {
 
     @Autowired
     private X509CertificateParser parser;
 
-    public CertLinkRequestValidator() {
+    public ValidCertificateDTOValidator() {
         // empty
     }
 
     @Override
-    public void initialize(CertLinkRequest constraintAnnotation) {
+    public void initialize(ValidCertificateDTO constraintAnnotation) {
         // empty
     }
 
-    private boolean missingPemAndDn(CertLinkRequestDTO value) {
+    private boolean missingPemAndDn(CertificateDTO value) {
         return Strings.isNullOrEmpty(value.getPemEncodedCertificate())
                 && (Strings.isNullOrEmpty(value.getSubjectDn())
                         || Strings.isNullOrEmpty(value.getIssuerDn()));
     }
 
-    private boolean inconsistentSubject(CertLinkRequestDTO value, IamX509Certificate cert) {
+    private boolean inconsistentSubject(CertificateDTO value, IamX509Certificate cert) {
         return !Strings.isNullOrEmpty(value.getSubjectDn())
                 && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getSubjectDn()),
                         X500NameUtils.getComparableForm(cert.getSubjectDn())));
     }
 
-    private boolean inconsistentIssuer(CertLinkRequestDTO value, IamX509Certificate cert) {
+    private boolean inconsistentIssuer(CertificateDTO value, IamX509Certificate cert) {
         return !Strings.isNullOrEmpty(value.getIssuerDn())
                 && (!X500NameUtils.equal(X500NameUtils.getComparableForm(value.getIssuerDn()),
                         X500NameUtils.getComparableForm(cert.getIssuerDn())));
     }
 
     @Override
-    public boolean isValid(CertLinkRequestDTO value, ConstraintValidatorContext context) {
+    public boolean isValid(CertificateDTO value, ConstraintValidatorContext context) {
 
         try {
             if (value == null) {

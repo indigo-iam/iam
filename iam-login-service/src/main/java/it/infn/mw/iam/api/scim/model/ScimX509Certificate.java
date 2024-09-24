@@ -24,21 +24,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import it.infn.mw.iam.api.scim.validator.ScimCertificate;
+import it.infn.mw.iam.api.requests.model.CertificateDTO;
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.PemContent;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
+import it.infn.mw.iam.api.validators.ValidCertificateDTO;
 
-@ScimCertificate
+@ValidCertificateDTO
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class ScimX509Certificate {
+public class ScimX509Certificate implements CertificateDTO {
 
   @Length(max = 36)
   private final String display;
 
   private final Boolean primary;
-  
+
   @Length(max = 256)
   @RFC2253Formatted(message = "Invalid subject DN format")
   private final String subjectDn;
@@ -56,16 +57,16 @@ public class ScimX509Certificate {
 
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date lastModified;
-  
+
   private final boolean hasProxyCertificate;
-  
+
   @JsonSerialize(using = JsonDateSerializer.class)
   private final Date proxyExpirationTime;
 
   @JsonCreator
-  private ScimX509Certificate(@JsonProperty("label") String display, @JsonProperty("primary") Boolean primary,
-      @JsonProperty("subjectDn") String subjectDn, 
-      @JsonProperty("issuerDn") String issuerDn,  
+  private ScimX509Certificate(@JsonProperty("label") String display,
+      @JsonProperty("primary") Boolean primary, @JsonProperty("subjectDn") String subjectDn,
+      @JsonProperty("issuerDn") String issuerDn,
       @JsonProperty("pemEncodedCertificate") String pemEncodedCertificate) {
 
     this.display = display;
@@ -117,7 +118,7 @@ public class ScimX509Certificate {
   public Date getLastModified() {
     return lastModified;
   }
-  
+
   public boolean isHasProxyCertificate() {
     return hasProxyCertificate;
   }
@@ -125,7 +126,6 @@ public class ScimX509Certificate {
   public Date getProxyExpirationTime() {
     return proxyExpirationTime;
   }
-
 
 
 
@@ -144,9 +144,9 @@ public class ScimX509Certificate {
     private Date created;
 
     private Date lastModified;
-    
+
     private boolean hasProxyCertificate;
-    
+
     private Date proxyExpirationTime;
 
     public Builder display(String display) {
@@ -184,12 +184,12 @@ public class ScimX509Certificate {
       this.pemEncodedCertificate = certificate;
       return this;
     }
-    
+
     public Builder hasProxyCertificate(boolean hasProxy) {
       this.hasProxyCertificate = hasProxy;
       return this;
     }
-    
+
     public Builder proxyExpirationTime(Date et) {
       this.proxyExpirationTime = et;
       return this;
