@@ -32,8 +32,8 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.E
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.IGNORED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.MEMBER;
 import static java.lang.String.format;
-import static java.lang.String.valueOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -255,6 +255,42 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(testAccount.getUserInfo().getEmail(), is(voPerson.getEmail()));
     assertThat(testAccount.getEndTime(),
         is(voPerson.getParticipations().iterator().next().getEndDate()));
+
+    assertThat(testAccount.isActive(), is(true));
+
+    Optional<IamLabel> cernStatusLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    assertThat(cernStatusLabel.isPresent(), is(true));
+    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+
+    Optional<IamLabel> cernMessageLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
+    assertThat(cernMessageLabel.isPresent(), is(true));
+    assertThat(cernMessageLabel.get().getValue(), is(VALID_MESSAGE));
+
+    Optional<IamLabel> cernTimestampLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
+    assertThat(cernTimestampLabel.isPresent(), is(false));
+  }
+
+  @Test
+  public void testLifecycleWhenVOPersonEndDateIsNull() {
+
+    VOPersonDTO voPerson = voPerson(CERN_PERSON_ID, null);
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(voPerson);
+
+    IamAccount testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+
+    cernHrLifecycleHandler.run();
+
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.getUserInfo().getGivenName(), is(voPerson.getFirstName()));
+    assertThat(testAccount.getUserInfo().getFamilyName(), is(voPerson.getName()));
+    assertThat(testAccount.getUserInfo().getEmail(), is(voPerson.getEmail()));
+    assertThat(testAccount.getEndTime(), nullValue());
 
     assertThat(testAccount.isActive(), is(true));
 

@@ -22,8 +22,12 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecy
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Optional;
 import java.util.Set;
 
@@ -112,12 +116,13 @@ public class ExpiredAccountsHandler implements Runnable {
 
     if (expiredAccount.isActive()) {
       LOG.info("Suspending account {} expired on {} ({} days ago)", expiredAccount.getUsername(),
-        expiredAccount.getEndTime(),
-        ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
+          expiredAccount.getEndTime(),
+          ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
       accountService.disableAccount(expiredAccount);
     } else {
       // nothing to do
-      LOG.debug("Account {} expired on {} has been already suspended", expiredAccount.getUsername(), expiredAccount.getEndTime());
+      LOG.debug("Account {} expired on {} has been already suspended", expiredAccount.getUsername(),
+          expiredAccount.getEndTime());
     }
     if (properties.getAccount().getExpiredAccountPolicy().isRemoveExpiredAccounts()) {
       markAsPendingRemoval(expiredAccount);
@@ -185,19 +190,28 @@ public class ExpiredAccountsHandler implements Runnable {
     }
   }
 
+  private Instant getTomorrowMidnight() {
+    ZonedDateTime zdt = ZonedDateTime.ofInstant(clock.instant(), ZoneId.systemDefault());
+    Calendar c = GregorianCalendar.from(zdt);
+    c.set(Calendar.HOUR_OF_DAY, 0);
+    c.set(Calendar.MINUTE, 0);
+    c.set(Calendar.SECOND, 0);
+    c.add(Calendar.DATE, 1);
+    return c.toInstant();
+  }
+
   public void handleExpiredAccounts() {
 
     accountsScheduledForRemoval.clear();
 
     LOG.debug("Starting...");
-    checkTime = clock.instant();
-    Date now = Date.from(checkTime);
+    checkTime = getTomorrowMidnight();
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
 
     while (true) {
       Page<IamAccount> expiredAccountsPage =
-          accountRepo.findExpiredAccountsAtTimestamp(now, pageRequest);
+          accountRepo.findExpiredAccountsAtTimestamp(Date.from(checkTime), pageRequest);
       LOG.debug("expiredAccountsPage: {}", expiredAccountsPage);
 
       if (expiredAccountsPage.hasContent()) {

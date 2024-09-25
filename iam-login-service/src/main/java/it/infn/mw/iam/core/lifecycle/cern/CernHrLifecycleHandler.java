@@ -27,14 +27,14 @@ import static java.lang.String.format;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.joda.time.DateTimeComparator;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -150,6 +150,10 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     return cernPersonIdLabel.get().getValue();
   }
 
+  private Date getStartOfDay() {
+    return LocalDate.now().toDateTimeAtStartOfDay(DateTimeZone.getDefault()).toDate();
+  }
+
   public void handleAccount(IamAccount account) {
 
     LOG.debug("Handling account: {}", account);
@@ -191,15 +195,12 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     if (ep.isEmpty()) {
       LOG.warn("No participation to '{}' found for user {}", experimentName, account.getUsername());
       if (!account.hasLabelWithValue(buildCernStatusLabel(NOT_FOUND))) {
-        Date currentDateTimeStartOfDay =
-            Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-        LOG.debug("Updating end-time for '{}' as expired today '{}' ...", account.getUsername(),
-            currentDateTimeStartOfDay);
-        accountService.setAccountEndTime(account, currentDateTimeStartOfDay);
+        accountService.setAccountEndTime(account, getStartOfDay());
         accountService.deleteLabel(account, buildLifecycleStatusLabel());
         accountService.addLabel(account, buildCernStatusLabel(NOT_FOUND));
         accountService.addLabel(account,
             buildCernMessageLabel(format(NO_PARTICIPATION_MESSAGE, experimentName)));
+        LOG.debug("Updated end-time for '{}' as '{}' ...", account.getUsername(), account.getEndTime());
       }
       return;
     }

@@ -25,6 +25,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.function.Supplier;
 
+import org.joda.time.LocalDate;
+
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
@@ -46,10 +48,7 @@ public interface LifecycleTestSupport {
   Instant THIRTY_ONE_DAYS_AGO = NOW.minus(31, ChronoUnit.DAYS);
 
   default IamLabel cernIgnoreLabel() {
-    return IamLabel.builder()
-      .prefix(LABEL_CERN_PREFIX)
-      .name(LABEL_IGNORE)
-      .build();
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
   }
 
 
@@ -70,13 +69,14 @@ public interface LifecycleTestSupport {
   }
 
   default IamLabel statusLabel(AccountLifecycleStatus s) {
-    return IamLabel.builder()
-      .name(LIFECYCLE_STATUS_LABEL)
-      .value(s.name())
-      .build();
+    return IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(s.name()).build();
   }
 
   default VOPersonDTO voPerson(String personId) {
+    return voPerson(personId, LocalDate.now().plusDays(365).toDate());
+  }
+
+  default VOPersonDTO voPerson(String personId, Date endDate) {
     VOPersonDTO dto = new VOPersonDTO();
     dto.setFirstName("TEST");
     dto.setName("USER");
@@ -87,8 +87,11 @@ public interface LifecycleTestSupport {
 
     ParticipationDTO p = new ParticipationDTO();
 
+    LocalDate startDate = LocalDate.now().minusDays(365);
+    
     p.setExperiment("test");
-    p.setStartDate(Date.from(Instant.parse("2020-01-01T00:00:00.00Z")));
+    p.setStartDate(startDate.toDate());
+    p.setEndDate(endDate);
 
     InstituteDTO i = new InstituteDTO();
     i.setId("000001");
@@ -110,7 +113,8 @@ public interface LifecycleTestSupport {
 
   default VOPersonDTO expiredVoPerson(String personId) {
     VOPersonDTO dto = voPerson(personId);
-    // Set endDate more than 7 days (suspension grace period) but less than 30 days (removal grace period)
+    // Set endDate more than 7 days (suspension grace period) but less than 30 days (removal grace
+    // period)
     dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(20, ChronoUnit.DAYS)));
     return dto;
   }
@@ -122,7 +126,8 @@ public interface LifecycleTestSupport {
     return dto;
   }
 
-  default VOPersonDTO voPerson(String personId, IamAccount account, String experiment, Date endDate) {
+  default VOPersonDTO voPerson(String personId, IamAccount account, String experiment,
+      Date endDate) {
     VOPersonDTO dto = new VOPersonDTO();
     dto.setFirstName(account.getUserInfo().getGivenName());
     dto.setName(account.getUserInfo().getName());
@@ -147,7 +152,7 @@ public interface LifecycleTestSupport {
 
     return dto;
   }
-  
+
   default Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
   }
