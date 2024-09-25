@@ -160,6 +160,7 @@ public class DefaultAccountLinkingService
       linkedCertificate.get().setCertificate(x509Credential.getCertificateChainPemString());
       linkedCertificate.get().setLastUpdateTime(new Date());
       certificateRepository.save(linkedCertificate.get());
+      userAccount.getX509Certificates().remove(linkedCertificate.get());
       userAccount.getX509Certificates().add(linkedCertificate.get());
       userAccount.touch();
       iamAccountRepository.save(userAccount);
