@@ -22,6 +22,7 @@ public class Authorities {
 
   public static final GrantedAuthority ROLE_OWNER = new SimpleGrantedAuthority("ROLE_ADMIN");
   public static final GrantedAuthority ROLE_ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
+  public static final GrantedAuthority ROLE_READER = new SimpleGrantedAuthority("ROLE_READER");
   public static final GrantedAuthority ROLE_USER = new SimpleGrantedAuthority("ROLE_USER");
   public static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
 

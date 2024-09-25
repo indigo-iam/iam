@@ -382,5 +382,11 @@ public class GroupManagerIntegrationTests {
       .andExpect(jsonPath("$[0].userName", equalTo("test")));
   }
 
+  @Test
+  @WithMockUser(username = "test", roles = {"READER"})
+  public void listGroupManagersWorksForReaderUser() throws Exception {
+    mvc.perform(get("/iam/group/{uuid}/group-managers", TEST_001_GROUP_ID))
+      .andExpect(status().isOk());
+  }
 
 }

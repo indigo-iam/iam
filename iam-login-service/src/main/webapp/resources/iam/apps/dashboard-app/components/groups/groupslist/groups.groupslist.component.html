@@ -82,9 +82,18 @@
                                 ng-click="$ctrl.openAddSubgroupDialog(group)" ng-show="$ctrl.isVoAdmin()">
                                 <i class="fa fa-plus"></i>
                             </button>
+                            <button disabled id="add_subgroup_{{group.id}}" title="Add Subgroup" class="btn btn-success btn-xs"
+                                ng-show="$root.loggedUser.isReader && !$ctrl.isVoAdmin()" style="cursor: not-allowed;">
+                                <i class="fa fa-plus"></i>
+                            </button>
+
                             <button ng-if="!group.members" ng-show="$ctrl.isVoAdmin()" title="Delete group"
                                 id="delete_group_{{group.id}}" class="btn btn-danger btn-xs"
                                 ng-click="$ctrl.openDeleteGroupDialog(group)">
+                                <i class="fa fa-times"></i>
+                            </button>
+                            <button disabled ng-show="$root.loggedUser.isReader && !$ctrl.isVoAdmin()" title="Delete group"
+                                id="delete_group_{{group.id}}" class="btn btn-danger btn-xs" style="cursor: not-allowed;">
                                 <i class="fa fa-times"></i>
                             </button>
                         </td>

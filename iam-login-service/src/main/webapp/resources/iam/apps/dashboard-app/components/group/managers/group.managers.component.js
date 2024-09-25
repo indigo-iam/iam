@@ -109,7 +109,7 @@
 
         self.$onInit = function () {
             console.log('GroupManagersController onInit');
-            self.privileged = self.groupManager || self.voAdmin;
+            self.privileged = self.groupManager || self.voAdmin || self.isReader;
             loadGroupManagers();
         };
 
@@ -175,7 +175,7 @@
 
     angular.module('dashboardApp').component('groupManagers', {
         templateUrl: '/resources/iam/apps/dashboard-app/components/group/managers/group.managers.component.html',
-        bindings: { group: '<', loadGroup: '&', voAdmin: '<', groupManager: '<' },
+        bindings: { group: '<', loadGroup: '&', voAdmin: '<', groupManager: '<', isReader: '<' },
         controller: [
             '$uibModal', 'AccountGroupManagerService', 'Utils', 'toaster', GroupManagersController
         ]
