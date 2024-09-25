@@ -180,8 +180,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
       .pemEncodedCertificate(TEST_1_CERT_STRING)
-      .subjectDn("a fake subject")
-      .issuerDn("a fake issuer")
+      .subjectDn("CN=test1,O=IGI,C=IT")
+      .issuerDn("CN=Test CA,O=IGI,C=IT")
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")
@@ -245,7 +245,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.schemas")
         .value(Matchers.contains("urn:ietf:params:scim:api:messages:2.0:Error")))
       .andExpect(jsonPath("$.detail").exists())
-      .andExpect(jsonPath("$.detail").value(containsString("Error parsing certificate chain")));
+      .andExpect(jsonPath("$.detail").value(containsString("Invalid PEM encoded certificate")));
   }
 
   @Test
@@ -341,7 +341,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.schemas")
         .value(Matchers.contains("urn:ietf:params:scim:api:messages:2.0:Error")))
       .andExpect(jsonPath("$.detail").exists())
-      .andExpect(jsonPath("$.detail").value(containsString("Error parsing certificate chain")));
+      .andExpect(jsonPath("$.detail").value(containsString("Invalid PEM encoded certificate")));
   }
 
   @Test
