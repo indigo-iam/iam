@@ -179,8 +179,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
-    assertThat(cernTimestampLabel.isPresent(), is(true));
-    assertThat(cernTimestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(cernTimestampLabel.isPresent(), is(false));
 
     expiredAccountsHandler.run();
 
@@ -197,8 +196,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(cernMessageLabel.get().getValue(), is(EXPIRED_MESSAGE));
 
     cernTimestampLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
-    assertThat(cernTimestampLabel.isPresent(), is(true));
-    assertThat(cernTimestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(cernTimestampLabel.isPresent(), is(false));
 
     Optional<IamLabel> iamStatusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
     assertThat(iamStatusLabel.isPresent(), is(true));
@@ -231,8 +229,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
-    assertThat(cernTimestampLabel.isPresent(), is(true));
-    assertThat(cernTimestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(cernTimestampLabel.isPresent(), is(false));
 
     expiredAccountsHandler.run();
 
@@ -273,8 +270,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
-    assertThat(cernTimestampLabel.isPresent(), is(true));
-    assertThat(cernTimestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(cernTimestampLabel.isPresent(), is(false));
   }
 
   @Test
@@ -310,9 +306,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(cernMessageLabel.isPresent(), is(true));
     assertThat(cernMessageLabel.get().getValue(), is(format(RESTORED_MESSAGE, clock.instant())));
 
-    assertThat(cernTimestampLabel.isPresent(), is(true));
-    assertThat(cernTimestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-
+    assertThat(cernTimestampLabel.isPresent(), is(false));
     assertThat(iamStatusLabel.isPresent(), is(false));
   }
 
@@ -337,8 +331,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ERROR.name()));
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(HR_DB_API_ERROR));
@@ -365,8 +358,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ERROR.name()));
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(HR_DB_API_ERROR));
@@ -394,8 +386,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.NOT_FOUND.name()));
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PARTICIPATION_MESSAGE, "test")));
@@ -424,8 +415,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     Optional<IamLabel> timestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(timestampLabel.isPresent(), is(false));
   }
 
   @Test
@@ -451,8 +441,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(), is(IGNORED.name()));
 
-    assertThat(timestampLabel.isPresent(), is(true));
-    assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
+    assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(IGNORE_MESSAGE));
@@ -486,9 +475,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
       assertThat(statusLabel.isPresent(), is(true));
       assertThat(statusLabel.get().getValue(), is(MEMBER.name()));
 
-      assertThat(timestampLabel.isPresent(), is(true));
-      assertThat(timestampLabel.get().getValue(), is(valueOf(clock.instant().toEpochMilli())));
-
+      assertThat(timestampLabel.isPresent(), is(false));
     }
   }
 

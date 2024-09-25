@@ -153,13 +153,14 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public void handleAccount(IamAccount account) {
 
     LOG.debug("Handling account: {}", account);
+    Instant checkTime = clock.instant();
     String cernPersonId = getCernPersonId(account);
     String experimentName = cernProperties.getExperimentName();
-    LOG.debug("Account CERN person id: {}", cernPersonId);
+    LOG.debug("Account CERN person id {} for experiment {}", cernPersonId, experimentName);
 
-    // 0. Update time-stamp label
-    Instant checkTime = clock.instant();
-    accountService.addLabel(account, buildCernTimestampLabel(checkTime));
+    // 0. Clear unused old labels if present
+    accountService.deleteLabel(account, buildCernTimestampLabel());
+    accountService.deleteLabel(account, buildCernActionLabel());
 
     // 1. Ignore account if label is set
     if (account.hasLabel(buildCernIgnoreLabel())) {
@@ -167,9 +168,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       accountService.addLabel(account, buildCernMessageLabel(IGNORE_MESSAGE));
       return;
     }
-
-    // Clear old IAM versions labels
-    accountService.deleteLabel(account, buildCernActionLabel());
 
     // 2. Retrieve VO person data from HR database
     Optional<VOPersonDTO> voPerson = Optional.empty();
@@ -283,12 +281,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       .build();
   }
 
-  private IamLabel buildCernTimestampLabel(Instant now) {
-    return IamLabel.builder()
-      .prefix(LABEL_CERN_PREFIX)
-      .name(LABEL_TIMESTAMP)
-      .value(String.valueOf(now.toEpochMilli()))
-      .build();
+  private IamLabel buildCernTimestampLabel() {
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_TIMESTAMP).build();
   }
 
   private IamLabel buildCernIgnoreLabel() {
