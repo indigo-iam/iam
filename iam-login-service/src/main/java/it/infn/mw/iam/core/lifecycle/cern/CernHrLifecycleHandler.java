@@ -33,8 +33,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.joda.time.DateTimeComparator;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -150,10 +148,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     return cernPersonIdLabel.get().getValue();
   }
 
-  private Date getStartOfDay() {
-    return LocalDate.now().toDateTimeAtStartOfDay(DateTimeZone.getDefault()).toDate();
-  }
-
   public void handleAccount(IamAccount account) {
 
     LOG.debug("Handling account: {}", account);
@@ -162,18 +156,15 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     String experimentName = cernProperties.getExperimentName();
     LOG.debug("Account CERN person id {} for experiment {}", cernPersonId, experimentName);
 
-    // 0. Clear unused old labels if present
     accountService.deleteLabel(account, buildCernTimestampLabel());
     accountService.deleteLabel(account, buildCernActionLabel());
 
-    // 1. Ignore account if label is set
     if (account.hasLabel(buildCernIgnoreLabel())) {
       accountService.addLabel(account, buildCernStatusLabel(IGNORED));
       accountService.addLabel(account, buildCernMessageLabel(IGNORE_MESSAGE));
       return;
     }
 
-    // 2. Retrieve VO person data from HR database
     Optional<VOPersonDTO> voPerson = Optional.empty();
     try {
       voPerson = Optional.ofNullable(hrDb.getHrDbPersonRecord(cernPersonId));
@@ -186,16 +177,14 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
 
-    // 3a. Sync info: Given Name, Family Name and Email
     syncAccountInformation(account, voPerson.get());
 
-    // 3b. Sync end-time
     Optional<ParticipationDTO> ep = getExperimentParticipation(voPerson.get(), experimentName);
 
     if (ep.isEmpty()) {
       LOG.warn("No participation to '{}' found for user {}", experimentName, account.getUsername());
       if (!account.hasLabelWithValue(buildCernStatusLabel(NOT_FOUND))) {
-        accountService.setAccountEndTime(account, getStartOfDay());
+        accountService.setAccountEndTime(account, Date.from(checkTime));
         accountService.deleteLabel(account, buildLifecycleStatusLabel());
         accountService.addLabel(account, buildCernStatusLabel(NOT_FOUND));
         accountService.addLabel(account,
@@ -210,20 +199,16 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     if (isValidExperimentParticipation(ep.get())) {
       accountService.addLabel(account, buildCernStatusLabel(MEMBER));
       if (account.isActive()) {
-        // 4a. User is active and has a valid experiment participation
         accountService.addLabel(account, buildCernMessageLabel(format(VALID_MESSAGE)));
         return;
       }
       if (accountWasSuspendedByIamLifecycleJob(account)) {
-        // 4b. User has been suspended by IAM life-cycle handler but has a valid participation:
-        // restore
         accountService.restoreAccount(account);
         accountService.addLabel(account,
             buildCernMessageLabel(format(RESTORED_MESSAGE, checkTime)));
         accountService.deleteLabel(account, buildLifecycleStatusLabel());
       }
     } else {
-      // 4c. Invalid participation found: let IAM expired accounts handler do its job
       accountService.addLabel(account, buildCernStatusLabel(EXPIRED));
       accountService.addLabel(account, buildCernMessageLabel(format(EXPIRED_MESSAGE)));
     }
@@ -231,6 +216,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   @Override
   public void run() {
+
+    LOG.info("CERN HR Lyfecycle handler ... [START]");
 
     Pageable pageRequest = PageRequest.of(0, cernProperties.getTask().getPageSize());
 
@@ -256,6 +243,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
       pageRequest = accountsPage.nextPageable();
     }
+
+    LOG.info("CERN HR Lyfecycle handler ... [END]");
   }
 
   @Override

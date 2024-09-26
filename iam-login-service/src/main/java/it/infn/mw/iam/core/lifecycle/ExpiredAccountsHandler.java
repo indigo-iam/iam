@@ -202,10 +202,12 @@ public class ExpiredAccountsHandler implements Runnable {
 
   public void handleExpiredAccounts() {
 
+    LOG.info("Expired accounts handler ... [START]");
+
     accountsScheduledForRemoval.clear();
 
-    LOG.debug("Starting...");
     checkTime = getTomorrowMidnight();
+    LOG.debug("Comparing end-time with {}", checkTime.toString());
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
 
@@ -232,6 +234,9 @@ public class ExpiredAccountsHandler implements Runnable {
     for (IamAccount a : accountsScheduledForRemoval) {
       removeAccount(a);
     }
+
+    LOG.info("Expired accounts handler ... [END]");
+
   }
 
   @Override
