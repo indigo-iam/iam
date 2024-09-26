@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -454,8 +455,8 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .findFirst()
       .get();
 
-    assertThat(createdCert1.getPrimary(), equalTo(TRUE));
-    assertThat(createdCert2.getPrimary(), equalTo(FALSE));
+    // One and only one certificate should be primary with no order guarantee
+    assertEquals(1, (createdCert1.getPrimary() ? 1 : 0) + (createdCert2.getPrimary() ? 1 : 0));
     assertThat(createdCert1.getPemEncodedCertificate(),
         equalTo(X509Utils.x509Certs.get(0).certificate));
     assertThat(createdCert2.getPemEncodedCertificate(),
