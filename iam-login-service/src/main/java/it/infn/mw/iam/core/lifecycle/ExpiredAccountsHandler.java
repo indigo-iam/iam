@@ -190,13 +190,12 @@ public class ExpiredAccountsHandler implements Runnable {
     }
   }
 
-  private Instant getTomorrowMidnight() {
+  private Instant getLastMidnight() {
     ZonedDateTime zdt = ZonedDateTime.ofInstant(clock.instant(), ZoneId.systemDefault());
     Calendar c = GregorianCalendar.from(zdt);
     c.set(Calendar.HOUR_OF_DAY, 0);
     c.set(Calendar.MINUTE, 0);
     c.set(Calendar.SECOND, 0);
-    c.add(Calendar.DATE, 1);
     return c.toInstant();
   }
 
@@ -206,7 +205,7 @@ public class ExpiredAccountsHandler implements Runnable {
 
     accountsScheduledForRemoval.clear();
 
-    checkTime = getTomorrowMidnight();
+    checkTime = getLastMidnight();
     LOG.debug("Comparing end-time with {}", checkTime);
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));

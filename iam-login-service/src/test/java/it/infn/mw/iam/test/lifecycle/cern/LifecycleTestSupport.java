@@ -43,6 +43,7 @@ public interface LifecycleTestSupport {
 
   Instant NOW = Instant.parse("2020-01-01T00:00:00.00Z");
 
+  Instant ONE_MINUTE_AGO = NOW.minus(1, ChronoUnit.MINUTES);
   Instant FOUR_DAYS_AGO = NOW.minus(4, ChronoUnit.DAYS);
   Instant EIGHT_DAYS_AGO = NOW.minus(8, ChronoUnit.DAYS);
   Instant THIRTY_ONE_DAYS_AGO = NOW.minus(31, ChronoUnit.DAYS);
@@ -77,32 +78,11 @@ public interface LifecycleTestSupport {
   }
 
   default VOPersonDTO voPerson(String personId, Date endDate) {
-    VOPersonDTO dto = new VOPersonDTO();
-    dto.setFirstName("TEST");
-    dto.setName("USER");
-    dto.setEmail("test@hr.cern");
-    dto.setParticipations(Sets.newHashSet());
-
-    dto.setId(Long.parseLong(personId));
-
-    ParticipationDTO p = new ParticipationDTO();
-
-    LocalDate startDate = LocalDate.now().minusDays(365);
-    
-    p.setExperiment("test");
-    p.setStartDate(startDate.toDate());
-    p.setEndDate(endDate);
-
-    InstituteDTO i = new InstituteDTO();
-    i.setId("000001");
-    i.setName("INFN");
-    i.setCountry("IT");
-    i.setTown("Bologna");
-    p.setInstitute(i);
-
-    dto.getParticipations().add(p);
-
-    return dto;
+    IamAccount account = IamAccount.newAccount();
+    account.getUserInfo().setGivenName("TEST");
+    account.getUserInfo().setFamilyName("USER");
+    account.getUserInfo().setEmail("test@hr.cern");
+    return voPerson(personId, account, "test", endDate);
   }
 
   default VOPersonDTO noParticipationsVoPerson(String personId) {

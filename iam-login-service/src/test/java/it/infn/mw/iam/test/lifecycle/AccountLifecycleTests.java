@@ -73,6 +73,30 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   private ExpiredAccountsHandler handler;
 
   @Test
+  public void testUserIsNotPendingSuspensionWhenEndTimeIsToday() {
+
+    IamAccount testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+    assertThat(testAccount.isActive(), is(true));
+
+    testAccount.setEndTime(Date.from(ONE_MINUTE_AGO));
+    repo.save(testAccount);
+
+    Optional<IamLabel> statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
+    assertThat(statusLabel.isPresent(), is(false));
+
+    handler.handleExpiredAccounts();
+
+    testAccount =
+        repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    assertThat(testAccount.isActive(), is(true));
+    statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
+    assertThat(statusLabel.isPresent(), is(false));
+
+  }
+
+  @Test
   public void testSuspensionGracePeriodWorks() {
     IamAccount testAccount =
         repo.findByUuid(TEST_USER_UUID).orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
