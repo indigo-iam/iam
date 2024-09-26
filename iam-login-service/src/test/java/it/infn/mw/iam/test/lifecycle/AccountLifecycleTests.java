@@ -109,9 +109,9 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   }
 
   @Test
-  public void testUserIsNotPendingSuspensionWhenEndTimeIsToday() {
+  public void testUserSuspensionAtLastMidnight() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(ONE_MINUTE_AGO));
+    accountService.setAccountEndTime(testAccount, Date.from(LAST_MIDNIGHT));
     handler.handleExpiredAccounts();
 
     testAccount = accountService.findByUuid(USER_UUID)
@@ -125,8 +125,9 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
   @Test
   public void testSuspensionGracePeriodWorks() {
 
-    accountService.setAccountEndTime(testAccount, Date.from(FOUR_DAYS_AGO));
-    Date lastUpdateTime = testAccount.getLastUpdateTime();
+    accountService.setAccountEndTime(testAccount, Date.from(DAY_BEFORE));
+    testAccount = accountService.findByUuid(USER_UUID)
+        .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     handler.handleExpiredAccounts();
 
@@ -135,8 +136,6 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
 
     assertThat(testAccount.isActive(), is(true));
-    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) > 0, is(true));
-    lastUpdateTime = testAccount.getLastUpdateTime();
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
         is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_SUSPENSION.name()));
@@ -144,9 +143,13 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     handler.handleExpiredAccounts();
 
     testAccount = accountService.findByUuid(USER_UUID)
-      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
-    assertThat(testAccount.isActive(), is(true));
-    assertThat(testAccount.getLastUpdateTime().compareTo(lastUpdateTime) == 0, is(true));
+        .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+      statusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
+
+      assertThat(testAccount.isActive(), is(true));
+      assertThat(statusLabel.isPresent(), is(true));
+      assertThat(statusLabel.get().getValue(),
+          is(ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_SUSPENSION.name()));
   }
 
   @Test

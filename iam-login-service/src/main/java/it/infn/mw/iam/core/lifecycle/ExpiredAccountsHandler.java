@@ -22,12 +22,8 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecy
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Optional;
 import java.util.Set;
 
@@ -190,22 +186,13 @@ public class ExpiredAccountsHandler implements Runnable {
     }
   }
 
-  private Instant getLastMidnight() {
-    ZonedDateTime zdt = ZonedDateTime.ofInstant(clock.instant(), ZoneId.systemDefault());
-    Calendar c = GregorianCalendar.from(zdt);
-    c.set(Calendar.HOUR_OF_DAY, 0);
-    c.set(Calendar.MINUTE, 0);
-    c.set(Calendar.SECOND, 0);
-    return c.toInstant();
-  }
-
   public void handleExpiredAccounts() {
 
     LOG.info("Expired accounts handler ... [START]");
 
     accountsScheduledForRemoval.clear();
 
-    checkTime = getLastMidnight();
+    checkTime = clock.instant().truncatedTo(ChronoUnit.DAYS);
     LOG.debug("Comparing end-time with {}", checkTime);
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
@@ -213,9 +200,9 @@ public class ExpiredAccountsHandler implements Runnable {
     while (true) {
       Page<IamAccount> expiredAccountsPage =
           accountRepo.findExpiredAccountsAtTimestamp(Date.from(checkTime), pageRequest);
-      LOG.debug("expiredAccountsPage: {}", expiredAccountsPage);
 
       if (expiredAccountsPage.hasContent()) {
+        LOG.debug("expiredAccountsPage [{}/{}]", expiredAccountsPage.getNumber()+1, expiredAccountsPage.getNumberOfElements());
 
         for (IamAccount expiredAccount : expiredAccountsPage.getContent()) {
           handleExpiredAccount(expiredAccount);

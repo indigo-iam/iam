@@ -41,9 +41,10 @@ public interface LifecycleTestSupport {
   String CERN_SSO_ISSUER = "https://auth.cern.ch/auth/realms/cern";
   String CERN_PERSON_ID = "12345678";
 
-  Instant NOW = Instant.parse("2020-01-01T12:00:00.00Z");
+  Instant LAST_MIDNIGHT = Instant.now().truncatedTo(ChronoUnit.DAYS);
+  Instant NOW = LAST_MIDNIGHT.plus(12, ChronoUnit.HOURS);
+  Instant DAY_BEFORE = LAST_MIDNIGHT.minus(1, ChronoUnit.SECONDS);
 
-  Instant DAY_BEFORE = NOW.minus(1, ChronoUnit.DAYS);
   Instant ONE_MINUTE_AGO = NOW.minus(1, ChronoUnit.MINUTES);
   Instant FOUR_DAYS_AGO = NOW.minus(4, ChronoUnit.DAYS);
   Instant EIGHT_DAYS_AGO = NOW.minus(8, ChronoUnit.DAYS);
