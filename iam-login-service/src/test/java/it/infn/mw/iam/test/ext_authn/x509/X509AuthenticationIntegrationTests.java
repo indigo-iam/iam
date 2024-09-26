@@ -21,6 +21,7 @@ import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CAN_LOGIN_KEY;
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import static java.lang.Boolean.TRUE;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -257,6 +258,42 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_ERROR_KEY, equalTo(expectedErrorMessage)));
+  }
+
+  @Test
+  public void testUpdateCertWithSameIssuerAndSubjectButDifferentPem() throws Exception {
+
+    IamAccount account = iamAccountRepo.findByUsername(TEST_USERNAME)
+      .orElseThrow(() -> new AssertionFailedError("Account not found"));
+    account.linkX509Certificates(singletonList(OLD_TEST_0_IAM_X509_CERT));
+
+    String oldPemCert = OLD_TEST_0_IAM_X509_CERT.getCertificate();
+
+    MockHttpSession session = loginAsTestUserWithTest0Cert(mvc);
+    IamX509AuthenticationCredential credential =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    String confirmationMessage =
+        String.format("Certificate '%s' linked succesfully", credential.getSubject());
+
+    mvc.perform(post("/iam/account-linking/X509").session(session).with(csrf().asHeader()))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"))
+      .andExpect(
+          flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
+
+    Optional<IamX509Certificate> testCert =
+        iamX509CertificateRepo.findBySubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER);
+    assertThat(testCert.isPresent(), is(true));
+    assertThat(
+        account.getX509Certificates()
+          .stream()
+          .anyMatch(cert -> cert.getCertificate().equals(testCert.get().getCertificate())),
+        is(true));
+
+    assertThat(account.getX509Certificates()
+      .stream()
+      .anyMatch(cert -> cert.getCertificate().equals(oldPemCert)), is(false));
   }
 
   @Test
