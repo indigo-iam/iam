@@ -53,6 +53,8 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 public class X509TestSupport {
 
   public static final String TEST_0_CERT_PATH = "src/test/resources/x509/test0.cert.pem";
+  public static final String OLD_TEST_0_CERT_PATH = "src/test/resources/x509/oldtest0.cert.pem";
+  public static final String OLD_TEST_0_KEY_PATH = "src/test/resources/x509/oldtest0.key.pem";
   public static final String TEST_0_KEY_PATH = "src/test/resources/x509/test0.key.pem";
 
   public static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
@@ -76,14 +78,18 @@ public class X509TestSupport {
   public static final String RCAUTH_CA_SUBJECT = "CN=RCAuth Mock CA,O=INDIGO-IAM,C=IT";
 
   protected X509Certificate TEST_0_CERT;
-  protected String TEST_0_CERT_STRING;
-  protected String TEST_0_CERT_STRING_NGINX;
-
+  protected X509Certificate OLD_TEST_0_CERT;
   protected X509Certificate TEST_1_CERT;
+
+  protected String TEST_0_CERT_STRING;
+  protected String OLD_TEST_0_CERT_STRING;
   protected String TEST_1_CERT_STRING;
+
+  protected String TEST_0_CERT_STRING_NGINX;
   protected String TEST_1_CERT_STRING_NGINX;
 
   protected IamX509Certificate TEST_0_IAM_X509_CERT;
+  protected IamX509Certificate OLD_TEST_0_IAM_X509_CERT;
   protected IamX509Certificate TEST_1_IAM_X509_CERT;
   protected IamX509Certificate TEST_2_IAM_X509_CERT;
 
@@ -91,6 +97,7 @@ public class X509TestSupport {
 
   protected String TEST_0_CERT_LABEL = "TEST 0 cert label";
   protected String TEST_1_CERT_LABEL = "TEST 1 cert label";
+  protected String OLD_TEST_0_CERT_LABEL = "Old TEST 0 cert label";
 
   protected String TEST_USERNAME = "test";
   protected String TEST_100_USERNAME = "test_100";
@@ -112,12 +119,25 @@ public class X509TestSupport {
           new ByteArrayInputStream(TEST_1_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
           Encoding.PEM);
 
+      OLD_TEST_0_CERT_STRING = new String(Files.readAllBytes(Paths.get(OLD_TEST_0_CERT_PATH)));
+
+      OLD_TEST_0_CERT = CertificateUtils.loadCertificate(
+          new ByteArrayInputStream(OLD_TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
+          Encoding.PEM);
+
       TEST_0_IAM_X509_CERT = new IamX509Certificate();
       TEST_0_IAM_X509_CERT.setCertificate(TEST_0_CERT_STRING);
       TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
       TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
       TEST_0_IAM_X509_CERT.setLabel(TEST_0_CERT_LABEL);
       TEST_0_IAM_X509_CERT.setPrimary(false);
+
+      OLD_TEST_0_IAM_X509_CERT = new IamX509Certificate();
+      OLD_TEST_0_IAM_X509_CERT.setCertificate(OLD_TEST_0_CERT_STRING);
+      OLD_TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
+      OLD_TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
+      OLD_TEST_0_IAM_X509_CERT.setLabel(OLD_TEST_0_CERT_LABEL);
+      OLD_TEST_0_IAM_X509_CERT.setPrimary(false);
 
       TEST_1_IAM_X509_CERT = new IamX509Certificate();
       TEST_1_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
