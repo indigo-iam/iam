@@ -207,7 +207,7 @@ public class ExpiredAccountsHandler implements Runnable {
     accountsScheduledForRemoval.clear();
 
     checkTime = getTomorrowMidnight();
-    LOG.debug("Comparing end-time with {}", checkTime.toString());
+    LOG.debug("Comparing end-time with {}", checkTime);
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
 
