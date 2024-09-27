@@ -86,7 +86,7 @@ public class IamUserInfo implements Serializable {
   private Boolean phoneNumberVerified;
   
   @OneToOne(optional=true, cascade=CascadeType.ALL)
-  @JoinColumn(name="address_id")
+  @JoinColumn(name="address_id", referencedColumnName = "id")
   private IamAddress address;
 
   private String birthdate;

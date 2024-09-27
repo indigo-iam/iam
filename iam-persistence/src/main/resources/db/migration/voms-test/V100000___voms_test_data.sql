@@ -68,14 +68,16 @@ INSERT INTO iam_account_authority(account_id, authority_id) VALUES
 
 -- test groups
 INSERT INTO iam_group(id, parent_group_id, name, uuid, description, creationtime, lastupdatetime) VALUES
-(1, null, 'indigo-dc', 'ff8b5c1e-c0d2-40d1-8216-9896f2570077', 'indigo-dc root group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(2, 1, 'indigo-dc/subgroup', '28c829f0-9c16-43e7-82a0-ea893ec4fce5', 'indigo-dc subgroup', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(3, 1, 'indigo-dc/another-subgroup', 'e17ca24b-4772-4e64-a30e-49b394c91503', 'indigo-dc another-subgroup', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(4, 1, 'indigo-dc/production', 'e9dd63e1-af45-4691-99c4-2d2b5bf5d66a', 'indigo-dc production role', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(5, 2, 'indigo-dc/subgroup/production', '5bea3ff8-64a6-43a9-a1f5-3354587f68b9', 'indigo-dc subgroup production role', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()));
+(3, null, 'indigo-dc', 'ff8b5c1e-c0d2-40d1-8216-9896f2570077', 'indigo-dc root group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(4, 1, 'indigo-dc/subgroup', '28c829f0-9c16-43e7-82a0-ea893ec4fce5', 'indigo-dc subgroup', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(5, 1, 'indigo-dc/another-subgroup', 'e17ca24b-4772-4e64-a30e-49b394c91503', 'indigo-dc another-subgroup', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(6, 1, 'indigo-dc/production', 'e9dd63e1-af45-4691-99c4-2d2b5bf5d66a', 'indigo-dc production role', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(7, 2, 'indigo-dc/subgroup/production', '5bea3ff8-64a6-43a9-a1f5-3354587f68b9', 'indigo-dc subgroup production role', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()));
+
+SET @IndigoDcGroupId = SELECT id FROM iam_group WHERE uuid = 'ff8b5c1e-c0d2-40d1-8216-9896f2570077';
 
 -- test groups membership
 INSERT INTO iam_account_group(account_id, group_id) VALUES
-(2,1);
+(2,@IndigoDcGroupId);
 
 

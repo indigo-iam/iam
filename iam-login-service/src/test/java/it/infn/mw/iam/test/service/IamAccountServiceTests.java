@@ -83,6 +83,7 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -119,6 +120,9 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Mock
   private NotificationFactory notificationFactory;
 
+  @Mock
+  private IamTotpMfaRepository totpMfaRepository;
+
   private Clock clock = Clock.fixed(NOW, ZoneId.systemDefault());
 
   private DefaultIamAccountService accountService;
@@ -153,9 +157,11 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
     when(iamProperties.getRegistration()).thenReturn(registrationProperties);
+    when(totpMfaRepository.findByAccount(any())).thenReturn(Optional.empty());
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory, iamProperties, iamGroupService);
+        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory,
+        iamProperties, iamGroupService, totpMfaRepository);
   }
 
   @Test(expected = NullPointerException.class)

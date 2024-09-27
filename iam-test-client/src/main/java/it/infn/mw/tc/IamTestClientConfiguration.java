@@ -2,6 +2,7 @@ package it.infn.mw.tc;
 
 import static java.util.stream.Collectors.toSet;
 
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -15,6 +16,12 @@ import java.util.stream.Stream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.config.Registry;
@@ -43,11 +50,22 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
 import eu.emi.security.authn.x509.NamespaceCheckingMode;
 import eu.emi.security.authn.x509.X509CertChainValidatorExt;
 import eu.emi.security.authn.x509.impl.SocketFactoryCreator;
 
+@SuppressWarnings("deprecation")
 @Configuration
 public class IamTestClientConfiguration {
 
@@ -55,7 +73,59 @@ public class IamTestClientConfiguration {
   private IamClientApplicationProperties iamClientConfig;
 
   @Bean
-  public FilterRegistrationBean<OIDCAuthenticationFilter> disabledAutomaticOidcFilterRegistration(
+  SecurityFilterChain filterChain(HttpSecurity http, OIDCAuthenticationFilter oidcFilter)
+      throws Exception {
+
+    http
+      .authorizeHttpRequests(requests -> requests
+        .antMatchers("/", "/user", "/error", "/openid_connect_login**", "/webjars/**")
+        .permitAll()
+        .antMatchers("/**")
+        .authenticated())
+      .exceptionHandling(handling -> handling
+        .authenticationEntryPoint(new SendUnauhtorizedAuthenticationEntryPoint()))
+      .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
+      .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()))
+      .addFilterAfter(csrfHeaderFilter(), CsrfFilter.class)
+      .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
+      .sessionManagement(management -> management.enableSessionUrlRewriting(false)
+        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+
+    return http.build();
+  }
+
+  private CsrfTokenRepository csrfTokenRepository() {
+
+    HttpSessionCsrfTokenRepository repository = new HttpSessionCsrfTokenRepository();
+    repository.setHeaderName("X-XSRF-TOKEN");
+    return repository;
+  }
+
+  private Filter csrfHeaderFilter() {
+
+    return new OncePerRequestFilter() {
+
+      @Override
+      protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+          FilterChain filterChain) throws ServletException, IOException {
+
+        CsrfToken csrf = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        if (csrf != null) {
+          Cookie cookie = WebUtils.getCookie(request, "XSRF-TOKEN");
+          String token = csrf.getToken();
+          if (cookie == null || token != null && !token.equals(cookie.getValue())) {
+            cookie = new Cookie("XSRF-TOKEN", token);
+            cookie.setPath("/");
+            response.addCookie(cookie);
+          }
+        }
+        filterChain.doFilter(request, response);
+      }
+    };
+  }
+
+  @Bean
+  FilterRegistrationBean<OIDCAuthenticationFilter> disabledAutomaticOidcFilterRegistration(
       OIDCAuthenticationFilter f) {
     FilterRegistrationBean<OIDCAuthenticationFilter> b =
         new FilterRegistrationBean<OIDCAuthenticationFilter>(f);
@@ -64,7 +134,7 @@ public class IamTestClientConfiguration {
   }
 
   @Bean(name = "openIdConnectAuthenticationFilter")
-  public OIDCAuthenticationFilter openIdConnectAuthenticationFilter()
+  OIDCAuthenticationFilter openIdConnectAuthenticationFilter()
       throws NoSuchAlgorithmException, KeyStoreException {
 
     ClientHttpRequestFactory rf = httpRequestFactory();
@@ -90,15 +160,13 @@ public class IamTestClientConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationManager")
-  public AuthenticationManager authenticationManager()
-      throws NoSuchAlgorithmException, KeyStoreException {
+  AuthenticationManager authenticationManager() throws NoSuchAlgorithmException, KeyStoreException {
 
     return new ProviderManager(Arrays.asList(openIdConnectAuthenticationProvider()));
   }
 
   @Bean
-  public OIDCAuthenticationProvider openIdConnectAuthenticationProvider()
-      throws NoSuchAlgorithmException {
+  OIDCAuthenticationProvider openIdConnectAuthenticationProvider() throws NoSuchAlgorithmException {
 
     OIDCAuthenticationProvider provider = new OIDCAuthenticationProvider();
     provider.setUserInfoFetcher(new IamUserInfoFetcher(httpRequestFactory()));
@@ -125,8 +193,7 @@ public class IamTestClientConfiguration {
     cde.setCodeChallengeMethod(iamClientConfig.getClient().getCodeChallengeMethod());
 
     if (Strings.isNotBlank(iamClientConfig.getClient().getScope())) {
-      cde.setScope(
-          Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
+      cde.setScope(Stream.of(iamClientConfig.getClient().getScope().split(" ")).collect(toSet()));
     }
 
     clients.put(iamClientConfig.getIssuer(), new RegisteredClient(cde));
@@ -196,7 +263,7 @@ public class IamTestClientConfiguration {
   }
 
   @Bean
-  public ClientHttpRequestFactory httpRequestFactory() throws NoSuchAlgorithmException {
+  ClientHttpRequestFactory httpRequestFactory() throws NoSuchAlgorithmException {
 
     if (iamClientConfig.getTls().isUseGridTrustAnchors()) {
       return new HttpComponentsClientHttpRequestFactory(httpClient());
