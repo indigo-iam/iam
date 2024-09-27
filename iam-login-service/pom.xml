@@ -367,6 +367,11 @@
       <artifactId>jackson-datatype-joda</artifactId>
     </dependency>
 
+    <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+    </dependency>
+
     <!-- Mail -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
