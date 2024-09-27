@@ -1,0 +1,59 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title"><strong>X.509 certificate linking requests</strong></h3>
+        <i class="fa fa-id-card-o pull-right"></i>
+        <i class="fa fa-sign-in pull-right"></i>
+    </div>
+    <div class="box-body">
+
+        <div ng-if="$ctrl.certLinkRequests.length == 0">No request found</div>
+
+        <div class="table-responsive" ng-if="$ctrl.certLinkRequests.length > 0">
+            <table class="table no-margin" id="x509_cert_req_list">
+                <tbody>
+                    <tr ng-repeat="req in $ctrl.certLinkRequests">
+                        <td>
+                            <dl>
+                                <dt>Subject</dt>
+                                <dd>{{ req.subjectDn }}</dd>
+                                <dt>Issuer</dt>
+                                <dd>{{ req.issuerDn }}</dd>
+                                <dt>Cretated</dt>
+                                <dd>{{ req.creationTime | relativeDate }}</dd>
+                            </dl>
+                        </td>
+                        <td class="text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-xs btn-danger" ng-click="$ctrl.abortRequest(req)">
+                                    <i class="fa fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="box-footer" ng-if="!$ctrl.voAdmin">
+        <button class="btn btn-success btn-sm" name="btn-req-cert-link" ng-click="$ctrl.openRequestCertLinkDialog()">
+            <i class="fa fa-sign-in"></i> Request certificate linking
+        </button>
+    </div>
+</div>

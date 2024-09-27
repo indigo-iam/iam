@@ -34,7 +34,7 @@
 
     function AddRemoveCertificateController(
         $scope, scimFactory, $uibModalInstance, action, cert, user,
-        successHandler) {
+        successHandler, errorHanlder, certificationAuthorities) {
         var self = this;
         self.enabled = true;
         self.action = action;
@@ -42,22 +42,37 @@
         self.user = user;
         self.error = undefined;
         self.successHandler = successHandler;
+        self.errorHanlder = errorHanlder;
+        self.certificationAuthorities = certificationAuthorities;
+        self.inputMode = "pem";
+        self.isRequest = false;
+        self.titleMessage = "Add an X.509 certificate to " + user.name.formatted + " IAM account?";
+        self.submitMessage = "Add certificate";
 
         self.certVal = {};
 
         self.doAdd = function () {
             self.error = undefined;
             self.enabled = false;
-            scimFactory.addX509Certificate(self.user.id, self.certVal)
-                .then(function (response) {
-                    $uibModalInstance.close(response.data);
+
+            const req = {
+                label: self.certVal.label,
+            }
+            if (self.inputMode == "pem") {
+                req.pemEncodedCertificate = self.certVal.pemEncodedCertificate;
+            } else if (self.inputMode == "dn") {
+                req.subjectDn = self.certVal.subjectDn;
+                req.issuerDn = self.certVal.issuerDn;
+            }
+
+            scimFactory.addX509Certificate(self.user.id, req)
+                .then(response => {
+                    $uibModalInstance.close(false);
                     self.successHandler(`Certificate added`);
-                    self.enabled = true;
                 })
-                .catch(function (error) {
-                    console.error(error);
-                    self.error = error;
-                    self.enabled = true;
+                .catch(response => {
+                    $uibModalInstance.close(false);
+                    self.errorHanlder(response);
                 });
         };
 
@@ -65,15 +80,14 @@
             self.error = undefined;
             self.enabled = false;
             scimFactory.removeX509Certificate(self.user.id, self.cert)
-                .then(function (response) {
+                .then(response => {
                     $uibModalInstance.close(response.data);
                     self.successHandler(`Certificate ${self.cert.subjectDn} removed`);
                     self.enabled = true;
                 })
-                .catch(function (error) {
-                    console.error(error);
-                    self.enabled = true;
-                    self.error = error;
+                .catch(response => {
+                    $uibModalInstance.close(response.data);
+                    self.errorHanlder(response);
                 });
         };
 
@@ -86,8 +100,11 @@
                 label: '',
                 primary: false,
                 pemEncodedCertificate: '',
+                subjectDn: '',
+                issuerDn: '',
             };
             self.error = undefined;
+            self.inputMode = "pem";
         };
 
         self.certLabelValid = function () {
@@ -95,10 +112,10 @@
         };
     }
 
-    function AddProxyCertController ($uibModalInstance, ProxyCertService) {
-        
+    function AddProxyCertController($uibModalInstance, ProxyCertService) {
+
         var self = this;
-        
+
         self.enabled = true;
         self.certVal = {
             certificate_chain: ""
@@ -109,14 +126,14 @@
         self.cancel = cancel;
         self.addProxy = addProxy;
 
-        function reset(){
+        function reset() {
             self.certVal = {
                 certificate_chain: ""
             }
             self.error = undefined;
         }
-        
-        function cancel(){
+
+        function cancel() {
             $uibModalInstance.dismiss('Dismissed');
         }
 
@@ -133,7 +150,7 @@
             self.enabled = true;
         }
 
-        function addProxy(){
+        function addProxy() {
             self.enabled = false;
             ProxyCertService.addProxyCertificate(self.certVal).then(handleSuccess).catch(handleFailure);
         }
@@ -172,7 +189,7 @@
         };
     }
 
-    function UserX509Controller(toaster, $uibModal, Utils, $state) {
+    function UserX509Controller(toaster, $uibModal, Utils, $state, TrustsService) {
         var self = this;
 
         self.accountLinkingEnabled = getAccountLinkingEnabled();
@@ -230,7 +247,25 @@
             });
         };
 
-        function addProxyCertificate(){
+        self.handleError = function (err) {
+            self.enabled = true;
+            var msg;
+
+            if (err.data) {
+                msg = err.data.detail;
+            } else if (err.statusText) {
+                msg = err.statusText;
+            } else {
+                msg = 'Invalid request';
+            }
+
+            toaster.pop({
+                type: 'error',
+                body: msg
+            });
+        };
+
+        function addProxyCertificate() {
             var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/proxy-cert.add.dialog.html',
                 controller: AddProxyCertController,
@@ -241,7 +276,7 @@
                     }
                 }
             });
-            
+
             modalInstance.result.then(function (r) {
                 $state.reload();
                 toaster.pop({
@@ -290,9 +325,14 @@
                     cert: undefined,
                     successHandler: function () {
                         return self.handleSuccess;
-                    }
+                    },
+                    errorHanlder: function () {
+                        return self.handleError;
+                    },
+                    certificationAuthorities: () => TrustsService.getTrusts()
                 }
             });
+            modalInstance.result.catch(()=>{}); // ignore dismiss
         };
 
         self.openRemoveCertificateDialog = function (cert) {
@@ -312,9 +352,16 @@
                     },
                     successHandler: function () {
                         return self.handleSuccess;
+                    },
+                    errorHanlder: function () {
+                        return self.handleError;
+                    },
+                    certificationAuthorities: function () {
+                        return [];
                     }
                 }
             });
+            modalInstance.result.catch(()=>{}); // ignore dismiss
         };
 
         self.openLinkCertificateDialog = function () {
@@ -333,7 +380,7 @@
                 }
             });
 
-            modalInstance.result.then(self.handleSuccess);
+            modalInstance.result.then(self.handleSuccess).catch(()=>{});
         };
 
         self.openUnlinkCertificateDialog = function (certificate) {
@@ -351,7 +398,7 @@
                 }
             });
 
-            modalInstance.result.then(self.handleSuccess);
+            modalInstance.result.then(self.handleSuccess).catch(()=>{});
         };
     }
 
@@ -364,7 +411,7 @@
         },
         templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/user.x509.component.html',
         controller: [
-            'toaster', '$uibModal', 'Utils', '$state', UserX509Controller
+            'toaster', '$uibModal', 'Utils', '$state', 'TrustsService', UserX509Controller
         ]
     });
 })();

@@ -46,7 +46,8 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"x509.trustAnchorsDir=src/test/resources/test-ca"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 public class ScimUserProvisioningPatchRemoveTests extends ScimUserTestSupport {
 

@@ -55,7 +55,7 @@ public class ScimGroupProvisioningListTests {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
+  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
 
   private Integer totalResults = 0;
 

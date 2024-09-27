@@ -30,6 +30,7 @@
         <div class="row">
             <section class="col-xs-12">
                 <uib-tabset active="$ctrl.activeTab" class="nav-tabs-custom" ng-show="$ctrl.privileged">
+
                     <uib-tab index="1" ng-show="$ctrl.voAdmin" select="$ctrl.load0()">
                         <uib-tab-heading>
                             <div class="text-larger"><i class="fa fa-user-plus requets-icon"></i> Registration
@@ -41,6 +42,7 @@
 
                         <registration-requests parent-cb="$ctrl.load0=$API.load" />
                     </uib-tab>
+
                     <uib-tab index="2" ng-show="$ctrl.privileged" select="$ctrl.load1()">
                         <uib-tab-heading>
                             <div class="text-larger">
@@ -51,6 +53,18 @@
                         </uib-tab-heading>
                         <group-requests parent-cb="$ctrl.load1=$API.load" />
                     </uib-tab>
+
+                    <uib-tab index="3" ng-show="$ctrl.privileged" select="$ctrl.load2()">
+                        <uib-tab-heading>
+                            <div class="text-larger">
+                                <i class="fa fa-id-card"></i> Certificate linking requests <span
+                                    ng-show="$root.pendingCertLinkRequests().totalResults > 0"
+                                    class="badge bg-blue-gradient">{{$root.pendingCertLinkRequests().totalResults}}</span>
+                            </div>
+                        </uib-tab-heading>
+                        <cert-link-requests parent-cb="$ctrl.load2=$API.load"></cert-link-requests>
+                    </uib-tab>
+
                 </uib-tabset>
             </section>
         </div>

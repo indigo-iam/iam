@@ -49,8 +49,8 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
     webEnvironment = WebEnvironment.MOCK)
 public class MeControllerTests {
 
-  private final static String TESTUSER_USERNAME = "test_101";
-  private final static String NOT_FOUND_USERNAME = "not_found";
+  private static final String TESTUSER_USERNAME = "test_101";
+  private static final String NOT_FOUND_USERNAME = "not_found";
 
   @Autowired
   private ScimRestUtilsMvc restUtils;
