@@ -15,15 +15,12 @@
  */
 package it.infn.mw.iam.api.validators;
 
-import java.util.List;
-
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.base.Strings;
-import static eu.emi.security.authn.x509.impl.X500NameUtils.equal;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
 import it.infn.mw.iam.api.requests.model.CertificateDTO;
@@ -70,7 +67,8 @@ public class ValidCertificateDTOValidator
     private boolean unknownCertificationAuthority(CertificateDTO value) throws Exception {
         String issuerDn = value.getIssuerDn();
         if (Strings.isNullOrEmpty(issuerDn)) {
-            issuerDn = parser.parseCertificateFromString(value.getPemEncodedCertificate()).getIssuerDn();
+            issuerDn = parser.parseCertificateFromString(value.getPemEncodedCertificate())
+                .getIssuerDn();
         }
         return !trustService.getTrusts().getResources().contains(issuerDn);
     }
@@ -78,24 +76,39 @@ public class ValidCertificateDTOValidator
     @Override
     public boolean isValid(CertificateDTO value, ConstraintValidatorContext context) {
 
+        boolean valid = true;
+        String message = "";
         try {
             if (value == null) {
-                return false;
+                valid = false;
+                message += "Certificate cannot be null. ";
             }
             if (missingPemAndDn(value)) {
-                return false;
+                valid = false;
+                message += "Either subject and issuer DN or the PEM content is required. ";
             }
             if (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())) {
                 IamX509Certificate cert =
                         parser.parseCertificateFromString(value.getPemEncodedCertificate());
-                if (inconsistentSubject(value, cert) || inconsistentIssuer(value, cert)) {
-                    return false;
+                if (inconsistentSubject(value, cert)) {
+                    valid = false;
+                    message +=
+                            "When both are provided, the subject of the PEM must be coherent with the subject DN. ";
+                }
+                if (inconsistentIssuer(value, cert)) {
+                    valid = false;
+                    message +=
+                            "When both are provided, yhe issuer of the PEM must be coherent with the issuer DN. ";
                 }
             }
             if (unknownCertificationAuthority(value)) {
-                return false;
+                valid = false;
+                message += "The selected certification authority is not known to the system. ";
             }
-            return true;
+            if (!valid) {
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+            }
+            return valid;
         } catch (
 
         Exception e) {

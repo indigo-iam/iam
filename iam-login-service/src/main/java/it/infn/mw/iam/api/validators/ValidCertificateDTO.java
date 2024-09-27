@@ -29,7 +29,7 @@ import javax.validation.Payload;
 @Target({TYPE, ANNOTATION_TYPE})
 @Constraint(validatedBy = ValidCertificateDTOValidator.class)
 public @interface ValidCertificateDTO {
-  String message() default "Invalid certificate linking request: either subject and issuer DN or the PEM content is required! When both are provided, the PEM must be coherent with the DNs. The issuer DN must be a known certification authority.";
+  String message() default "Invalid certificate data";
 
   Class<?>[] groups() default {};
 
