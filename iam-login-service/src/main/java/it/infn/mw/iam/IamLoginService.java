@@ -17,6 +17,7 @@ package it.infn.mw.iam;
 
 import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.oauth2.web.CorsFilter;
+import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
@@ -77,7 +78,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=CorsFilter.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=OAuthConfirmationController.class)
+        value=OAuthConfirmationController.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=DeviceEndpoint.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(
