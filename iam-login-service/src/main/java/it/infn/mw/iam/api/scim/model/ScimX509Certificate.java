@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.api.requests.model.CertificateDTO;
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
-import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.PemContent;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
 import it.infn.mw.iam.api.validators.ValidCertificateDTO;
@@ -46,7 +45,6 @@ public class ScimX509Certificate implements CertificateDTO {
 
   @Length(max = 256)
   @RFC2253Formatted(message = "Invalid issuer DN format")
-  @KnownCertificationAuthority(message = "Certification authority not recognized")
   private final String issuerDn;
 
   @PemContent(message = "Invalid PEM encoded certificate")

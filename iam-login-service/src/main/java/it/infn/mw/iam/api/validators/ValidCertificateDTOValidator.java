@@ -15,16 +15,20 @@
  */
 package it.infn.mw.iam.api.validators;
 
+import java.util.List;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.base.Strings;
+import static eu.emi.security.authn.x509.impl.X500NameUtils.equal;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
 import it.infn.mw.iam.api.requests.model.CertificateDTO;
 import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
+import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class ValidCertificateDTOValidator
@@ -32,6 +36,9 @@ public class ValidCertificateDTOValidator
 
     @Autowired
     private X509CertificateParser parser;
+
+    @Autowired
+    IamTrustService trustService;
 
     public ValidCertificateDTOValidator() {
         // empty
@@ -60,6 +67,14 @@ public class ValidCertificateDTOValidator
                         X500NameUtils.getComparableForm(cert.getIssuerDn())));
     }
 
+    private boolean unknownCertificationAuthority(CertificateDTO value) throws Exception {
+        String issuerDn = value.getIssuerDn();
+        if (Strings.isNullOrEmpty(issuerDn)) {
+            issuerDn = parser.parseCertificateFromString(value.getPemEncodedCertificate()).getIssuerDn();
+        }
+        return !trustService.getTrusts().getResources().contains(issuerDn);
+    }
+
     @Override
     public boolean isValid(CertificateDTO value, ConstraintValidatorContext context) {
 
@@ -76,6 +91,9 @@ public class ValidCertificateDTOValidator
                 if (inconsistentSubject(value, cert) || inconsistentIssuer(value, cert)) {
                     return false;
                 }
+            }
+            if (unknownCertificationAuthority(value)) {
+                return false;
             }
             return true;
         } catch (

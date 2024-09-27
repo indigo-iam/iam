@@ -22,7 +22,6 @@ import javax.validation.constraints.NotEmpty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.infn.mw.iam.api.validators.KnownCertificationAuthority;
 import it.infn.mw.iam.api.validators.RFC2253Formatted;
 import it.infn.mw.iam.api.validators.ValidCertificateDTO;
 import it.infn.mw.iam.api.validators.PemContent;
@@ -40,7 +39,6 @@ public class CertLinkRequestDTO extends IamRequestDTO implements CertificateDTO 
   private String subjectDn;
 
   @RFC2253Formatted(message = "Invalid issuer DN format")
-  @KnownCertificationAuthority(message = "Certification authority not recognized")
   private String issuerDn;
 
   public CertLinkRequestDTO() {
