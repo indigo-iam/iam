@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.registration.cern;
+package it.infn.mw.iam.core.user.exception;
 
-import org.springframework.context.annotation.Profile;
+import static java.lang.String.format;
 
-import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
+public class EmailAlreadyBoundException extends IamAccountException {
 
-@Profile("cern")
-public interface CernHrDBApiService {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 4103663720620113509L;
 
-  VOPersonDTO getHrDbPersonRecord(String personId);
+  public EmailAlreadyBoundException(String email, String targetUser, String emailOwner) {
+    super(format(
+        "Unable to set email '%s' to user '%s': email already bounded to another user ('%s')",
+        email, targetUser, emailOwner));
+  }
 
 }

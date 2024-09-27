@@ -91,7 +91,7 @@ public class ScimAccountLabelConverterTests {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS).doesNotExist());
 
-    accountService.setLabel(testAccount, IAM_TEST_LABEL);
+    accountService.addLabel(testAccount, IAM_TEST_LABEL);
 
     mvc.perform(get(ScimUtils.getUserLocation(testAccount.getUuid())))
       .andExpect(status().isOk())
@@ -103,7 +103,7 @@ public class ScimAccountLabelConverterTests {
       .andExpect(
           jsonPath("$." + ScimIndigoUser.INDIGO_USER_SCHEMA.LABELS + "[0].prefix").value(IAM));
 
-    accountService.setLabel(testAccount, IAM_TOAST_LABEL);
+    accountService.addLabel(testAccount, IAM_TOAST_LABEL);
 
     mvc.perform(get(ScimUtils.getUserLocation(testAccount.getUuid())))
       .andExpect(status().isOk())
