@@ -22,7 +22,7 @@ public final class RegexUtil {
   // Regex matches password with at least one lowercase letter, one uppercase
   // letter, one number, one symbol and minimum length of 8 characters
   public static final String PASSWORD_REGEX =
-      "^(?=.*[\\p{Lower}])(?=.*[\\p{Upper}])(?=.*[\\p{Digit}])(?=.*[\\p{Punct}]).{8,}([^\\r\\t\\v\\f\\n]+)$";
+      "^(?=.*[\\p{Lower}])(?=.*[\\p{Upper}])(?=.*[\\p{Digit}])(?=.*[\\p{Punct}]).{7,}([^\\r\\t\\v\\f\\n]+)$";
   public static final String PASSWORD_REGEX_MESSAGE_ERROR =
       "The password must include at least one uppercase letter, one lowercase letter, one number, one symbol (e.g., @$!%*?&) and must contain at least 8 characters for greater security.";
 }
