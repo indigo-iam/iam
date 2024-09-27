@@ -79,9 +79,9 @@ public class ValidCertificateDTOValidator
         boolean valid = true;
         try {
             if (value == null) {
-                valid = false;
                 String message = "Certificate cannot be null.";
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                return false;
             }
             if (missingPemAndDn(value)) {
                 valid = false;
