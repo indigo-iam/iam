@@ -77,41 +77,43 @@ public class ValidCertificateDTOValidator
     public boolean isValid(CertificateDTO value, ConstraintValidatorContext context) {
 
         boolean valid = true;
-        String message = "";
         try {
             if (value == null) {
                 valid = false;
-                message += "Certificate cannot be null. ";
+                String message = "Certificate cannot be null.";
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
             }
             if (missingPemAndDn(value)) {
                 valid = false;
-                message += "Either subject and issuer DN or the PEM content is required. ";
+                String message = "Either subject and issuer DN or the PEM content is required. ";
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+
             }
             if (!Strings.isNullOrEmpty(value.getPemEncodedCertificate())) {
                 IamX509Certificate cert =
                         parser.parseCertificateFromString(value.getPemEncodedCertificate());
                 if (inconsistentSubject(value, cert)) {
                     valid = false;
-                    message +=
+                    String message =
                             "When both are provided, the subject of the PEM must be coherent with the subject DN. ";
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+
                 }
                 if (inconsistentIssuer(value, cert)) {
                     valid = false;
-                    message +=
+                    String message =
                             "When both are provided, the issuer of the PEM must be coherent with the issuer DN. ";
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+
                 }
             }
             if (unknownCertificationAuthority(value)) {
                 valid = false;
-                message += "The selected certification authority is not known to the system. ";
-            }
-            if (!valid) {
+                String message = "The selected certification authority is not known to the system.";
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
             }
             return valid;
-        } catch (
-
-        Exception e) {
+        } catch (Exception e) {
             return false;
         }
 
