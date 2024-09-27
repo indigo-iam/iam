@@ -98,7 +98,7 @@ public class ValidCertificateDTOValidator
                 if (inconsistentIssuer(value, cert)) {
                     valid = false;
                     message +=
-                            "When both are provided, yhe issuer of the PEM must be coherent with the issuer DN. ";
+                            "When both are provided, the issuer of the PEM must be coherent with the issuer DN. ";
                 }
             }
             if (unknownCertificationAuthority(value)) {
