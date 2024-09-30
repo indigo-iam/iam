@@ -212,7 +212,7 @@
     <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.21</version>
+        <version>9.37.2</version>
     </dependency>
 
     <!-- OAuth 2 dependencies -->
@@ -365,6 +365,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-joda</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
     </dependency>
 
     <!-- Mail -->
