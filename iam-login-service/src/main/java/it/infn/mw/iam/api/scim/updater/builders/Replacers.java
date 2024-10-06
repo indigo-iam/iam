@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.updater.builders;
 
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_ACTIVE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
@@ -36,6 +37,7 @@ import it.infn.mw.iam.api.scim.updater.UsernameUpdater;
 import it.infn.mw.iam.api.scim.updater.util.AccountFinder;
 import it.infn.mw.iam.api.scim.updater.util.IdNotBoundChecker;
 import it.infn.mw.iam.audit.events.account.ActiveReplacedEvent;
+import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
@@ -144,6 +146,11 @@ public class Replacers extends AccountBuilderSupport {
 
     return new DefaultAccountUpdater<Boolean, ActiveReplacedEvent>(account, ACCOUNT_REPLACE_ACTIVE,
         account::isActive, account::setActive, isActive, ActiveReplacedEvent::new);
+  }
+
+  public AccountUpdater serviceAccount(boolean isServiceAccount) {
+    return new DefaultAccountUpdater<Boolean, ServiceAccountReplacedEvent>(account, ACCOUNT_REPLACE_SERVICE_ACCOUNT,
+        account::isServiceAccount, account::setServiceAccount, isServiceAccount, ServiceAccountReplacedEvent::new);
   }
 
 }

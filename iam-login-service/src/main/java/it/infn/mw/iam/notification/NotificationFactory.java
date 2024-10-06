@@ -57,4 +57,8 @@ public interface NotificationFactory {
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
 
   IamEmailNotification createAccountRestoredMessage(IamAccount account);
+
+  IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
+
+  IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
 }
