@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -187,6 +188,15 @@ public class IamOAuthConfirmationController {
 
     Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
 
+    boolean isAdmin =
+        account.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+    // admin scopes are not allowed to clients approved by regular users
+    if (!isAdmin) {
+      filteredScopes =
+          filteredScopes.stream().filter(s -> !s.startsWith("iam")).collect(Collectors.toSet());
+    }
+
     // sort scopes for display based on the inherent order of system scopes
     for (SystemScope s : systemScopes) {
       if (scopeService.fromStrings(filteredScopes).contains(s)) {
@@ -195,7 +205,7 @@ public class IamOAuthConfirmationController {
     }
 
     // add in any scopes that aren't system scopes to the end of the list
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+    sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     model.put("scopes", sortedScopes);
 
@@ -230,7 +240,7 @@ public class IamOAuthConfirmationController {
 
 
     // contacts
-    if (client.getContacts() != null) {
+    if (!client.getContacts().isEmpty()) {
       String contacts = Joiner.on(", ").join(client.getContacts());
       model.put("contacts", contacts);
     }
