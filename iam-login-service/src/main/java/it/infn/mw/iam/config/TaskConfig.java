@@ -34,6 +34,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
+import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -105,6 +106,13 @@ public class TaskConfig implements SchedulingConfigurer {
   @CacheEvict(allEntries = true, cacheNames = IamWellKnownInfoProvider.CACHE_KEY)
   public void logWellKnownCacheEviction() {
     LOG.debug("well-known config cache evicted");
+  }
+
+  @Scheduled(fixedRateString = "${task.trustCacheCleanupPeriodSecs:3600}",
+      timeUnit = TimeUnit.SECONDS)
+  @CacheEvict(allEntries = true, cacheNames = IamTrustService.TRUST_CACHE_KEY)
+  public void logTrustCacheEviction() {
+    LOG.debug("trust config cache evicted");
   }
 
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
