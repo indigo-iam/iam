@@ -61,7 +61,7 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
 
     IamAccount testAccount = findTestAccount();
     Date now = new Date();
-    repo.createSignatureForAccount(aup, testAccount, new Date());
+    repo.createSignatureForAccount(aup, testAccount, now);
 
     IamAupSignature sig = repo.findSignatureForAccount(aup, testAccount)
       .orElseThrow(() -> new AssertionError("Expected signature not found in database"));

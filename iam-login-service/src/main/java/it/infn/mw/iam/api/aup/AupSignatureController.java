@@ -29,12 +29,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,6 +45,7 @@ import it.infn.mw.iam.api.aup.error.AupNotFoundError;
 import it.infn.mw.iam.api.aup.error.AupSignatureNotFoundError;
 import it.infn.mw.iam.api.aup.model.AupSignatureConverter;
 import it.infn.mw.iam.api.aup.model.AupSignatureDTO;
+import it.infn.mw.iam.api.aup.model.AupSignaturePatchRequestDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.audit.events.aup.AupSignatureDeletedEvent;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
@@ -71,6 +74,7 @@ public class AupSignatureController {
   private final TimeProvider timeProvider;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
+
   public AupSignatureController(AupSignatureConverter conv, AccountUtils utils,
       IamAupSignatureRepository signatureRepo, IamAupRepository aupRepo, TimeProvider timeProvider,
       ApplicationEventPublisher publisher, NotificationFactory notificationFactory) {
@@ -141,6 +145,7 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId,
+      @RequestBody(required = false) @Validated AupSignaturePatchRequestDTO dto,
       Authentication authentication) throws AccountNotFoundException {
 
     Optional<IamAccount> updaterAccount = accountUtils.getAuthenticatedUserAccount();
@@ -148,9 +153,11 @@ public class AupSignatureController {
     IamAccount account = accountUtils.getByAccountId(accountId)
       .orElseThrow(accountNotFoundException(format(ACCOUNT_NOT_FOUND_FOR_ID_MESSAGE, accountId)));
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(aupNotFoundException());
-    Date now = new Date(timeProvider.currentTimeMillis());
 
-    IamAupSignature signature = signatureRepo.createSignatureForAccount(aup, account, now);
+    Date signatureTime =
+        dto == null ? new Date(timeProvider.currentTimeMillis()) : dto.getSignatureTime();
+    IamAupSignature signature =
+        signatureRepo.createSignatureForAccount(aup, account, signatureTime);
 
     String principal = null;
 

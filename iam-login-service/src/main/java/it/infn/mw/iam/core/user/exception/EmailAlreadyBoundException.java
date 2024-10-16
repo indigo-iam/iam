@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.util;
+package it.infn.mw.iam.core.user.exception;
 
-public final class RegexUtil {
+import static java.lang.String.format;
 
-  private RegexUtil() {}
+public class EmailAlreadyBoundException extends IamAccountException {
 
-  // Regex matches password with at least one lowercase letter, one uppercase
-  // letter, one number, one symbol and minimum length of 8 characters
-  public static final String PASSWORD_REGEX =
-      "^(?=.*[\\p{Lower}])(?=.*[\\p{Upper}])(?=.*[\\p{Digit}])(?=.*[\\p{Punct}]).{7,}([^\\r\\t\\v\\f\\n]+)$";
-  public static final String PASSWORD_REGEX_MESSAGE_ERROR =
-      "The password must include at least one uppercase letter, one lowercase letter, one number, one symbol (e.g., @$!%*?&) and must contain at least 8 characters for greater security.";
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 4103663720620113509L;
+
+  public EmailAlreadyBoundException(String email, String targetUser, String emailOwner) {
+    super(format(
+        "Unable to set email '%s' to user '%s': email already bounded to another user ('%s')",
+        email, targetUser, emailOwner));
+  }
+
 }
