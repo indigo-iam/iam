@@ -13,22 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.account;
+package it.infn.mw.iam.audit.events.account.x509;
 
-import it.infn.mw.iam.audit.events.account.x509.X509CertificateLinkedEvent;
-import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
+import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-public class X509CertificateUpdatedEvent extends X509CertificateLinkedEvent {
+public class X509CertificateUnlinkedEvent extends AccountEvent {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  public X509CertificateUpdatedEvent(Object source, IamAccount account, String message,
-      IamX509AuthenticationCredential cred) {
-    super(source, account, message, cred);
+
+  private final String certificateSubject;
+
+  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
+      String certificateSubject) {
+    super(source, account, message);
+    this.certificateSubject = certificateSubject;
+  }
+
+  public String getCertificateSubject() {
+    return certificateSubject;
   }
 
 }

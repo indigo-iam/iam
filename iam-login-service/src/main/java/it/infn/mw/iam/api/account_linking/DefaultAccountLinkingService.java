@@ -22,7 +22,6 @@ import java.security.Principal;
 import java.util.Date;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,9 +29,9 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.audit.events.account.AccountLinkedEvent;
 import it.infn.mw.iam.audit.events.account.AccountUnlinkedEvent;
-import it.infn.mw.iam.audit.events.account.X509CertificateLinkedEvent;
-import it.infn.mw.iam.audit.events.account.X509CertificateUnlinkedEvent;
 import it.infn.mw.iam.audit.events.account.X509CertificateUpdatedEvent;
+import it.infn.mw.iam.audit.events.account.x509.X509CertificateLinkedEvent;
+import it.infn.mw.iam.audit.events.account.x509.X509CertificateUnlinkedEvent;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
@@ -44,18 +43,21 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.model.IamX509ProxyCertificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
 @Service
 public class DefaultAccountLinkingService
     implements AccountLinkingService, ApplicationEventPublisherAware {
 
   final IamAccountRepository iamAccountRepository;
+  final IamX509CertificateRepository certificateRepository;
   final ExternalAccountLinker externalAccountLinker;
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
-  public DefaultAccountLinkingService(IamAccountRepository repo, ExternalAccountLinker linker) {
+  public DefaultAccountLinkingService(IamAccountRepository repo,
+      IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker) {
     this.iamAccountRepository = repo;
+    this.certificateRepository = certificateRepository;
     this.externalAccountLinker = linker;
   }
 
@@ -140,27 +142,26 @@ public class DefaultAccountLinkingService
 
     IamAccount userAccount = findAccount(authenticatedUser);
 
-    iamAccountRepository.findByCertificateSubject(x509Credential.getSubject())
-      .ifPresent(linkedAccount -> {
-        if (!linkedAccount.getUuid().equals(userAccount.getUuid())) {
-          throw new AccountAlreadyLinkedError(
-              format("X.509 credential with subject '%s' is already linked to another user",
-                  x509Credential.getSubject()));
-        }
-      });
+    Optional<IamAccount> linkedAccount =
+        certificateRepository.findBySubjectDn(x509Credential.getSubject()).stream().findFirst();
 
-    Optional<IamX509Certificate> linkedCert = userAccount.getX509Certificates()
-      .stream()
-      .filter(c -> c.getSubjectDn().equals(x509Credential.getSubject()) && c.getIssuerDn().equals(x509Credential.getIssuer()))
-      .findAny();
+    // check if the x509Credential is linked to another user
+    if (linkedAccount.isPresent() && !linkedAccount.get().getUuid().equals(userAccount.getUuid())) {
+      throw new AccountAlreadyLinkedError(
+          format("X.509 credential with subject '%s' is already linked to another user",
+              x509Credential.getSubject()));
+    }
 
-    if (linkedCert.isPresent()) {
+    Optional<IamX509Certificate> linkedCertificate = certificateRepository
+      .findBySubjectDnAndIssuerDn(x509Credential.getSubject(), x509Credential.getIssuer());
 
-      linkedCert.ifPresent(c -> {
-        c.setCertificate(x509Credential.getCertificateChainPemString());
-        c.setLastUpdateTime(new Date());
-      });
+    if (linkedCertificate.isPresent()) {
 
+      linkedCertificate.get().setCertificate(x509Credential.getCertificateChainPemString());
+      linkedCertificate.get().setLastUpdateTime(new Date());
+      certificateRepository.save(linkedCertificate.get());
+      userAccount.getX509Certificates().remove(linkedCertificate.get());
+      userAccount.getX509Certificates().add(linkedCertificate.get());
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
@@ -168,28 +169,23 @@ public class DefaultAccountLinkingService
           String.format("User '%s' has updated its linked certificate with subject '%s'",
               userAccount.getUsername(), x509Credential.getSubject()),
           x509Credential));
-
     } else {
 
       Date now = new Date();
       IamX509Certificate newCert = x509Credential.asIamX509Certificate();
       newCert.setLabel(String.format("cert-%d", userAccount.getX509Certificates().size()));
-
       newCert.setCreationTime(now);
       newCert.setLastUpdateTime(now);
-
       newCert.setPrimary(true);
       newCert.setAccount(userAccount);
+      certificateRepository.save(newCert);
       userAccount.getX509Certificates().add(newCert);
       userAccount.touch();
-
       iamAccountRepository.save(userAccount);
-
       eventPublisher.publishEvent(new X509CertificateLinkedEvent(this, userAccount,
           String.format("User '%s' linked certificate with subject '%s' to his/her membership",
               userAccount.getUsername(), x509Credential.getSubject()),
           x509Credential));
-
     }
   }
 
