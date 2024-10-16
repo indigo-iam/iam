@@ -26,5 +26,6 @@ public enum IamEventCategory {
   AUP,
   MEMBERSHIP,
   CLIENT,
-  TOKEN
+  TOKEN,
+  CERTIFICATE_LINK,
 }
