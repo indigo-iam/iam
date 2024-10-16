@@ -143,7 +143,7 @@ public class DefaultAccountLinkingService
     IamAccount userAccount = findAccount(authenticatedUser);
 
     Optional<IamAccount> linkedAccount =
-        certificateRepository.findBySubject(x509Credential.getSubject()).stream().findFirst();
+        certificateRepository.findBySubjectDn(x509Credential.getSubject()).stream().findFirst();
 
     // check if the x509Credential is linked to another user
     if (linkedAccount.isPresent() && !linkedAccount.get().getUuid().equals(userAccount.getUuid())) {

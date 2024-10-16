@@ -191,7 +191,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
 
     Optional<IamAccount> linkedUser =
-        iamX509CertificateRepo.findBySubject(TEST_0_SUBJECT).stream().findFirst();
+        iamX509CertificateRepo.findBySubjectDn(TEST_0_SUBJECT).stream().findFirst();
     assertThat(linkedUser.isPresent(), is(true));
     assertThat(linkedUser.get().getUsername(), is("test"));
 
@@ -283,7 +283,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMessage)));
 
     Optional<IamX509Certificate> testCert =
-        iamX509CertificateRepo.findBySubjectAndIssuer(TEST_0_SUBJECT, TEST_0_ISSUER);
+        iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
     assertThat(testCert.isPresent(), is(true));
     assertThat(
         account.getX509Certificates()
