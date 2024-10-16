@@ -207,7 +207,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     session = (MockHttpSession) mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
-      .andExpect(view().name("approveDevice"))
+      .andExpect(view().name("iam/approveDevice"))
       .andReturn()
       .getRequest()
       .getSession();
