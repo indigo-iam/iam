@@ -89,7 +89,8 @@
 		<jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
 		<jaxb-runtime.version>2.3.2</jaxb-runtime.version>
 
-		<bouncycastle.version>1.58</bouncycastle.version>
+		<bouncycastle.version>1.60</bouncycastle.version>
+		<commons-collections.version>3.2.2</commons-collections.version>
 
 		<resource.delimiter>@</resource.delimiter>
 
@@ -280,6 +281,12 @@
 				<groupId>org.flywaydb</groupId>
 				<artifactId>flyway-core</artifactId>
 				<version>${flyway.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>commons-collections</groupId>
+				<artifactId>commons-collections</artifactId>
+				<version>${commons-collections.version}</version>
 			</dependency>
 
 			<!-- JSR APIs (for Java 11 compatibility) -->

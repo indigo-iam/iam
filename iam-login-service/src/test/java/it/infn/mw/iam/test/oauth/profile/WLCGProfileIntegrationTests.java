@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +57,6 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -540,8 +540,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
 
     JSONObject nestedActClaimValue =
-        (JSONObject) exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("act");
-    assertThat(nestedActClaimValue.getAsString("sub"), is(ACTOR_CLIENT_ID));
+        (JSONObject) JSONObject.wrap(exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("act"));
+    assertThat(nestedActClaimValue.getString("sub"), is(ACTOR_CLIENT_ID));
 
     // Check that token can be introspected properly
     mvc
