@@ -441,9 +441,7 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   public void testSignAupThrowExceptionForServiceAccount() throws Exception {
-    IamAup aup = buildDefaultAup();
-    aupRepo.save(aup);
-    
+       
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     testAccount.setServiceAccount(true);
     accountRepo.save(testAccount);
