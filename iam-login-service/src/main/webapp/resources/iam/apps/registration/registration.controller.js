@@ -52,7 +52,6 @@ function RegistrationController(
       type: "text",
       minlength: 2,
       required: true,
-      validators: "",
       showField: true,
     },
     surname: {
@@ -64,7 +63,6 @@ function RegistrationController(
       type: "text",
       minlength: 2,
       required: true,
-      validators: "",
       showField: true,
     },
     email: {
@@ -75,7 +73,6 @@ function RegistrationController(
       placeholder: "Enter a valid email address",
       type: "email",
       required: true,
-      validators: "iam-email-available-validator",
       showField: true,
       debounceTime: 500
     },
@@ -88,7 +85,6 @@ function RegistrationController(
       type: "text",
       minlength: 2,
       required: true,
-      validators: "iam-username-available-validator",
       showField: true,
       debounceTime: 500
     },
@@ -102,7 +98,6 @@ function RegistrationController(
       type: "textarea",
       rows: 5,
       required: true,
-      validators: "",
       showField: true,
     },
   };

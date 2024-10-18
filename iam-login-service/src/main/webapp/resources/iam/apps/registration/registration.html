@@ -68,19 +68,39 @@
                     ng-class="{'has-error': rc.fieldInvalid(field.name), 'has-success': rc.fieldValid(field.name)}"
                 >
                     <label class="control-label" for="{{field.name}}">{{field.label}}</label>
+
+                    <!-- Field where applying custom directive is NOT needed -->
                     <input
-                        ng-if="field.type == 'text' || field.type == 'email'"
+                        ng-if="field.type == 'text' && field.name != 'username'"
                         class="form-control" name="{{field.name}}" id="{{field.name}}" type="{{field.type}}"
                         ng-model="request[field.ngModelName]" placeholder="{{field.placeholder}}" ng-required="field.required"
                         ng-minlength="field.minlength" ng-readonly="rc.fieldReadonly(field.name)"
-                        ng-model-options="{ debounce: field.debounceTime || 0 }" ng-attr-validator="{{field.validators}}" />
-            
+                        ng-model-options="{ debounce: field.debounceTime || 0 }" />
+
+                    <!-- Field where applying custom directive directly is a MUST -->
+                    <input
+                        ng-if="field.type == 'email'"
+                        class="form-control" name="{{field.name}}" id="{{field.name}}" type="{{field.type}}"
+                        ng-model="request[field.ngModelName]" placeholder="{{field.placeholder}}" ng-required="field.required"
+                        ng-minlength="field.minlength" ng-readonly="rc.fieldReadonly(field.name)"
+                        ng-model-options="{ debounce: field.debounceTime || 0 }"
+                        iam-email-available-validator />
+
+                    <!-- Field where applying custom directive directly is a MUST -->
+                    <input
+                        ng-if="field.type == 'text' && field.name == 'username'"
+                        class="form-control" name="{{field.name}}" id="{{field.name}}" type="{{field.type}}"
+                        ng-model="request[field.ngModelName]" placeholder="{{field.placeholder}}" ng-required="field.required"
+                        ng-minlength="field.minlength" ng-readonly="rc.fieldReadonly(field.name)"
+                        ng-model-options="{ debounce: field.debounceTime || 0 }"
+                        iam-username-available-validator />
+
                     <textarea
                         ng-if="field.type === 'textarea'" class="form-control" id="{{field.name}}"
                         name="{{field.name}}" rows="{{field.rows}}" placeholder="{{field.placeholder}}"
                         ng-model="request[field.ngModelName]" ng-required="field.required"
-                        ng-minlength="{{field.minlength}}" ng-readonly="rc.fieldReadonly(field.name)"></textarea> 
-            
+                        ng-minlength="{{field.minlength}}" ng-readonly="rc.fieldReadonly(field.name)"></textarea>
+
                     <span class="help-block" ng-show="registrationForm[field.name].$dirty && rc.getFieldErrorMessage(field.name)">
                         {{ rc.getFieldErrorMessage(field.name) }}
                     </span>
