@@ -19,6 +19,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.SpringApplication;
@@ -31,6 +32,7 @@ import it.infn.mw.iam.test.util.db.MySQL57TestContainer;
 import it.infn.mw.iam.test.util.db.MySQL80TestContainer;
 
 @Testcontainers(disabledWithoutDocker = true)
+@Disabled("MySQL 5.7 no more supported")
 public class Upgradev1_7_0DbTests extends UpgradeDbTestSupport {
 
   public static final String DB_DUMP = "iam-v1.7.0-mysql5.7.sql";

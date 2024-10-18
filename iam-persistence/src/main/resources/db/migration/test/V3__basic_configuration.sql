@@ -1,10 +1,11 @@
 -- Authorities
-INSERT INTO iam_authority(ID, AUTH) VALUES
-(1, 'ROLE_ADMIN'),
-(2, 'ROLE_USER');
+INSERT INTO iam_authority(AUTH) VALUES
+('ROLE_ADMIN'),
+('ROLE_USER');
+-- ROLE_ADMIN id = 1, ROLE_USER id = 2
 
 -- Administrator account 
-INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, PICTURE, GENDER) VALUES
+INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, PICTURE, GENDER) VALUES
 (1, 'Admin', 'User', 'admin@iam.test', true, '1950-01-01', null, 'M');
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active) VALUES

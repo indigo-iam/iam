@@ -43,16 +43,16 @@ public class RemoveOrphanTokens implements SpringJdbcFlywayMigration {
   public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
     int updateResult = jdbcTemplate.update(DELETE_ACCESS_TOKENS_OF_DELETED_USERS);
-    LOG.info("Removed {} access tokens owned by deleted users", updateResult);
+    LOG.debug("Removed {} access tokens owned by deleted users", updateResult);
 
     updateResult = jdbcTemplate.update(DELETE_REFRESH_TOKENS_OF_DELETED_USERS);
-    LOG.info("Removed {} refresh tokens owned by deleted users", updateResult);
+    LOG.debug("Removed {} refresh tokens owned by deleted users", updateResult);
 
     updateResult = jdbcTemplate.update(DELETE_ACCESS_TOKENS_WITH_INVALID_AUTH_HOLDER);
-    LOG.info("Removed {} access tokens with invalid authentication holder", updateResult);
+    LOG.debug("Removed {} access tokens with invalid authentication holder", updateResult);
 
     updateResult = jdbcTemplate.update(DELETE_REFRESH_TOKENS_WITH_INVALID_AUTH_HOLDER);
-    LOG.info("Removed {} refresh tokens with invalid authentication holder", updateResult);
+    LOG.debug("Removed {} refresh tokens with invalid authentication holder", updateResult);
   }
 
 }

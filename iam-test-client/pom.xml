@@ -15,6 +15,10 @@
   <name>IAM Test Client Application</name>
   <description>A test client application for the IAM login service</description>
 
+  <properties>
+    <start-class>it.infn.mw.tc.IamTestClientApplication</start-class>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.webjars</groupId>
