@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.registration.cern.mock;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.time.Instant;
 import java.util.Date;
@@ -30,7 +29,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
@@ -47,7 +46,7 @@ public class MockCernAuthController implements CernHrDBApiService {
   @Autowired
   CernProperties properties;
 
-  @RequestMapping(method = GET, path = "/mock-cern-auth")
+  @GetMapping("/mock-cern-auth")
   public String mockCernAuthentication(HttpSession session) {
 
     OidcSecurityContextBuilder builder = new OidcSecurityContextBuilder();
@@ -67,11 +66,6 @@ public class MockCernAuthController implements CernHrDBApiService {
     session.setAttribute(SPRING_SECURITY_CONTEXT_KEY, context);
 
     return "redirect:/start-registration";
-  }
-
-  @Override
-  public boolean hasValidExperimentParticipation(String personId) {
-    return false;
   }
 
   @Override

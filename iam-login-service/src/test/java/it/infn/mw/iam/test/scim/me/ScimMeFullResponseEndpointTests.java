@@ -45,7 +45,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
     "scim.include_managed_groups=true", "scim.include_authorities=true"})
 public class ScimMeFullResponseEndpointTests {
 
-  private final static String ME_ENDPOINT = "/scim/Me";
+  private static final String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;

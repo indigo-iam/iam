@@ -18,7 +18,7 @@ angular.module('passwordResetApp').directive('strongPassword', function () {
         require: 'ngModel',
         link: function (scope, element, attrs, ngModel) {
             ngModel.$parsers.unshift(function (viewValue) {
-                var passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!"#$%&'()*+,-./:;<=>?@[\]\^ `{|}~]).{8,}([^\r\t\v\f\n]+)$/;
+                var passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!"#$%&'()*+,-./:;<=>?@[\]\^ `{|}~]).{7,}([^\r\t\v\f\n]+)$/;
                 var isStrong = passwordStrengthRegex.test(viewValue);
                 ngModel.$setValidity('strongPassword', isStrong);
                 return viewValue;
