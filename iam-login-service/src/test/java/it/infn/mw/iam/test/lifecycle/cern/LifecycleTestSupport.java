@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.test.lifecycle.cern;
 
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_ACTION;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_IGNORE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_SKIP_EMAIL_SYNCH;
@@ -25,12 +25,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.function.Supplier;
 
+import org.joda.time.LocalDate;
+
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
-import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Action;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
 public interface LifecycleTestSupport {
@@ -38,17 +41,17 @@ public interface LifecycleTestSupport {
   String CERN_SSO_ISSUER = "https://auth.cern.ch/auth/realms/cern";
   String CERN_PERSON_ID = "12345678";
 
-  Instant NOW = Instant.parse("2020-01-01T00:00:00.00Z");
+  Instant LAST_MIDNIGHT = Instant.now().truncatedTo(ChronoUnit.DAYS);
+  Instant NOW = LAST_MIDNIGHT.plus(12, ChronoUnit.HOURS);
+  Instant DAY_BEFORE = LAST_MIDNIGHT.minus(1, ChronoUnit.SECONDS);
 
+  Instant ONE_MINUTE_AGO = NOW.minus(1, ChronoUnit.MINUTES);
   Instant FOUR_DAYS_AGO = NOW.minus(4, ChronoUnit.DAYS);
   Instant EIGHT_DAYS_AGO = NOW.minus(8, ChronoUnit.DAYS);
   Instant THIRTY_ONE_DAYS_AGO = NOW.minus(31, ChronoUnit.DAYS);
 
   default IamLabel cernIgnoreLabel() {
-    return IamLabel.builder()
-      .prefix(LABEL_CERN_PREFIX)
-      .name(LABEL_IGNORE)
-      .build();
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
   }
 
 
@@ -68,27 +71,57 @@ public interface LifecycleTestSupport {
       .build();
   }
 
-  default IamLabel actionLabel(Action a) {
-    return IamLabel.builder()
-      .prefix(LABEL_CERN_PREFIX)
-      .name(LABEL_ACTION)
-      .value(a.name())
-      .build();
+  default IamLabel statusLabel(AccountLifecycleStatus s) {
+    return IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(s.name()).build();
   }
 
   default VOPersonDTO voPerson(String personId) {
+    return voPerson(personId, LocalDate.now().plusDays(365).toDate());
+  }
+
+  default VOPersonDTO voPerson(String personId, Date endDate) {
+    IamAccount account = IamAccount.newAccount();
+    account.getUserInfo().setGivenName("TEST");
+    account.getUserInfo().setFamilyName("USER");
+    account.getUserInfo().setEmail("test@hr.cern");
+    return voPerson(personId, account, "test", endDate);
+  }
+
+  default VOPersonDTO noParticipationsVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    dto.getParticipations().clear();
+    return dto;
+  }
+
+  default VOPersonDTO expiredVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    // Set endDate more than 7 days (suspension grace period) but less than 30 days (removal grace
+    // period)
+    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(20, ChronoUnit.DAYS)));
+    return dto;
+  }
+
+  default VOPersonDTO removedVoPerson(String personId) {
+    VOPersonDTO dto = voPerson(personId);
+    // Set endDate more than 30 days (removal grace period)
+    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(40, ChronoUnit.DAYS)));
+    return dto;
+  }
+
+  default VOPersonDTO voPerson(String personId, IamAccount account, String experiment,
+      Date endDate) {
     VOPersonDTO dto = new VOPersonDTO();
-    dto.setFirstName("TEST");
-    dto.setName("USER");
-    dto.setEmail("test@hr.cern");
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
     dto.setParticipations(Sets.newHashSet());
 
     dto.setId(Long.parseLong(personId));
 
     ParticipationDTO p = new ParticipationDTO();
 
-    p.setExperiment("test");
-    p.setStartDate(Date.from(Instant.parse("2020-01-01T00:00:00.00Z")));
+    p.setExperiment(experiment);
+    p.setStartDate(endDate);
 
     InstituteDTO i = new InstituteDTO();
     i.setId("000001");
@@ -101,7 +134,7 @@ public interface LifecycleTestSupport {
 
     return dto;
   }
-  
+
   default Supplier<AssertionError> assertionError(String message) {
     return () -> new AssertionError(message);
   }

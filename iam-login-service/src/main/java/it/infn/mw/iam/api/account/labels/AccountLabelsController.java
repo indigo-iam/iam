@@ -94,7 +94,7 @@ public class AccountLabelsController {
     handleValidationError(validationResult);
     IamAccount account = service.findByUuid(id).orElseThrow(noSuchAccountError(id));
 
-    service.setLabel(account, converter.entityFromDto(label));
+    service.addLabel(account, converter.entityFromDto(label));
   }
 
   @RequestMapping(method = DELETE)

@@ -5,4 +5,4 @@ The admin takes this action with the following motivation:
 ${motivation}
 
 
-The ${organisationName} registration service
+The ${organisationName} management service

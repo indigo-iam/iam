@@ -17,11 +17,9 @@ package it.infn.mw.iam.api.account.lifecycle;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
 import static java.lang.String.format;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +27,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -53,7 +52,6 @@ public class AccountLifecycleController {
   private final IamAccountService service;
   private final LifecycleProperties properties;
 
-  @Autowired
   public AccountLifecycleController(IamAccountService accountService,
       LifecycleProperties properties) {
     this.service = accountService;
@@ -71,7 +69,7 @@ public class AccountLifecycleController {
     }
   }
 
-  @RequestMapping(method = PUT)
+  @PutMapping
   public void setEndTime(@PathVariable String id, @RequestBody @Validated AccountLifecycleDTO dto,
       BindingResult validationResult) {
 

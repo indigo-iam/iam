@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.registration.cern;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -27,7 +26,6 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withUnauthorizedRequest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -70,7 +68,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
   public static class TestConfig {
     @Bean
     @Primary
-    public RestTemplateFactory mockRestTemplateFactory() {
+    RestTemplateFactory mockRestTemplateFactory() {
       return new MockRestTemplateFactory();
     }
   }
@@ -90,49 +88,6 @@ public class CernHrDbApiClientTests extends CernTestSupport {
   public void setup() {
     mockRtf = (MockRestTemplateFactory) rtf;
     mockRtf.resetTemplate();
-  }
-
-  @Test
-  public void checkMembershipSuccess() {
-    String personId = "12356789";
-    String apiValidationUrl = apiValidationUrl(personId);
-    mockRtf.getMockServer()
-      .expect(requestTo(apiValidationUrl))
-      .andExpect(method(GET))
-      .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(OK).contentType(APPLICATION_JSON).body("true"));
-
-    assertThat(hrDbService.hasValidExperimentParticipation(personId), is(true));
-  }
-
-  @Test
-  public void checkMembershipFailure() {
-    String personId = "12356789";
-    String apiValidationUrl = apiValidationUrl(personId);
-    mockRtf.getMockServer()
-      .expect(requestTo(apiValidationUrl))
-      .andExpect(method(GET))
-      .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withStatus(OK).contentType(APPLICATION_JSON).body("false"));
-
-    assertThat(hrDbService.hasValidExperimentParticipation(personId), is(false));
-  }
-
-  @Test(expected = CernHrDbApiError.class)
-  public void checkAuthorizationError() {
-    String personId = "12356789";
-    String apiValidationUrl = apiValidationUrl(personId);
-    mockRtf.getMockServer()
-      .expect(requestTo(apiValidationUrl))
-      .andExpect(method(GET))
-      .andExpect(header("Authorization", BASIC_AUTH_HEADER_VALUE))
-      .andRespond(withUnauthorizedRequest());
-    try {
-      hrDbService.hasValidExperimentParticipation(personId);
-    } catch (CernHrDbApiError e) {
-      assertThat(e.getMessage(), containsString("401"));
-      throw e;
-    }
   }
 
   @Test

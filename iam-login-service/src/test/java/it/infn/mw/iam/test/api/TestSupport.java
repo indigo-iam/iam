@@ -56,6 +56,9 @@ public class TestSupport {
   public static final String EXPECTED_ACCOUNT_NOT_FOUND = "Expected account not found";
   public static final String EXPECTED_GROUP_NOT_FOUND = "Expected group not found";
 
+  public static final String CERN_USER = "cern-user";
+  public static final String CERN_USER_UUID = "e7de071b-578f-46ec-a2f1-6f9844a50aa5";
+
   public static String LABEL_PREFIX = "indigo-iam.github.io";
   public static String LABEL_NAME = "example.label";
   public static String LABEL_VALUE = "example-label-value";

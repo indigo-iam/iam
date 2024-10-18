@@ -20,7 +20,6 @@ import static java.lang.String.format;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -48,7 +47,6 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
   final RestTemplateFactory rtFactory;
   final CernProperties properties;
 
-  @Autowired
   public DefaultCernHrDBApiService(RestTemplateFactory rtFactory, CernProperties properties) {
     this.rtFactory = rtFactory;
     this.properties = properties;
@@ -62,26 +60,6 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
         properties.getHrApi().getPassword()));
 
     return headers;
-  }
-
-  @Override
-  public boolean hasValidExperimentParticipation(String personId) {
-    RestTemplate rt = rtFactory.newRestTemplate();
-
-    String personValidUrl = String.format("%s%s", properties.getHrApi().getUrl(),
-        format(PARTICIPATION_API_PATH_TEMPLATE, properties.getExperimentName(), personId));
-
-    LOG.debug("Querying HR db participation API for person {} at URL {}", personId, personValidUrl);
-
-    try {
-
-      ResponseEntity<Boolean> response = rt.exchange(personValidUrl, HttpMethod.GET,
-          new HttpEntity<>(buildAuthHeaders()), Boolean.class);
-      return response.getBody();
-    } catch (RestClientException e) {
-      final String errorMsg = "HR db api error: " + e.getMessage();
-      throw new CernHrDbApiError(errorMsg, e);
-    } 
   }
 
   @Override

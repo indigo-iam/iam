@@ -22,8 +22,6 @@ import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 @Profile("cern")
 public interface CernHrDBApiService {
 
-  boolean hasValidExperimentParticipation(String personId);
-
   VOPersonDTO getHrDbPersonRecord(String personId);
 
 }

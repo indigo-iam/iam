@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<settings xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0  http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <!--<localRepository>/tmp/m2-repository</localRepository>-->
+    <interactiveMode>false</interactiveMode>
+    <mirrors>
+        <mirror>
+            <id>nexus</id>
+            <name>CNAF maven mirror</name>
+            <url>https://repo.cloud.cnaf.infn.it/repository/maven-public</url>
+            <mirrorOf>*</mirrorOf>
+        </mirror>
+    </mirrors>
+    <profiles>
+    <profile>
+      <id>nexus</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>nexus</activeProfile>
+    </activeProfiles>
+</settings>

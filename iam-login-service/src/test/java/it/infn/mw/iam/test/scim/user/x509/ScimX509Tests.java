@@ -33,19 +33,24 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
@@ -53,6 +58,10 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"x509.trustAnchorsDir=src/test/resources/test-ca"})
 public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
   public static final Logger LOG = LoggerFactory.getLogger(ScimX509Tests.class);
@@ -63,7 +72,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
   @Autowired
   private ObjectMapper mapper;
-  
+
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
@@ -74,7 +83,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
-  
+
   @After
   public void teardown() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
@@ -85,8 +94,9 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     IamAccount user = iamAccountRepo.findByUsername(TEST_USERNAME)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
-    mvc.perform(get("/scim/Users/{id}", user.getUuid())).andExpect(status().isOk()).andExpect(
-        jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
+    mvc.perform(get("/scim/Users/{id}", user.getUuid()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.%s.certificates", INDIGO_USER_SCHEMA).doesNotExist());
 
   }
 
@@ -180,8 +190,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_1_CERT_LABEL)
       .pemEncodedCertificate(TEST_1_CERT_STRING)
-      .subjectDn("a fake subject")
-      .issuerDn("a fake issuer")
+      .subjectDn("CN=test1,O=IGI,C=IT")
+      .issuerDn("CN=Test CA,O=IGI,C=IT")
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")
@@ -245,7 +255,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.schemas")
         .value(Matchers.contains("urn:ietf:params:scim:api:messages:2.0:Error")))
       .andExpect(jsonPath("$.detail").exists())
-      .andExpect(jsonPath("$.detail").value(containsString("Error parsing certificate chain")));
+      .andExpect(jsonPath("$.detail").value(containsString("Invalid PEM encoded certificate")));
   }
 
   @Test
@@ -305,17 +315,16 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().add(user).build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     testUser = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
       .orElseThrow(() -> new AssertionError("Expected test user not found"));
 
     assertThat(testUser.getUsername(), equalTo(TEST_USERNAME));
   }
-  
+
   @Test
   public void testScimAddCertificateFailureInvalidCertificate() throws Exception {
 
@@ -333,7 +342,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     mvc
       .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("400")))
@@ -341,7 +351,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .andExpect(jsonPath("$.schemas")
         .value(Matchers.contains("urn:ietf:params:scim:api:messages:2.0:Error")))
       .andExpect(jsonPath("$.detail").exists())
-      .andExpect(jsonPath("$.detail").value(containsString("Error parsing certificate chain")));
+      .andExpect(jsonPath("$.detail").value(containsString("Invalid PEM encoded certificate")));
   }
 
   @Test
@@ -360,8 +370,7 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .build();
 
     mvc
-      .perform(post("/scim/Users")
-        .content(mapper.writeValueAsString(user))
+      .perform(post("/scim/Users").content(mapper.writeValueAsString(user))
         .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isCreated());
 
@@ -375,7 +384,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
 
     mvc
       .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
+        .content(mapper.writeValueAsString(patchRequest))
+        .contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.status").exists())
       .andExpect(jsonPath("$.status").value(equalTo("409")))
@@ -416,10 +426,9 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", account.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", account.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
 
     iamAccountRepo.findByCertificate(TEST_0_SUBJECT).ifPresent(a -> {
       throw new AssertionError("Found unexpected account bound to '" + TEST_0_SUBJECT
@@ -447,9 +456,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
       .remove(ScimUser.builder().addX509Certificate(cert).build())
       .build();
 
-    mvc
-      .perform(patch("/scim/Users/{id}", testUser.getUuid())
-        .content(mapper.writeValueAsString(patchRequest)).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isNoContent());
+    mvc.perform(patch("/scim/Users/{id}", testUser.getUuid())
+      .content(mapper.writeValueAsString(patchRequest))
+      .contentType(SCIM_CONTENT_TYPE)).andExpect(status().isNoContent());
   }
 }

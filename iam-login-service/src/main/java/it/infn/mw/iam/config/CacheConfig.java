@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
+import it.infn.mw.iam.api.trust.sevice.IamTrustService;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -40,7 +41,7 @@ public class CacheConfig {
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
   CacheManager localCacheManager(CacheProperties props) {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
-        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
+        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, IamTrustService.TRUST_CACHE_KEY);
   }
 
   @Bean
@@ -50,6 +51,8 @@ public class CacheConfig {
       .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
           RedisCacheConfiguration.defaultCacheConfig())
       .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig())
+      .withCacheConfiguration(IamTrustService.TRUST_CACHE_KEY,
           RedisCacheConfiguration.defaultCacheConfig());
   }
 

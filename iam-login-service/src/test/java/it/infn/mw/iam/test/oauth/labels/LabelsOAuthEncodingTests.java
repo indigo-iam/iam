@@ -91,7 +91,7 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    accountService.setLabel(testAccount, TEST_LABEL);
+    accountService.addLabel(testAccount, TEST_LABEL);
 
     AccessTokenGetter tg = buildAccessTokenGetter();
     tg.scope("openid profile");

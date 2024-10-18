@@ -17,14 +17,14 @@ package it.infn.mw.iam.api.requests;
 
 import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 @Service
 public class GroupRequestConverter {
 
-  public GroupRequestDto fromEntity(IamGroupRequest iamGroupRequest) {
-    GroupRequestDto groupRequest = new GroupRequestDto();
+  public GroupRequestDTO fromEntity(IamGroupRequest iamGroupRequest) {
+    GroupRequestDTO groupRequest = new GroupRequestDTO();
     
     groupRequest.setUuid(iamGroupRequest.getUuid());
     groupRequest.setUsername(iamGroupRequest.getAccount().getUsername());

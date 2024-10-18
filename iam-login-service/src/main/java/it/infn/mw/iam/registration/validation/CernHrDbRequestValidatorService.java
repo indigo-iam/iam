@@ -23,11 +23,11 @@ import static it.infn.mw.iam.registration.validation.RegistrationRequestValidati
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -45,14 +45,11 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 @Profile("cern")
 public class CernHrDbRequestValidatorService implements RegistrationRequestValidationService {
 
-
-
   public static final Logger LOG = LoggerFactory.getLogger(CernHrDbRequestValidatorService.class);
 
   final CernHrDBApiService hrDbApi;
   final CernProperties cernProperties;
 
-  @Autowired
   public CernHrDbRequestValidatorService(CernHrDBApiService hrDbApi, CernProperties properties) {
     this.hrDbApi = hrDbApi;
     this.cernProperties = properties;
@@ -72,9 +69,7 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
     request.getLabels().add(label);
   }
 
-  public void synchronizeInfo(RegistrationRequestDto request, String personId) {
-
-    VOPersonDTO voPersonDTO = hrDbApi.getHrDbPersonRecord(personId);
+  public void synchronizeInfo(RegistrationRequestDto request, VOPersonDTO voPersonDTO) {
 
     request.setGivenname(voPersonDTO.getFirstName());
     request.setFamilyname(voPersonDTO.getName());
@@ -106,9 +101,10 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
     }
 
     try {
-      if (hrDbApi.hasValidExperimentParticipation(cernPersonId)) {
+      VOPersonDTO voPersonDTO = hrDbApi.getHrDbPersonRecord(cernPersonId);
+      if (hasValidParticipationToExperiment(voPersonDTO)) {
         addPersonIdLabel(registrationRequest, cernPersonId);
-        synchronizeInfo(registrationRequest, cernPersonId);
+        synchronizeInfo(registrationRequest, voPersonDTO);
         return ok();
       }
     } catch (CernHrDbApiError e) {
@@ -119,4 +115,12 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
         auth.getGivenName(), auth.getFamilyName(), cernPersonId));
   }
 
+  private boolean hasValidParticipationToExperiment(VOPersonDTO voPersonDTO) {
+    if (Objects.isNull(voPersonDTO)) {
+      return false;
+    }
+    return voPersonDTO.getParticipations()
+      .stream()
+      .anyMatch(p -> p.getExperiment().equalsIgnoreCase(cernProperties.getExperimentName()));
+  }
 }

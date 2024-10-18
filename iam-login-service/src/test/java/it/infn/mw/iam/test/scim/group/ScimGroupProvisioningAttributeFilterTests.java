@@ -53,7 +53,7 @@ public class ScimGroupProvisioningAttributeFilterTests {
   @Autowired
   private MockMvc mvc;
 
-  private final static String GROUPS_URI = ScimUtils.getGroupsLocation();
+  private static final String GROUPS_URI = ScimUtils.getGroupsLocation();
 
   @Before
   public void setup() {
