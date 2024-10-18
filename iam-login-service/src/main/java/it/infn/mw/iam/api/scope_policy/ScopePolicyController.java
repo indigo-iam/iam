@@ -55,7 +55,7 @@ public class ScopePolicyController {
   }
 
   @RequestMapping(value = "/iam/scope_policies", method = RequestMethod.GET)
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   public List<ScopePolicyDTO> listScopePolicies() {
 
     Iterable<IamScopePolicy> policies = policyService.findAllScopePolicies();

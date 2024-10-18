@@ -22,6 +22,7 @@ import java.util.List;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -67,6 +68,7 @@ public class ScimIndigoUser {
   private final List<ScimSamlId> samlIds;
 
   @Valid
+  @JsonFilter("pemEncodedCertificateFilter")
   private final List<ScimX509Certificate> certificates;
 
   @JsonSerialize(using = JsonDateSerializer.class)

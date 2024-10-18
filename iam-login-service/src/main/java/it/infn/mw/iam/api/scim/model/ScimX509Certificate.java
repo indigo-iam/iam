@@ -20,6 +20,7 @@ import java.util.Date;
 import org.hibernate.validator.constraints.Length;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -47,6 +48,7 @@ public class ScimX509Certificate implements CertificateDTO {
   @RFC2253Formatted(message = "Invalid issuer DN format")
   private final String issuerDn;
 
+  @JsonFilter("pemEncodedCertificateFilter")
   @PemContent(message = "Invalid PEM encoded certificate")
   private final String pemEncodedCertificate;
 
