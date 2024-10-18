@@ -183,8 +183,6 @@ public class DefaultRegistrationRequestService
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
       Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
 
-    notesSanityChecks(dto.getNotes());
-
     if (!isNull(validationService)) {
       RegistrationRequestValidationResult result =
           validationService.validateRegistrationRequest(dto, extAuthnInfo);
@@ -371,16 +369,7 @@ public class DefaultRegistrationRequestService
     return retval;
   }
 
-  private void notesSanityChecks(final String notes) {
 
-    if (notes == null) {
-      throw new RegistrationRequestValidatorError("Notes field cannot be null");
-    }
-
-    if (notes.trim().isEmpty()) {
-      throw new RegistrationRequestValidatorError("Notes field cannot be the empty string");
-    }
-  }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
@@ -411,5 +400,4 @@ public class DefaultRegistrationRequestService
 
     return handleApprove(request);
   }
-
 }
