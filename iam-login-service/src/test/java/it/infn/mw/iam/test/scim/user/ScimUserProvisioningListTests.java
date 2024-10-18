@@ -88,6 +88,32 @@ public class ScimUserProvisioningListTests {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = "ADMIN")
+  public void testAdminCanNotSeePemEncodedCertificate() throws Exception {
+    testPemEncodedCertificateDoesNotExist();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void testReaderCanNotSeePemEncodedCertificate() throws Exception {
+    testPemEncodedCertificateDoesNotExist();
+  }
+
+  private void testPemEncodedCertificateDoesNotExist() throws Exception {
+    scimUtils.getUsers()
+        .andExpect(jsonPath("$.totalResults", equalTo(TOTAL_USERS_COUNT)))
+        .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
+        .andExpect(jsonPath("$.Resources[0].userName", equalTo("admin")))
+        .andExpect(jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates",
+            hasSize(equalTo(1))))
+        .andExpect(jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].subjectDn",
+            equalTo("CN=test2,O=IGI,C=IT")))
+        .andExpect(
+            jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates[0].pemEncodedCertificate")
+                .doesNotExist());
+  }
+
+  @Test
   public void testCountAs10Returns10Items() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().count(10).build())

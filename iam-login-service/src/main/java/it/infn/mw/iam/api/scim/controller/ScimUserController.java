@@ -85,16 +85,19 @@ public class ScimUserController extends ScimControllerSupport {
     ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
+    SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
-
-      FilterProvider filterProvider = new SimpleFilterProvider().addFilter("attributeFilter",
-          SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
-
-      wrapper.setFilters(filterProvider);
+      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
+    } else {
+      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.serializeAll());
     }
+    
+    filterProvider.addFilter("pemEncodedCertificateFilter",
+        SimpleBeanPropertyFilter.serializeAllExcept("pemEncodedCertificate"));
 
+    wrapper.setFilters(filterProvider);
     return wrapper;
   }
 
