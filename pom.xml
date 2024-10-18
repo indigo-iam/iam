@@ -15,7 +15,7 @@
 
 	<groupId>it.infn.mw.iam-parent</groupId>
 	<artifactId>iam-parent</artifactId>
-	<version>1.10.1</version>
+	<version>1.11.0</version>
 	<packaging>pom</packaging>
 
 	<name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
@@ -61,15 +61,19 @@
 		<!-- Update this in sync with the parent project version -->
 		<spring-boot.version>2.6.15</spring-boot.version>
 
-		<angularjs.version>1.6.1</angularjs.version>
+		<angularjs.version>1.8.3</angularjs.version>
 		<angular-ui-bootstrap.version>2.5.6</angular-ui-bootstrap.version>
-		<angular-ui-router.version>1.0.20</angular-ui-router.version>
+		<angular-ui-router.version>1.0.30</angular-ui-router.version>
 		<angular-ui-select.version>0.19.8</angular-ui-select.version>
-		<angular-sanitize.version>1.3.11</angular-sanitize.version>
+		<angular-sanitize.version>1.8.3</angular-sanitize.version>
+		<angular-cookies.version>1.8.3</angular-cookies.version>
+		<angular-resource.version>1.8.3</angular-resource.version>
+		<angular-animate.version>1.8.3</angular-animate.version>
+		<angular-jwt.version>0.1.11</angular-jwt.version>
 		<font-awesome.version>4.7.0</font-awesome.version>
-		<jquery.version>3.6.0</jquery.version>
+		<jquery.version>3.7.1</jquery.version>
 		<bootstrap.version>3.4.1</bootstrap.version>
-		<jquery-ui.version>1.13.2</jquery-ui.version>
+		<jquery-ui.version>1.13.3</jquery-ui.version>
 
 		<rest-assured.version>4.4.0</rest-assured.version>
 		<json-path.version>2.9.0</json-path.version>
@@ -144,15 +148,39 @@
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>angular-ui-router</artifactId>
 				<version>${angular-ui-router.version}</version>
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
+				<artifactId>angular-cookies</artifactId>
+				<version>${angular-cookies.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars.npm</groupId>
+				<artifactId>angular-resource</artifactId>
+				<version>${angular-resource.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>angular-sanitize</artifactId>
 				<version>${angular-sanitize.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars.bower</groupId>
+				<artifactId>angular-jwt</artifactId>
+				<version>${angular-jwt.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.webjars.npm</groupId>
+				<artifactId>angular-animate</artifactId>
+				<version>${angular-animate.version}</version>
 			</dependency>
 
 			<dependency>
@@ -162,25 +190,25 @@
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>jquery</artifactId>
 				<version>${jquery.version}</version>
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>jquery-ui</artifactId>
 				<version>${jquery-ui.version}</version>
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>bootstrap</artifactId>
 				<version>${bootstrap.version}</version>
 			</dependency>
 
 			<dependency>
-				<groupId>org.webjars</groupId>
+				<groupId>org.webjars.npm</groupId>
 				<artifactId>font-awesome</artifactId>
 				<version>${font-awesome.version}</version>
 			</dependency>

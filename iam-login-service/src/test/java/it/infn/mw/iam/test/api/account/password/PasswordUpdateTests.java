@@ -138,6 +138,29 @@ public class PasswordUpdateTests {
   }
 
   @Test
+  public void testUpdatePasswordWithMinLength() {
+
+    String currentPassword = "password";
+    String newPassword = "S3crP@ss";
+
+    String accessToken = passwordTokenGetter().port(iamPort)
+        .username(testUser.getUserName())
+        .password(currentPassword)
+        .getAccessToken();
+
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
+
+    passwordTokenGetter().port(iamPort)
+        .username(testUser.getUserName())
+        .password(newPassword)
+        .getAccessToken();
+
+    currentPassword = newPassword;
+    newPassword = "T0S#ort";
+    doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.BAD_REQUEST.value());
+  }
+
+  @Test
   public void testUpdatePasswordFullAuthenticationRequired() {
 
     String currentPassword = "password";

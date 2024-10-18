@@ -1,0 +1,92 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<div class="box box-solid no-padding no-shadow no-border" ngcloak>
+    <div class="box-header with-border" ng-show="$ctrl.requests.length > 0">
+        <div class="input-group">
+            <input placeholder="Filter requests..." ng-model="$ctrl.filter" class="form-control" />
+            <div class="input-group-btn">
+                <button type="button" class="btn btn-default" ng-click="$ctrl.resetFilter()">Show all</button>
+            </div>
+        </div>
+    </div>
+    <div class="box-body no-padding">
+        <table id="cert-link-reqs" class="table ">
+            <thead ng-show="$ctrl.filtered.length > 0">
+                <tr>
+                    <td>
+                        <div>
+                            <ul id="greq_pagination_top" uib-pagination ng-model="$ctrl.currentPage"
+                                items-per-page="$ctrl.itemsPerPage"
+                                template-url="resources/iam/apps/dashboard-app/components/common/pagination.template.html"
+                                total-items="$ctrl.totalResults" max-size="0" ng-change="$ctrl.pageChanged()"
+                                class="pull-left">
+                            </ul>
+                        </div>
+                        <div class="pull-left page-counter" style="margin-top: 46px; margin-left: 12px">
+                            {{$ctrl.pageLeft}} - {{$ctrl.pageRight}} of
+                            {{$ctrl.totalResults}}</div>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-show="!$ctrl.requests.length">
+                    <td class="no-border-top">
+                        <div class="table-msg">
+                            No pending requests found.
+                        </div>
+                    </td>
+                </tr>
+                <tr ng-show="$ctrl.requests.length > 0 && $ctrl.filtered.length == 0">
+                    <td class="no-border-top">
+                        <div class="table-msg">
+                            No requests found matching the search filter.
+                        </div>
+                    </td>
+                </tr>
+                <tr ng-repeat="r in $ctrl.filtered | orderBy:'creationTime':true ">
+                    <td>
+                        <p>
+                            <a ui-sref="user({id: r.userUuid})">{{r.userFullName}}</a> requested to link the following
+                            certificate:<br />
+                            <strong>Subject: </strong> {{r.subjectDn}}<br />
+                            <strong>Issuer: </strong>: {{r.issuerDn}}<br />
+                            {{r.creationTime | relativeDate}}.<br />
+                        </p>
+                        <div ng-show="r.notes">
+                            <p>
+                                In support of this request, the user has provided the following motivation:
+                            <blockquote>
+                                {{r.notes}}
+                            </blockquote>
+                            </p>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-sm" ng-click="$ctrl.approve(r)" ng-disabled="$ctrl.busy">
+                                <i class="fa fa-check"></i> Approve
+                            </button>
+                            <button class="btn btn-danger btn-sm" ng-click="$ctrl.reject(r)" ng-disabled="$ctrl.busy">
+                                <i class="fa fa-times"></i> Reject
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

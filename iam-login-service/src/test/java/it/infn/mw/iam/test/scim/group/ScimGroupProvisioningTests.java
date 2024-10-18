@@ -56,7 +56,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
 public class ScimGroupProvisioningTests {
 
-  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
+  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;

@@ -130,7 +130,7 @@ public class FindAccountIntegrationTests extends TestSupport {
       .andExpect(jsonPath("$.Resources", emptyIterable()));
 
     IamLabel testLabel = IamLabel.builder().name("test").build();
-    accountService.setLabel(testAccount, testLabel);
+    accountService.addLabel(testAccount, testLabel);
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(OK)
@@ -139,7 +139,7 @@ public class FindAccountIntegrationTests extends TestSupport {
 
     testLabel = IamLabel.builder().name("test").value("test").build();
     testAccount.getLabels().add(testLabel);
-    accountService.setLabel(testAccount, testLabel);
+    accountService.addLabel(testAccount, testLabel);
 
     mvc.perform(get(FIND_BY_LABEL_RESOURCE).param("name", "test").param("value", "test"))
       .andExpect(OK)

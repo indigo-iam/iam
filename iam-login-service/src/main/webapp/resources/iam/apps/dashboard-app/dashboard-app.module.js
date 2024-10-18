@@ -32,7 +32,7 @@
     angular.module('dashboardApp')
         .run(function (
             $window, $rootScope, $state, $stateParams, $q, $uibModal, $trace, Utils,
-            UserService, RegistrationRequestService, TokensService, GroupRequestsService, ScopesService, toaster) {
+            UserService, RegistrationRequestService, TokensService, GroupRequestsService, CertLinkRequestsService, ScopesService, toaster) {
 
             $state.defaultErrorHandler(function (response) {
                 if (response.status) {
@@ -42,7 +42,7 @@
                         body: response.statusText
                     });
                 }
-                else if(response.detail.data.error == 'insufficient_scope' || response.detail.data.error == 'access_denied') {
+                else if (response.detail.data.error == 'insufficient_scope' || response.detail.data.error == 'access_denied') {
                     console.error(response);
                     toaster.pop({
                         type: 'warning',
@@ -116,6 +116,14 @@
                     }));
                 }
 
+                if (Utils.isAdmin()) {
+                    promises.push(CertLinkRequestsService.getCertLinkRequests({
+                        status: 'PENDING'
+                    }).then(function (r) {
+                        $rootScope.pendingCertLinkRequests(r);
+                    }));
+                }
+
                 return $q.all(promises).catch(function (error) {
                     console.error("Error loading logged user info" + error);
                 });
@@ -154,6 +162,13 @@
                 return $rootScope.pendingRequests.gm;
             };
 
+            $rootScope.pendingCertLinkRequests = function (val) {
+                if (val) {
+                    $rootScope.pendingRequests.cl = val;
+                }
+                return $rootScope.pendingRequests.cl;
+            };
+
             $rootScope.pendingRequestsCount = function () {
 
                 var groupRequestsCount = function () {
@@ -170,9 +185,14 @@
                         rrCount = $rootScope.pendingRequests.reg.length;
                     }
 
+                    var clCount = 0;
+                    if ($rootScope.pendingRequests.cl) {
+                        clCount = $rootScope.pendingRequests.cl.totalResults;
+                    }
+
                     var grCount = groupRequestsCount();
 
-                    return rrCount + grCount;
+                    return rrCount + grCount + clCount;
 
                 } else if (Utils.isGroupManager()) {
                     return groupRequestsCount();

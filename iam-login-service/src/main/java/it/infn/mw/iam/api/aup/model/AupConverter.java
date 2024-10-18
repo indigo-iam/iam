@@ -32,7 +32,11 @@ public class AupConverter implements Converter<AupDTO, IamAup> {
     aup.setSignatureValidityInDays(dto.getSignatureValidityInDays());
     aup.setUrl(dto.getUrl());
     aup.setText(dto.getText());
-    aup.setAupRemindersInDays(dto.getAupRemindersInDays());
+    if (dto.getAupRemindersInDays() == null) {
+      aup.setAupRemindersInDays("");
+    } else {
+      aup.setAupRemindersInDays(dto.getAupRemindersInDays());
+    }
     return aup;
   }
 
