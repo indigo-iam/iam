@@ -59,6 +59,12 @@ public class DefaultAupSignatureCheckService implements AUPSignatureCheckService
       return false;
     }
 
+    if (account.isServiceAccount()) {
+      LOG.debug("AUP signature not needed for account '{}': Account is a service account",
+          account.getUsername());
+      return false;
+    }
+
     if (isNull(account.getAupSignature())) {
       LOG.debug("AUP signature needed for account '{}': no signature record found for user",
           account.getUsername());

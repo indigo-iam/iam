@@ -100,6 +100,10 @@
                     console.info("Account not found");
                     return null;
                 }
+                if (res.status == 405) {
+                    console.info(res.data.error);                    
+                    return null;
+                }
                 return $q.reject(res);
             });
         }
@@ -108,6 +112,10 @@
             return $http.delete('/iam/aup/signature/' + userId).catch(function(res) {
                 if (res.status == 404) {
                     console.info("Account not found");
+                    return null;
+                }
+                if (res.status == 405) {
+                    console.info(res.data.error);
                     return null;
                 }
                 return $q.reject(res);
