@@ -114,32 +114,6 @@ public class RegistrationUsernameTests extends TestSupport {
     }
   }
 
-    private RegistrationRequestDto createRegistrationRequest(String username) {
-
-        String email = username + "@example.org";
-        RegistrationRequestDto request = new RegistrationRequestDto();
-        request.setGivenname("Test");
-        request.setFamilyname("User");
-        request.setEmail(email);
-        request.setUsername(username);
-        request.setNotes("Some short notes...");
-        request.setPassword("password");
-
-        return request;
-    }
-
-    @Test
-    public void validUsernames() throws Exception {
-        final String[] validUsernames = {"bob", "b", "test$", "root", "test1234", "test_", "_test"};
-
-        for (String u : validUsernames) {
-            RegistrationRequestDto r = createRegistrationRequest(u);
-            mvc.perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(r))).andExpect(status().isOk());
-        }
-
-    }
-
     @Test
     public void nonUnixUsernames() throws Exception {
         final String[] nonUnixUsernames = {"£$%^&*(", ".,", "-test", "1test", "test$$", "username@example.com", "username@domain",

@@ -97,12 +97,6 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
   private ObjectMapper mapper;
 
   @Autowired
-  private MockMvc mvc;
-
-  @Autowired
-  private ObjectMapper mapper;
-
-  @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired

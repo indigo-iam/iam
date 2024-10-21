@@ -71,6 +71,12 @@
     max-width: 250px;
 }
 
+.verify-form {
+    padding-top: 1em;
+    margin: 0 auto;
+    max-width: 250px;
+}
+
 #sign-aup-form {
     padding-top: 2em;
     margin: 0 auto;

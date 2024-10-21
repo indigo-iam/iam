@@ -19,7 +19,6 @@ import static dev.samstevens.totp.util.Utils.getDataUriForImage;
 
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -71,7 +70,6 @@ public class AuthenticatorAppSettingsController {
   private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  @Autowired
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator,
       IamTotpMfaProperties iamTotpMfaProperties) {

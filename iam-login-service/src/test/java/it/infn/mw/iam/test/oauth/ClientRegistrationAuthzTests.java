@@ -27,6 +27,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 

@@ -17,9 +17,9 @@ package it.infn.mw.iam.config.security;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import javax.servlet.RequestDispatcher;
 
@@ -54,10 +54,9 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
+import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
-import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
@@ -72,6 +71,7 @@ import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -113,6 +113,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamAccountRepository accountRepo;
+    
+    @Autowired
+    private IamTotpMfaRepository totpMfaRepository;
 
     @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
@@ -129,7 +132,7 @@ public class IamWebSecurityConfig {
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, totpMfaRepository));
       // @formatter:on
     }
 

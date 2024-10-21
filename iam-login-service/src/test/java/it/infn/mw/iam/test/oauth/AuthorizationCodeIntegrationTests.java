@@ -35,8 +35,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.ValidatableResponse;
+import io.restassured.RestAssured;
+import io.restassured.response.ValidatableResponse;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
@@ -168,7 +168,7 @@ public class AuthorizationCodeIntegrationTests {
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
         .formParam("state", "1")
-        .authentication()
+        .auth()
           .preemptive()
             .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()

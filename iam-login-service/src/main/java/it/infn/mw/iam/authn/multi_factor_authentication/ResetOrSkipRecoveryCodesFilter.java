@@ -37,7 +37,7 @@ import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.api.common.error.NoAuthenticatedUserError;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;

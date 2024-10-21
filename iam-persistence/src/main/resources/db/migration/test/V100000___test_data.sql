@@ -21,15 +21,6 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
-  token_endpoint_auth_method, require_auth_time, token_endpoint_auth_signing_alg, jwks, active) VALUES
-  (15, 'jwt-auth-client_secret_jwt', 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7', 'JWT Bearer Auth Client (client_secret_jwt)', 
-  false, null, 3600, 600, true, 'SECRET_JWT', false, 'HS256', null, true),
-  (16, 'jwt-auth-private_key_jwt', 'secret', 'JWT Bearer Auth Client (private_key_jwt)', 
-  false, null, 3600, 600, true,'PRIVATE_KEY', false, 'RS256',
-  '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}', true);
-
-INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
-  refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
   token_endpoint_auth_method, require_auth_time, token_endpoint_auth_signing_alg, jwks) VALUES
   (15, 'jwt-auth-client_secret_jwt', 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7', 'JWT Bearer Auth Client (client_secret_jwt)', 
   false, null, 3600, 600, true, 'SECRET_JWT', false, 'HS256', null),
