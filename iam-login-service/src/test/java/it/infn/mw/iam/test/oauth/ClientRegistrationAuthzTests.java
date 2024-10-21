@@ -21,12 +21,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -39,6 +47,17 @@ public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport 
   @Autowired
   private MockMvc mvc;
 
+  @Autowired
+  private IamAccountClientRepository accountClientRepo;
+
+  @Autowired
+  private IamClientRepository clientRepo;
+
+  @Autowired
+  private ObjectMapper mapper;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
 
   @Test
   public void testClientRegistrationRequiresAuthenticatedUser() throws Exception {
@@ -46,25 +65,49 @@ public class ClientRegistrationAuthzTests extends ClientRegistrationTestSupport 
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
     mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
-      .andExpect(status().isUnauthorized());
+      .andExpect(status().isForbidden());
   }
-  
-  @WithMockUser(username="test", roles="USER")
+
+  @WithMockUser(username = "test", roles = "USER")
+  @Test
   public void testClientRegistrationWorksForAuthenticatedUser() throws Exception {
 
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
-    mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
-      .andExpect(status().isCreated());
+    String responseJson =
+        mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
+          .andExpect(status().isCreated())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    RegisteredClientDTO response = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    ClientDetailsEntity client = clientRepo.findByClientId(response.getClientId()).orElseThrow();
+    accountClientRepo.findByAccountAndClient(testAccount, client).orElseThrow();
   }
-  
-  @WithMockUser(username="admin", roles="ADMIN")
+
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  @Test
   public void testClientRegistrationWorksForAdminUser() throws Exception {
 
+    IamAccount adminAccount = accountRepo.findByUsername("admin").orElseThrow();
+
     String jsonInString = ClientJsonStringBuilder.builder().scopes("test").build();
 
-    mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
-      .andExpect(status().isCreated());
+    String responseJson =
+        mvc.perform(post(REGISTER_ENDPOINT).contentType(APPLICATION_JSON).content(jsonInString))
+          .andExpect(status().isCreated())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    RegisteredClientDTO response = mapper.readValue(responseJson, RegisteredClientDTO.class);
+
+    ClientDetailsEntity client = clientRepo.findByClientId(response.getClientId()).orElseThrow();
+    accountClientRepo.findByAccountAndClient(adminAccount, client).orElseThrow();
   }
 
 }
