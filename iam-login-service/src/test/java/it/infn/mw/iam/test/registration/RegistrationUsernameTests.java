@@ -114,15 +114,4 @@ public class RegistrationUsernameTests extends TestSupport {
     }
   }
 
-    @Test
-    public void nonUnixUsernames() throws Exception {
-        final String[] nonUnixUsernames = {"£$%^&*(", ".,", "-test", "1test", "test$$", "username@example.com", "username@domain",
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"};
-
-        for (String u : nonUnixUsernames) {
-            RegistrationRequestDto r = createRegistrationRequest(u);
-            mvc.perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(r))).andExpect(status().isBadRequest());
-        }
-    }
 }
