@@ -274,13 +274,8 @@
     </dependency>
 
     <dependency>
-<<<<<<< HEAD
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-=======
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
->>>>>>> af13c9c9 (Merging changes for updating Spring boot and Java version. Squashed commit of the following:)
       <scope>runtime</scope>
     </dependency>
 
@@ -438,70 +433,6 @@
         <directory>src/main/webapp</directory>
       </resource>
     </resources>
-<<<<<<< HEAD
-=======
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- Jacoco prepare-agent builds some command-line params without -->
-          <!-- which jacoco will not instrument. Hence it is important to add -->
-          <!-- those command-line params here (${argLine} holds those params) -->
-          <argLine>${argLine} ${jvm.test.args}</argLine>
-          <runOrder>alphabetical</runOrder>
-          <useSystemClassLoader>false</useSystemClassLoader>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>it/infn/mw/iam/api/registration/cern/mock/*.class</exclude>
-            <exclude>it/infn/mw/iam/api/registration/cern/dto/*.class</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <echo>Project Base Path (WEB):: ${project.basedir}</echo>
-                <echo>Jacoco exec target path (WEB)::
-                  ${sonar.jacoco.reportPath}</echo>
-              </tasks>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>report-aggregate</id>
-            <goals>
-              <goal>report-aggregate</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <mainClass>it.infn.mw.iam.IamLoginService</mainClass>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-    
->>>>>>> af13c9c9 (Merging changes for updating Spring boot and Java version. Squashed commit of the following:)
     <pluginManagement>
       <plugins>
         <plugin>

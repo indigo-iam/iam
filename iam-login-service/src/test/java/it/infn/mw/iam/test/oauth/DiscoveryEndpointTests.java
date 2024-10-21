@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.web.IamDiscoveryEndpoint;
+import it.infn.mw.iam.core.web.wellknown.IamDiscoveryEndpoint;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 

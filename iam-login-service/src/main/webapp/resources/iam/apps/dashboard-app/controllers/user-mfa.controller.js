@@ -16,72 +16,79 @@
 'use strict';
 
 angular.module('dashboardApp')
-  .controller('UserMfaController', UserMfaController);
+	.controller('UserMfaController', UserMfaController);
 
 UserMfaController.$inject = [
-  '$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster'
+	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'user', '$uibModal', 'toaster'
 ];
 
 function UserMfaController(
-  $http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
-  var userMfaCtrl = this;
+	$http, $scope, $state, $uibModalInstance, Utils, user, $uibModal, toaster) {
+	var userMfaCtrl = this;
 
-  userMfaCtrl.$onInit = function () {
-    console.log('UserMfaController onInit');
-    getMfaSettings();
-  };
+	userMfaCtrl.$onInit = function() {
+		console.log('UserMfaController onInit');
+		getMfaSettings();
+	};
 
-    userMfaCtrl.userToEdit = user;
+	// TODO include this data in what is fetched from the /scim/me endpoint
+	function getMfaSettings() {
+		$http.get('/iam/multi-factor-settings').then(function(response) {
+			userMfaCtrl.authenticatorAppActive = response.data.authenticatorAppActive;
+		});
+	}
 
-    userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
-    userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
+	userMfaCtrl.userToEdit = user;
 
-    function enableAuthenticatorApp() {
-      var modalInstance = $uibModal.open({
-        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/enable-authenticator-app.html',
-        controller: 'EnableAuthenticatorAppController',
-        controllerAs: 'authAppCtrl',
-        resolve: {user: function() { return self.user; }}
-      });
+	userMfaCtrl.enableAuthenticatorApp = enableAuthenticatorApp;
+	userMfaCtrl.disableAuthenticatorApp = disableAuthenticatorApp;
 
-      modalInstance.result.then(function(msg) {
-        toaster.pop({type: 'success', body: msg});
-      });
-    }
+	function enableAuthenticatorApp() {
+		var modalInstance = $uibModal.open({
+			templateUrl: '/resources/iam/apps/dashboard-app/templates/home/enable-authenticator-app.html',
+			controller: 'EnableAuthenticatorAppController',
+			controllerAs: 'authAppCtrl',
+			resolve: { user: function() { return self.user; } }
+		});
 
-    function disableAuthenticatorApp() {
-      var modalInstance = $uibModal.open({
-        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disable-authenticator-app.html',
-        controller: 'DisableAuthenticatorAppController',
-        controllerAs: 'authAppCtrl',
-        resolve: {user: function() { return self.user; }}
-      });
+		modalInstance.result.then(function(msg) {
+			return $uibModalInstance.close(msg);
+		});
+	}
 
-      modalInstance.result.then(function(msg) {
-        toaster.pop({type: 'success', body: msg});
-      });
-    }
+	function disableAuthenticatorApp() {
+		var modalInstance = $uibModal.open({
+			templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disable-authenticator-app.html',
+			controller: 'DisableAuthenticatorAppController',
+			controllerAs: 'authAppCtrl',
+			resolve: { user: function() { return self.user; } }
+		});
 
-    userMfaCtrl.dismiss = dismiss;
-    userMfaCtrl.reset = reset;
+		modalInstance.result.then(function(msg) {
+			return $uibModalInstance.close(msg);
+		});
+	}
 
-    function reset() {
-      console.log('reset form');
+	userMfaCtrl.dismiss = dismiss;
+	userMfaCtrl.reset = reset;
 
-      userMfaCtrl.enabled = true;
+	function reset() {
+		console.log('reset form');
 
-      if ($scope.userMfaForm) {
-        $scope.userMfaForm.$setPristine();
-      }
-    }
+		userMfaCtrl.enabled = true;
 
-    userMfaCtrl.reset();
+		if ($scope.userMfaForm) {
+			$scope.userMfaForm.$setPristine();
+		}
+	}
 
-    function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
+	userMfaCtrl.reset();
 
-    userMfaCtrl.message = '';
+	function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
 
-    userMfaCtrl.submit = function() {
-      return $uibModalInstance.close('Updated settings');
-    };
-  }
+	userMfaCtrl.message = '';
+
+	userMfaCtrl.submit = function() {
+		return $uibModalInstance.close('Updated settings');
+	};
+}

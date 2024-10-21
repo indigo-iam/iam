@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn;
 
-import static it.infn.mw.iam.core.web.EnforceAupFilter.REQUESTING_SIGNATURE;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import java.io.IOException;
@@ -33,10 +32,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.aup.AUPSignatureCheckService;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 /**
  * Success handler for the normal login flow. This determines if MFA is enabled on an account and,

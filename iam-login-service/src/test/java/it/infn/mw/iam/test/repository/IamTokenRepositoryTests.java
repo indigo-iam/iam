@@ -66,7 +66,6 @@ public class IamTokenRepositoryTests {
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
-<<<<<<< HEAD
   private AuthenticationHolderRepository authenticationHolderRepo;
 
   @Autowired
