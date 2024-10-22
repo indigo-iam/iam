@@ -55,4 +55,5 @@ public class JWKEndpointTests extends EndpointsTestUtils implements JWKTestSuppo
     // @formatter:on
 
   }
+
 }

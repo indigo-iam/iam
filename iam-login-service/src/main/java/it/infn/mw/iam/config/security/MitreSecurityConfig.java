@@ -119,7 +119,6 @@ public class MitreSecurityConfig {
     @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
-
     @Override
     public void configure(final HttpSecurity http) throws Exception {
 

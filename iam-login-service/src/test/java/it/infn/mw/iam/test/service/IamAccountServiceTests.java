@@ -42,6 +42,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.google.common.collect.Sets;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,8 +58,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
@@ -148,7 +148,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(accountRepo.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepo.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID)).thenThrow(EmailAlreadyBoundException.class);
-
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
@@ -1056,5 +1055,4 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
   }
-
 }

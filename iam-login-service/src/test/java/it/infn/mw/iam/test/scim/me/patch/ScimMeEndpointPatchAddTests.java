@@ -45,6 +45,7 @@ import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
@@ -327,5 +328,6 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   public void testPatchAddX509CertificateNotSupportedNoToken() throws Exception {
 
     patchAddX509CertificateNotSupported();
+
   }
 }

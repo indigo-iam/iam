@@ -22,5 +22,4 @@ public interface CertificateDTO {
     String getSubjectDn();
 
     String getIssuerDn();
-
 }

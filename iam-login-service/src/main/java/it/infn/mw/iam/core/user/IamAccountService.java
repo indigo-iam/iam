@@ -34,14 +34,15 @@ import it.infn.mw.iam.persistence.model.IamSshKey;
  */
 public interface IamAccountService {
 
-  
+
   /**
    * Finds an account by UUID
-   * @param uuid 
+   * 
+   * @param uuid
    * @return an {@link Optional} iam account
    */
   Optional<IamAccount> findByUuid(String uuid);
-  
+
   /**
    * Creates a new {@link IamAccount}, after some checks.
    * 
@@ -122,6 +123,7 @@ public interface IamAccountService {
 
   /**
    * Sets end time for a given account
+   * 
    * @param account
    * @param endTime
    * @return the updated account
@@ -130,18 +132,20 @@ public interface IamAccountService {
 
   /**
    * Disables account
+   * 
    * @param account
    * @return the updated account
    */
   IamAccount disableAccount(IamAccount account);
-  
+
   /**
    * Restores account
+   * 
    * @param account
    * @return the updated account
    */
   IamAccount restoreAccount(IamAccount account);
-  
+
   /**
    * Sets an attribute for the account
    * 

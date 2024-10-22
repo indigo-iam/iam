@@ -23,11 +23,11 @@ import org.mitre.openid.connect.view.HttpCodeView;
 import org.mitre.openid.connect.view.JsonEntityView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,7 +49,6 @@ public class IamDiscoveryEndpoint {
   private final UserInfoService userService;
   private final WellKnownInfoProvider wellKnownInfoProvider;
 
-  @Autowired
   public IamDiscoveryEndpoint(ConfigurationPropertiesBean config, UserInfoService userService,
       WellKnownInfoProvider wellKnownInfoProvider) {
     this.config = config;
@@ -57,7 +56,7 @@ public class IamDiscoveryEndpoint {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
   }
 
-  @RequestMapping(value = {"/" + WEBFINGER_URL}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = {"/" + WEBFINGER_URL}, produces = MediaType.APPLICATION_JSON_VALUE)
   public String webfinger(@RequestParam("resource") String resource,
       @RequestParam(value = "rel", required = false) String rel, Model model) {
 
