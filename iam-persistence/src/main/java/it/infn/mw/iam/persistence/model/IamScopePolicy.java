@@ -218,6 +218,7 @@ public class IamScopePolicy implements Serializable {
     setDescription(other.getDescription());
     setRule(other.getRule());
     setScopes(other.getScopes());
+    setMatchingPolicy(other.getMatchingPolicy());
     linkAccount();
     linkGroup();
   }

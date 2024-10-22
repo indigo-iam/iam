@@ -53,6 +53,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
+import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
@@ -545,6 +546,31 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
       .andExpect(jsonPath("$.rule", equalTo("DENY")))
       .andExpect(jsonPath("$.description", equalTo(description)))
       .andExpect(jsonPath("$.scopes").doesNotExist());
+
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"iam:admin.read", "iam:admin.write"})
+  public void testDefaultPolicyUpdateUpdatingMatchingPolicy() throws Exception {
+    final String description = "DENY ALL!";
+
+    ScopePolicyDTO sp = new ScopePolicyDTO();
+    sp.setDescription(description);
+    sp.setRule(PolicyRule.DENY.name());
+    sp.setMatchingPolicy(MatchingPolicy.PATH.name());
+    sp.setScopes(Sets.newHashSet(SCIM_READ, SCIM_WRITE));
+    sp.setId(1L);
+
+    String serializedSp = mapper.writeValueAsString(sp);
+    mvc.perform(put("/iam/scope_policies/1").content(serializedSp).contentType(APPLICATION_JSON))
+      .andExpect(status().isNoContent());
+
+    mvc.perform(get("/iam/scope_policies/1"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.id", equalTo(1)))
+      .andExpect(jsonPath("$.rule", equalTo("DENY")))
+      .andExpect(jsonPath("$.description", equalTo(description)))
+      .andExpect(jsonPath("$.matchingPolicy", equalTo(MatchingPolicy.PATH.name())));
 
   }
   
