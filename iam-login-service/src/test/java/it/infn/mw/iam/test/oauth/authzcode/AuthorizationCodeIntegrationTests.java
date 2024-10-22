@@ -164,7 +164,7 @@ public class AuthorizationCodeIntegrationTests {
         .get(0);
 
       // @formatter:off
-      ValidatableResponse resp3= RestAssured.given()
+      ValidatableResponse resp3 = RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -216,7 +216,7 @@ public class AuthorizationCodeIntegrationTests {
       // @formatter:on
 
     // @formatter:off
-      ValidatableResponse resp2 = RestAssured.given()
+      RestAssured.given()
         .formParam("username", "test")
         .formParam("password", "password")
         .formParam("submit", "Login")
@@ -230,7 +230,7 @@ public class AuthorizationCodeIntegrationTests {
 
     // @formatter:off
       RestAssured.given()
-        .cookie(resp2.extract().detailedCookie("JSESSIONID"))
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .queryParam("response_type", RESPONSE_TYPE_CODE)
         .queryParam("client_id", TEST_CLIENT_ID)
         .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
@@ -246,8 +246,8 @@ public class AuthorizationCodeIntegrationTests {
       // @formatter:on
 
     // @formatter:off
-      ValidatableResponse resp4 = RestAssured.given()
-        .cookie(resp2.extract().detailedCookie("JSESSIONID"))
+      ValidatableResponse resp2 = RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .formParam("user_oauth_approval", "true")
         .formParam("authorize", "Authorize")
         .formParam("scope_openid", "openid")
@@ -265,14 +265,14 @@ public class AuthorizationCodeIntegrationTests {
         .statusCode(HttpStatus.SEE_OTHER.value());
       // @formatter:on
 
-    String authzCode = UriComponentsBuilder.fromHttpUrl(resp4.extract().header("Location"))
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
       .build()
       .getQueryParams()
       .get("code")
       .get(0);
 
     // @formatter:off
-      ValidatableResponse resp5= RestAssured.given()
+      ValidatableResponse resp3 = RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -287,10 +287,10 @@ public class AuthorizationCodeIntegrationTests {
       // @formatter:on
 
     String refreshToken =
-        mapper.readTree(resp5.extract().body().asString()).get("refresh_token").asText();
+        mapper.readTree(resp3.extract().body().asString()).get("refresh_token").asText();
 
     // @formatter:off
-      ValidatableResponse resp6= RestAssured.given()
+      ValidatableResponse resp4 = RestAssured.given()
         .formParam("grant_type", "refresh_token")
         .formParam("refresh_token", refreshToken)
         .formParam("scope", "openid")
@@ -304,7 +304,7 @@ public class AuthorizationCodeIntegrationTests {
       // @formatter:on
 
     String refreshedToken =
-        mapper.readTree(resp6.extract().body().asString()).get("access_token").asText();
+        mapper.readTree(resp4.extract().body().asString()).get("access_token").asText();
 
    // @formatter:off
       RestAssured.given()
