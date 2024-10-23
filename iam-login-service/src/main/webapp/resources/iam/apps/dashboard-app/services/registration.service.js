@@ -60,10 +60,11 @@
             return $http.post('/registration/approve/' + req.uuid);
         }
 
-        function rejectRequest(req, motivation) {
+        function rejectRequest(req, motivation, doNotSendEmail) {
 
             var d = {
-                motivation: motivation
+                motivation: motivation,
+                doNotSendEmail: doNotSendEmail
             };
 
             return $http({
@@ -82,9 +83,9 @@
             return $q.all(promises);
         }
 
-        function bulkReject(requests, motivation) {
+        function bulkReject(requests, motivation, doNotSendEmail) {
             var promises = [];
-            angular.forEach(requests, r => promises.push(rejectRequest(r, motivation)));
+            angular.forEach(requests, r => promises.push(rejectRequest(r, motivation, doNotSendEmail)));
             return $q.all(promises);
         }
     }

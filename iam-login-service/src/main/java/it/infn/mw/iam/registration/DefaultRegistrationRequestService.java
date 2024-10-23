@@ -358,9 +358,12 @@ public class DefaultRegistrationRequestService
   }
 
   private RegistrationRequestDto handleReject(IamRegistrationRequest request,
-      Optional<String> motivation) {
+      Optional<String> motivation, boolean doNotSendEmail) {
     request.setStatus(REJECTED);
-    notificationFactory.createRequestRejectedMessage(request, motivation);
+    if(!doNotSendEmail){
+      notificationFactory.createRequestRejectedMessage(request, motivation);
+    }
+    
     RegistrationRequestDto retval = converter.fromEntity(request);
 
     accountService.deleteAccount(request.getAccount());
@@ -387,7 +390,7 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
-  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation) {
+  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean sendEmail) {
 
     IamRegistrationRequest request = findRequestById(requestUuid);
 
@@ -396,7 +399,7 @@ public class DefaultRegistrationRequestService
           String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
     }
 
-    return handleReject(request, motivation);
+    return handleReject(request, motivation, sendEmail);
   }
 
   @Override

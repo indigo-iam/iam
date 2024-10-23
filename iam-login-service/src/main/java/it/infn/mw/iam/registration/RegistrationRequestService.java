@@ -32,7 +32,7 @@ public interface RegistrationRequestService {
 
   RegistrationRequestDto confirmRequest(String confirmationKey);
   
-  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation);
+  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail);
   
   RegistrationRequestDto approveRequest(String requestUuid);
 
