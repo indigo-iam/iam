@@ -90,6 +90,7 @@ public class IamLoginService {
 
   public static void main(final String[] args) {
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
+    iamLoginService.setAdditionalProfiles("registration");
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
     iamLoginService.run(args);
 
