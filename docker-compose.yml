@@ -85,12 +85,7 @@ services:
       - logs:/var/log/iam
       - .:/code:ro
       - /dev/urandom:/dev/random
-<<<<<<< HEAD
         # - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
-=======
-      - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
-
->>>>>>> af13c9c9 (Merging changes for updating Spring boot and Java version. Squashed commit of the following:)
         # - ./compose/metadata/iam.local.io.metadata.xml:/indigo-iam/iam.local.io.metadata.xml:ro
         # - ./compose/metadata/spid-idp.example.metadata.xml:/indigo-iam/spid-idp.example.metadata.xml:ro
         # - ./compose/custom-saml/application-saml.yml:/indigo-iam/config/application-saml.yml:ro
