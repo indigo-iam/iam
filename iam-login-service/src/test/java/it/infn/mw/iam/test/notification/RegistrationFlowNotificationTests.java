@@ -33,8 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.UnsupportedEncodingException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,8 +49,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
@@ -386,7 +382,7 @@ public class RegistrationFlowNotificationTests {
   }
 
   private RegistrationRequestDto createRegistrationRequest(RegistrationRequestDto request)
-      throws UnsupportedEncodingException, Exception, JsonProcessingException, JsonMappingException {
+      throws Exception {
 
     String responseJson = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
