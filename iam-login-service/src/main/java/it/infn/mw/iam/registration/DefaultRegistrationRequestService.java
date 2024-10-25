@@ -390,7 +390,7 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
-  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean sendEmail) {
+  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail) {
 
     IamRegistrationRequest request = findRequestById(requestUuid);
 
@@ -399,7 +399,7 @@ public class DefaultRegistrationRequestService
           String.format("Bad status transition from [%s] to [%s]", request.getStatus(), APPROVED));
     }
 
-    return handleReject(request, motivation, sendEmail);
+    return handleReject(request, motivation, doNotSendEmail);
   }
 
   @Override
