@@ -189,7 +189,8 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
 
-    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)) {
+    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)
+        && clientService.findClientOwners(clientId, null).isEmpty()) {
       clientService.linkClientToAccount(client, account);
     }
 
