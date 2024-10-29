@@ -54,10 +54,13 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
+
+  public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   @Autowired
   private ClientDetailsEntityService clientDetailsService;
@@ -190,7 +193,7 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
         && clientService.findClientOwners(clientId, null).isEmpty()) {
       clientService.linkClientToAccount(client, account);
     }
-    
+
     return authorizationRequest;
 
   }
