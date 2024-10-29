@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.oauth.authzcode;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.security.core.authority.AuthorityUtils.commaSeparatedStringToAuthorityList;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
@@ -80,9 +79,6 @@ public class AuthorizationCodeTests {
 
   @Autowired
   private IamAupRepository aupRepo;
-
-  @Autowired
-  private IamClientRepository clientRepo;
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
