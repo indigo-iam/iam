@@ -47,7 +47,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
