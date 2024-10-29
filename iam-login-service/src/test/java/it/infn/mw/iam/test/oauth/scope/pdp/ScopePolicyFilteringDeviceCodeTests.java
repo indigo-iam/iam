@@ -52,7 +52,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-public class ScopePolicyFilteringDeviceCode extends ScopePolicyTestUtils {
+public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
 
   @Autowired
   private IamAccountRepository accountRepo;
