@@ -24,22 +24,10 @@
       console.log('ResetMfaController onInit');
       self.enabled = true;
       self.user = self.userCtrl.user;
-      self.getMfaSettingsForAccount();
     };
 
     self.isMe = function() { return self.userCtrl.isMe(); };
     self.isVoAdmin = function () { return self.userCtrl.isVoAdmin(); };
-    
-    self.getMfaSettingsForAccount = function () {
-      AuthenticatorAppService.getMfaSettingsForAccount(self.user.id).then(res => {
-        console.debug('results:', res);
-        self.isMfaActive = res;
-      })
-        .catch(error => {
-          console.error('Error fetching MFA settings:', error);
-          return { error: 'Failed to fetch MFA settings' };
-        });
-    };
 
     self.openResetMfaModal = function() {
       var modalInstance = $uibModal.open({
@@ -50,8 +38,10 @@
       });
 
       modalInstance.result.then(function(msg) {
+        if (self.isVoAdmin()) {
+          self.userCtrl.getMfaSettingsForAccount();
+        }
         toaster.pop({type: 'success', body: msg});
-        self.getMfaSettingsForAccount();
       });
     };
   }

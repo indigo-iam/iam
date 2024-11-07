@@ -36,8 +36,11 @@
         resolve: {user: function() { return self.user; }}
       });
 
-      modalInstance.result.then(function(msg) {
-        toaster.pop({type: 'success', body: msg});
+      modalInstance.result.then(function (msg) {
+        if (self.userCtrl.isVoAdmin()) {
+          self.userCtrl.getMfaSettingsForAccount();
+        }
+        toaster.pop({ type: 'success', body: msg });
       });
     };
   }
