@@ -22,9 +22,14 @@
 </div>
 <div class="modal-body">
     <form name="createAup">
-        <div class="form-group" ng-class="{'has-error': $ctrl.error || createAup.url.$dirty && !createAup.url.$valid}">
+        <div class="form-group has-error" ng-if="$ctrl.error">
+            <span class="help-block">
+                {{ $ctrl.error }}
+            </span>
+        </div>
+        <div class="form-group">
             <label>Acceptable Usage Policy URL</label>
-            <input name="url" class="form-control" type="url" value="http://" ng-model="$ctrl.aupVal.url"
+            <input name="url" class="form-control" value="http://" ng-model="$ctrl.aupVal.url"
                 required="true">
             <span class="help-block" ng-if="$ctrl.aup.text">
                 Since v1.6.0, IAM has moved to external AUP documents. Please provide a valid URL pointing to your AUP
@@ -34,14 +39,12 @@
                 The URL above is presented to users at registration time or periodically
                 if the AUP is configured for periodic reacceptance
             </span>
-            <span class="help-block" ng-if="createAup.url.$dirty && createAup.url.$error.required">
-                Please provide a valid URL pointing to your AUP document.
-            </span>
-            <span class="help-block" ng-if="$ctrl.error">
-                {{ $ctrl.error }}
-            </span>
+            <div class="form-group has-error" ng-if="createAup.url.$dirty && createAup.url.$error.required">
+                <span class="help-block">
+                        Please provide a valid URL for the AUP
+                </span>
+            </div>
         </div>
-
         <div class="form-group">
             <label>AUP signature validity (in days)</label>
             <input name="signatureValidity" class="form-control" type="number" value="365"
@@ -51,6 +54,18 @@
                 AUP signature (with the period defined in days).
                 If set to zero, the AUP signature will be asked only at registration time.
             </span>
+        </div>
+        <div class="form-group" ng-if="$ctrl.aupVal.signatureValidityInDays > 0">
+            <label>AUP signature reminders (in days)</label>
+            <input name="aupReminder" class="form-control" type="text" ng-model="$ctrl.aupVal.aupRemindersInDays" placeholder="30,15,1" ng-required="$ctrl.aupVal.signatureValidityInDays > 0">
+            <span class="help-block">
+                Indicate a sequence of comma-separated numbers representing how many days before the AUP expiration reminder messages must be sent.
+            </span>
+            <div class="form-group has-error" ng-if="createAup.aupReminder.$dirty && createAup.aupReminder.$error.required">
+                <span class="help-block">
+                    Required input
+                </span>
+            </div>
         </div>
         <div class="form-group">
             <div class="bs-callout bs-callout-primary">
@@ -64,7 +79,7 @@
 </div>
 <div class="modal-footer">
     <button class="btn btn-primary" type="button" id="modal-btn-confirm"
-        ng-disabled="!$ctrl.aupVal.url || !$ctrl.enabled" ng-click="$ctrl.doSaveAup()">Edit AUP</button>
+        ng-disabled="!$ctrl.enabled" ng-click="$ctrl.doSaveAup()">Edit AUP</button>
 
     <button class="btn btn-warning" type="button" id="modal-btn-reset" ng-click="$ctrl.reset()">Reset form</button>
 

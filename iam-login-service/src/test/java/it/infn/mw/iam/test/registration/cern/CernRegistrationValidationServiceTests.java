@@ -119,7 +119,6 @@ public class CernRegistrationValidationServiceTests {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
     return request;
   }
 
@@ -134,6 +133,31 @@ public class CernRegistrationValidationServiceTests {
     ParticipationDTO p = new ParticipationDTO();
 
     p.setExperiment("test");
+    p.setStartDate(Date.from(Instant.parse("2020-01-01T00:00:00.00Z")));
+
+    InstituteDTO i = new InstituteDTO();
+    i.setId("000001");
+    i.setName("INFN");
+    i.setCountry("IT");
+    i.setTown("Bologna");
+    p.setInstitute(i);
+
+    dto.getParticipations().add(p);
+
+    return dto;
+  }
+
+  private VOPersonDTO mockInvalidVoPerson() {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName("TEST");
+    dto.setName("USER");
+    dto.setEmail("test@hr.cern");
+    dto.setId(988211L);
+    dto.setParticipations(Sets.newHashSet());
+
+    ParticipationDTO p = new ParticipationDTO();
+
+    p.setExperiment("this-is-not-test");
     p.setStartDate(Date.from(Instant.parse("2020-01-01T00:00:00.00Z")));
 
     InstituteDTO i = new InstituteDTO();
@@ -188,7 +212,7 @@ public class CernRegistrationValidationServiceTests {
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
       claims = {"cern_person_id", "988211"})
   public void testHrDbApiErrorIsHandled() throws Exception {
-    when(hrDbApi.hasValidExperimentParticipation(anyString()))
+    when(hrDbApi.getHrDbPersonRecord(anyString()))
       .thenThrow(new CernHrDbApiError("error"));
 
     mvc
@@ -203,7 +227,7 @@ public class CernRegistrationValidationServiceTests {
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern", givenName = "Test",
       familyName = "User", claims = {"cern_person_id", "988211"})
   public void testInvalidRequestIsReported() throws Exception {
-    when(hrDbApi.hasValidExperimentParticipation(anyString())).thenReturn(false);
+    when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockInvalidVoPerson());
 
     mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
@@ -216,7 +240,6 @@ public class CernRegistrationValidationServiceTests {
   @WithMockOIDCUser(issuer = "https://auth.cern.ch/auth/realms/cern",
       claims = {"cern_person_id", "988211"})
   public void testLabelIsAddedToRegistrationRequest() throws Exception {
-    when(hrDbApi.hasValidExperimentParticipation(anyString())).thenReturn(true);
     when(hrDbApi.getHrDbPersonRecord(anyString())).thenReturn(mockVoPerson());
 
     String response = mvc

@@ -64,6 +64,7 @@ public class IamAupRepositoryTests extends AupTestSupport{
     assertThat(aup.getCreationTime(), new DateEqualModulo1Second(creationTime));
     assertThat(aup.getLastUpdateTime(), new DateEqualModulo1Second(creationTime));
     assertThat(aup.getSignatureValidityInDays(), equalTo(365L));
+    assertThat(aup.getAupRemindersInDays(), equalTo("30,15,1"));
     
   }
   

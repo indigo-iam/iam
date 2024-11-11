@@ -16,16 +16,19 @@
 package it.infn.mw.iam.core.lifecycle;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_SUSPENSION;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,10 +46,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class ExpiredAccountsHandler implements Runnable {
 
   public enum AccountLifecycleStatus {
-    OK,
-    PENDING_SUSPENSION,
-    PENDING_REMOVAL,
-    SUSPENDED
+    PENDING_SUSPENSION, PENDING_REMOVAL, SUSPENDED
   }
 
   public static final String LIFECYCLE_TIMESTAMP_LABEL = "lifecycle.timestamp";
@@ -67,7 +67,6 @@ public class ExpiredAccountsHandler implements Runnable {
 
   private Set<IamAccount> accountsScheduledForRemoval = newHashSet();
 
-  @Autowired
   public ExpiredAccountsHandler(Clock clock, LifecycleProperties properties,
       IamAccountRepository repo, IamAccountService service) {
     this.clock = clock;
@@ -96,40 +95,72 @@ public class ExpiredAccountsHandler implements Runnable {
         properties.getAccount().getExpiredAccountPolicy().getRemovalGracePeriodDays());
   }
 
-  private void addLastCheckedLabel(IamAccount expiredAccount) {
-    accountService.setLabel(expiredAccount,
-        IamLabel.builder()
-          .name(LIFECYCLE_TIMESTAMP_LABEL)
-          .value(String.valueOf(checkTime.toEpochMilli()))
-          .build());
+  private void addStatusLabel(IamAccount expiredAccount, AccountLifecycleStatus status) {
+    accountService.addLabel(expiredAccount,
+        IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(status.name()).build());
   }
 
-  private void addStatusLabel(IamAccount expiredAccount, AccountLifecycleStatus status) {
-    accountService.setLabel(expiredAccount,
-        IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).value(status.name()).build());
+  private boolean checkAccountStatusIs(IamAccount a, AccountLifecycleStatus status) {
+    Optional<IamLabel> lifecycleStatus = a.getLabelByName(LIFECYCLE_STATUS_LABEL);
+    if (lifecycleStatus.isEmpty()) {
+      return false;
+    }
+    return status.name().equals(lifecycleStatus.get().getValue());
   }
 
   private void suspendAccount(IamAccount expiredAccount) {
 
-    LOG.info("Suspeding account {} expired on {} ({} days ago)", expiredAccount.getUsername(),
-        expiredAccount.getEndTime(),
-        ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
-    accountService.disableAccount(expiredAccount);
+    if (expiredAccount.isActive()) {
+      LOG.info("Suspending account {} expired on {} ({} days ago)", expiredAccount.getUsername(),
+          expiredAccount.getEndTime(),
+          ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
+      accountService.disableAccount(expiredAccount);
+    } else {
+      // nothing to do
+      LOG.debug("Account {} expired on {} has been already suspended", expiredAccount.getUsername(),
+          expiredAccount.getEndTime());
+    }
     if (properties.getAccount().getExpiredAccountPolicy().isRemoveExpiredAccounts()) {
-      addStatusLabel(expiredAccount, AccountLifecycleStatus.PENDING_REMOVAL);
+      markAsPendingRemoval(expiredAccount);
+    } else {
+      markAsSuspended(expiredAccount);
     }
-    else {
-      addStatusLabel(expiredAccount, AccountLifecycleStatus.SUSPENDED);
-    }
-    addLastCheckedLabel(expiredAccount);
   }
 
   private void markAsPendingSuspension(IamAccount expiredAccount) {
+    if (checkAccountStatusIs(expiredAccount, PENDING_SUSPENSION)) {
+      LOG.debug("Account {} expired on {} has been already marked as pending suspension",
+          expiredAccount.getUsername(), expiredAccount.getEndTime());
+      return;
+    }
     LOG.info("Marking account {} (expired on {} ({} days ago)) as pending suspension",
         expiredAccount.getUsername(), expiredAccount.getEndTime(),
         ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
-    addStatusLabel(expiredAccount, AccountLifecycleStatus.PENDING_SUSPENSION);
-    addLastCheckedLabel(expiredAccount);
+    addStatusLabel(expiredAccount, PENDING_SUSPENSION);
+  }
+
+  private void markAsPendingRemoval(IamAccount expiredAccount) {
+    if (checkAccountStatusIs(expiredAccount, PENDING_REMOVAL)) {
+      LOG.debug("Account {} expired on {} has been already marked as pending removal",
+          expiredAccount.getUsername(), expiredAccount.getEndTime());
+      return;
+    }
+    LOG.info("Marking account {} (expired on {} ({} days ago)) as pending removal",
+        expiredAccount.getUsername(), expiredAccount.getEndTime(),
+        ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
+    addStatusLabel(expiredAccount, PENDING_REMOVAL);
+  }
+
+  private void markAsSuspended(IamAccount expiredAccount) {
+    if (checkAccountStatusIs(expiredAccount, SUSPENDED)) {
+      LOG.debug("Account {} expired on {} has been already marked as suspended",
+          expiredAccount.getUsername(), expiredAccount.getEndTime());
+      return;
+    }
+    LOG.info("Marking account {} (expired on {} ({} days ago)) as suspended",
+        expiredAccount.getUsername(), expiredAccount.getEndTime(),
+        ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
+    addStatusLabel(expiredAccount, SUSPENDED);
   }
 
   private void removeAccount(IamAccount expiredAccount) {
@@ -138,7 +169,6 @@ public class ExpiredAccountsHandler implements Runnable {
         ChronoUnit.DAYS.between(expiredAccount.getEndTime().toInstant(), checkTime));
     accountService.deleteAccount(expiredAccount);
   }
-
 
   private void scheduleAccountRemoval(IamAccount expiredAccount) {
     accountsScheduledForRemoval.add(expiredAccount);
@@ -158,20 +188,21 @@ public class ExpiredAccountsHandler implements Runnable {
 
   public void handleExpiredAccounts() {
 
+    LOG.info("Expired accounts handler ... [START]");
+
     accountsScheduledForRemoval.clear();
 
-    LOG.debug("Starting...");
-    checkTime = clock.instant();
-    Date now = Date.from(checkTime);
+    checkTime = clock.instant().truncatedTo(ChronoUnit.DAYS);
+    LOG.debug("Comparing end-time with {}", checkTime);
 
     Pageable pageRequest = PageRequest.of(0, PAGE_SIZE, Sort.by(Direction.ASC, "endTime"));
 
     while (true) {
       Page<IamAccount> expiredAccountsPage =
-          accountRepo.findExpiredAccountsAtTimestamp(now, pageRequest);
-      LOG.debug("expiredAccountsPage: {}", expiredAccountsPage);
+          accountRepo.findExpiredAccountsAtTimestamp(Date.from(checkTime), pageRequest);
 
       if (expiredAccountsPage.hasContent()) {
+        LOG.debug("expiredAccountsPage [{}/{}]", expiredAccountsPage.getNumber()+1, expiredAccountsPage.getNumberOfElements());
 
         for (IamAccount expiredAccount : expiredAccountsPage.getContent()) {
           handleExpiredAccount(expiredAccount);
@@ -189,6 +220,9 @@ public class ExpiredAccountsHandler implements Runnable {
     for (IamAccount a : accountsScheduledForRemoval) {
       removeAccount(a);
     }
+
+    LOG.info("Expired accounts handler ... [END]");
+
   }
 
   @Override

@@ -20,24 +20,16 @@
 <%@ taglib prefix="t" tagdir="/WEB-INF/tags/iam"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <t:page title="Log in">
-  <jsp:attribute name="footer">
+    <jsp:attribute name="footer">
         <script type="text/javascript" src="/webjars/angularjs/angular.min.js"></script>
-        <script type="text/javascript" src="/webjars/angularjs/angular-animate.js"></script>
+        <script type="text/javascript" src="/webjars/angular-animate/angular-animate.min.js"></script>
         <script type="text/javascript" src="/webjars/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/passwordreset.app.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/service/passwordreset.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/controller/passwordreset.controller.js"></script>
         <script type="text/javascript">
-									angular
-											.element(document)
-											.ready(
-													function() {
-														angular
-																.bootstrap(
-																		document,
-																		[ 'passwordResetApp' ]);
-													});
-								</script>
+            angular.element(document).ready(function () { angular.bootstrap(document, ['passwordResetApp']); });
+        </script>
     </jsp:attribute>
   <jsp:body>
         <div id="login-error">
@@ -48,15 +40,14 @@
             <c:if test="${ param.externalAuthenticationError != null }">
                 <div class="alert alert-danger">
                     <strong>External authentication error</strong>
-                    <div>${param.externalAuthenticationError}</div>
                 </div>
             </c:if>
 
             <c:if test="${ param.error != null }">
                 <div class="alert alert-danger">
                     <strong>
-            <spring:message code="login.error" />
-          </strong>
+                        <spring:message code="login.error" />
+                    </strong>
                     <div>${SPRING_SECURITY_LAST_EXCEPTION.message}</div>
                 </div>
             </c:if>
@@ -70,7 +61,7 @@
 
         <div style="text-align: center">
             <h3>Welcome to <strong>${iamOrganisationName}</strong>
-      </h3>
+            </h3>
         </div>
 
         <c:if
@@ -222,21 +213,21 @@
         </c:if>
         
         <c:if test="${not empty IAM_X509_CRED && !IAM_X509_CRED.failedVerification()}">
-          <div id="x509-authn-info">
-            You have been successfully authenticated as<br>
-        <strong>${IAM_X509_CRED.subject}</strong>
-            <c:if test="${!IAM_X509_CAN_LOGIN}">
-              <p>
-              This certificate is not linked to any account in this organization
-              </p>
-            </c:if>
+            <div id="x509-authn-info">
+                You have been successfully authenticated as<br>
+                <strong>${IAM_X509_CRED.subject}</strong>
+                <c:if test="${!IAM_X509_CAN_LOGIN}">
+                    <p>
+                    This certificate is not linked to any account in this organization
+                    </p>
+                </c:if>
           </div>
         </c:if>
         
         <c:if test="${loginPageConfiguration.includeCustomContent}">
-          <div id="login-custom-content">
-            <c:import url="${loginPageConfiguration.customContentUrl}" />
-          </div>
+            <div id="login-custom-content">
+                <c:import url="${loginPageConfiguration.customContentUrl}" />
+            </div>
         </c:if>
-    </jsp:body>
+  </jsp:body>
 </t:page>

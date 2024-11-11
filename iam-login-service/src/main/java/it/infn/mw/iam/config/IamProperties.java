@@ -232,6 +232,8 @@ public class IamProperties {
 
     Map<String, RegistrationFieldProperties> fields;
 
+    List<DefaultGroup> defaultGroups;
+
     public boolean isShowRegistrationButtonInLoginPage() {
       return showRegistrationButtonInLoginPage;
     }
@@ -286,6 +288,14 @@ public class IamProperties {
 
     public void setFields(Map<String, RegistrationFieldProperties> fields) {
       this.fields = fields;
+    }
+
+    public List<DefaultGroup> getDefaultGroups() {
+      return defaultGroups;
+    }
+
+    public void setDefaultGroups(List<DefaultGroup> defaultGroups) {
+      this.defaultGroups = defaultGroups;
     }
   }
 
@@ -548,7 +558,7 @@ public class IamProperties {
   }
 
   public static class ClientProperties {
-    private boolean trackLastUsed;
+    private boolean trackLastUsed = false;
 
     public boolean isTrackLastUsed() {
       return trackLastUsed;
@@ -556,6 +566,27 @@ public class IamProperties {
 
     public void setTrackLastUsed(boolean trackLastUsed) {
       this.trackLastUsed = trackLastUsed;
+    }
+  }
+
+  public static class DefaultGroup {
+    private String name;
+    private String enrollment = "INSERT";
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public String getEnrollment() {
+      return enrollment;
+    }
+
+    public void setEnrollment(String enrollment) {
+      this.enrollment = enrollment;
     }
   }
 

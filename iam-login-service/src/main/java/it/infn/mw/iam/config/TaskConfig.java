@@ -37,6 +37,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.web.aup.AupReminderTask;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
@@ -85,6 +86,9 @@ public class TaskConfig implements SchedulingConfigurer {
   ExpiredAccountsHandler expiredAccountsHandler;
 
   @Autowired
+  AupReminderTask aupReminderTask;
+
+  @Autowired
   CacheManager cacheManager;
 
   @Autowired
@@ -125,6 +129,12 @@ public class TaskConfig implements SchedulingConfigurer {
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredDeviceCodes() {
     deviceCodeService.clearExpiredDeviceCodes();
+  }
+
+  @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS,
+      initialDelay = ONE_MINUTE_MSEC)
+  public void scheduledAupRemindersTask() {
+    aupReminderTask.sendAupReminders();
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

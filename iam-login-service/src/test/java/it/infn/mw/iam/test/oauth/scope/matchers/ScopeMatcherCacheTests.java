@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -36,8 +37,8 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.client.service.ClientService;
-import it.infn.mw.iam.config.CacheConfig;
-import it.infn.mw.iam.config.RedisCacheProperties;
+import it.infn.mw.iam.config.CacheProperties;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -53,10 +54,13 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
   private ClientService clientService;
 
   @Autowired
-  private CacheConfig cacheConfig;
-  
+  private IamClientRepository clientRepository;
+
   @Autowired
-  private RedisCacheProperties redisCacheProperties;
+  private CacheManager localCacheManager;
+
+  @Autowired
+  private CacheProperties cacheProperties;
 
   private String getAccessTokenForClient(String scopes) throws Exception {
 
@@ -67,10 +71,19 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       .getAccessTokenValue();
   }
 
+  private void getAccessTokenForClientFailWithStatusCode(String scopes, int statusCode) throws Exception {
+
+    new AccessTokenGetter().grantType("client_credentials")
+      .clientId(CLIENT_ID)
+      .clientSecret(CLIENT_SECRET)
+      .scope(scopes)
+      .performTokenRequest(statusCode);
+  }
+
   @Test
-  public void ensureRedisCashIsDisabled() {
-    assertFalse(redisCacheProperties.isEnabled());
-    assertThat(cacheConfig.localCacheManager(), instanceOf(CacheManager.class));
+  public void ensureRedisCacheIsDisabled() {
+    assertFalse(cacheProperties.getRedis().isEnabled());
+    assertThat(localCacheManager, instanceOf(ConcurrentMapCacheManager.class));
   }
 
   @Test
@@ -87,6 +100,8 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       assertThat("scim:read",
           not(in(token.getJWTClaimsSet().getClaim("scope").toString().split(" "))));
       client.setScope(Sets.newHashSet("openid", "profile", "email", "scim:read"));
+      clientRepository.save(client);
+      getAccessTokenForClientFailWithStatusCode("openid profile email scim:read", 400);
       clientService.updateClient(client);
       token = JWTParser.parse(getAccessTokenForClient("openid profile email scim:read"));
       assertThat("scim:read", in(token.getJWTClaimsSet().getClaim("scope").toString().split(" ")));
@@ -94,4 +109,5 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
       clientService.deleteClient(client);
     }
   }
+
 }
