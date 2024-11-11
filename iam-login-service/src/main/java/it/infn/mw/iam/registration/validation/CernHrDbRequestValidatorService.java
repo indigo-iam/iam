@@ -16,7 +16,7 @@
 package it.infn.mw.iam.registration.validation;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_CERN_PREFIX;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult.error;
 import static it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult.invalid;
 import static it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult.ok;
