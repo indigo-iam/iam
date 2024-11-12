@@ -27,14 +27,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
+import org.springframework.web.bind.annotation.*;
 import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
@@ -47,6 +40,7 @@ import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -71,14 +65,16 @@ public class AuthenticatorAppSettingsController {
   private final IamAccountRepository accountRepository;
   private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final NotificationFactory notificationFactory;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+      IamTotpMfaProperties iamTotpMfaProperties, NotificationFactory notificationFactory) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.qrGenerator = qrGenerator;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.notificationFactory = notificationFactory;
   }
 
   /**
@@ -193,12 +189,13 @@ public class AuthenticatorAppSettingsController {
    * @return nothing
    */
   @PreAuthorize("hasRole('ADMIN')")
-  @RequestMapping(value = RESET_URL, method = RequestMethod.DELETE,
-      produces = MediaType.TEXT_PLAIN_VALUE)
+  @DeleteMapping(value = RESET_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void resetAuthenticatorApp(@PathVariable String accountId) {    
-    IamAccount account = accountRepository.findByUuid(accountId).orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
+  public void resetAuthenticatorApp(@PathVariable String accountId) {
+    IamAccount account = accountRepository.findByUuid(accountId)
+        .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
     service.disableTotpMfa(account);
+    notificationFactory.createMfaResetMessage(account);
   }
 
   /**

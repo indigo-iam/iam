@@ -470,6 +470,25 @@ public class TransientNotificationFactory implements NotificationFactory {
         subject, asList(certLinkRequest.getAccount().getUserInfo().getEmail()));
   }
 
+  @Override
+  public IamEmailNotification createMfaResetMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Multi-factor authentication (MFA) reset";
+
+    IamEmailNotification notification =
+        createMessage("mfaReset.ftl", model, IamNotificationType.MFA_RESET,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created Multi-factor authentication (MFA) reset message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
