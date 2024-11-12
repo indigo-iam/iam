@@ -25,9 +25,6 @@
             console.log('userController onInit');
             self.loaded = true;
             $timeout(self.showAccountLinkingFeedback, 0);
-            if (self.isVoAdmin()) {
-                self.getMfaSettingsForAccount();
-            }
         };
 
         self.accountLinkingEnabled = getAccountLinkingEnabled();

@@ -187,11 +187,9 @@ public class AuthenticatorAppSettingsController {
   }
 
   /**
-   * Reset authenticator app MFA on account User sends a TOTP through POST which we verify before
-   * disabling
+   * Reset authenticator app MFA on account by Admin on request
    * 
-   * @param code the TOTP to verify
-   * @param validationResult result of validation checks on the code
+   * @param accountId the accountId to get user account
    * @return nothing
    */
   @PreAuthorize("hasRole('ADMIN')")
