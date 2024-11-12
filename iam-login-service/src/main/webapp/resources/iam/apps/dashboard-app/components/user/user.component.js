@@ -18,9 +18,8 @@
 
     function UserController(
         $timeout, $cookies, $rootScope, $uibModal, ModalService, scimFactory,
-        UserService, Utils, toaster, AuthenticatorAppService) {
+        UserService, Utils, toaster) {
         var self = this;
-        var isMfaActive = false;
 
         self.$onInit = function () {
             console.log('userController onInit');
@@ -49,16 +48,6 @@
         self.isMe = function () {
             return Utils.isMe(self.user.id);
         };
-
-        self.getMfaSettingsForAccount = function () {
-            AuthenticatorAppService.getMfaSettingsForAccount(self.user.id).then(res => {
-              self.isMfaActive = res;
-            })
-              .catch(error => {
-                console.error(`Error fetching MFA settings for ${self.user.id}:`, error);
-                return { error: 'Failed to fetch MFA settings' };
-              });
-          };
 
         self.canManageLinkedAccounts = function () {
             if (!self.accountLinkingEnabled) {
@@ -143,7 +132,7 @@
         },
         controller: [
             '$timeout', '$cookies', '$rootScope', '$uibModal', 'ModalService',
-            'scimFactory', 'UserService', 'Utils', 'toaster', 'AuthenticatorAppService', UserController
+            'scimFactory', 'UserService', 'Utils', 'toaster', UserController
         ]
     });
 })();

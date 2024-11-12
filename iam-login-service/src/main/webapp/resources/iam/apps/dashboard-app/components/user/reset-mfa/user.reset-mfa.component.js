@@ -17,7 +17,7 @@
   'use strict';
 
   function ResetMfaController(
-      toaster, Utils, ModalService, $uibModal, AuthenticatorAppService) {
+      toaster, Utils, ModalService, $uibModal) {
     var self = this;
 
     self.$onInit = function () {
@@ -38,10 +38,12 @@
       });
 
       modalInstance.result.then(function(msg) {
-        if (self.isVoAdmin()) {
-          self.userCtrl.getMfaSettingsForAccount();
-        }
-        toaster.pop({type: 'success', body: msg});
+        self.userCtrl.loadUser().then(function () {
+          toaster.pop({
+            type: 'success',
+            body: msg
+          });
+        });
       });
     };
   }
@@ -53,7 +55,7 @@
     templateUrl:
         '/resources/iam/apps/dashboard-app/components/user/reset-mfa/user.reset-mfa.component.html',
     controller: [
-      'toaster', 'Utils', 'ModalService', '$uibModal', 'AuthenticatorAppService',
+      'toaster', 'Utils', 'ModalService', '$uibModal',
       ResetMfaController
     ]
   });

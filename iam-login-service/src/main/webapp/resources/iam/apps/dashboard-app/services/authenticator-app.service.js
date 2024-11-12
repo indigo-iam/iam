@@ -26,6 +26,7 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 		enableAuthenticatorApp: enableAuthenticatorApp,
 		disableAuthenticatorApp: disableAuthenticatorApp,
 		resetAuthenticatorApp: resetAuthenticatorApp,
+		getMfaSettings: getMfaSettings,
 		getMfaSettingsForAccount: getMfaSettingsForAccount
 	};
 
@@ -79,5 +80,9 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 
 	function getMfaSettingsForAccount(userId) {
 		return $http.get('/iam/multi-factor-settings/' + userId).then(handleSuccess).catch(handleError);
+	}
+
+	function getMfaSettings() {
+		return $http.get('/iam/multi-factor-settings/').then(handleSuccess).catch(handleError);
 	}
 }

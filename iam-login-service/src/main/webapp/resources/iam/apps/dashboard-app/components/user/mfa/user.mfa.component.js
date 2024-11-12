@@ -37,10 +37,12 @@
       });
 
       modalInstance.result.then(function (msg) {
-        if (self.userCtrl.isVoAdmin()) {
-          self.userCtrl.getMfaSettingsForAccount();
-        }
-        toaster.pop({ type: 'success', body: msg });
+        self.userCtrl.loadUser().then(function () {
+          toaster.pop({
+            type: 'success',
+            body: msg
+          });
+        });
       });
     };
   }

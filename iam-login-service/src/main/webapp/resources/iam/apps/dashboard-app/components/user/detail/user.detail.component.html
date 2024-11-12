@@ -56,6 +56,19 @@
             </tr>
             <tr>
                 <td class="text-bold text-left">
+                    Multi-factor authentication 
+                </td>
+                <td class="text-right">
+                    <span class="label label-success" ng-show="$ctrl.user.isMfaActive">
+                        <i class="fa fa-check"></i> Active
+                    </span>
+                    <span class="label label-warning" ng-show="!$ctrl.user.isMfaActive">
+                        <i class="fa fa-check"></i> Disabled
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="text-bold text-left">
                     Created
                 </td>
                 <td class="text-right">
