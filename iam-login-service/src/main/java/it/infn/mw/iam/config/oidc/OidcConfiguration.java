@@ -74,6 +74,7 @@ import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @Configuration
@@ -169,11 +170,13 @@ public class OidcConfiguration {
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
       OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator, SessionTimeoutHelper timeoutHelper) {
+      AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper, IamAccountRepository accountRepo,
+      IamTotpMfaRepository totpMfaRepository) {
 
-    OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
-    
+    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(userDetailService,
+        validator, timeoutHelper, accountRepo, totpMfaRepository);
+
     provider.setUserInfoFetcher(userInfoFetcher);
 
     return provider;
