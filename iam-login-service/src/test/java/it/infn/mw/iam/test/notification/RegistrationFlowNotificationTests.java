@@ -25,6 +25,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -154,6 +155,9 @@ public class RegistrationFlowNotificationTests {
     notificationDelivery.clearDeliveredNotifications();
 
     String confirmationKey = generator.getLastToken();
+    
+    mvc.perform(head("/registration/verify/{token}", confirmationKey).contentType(APPLICATION_JSON))
+    .andExpect(status().isMethodNotAllowed());
 
     mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
       .andExpect(status().isOk());

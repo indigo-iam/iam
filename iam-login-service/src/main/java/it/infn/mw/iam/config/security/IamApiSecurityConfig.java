@@ -16,6 +16,7 @@
 package it.infn.mw.iam.config.security;
 
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.HEAD;
 import static org.springframework.http.HttpMethod.POST;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -136,6 +137,7 @@ public class IamApiSecurityConfig {
             .antMatchers(GET, "/registration/config").permitAll()
             .antMatchers(GET, "/registration/confirm/**").permitAll()
             .antMatchers(GET, "/registration/verify/**").permitAll()
+            .antMatchers(HEAD, "/registration/verify/**").permitAll()
             .antMatchers(GET, "/registration/submitted").permitAll()
             .antMatchers(GET, "/iam/config/**").permitAll()
             .antMatchers(GET, AUP_PATH).permitAll()
