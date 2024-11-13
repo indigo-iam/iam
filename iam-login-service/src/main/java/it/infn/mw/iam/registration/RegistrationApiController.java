@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -141,6 +142,11 @@ public class RegistrationApiController {
   public RegistrationRequestDto confirmRequest(@PathVariable("token") String token) {
 
     return service.confirmRequest(token);
+  }
+
+  @RequestMapping(value = "/registration/verify/{token}", method = RequestMethod.HEAD)
+  public ResponseEntity<String> handleHeadRequest() {
+    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
   }
 
   @RequestMapping(value = "/registration/verify/{token}", method = RequestMethod.GET)
