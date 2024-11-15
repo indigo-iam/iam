@@ -369,7 +369,8 @@ public class DefaultRegistrationRequestService
     accountService.deleteAccount(request.getAccount());
 
     eventPublisher.publishEvent(new RegistrationRejectEvent(this, request,
-        "Reject registration request for user " + request.getAccount().getUsername()));
+        "Reject registration request for user " + request.getAccount().getUsername() +
+            (motivation.isPresent() ? " with motivation: " + motivation.get() : "")));
 
     return retval;
   }
