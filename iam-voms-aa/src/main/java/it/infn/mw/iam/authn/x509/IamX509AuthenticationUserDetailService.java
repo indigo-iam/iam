@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
 @Service
@@ -42,14 +41,11 @@ public class IamX509AuthenticationUserDetailService
   public static final SimpleGrantedAuthority X509_AUTHORITY =
       new SimpleGrantedAuthority("ROLE_X509");
 
-  IamAccountRepository accountRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
   IamX509CertificateRepository x509CertRepository;
 
-  public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
-      InactiveAccountAuthenticationHander handler,
+  public IamX509AuthenticationUserDetailService(InactiveAccountAuthenticationHander handler,
       IamX509CertificateRepository x509CertRepository) {
-    this.accountRepository = accountRepository;
     this.inactiveAccountHandler = handler;
     this.x509CertRepository = x509CertRepository;
   }
