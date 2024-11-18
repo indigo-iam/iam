@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.registration.cern;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
@@ -47,10 +48,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
-import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ErrorDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.config.cern.CernVOPersonNotFoundException;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
@@ -109,7 +110,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
     assertThat(user.get().getName(), is(MOCK_HR_USER_FAMILY_NAME));
   }
 
-  @Test(expected = CernHrDbApiError.class)
+  @Test(expected = CernVOPersonNotFoundException.class)
   public void checkErrorPersonRecord() throws JsonProcessingException {
     String personId = "12356789";
     String voPersonUrl = voPersonUrl(personId);
@@ -122,8 +123,9 @@ public class CernHrDbApiClientTests extends CernTestSupport {
 
     try {
       hrDbService.getHrDbPersonRecord(personId);
-    } catch (CernHrDbApiError e) {
-      assertThat(e.getMessage(), startsWith("HR db api error: 404 Not Found"));
+    } catch (CernVOPersonNotFoundException e) {
+      assertThat(e.getMessage(),
+          startsWith(format("VO person %s not found at URL %s", personId, voPersonUrl)));
       throw e;
     }
   }

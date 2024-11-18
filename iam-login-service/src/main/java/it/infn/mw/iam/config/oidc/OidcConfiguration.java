@@ -49,7 +49,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.web.client.ResponseErrorHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -130,17 +129,17 @@ public class OidcConfiguration {
 
   @Bean
   @Profile("!canl")
-  RestTemplateFactory restTemplateFactory(ResponseErrorHandler errorHandler) {
+  RestTemplateFactory restTemplateFactory() {
 
-    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory(), errorHandler);
+    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory());
   }
 
   @Bean
   @Profile("canl")
   RestTemplateFactory canlRestTemplateFactory(
-      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf, ResponseErrorHandler errorHandler) {
+      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf) {
 
-    return new DefaultRestTemplateFactory(rf, errorHandler);
+    return new DefaultRestTemplateFactory(rf);
   }
 
   @Bean(name = "OIDCExternalAuthenticationFailureHandler")

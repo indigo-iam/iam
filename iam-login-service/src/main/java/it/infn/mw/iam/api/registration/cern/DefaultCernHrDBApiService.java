@@ -26,8 +26,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -79,8 +81,13 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
       ResponseEntity<VOPersonDTO> response = rt.exchange(personValidUrl, HttpMethod.GET,
           new HttpEntity<>(buildAuthHeaders()), VOPersonDTO.class);
       return Optional.of(response.getBody());
-    } catch (CernVOPersonNotFoundException e) {
-      LOG.warn("VO person {} not found at URL {}", personId, personValidUrl);
+    } catch (HttpClientErrorException e) {
+      
+      if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+        String notFoundMessage = String.format("VO person %s not found at URL %s", personId, personValidUrl);
+        LOG.warn(notFoundMessage);
+        throw new CernVOPersonNotFoundException(notFoundMessage);
+      }
       return Optional.empty();
     } catch (RestClientException e) {
       final String errorMsg = "HR db api error: " + e.getMessage();
