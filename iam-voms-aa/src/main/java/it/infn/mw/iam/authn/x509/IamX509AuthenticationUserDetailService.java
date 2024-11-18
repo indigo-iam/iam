@@ -20,7 +20,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
 import org.springframework.security.core.userdetails.User;
@@ -29,7 +28,9 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
 @Service
 public class IamX509AuthenticationUserDetailService
@@ -43,12 +44,14 @@ public class IamX509AuthenticationUserDetailService
 
   IamAccountRepository accountRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
+  IamX509CertificateRepository x509CertRepository;
 
-  @Autowired
   public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
-      InactiveAccountAuthenticationHander handler) {
+      InactiveAccountAuthenticationHander handler,
+      IamX509CertificateRepository x509CertRepository) {
     this.accountRepository = accountRepository;
     this.inactiveAccountHandler = handler;
+    this.x509CertRepository = x509CertRepository;
   }
 
   protected User buildUserFromIamAccount(IamAccount account) {
@@ -63,18 +66,26 @@ public class IamX509AuthenticationUserDetailService
   @Override
   public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken token) {
 
-    String principal = (String) token.getPrincipal();
+    IamX509AuthenticationCredential credentials =
+        (IamX509AuthenticationCredential) token.getCredentials();
 
-    LOG.debug("Loading IAM account for X.509 principal '{}'", principal);
+    LOG.debug("Loading IAM account for X.509 certificate with subject '{}' and issuer '{}'",
+        credentials.getSubject(), credentials.getIssuer());
 
-    Optional<IamAccount> account = accountRepository.findByCertificateSubject(principal);
+    Optional<IamX509Certificate> cert = x509CertRepository
+      .findBySubjectDnAndIssuerDn(credentials.getSubject(), credentials.getIssuer());
 
-    if (account.isPresent()) {
-      LOG.debug("Found IAM account {} linked to principal '{}'", account.get().getUuid(), principal);
-      return buildUserFromIamAccount(account.get());
-    } else {
-      return buildUnknownUser(token);
+    if (cert.isPresent()) {
+
+      IamAccount account = cert.get().getAccount();
+
+      LOG.debug(
+          "Found IAM account {} linked to X.509 certificate with subject '{}' and issuer '{}'",
+          account.getUuid(), cert.get().getSubjectDn(), cert.get().getIssuerDn());
+      return buildUserFromIamAccount(account);
+
     }
+    return buildUnknownUser(token);
   }
 
 }
