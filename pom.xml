@@ -15,7 +15,7 @@
 
 	<groupId>it.infn.mw.iam-parent</groupId>
 	<artifactId>iam-parent</artifactId>
-	<version>1.10.2</version>
+	<version>1.10.3</version>
 	<packaging>pom</packaging>
 
 	<name>INDIGO Identity and Access Manager (IAM) - Parent POM</name>
