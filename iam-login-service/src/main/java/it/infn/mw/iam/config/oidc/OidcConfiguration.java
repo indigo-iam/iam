@@ -49,6 +49,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.web.client.ResponseErrorHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -94,7 +95,7 @@ public class OidcConfiguration {
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
   @Bean
-  public FilterRegistrationBean<OidcClientFilter> disabledAutomaticOidcFilterRegistration(
+  FilterRegistrationBean<OidcClientFilter> disabledAutomaticOidcFilterRegistration(
       OidcClientFilter f) {
 
     FilterRegistrationBean<OidcClientFilter> b = new FilterRegistrationBean<>(f);
@@ -103,7 +104,7 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationFilter")
-  public OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
+  OidcClientFilter openIdConnectAuthenticationFilterCanl(OidcTokenRequestor tokenRequestor,
       @Qualifier("OIDCAuthenticationManager") AuthenticationManager oidcAuthenticationManager,
       @Qualifier("OIDCExternalAuthenticationSuccessHandler") AuthenticationSuccessHandler successHandler,
       @Qualifier("OIDCExternalAuthenticationFailureHandler") AuthenticationFailureHandler failureHandler,
@@ -129,27 +130,27 @@ public class OidcConfiguration {
 
   @Bean
   @Profile("!canl")
-  public RestTemplateFactory restTemplateFactory() {
+  RestTemplateFactory restTemplateFactory(ResponseErrorHandler errorHandler) {
 
-    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory());
+    return new DefaultRestTemplateFactory(new HttpComponentsClientHttpRequestFactory(), errorHandler);
   }
 
   @Bean
   @Profile("canl")
-  public RestTemplateFactory canlRestTemplateFactory(
-      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf) {
+  RestTemplateFactory canlRestTemplateFactory(
+      @Qualifier("canlRequestFactory") ClientHttpRequestFactory rf, ResponseErrorHandler errorHandler) {
 
-    return new DefaultRestTemplateFactory(rf);
+    return new DefaultRestTemplateFactory(rf, errorHandler);
   }
 
   @Bean(name = "OIDCExternalAuthenticationFailureHandler")
-  public AuthenticationFailureHandler failureHandler() {
+  AuthenticationFailureHandler failureHandler() {
 
     return new ExternalAuthenticationFailureHandler(new OidcExceptionMessageHelper());
   }
 
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
-  public AuthenticationSuccessHandler successHandler() {
+  AuthenticationSuccessHandler successHandler() {
 
     RootIsDashboardSuccessHandler sa =
         new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
@@ -161,13 +162,13 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCAuthenticationManager")
-  public AuthenticationManager authenticationManager(
+  AuthenticationManager authenticationManager(
       OIDCAuthenticationProvider oidcAuthenticationProvider) {
     return new ProviderManager(Arrays.asList(oidcAuthenticationProvider));
   }
 
   @Bean
-  public OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
+  OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
       OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
       AuthenticationValidator<OIDCAuthenticationToken> validator, SessionTimeoutHelper timeoutHelper) {
 
@@ -180,21 +181,21 @@ public class OidcConfiguration {
   }
 
   @Bean
-  public IssuerService oidcIssuerService() {
+  IssuerService oidcIssuerService() {
 
     return new IamThirdPartyIssuerService();
   }
 
   @Bean
   @Profile("!canl")
-  public ServerConfigurationService dynamicServerConfiguration() {
+  ServerConfigurationService dynamicServerConfiguration() {
 
     return new DynamicServerConfigurationService();
   }
 
   @Bean
   @Profile("canl")
-  public ServerConfigurationService canlDynamicServerConfiguration(
+  ServerConfigurationService canlDynamicServerConfiguration(
       @Qualifier("canlHttpClient") HttpClient client) {
 
     return new DynamicServerConfigurationService(client);
@@ -205,7 +206,7 @@ public class OidcConfiguration {
   }
 
   @Bean
-  public ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
+  ClientConfigurationService oidcClientConfiguration(OidcValidatedProviders providers) {
 
     Map<String, RegisteredClient> clients = new LinkedHashMap<>();
 
@@ -231,31 +232,31 @@ public class OidcConfiguration {
   }
 
   @Bean
-  public AuthRequestOptionsService authOptions() {
+  AuthRequestOptionsService authOptions() {
 
     return new StaticAuthRequestOptionsService();
   }
 
   @Bean
-  public AuthRequestUrlBuilder authRequestBuilder() {
+  AuthRequestUrlBuilder authRequestBuilder() {
 
     return new PlainAuthRequestUrlBuilder();
   }
 
   @Bean
-  public OidcUserDetailsService userDetailService(IamAccountRepository repo,
+  OidcUserDetailsService userDetailService(IamAccountRepository repo,
       InactiveAccountAuthenticationHander handler) {
 
     return new DefaultOidcUserDetailsService(repo, handler);
   }
 
   @Bean
-  public UserInfoFetcher userInfoFetcher() {
+  UserInfoFetcher userInfoFetcher() {
     return new UserInfoFetcher();
   }
 
   @Bean
-  public OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory,
+  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory,
       ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }

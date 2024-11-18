@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.registration.cern;
 
+import java.util.Optional;
+
 import org.springframework.context.annotation.Profile;
 
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
@@ -22,6 +24,6 @@ import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 @Profile("cern")
 public interface CernHrDBApiService {
 
-  VOPersonDTO getHrDbPersonRecord(String personId);
+  Optional<VOPersonDTO> getHrDbPersonRecord(String personId);
 
 }

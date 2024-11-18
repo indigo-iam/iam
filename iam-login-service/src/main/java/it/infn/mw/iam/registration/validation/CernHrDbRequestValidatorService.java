@@ -101,10 +101,14 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
     }
 
     try {
-      VOPersonDTO voPersonDTO = hrDbApi.getHrDbPersonRecord(cernPersonId);
-      if (hasValidParticipationToExperiment(voPersonDTO)) {
+      Optional<VOPersonDTO> voPersonDTO = hrDbApi.getHrDbPersonRecord(cernPersonId);
+      if (voPersonDTO.isEmpty()) {
+        return invalid(format("No experiment participation found for user %s %s (PersonId: %s)",
+            auth.getGivenName(), auth.getFamilyName(), cernPersonId));
+      }
+      if (hasValidParticipationToExperiment(voPersonDTO.get())) {
         addPersonIdLabel(registrationRequest, cernPersonId);
-        synchronizeInfo(registrationRequest, voPersonDTO);
+        synchronizeInfo(registrationRequest, voPersonDTO.get());
         return ok();
       }
     } catch (CernHrDbApiError e) {

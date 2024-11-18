@@ -27,6 +27,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -101,9 +103,10 @@ public class CernHrDbApiClientTests extends CernTestSupport {
       .andRespond(withStatus(OK).contentType(APPLICATION_JSON)
         .body(mapper.writeValueAsString(mockHrUser(personId))));
 
-    VOPersonDTO user = hrDbService.getHrDbPersonRecord(personId);
-    assertThat(user.getFirstName(), is(MOCK_HR_USER_FIRST_NAME));
-    assertThat(user.getName(), is(MOCK_HR_USER_FAMILY_NAME));
+    Optional<VOPersonDTO> user = hrDbService.getHrDbPersonRecord(personId);
+    assertThat(user.isPresent(), is(true));
+    assertThat(user.get().getFirstName(), is(MOCK_HR_USER_FIRST_NAME));
+    assertThat(user.get().getName(), is(MOCK_HR_USER_FAMILY_NAME));
   }
 
   @Test(expected = CernHrDbApiError.class)

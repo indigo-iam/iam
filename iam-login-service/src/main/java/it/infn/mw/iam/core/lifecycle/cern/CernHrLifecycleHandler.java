@@ -31,7 +31,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -47,6 +46,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
+import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -66,9 +66,9 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public static final String IGNORE_MESSAGE = "Skipping account as requested by the 'ignore' label";
   public static final String RESTORED_MESSAGE = "Account restored on %s";
+  public static final String NO_PERSON_FOUND_MESSAGE = "No person id %s found on HR DB";
   public static final String NO_PARTICIPATION_MESSAGE =
-      "Account end-time not updated: no participation to %s found";
-  public static final String EXPIRED_MESSAGE = "Account participation to the experiment is expired";
+      "Account end-time not updated: no participation to %s found";  public static final String EXPIRED_MESSAGE = "Account participation to the experiment is expired";
   public static final String VALID_MESSAGE = "Account has a valid participation to the experiment";
 
   public static final String HR_DB_API_ERROR = "Account not updated: HR DB error";
@@ -160,13 +160,21 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
     Optional<VOPersonDTO> voPerson = Optional.empty();
     try {
-      voPerson = Optional.ofNullable(hrDb.getHrDbPersonRecord(cernPersonId));
-    } catch (RuntimeException e) {
+      voPerson = hrDb.getHrDbPersonRecord(cernPersonId);
+    } catch (CernHrDbApiError e) {
       LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
-    }
-    if (Objects.isNull(voPerson) || voPerson.isEmpty()) {
       accountService.addLabel(account, hrUtils.buildCernStatusLabel(ERROR));
       accountService.addLabel(account, hrUtils.buildCernMessageLabel(format(HR_DB_API_ERROR)));
+      return;
+    }
+    if (voPerson.isEmpty()) {
+      accountService.addLabel(account, hrUtils.buildCernStatusLabel(NOT_FOUND));
+      accountService.addLabel(account,
+          hrUtils.buildCernMessageLabel(format(NO_PERSON_FOUND_MESSAGE, cernPersonId)));
+      LOG.warn(
+          "No record found for person id {}. The account {} won't be update for a safe approach. "
+          + "Check it manually with the HR office.",
+          cernPersonId, account.getUsername());
       return;
     }
 

@@ -18,6 +18,8 @@ package it.infn.mw.iam.api.registration.cern;
 import static it.infn.mw.iam.util.BasicAuthenticationUtils.basicAuthHeaderValue;
 import static java.lang.String.format;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -32,6 +34,7 @@ import org.springframework.web.client.RestTemplate;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.config.cern.CernProperties;
+import it.infn.mw.iam.config.cern.CernVOPersonNotFoundException;
 
 @Service
 @Profile("cern")
@@ -63,7 +66,7 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
   }
 
   @Override
-  public VOPersonDTO getHrDbPersonRecord(String personId) {
+  public Optional<VOPersonDTO> getHrDbPersonRecord(String personId) {
 
     RestTemplate rt = rtFactory.newRestTemplate();
 
@@ -75,7 +78,10 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
     try {
       ResponseEntity<VOPersonDTO> response = rt.exchange(personValidUrl, HttpMethod.GET,
           new HttpEntity<>(buildAuthHeaders()), VOPersonDTO.class);
-      return response.getBody();
+      return Optional.of(response.getBody());
+    } catch (CernVOPersonNotFoundException e) {
+      LOG.warn("VO person {} not found at URL {}", personId, personValidUrl);
+      return Optional.empty();
     } catch (RestClientException e) {
       final String errorMsg = "HR db api error: " + e.getMessage();
       throw new CernHrDbApiError(errorMsg, e);

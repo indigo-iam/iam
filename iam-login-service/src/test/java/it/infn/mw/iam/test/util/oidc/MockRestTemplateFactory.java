@@ -20,6 +20,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
+import it.infn.mw.iam.config.cern.CernHrLifecycleResponseHandler;
 
 public class MockRestTemplateFactory extends DefaultRestTemplateFactory {
 
@@ -27,7 +28,7 @@ public class MockRestTemplateFactory extends DefaultRestTemplateFactory {
   MockRestServiceServer mockServer;
 
   public MockRestTemplateFactory() {
-    super(new HttpComponentsClientHttpRequestFactory());
+    super(new HttpComponentsClientHttpRequestFactory(), new CernHrLifecycleResponseHandler());
     resetTemplate();
   }
 

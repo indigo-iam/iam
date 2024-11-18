@@ -16,21 +16,27 @@
 package it.infn.mw.iam.authn.oidc;
 
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 public class DefaultRestTemplateFactory implements RestTemplateFactory {
 
-  private ClientHttpRequestFactory httpRequestFactory;
+  final ClientHttpRequestFactory httpRequestFactory;
+  final ResponseErrorHandler errorHandler;
 
-  public DefaultRestTemplateFactory(ClientHttpRequestFactory httpRequestFactory) {
+  public DefaultRestTemplateFactory(ClientHttpRequestFactory httpRequestFactory,
+      ResponseErrorHandler errorHandler) {
 
     this.httpRequestFactory = httpRequestFactory;
+    this.errorHandler = errorHandler;
   }
 
   @Override
   public RestTemplate newRestTemplate() {
 
-    return new RestTemplate(httpRequestFactory);
+    RestTemplate rt = new RestTemplate(httpRequestFactory);
+    rt.setErrorHandler(errorHandler);
+    return rt;
   }
 
 }
