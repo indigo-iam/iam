@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -94,12 +96,15 @@ public class TestTokensUtils {
       String[] scopes) {
 
     Authentication userAuth = null;
+    Map<String, String> requestParameters = new HashMap<String, String>();
+    requestParameters.put("grant_type", "authorization_code");
 
     if (username != null) {
       userAuth = new UsernamePasswordAuthenticationToken(username, "");
     }
 
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
+    req.setRequestParameters(requestParameters);
     OAuth2Authentication auth = new OAuth2Authentication(req, userAuth);
 
     return auth;
