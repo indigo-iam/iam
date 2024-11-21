@@ -18,7 +18,7 @@ cern:
   sso-issuer: "https://auth.cern.ch/auth/realms/cern"
   person-id-claim: "cern_person_id"
   experiment-name: "test"
-  hr_api:
+  hr-api:
     url: "http://hr.test.example"
     username: "username"
     password: "password"

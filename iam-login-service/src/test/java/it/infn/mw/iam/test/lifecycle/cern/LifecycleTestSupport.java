@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STA
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_IGNORE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -58,6 +59,10 @@ public interface LifecycleTestSupport {
 
   default IamLabel skipEmailSyncLabel() {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_EMAIL_SYNCH).build();
+  }
+
+  default IamLabel skipEndDateSyncLabel() {
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_END_DATE_SYNCH).build();
   }
 
   default IamLabel cernPersonIdLabel() {
