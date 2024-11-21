@@ -17,8 +17,9 @@ package it.infn.mw.iam.config.cern;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
-
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
@@ -30,13 +31,13 @@ public class CernProperties {
 
   public static class HrSynchTaskProperties {
 
-    boolean enabled = true;
+    boolean enabled;
 
     @NotBlank
-    String cronSchedule = "0 23 */12 * * *";
+    String cronSchedule;
 
     @Min(value = 5L)
-    int pageSize = 50;
+    int pageSize;
 
     public boolean isEnabled() {
       return enabled;
@@ -67,13 +68,13 @@ public class CernProperties {
   public static class HrDbApiProperties {
 
     @NotBlank
-    String url = "http://hr.test.example";
+    String url;
 
     @NotBlank
-    String username = "username";
+    String username;
 
     @NotBlank
-    String password = "password";
+    String password;
 
     public String getUrl() {
       return url;
@@ -100,14 +101,24 @@ public class CernProperties {
     }
   }
 
-  @NotBlank
-  private String ssoIssuer = "https://auth.cern.ch/auth/realms/cern";
+  public enum CernHrActionsOnUser {
+    no_action, disable_user;
+  }
 
   @NotBlank
-  private String personIdClaim = "cern_person_id";
+  private String ssoIssuer;
 
   @NotBlank
-  private String experimentName = "test";
+  private String personIdClaim;
+
+  @NotBlank
+  private String experimentName;
+
+  @NotNull
+  private CernHrActionsOnUser onPersonIdNotFound;
+
+  @NotNull
+  private CernHrActionsOnUser onParticipationNotFound;
 
   @Valid
   private HrDbApiProperties hrApi = new HrDbApiProperties();
@@ -154,4 +165,21 @@ public class CernProperties {
   public void setTask(HrSynchTaskProperties task) {
     this.task = task;
   }
+
+  public CernHrActionsOnUser getOnPersonIdNotFound() {
+    return onPersonIdNotFound;
+  }
+
+  public void setOnPersonIdNotFound(CernHrActionsOnUser onPersonIdNotFound) {
+    this.onPersonIdNotFound = onPersonIdNotFound;
+  }
+
+  public CernHrActionsOnUser getOnParticipationNotFound() {
+    return onParticipationNotFound;
+  }
+
+  public void setOnParticipationNotFound(CernHrActionsOnUser onParticipationNotFound) {
+    this.onParticipationNotFound = onParticipationNotFound;
+  }
+
 }

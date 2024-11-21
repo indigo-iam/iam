@@ -23,7 +23,6 @@ import static it.infn.mw.iam.registration.validation.RegistrationRequestValidati
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
-import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -36,9 +35,11 @@ import com.google.common.collect.Lists;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
+import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.config.cern.CernProperties;
+import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 
 @Service
@@ -106,7 +107,10 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
         return invalid(format("No experiment participation found for user %s %s (PersonId: %s)",
             auth.getGivenName(), auth.getFamilyName(), cernPersonId));
       }
-      if (hasValidParticipationToExperiment(voPersonDTO.get())) {
+      Optional<ParticipationDTO> ep = CernHrLifecycleUtils.getMostRecentMembership(
+          voPersonDTO.get().getParticipations(), cernProperties.getExperimentName());
+
+      if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate())) {
         addPersonIdLabel(registrationRequest, cernPersonId);
         synchronizeInfo(registrationRequest, voPersonDTO.get());
         return ok();
@@ -117,14 +121,5 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
 
     return invalid(format("No valid experiment participation found for user %s %s (PersonId: %s)",
         auth.getGivenName(), auth.getFamilyName(), cernPersonId));
-  }
-
-  private boolean hasValidParticipationToExperiment(VOPersonDTO voPersonDTO) {
-    if (Objects.isNull(voPersonDTO)) {
-      return false;
-    }
-    return voPersonDTO.getParticipations()
-      .stream()
-      .anyMatch(p -> p.getExperiment().equalsIgnoreCase(cernProperties.getExperimentName()));
   }
 }

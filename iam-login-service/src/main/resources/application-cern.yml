@@ -1,0 +1,18 @@
+cern:
+  sso-issuer: "https://auth.cern.ch/auth/realms/cern"
+  person-id-claim: "cern_person_id"
+  experiment-name: "test"
+  hr_api:
+    url: "http://hr.test.example"
+    username: "username"
+    password: "password"
+  task:
+    enabled: true
+    cron-schedule: "0 23 */12 * * *"
+    page-size: 50
+  # Action when API returns 404 on asking info about a VO person.
+  # Values: no_action, disable_user
+  on-person-id-not-found: no_action
+  # Action when the VO-person received from the HR API contains no participations to the experiment (even expired). 
+  # Values: no_action, disable_user
+  on-participation-not-found: no_action

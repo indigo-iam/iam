@@ -23,7 +23,6 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.HR_DB_AP
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.IGNORE_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PARTICIPATION_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PERSON_FOUND_MESSAGE;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.RESTORED_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.VALID_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.EXPIRED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.IGNORED;
@@ -165,7 +164,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
 
-    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(expiredVoPerson(CERN_PERSON_ID)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
+      .thenReturn(Optional.of(expiredVoPerson(CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -215,7 +215,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));
 
-    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(removedVoPerson(CERN_PERSON_ID)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
+      .thenReturn(Optional.of(removedVoPerson(CERN_PERSON_ID)));
 
     cernHrLifecycleHandler.run();
 
@@ -286,7 +287,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     Comparator<ParticipationDTO> comparator = Comparator.comparing(ParticipationDTO::getEndDate);
 
-    ParticipationDTO highestParticipation = voPerson.getParticipations().stream().max(comparator).get();
+    ParticipationDTO highestParticipation =
+        voPerson.getParticipations().stream().max(comparator).get();
     when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
@@ -397,7 +399,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   @Test
   public void testRestoreLifecycleWorks() {
 
-    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
+      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
 
@@ -425,7 +428,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
 
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(format(RESTORED_MESSAGE, clock.instant())));
+    assertThat(cernMessageLabel.get().getValue(), is(format(VALID_MESSAGE)));
 
     assertThat(cernTimestampLabel.isPresent(), is(false));
     assertThat(iamStatusLabel.isPresent(), is(false));
@@ -477,7 +480,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.NOT_FOUND.name()));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ID_NOT_FOUND.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -505,7 +508,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.NOT_FOUND.name()));
+    assertThat(statusLabel.get().getValue(),
+        is(CernHrLifecycleHandler.Status.EXP_NOT_FOUND.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -517,7 +521,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   @Test
   public void testLifecycleNotRestoreAccountsSuspendedByAdmins() {
 
-    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID)).thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
+    when(hrDb.getHrDbPersonRecord(CERN_PERSON_ID))
+      .thenReturn(Optional.of(voPerson(CERN_PERSON_ID)));
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
     assertThat(testAccount.isActive(), is(true));

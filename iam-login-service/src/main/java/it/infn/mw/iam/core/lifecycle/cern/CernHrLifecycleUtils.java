@@ -15,27 +15,24 @@
  */
 package it.infn.mw.iam.core.lifecycle.cern;
 
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsLast;
 
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import org.joda.time.DateTimeComparator;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status;
-import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
-@Component
-@Profile("cern")
 public class CernHrLifecycleUtils {
 
   public static final String LABEL_CERN_PREFIX = "hr.cern";
@@ -45,18 +42,14 @@ public class CernHrLifecycleUtils {
   public static final String LABEL_ACTION = "action";
   public static final String LABEL_IGNORE = "ignore";
   public static final String LABEL_SKIP_EMAIL_SYNCH = "skip-email-synch";
+  public static final String LABEL_SKIP_END_DATE_SYNCH = "skip-end-date-synch";
 
-  public boolean isSkipEmailSynch(IamAccount a) {
-
-    return a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_SKIP_EMAIL_SYNCH).isPresent();
-  }
-
-  public IamLabel buildCernActionLabel() {
+  public static IamLabel buildCernActionLabel() {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_ACTION).build();
   }
 
-  public IamLabel buildCernStatusLabel(Status status) {
+  public static IamLabel buildCernStatusLabel(Status status) {
 
     return IamLabel.builder()
       .prefix(LABEL_CERN_PREFIX)
@@ -65,37 +58,46 @@ public class CernHrLifecycleUtils {
       .build();
   }
 
-  public IamLabel buildCernTimestampLabel() {
+  public static IamLabel buildCernTimestampLabel() {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_TIMESTAMP).build();
   }
 
-  public IamLabel buildCernIgnoreLabel() {
+  public static IamLabel buildCernIgnoreLabel() {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_IGNORE).build();
   }
 
-  public IamLabel buildCernMessageLabel(String message) {
+  public static IamLabel buildCernMessageLabel(String message) {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_MESSAGE).value(message).build();
   }
 
-  public Optional<ParticipationDTO> getLastActiveExperimentParticipation(Set<ParticipationDTO> participations,
-      String experimentName) {
-
-    Comparator<ParticipationDTO> comparator =
-        nullsLast(comparing(ParticipationDTO::getEndDate, nullsLast(naturalOrder())).reversed());
-
-    return participations.stream()
-      .filter(p -> p.getExperiment().equalsIgnoreCase(experimentName))
-      .sorted(comparator).findFirst();
+  public static IamLabel buildLifecycleStatusLabel() {
+    return IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).build();
   }
 
-  public boolean isValidExperimentParticipation(ParticipationDTO participation) {
-    if (Objects.isNull(participation.getEndDate())) {
+  public static IamLabel buildLifecycleStatusLabel(AccountLifecycleStatus status) {
+    return IamLabel.builder()
+      .name(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL)
+      .value(status.name())
+      .build();
+  }
+
+  public static Optional<ParticipationDTO> getMostRecentMembership(Set<ParticipationDTO> p,
+      String experimentName) {
+    Comparator<ParticipationDTO> comparator =
+        nullsLast(comparing(ParticipationDTO::getEndDate, nullsLast(naturalOrder())).reversed());
+    return p.stream()
+      .filter(c -> c.getExperiment().equalsIgnoreCase(experimentName))
+      .sorted(comparator)
+      .findFirst();
+  }
+
+  public static boolean isActiveMembership(Date endTime) {
+    if (endTime == null) {
       return true;
     }
-    return DateTimeComparator.getDateOnlyInstance()
-      .compare(participation.getEndDate(), new Date()) >= 0;
+    return DateTimeComparator.getDateOnlyInstance().compare(endTime, new Date()) >= 0;
   }
 }
