@@ -44,6 +44,8 @@ public class CernHrLifecycleUtils {
   public static final String LABEL_SKIP_EMAIL_SYNCH = "skip-email-synch";
   public static final String LABEL_SKIP_END_DATE_SYNCH = "skip-end-date-synch";
 
+  private CernHrLifecycleUtils() {}
+
   public static IamLabel buildCernActionLabel() {
 
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_ACTION).build();

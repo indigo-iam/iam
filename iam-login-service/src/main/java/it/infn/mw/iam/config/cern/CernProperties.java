@@ -101,7 +101,7 @@ public class CernProperties {
   }
 
   public enum CernHrActionsOnUser {
-    no_action, disable_user;
+    NO_ACTION, DISABLE_USER;
   }
 
   @NotBlank
@@ -113,9 +113,9 @@ public class CernProperties {
   @NotBlank
   private String experimentName = "test";
 
-  private CernHrActionsOnUser onPersonIdNotFound = CernHrActionsOnUser.no_action;
+  private CernHrActionsOnUser onPersonIdNotFound = CernHrActionsOnUser.NO_ACTION;
 
-  private CernHrActionsOnUser onParticipationNotFound = CernHrActionsOnUser.no_action;
+  private CernHrActionsOnUser onParticipationNotFound = CernHrActionsOnUser.NO_ACTION;
 
   @Valid
   private HrDbApiProperties hrApi = new HrDbApiProperties();
