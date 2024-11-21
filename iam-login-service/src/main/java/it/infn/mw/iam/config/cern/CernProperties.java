@@ -18,7 +18,6 @@ package it.infn.mw.iam.config.cern;
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -31,13 +30,13 @@ public class CernProperties {
 
   public static class HrSynchTaskProperties {
 
-    boolean enabled;
+    boolean enabled = true;
 
     @NotBlank
-    String cronSchedule;
+    String cronSchedule = "0 23 */12 * * *";
 
     @Min(value = 5L)
-    int pageSize;
+    int pageSize = 50;
 
     public boolean isEnabled() {
       return enabled;
@@ -68,13 +67,13 @@ public class CernProperties {
   public static class HrDbApiProperties {
 
     @NotBlank
-    String url;
+    String url = "http://hr.test.example";
 
     @NotBlank
-    String username;
+    String username = "username";
 
     @NotBlank
-    String password;
+    String password = "password";
 
     public String getUrl() {
       return url;
@@ -106,19 +105,17 @@ public class CernProperties {
   }
 
   @NotBlank
-  private String ssoIssuer;
+  private String ssoIssuer = "https://auth.cern.ch/auth/realms/cern";
 
   @NotBlank
-  private String personIdClaim;
+  private String personIdClaim = "cern_person_id";
 
   @NotBlank
-  private String experimentName;
+  private String experimentName = "test";
 
-  @NotNull
-  private CernHrActionsOnUser onPersonIdNotFound;
+  private CernHrActionsOnUser onPersonIdNotFound = CernHrActionsOnUser.no_action;
 
-  @NotNull
-  private CernHrActionsOnUser onParticipationNotFound;
+  private CernHrActionsOnUser onParticipationNotFound = CernHrActionsOnUser.no_action;
 
   @Valid
   private HrDbApiProperties hrApi = new HrDbApiProperties();
