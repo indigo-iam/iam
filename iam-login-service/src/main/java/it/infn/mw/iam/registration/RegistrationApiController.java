@@ -135,17 +135,11 @@ public class RegistrationApiController {
     return service.rejectRequest(uuid, Optional.ofNullable(motivation));
   }
 
-  @GetMapping(value = "/registration/confirm/{token}")
-  public RegistrationRequestDto confirmRequest(@PathVariable("token") String token) {
-
-    return service.confirmRequest(token);
-  }
-
   @GetMapping(value = "/registration/verify/{token}")
-  public ModelAndView openVerifyRequestPage(final Model model, @PathVariable("token") String token) {
+  public ModelAndView openConfirmRequestPage(final Model model, @PathVariable("token") String token) {
 
     model.addAttribute("token", token);
-    return new ModelAndView("iam/verifyRequest");
+    return new ModelAndView("iam/confirmRequest");
   }
 
   @PostMapping(value = "/registration/verify")
