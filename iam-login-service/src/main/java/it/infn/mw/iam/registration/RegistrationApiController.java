@@ -155,7 +155,7 @@ public class RegistrationApiController {
       model.addAttribute("verificationSuccess", true);
       SecurityContextHolder.clearContext();
     } catch (ScimResourceNotFoundException e) {
-      LOG.warn(e.getMessage(), e);
+      LOG.warn(e.getMessage());
       String message = "Activation failed: " + e.getMessage();
       model.addAttribute("verificationMessage", message);
       model.addAttribute("verificationFailure", true);
