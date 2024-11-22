@@ -92,7 +92,7 @@ public class IamApiSecurityConfig {
           .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
           .authorizeRequests()
-            .anyRequest().fullyAuthenticated()            
+            .anyRequest().fullyAuthenticated()
         .and()
           .csrf().disable();
       // @formatter:on
@@ -161,9 +161,9 @@ public class IamApiSecurityConfig {
             .antMatchers(GET, "/registration/username-available/**").permitAll()
             .antMatchers(GET, "/registration/email-available/**").permitAll()
             .antMatchers(GET, "/registration/config").permitAll()
-            .antMatchers(GET, "/registration/confirm/**").permitAll()
-            .antMatchers(GET, "/registration/verify/**").permitAll()
             .antMatchers(HEAD, "/registration/verify/**").permitAll()
+            .antMatchers(GET, "/registration/verify/**").permitAll()
+            .antMatchers(POST, "/registration/verify").permitAll()
             .antMatchers(GET, "/registration/submitted").permitAll()
             .antMatchers(GET, "/iam/config/**").permitAll()
             .antMatchers(GET, AUP_PATH).permitAll()

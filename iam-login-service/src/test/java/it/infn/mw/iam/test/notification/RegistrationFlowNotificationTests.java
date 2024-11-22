@@ -16,11 +16,13 @@
 package it.infn.mw.iam.test.notification;
 
 import static it.infn.mw.iam.test.util.AuthenticationUtils.adminAuthentication;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
@@ -51,6 +54,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -97,6 +101,9 @@ public class RegistrationFlowNotificationTests {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  private IamRegistrationRequestRepository requestRepository;
+
   private MockMvc mvc;
 
   @Before
@@ -142,6 +149,14 @@ public class RegistrationFlowNotificationTests {
       .getResponse()
       .getContentAsString();
 
+    String confirmationKey = generator.getLastToken();
+
+    assertThat(requestRepository.findByAccountConfirmationKey(confirmationKey)
+      .get()
+      .getAccount()
+      .getUserInfo()
+      .getEmail(), is("approve_flow@example.org"));
+
     request = mapper.readValue(responseJson, RegistrationRequestDto.class);
 
     notificationDelivery.sendPendingNotifications();
@@ -154,14 +169,17 @@ public class RegistrationFlowNotificationTests {
 
     notificationDelivery.clearDeliveredNotifications();
 
-    String confirmationKey = generator.getLastToken();
-    
-    mvc.perform(head("/registration/verify/{token}", confirmationKey).contentType(APPLICATION_JSON))
-    .andExpect(status().isMethodNotAllowed());
+    mvc.perform(head("/registration/verify/{token}", confirmationKey)).andExpect(status().isOk());
 
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+    mvc.perform(get("/registration/verify/wrongtoken")).andExpect(status().isOk());
 
+    mvc.perform(post("/registration/verify").content("token=wrongtoken").contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
+
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey).contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     notificationDelivery.sendPendingNotifications();
 
@@ -174,7 +192,6 @@ public class RegistrationFlowNotificationTests {
     assertThat(message.getReceivers(), hasSize(1));
     assertThat(message.getReceivers().get(0).getEmailAddress(),
         equalTo(properties.getAdminAddress()));
-
 
     notificationDelivery.clearDeliveredNotifications();
 
@@ -226,8 +243,10 @@ public class RegistrationFlowNotificationTests {
 
     String confirmationKey = generator.getLastToken();
 
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
 
     notificationDelivery.sendPendingNotifications();
@@ -294,9 +313,10 @@ public class RegistrationFlowNotificationTests {
 
     String confirmationKey = generator.getLastToken();
 
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
-
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     notificationDelivery.sendPendingNotifications();
 

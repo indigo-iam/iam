@@ -20,8 +20,10 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.Test;
@@ -91,7 +93,10 @@ public class ExternalAuthenticationRegistrationTests {
     request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
-    mvc.perform(get("/registration/confirm/{token}", token)).andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + token)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     mvc
       .perform(post("/registration/approve/{uuid}", request.getUuid())
@@ -136,7 +141,10 @@ public class ExternalAuthenticationRegistrationTests {
     request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
-    mvc.perform(get("/registration/confirm/{token}", token)).andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + token)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     mvc
       .perform(post("/registration/approve/{uuid}", request.getUuid())
