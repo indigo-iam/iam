@@ -22,8 +22,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertTrue;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -119,7 +121,10 @@ public class SamlExtAuthRegistrationTests extends SamlAuthenticationTestSupport 
         startsWith("Your registration request to indigo-dc was submitted successfully"));
 
     // the same happens after having confirmed the request
-    mvc.perform(get("/registration/confirm/{token}", token)).andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + token)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
       .andExpect(status().isOk())

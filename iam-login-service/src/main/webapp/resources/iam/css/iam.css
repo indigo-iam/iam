@@ -125,6 +125,17 @@
     max-width: 250px;
 }
 
+#verify-registration-form {
+    padding-top: 2em;
+    margin: 0 auto;
+    text-align: justify;
+    max-width: 400px;
+}
+
+#verify-registration-form p {
+    font-size: larger;
+}
+
 #register-confirm-message {
     padding-top: 2em;
     margin: 0 auto;
@@ -134,6 +145,11 @@
 
 #register-confirm-message p {
     font-size: larger;
+}
+
+#register-confirm-message p.error {
+    text-align: left;
+    font-weight: bold;
 }
 
 #register-confirm-back-btn {

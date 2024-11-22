@@ -35,7 +35,7 @@
       <c:otherwise>
         <p>Something went wrong with your request.</p>
         <p>Detailed error message:</p>
-        <p>${verificationMessage}</p>
+        <p class="error">${verificationMessage}</p>
       </c:otherwise>
     </c:choose>
     <div id="register-confirm-back-btn" class="row text-center">
