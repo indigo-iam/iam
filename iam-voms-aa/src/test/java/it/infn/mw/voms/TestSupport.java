@@ -66,6 +66,8 @@ public class TestSupport {
   public static final String TEST_0_V_START = "Sep 26 15:39:34 2012 GMT";
   public static final String TEST_0_V_END = "Sep 24 15:39:34 2022 GMT";
 
+  public static final String TEST_1_ISSUER = "CN=different IGI TEST CA,O=IGI,C=IT";
+
 
   public static final String TEST_0_EEC_PATH = "/certs/test0.cert.pem";
   public static final String TEST = "test";
@@ -174,6 +176,22 @@ public class TestSupport {
     cert.setLabel("label");
     cert.setSubjectDn(TEST_0_SUBJECT);
     cert.setIssuerDn(TEST_0_ISSUER);
+
+    List<IamX509Certificate> certs = Lists.newArrayList(cert);
+    testAccount.linkX509Certificates(certs);
+    accountRepo.save(testAccount);
+
+    return testAccount;
+  }
+
+  protected IamAccount setupTestUserWithDifferentCertIssuer() {
+    IamAccount testAccount =
+        accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setLabel("label");
+    cert.setSubjectDn(TEST_0_SUBJECT);
+    cert.setIssuerDn(TEST_1_ISSUER);
 
     List<IamX509Certificate> certs = Lists.newArrayList(cert);
     testAccount.linkX509Certificates(certs);
