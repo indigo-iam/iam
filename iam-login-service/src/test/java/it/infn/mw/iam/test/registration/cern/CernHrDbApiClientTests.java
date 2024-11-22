@@ -124,7 +124,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
   }
 
   @Test(expected = CernHrDbApiError.class)
-  public void checkApiErrorThrowsException() throws JsonProcessingException {
+  public void checkApiErrorThrowsException() {
     String personId = "12356789";
     String voPersonUrl = voPersonUrl(personId);
     mockRtf.getMockServer()
