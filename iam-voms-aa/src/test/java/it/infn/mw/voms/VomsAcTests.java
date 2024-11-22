@@ -150,6 +150,26 @@ public class VomsAcTests extends TestSupport {
   }
 
   @Test
+  public void userWithDifferentCertIssuerDoesNotGetAC() throws Exception {
+    IamAccount testAccount = setupTestUserWithDifferentCertIssuer();
+    IamGroup rootGroup = createVomsRootGroup();
+
+    addAccountToGroup(testAccount, rootGroup);
+
+    byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+      .andExpect(status().isForbidden())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+
+    assertThat(response.hasErrors(), is(true));
+    assertThat(response.errorMessages()[0].getMessage(), containsString("User unknown to this VO"));
+
+  }
+
+  @Test
   public void userWithExpiredAUPDoesNotGetAc() throws Exception {
 
     IamAccount testAccount = setupTestUser();
@@ -184,13 +204,13 @@ public class VomsAcTests extends TestSupport {
     aupRepo.delete(aup);
 
     byte[] xmlResponse2 = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsByteArray();
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
 
-      VOMSResponse response2 = parser.parse(new ByteArrayInputStream(xmlResponse2));
-      assertThat(response2.hasErrors(), is(false));
+    VOMSResponse response2 = parser.parse(new ByteArrayInputStream(xmlResponse2));
+    assertThat(response2.hasErrors(), is(false));
   }
 
 
