@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.registration;
 
+import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
+import static java.lang.String.format;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -23,10 +26,8 @@ import javax.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,10 +37,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -57,8 +58,6 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
-import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
-import static java.lang.String.format;
 
 @RestController
 @Transactional
@@ -73,7 +72,6 @@ public class RegistrationApiController {
 
   private static final String INVALID_REGISTRATION_TEMPLATE = "Invalid registration request: %s";
 
-  @Autowired
   public RegistrationApiController(RegistrationRequestService registrationService,
       IamProperties properties) {
     service = registrationService;
@@ -98,7 +96,7 @@ public class RegistrationApiController {
   }
 
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
-  @RequestMapping(value = "/registration/list", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/list")
   @ResponseBody
   public List<RegistrationRequestDto> listRequests(
       @RequestParam(value = "status", required = false) IamRegistrationRequestStatus status) {
@@ -107,15 +105,14 @@ public class RegistrationApiController {
   }
 
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
-  @RequestMapping(value = "/registration/list/pending", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/list/pending")
   @ResponseBody
   public List<RegistrationRequestDto> listPendingRequests() {
 
     return service.listPendingRequests();
   }
 
-  @RequestMapping(value = "/registration/create", method = RequestMethod.POST,
-      consumes = "application/json")
+  @PostMapping(value = "/registration/create", consumes = "application/json")
   public RegistrationRequestDto createRegistrationRequest(
       @Valid @RequestBody @JsonView(
           value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
@@ -125,32 +122,34 @@ public class RegistrationApiController {
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
-  @RequestMapping(value = "/registration/approve/{uuid}", method = RequestMethod.POST)
+  @PostMapping(value = "/registration/approve/{uuid}")
   public RegistrationRequestDto approveRequest(@PathVariable("uuid") String uuid) {
     return service.approveRequest(uuid);
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
-  @RequestMapping(value = "/registration/reject/{uuid}", method = RequestMethod.POST)
+  @PostMapping(value = "/registration/reject/{uuid}")
   public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
       @RequestParam(required = false) String motivation) {
 
     return service.rejectRequest(uuid, Optional.ofNullable(motivation));
   }
 
-  @RequestMapping(value = "/registration/confirm/{token}", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/confirm/{token}")
   public RegistrationRequestDto confirmRequest(@PathVariable("token") String token) {
 
     return service.confirmRequest(token);
   }
 
-  @RequestMapping(value = "/registration/verify/{token}", method = RequestMethod.HEAD)
-  public ResponseEntity<String> handleHeadRequest() {
-    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
+  @GetMapping(value = "/registration/verify/{token}")
+  public ModelAndView openVerifyRequestPage(final Model model, @PathVariable("token") String token) {
+
+    model.addAttribute("token", token);
+    return new ModelAndView("iam/verifyRequest");
   }
 
-  @RequestMapping(value = "/registration/verify/{token}", method = RequestMethod.GET)
-  public ModelAndView verify(final Model model, @PathVariable("token") String token) {
+  @PostMapping(value = "/registration/verify")
+  public ModelAndView verifyRequest(final Model model, @RequestParam("token") String token) {
     try {
       service.confirmRequest(token);
       model.addAttribute("verificationSuccess", true);
@@ -165,7 +164,7 @@ public class RegistrationApiController {
     return new ModelAndView("iam/requestVerified");
   }
 
-  @RequestMapping(value = "/registration/insufficient-auth", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/insufficient-auth")
   public ModelAndView insufficientAuth(final Model model, final HttpServletRequest request,
       final Authentication auth) {
 
@@ -177,13 +176,13 @@ public class RegistrationApiController {
     return new ModelAndView("iam/insufficient-auth");
   }
 
-  @RequestMapping(value = "/registration/submitted", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/submitted")
   public ModelAndView submissionSuccess() {
     SecurityContextHolder.clearContext();
     return new ModelAndView("iam/requestSubmitted");
   }
 
-  @RequestMapping(value = "/registration/config", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/config")
   public RegistrationProperties registrationConfig() {
     return registrationProperties;
   }
