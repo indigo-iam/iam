@@ -17,6 +17,9 @@ package it.infn.mw.iam.api.registration.cern;
 
 import static it.infn.mw.iam.util.BasicAuthenticationUtils.basicAuthHeaderValue;
 import static java.lang.String.format;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -63,7 +67,7 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
   }
 
   @Override
-  public VOPersonDTO getHrDbPersonRecord(String personId) {
+  public Optional<VOPersonDTO> getHrDbPersonRecord(String personId) {
 
     RestTemplate rt = rtFactory.newRestTemplate();
 
@@ -75,10 +79,13 @@ public class DefaultCernHrDBApiService implements CernHrDBApiService {
     try {
       ResponseEntity<VOPersonDTO> response = rt.exchange(personValidUrl, HttpMethod.GET,
           new HttpEntity<>(buildAuthHeaders()), VOPersonDTO.class);
-      return response.getBody();
+      return Optional.of(response.getBody());
     } catch (RestClientException e) {
-      final String errorMsg = "HR db api error: " + e.getMessage();
-      throw new CernHrDbApiError(errorMsg, e);
+      if ((e instanceof HttpClientErrorException)
+          && (((HttpClientErrorException) e).getStatusCode().equals(NOT_FOUND))) {
+        return Optional.empty();
+      }
+      throw new CernHrDbApiError(e.getMessage(), e);
     }
   }
 }

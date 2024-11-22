@@ -20,6 +20,7 @@ import static org.springframework.security.web.context.HttpSessionSecurityContex
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 
 import javax.servlet.http.HttpSession;
 
@@ -69,7 +70,7 @@ public class MockCernAuthController implements CernHrDBApiService {
   }
 
   @Override
-  public VOPersonDTO getHrDbPersonRecord(String personId) {
+  public Optional<VOPersonDTO> getHrDbPersonRecord(String personId) {
     VOPersonDTO dto = new VOPersonDTO();
     dto.setFirstName("TEST");
     dto.setName("USER");
@@ -89,6 +90,6 @@ public class MockCernAuthController implements CernHrDBApiService {
     p.setInstitute(i);
 
     dto.getParticipations().add(p);
-    return dto;
+    return Optional.of(dto);
   }
 }
