@@ -16,10 +16,10 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
-import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.Before;
@@ -135,11 +136,8 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   @Test
   public void testListRequestsUnauthorized() throws Exception {
 
-    // @formatter:off
-    mvc.perform(get("/registration/list")
-        .with(authentication(anonymousAuthenticationToken())))
+    mvc.perform(get("/registration/list").with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isUnauthorized());
-    // @formatter:on
   }
 
   @Test
@@ -148,10 +146,11 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     createRegistrationRequest("test_confirm_fail");
     String badToken = "abcdefghilmnopqrstuvz";
 
-    // @formatter:off
-    mvc.perform(get("/registration/confirm/{token}", badToken))
-      .andExpect(status().isNotFound());
-    // @formatter:on
+    mvc
+      .perform(post("/registration/verify").content("token=" + badToken)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
   }
 
   @Test
@@ -165,31 +164,24 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
     confirmRegistrationRequest(token);
 
-    // @formatter:off
     mvc.perform(post("/registration/{uuid}/{decision}", reg.getUuid(), APPROVED.name())
-        .with(authentication(anonymousAuthenticationToken())))
-      .andExpect(status().isUnauthorized());
-    // @formatter:on
+      .with(authentication(anonymousAuthenticationToken()))).andExpect(status().isUnauthorized());
   }
 
   @Test
   public void testUsernameAvailable() throws Exception {
     String username = "tester";
-    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("true"));
-    // @formatter:on
   }
 
   @Test
   public void testUsernameAlreadyTaken() throws Exception {
     String username = "admin";
-    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("false"));
-    // @formatter:on
   }
 
   @Test
@@ -205,12 +197,10 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setUsername(username);
     request.setPassword("password");
 
-    // @formatter:off
-    mvc.perform(post("/registration/create")
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
   }
 
   @Test
@@ -227,12 +217,10 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setPassword("password");
     request.setNotes(" ");
 
-    // @formatter:off
-    mvc.perform(post("/registration/create")
-        .contentType(MediaType.APPLICATION_JSON)
+    mvc
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
       .andExpect(status().isBadRequest());
-    // @formatter:on
   }
 
   @Test
@@ -263,7 +251,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setNotes("Some short notes...");
     request.setPassword("password");
 
-    // @formatter:off
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
@@ -271,17 +258,16 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
 
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
 
   private void confirmRegistrationRequest(String confirmationKey) throws Exception {
-    // @formatter:off
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey))
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(CONFIRMED.name())));
-    // @formatter:on
+      .andExpect(model().attributeExists("verificationSuccess"));
   }
 
 
