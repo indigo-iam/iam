@@ -118,8 +118,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     try {
       voPerson = hrDb.getHrDbPersonRecord(cernPersonId);
     } catch (CernHrDbApiError e) {
-      LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
-      setCernStatusLabel(account, ERROR, format(HR_DB_API_ERROR));
+      handleApiError(account, e);
       return;
     }
     if (voPerson.isEmpty()) {
@@ -274,6 +273,11 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       LOG.debug("Updating end-time for '{}' to {} ...", a.getUsername(), endDate);
       accountService.setAccountEndTime(a, endDate);
     }
+  }
+
+  private void handleApiError(IamAccount account, CernHrDbApiError e) {
+    LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
+    setCernStatusLabel(account, ERROR, format(HR_DB_API_ERROR));
   }
 
   private void handleNoPersonIdFound(IamAccount a, String cernPersonId) {
