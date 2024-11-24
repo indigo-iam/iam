@@ -151,7 +151,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   @Override
   public void run() {
 
-    LOG.info("CERN HR Lyfecycle handler ... [START]");
+    LOG.debug("CERN HR Lyfecycle handler ... [START]");
 
     Pageable pageRequest = PageRequest.of(0, cernProperties.getTask().getPageSize());
 
@@ -178,7 +178,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       pageRequest = accountsPage.nextPageable();
     }
 
-    LOG.info("CERN HR Lyfecycle handler ... [END]");
+    LOG.debug("CERN HR Lyfecycle handler ... [END]");
   }
 
   @Override
