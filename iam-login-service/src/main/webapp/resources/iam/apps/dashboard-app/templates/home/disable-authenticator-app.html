@@ -18,18 +18,18 @@
 <form class="form-horizontal" ng-submit="authAppCtrl.submitDisable()" name="authenticatorAppForm">
 
   <div class="modal-header">
-    <h3 class="modal-title">Disable MFA through authenticator app</h3>
+    <h3 class="modal-title">Disable MFA through authenticator</h3>
   </div>
 
   <div class="modal-body">
 
-    <p>This action disables multi-factor authentication on this account through your selected authentication app.</p>
+    <p>This action disables multi-factor authentication on this account through your authenticator.</p>
     <p>This could leave your account vulnerable and may restrict access to some IAM services.</p>
-    <p>To continue, please enter a code from your authenticator app.</p>
+    <p>To continue, please enter a TOTP from your authenticator.</p>
 
     <div class="form-group">
       <div class="col-sm-3">
-        <label class="control-label" for="code">Code</label>
+        <label class="control-label" for="code">TOTP</label>
       </div>
       <div class="col-sm-9"  ng-class="{'has-error': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'has-success': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}">
         <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="authAppCtrl.user.code" required ng-minlength="authAppCtrl.codeMinlength" />

@@ -77,7 +77,7 @@
           authAppCtrl.user.code)
         .then(function () {
           authAppCtrl.requestPending = false;
-          $uibModalInstance.close('Authenticator app enabled');
+          $uibModalInstance.close('Authenticator enabled');
         })
         .catch(function (error) {
           authAppCtrl.requestPending = false;
@@ -127,7 +127,7 @@
           authAppCtrl.user.code)
         .then(function () {
           authAppCtrl.requestPending = false;
-          return $uibModalInstance.close('Authenticator app disabled');
+          return $uibModalInstance.close('Authenticator disabled');
         })
         .catch(function (error) {
           authAppCtrl.requestPending = false;

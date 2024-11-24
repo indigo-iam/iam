@@ -18,19 +18,21 @@
 <form class="form-horizontal" ng-submit="authAppCtrl.submitEnable()" name="authenticatorAppForm">
 
   <div class="modal-header">
-    <h3 class="modal-title">Enable authenticator app</h3>
+    <h3 class="modal-title">Enable authenticator</h3>
   </div>
 
   <div class="modal-body">
 
-    <p>Scan the QR code through your authenticator app and input a TOTP to validate configuration.</p>
-    <img ng-src="{{authAppCtrl.dataUri}}" />
-    <p>Alternatively, enter this secret manually into the app.</p>
+    <p>Scan the QR code through your authenticator and input a TOTP to validate configuration.</p>
+    <div style="text-align: center;">
+      <img ng-src="{{authAppCtrl.dataUri}}" />
+    </div>
+    <p>Alternatively, enter this secret manually into your authenticator.</p>
     <p>{{authAppCtrl.secret}}</p>
 
     <div class="form-group">
       <div class="col-sm-3">
-        <label class="control-label" for="code">Code</label>
+        <label class="control-label" for="code">TOTP</label>
       </div>
       <div class="col-sm-9"  ng-class="{'has-error': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'has-success': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}">
         <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="authAppCtrl.user.code" required ng-minlength="authAppCtrl.codeMinlength" />
