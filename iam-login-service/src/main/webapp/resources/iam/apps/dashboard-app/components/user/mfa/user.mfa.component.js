@@ -28,6 +28,8 @@
 
     self.isMe = function() { return self.userCtrl.isMe(); };
 
+    self.isMfaActive = function() { return self.userCtrl.user.isMfaActive; };
+
     self.openUserMfaModal = function() {
       var modalInstance = $uibModal.open({
         templateUrl: '/resources/iam/apps/dashboard-app/templates/home/editmfasettings.html',

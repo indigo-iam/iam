@@ -25,7 +25,7 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 		addMfaSecretToUser: addMfaSecretToUser,
 		enableAuthenticatorApp: enableAuthenticatorApp,
 		disableAuthenticatorApp: disableAuthenticatorApp,
-		resetAuthenticatorApp: resetAuthenticatorApp,
+		disableAuthenticatorAppForUser: disableAuthenticatorAppForUser,
 		getMfaSettings: getMfaSettings,
 		getMfaSettingsForAccount: getMfaSettingsForAccount
 	};
@@ -66,7 +66,7 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 		return $http.post('/iam/authenticator-app/disable', data, config);
 	};
 
-	function resetAuthenticatorApp(userId) {
+	function disableAuthenticatorAppForUser(userId) {
 		return $http.delete('/iam/authenticator-app/reset/' + userId);
 	}
 

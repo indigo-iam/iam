@@ -16,12 +16,12 @@
 (function() {
   'use strict';
 
-  function ResetMfaController(
+  function DisableMfaController(
       toaster, Utils, ModalService, $uibModal) {
     var self = this;
 
     self.$onInit = function () {
-      console.log('ResetMfaController onInit');
+      console.log('DisableMfaController onInit');
       self.enabled = true;
       self.user = self.userCtrl.user;
     };
@@ -29,11 +29,11 @@
     self.isMe = function() { return self.userCtrl.isMe(); };
     self.isVoAdmin = function () { return self.userCtrl.isVoAdmin(); };
 
-    self.openResetMfaModal = function() {
+    self.openDisableMfaModal = function() {
       var modalInstance = $uibModal.open({
-        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/resetMfaSettings.html',
-        controller: 'ResetMfaController',
-        controllerAs: 'resetMfaCtrl',
+        templateUrl: '/resources/iam/apps/dashboard-app/templates/home/disableMfaSettings.html',
+        controller: 'DisableMfaController',
+        controllerAs: 'disableMfaCtrl',
         resolve: {user: function() { return self.user; }}
       });
 
@@ -50,13 +50,13 @@
 
 
 
-  angular.module('dashboardApp').component('userResetMfa', {
+  angular.module('dashboardApp').component('userDisableMfa', {
     require: {userCtrl: '^user'},
     templateUrl:
-        '/resources/iam/apps/dashboard-app/components/user/reset-mfa/user.reset-mfa.component.html',
+        '/resources/iam/apps/dashboard-app/components/user/disable-mfa/user.disable-mfa.component.html',
     controller: [
       'toaster', 'Utils', 'ModalService', '$uibModal',
-      ResetMfaController
+      DisableMfaController
     ]
   });
 })();

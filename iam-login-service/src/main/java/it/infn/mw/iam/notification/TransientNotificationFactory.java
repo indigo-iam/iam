@@ -471,20 +471,20 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   @Override
-  public IamEmailNotification createMfaResetMessage(IamAccount account) {
+  public IamEmailNotification createMfaDisableMessage(IamAccount account) {
     String recipient = account.getUserInfo().getName();
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(ORGANISATION_NAME, organisationName);
 
-    String subject = "Multi-factor authentication (MFA) reset";
+    String subject = "Multi-factor authentication (MFA) disabled";
 
     IamEmailNotification notification =
-        createMessage("mfaReset.ftl", model, IamNotificationType.MFA_RESET,
+        createMessage("mfaDisable.ftl", model, IamNotificationType.MFA_DISABLE,
             subject, asList(account.getUserInfo().getEmail()));
 
-    LOG.debug("Created Multi-factor authentication (MFA) reset message for the account {}", account.getUuid());
+    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}", account.getUuid());
 
     return notification;
   }

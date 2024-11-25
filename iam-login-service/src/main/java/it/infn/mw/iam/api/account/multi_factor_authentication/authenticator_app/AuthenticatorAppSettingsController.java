@@ -59,7 +59,7 @@ public class AuthenticatorAppSettingsController {
   public static final String ADD_SECRET_URL = BASE_URL + "/add-secret";
   public static final String ENABLE_URL = BASE_URL + "/enable";
   public static final String DISABLE_URL = BASE_URL + "/disable";
-  public static final String RESET_URL = BASE_URL + "/reset/{accountId}";
+  public static final String DISABLE_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
@@ -189,13 +189,13 @@ public class AuthenticatorAppSettingsController {
    * @return nothing
    */
   @PreAuthorize("hasRole('ADMIN')")
-  @DeleteMapping(value = RESET_URL, produces = MediaType.TEXT_PLAIN_VALUE)
+  @DeleteMapping(value = DISABLE_URL_FOR_ACCOUNT_ID, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void resetAuthenticatorApp(@PathVariable String accountId) {
+  public void disableAuthenticatorAppForAccount(@PathVariable String accountId) {
     IamAccount account = accountRepository.findByUuid(accountId)
         .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
     service.disableTotpMfa(account);
-    notificationFactory.createMfaResetMessage(account);
+    notificationFactory.createMfaDisableMessage(account);
   }
 
   /**

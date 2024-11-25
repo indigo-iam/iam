@@ -17,21 +17,21 @@
 -->
 
 <div class="modal-header">
-	<h3 class="modal-title">Reset multi-factor authentication settings
-		for {{resetMfaCtrl.userToEdit.name.formatted}}</h3>
+	<h3 class="modal-title">Disable multi-factor authentication (MFA) settings
+		for {{disableMfaCtrl.userToEdit.name.formatted}}</h3>
 </div>
 
 <div class="modal-body">
 
 	<div class="form-group">
-		Are you sure you want to reset multi-factor authentication settings
-		for {{resetMfaCtrl.userToEdit.name.formatted}}?
+		Are you sure you want to disable multi-factor authentication (MFA) settings
+		for {{disableMfaCtrl.userToEdit.name.formatted}}?
 	</div>
 </div>
 
 <div class="modal-footer">
-	<button class="btn btn-success" type="button" name="reset"
-			id="modal-btn-reset" ng-click="resetMfaCtrl.resetMfa()">Ok</button>
+	<button class="btn btn-success" type="button" name="disable"
+			id="modal-btn-disable" ng-click="disableMfaCtrl.disableMfa()">Ok</button>
 	<button class="btn btn-danger" type="button" name="cancel" id="modal-btn-cancel"
-		ng-click="resetMfaCtrl.cancel()">Cancel</button>
+		ng-click="disableMfaCtrl.cancel()">Cancel</button>
 </div>

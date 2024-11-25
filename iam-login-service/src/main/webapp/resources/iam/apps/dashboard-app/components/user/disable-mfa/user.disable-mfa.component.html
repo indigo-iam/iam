@@ -15,9 +15,9 @@
     limitations under the License.
 
 -->
-<!-- Reset multi-factor settings button -->
-<button class="btn btn-success btn-block" style="margin-top: 5px" ng-click="$ctrl.openResetMfaModal()"
-    name="reset-mfa-btn" ng-if="$ctrl.isVoAdmin()">
-    <i class="fa fa-undo"></i>
-    <strong>Reset multi-factor settings</strong>
+<!-- Disable multi-factor settings button -->
+<button class="btn btn-success btn-block" style="margin-top: 5px" ng-click="$ctrl.openDisableMfaModal()"
+    name="disable-mfa-btn" ng-if="$ctrl.isVoAdmin()">
+    <i class="fa fa-ban"></i>
+    <strong>Disable MFA</strong>
 </button>

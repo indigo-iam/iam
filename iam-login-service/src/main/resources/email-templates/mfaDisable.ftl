@@ -1,6 +1,6 @@
 Dear ${recipient},
 
-this mail is to inform that your Multi-Factor Authentication (MFA) settings for account in ${organisationName} have been successfully reset.
+this mail is to inform that your Multi-Factor Authentication (MFA) settings for account in ${organisationName} have been successfully disabled.
 As a result, you can now delete the existing entry from your authenticator app.
 
 

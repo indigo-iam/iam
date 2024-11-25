@@ -56,15 +56,11 @@
             </tr>
             <tr>
                 <td class="text-bold text-left">
-                    Multi-factor authentication 
+                    MFA
                 </td>
                 <td class="text-right">
-                    <span class="label label-success" ng-show="$ctrl.user.isMfaActive">
-                        <i class="fa fa-check"></i> Active
-                    </span>
-                    <span class="label label-warning" ng-show="!$ctrl.user.isMfaActive">
-                        <i class="fa fa-check"></i> Disabled
-                    </span>
+                    <i class="fa fa-check" style="color:green" ng-show="$ctrl.user.isMfaActive"></i>
+                    <i class="fa fa-times" style="color:red" ng-show="!$ctrl.user.isMfaActive"></i>
                 </td>
             </tr>
             <tr>

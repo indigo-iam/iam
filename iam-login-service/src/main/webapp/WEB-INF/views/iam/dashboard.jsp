@@ -124,7 +124,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/edit-password.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/user-mfa.controller.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/reset-mfa.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/disable-mfa.controller.js"></script>
 
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/header/header.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/result.component.js"></script>
@@ -145,7 +145,7 @@
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/mfa/user.mfa.component.js"></script>
     <script type="text/javascript"
-    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/reset-mfa/user.reset-mfa.component.js"></script>
+    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/disable-mfa/user.disable-mfa.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/privileges/user.privileges.component.js"></script>
   <script type="text/javascript"

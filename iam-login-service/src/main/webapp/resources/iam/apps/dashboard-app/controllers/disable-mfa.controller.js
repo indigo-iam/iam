@@ -16,24 +16,24 @@
 'use strict';
 
 angular.module('dashboardApp')
-	.controller('ResetMfaController', ResetMfaController);
+	.controller('DisableMfaController', DisableMfaController);
 
-ResetMfaController.$inject = [
+DisableMfaController.$inject = [
 	'$http', '$scope', '$state', '$uibModalInstance', 'Utils', 'AuthenticatorAppService', 'user', '$uibModal', 'toaster'
 ];
 
-function ResetMfaController(
+function DisableMfaController(
 	$http, $scope, $state, $uibModalInstance, Utils, AuthenticatorAppService, user, $uibModal, toaster) {
-	var resetMfaCtrl = this;
+	var disableMfaCtrl = this;
 
-	resetMfaCtrl.userToEdit = user;
+	disableMfaCtrl.userToEdit = user;
 
-	resetMfaCtrl.resetMfa = function () {
-		AuthenticatorAppService.resetAuthenticatorApp(user.id).then(function(result) {
+	disableMfaCtrl.disableMfa = function () {
+		AuthenticatorAppService.disableAuthenticatorAppForUser(user.id).then(function(result) {
 			if (result != null && result.status === 200) {
-			  $uibModalInstance.close('Multi-factor authentication settings reset');
+			  $uibModalInstance.close('Multi-factor authentication settings disabled');
 			} else {
-			  var message = "Unable to reset Multi-factor authentication settings";
+			  var message = "Unable to disable Multi-factor authentication settings";
 			  console.error(message);
 			  $uibModalInstance.close(message);
 			}
@@ -44,6 +44,6 @@ function ResetMfaController(
 		  });
 	};
 
-	resetMfaCtrl.cancel = function () { return $uibModalInstance.close('Cancel'); };
+	disableMfaCtrl.cancel = function () { return $uibModalInstance.close('Cancel'); };
 
 }

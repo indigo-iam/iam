@@ -16,7 +16,7 @@
 
 package it.infn.mw.iam.test.multi_factor_authentication.authenticator_app;
 
-import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.RESET_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.DISABLE_URL_FOR_ACCOUNT_ID;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
@@ -91,35 +91,35 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     @Test
     @WithAnonymousUser
-    public void testResetAuthenticatorAppNoAuthenticationFails() throws Exception {
-        mvc.perform(delete(RESET_URL, TOTP_UUID))
+    public void testDisableAuthenticatorAppNoAuthenticationFails() throws Exception {
+        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
-    public void testResetAuthenticatorAppWorksForAdmin() throws Exception {
-        mvc.perform(delete(RESET_URL, TOTP_UUID))
+    public void testDisableAuthenticatorAppWorksForAdmin() throws Exception {
+        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
-    public void testConfirmationEmailSentOnMfaReset() throws Exception {
-        mvc.perform(delete(RESET_URL, TOTP_UUID))
+    public void testConfirmationEmailSentOnMfaDisable() throws Exception {
+        mvc.perform(delete(DISABLE_URL_FOR_ACCOUNT_ID, TOTP_UUID))
                 .andExpect(status().isOk());
 
         List<IamEmailNotification> notifications = notificationRepo
-                .findByNotificationType(IamNotificationType.MFA_RESET);
+                .findByNotificationType(IamNotificationType.MFA_DISABLE);
 
         assertEquals(1, notifications.size());
-        assertEquals("[indigo-dc IAM] Multi-factor authentication (MFA) reset", notifications.get(0).getSubject());
+        assertEquals("[indigo-dc IAM] Multi-factor authentication (MFA) disabled", notifications.get(0).getSubject());
 
         notificationDelivery.sendPendingNotifications();
 
         assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
         IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
-        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Multi-factor authentication (MFA) reset"));
+        assertThat(message.getSubject(), equalTo("[indigo-dc IAM] Multi-factor authentication (MFA) disabled"));
     }
 
 }

@@ -18,6 +18,6 @@
 <!-- Edit multi-factor settings button -->
 <button class="btn btn-success btn-block" style="margin-top: 5px" ng-click="$ctrl.openUserMfaModal()"
     name="edit-mfa-btn" ng-if="$ctrl.isMe()">
-    <i class="fa fa-key"></i>
-    <strong>Edit multi-factor settings</strong>
+    <strong ng-if="$ctrl.isMfaActive()"><i class="fa fa-ban"></i> Disable MFA</strong>
+    <strong ng-if="!$ctrl.isMfaActive()"><i class="fa fa-key"></i> Enable MFA</strong>
 </button>
