@@ -39,7 +39,7 @@ import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimResource;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.api.group_requests.GroupRequestsTestUtils;
+import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 import it.infn.mw.iam.test.scim.ScimUtils;
 
 public class ScimGroupPatchUtils extends GroupRequestsTestUtils {

@@ -37,8 +37,8 @@ public class ScimApiAuthzTests {
   @Autowired
   private MockMvc mvc;
 
-  private static final String GROUP_URI = ScimUtils.getGroupsLocation();
-  private static final String USER_URI = ScimUtils.getUsersLocation();
+  private final static String GROUP_URI = ScimUtils.getGroupsLocation();
+  private final static String USER_URI = ScimUtils.getUsersLocation();
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
