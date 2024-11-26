@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.common.PagingUtils;
-import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
+import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 
 @RestController
@@ -49,13 +49,13 @@ public class GroupRequestsController {
 
   @RequestMapping(method = RequestMethod.POST, value = {"", "/"})
   @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-  public GroupRequestDTO createGroupRequest(@RequestBody @Valid GroupRequestDTO groupRequest) {
+  public GroupRequestDto createGroupRequest(@RequestBody @Valid GroupRequestDto groupRequest) {
     return groupRequestService.createGroupRequest(groupRequest);
   }
 
   @RequestMapping(method = RequestMethod.GET, value = {"", "/"})
   @PreAuthorize("hasAnyRole('ADMIN','USER')")
-  public ListResponseDTO<GroupRequestDTO> listGroupRequest(
+  public ListResponseDTO<GroupRequestDto> listGroupRequest(
       @RequestParam(required = false) String username,
       @RequestParam(required = false) String groupName,
       @RequestParam(required = false) String status, @RequestParam(required = false) Integer count,
@@ -71,7 +71,7 @@ public class GroupRequestsController {
 
   @RequestMapping(method = RequestMethod.GET, value = "/{requestId}")
   @PreAuthorize("hasRole('ADMIN') or #iam.canAccessGroupRequest(#requestId)")
-  public GroupRequestDTO getGroupRequestDetails(
+  public GroupRequestDto getGroupRequestDetails(
       @Valid @PathVariable("requestId") String requestId) {
     return groupRequestService.getGroupRequestDetails(requestId);
   }
@@ -86,14 +86,14 @@ public class GroupRequestsController {
   @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/approve")
   @PreAuthorize("hasRole('ADMIN') or #iam.canManageGroupRequest(#requestId)")
   @ResponseStatus(HttpStatus.OK)
-  public GroupRequestDTO approveGroupRequest(@Valid @PathVariable("requestId") String requestId) {
+  public GroupRequestDto approveGroupRequest(@Valid @PathVariable("requestId") String requestId) {
     return groupRequestService.approveGroupRequest(requestId);
   }
 
   @RequestMapping(method = RequestMethod.POST, value = "/{requestId}/reject")
   @PreAuthorize("hasRole('ADMIN') or #iam.canManageGroupRequest(#requestId)")
   @ResponseStatus(HttpStatus.OK)
-  public GroupRequestDTO rejectGroupRequest(@Valid @PathVariable("requestId") String requestId,
+  public GroupRequestDto rejectGroupRequest(@Valid @PathVariable("requestId") String requestId,
       @RequestParam @NotEmpty String motivation) {
     return groupRequestService.rejectGroupRequest(requestId, motivation);
   }

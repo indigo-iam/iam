@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events;
+package it.infn.mw.iam.api.requests.exception;
 
-public enum IamEventCategory {
-  NONE,
-  ACCOUNT,
-  GROUP,
-  REGISTRATION,
-  AUTHENTICATION,
-  AUTHORIZATION,
-  SCOPE_POLICY,
-  AUP,
-  MEMBERSHIP,
-  CLIENT,
-  TOKEN
+public class GroupRequestValidationError extends IllegalArgumentException {
+
+  private static final long serialVersionUID = 1L;
+
+  public GroupRequestValidationError(String message) {
+    super(message);
+  }
 }

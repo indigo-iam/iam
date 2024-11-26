@@ -65,7 +65,7 @@
     </div>
     <div class="box-footer" ng-if="$ctrl.userCtrl.canManageLinkedAccounts() || $ctrl.userCtrl.canLinkAccounts()">
         <button class="btn btn-success btn-sm" name="btn-add-cert" ng-click="$ctrl.openAddCertificateDialog()"
-            ng-if="$ctrl.userCtrl.isVoAdmin()">
+            ng-if="$ctrl.userCtrl.canManageLinkedAccounts()">
             <i class="fa fa-plus"></i> Add certificate
         </button>
         <button class="btn btn-success btn-sm" name="btn-link-cert" ng-click="$ctrl.openLinkCertificateDialog()"

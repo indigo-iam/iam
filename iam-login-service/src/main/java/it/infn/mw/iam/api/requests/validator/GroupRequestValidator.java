@@ -20,9 +20,9 @@ import javax.validation.ConstraintValidatorContext;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
+import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 
-public class GroupRequestValidator implements ConstraintValidator<GroupRequest, GroupRequestDTO> {
+public class GroupRequestValidator implements ConstraintValidator<GroupRequest, GroupRequestDto> {
 
   public GroupRequestValidator() {
     // empty
@@ -34,7 +34,7 @@ public class GroupRequestValidator implements ConstraintValidator<GroupRequest, 
   }
 
   @Override
-  public boolean isValid(GroupRequestDTO value, ConstraintValidatorContext context) {
+  public boolean isValid(GroupRequestDto value, ConstraintValidatorContext context) {
 
     return value != null && !Strings.isNullOrEmpty(value.getGroupName())
         && !Strings.isNullOrEmpty(value.getNotes());

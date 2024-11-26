@@ -50,8 +50,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK,
-    properties = {"x509.trustAnchorsDir=src/test/resources/test-ca"})
+    webEnvironment = WebEnvironment.MOCK)
 public class ScimMeEndpointPatchReplaceTests extends ScimMeEndpointUtils {
 
   @Autowired
