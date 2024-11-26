@@ -17,21 +17,21 @@ package it.infn.mw.iam.api.requests.service;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
-import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
+import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 
 public interface GroupRequestsService {
 
-  GroupRequestDTO createGroupRequest(GroupRequestDTO groupRequest);
+  GroupRequestDto createGroupRequest(GroupRequestDto groupRequest);
 
   void deleteGroupRequest(String requestId);
 
-  GroupRequestDTO approveGroupRequest(String requestId);
+  GroupRequestDto approveGroupRequest(String requestId);
 
-  GroupRequestDTO rejectGroupRequest(String requestId, String motivation);
+  GroupRequestDto rejectGroupRequest(String requestId, String motivation);
 
-  GroupRequestDTO getGroupRequestDetails(String requestId);
+  GroupRequestDto getGroupRequestDetails(String requestId);
 
-  ListResponseDTO<GroupRequestDTO> listGroupRequests(String username, String groupName,
+  ListResponseDTO<GroupRequestDto> listGroupRequests(String username, String groupName,
       String status, OffsetPageable pageRequest);
 
 }

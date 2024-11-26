@@ -23,7 +23,6 @@ import org.springframework.security.web.FilterInvocation;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.requests.CertLinkRequestUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 
@@ -33,16 +32,13 @@ public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpression
 
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
-  private final CertLinkRequestUtils certLinkRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
   @Autowired
   public IamWebSecurityExpressionHandler(AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, CertLinkRequestUtils certLinkRequestUtils,
-      OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
     this.accountUtils = accountUtils;
     this.groupRequestUtils = groupRequestUtils;
-    this.certLinkRequestUtils = certLinkRequestUtils;
     this.scopeResolver = scopeResolver;
   }
 
@@ -53,7 +49,7 @@ public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpression
     StandardEvaluationContext ec =
         super.createEvaluationContextInternal(authentication, invocation);
     ec.setVariable("iam", new IamSecurityExpressionMethods(authentication, accountUtils,
-        groupRequestUtils, certLinkRequestUtils, scopeResolver));
+        groupRequestUtils, scopeResolver));
     return ec;
   }
 

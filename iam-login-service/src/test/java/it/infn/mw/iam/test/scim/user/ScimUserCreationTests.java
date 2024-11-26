@@ -28,7 +28,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -78,8 +77,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @IamMockMvcIntegrationTest
 @SpringBootTest(
     classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK,
-    properties = {"x509.trustAnchorsDir=src/test/resources/test-ca"})
+    webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserCreationTests extends ScimUserTestSupport {
 
@@ -456,8 +454,8 @@ public class ScimUserCreationTests extends ScimUserTestSupport {
       .findFirst()
       .get();
 
-    // One and only one certificate should be primary with no order guarantee
-    assertEquals(1, (createdCert1.getPrimary() ? 1 : 0) + (createdCert2.getPrimary() ? 1 : 0));
+    assertThat(createdCert1.getPrimary(), equalTo(TRUE));
+    assertThat(createdCert2.getPrimary(), equalTo(FALSE));
     assertThat(createdCert1.getPemEncodedCertificate(),
         equalTo(X509Utils.x509Certs.get(0).certificate));
     assertThat(createdCert2.getPemEncodedCertificate(),

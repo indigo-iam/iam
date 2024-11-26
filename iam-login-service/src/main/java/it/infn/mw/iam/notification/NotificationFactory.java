@@ -22,7 +22,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
@@ -58,9 +57,4 @@ public interface NotificationFactory {
   IamEmailNotification createAccountSuspendedMessage(IamAccount account);
 
   IamEmailNotification createAccountRestoredMessage(IamAccount account);
-  IamEmailNotification createAdminHandleCertLinkRequestMessage(IamCertLinkRequest certLinkRequest);
-
-  IamEmailNotification createCertLinkApprovedMessage(IamCertLinkRequest certLinkRequest);
-
-  IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest);
 }
