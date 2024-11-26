@@ -16,6 +16,7 @@
 package it.infn.mw.iam.config.security;
 
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.HEAD;
 import static org.springframework.http.HttpMethod.POST;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ import org.springframework.security.web.context.SecurityContextPersistenceFilter
 
 import it.infn.mw.iam.api.proxy.ProxyCertificatesApiController;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.security.IamWebSecurityConfig.UserLoginConfig;
 import it.infn.mw.iam.core.oauth.FormClientCredentialsAuthenticationFilter;
 
 @SuppressWarnings("deprecation")
@@ -90,7 +92,7 @@ public class IamApiSecurityConfig {
           .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and()
           .authorizeRequests()
-            .anyRequest().fullyAuthenticated()            
+            .anyRequest().fullyAuthenticated()
         .and()
           .csrf().disable();
       // @formatter:on
@@ -99,6 +101,31 @@ public class IamApiSecurityConfig {
 
   @Configuration
   @Order(21)
+  public static class IamApiRedirectConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationProcessingFilter resourceFilter;
+
+    @Autowired
+    private UserLoginConfig userLoginConfig;
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      http.requestMatchers(matchers -> matchers.antMatchers("/iam/aup/sign"))
+        .exceptionHandling(
+            handling -> handling.authenticationEntryPoint(userLoginConfig.entryPoint())
+              .accessDeniedHandler(new OAuth2AccessDeniedHandler()))
+        .addFilterAfter(resourceFilter, SecurityContextPersistenceFilter.class)
+        .sessionManagement(
+            management -> management.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+        .authorizeRequests(requests -> requests.anyRequest().authenticated())
+        .csrf(csrf -> csrf.disable());
+    }
+  }
+
+  @Configuration
+  @Order(22)
   public static class IamApiConfig extends WebSecurityConfigurerAdapter {
 
     private static final String AUP_PATH = "/iam/aup";
@@ -134,8 +161,9 @@ public class IamApiSecurityConfig {
             .antMatchers(GET, "/registration/username-available/**").permitAll()
             .antMatchers(GET, "/registration/email-available/**").permitAll()
             .antMatchers(GET, "/registration/config").permitAll()
-            .antMatchers(GET, "/registration/confirm/**").permitAll()
+            .antMatchers(HEAD, "/registration/verify/**").permitAll()
             .antMatchers(GET, "/registration/verify/**").permitAll()
+            .antMatchers(POST, "/registration/verify").permitAll()
             .antMatchers(GET, "/registration/submitted").permitAll()
             .antMatchers(GET, "/iam/config/**").permitAll()
             .antMatchers(GET, AUP_PATH).permitAll()

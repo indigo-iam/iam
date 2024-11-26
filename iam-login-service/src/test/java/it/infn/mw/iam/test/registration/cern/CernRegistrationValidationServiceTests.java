@@ -122,7 +122,7 @@ public class CernRegistrationValidationServiceTests {
     return request;
   }
 
-  private VOPersonDTO mockVoPerson() {
+  private Optional<VOPersonDTO> mockVoPerson() {
     VOPersonDTO dto = new VOPersonDTO();
     dto.setFirstName("TEST");
     dto.setName("USER");
@@ -144,10 +144,10 @@ public class CernRegistrationValidationServiceTests {
 
     dto.getParticipations().add(p);
 
-    return dto;
+    return Optional.of(dto);
   }
 
-  private VOPersonDTO mockInvalidVoPerson() {
+  private Optional<VOPersonDTO> mockInvalidVoPerson() {
     VOPersonDTO dto = new VOPersonDTO();
     dto.setFirstName("TEST");
     dto.setName("USER");
@@ -169,7 +169,7 @@ public class CernRegistrationValidationServiceTests {
 
     dto.getParticipations().add(p);
 
-    return dto;
+    return Optional.of(dto);
   }
 
   @Test
@@ -257,9 +257,9 @@ public class CernRegistrationValidationServiceTests {
     assertThat(request.getLabels().get(0).getPrefix(), is("hr.cern"));
     assertThat(request.getLabels().get(0).getName(), is("cern_person_id"));
     assertThat(request.getLabels().get(0).getValue(), is("988211"));
-    assertThat(request.getGivenname(), is(mockVoPerson().getFirstName()));
-    assertThat(request.getFamilyname(), is(mockVoPerson().getName()));
-    assertThat(request.getEmail(), is(mockVoPerson().getEmail()));
+    assertThat(request.getGivenname(), is(mockVoPerson().get().getFirstName()));
+    assertThat(request.getFamilyname(), is(mockVoPerson().get().getName()));
+    assertThat(request.getEmail(), is(mockVoPerson().get().getEmail()));
 
     mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
       .with(user("admin").roles("ADMIN", "USER"))).andExpect(status().isOk());

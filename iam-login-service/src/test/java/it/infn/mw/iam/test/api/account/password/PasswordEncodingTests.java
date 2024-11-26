@@ -16,10 +16,11 @@
 package it.infn.mw.iam.test.api.account.password;
 
 import static it.infn.mw.iam.test.util.AuthenticationUtils.adminAuthentication;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
@@ -97,8 +98,11 @@ public class PasswordEncodingTests {
       .getContentAsString();
 
     String confirmationKey = "NoValidToken";
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isNotFound());
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
 
   }
 
@@ -125,8 +129,10 @@ public class PasswordEncodingTests {
     request = mapper.readValue(rs, RegistrationRequestDto.class);
 
     String confirmationKey = tokenGenerator.getLastToken();
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     mvc.perform(post("/registration/approve/{uuid}", request.getUuid())
       .with(authentication(adminAuthentication()))

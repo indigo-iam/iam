@@ -16,13 +16,15 @@
 package it.infn.mw.iam.test.lifecycle.cern;
 
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_CERN_PREFIX;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_IGNORE;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.LABEL_SKIP_EMAIL_SYNCH;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_IGNORE;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.joda.time.LocalDate;
@@ -59,6 +61,10 @@ public interface LifecycleTestSupport {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_EMAIL_SYNCH).build();
   }
 
+  default IamLabel skipEndDateSyncLabel() {
+    return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_SKIP_END_DATE_SYNCH).build();
+  }
+
   default IamLabel cernPersonIdLabel() {
     return cernPersonIdLabel(CERN_PERSON_ID);
   }
@@ -76,62 +82,88 @@ public interface LifecycleTestSupport {
   }
 
   default VOPersonDTO voPerson(String personId) {
-    return voPerson(personId, LocalDate.now().plusDays(365).toDate());
+    return voPerson(personId, getTestAccount(), getTestParticipations());
   }
 
   default VOPersonDTO voPerson(String personId, Date endDate) {
-    IamAccount account = IamAccount.newAccount();
-    account.getUserInfo().setGivenName("TEST");
-    account.getUserInfo().setFamilyName("USER");
-    account.getUserInfo().setEmail("test@hr.cern");
-    return voPerson(personId, account, "test", endDate);
+    Date startDate = endDate == null ? LocalDate.now().minusDays(365).toDate()
+        : LocalDate.fromDateFields(endDate).minusDays(365).toDate();
+    return voPerson(personId, getTestAccount(),
+        Sets.newHashSet(getParticipation("test", startDate, endDate)));
   }
 
   default VOPersonDTO noParticipationsVoPerson(String personId) {
-    VOPersonDTO dto = voPerson(personId);
-    dto.getParticipations().clear();
-    return dto;
+    return voPerson(personId, getTestAccount(), Sets.newHashSet());
   }
 
   default VOPersonDTO expiredVoPerson(String personId) {
-    VOPersonDTO dto = voPerson(personId);
-    // Set endDate more than 7 days (suspension grace period) but less than 30 days (removal grace
-    // period)
-    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(20, ChronoUnit.DAYS)));
-    return dto;
+    return voPerson(personId, getTestAccount(),
+        Sets.newHashSet(getExpiredParticipation("test", 20)));
   }
 
   default VOPersonDTO removedVoPerson(String personId) {
-    VOPersonDTO dto = voPerson(personId);
-    // Set endDate more than 30 days (removal grace period)
-    dto.getParticipations().iterator().next().setEndDate(Date.from(NOW.minus(40, ChronoUnit.DAYS)));
-    return dto;
+    return voPerson(personId, getTestAccount(),
+        Sets.newHashSet(getExpiredParticipation("test", 40)));
   }
 
-  default VOPersonDTO voPerson(String personId, IamAccount account, String experiment,
-      Date endDate) {
-    VOPersonDTO dto = new VOPersonDTO();
-    dto.setFirstName(account.getUserInfo().getGivenName());
-    dto.setName(account.getUserInfo().getName());
-    dto.setEmail(account.getUserInfo().getEmail());
-    dto.setParticipations(Sets.newHashSet());
-
-    dto.setId(Long.parseLong(personId));
-
-    ParticipationDTO p = new ParticipationDTO();
-
-    p.setExperiment(experiment);
-    p.setStartDate(endDate);
-
+  default InstituteDTO getTestInstitute() {
     InstituteDTO i = new InstituteDTO();
     i.setId("000001");
     i.setName("INFN");
     i.setCountry("IT");
     i.setTown("Bologna");
-    p.setInstitute(i);
+    return i;
+  }
 
-    dto.getParticipations().add(p);
+  default IamAccount getTestAccount() {
+    IamAccount account = IamAccount.newAccount();
+    account.getUserInfo().setGivenName("TEST");
+    account.getUserInfo().setFamilyName("USER");
+    account.getUserInfo().setEmail("test@hr.cern");
+    return account;
+  }
 
+  default ParticipationDTO getUnlimitedParticipation(String experiment) {
+    Date startDate = LocalDate.now().minusDays(365).toDate();
+    return getParticipation(experiment, startDate, null);
+  }
+
+  default ParticipationDTO getLimitedParticipation(String experiment) {
+    Date startDate = LocalDate.now().minusDays(365).toDate();
+    Date endDate = LocalDate.now().plusDays(365).toDate();
+    return getParticipation(experiment, startDate, endDate);
+  }
+
+  default Set<ParticipationDTO> getTestParticipations() {
+    return Sets.newHashSet(getLimitedParticipation("test"));
+  }
+
+  default ParticipationDTO getParticipation(String experiment, Date startDate, Date endDate) {
+    ParticipationDTO p = new ParticipationDTO();
+    p.setExperiment(experiment);
+    p.setStartDate(startDate);
+    p.setEndDate(endDate);
+    p.setInstitute(getTestInstitute());
+    return p;
+  }
+
+  default ParticipationDTO getExpiredParticipation(String experiment, int daysAgo) {
+    ParticipationDTO p = new ParticipationDTO();
+    p.setExperiment(experiment);
+    p.setStartDate(LocalDate.now().minusDays(daysAgo + 365).toDate());
+    p.setEndDate(LocalDate.now().minusDays(daysAgo).toDate());
+    p.setInstitute(getTestInstitute());
+    return p;
+  }
+
+  default VOPersonDTO voPerson(String personId, IamAccount account,
+      Set<ParticipationDTO> participations) {
+    VOPersonDTO dto = new VOPersonDTO();
+    dto.setFirstName(account.getUserInfo().getGivenName());
+    dto.setName(account.getUserInfo().getName());
+    dto.setEmail(account.getUserInfo().getEmail());
+    dto.setId(Long.parseLong(personId));
+    dto.setParticipations(participations);
     return dto;
   }
 

@@ -13,26 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.registration.cern;
+package it.infn.mw.iam.audit.events.account.x509;
 
-import java.util.Optional;
+import it.infn.mw.iam.audit.events.account.AccountEvent;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
-import org.springframework.context.annotation.Profile;
-import org.springframework.web.client.RestClientException;
-
-import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
-
-@Profile("cern")
-public interface CernHrDBApiService {
+public class X509CertificateUnlinkedEvent extends AccountEvent {
 
   /**
-   * Returns an @Optional object that contains the @VOPersonDTO related to the CERN person ID
-   * provided as parameter or empty if not found.
    * 
-   * @param personId
-   * @return
-   * @throws RestClientException in case of ApiErrors
    */
-  Optional<VOPersonDTO> getHrDbPersonRecord(String personId) throws RestClientException;
+  private static final long serialVersionUID = 1L;
+
+
+  private final String certificateSubject;
+
+  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
+      String certificateSubject) {
+    super(source, account, message);
+    this.certificateSubject = certificateSubject;
+  }
+
+  public String getCertificateSubject() {
+    return certificateSubject;
+  }
 
 }

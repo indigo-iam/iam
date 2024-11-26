@@ -17,13 +17,14 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -32,27 +33,31 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @ConditionalOnProperty(name = "iam.enableScopeAuthz", havingValue = "true")
 public class IamPDPScopeFilter implements IamScopeFilter {
 
+  private static final Set<String> adminScopes = Set.of("iam:admin.read", "iam:admin.write");
+
   final ScopePolicyPDP pdp;
   final IamAccountRepository accountRepo;
+  final AccountUtils accountUtils;
 
-  @Autowired
-  public IamPDPScopeFilter(ScopePolicyPDP pdp, IamAccountRepository accountRepo) {
+  public IamPDPScopeFilter(ScopePolicyPDP pdp, IamAccountRepository accountRepo,
+      AccountUtils accountUtils) {
     this.pdp = pdp;
     this.accountRepo = accountRepo;
+    this.accountUtils = accountUtils;
   }
 
   protected Optional<IamAccount> resolveIamAccount(Authentication authn) {
-    
-    if (authn == null){
+
+    if (authn == null) {
       return Optional.empty();
     }
-    
+
     Authentication userAuthn = authn;
-    
-    if (authn instanceof OAuth2Authentication){
+
+    if (authn instanceof OAuth2Authentication) {
       userAuthn = ((OAuth2Authentication) authn).getUserAuthentication();
     }
-    
+
     if (userAuthn == null) {
       return Optional.empty();
     }
@@ -63,13 +68,18 @@ public class IamPDPScopeFilter implements IamScopeFilter {
 
   @Override
   public void filterScopes(Set<String> scopes, Authentication authn) {
-    
+
     Optional<IamAccount> maybeAccount = resolveIamAccount(authn);
 
     if (maybeAccount.isPresent()) {
-      Set<String> filteredScopes =
-          pdp.filterScopes(scopes, maybeAccount.get());
-      
+      Set<String> filteredScopes = pdp.filterScopes(scopes, maybeAccount.get());
+
+      if (!accountUtils.isAdmin(authn)) {
+        filteredScopes = filteredScopes.stream()
+          .filter(s -> !adminScopes.contains(s))
+          .collect(Collectors.toSet());
+      }
+
       scopes.retainAll(filteredScopes);
     }
 
