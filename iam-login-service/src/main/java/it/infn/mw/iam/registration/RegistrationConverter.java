@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
@@ -37,7 +36,6 @@ public class RegistrationConverter {
 
   final LabelDTOConverter labelConverter;
 
-  @Autowired
   public RegistrationConverter(LabelDTOConverter labelConverter) {
     this.labelConverter = labelConverter;
   }
