@@ -15,11 +15,9 @@
  */
 package it.infn.mw.iam.registration;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,18 +26,16 @@ public class RegistrationUtilsController {
 
   final RegistrationRequestService service;
 
-  @Autowired
   public RegistrationUtilsController(RegistrationRequestService service) {
     this.service = service;
   }
 
-  @RequestMapping(value = "/registration/username-available/{username:.+}",
-      method = RequestMethod.GET)
+  @GetMapping(value = "/registration/username-available/{username:.+}")
   public Boolean usernameAvailable(@PathVariable("username") String username) {
     return service.usernameAvailable(username);
   }
 
-  @RequestMapping(value = "/registration/email-available/{email:.+}", method = RequestMethod.GET)
+  @GetMapping(value = "/registration/email-available/{email:.+}")
   public Boolean emailAvailable(@PathVariable("email") String email) {
     return service.emailAvailable(email);
   }
