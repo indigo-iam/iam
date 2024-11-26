@@ -17,16 +17,17 @@ package it.infn.mw.iam.api.aup;
 
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,7 +46,6 @@ public class AupController {
   private final AupService service;
   private final AupConverter converter;
 
-  @Autowired
   public AupController(AupService service, AupConverter converter) {
     this.service = service;
     this.converter = converter;
@@ -57,14 +57,14 @@ public class AupController {
     return new InvalidAupError(firstErrorMessage);
   }
 
-  @RequestMapping(value = "/iam/aup", method = RequestMethod.GET)
+  @GetMapping(value = "/iam/aup")
   public AupDTO getAup() {
     IamAup aup = service.findAup().orElseThrow(AupNotFoundError::new);
 
     return converter.dtoFromEntity(aup);
   }
 
-  @RequestMapping(value = "/iam/aup", method = RequestMethod.POST)
+  @PostMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.CREATED)
   @PreAuthorize("hasRole('ADMIN')")
   public void createAup(@Valid @RequestBody AupDTO aup, BindingResult validationResult) {
@@ -79,7 +79,7 @@ public class AupController {
     service.saveAup(aup);
   }
 
-  @RequestMapping(value = "/iam/aup", method = RequestMethod.PATCH)
+  @PatchMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.OK)
   @PreAuthorize("hasRole('ADMIN')")
   public AupDTO updateAup(@Valid @RequestBody AupDTO aup, BindingResult validationResult) {
@@ -92,7 +92,7 @@ public class AupController {
     return converter.dtoFromEntity(updatedAup);
   }
 
-  @RequestMapping(value = "/iam/aup/touch", method = RequestMethod.POST)
+  @PostMapping(value = "/iam/aup/touch")
   @ResponseStatus(code = HttpStatus.OK)
   @PreAuthorize("hasRole('ADMIN')")
   public AupDTO touchAup() {
@@ -101,7 +101,7 @@ public class AupController {
     return converter.dtoFromEntity(updatedAup);
   }
 
-  @RequestMapping(value = "/iam/aup", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
   @PreAuthorize("hasRole('ADMIN')")
   public void deleteAup() {

@@ -23,6 +23,7 @@ import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -161,6 +162,8 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
     String token = generator.getLastToken();
     assertNotNull(token);
+
+    mvc.perform(head("/registration/verify/" + token)).andExpect(status().isOk());
 
     confirmRegistrationRequest(token);
 
