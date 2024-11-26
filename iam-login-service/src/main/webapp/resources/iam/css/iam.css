@@ -687,15 +687,3 @@ body.skin-blue {
 .container-spacer {
     padding-top: 1em !important;
 }
-
-.ca-selected {
-    max-inline-size: 95%; 
-    overflow: hidden;
-}
-
-.ca-choices {
-    max-width: 100%; 
-    overflow: break-word; 
-    text-wrap: pretty; 
-    white-space: normal;
-}

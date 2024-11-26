@@ -47,7 +47,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @IamMockMvcIntegrationTest
 public class ScimMeAupTests extends AupTestSupport {
 
-  private static final String ME_ENDPOINT = "/scim/Me";
+  private final static String ME_ENDPOINT = "/scim/Me";
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;

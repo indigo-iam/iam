@@ -64,9 +64,9 @@ public class AupIntegrationTests extends AupTestSupport {
   private final String INVALID_AUP_URL =
       "https://iam.local.io/\"</script><script>alert(8);</script>";
 
-  private static final String DEFAULT_AUP_TEXT = null;
-  private static final String DEFAULT_AUP_URL = "http://updated-aup-text.org/";
-  private static final String DEFAULT_AUP_DESC = "desc";
+  private final static String DEFAULT_AUP_TEXT = null;
+  private final static String DEFAULT_AUP_URL = "http://updated-aup-text.org/";
+  private final static String DEFAULT_AUP_DESC = "desc";
 
 
   @Autowired

@@ -25,13 +25,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.requests.CertLinkRequestUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
-import it.infn.mw.iam.core.IamRequestStatus;
+import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 
 @SuppressWarnings("deprecation")
@@ -42,16 +40,13 @@ public class IamSecurityExpressionMethods {
   private final Authentication authentication;
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
-  private final CertLinkRequestUtils certLinkRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
   public IamSecurityExpressionMethods(Authentication authentication, AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, CertLinkRequestUtils certLinkRequestUtils,
-      OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
     this.authentication = authentication;
     this.accountUtils = accountUtils;
     this.groupRequestUtils = groupRequestUtils;
-    this.certLinkRequestUtils = certLinkRequestUtils;
     this.scopeResolver = scopeResolver;
   }
 
@@ -104,7 +99,7 @@ public class IamSecurityExpressionMethods {
     Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
 
     return groupRequest.isPresent() && ((canAccessGroupRequest(requestId)
-        && IamRequestStatus.PENDING.equals(groupRequest.get().getStatus()))
+        && IamGroupRequestStatus.PENDING.equals(groupRequest.get().getStatus()))
         || canManageGroupRequest(requestId));
   }
 
@@ -138,23 +133,5 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
-  }
-
-  public boolean userCanAccessCertLinkRequest(String requestId) {
-    Optional<IamCertLinkRequest> certLinkRequest =
-        certLinkRequestUtils.getOptionalCertLinkRequest(requestId);
-    Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
-
-
-    return userAccount.isPresent() && certLinkRequest.isPresent()
-        && (certLinkRequest.get().getAccount().getUuid().equals(userAccount.get().getUuid()));
-  }
-
-  public boolean userCanDeleteCertLinkRequest(String requestId) {
-    Optional<IamCertLinkRequest> certLinkRequest =
-        certLinkRequestUtils.getOptionalCertLinkRequest(requestId);
-
-    return certLinkRequest.isPresent() && (userCanAccessCertLinkRequest(requestId)
-        && IamRequestStatus.PENDING.equals(certLinkRequest.get().getStatus()));
   }
 }
