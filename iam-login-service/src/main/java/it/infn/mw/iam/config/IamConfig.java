@@ -49,6 +49,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
 
 import com.google.common.collect.Maps;
 
@@ -309,8 +310,15 @@ public class IamConfig {
   }
 
   @Bean(destroyMethod = "shutdown")
-  public ScheduledExecutorService taskScheduler() {
+  ScheduledExecutorService taskScheduler() {
     return Executors.newSingleThreadScheduledExecutor();
+  }
+
+  @Bean
+  DefaultCookieSerializer defaultCookieSerializer() {
+    DefaultCookieSerializer cs = new DefaultCookieSerializer();
+    cs.setSameSite(null);
+    return cs;
   }
 
 }
