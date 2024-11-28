@@ -105,6 +105,7 @@ public class IamAccount implements Serializable {
   private Set<IamAuthority> authorities = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
   private Set<IamAccountGroupMembership> groups = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
