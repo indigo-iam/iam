@@ -56,6 +56,15 @@
             </tr>
             <tr>
                 <td class="text-bold text-left">
+                    MFA
+                </td>
+                <td class="text-right">
+                    <i class="fa fa-check" style="color:green" ng-show="$ctrl.user.isMfaActive"></i>
+                    <i class="fa fa-times" style="color:red" ng-show="!$ctrl.user.isMfaActive"></i>
+                </td>
+            </tr>
+            <tr>
+                <td class="text-bold text-left">
                     Created
                 </td>
                 <td class="text-right">

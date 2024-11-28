@@ -24,6 +24,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -42,6 +44,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public class MultiFactorSettingsController {
 
   public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
+  public static final String MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL = "/iam/multi-factor-settings/{accountId}";
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
 
@@ -50,6 +53,26 @@ public class MultiFactorSettingsController {
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
+  }
+
+  /**
+   * Retrieve info about MFA settings and return them in a DTO
+   * 
+   * @return MultiFactorSettingsDTO the MFA settings for the account
+   */
+  @PreAuthorize("hasRole('ADMIN')")
+  @GetMapping(value = MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
+  public MultiFactorSettingsDTO getMultiFactorSettingsForAccount(@PathVariable String accountId) {
+    IamAccount account = accountRepository.findByUuid(accountId).orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
+
+    boolean isActive = totpMfaRepository.findByAccount(account)
+        .map(IamTotpMfa::isActive)
+        .orElse(false);
+
+    MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
+    dto.setAuthenticatorAppActive(isActive);
+    return dto;
   }
 
 

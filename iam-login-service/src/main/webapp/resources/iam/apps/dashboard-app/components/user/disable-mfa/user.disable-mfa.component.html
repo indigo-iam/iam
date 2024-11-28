@@ -15,9 +15,9 @@
     limitations under the License.
 
 -->
-<!-- Edit multi-factor settings button -->
-<button class="btn btn-success btn-block" style="margin-top: 5px" ng-click="$ctrl.openUserMfaModal()"
-    name="edit-mfa-btn" ng-if="$ctrl.isMe()">
-    <strong ng-if="$ctrl.isMfaActive()"><i class="fa fa-ban"></i> Disable MFA</strong>
-    <strong ng-if="!$ctrl.isMfaActive()"><i class="fa fa-key"></i> Enable MFA</strong>
+<!-- Disable multi-factor settings button -->
+<button class="btn btn-success btn-block" style="margin-top: 5px" ng-click="$ctrl.openDisableMfaModal()"
+    name="disable-mfa-btn" ng-if="$ctrl.isVoAdmin()">
+    <i class="fa fa-ban"></i>
+    <strong>Disable MFA</strong>
 </button>

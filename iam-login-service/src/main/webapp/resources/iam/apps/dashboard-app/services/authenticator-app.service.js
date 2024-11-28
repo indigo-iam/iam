@@ -24,7 +24,10 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 	var service = {
 		addMfaSecretToUser: addMfaSecretToUser,
 		enableAuthenticatorApp: enableAuthenticatorApp,
-		disableAuthenticatorApp: disableAuthenticatorApp
+		disableAuthenticatorApp: disableAuthenticatorApp,
+		disableAuthenticatorAppForUser: disableAuthenticatorAppForUser,
+		getMfaSettings: getMfaSettings,
+		getMfaSettingsForAccount: getMfaSettingsForAccount
 	};
 
 	return service;
@@ -62,4 +65,24 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 
 		return $http.post('/iam/authenticator-app/disable', data, config);
 	};
+
+	function disableAuthenticatorAppForUser(userId) {
+		return $http.delete('/iam/authenticator-app/reset/' + userId);
+	}
+
+	function handleSuccess(res) {
+		return res.data.authenticatorAppActive;
+	}
+
+	function handleError(res) {
+		return $q.reject(res);
+	}
+
+	function getMfaSettingsForAccount(userId) {
+		return $http.get('/iam/multi-factor-settings/' + userId).then(handleSuccess).catch(handleError);
+	}
+
+	function getMfaSettings() {
+		return $http.get('/iam/multi-factor-settings/').then(handleSuccess).catch(handleError);
+	}
 }
