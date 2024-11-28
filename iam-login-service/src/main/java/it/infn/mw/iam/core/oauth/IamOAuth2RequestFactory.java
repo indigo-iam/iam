@@ -17,6 +17,11 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +43,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 
@@ -47,6 +53,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
   protected static final String[] AUDIENCE_KEYS = {"aud", "audience"};
+  public static final String RESOURCE = "resource";
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
 
@@ -81,13 +88,20 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (inputParams.containsKey(audienceKey)) {
-        if (!authzRequest.getExtensions().containsKey(AUD)) {
-          authzRequest.getExtensions().put(AUD, inputParams.get(audienceKey));
-        }
+    if (inputParams.containsKey(RESOURCE) && !authzRequest.getExtensions().containsKey(AUD)) {
 
-        break;
+      String resourceParams = inputParams.get(RESOURCE);
+
+      splitBySpace(resourceParams).forEach(this::isValidUrl);
+      authzRequest.getExtensions().put(AUD, resourceParams);
+
+    } else {
+      for (String audienceKey : AUDIENCE_KEYS) {
+        if (inputParams.containsKey(audienceKey)
+            && !authzRequest.getExtensions().containsKey(AUD)) {
+          authzRequest.getExtensions().put(AUD, inputParams.get(audienceKey));
+          break;
+        }
       }
     }
 
@@ -115,14 +129,22 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     handlePasswordGrantAuthenticationTimestamp(request);
 
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (tokenRequest.getRequestParameters().containsKey(audienceKey)) {
+    if (tokenRequest.getRequestParameters().containsKey(RESOURCE)
+        && !request.getExtensions().containsKey(AUD)) {
 
-        if (!request.getExtensions().containsKey(AUD)) {
+      String resourceParams = tokenRequest.getRequestParameters().get(RESOURCE);
+      splitBySpace(resourceParams).forEach(this::isValidUrl);
+
+      request.getExtensions().put(AUD, resourceParams);
+
+    } else {
+      for (String audienceKey : AUDIENCE_KEYS) {
+        if (tokenRequest.getRequestParameters().containsKey(audienceKey)
+            && !request.getExtensions().containsKey(AUD)) {
+
           request.getExtensions().put(AUD, tokenRequest.getRequestParameters().get(audienceKey));
+          break;
         }
-
-        break;
       }
     }
 
@@ -162,6 +184,19 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
 
     return new TokenRequest(requestParameters, clientId, scopes, grantType);
+  }
+
+  private boolean isValidUrl(String url) {
+    try {
+      new URL(url).toURI();
+      return true;
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new InvalidResourceError("Invalid resource value: " + url);
+    }
+  }
+
+  private List<String> splitBySpace(String str) {
+    return Arrays.asList(str.split(" "));
   }
 
 }
