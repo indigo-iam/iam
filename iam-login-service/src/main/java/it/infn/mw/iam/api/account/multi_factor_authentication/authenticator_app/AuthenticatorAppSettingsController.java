@@ -143,6 +143,7 @@ public class AuthenticatorAppSettingsController {
     }
 
     service.enableTotpMfa(account);
+    notificationFactory.createMfaEnableMessage(account);
   }
 
 

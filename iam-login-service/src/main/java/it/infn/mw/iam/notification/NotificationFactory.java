@@ -65,4 +65,6 @@ public interface NotificationFactory {
   IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest);
 
   IamEmailNotification createMfaDisableMessage(IamAccount account);
+
+  IamEmailNotification createMfaEnableMessage(IamAccount account);
 }
