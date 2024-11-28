@@ -181,6 +181,7 @@ public class AuthenticatorAppSettingsController {
     }
 
     service.disableTotpMfa(account);
+    notificationFactory.createMfaDisableMessage(account);
   }
 
   /**
