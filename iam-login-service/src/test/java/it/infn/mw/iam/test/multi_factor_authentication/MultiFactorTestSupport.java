@@ -15,12 +15,8 @@
  */
 package it.infn.mw.iam.test.multi_factor_authentication;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
-import it.infn.mw.iam.persistence.model.IamTotpRecoveryCode;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 public class MultiFactorTestSupport extends IamTotpMfaCommons{
@@ -112,14 +108,6 @@ public class MultiFactorTestSupport extends IamTotpMfaCommons{
     newTotpMfa.setAccount(totpMfa.getAccount());
     newTotpMfa.setSecret(totpMfa.getSecret());
     newTotpMfa.setActive(totpMfa.isActive());
-
-    Set<IamTotpRecoveryCode> newCodes = new HashSet<>();
-    for (IamTotpRecoveryCode recoveryCode : totpMfa.getRecoveryCodes()) {
-      IamTotpRecoveryCode newCode = new IamTotpRecoveryCode(newTotpMfa);
-      newCode.setCode(recoveryCode.getCode());
-      newCodes.add(newCode);
-    }
-    newTotpMfa.setRecoveryCodes(newCodes);
 
     newTotpMfa.touch();
 

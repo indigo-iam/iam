@@ -21,7 +21,7 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 public interface IamTotpMfaService {
 
   /**
-   * Generates and attaches a TOTP MFA secret to a user account, along with a set of recovery codes
+   * Generates and attaches a TOTP MFA secret to a user account
    * This is pre-emptive to actually enabling TOTP MFA on the account - the secret is written for
    * server-side TOTP verification during the user's enabling of MFA on their account
    * 
