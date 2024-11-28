@@ -31,9 +31,9 @@ function DisableMfaController(
 	disableMfaCtrl.disableMfa = function () {
 		AuthenticatorAppService.disableAuthenticatorAppForUser(user.id).then(function(result) {
 			if (result != null && result.status === 200) {
-			  $uibModalInstance.close('Multi-factor authentication settings disabled');
+			  $uibModalInstance.close('Multi-factor authentication disabled');
 			} else {
-			  var message = "Unable to disable Multi-factor authentication settings";
+			  var message = "Unable to disable multi-factor authentication";
 			  console.error(message);
 			  $uibModalInstance.close(message);
 			}

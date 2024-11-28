@@ -19,7 +19,7 @@
 	name="userMfaForm">
 
 	<div class="modal-header">
-		<h3 class="modal-title">Edit multi-factor authentication settings
+		<h3 class="modal-title">Edit multi-factor authentication
 			for {{userMfaCtrl.userToEdit.name.formatted}}</h3>
 	</div>
 
@@ -33,7 +33,7 @@
 					<span class="label label-success"
 					ng-show="userMfaCtrl.authenticatorAppActive"> <i
 						class="fa fa-check"></i> Enabled
-				</span>
+				</span>&nbsp;
 					<button class="btn btn-danger" type="button"
 						name="disable-authenticator-app"
 						id="disable-authenticator-app-btn"
@@ -42,7 +42,7 @@
 					<span class="label label-danger"
 					ng-show="!userMfaCtrl.authenticatorAppActive"> <i
 						class="fa fa-check"></i> Disabled
-				</span>
+				</span>&nbsp;
 					<button class="btn btn-success" type="button"
 						name="enable-authenticator-app" id="enable-authenticator-app-btn"
 						ng-show="!userMfaCtrl.authenticatorAppActive"
