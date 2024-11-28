@@ -17,8 +17,6 @@ package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.TOTP_VERIFIED;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter.RECOVERY_CODE_VERIFIED;
-import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
 
 import java.io.IOException;
 
@@ -38,10 +36,6 @@ import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-/**
- * Determines if a recovery code was used to authenticate. If so, we need to redirect to the page
- * that asks if the user wants to reset their recovery codes or skip this step to continue onwards.
- */
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
 
   private final AccountUtils accountUtils;
@@ -72,15 +66,8 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
         .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
       return;
     } else {
-      // If a recovery code was used, RECOVERY_CODE_VERIFIED attribute will exist in the request
-      Object recoveryCodeVerifiedAttribute = request.getAttribute(RECOVERY_CODE_VERIFIED);
-      if (recoveryCodeVerifiedAttribute != null
-          && (boolean) recoveryCodeVerifiedAttribute == Boolean.TRUE) {
-        response.sendRedirect(RECOVERY_CODE_RESET_URL);
-      } else {
         continueWithDefaultSuccessHandler(request, response, authentication);
       }
-    }
   }
 
   private void continueWithDefaultSuccessHandler(HttpServletRequest request,
@@ -101,7 +88,6 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     }
     session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
     request.removeAttribute(TOTP_VERIFIED);
-    request.removeAttribute(RECOVERY_CODE_VERIFIED);
   }
 }
 

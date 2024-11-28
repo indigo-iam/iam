@@ -35,20 +35,15 @@ import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
 import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
-import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpRecoveryCodeResetService;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorRecoveryCodeCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
-import it.infn.mw.iam.authn.multi_factor_authentication.ResetOrSkipRecoveryCodesFilter;
-import it.infn.mw.iam.authn.multi_factor_authentication.ViewRecoveryCodesFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 // TODO add admin config options from properties file
@@ -70,9 +65,6 @@ public class IamTotpMfaConfig {
 
   @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
-
-  @Autowired
-  private IamTotpRecoveryCodeResetService recoveryCodeResetService;
 
   @Autowired
   private AccountUtils accountUtils;
@@ -113,18 +105,6 @@ public class IamTotpMfaConfig {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
-
-  /**
-   * Responsible for generating random recovery codes for backup authentication
-   * 
-   * @return RecoveryCodeGenerator
-   */
-  @Bean
-  @Qualifier("recoveryCodeGenerator")
-  public RecoveryCodeGenerator recoveryCodeGenerator() {
-    return new RecoveryCodeGenerator();
-  }
-
   @Bean(name = "MultiFactorVerificationFilter")
   public MultiFactorVerificationFilter multiFactorVerificationFilter(
       @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager) {
@@ -135,35 +115,15 @@ public class IamTotpMfaConfig {
     return filter;
   }
 
-  @Bean(name = "ResetOrSkipRecoveryCodesFilter")
-  public ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter() {
-
-    ResetOrSkipRecoveryCodesFilter filter = new ResetOrSkipRecoveryCodesFilter(accountUtils,
-        aupSignatureCheckService, accountRepo, iamBaseUrl, recoveryCodeResetService);
-
-    return filter;
-  }
-
-  @Bean(name = "ViewRecoveryCodesFilter")
-  public ViewRecoveryCodesFilter viewRecoveryCodesFilter() {
-
-    ViewRecoveryCodesFilter filter = new ViewRecoveryCodesFilter(accountUtils,
-        aupSignatureCheckService, accountRepo, iamBaseUrl);
-
-    return filter;
-  }
-
   /**
    * Authentication manager for the MFA verification process
    * 
    * @param totpCheckProvider checks a provided TOTP
-   * @param recoveryCodeCheckProvider checks a provided recovery code
    * @return a new provider manager
    */
   @Bean(name = "MultiFactorVerificationAuthenticationManager")
-  public AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider,
-      MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider) {
-    return new ProviderManager(Arrays.asList(totpCheckProvider, recoveryCodeCheckProvider));
+  public AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
+    return new ProviderManager(Arrays.asList(totpCheckProvider));
   }
 
   public AuthenticationSuccessHandler successHandler() {
@@ -186,8 +146,4 @@ public class IamTotpMfaConfig {
     return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
   }
 
-  @Bean
-  public MultiFactorRecoveryCodeCheckProvider recoveryCodeCheckProvider() {
-    return new MultiFactorRecoveryCodeCheckProvider(accountRepo, totpMfaService);
-  }
 }

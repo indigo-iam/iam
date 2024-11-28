@@ -37,16 +37,14 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 /**
- * Used in the MFA verification flow. Receives either a TOTP or recovery code and constructs the
+ * Used in the MFA verification flow. Receives either a TOTP and constructs the
  * authentication request with this parameter. The request is passed to dedicated authentication
  * providers which will create the full authentication or raise the appropriate exception
  */
 public class MultiFactorVerificationFilter extends AbstractAuthenticationProcessingFilter {
 
   public static final String TOTP_MFA_CODE_KEY = "totp";
-  public static final String TOTP_RECOVERY_CODE_KEY = "recoveryCode";
   public static final String TOTP_VERIFIED = "TOTP_VERIFIED";
-  public static final String RECOVERY_CODE_VERIFIED = "RECOVERY_CODE_VERIFIED";
 
   public static final AntPathRequestMatcher DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER =
       new AntPathRequestMatcher(MFA_VERIFY_URL, "POST");
@@ -54,7 +52,6 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   private final boolean postOnly = true;
 
   private String totpParameter = TOTP_MFA_CODE_KEY;
-  private String recoveryCodeParameter = TOTP_RECOVERY_CODE_KEY;
 
   public MultiFactorVerificationFilter(AuthenticationManager authenticationManager,
       AuthenticationSuccessHandler successHandler, AuthenticationFailureHandler failureHandler) {
@@ -78,27 +75,22 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
     ExtendedAuthenticationToken authRequest = (ExtendedAuthenticationToken) auth;
 
-    // Parse TOTP and recovery code from request (only one should be set)
+    // Parse TOTP from request (only one should be set)
     String totp = parseTotp(request);
-    String recoveryCode = parseRecoveryCode(request);
 
     if (totp != null) {
       authRequest.setTotp(totp);
-    } else if (recoveryCode != null) {
-      authRequest.setRecoveryCode(recoveryCode);
     } else {
-      throw new ProviderNotFoundException("No valid totp code or recovery code was received");
+      throw new ProviderNotFoundException("No valid totp code was received");
     }
 
     Authentication fullAuthentication = this.getAuthenticationManager().authenticate(authRequest);
     if (fullAuthentication == null) {
-      throw new ProviderNotFoundException("No valid totp code or recovery code was received");
+      throw new ProviderNotFoundException("No valid totp code was received");
     }
 
     if (authRequest.getTotp() != null) {
       request.setAttribute(TOTP_VERIFIED, Boolean.TRUE);
-    } else if (authRequest.getRecoveryCode() != null) {
-      request.setAttribute(RECOVERY_CODE_VERIFIED, Boolean.TRUE);
     }
 
     return fullAuthentication;
@@ -123,8 +115,4 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
     return totp != null ? totp.trim() : null;
   }
 
-  private String parseRecoveryCode(HttpServletRequest request) {
-    String recoveryCode = request.getParameter(this.recoveryCodeParameter);
-    return recoveryCode != null ? recoveryCode.trim() : null;
-  }
 }
