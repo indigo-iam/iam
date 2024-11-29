@@ -19,18 +19,12 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
+import org.springframework.web.bind.annotation.*;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
@@ -54,7 +48,6 @@ public class MfaVerifyController {
   final IamAccountRepository accountRepository;
   final IamTotpMfaRepository totpMfaRepository;
 
-  @Autowired
   public MfaVerifyController(IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
@@ -62,7 +55,7 @@ public class MfaVerifyController {
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
-  @RequestMapping(method = RequestMethod.GET, path = "")
+  @GetMapping("")
   public String getVerifyMfaView(Authentication authentication, ModelMap model) {
     IamAccount account = accountRepository.findByUsername(authentication.getName())
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));

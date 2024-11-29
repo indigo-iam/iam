@@ -84,8 +84,7 @@ public class AuthenticatorAppSettingsController {
    * @return DTO containing the plaintext TOTP secret and QR code URI for scanning
    */
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = ADD_SECRET_URL, method = RequestMethod.PUT,
-      produces = MediaType.APPLICATION_JSON_VALUE)
+  @PutMapping(value = ADD_SECRET_URL, produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public SecretAndDataUriDTO addSecret() throws IamTotpMfaInvalidArgumentError {
     final String username = getUsernameFromSecurityContext();
@@ -117,8 +116,7 @@ public class AuthenticatorAppSettingsController {
    * @return nothing
    */
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = ENABLE_URL, method = RequestMethod.POST,
-      produces = MediaType.TEXT_PLAIN_VALUE)
+  @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult) {
@@ -156,8 +154,7 @@ public class AuthenticatorAppSettingsController {
    * @return nothing
    */
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = DISABLE_URL, method = RequestMethod.POST,
-      produces = MediaType.TEXT_PLAIN_VALUE)
+  @PostMapping(value = DISABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
