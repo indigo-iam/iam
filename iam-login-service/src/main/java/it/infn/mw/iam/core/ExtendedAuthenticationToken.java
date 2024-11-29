@@ -38,7 +38,6 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
  * login. This is for providing the {@code amr} claim in an OAuth2 id_token provided to a
  * client</li>
  * <li>{@code String totp} - if authenticating with a TOTP, this field is set</li>
- * <li>{@code String recoveryCode} - if authenticating with a recovery code, this field is set</li>
  * <li>{@code fullyAuthenticatedAuthorities} - the authorities the user will be granted if full
  * authentication takes place. If an MFA user has only authenticated with a username and password so
  * far, they will only officially have an authority of PRE_AUTHENTICATED
@@ -51,7 +50,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
-  private String recoveryCode;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
@@ -73,7 +71,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.credentials = other.getCredentials();
     this.authenticationMethodReferences = other.getAuthenticationMethodReferences();
     this.totp = other.getTotp();
-    this.recoveryCode = other.getRecoveryCode();
     this.fullyAuthenticatedAuthorities = other.getFullyAuthenticatedAuthorities();
   }
 
@@ -103,14 +100,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.totp = totp;
   }
 
-  public String getRecoveryCode() {
-    return recoveryCode;
-  }
-
-  public void setRecoveryCode(String recoveryCode) {
-    this.recoveryCode = recoveryCode;
-  }
-
   @Override
   public Object getCredentials() {
     return this.credentials;
@@ -132,7 +121,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     sb.append("Granted Authorities=").append(this.getAuthorities()).append(", ");
     sb.append("Authentication Method References=").append(this.getAuthenticationMethodReferences());
     sb.append("TOTP=").append(this.getTotp());
-    sb.append("Recovery code=").append(this.getRecoveryCode());
     sb.append("]");
     return sb.toString();
   }

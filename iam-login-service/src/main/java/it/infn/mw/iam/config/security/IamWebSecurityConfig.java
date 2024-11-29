@@ -18,8 +18,6 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
-import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_RESET_URL;
-import static it.infn.mw.iam.authn.multi_factor_authentication.authenticator_app.RecoveryCodeManagementController.RECOVERY_CODE_VIEW_URL;
 
 import javax.servlet.RequestDispatcher;
 
@@ -60,8 +58,6 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
-import it.infn.mw.iam.authn.multi_factor_authentication.ResetOrSkipRecoveryCodesFilter;
-import it.infn.mw.iam.authn.multi_factor_authentication.ViewRecoveryCodesFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
@@ -366,10 +362,6 @@ public class IamWebSecurityConfig {
     @Qualifier("MultiFactorVerificationFilter")
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
-    @Autowired
-    @Qualifier("ResetOrSkipRecoveryCodesFilter")
-    private ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter;
-
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
       LoginUrlAuthenticationEntryPoint entryPoint =
           new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
@@ -390,52 +382,6 @@ public class IamWebSecurityConfig {
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())
         .and()
         .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
-    }
-  }
-
-  /**
-   * Configure the endpoint where users choose to either reset their recovery codes or continue with
-   * authentication process. Only used when a user provides a recovery code as verification
-   */
-  @Configuration
-  @Order(103)
-  public static class RecoveryCodeConfigurationAdapter extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    @Qualifier("ResetOrSkipRecoveryCodesFilter")
-    private ResetOrSkipRecoveryCodesFilter resetOrSkipRecoveryCodesFilter;
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-      http.antMatcher(RECOVERY_CODE_RESET_URL + "**")
-        .authorizeRequests()
-        .anyRequest()
-        .hasRole("USER")
-        .and()
-        .addFilterAfter(resetOrSkipRecoveryCodesFilter, UsernamePasswordAuthenticationFilter.class);
-    }
-  }
-
-  /**
-   * Configure the endpoint for viewing recovery codes during the auth flow, following a recovery
-   * code reset
-   */
-  @Configuration
-  @Order(104)
-  public static class RecoveryCodeViewConfigurationAdapter extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    @Qualifier("ViewRecoveryCodesFilter")
-    private ViewRecoveryCodesFilter viewRecoveryCodesFilter;
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-      http.antMatcher(RECOVERY_CODE_VIEW_URL + "**")
-        .authorizeRequests()
-        .anyRequest()
-        .hasRole("USER")
-        .and()
-        .addFilterAfter(viewRecoveryCodesFilter, UsernamePasswordAuthenticationFilter.class);
     }
   }
 }
