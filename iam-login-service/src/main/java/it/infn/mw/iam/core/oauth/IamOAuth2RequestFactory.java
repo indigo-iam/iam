@@ -191,7 +191,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       new URL(url).toURI();
       return true;
     } catch (MalformedURLException | URISyntaxException e) {
-      throw new InvalidResourceError("Invalid resource value: " + url);
+      throw new InvalidResourceError("Not a valid URI: " + url);
     }
   }
 

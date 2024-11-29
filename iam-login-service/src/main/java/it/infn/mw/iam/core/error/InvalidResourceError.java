@@ -21,10 +21,6 @@ public class InvalidResourceError extends ClientAuthenticationException {
 
   private static final long serialVersionUID = 1L;
 
-  public InvalidResourceError(String message, Throwable cause) {
-    super(message, cause);
-  }
-
   public InvalidResourceError(String message) {
     super(message);
   }
