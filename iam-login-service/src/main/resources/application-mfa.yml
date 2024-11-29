@@ -15,5 +15,5 @@
 #
 
 mfa:
-  edit-multi-factor-settings-btn-enabled: ${IAM_TOTP_MFA_ENABLE_EDIT_BUTTON:true}
+  multi-factor-settings-btn-enabled: ${IAM_TOTP_MFA_ENABLE_MFA_SETTINGS_BUTTON:false}
   password-to-encrypt-and-decrypt: ${IAM_TOTP_MFA_PASSWORD_TO_ENCRYPT_AND_DECRYPT:define_me_please}

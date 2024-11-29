@@ -41,7 +41,8 @@
             isGroupManagerForGroup: isGroupManagerForGroup,
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
-            username: username
+            username: username,
+            isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled
         };
 
         return service;
@@ -119,6 +120,10 @@
         function isSamlEnabled() {
 
             return getSamlEnabled();
+        }
+
+        function isMfaSettingsBtnEnabled() {
+            return getMfaSettingsBtnEnabled();
         }
 
         function buildErrorResult(errorString) {
