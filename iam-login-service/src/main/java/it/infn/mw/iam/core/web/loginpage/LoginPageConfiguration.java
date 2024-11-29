@@ -29,6 +29,8 @@ public interface LoginPageConfiguration {
 
   boolean isShowLinkToLocalAuthenticationPage();
 
+  boolean isMfaSettingsBtnEnabled();
+
   boolean isExternalAuthenticationEnabled();
 
   boolean isOidcEnabled();

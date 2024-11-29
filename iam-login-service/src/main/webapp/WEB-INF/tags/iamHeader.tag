@@ -111,4 +111,8 @@ function getRcauthEnabled() {
 function getExternalAuthenticationEnabled() {
     return ${loginPageConfiguration.externalAuthenticationEnabled};
 }
+
+function getMfaSettingsBtnEnabled() {
+  return ${loginPageConfiguration.mfaSettingsBtnEnabled};
+}
 </script>

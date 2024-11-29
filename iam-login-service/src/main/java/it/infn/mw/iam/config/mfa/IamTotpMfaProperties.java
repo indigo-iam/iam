@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "mfa")
 public class IamTotpMfaProperties {
 
-  private boolean editMultiFactorSettingsBtnEnabled;
+  private boolean multiFactorSettingsBtnEnabled;
   private String passwordToEncryptAndDecrypt;
 
   public String getPasswordToEncryptOrDecrypt() {
@@ -33,11 +33,11 @@ public class IamTotpMfaProperties {
     this.passwordToEncryptAndDecrypt = passwordToEncryptAndDecrypt;
   }
 
-  public void setEditMultiFactorSettingsBtnEnabled(boolean editMultiFactorSettingsBtnEnabled) {
-    this.editMultiFactorSettingsBtnEnabled = editMultiFactorSettingsBtnEnabled;
+  public void setMultiFactorSettingsBtnEnabled(boolean multiFactorSettingsBtnEnabled) {
+    this.multiFactorSettingsBtnEnabled = multiFactorSettingsBtnEnabled;
   }
 
-  public boolean isEditMultiFactorSettingsBtnEnabled() {
-    return editMultiFactorSettingsBtnEnabled;
+  public boolean hasMultiFactorSettingsBtnEnabled() {
+    return multiFactorSettingsBtnEnabled;
   }
 }

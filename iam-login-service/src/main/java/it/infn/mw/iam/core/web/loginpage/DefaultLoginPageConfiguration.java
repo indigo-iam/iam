@@ -33,6 +33,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.Logo;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 
 @Component
 public class DefaultLoginPageConfiguration implements LoginPageConfiguration, EnvironmentAware {
@@ -48,6 +49,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean registrationEnabled;
   private boolean localAuthenticationVisible;
   private boolean showLinkToLocalAuthn;
+  private boolean mfaSettingsBtnEnabled;
 
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
@@ -55,11 +57,16 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private OidcValidatedProviders providers;
 
   private final IamProperties iamProperties;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   @Autowired
-  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties) {
+  public DefaultLoginPageConfiguration(
+    OidcValidatedProviders providers,
+    IamProperties properties,
+    IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
 
@@ -74,6 +81,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+    mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
   }
 
   @Override
@@ -165,6 +173,10 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     return showLinkToLocalAuthn;
   }
 
+  @Override
+  public boolean isMfaSettingsBtnEnabled() {
+    return mfaSettingsBtnEnabled;
+  }
 
   @Override
   public boolean isShowRegistrationButton() {
