@@ -44,6 +44,10 @@
             return self.indigoUser() && self.indigoUser().endTime;
         };
 
+        self.isMfaSettingsBtnEnabled = function () {
+            return Utils.isMfaSettingsBtnEnabled();
+        };
+
     }
 
     angular.module('dashboardApp').component('userDetail', {
