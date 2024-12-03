@@ -16,26 +16,55 @@
 (function () {
     'use strict';
 
-    function ClientSecretController(toaster, ClientsService) {
+    function ModalClientSecretController($rootScope, $scope, $uibModal, $uibModalInstance, ClientsService, toaster, client) {
         var self = this;
-        self.showSecret = false;
 
         self.toggleSecretVisibility = toggleSecretVisibility;
         self.clipboardSuccess = clipboardSuccess;
         self.clipboardError = clipboardError;
-        self.rotateClientSecret = rotateClientSecret;
-        self.isLimited = isLimited;
-        self.rotateClientRat = rotateClientRat;
+        self.confirmation = false;
+        self.clientId = client.client_id;
+        self.clientName = client.client_name;
+        self.isNewClient = !!self.clientId;
+        self.parent = parent;
+        self.showSecret = false;
+
+        self.closeModal = function () {
+            self.isModalOpen = false;
+            $uibModalInstance.dismiss('Dismissed');
+        };
+
+        self.toggleSecretVisibility = () => {
+            self.showSecret = !self.showSecret;
+        };
+
+        self.confirmRequestNewSecret = function () {
+            self.confirmation = true;
+            var results = ClientsService.rotateClientSecret(client.client_id).then(res => {
+                self.newSecret = res.client_secret;
+                toaster.pop({
+                    type: 'success',
+                    body: 'Registration access token rotated for client ' + self.clientName
+                });
+            }).catch(error => {
+                console.error(error);
+                toaster.pop({
+                    type: 'error',
+                    body: 'Could not rotate secret for client ' + self.clientName
+                });
+            });
+        }
+
+        self.closeModal = function () {
+            self.isModalOpen = false;
+            $uibModalInstance.close();
+        };
 
         function clipboardError(event) {
             toaster.pop({
                 type: 'error',
                 body: 'Could not copy secret to clipboard!'
             });
-        }
-
-        function isLimited() {
-            return self.limited === 'true' | self.limited;
         }
 
         function clipboardSuccess(event, source) {
@@ -51,6 +80,31 @@
 
         function toggleSecretVisibility() {
             self.showSecret = !self.showSecret;
+        }
+    }
+
+    function ClientSecretController($uibModal, toaster, ClientsService) {
+        var self = this;
+
+        self.isLimited = isLimited;
+        self.rotateClientRat = rotateClientRat;
+        self.openModalRequestClientSecret = function () {
+            self.isModalOpen = true;
+
+            var modalSecret = $uibModal.open({
+                templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/clientsecret/clientsecret.dialog.html',
+                controller: ModalClientSecretController,
+                controllerAs: '$ctrl',
+                resolve: {
+                    client: () => { return self.client }
+                }
+            });
+
+            modalSecret.result.then(self.handleSuccess);
+        };
+
+        function isLimited() {
+            return self.limited === 'true' | self.limited;
         }
 
         function rotateClientRat() {
@@ -68,21 +122,6 @@
                     });
                 });
             }
-        }
-
-        function rotateClientSecret() {
-            ClientsService.rotateClientSecret(self.client.client_id).then(res => {
-                self.client = res;
-                toaster.pop({
-                    type: 'success',
-                    body: 'Secret rotated for client ' + self.client.client_name
-                });
-            }).catch(res => {
-                toaster.pop({
-                    type: 'error',
-                    body: 'Could not rotate secret for client ' + self.client.client_name
-                });
-            });
         }
 
         self.$onInit = function () {
@@ -104,7 +143,7 @@
                 newClient: "<",
                 limited: '@'
             },
-            controller: ['toaster', 'ClientsService', ClientSecretController],
+            controller: ['$uibModal', 'toaster', 'ClientsService', ClientSecretController],
             controllerAs: '$ctrl'
         };
     }

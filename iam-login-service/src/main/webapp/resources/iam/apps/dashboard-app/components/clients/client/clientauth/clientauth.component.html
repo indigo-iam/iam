@@ -56,7 +56,6 @@
             </label>
         </div>
     </div>
-    <hr>
     <clientsecret client="$ctrl.client" new-client="$ctrl.newClient" limited="{{$ctrl.limited}}"></clientsecret>
     <hr>
     <div class="form-group">
@@ -72,13 +71,15 @@
         <div class="form-inline">
             <div class="radio">
                 <label>
-                    <input type="radio" name="jwk-opt" id="jwks_uri" value="uri" ng-model="$ctrl.jwkOpt" ng-change="$ctrl.updateJwk()">
+                    <input type="radio" name="jwk-opt" id="jwks_uri" value="uri" ng-model="$ctrl.jwkOpt"
+                        ng-change="$ctrl.updateJwk()">
                     By URI
                 </label>
             </div>
             <div class="radio">
                 <label>
-                    <input type="radio" name="jwk-opt" id="jwks_jwk" value="jwk" ng-model="$ctrl.jwkOpt" ng-change="$ctrl.updateJwk()">
+                    <input type="radio" name="jwk-opt" id="jwks_jwk" value="jwk" ng-model="$ctrl.jwkOpt"
+                        ng-change="$ctrl.updateJwk()">
                     By value
                 </label>
             </div>
@@ -99,7 +100,8 @@
         'jwk'">
             <label for="jwk">JSON Web Keyset value</label>
 
-            <textarea name="jwk" id="jwk" class="form-control" rows="3" ng-model="$ctrl.client.jwk" placeholder='{ "keys": [ ] }'></textarea>
+            <textarea name="jwk" id="jwk" class="form-control" rows="3" ng-model="$ctrl.client.jwk"
+                placeholder='{ "keys": [ ] }'></textarea>
             <p class="help-block">
                 The JSON Web Keyset for this client
             </p>
