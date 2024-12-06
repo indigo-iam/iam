@@ -70,7 +70,6 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
     if (response.isCommitted()) {
       System.out
         .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
-      return;
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
     } else {

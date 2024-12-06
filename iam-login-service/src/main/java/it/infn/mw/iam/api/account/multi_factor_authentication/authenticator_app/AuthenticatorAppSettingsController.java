@@ -60,6 +60,7 @@ public class AuthenticatorAppSettingsController {
   public static final String ENABLE_URL = BASE_URL + "/enable";
   public static final String DISABLE_URL = BASE_URL + "/disable";
   public static final String DISABLE_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
+  private static final String BAD_CODE = "Bad code";
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
@@ -121,7 +122,7 @@ public class AuthenticatorAppSettingsController {
   public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
       BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new BadMfaCodeError("Bad code");
+      throw new BadMfaCodeError(BAD_CODE);
     }
 
     final String username = getUsernameFromSecurityContext();
@@ -137,7 +138,7 @@ public class AuthenticatorAppSettingsController {
     }
 
     if (!valid) {
-      throw new BadMfaCodeError("Bad code");
+      throw new BadMfaCodeError(BAD_CODE);
     }
 
     service.enableTotpMfa(account);
@@ -158,7 +159,7 @@ public class AuthenticatorAppSettingsController {
   @ResponseBody
   public void disableAuthenticatorApp(@Valid CodeDTO code, BindingResult validationResult) {
     if (validationResult.hasErrors()) {
-      throw new BadMfaCodeError("Bad code");
+      throw new BadMfaCodeError(BAD_CODE);
     }
 
     final String username = getUsernameFromSecurityContext();
@@ -174,7 +175,7 @@ public class AuthenticatorAppSettingsController {
     }
 
     if (!valid) {
-      throw new BadMfaCodeError("Bad code");
+      throw new BadMfaCodeError(BAD_CODE);
     }
 
     service.disableTotpMfa(account);

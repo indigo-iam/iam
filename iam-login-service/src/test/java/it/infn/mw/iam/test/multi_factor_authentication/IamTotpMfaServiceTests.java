@@ -130,6 +130,15 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
+  public void testAddMfaSecretWhenTotpIsNotActive() {
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    TOTP_MFA.setActive(false);
+    when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
+    assertFalse(totpMfa.isActive());
+  }
+
+  @Test
   public void testAddTotpMfaSecret_whenPasswordIsEmpty() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");

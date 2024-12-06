@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -26,8 +25,6 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import it.infn.mw.iam.api.common.NoSuchAccountError;
@@ -48,7 +45,6 @@ public class MultiFactorSettingsController {
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
 
-  @Autowired
   public MultiFactorSettingsController(IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
@@ -82,7 +78,7 @@ public class MultiFactorSettingsController {
    * @return MultiFactorSettingsDTO the MFA settings for the account
    */
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(value = MULTI_FACTOR_SETTINGS_URL, method = RequestMethod.GET,
+  @GetMapping(value = MULTI_FACTOR_SETTINGS_URL,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public MultiFactorSettingsDTO getMultiFactorSettings() {

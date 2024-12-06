@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
@@ -42,6 +41,7 @@ import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
 public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationEventPublisherAware {
 
   public static final int RECOVERY_CODE_QUANTITY = 6;
+  private static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
 
   private final IamAccountService iamAccountService;
   private final IamTotpMfaRepository totpMfaRepository;
@@ -50,7 +50,6 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   private final IamTotpMfaProperties iamTotpMfaProperties;
   private ApplicationEventPublisher eventPublisher;
 
-  @Autowired
   public DefaultIamTotpMfaService(IamAccountService iamAccountService,
       IamTotpMfaRepository totpMfaRepository, SecretGenerator secretGenerator,
       CodeVerifier codeVerifier, ApplicationEventPublisher eventPublisher,
@@ -123,7 +122,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   public IamTotpMfa enableTotpMfa(IamAccount account) {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+      throw new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE);
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
@@ -151,7 +150,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   public IamTotpMfa disableTotpMfa(IamAccount account) {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+      throw new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE);
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();
@@ -173,7 +172,7 @@ public class DefaultIamTotpMfaService implements IamTotpMfaService, ApplicationE
   public boolean verifyTotp(IamAccount account, String totp) throws IamTotpMfaInvalidArgumentError {
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     if (!totpMfaOptional.isPresent()) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+      throw new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE);
     }
 
     IamTotpMfa totpMfa = totpMfaOptional.get();

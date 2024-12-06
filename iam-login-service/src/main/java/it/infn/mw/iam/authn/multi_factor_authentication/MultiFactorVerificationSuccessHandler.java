@@ -31,10 +31,10 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 public class MultiFactorVerificationSuccessHandler implements AuthenticationSuccessHandler {
 
@@ -64,7 +64,6 @@ public class MultiFactorVerificationSuccessHandler implements AuthenticationSucc
     if (response.isCommitted()) {
       System.out
         .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
-      return;
     } else {
         continueWithDefaultSuccessHandler(request, response, authentication);
       }

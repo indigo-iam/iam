@@ -72,7 +72,8 @@ public class AccountUtils {
   public boolean isAuthenticated(Authentication auth) {
     if (isNull(auth) || auth instanceof AnonymousAuthenticationToken) {
       return false;
-    } else if (auth instanceof ExtendedAuthenticationToken && !auth.isAuthenticated()) {
+    }
+    if (auth instanceof ExtendedAuthenticationToken && !auth.isAuthenticated()) {
       return false;
     }
     return true;

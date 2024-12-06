@@ -17,13 +17,14 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL;
+import static it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsController.MULTI_FACTOR_SETTINGS_URL;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.mockito.Mockito.when;
-import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Optional;
 
@@ -57,6 +58,7 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
     @Before
     public void setup() {
         when(accountRepository.findByUuid(TOTP_UUID)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
+        when(accountRepository.findByUsername(TOTP_USERNAME)).thenReturn(Optional.of(TOTP_MFA_ACCOUNT));
         when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
 
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
@@ -72,6 +74,14 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
     @WithMockUser(username = "admin", roles = "ADMIN")
     public void testGetMfaAccountSettingWorksForAdmin() throws Exception {
         mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
+                .andExpect(status().isOk())
+                .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
+    }
+
+    @Test
+    @WithMockUser(username = "test-mfa-user", roles = "USER")
+    public void testGetMfaAccountSettingWorksForAuthenticatedUser() throws Exception {
+        mvc.perform(get(MULTI_FACTOR_SETTINGS_URL))
                 .andExpect(status().isOk())
                 .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
     }
