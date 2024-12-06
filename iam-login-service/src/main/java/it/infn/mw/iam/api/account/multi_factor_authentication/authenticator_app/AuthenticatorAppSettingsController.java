@@ -236,14 +236,7 @@ public class AuthenticatorAppSettingsController {
       .period(30)
       .build();
 
-    byte[] imageData;
-
-    try {
-      imageData = qrGenerator.generate(data);
-    } catch (QrGenerationException e) {
-      throw new BadMfaCodeError(CODE_GENERATION_ERROR);
-    }
-
+    byte[] imageData = qrGenerator.generate(data);
     String mimeType = qrGenerator.getImageMimeType();
     return getDataUriForImage(imageData, mimeType);
   }

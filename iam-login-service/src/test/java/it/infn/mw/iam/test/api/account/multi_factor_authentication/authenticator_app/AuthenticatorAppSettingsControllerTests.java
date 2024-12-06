@@ -19,8 +19,10 @@ import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticat
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.DISABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.ENABLE_URL;
 import static it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.AuthenticatorAppSettingsController.MFA_SECRET_NOT_FOUND_MESSAGE;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,6 +31,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Optional;
@@ -46,9 +49,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.util.NestedServletException;
 
+import dev.samstevens.totp.exceptions.QrGenerationException;
+import dev.samstevens.totp.qr.QrData;
+import dev.samstevens.totp.qr.QrGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
+import it.infn.mw.iam.core.user.exception.TotpMfaAlreadyEnabledException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -56,6 +64,7 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.multi_factor_authentication.MultiFactorTestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockMfaUser;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.WithMockPreAuthenticatedUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
@@ -77,6 +86,10 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
   @MockBean
   private IamTotpMfaProperties iamTotpMfaProperties;
+
+  @MockBean
+  private QrGenerator qrGenerator;
+
 
   @BeforeClass
   public static void init() {
@@ -105,6 +118,48 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
 
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isOk());
+
+    // TODO called twice for some reason?
+    verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
+    verify(totpMfaService, times(1)).addTotpMfaSecret(account);
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USERNAME)
+  public void testAddSecretThrowsQrGenerationException() throws Exception {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+    when(accountRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(account));
+
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+    when(totpMfaService.addTotpMfaSecret(account)).thenReturn(totpMfa);
+
+    when(qrGenerator.generate(any(QrData.class))).thenThrow(
+        new QrGenerationException("Simulated QR generation failure", new RuntimeException()));
+
+    mvc.perform(put(ADD_SECRET_URL))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().string(containsString("Could not generate QR code")));
+
+    verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
+    verify(totpMfaService, times(1)).addTotpMfaSecret(account);
+    verify(qrGenerator, times(1)).generate(any(QrData.class));
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USERNAME)
+  public void testAddSecretThrowsMfaSecretAlreadyBoundException() throws Exception {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setActive(false);
+    totpMfa.setAccount(null);
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+    when(totpMfaService.addTotpMfaSecret(account)).thenThrow(new MfaSecretAlreadyBoundException(
+        "A multi-factor secret is already assigned to this account"));
+
+    mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isConflict());
 
     // TODO called twice for some reason?
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
@@ -160,6 +215,45 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
     when(totpMfaService.enableTotpMfa(account)).thenReturn(totpMfa);
 
     mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isOk());
+
+    verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
+    verify(totpMfaService, times(1)).verifyTotp(account, totp);
+    verify(totpMfaService, times(1)).enableTotpMfa(account);
+  }
+
+  @Test
+  @WithMockOAuthUser(user = TEST_USERNAME, authorities = "ROLE_USER")
+  public void testEnableAuthenticatorAppViaOauthAuthn() throws Exception {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+
+    IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
+    totpMfa.setActive(true);
+    totpMfa.setAccount(account);
+    totpMfa.setSecret(IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(TOTP_MFA_SECRET,
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()));
+    String totp = "123456";
+
+    when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
+    when(totpMfaService.enableTotpMfa(account)).thenReturn(totpMfa);
+
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isOk());
+
+    verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
+    verify(totpMfaService, times(1)).verifyTotp(account, totp);
+    verify(totpMfaService, times(1)).enableTotpMfa(account);
+  }
+
+  @Test
+  @WithMockUser(username = TEST_USERNAME)
+  public void testEnableAuthenticatorAppThrowsTotpMfaAlreadyEnabledException() throws Exception {
+    IamAccount account = cloneAccount(TEST_ACCOUNT);
+    String totp = "123456";
+
+    when(totpMfaService.verifyTotp(account, totp)).thenReturn(true);
+    when(totpMfaService.enableTotpMfa(account))
+      .thenThrow(new TotpMfaAlreadyEnabledException("TOTP MFA is already enabled on this account"));
+
+    mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isConflict());
 
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).verifyTotp(account, totp);
