@@ -60,7 +60,9 @@ public class AuthenticatorAppSettingsController {
   public static final String ENABLE_URL = BASE_URL + "/enable";
   public static final String DISABLE_URL = BASE_URL + "/disable";
   public static final String DISABLE_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
-  private static final String BAD_CODE = "Bad code";
+  public static final String BAD_CODE = "Bad code";
+  public static final String CODE_GENERATION_ERROR = "Could not generate QR code";
+  public static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
@@ -104,7 +106,7 @@ public class AuthenticatorAppSettingsController {
 
       return dto;
     } catch (QrGenerationException e) {
-      throw new BadMfaCodeError("Could not generate QR code");
+      throw new BadMfaCodeError(CODE_GENERATION_ERROR);
     }
   }
 
@@ -134,7 +136,7 @@ public class AuthenticatorAppSettingsController {
     try {
       valid = service.verifyTotp(account, code.getCode());
     } catch (MfaSecretNotFoundException e) {
-      throw e;
+      throw new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE);
     }
 
     if (!valid) {
@@ -171,7 +173,7 @@ public class AuthenticatorAppSettingsController {
     try {
       valid = service.verifyTotp(account, code.getCode());
     } catch (MfaSecretNotFoundException e) {
-      throw e;
+      throw new MfaSecretNotFoundException(MFA_SECRET_NOT_FOUND_MESSAGE);
     }
 
     if (!valid) {
@@ -239,7 +241,7 @@ public class AuthenticatorAppSettingsController {
     try {
       imageData = qrGenerator.generate(data);
     } catch (QrGenerationException e) {
-      throw e;
+      throw new BadMfaCodeError(CODE_GENERATION_ERROR);
     }
 
     String mimeType = qrGenerator.getImageMimeType();
