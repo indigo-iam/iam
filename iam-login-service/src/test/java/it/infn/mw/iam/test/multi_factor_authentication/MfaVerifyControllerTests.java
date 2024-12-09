@@ -38,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -74,6 +75,27 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
       .andExpect(model().attributeExists("factors"));
 
     verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
+  }
+
+  @Test
+  @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
+  public void testGetVerifyMfaViewWhenTotpAlreadyPresent() throws Exception {
+    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    mvc.perform(get(MFA_VERIFY_URL))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("factors"));
+
+    verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
+  }
+
+  @Test
+  @WithMockUser(username = "test-mfa-user", authorities = {"ROLE_PRE_AUTHENTICATED"})
+  public void testGetVerifyMfaViewThrowsNoSuchAccountError() throws Exception {
+    when(accountRepository.findByUsername(TOTP_USERNAME))
+      .thenThrow(new NoSuchAccountError(String.format("Account not found for username '%s'", TOTP_USERNAME)));
+    mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isBadRequest());
+
+    verify(totpMfaRepository, times(0)).findByAccount(TOTP_MFA_ACCOUNT);
   }
 
   @Test
