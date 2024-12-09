@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.account;
 
-import static java.util.Objects.isNull;
-
 import java.util.Optional;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -70,13 +68,8 @@ public class AccountUtils {
   }
 
   public boolean isAuthenticated(Authentication auth) {
-    if (isNull(auth) || auth instanceof AnonymousAuthenticationToken) {
-      return false;
-    }
-    if (auth instanceof ExtendedAuthenticationToken && !auth.isAuthenticated()) {
-      return false;
-    }
-    return true;
+    return auth != null && !(auth instanceof AnonymousAuthenticationToken)
+        && (!(auth instanceof ExtendedAuthenticationToken) || auth.isAuthenticated());
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount(Authentication authn) {
