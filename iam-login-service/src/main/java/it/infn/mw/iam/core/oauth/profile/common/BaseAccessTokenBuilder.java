@@ -19,8 +19,12 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.text.ParseException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
@@ -41,6 +46,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 
 @SuppressWarnings("deprecation")
@@ -49,6 +55,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
   public static final String AUDIENCE = "audience";
+  public static final String RESOURCE = "resource";
   public static final String AUD_KEY = "aud";
   public static final String SCOPE_CLAIM_NAME = "scope";
 
@@ -123,6 +130,28 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return false;
   }
 
+  protected boolean hasValidRefreshTokenResourceRequest(OAuth2Authentication authentication) {
+    TokenRequest refreshTokenRequest = authentication.getOAuth2Request().getRefreshTokenRequest();
+    if (!(isNull(refreshTokenRequest)
+        || isNull(refreshTokenRequest.getRequestParameters().get(RESOURCE)))) {
+      final String audience = authentication.getOAuth2Request()
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(RESOURCE);
+      Arrays.asList(audience.split(" ")).forEach(this::validateUrl);
+      return true;
+    }
+    return false;
+  }
+
+  private void validateUrl(String url) {
+    try {
+      new URL(url).toURI();
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new InvalidResourceError("Not a valid URI: " + url);
+    }
+  }
+
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
     final String audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
     return !isNullOrEmpty(audience);
@@ -159,6 +188,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
         .getRefreshTokenRequest()
         .getRequestParameters()
         .get(AUDIENCE);
+    }
+
+    if (hasValidRefreshTokenResourceRequest(authentication)) {
+      audience = authentication.getOAuth2Request()
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(RESOURCE);
     }
 
     if (!isNullOrEmpty(audience)) {
