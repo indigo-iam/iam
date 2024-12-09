@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.config;
 
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -38,7 +40,7 @@ public class DataSourceConfig {
 
     @Bean
     @Primary
-    public HikariDataSource primaryDataSource(@Qualifier("dataSource") DataSourceProperties dataSourceProperties) {
+    public DataSource primaryDataSource(@Qualifier("dataSource") DataSourceProperties dataSourceProperties) {
         return dataSourceProperties
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
@@ -56,7 +58,7 @@ public class DataSourceConfig {
     @Qualifier("sessionDataSource")
     @SpringSessionDataSource
     @ConditionalOnProperty(name = "spring.session.store-type", havingValue = "jdbc")
-    public HikariDataSource sessionDataSource(@Qualifier("sessionDataSourceProperties") DataSourceProperties sessionDataSourceProperties) {
+    public DataSource sessionDataSource(@Qualifier("sessionDataSourceProperties") DataSourceProperties sessionDataSourceProperties) {
         return sessionDataSourceProperties
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
