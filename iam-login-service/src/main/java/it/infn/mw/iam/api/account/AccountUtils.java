@@ -38,7 +38,7 @@ public class AccountUtils {
   }
 
   public boolean isRegisteredUser(Authentication auth) {
-    if (auth == null || auth.getAuthorities() == null) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
     }
 
@@ -46,7 +46,7 @@ public class AccountUtils {
   }
 
   public boolean isAdmin(Authentication auth) {
-    if (auth == null || auth.getAuthorities() == null) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
     }
 
@@ -54,7 +54,7 @@ public class AccountUtils {
   }
 
   public boolean isPreAuthenticated(Authentication auth) {
-    if (auth == null || auth.getAuthorities() == null) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
     }
 
