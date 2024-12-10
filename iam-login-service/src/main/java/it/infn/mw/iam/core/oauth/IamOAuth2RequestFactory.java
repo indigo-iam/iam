@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
@@ -188,7 +189,16 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static void validateUrl(String url) {
     try {
-      new URL(url).toURI();
+      URI validURI = new URL(url).toURI();
+
+      if (validURI.getRawQuery() != null) {
+        throw new InvalidResourceError("The resource indicator contains a query component: " + url);
+      }
+      if (validURI.getRawFragment() != null) {
+        throw new InvalidResourceError(
+            "The resource indicator contains a fragment component: " + url);
+      }
+
     } catch (MalformedURLException | URISyntaxException e) {
       throw new InvalidResourceError("Not a valid URI: " + url);
     }
