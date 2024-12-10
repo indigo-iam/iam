@@ -244,9 +244,8 @@ INSERT INTO iam_account_group(account_id, group_id) VALUES
 (2,2);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
-(2,2);
-
-
+(2,2),
+(1000, 2);
 
 -- Other test groups
 INSERT INTO iam_group(id, name, uuid, description, creationtime, lastupdatetime) VALUES
