@@ -128,16 +128,16 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected boolean hasValidRefreshTokenResourceRequest(OAuth2Authentication authentication) {
+
     TokenRequest refreshTokenRequest = authentication.getOAuth2Request().getRefreshTokenRequest();
+
     if (!(isNull(refreshTokenRequest)
         || isNull(refreshTokenRequest.getRequestParameters().get(RESOURCE)))) {
-      final String audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(RESOURCE);
+      final String audience = refreshTokenRequest.getRequestParameters().get(RESOURCE);
       splitBySpace(audience).forEach(aud -> validateUrl(aud));
       return true;
     }
+
     return false;
   }
 
