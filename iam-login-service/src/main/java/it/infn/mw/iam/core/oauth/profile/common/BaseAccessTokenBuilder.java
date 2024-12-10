@@ -16,15 +16,13 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.validateUrl;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -46,7 +44,6 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 
 @SuppressWarnings("deprecation")
@@ -138,18 +135,10 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
         .getRefreshTokenRequest()
         .getRequestParameters()
         .get(RESOURCE);
-      Arrays.asList(audience.split(" ")).forEach(this::validateUrl);
+      splitBySpace(audience).forEach(aud -> validateUrl(aud));
       return true;
     }
     return false;
-  }
-
-  private void validateUrl(String url) {
-    try {
-      new URL(url).toURI();
-    } catch (MalformedURLException | URISyntaxException e) {
-      throw new InvalidResourceError("Not a valid URI: " + url);
-    }
   }
 
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {

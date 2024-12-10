@@ -265,6 +265,23 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  public void testEmptyResourceIndicatorValidationFailsPasswordFlow() throws Exception {
+
+    mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", "openid profile")
+        .param("resource", ""))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description").value("Not a valid URI: "));
+
+  }
+
+  @Test
   public void testResourceIndicatorRequestClientCredentialsFlow() throws Exception {
 
     String tokenResponseJson = mvc
@@ -382,6 +399,20 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
       .andExpect(jsonPath("$.error_description").value("Not a valid URI: resource"));
+
+  }
+
+  @Test
+  public void testEmptyResourceIndicatorValidationFailsClientCredentialFlow() throws Exception {
+
+    mvc
+      .perform(post("/token").param("grant_type", "client_credentials")
+        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("resource", ""))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description").value("Not a valid URI: "));
 
   }
 

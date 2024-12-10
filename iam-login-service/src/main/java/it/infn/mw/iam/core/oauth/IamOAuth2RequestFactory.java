@@ -92,7 +92,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
       String resourceParams = inputParams.get(RESOURCE);
 
-      splitBySpace(resourceParams).forEach(this::isValidUrl);
+      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
       authzRequest.getExtensions().put(AUD, resourceParams);
 
     } else {
@@ -133,7 +133,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         && !request.getExtensions().containsKey(AUD)) {
 
       String resourceParams = tokenRequest.getRequestParameters().get(RESOURCE);
-      splitBySpace(resourceParams).forEach(this::isValidUrl);
+      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
 
       request.getExtensions().put(AUD, resourceParams);
 
@@ -186,16 +186,15 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     return new TokenRequest(requestParameters, clientId, scopes, grantType);
   }
 
-  private boolean isValidUrl(String url) {
+  public static void validateUrl(String url) {
     try {
       new URL(url).toURI();
-      return true;
     } catch (MalformedURLException | URISyntaxException e) {
       throw new InvalidResourceError("Not a valid URI: " + url);
     }
   }
 
-  private List<String> splitBySpace(String str) {
+  public static List<String> splitBySpace(String str) {
     return Arrays.asList(str.split(" "));
   }
 
