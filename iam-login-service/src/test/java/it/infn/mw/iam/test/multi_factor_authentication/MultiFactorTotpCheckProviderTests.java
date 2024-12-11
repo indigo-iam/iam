@@ -36,7 +36,7 @@ import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-public class IamMfaTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
+public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
 
   private MultiFactorTotpCheckProvider multiFactorTotpCheckProvider;
 
