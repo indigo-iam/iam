@@ -56,13 +56,13 @@ public class IamMfaTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void authenticate_returnsNull_whenTotpIsNull() {
+  public void authenticateReturnsNullWhenTotpIsNull() {
     when(token.getTotp()).thenReturn(null);
     assertNull(multiFactorTotpCheckProvider.authenticate(token));
   }
 
   @Test
-  public void authenticate_throwsBadCredentialsException_whenAccountNotFound() {
+  public void authenticateThrowsBadCredentialsExceptionWhenAccountNotFound() {
     when(token.getTotp()).thenReturn("123456");
     when(token.getName()).thenReturn("username");
     when(accountRepo.findByUsername("username")).thenReturn(Optional.empty());
@@ -72,7 +72,7 @@ public class IamMfaTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void authenticate_propagatesMfaSecretNotFoundException() {
+  public void authenticatePropagatesMfaSecretNotFoundException() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -85,7 +85,7 @@ public class IamMfaTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void authenticate_throwsBadCredentialsException_whenTotpIsInvalid() {
+  public void authenticateThrowsBadCredentialsExceptionWhenTotpIsInvalid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
@@ -97,7 +97,7 @@ public class IamMfaTotpCheckProviderTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void authenticate_returnsSuccessfulAuthentication_whenTotpIsValid() {
+  public void authenticateReturnsSuccessfulAuthenticationWhenTotpIsValid() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
     when(token.getName()).thenReturn("totp");
     when(token.getTotp()).thenReturn("123456");
