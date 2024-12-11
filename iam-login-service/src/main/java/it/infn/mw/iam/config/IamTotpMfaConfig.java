@@ -61,9 +61,6 @@ public class IamTotpMfaConfig {
   private IamAccountRepository accountRepo;
 
   @Autowired
-  private IamTotpMfaService totpMfaService;
-
-  @Autowired
   private AUPSignatureCheckService aupSignatureCheckService;
 
   @Autowired
@@ -76,7 +73,7 @@ public class IamTotpMfaConfig {
    */
   @Bean
   @Qualifier("secretGenerator")
-  public SecretGenerator secretGenerator() {
+  SecretGenerator secretGenerator() {
     return new DefaultSecretGenerator();
   }
 
@@ -89,7 +86,7 @@ public class IamTotpMfaConfig {
    */
   @Bean
   @Qualifier("qrGenerator")
-  public QrGenerator qrGenerator() {
+  QrGenerator qrGenerator() {
     return new ZxingPngQrGenerator();
   }
 
@@ -101,18 +98,16 @@ public class IamTotpMfaConfig {
    */
   @Bean
   @Qualifier("codeVerifier")
-  public CodeVerifier codeVerifier() {
+  CodeVerifier codeVerifier() {
     return new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
   }
 
   @Bean(name = "MultiFactorVerificationFilter")
-  public MultiFactorVerificationFilter multiFactorVerificationFilter(
+  MultiFactorVerificationFilter multiFactorVerificationFilter(
       @Qualifier("MultiFactorVerificationAuthenticationManager") AuthenticationManager authenticationManager) {
 
-    MultiFactorVerificationFilter filter = new MultiFactorVerificationFilter(authenticationManager,
-        successHandler(), failureHandler());
-
-    return filter;
+    return new MultiFactorVerificationFilter(authenticationManager, successHandler(),
+        failureHandler());
   }
 
   /**
@@ -122,7 +117,7 @@ public class IamTotpMfaConfig {
    * @return a new provider manager
    */
   @Bean(name = "MultiFactorVerificationAuthenticationManager")
-  public AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
+  AuthenticationManager authenticationManager(MultiFactorTotpCheckProvider totpCheckProvider) {
     return new ProviderManager(Arrays.asList(totpCheckProvider));
   }
 
@@ -142,7 +137,7 @@ public class IamTotpMfaConfig {
   }
 
   @Bean
-  public MultiFactorTotpCheckProvider totpCheckProvider() {
+  MultiFactorTotpCheckProvider totpCheckProvider(IamTotpMfaService totpMfaService) {
     return new MultiFactorTotpCheckProvider(accountRepo, totpMfaService);
   }
 

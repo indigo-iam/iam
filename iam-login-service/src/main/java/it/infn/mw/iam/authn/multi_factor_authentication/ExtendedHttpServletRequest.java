@@ -59,9 +59,7 @@ public final class ExtendedHttpServletRequest extends HttpServletRequestWrapper 
       Map<String, String[]> paramMap) {
     Objects.requireNonNull(paramMap);
 
-    Map<String, String[]> commonQueryParamMap = new LinkedHashMap<>(paramMap);
-
-    return commonQueryParamMap;
+    return new LinkedHashMap<>(paramMap);
   }
 
   @Override

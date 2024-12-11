@@ -17,9 +17,6 @@ package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.io.IOException;
-import java.text.ParseException;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,8 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -78,8 +73,7 @@ public class IamTotpAuthenticationTests {
   }
 
   @Test
-  public void testRedirectToVerifyPageAfterLogin()
-      throws JsonProcessingException, IOException, ParseException {
+  public void testRedirectToVerifyPageAfterLogin() {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -113,8 +107,7 @@ public class IamTotpAuthenticationTests {
   }
 
   @Test
-  public void testRedirectToAuthorizeUrlWhenTotpIsInactive()
-      throws JsonProcessingException, IOException, ParseException {
+  public void testRedirectToAuthorizeUrlWhenTotpIsInactive() {
 
     IamTotpMfa totp = totpMfaRepo.findByAccountId(Long.valueOf(1000)).orElseThrow();
     totp.setActive(false);

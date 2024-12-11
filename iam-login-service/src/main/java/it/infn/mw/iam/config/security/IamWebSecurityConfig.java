@@ -363,9 +363,7 @@ public class IamWebSecurityConfig {
     private MultiFactorVerificationFilter multiFactorVerificationFilter;
 
     public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
-      LoginUrlAuthenticationEntryPoint entryPoint =
-          new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
-      return entryPoint;
+      return new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
     }
 
     @Override

@@ -49,7 +49,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   public static final AntPathRequestMatcher DEFAULT_MFA_VERIFY_ANT_PATH_REQUEST_MATCHER =
       new AntPathRequestMatcher(MFA_VERIFY_URL, "POST");
 
-  private final boolean postOnly = true;
+  private static final boolean postOnly = true;
 
   private String totpParameter = TOTP_MFA_CODE_KEY;
 
@@ -63,13 +63,13 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
   @Override
   public Authentication attemptAuthentication(HttpServletRequest request,
       HttpServletResponse response) throws AuthenticationException {
-    if (this.postOnly && !request.getMethod().equals("POST")) {
+    if (postOnly && !request.getMethod().equals("POST")) {
       throw new AuthenticationServiceException(
           "Authentication method not supported: " + request.getMethod());
     }
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || !(auth instanceof ExtendedAuthenticationToken)) {
+    if (!(auth instanceof ExtendedAuthenticationToken)) {
       throw new AuthenticationServiceException("Bad authentication");
     }
 

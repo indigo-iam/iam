@@ -81,7 +81,9 @@ public class ExtendedHttpServletRequestFilter extends GenericFilterBean {
     Iterator<IamAuthenticationMethodReference> it = amrSet.iterator();
     while (it.hasNext()) {
       IamAuthenticationMethodReference current = it.next();
-      amrClaim += current.getName() + "+";
+      StringBuilder amrClaimBuilder = new StringBuilder(amrClaim);
+      amrClaimBuilder.append(current.getName()).append("+");
+      amrClaim = amrClaimBuilder.toString();
     }
 
     // Remove trailing + symbol at end of string

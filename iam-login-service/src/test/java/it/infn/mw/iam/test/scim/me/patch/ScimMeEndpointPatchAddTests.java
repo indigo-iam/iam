@@ -106,7 +106,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   private void patchPasswordNotSupported() throws Exception {
 
     String oldPassword = accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getPassword();
 
     ScimUser updates = ScimUser.builder().password("newpassword").build();
@@ -114,7 +114,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     scimUtils.patchMe(add, updates, BAD_REQUEST);
 
     String newPassword = accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getPassword();
 
     assertThat(oldPassword, equalTo(newPassword));
@@ -123,7 +123,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   private void patchAddOidcIdNotSupported() throws Exception {
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getOidcIds()
       .isEmpty(), equalTo(true));
 
@@ -133,7 +133,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     scimUtils.patchMe(add, updates, BAD_REQUEST);
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getOidcIds()
       .isEmpty(), equalTo(true));
   }
@@ -141,7 +141,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   private void patchAddSamlIdNotSupported() throws Exception {
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getSamlIds()
       .isEmpty(), equalTo(true));
 
@@ -152,7 +152,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     scimUtils.patchMe(add, updates, BAD_REQUEST);
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getSamlIds()
       .isEmpty(), equalTo(true));
   }
@@ -160,7 +160,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   private void patchAddX509CertificateNotSupported() throws Exception {
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getX509Certificates()
       .isEmpty(), equalTo(true));
 
@@ -174,7 +174,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
     scimUtils.patchMe(add, updates, BAD_REQUEST);
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getX509Certificates()
       .isEmpty(), equalTo(true));
   }
@@ -182,7 +182,7 @@ public class ScimMeEndpointPatchAddTests extends ScimMeEndpointUtils {
   private void patchAddSshKeyIsSupported() throws Exception {
 
     assertThat(accountRepository.findByUsername(TEST_USERNAME)
-      .orElseThrow(() -> new IllegalStateException())
+      .orElseThrow(IllegalStateException::new)
       .getSshKeys()
       .isEmpty(), equalTo(true));
 

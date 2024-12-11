@@ -212,7 +212,7 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc.perform(get("/authorize").session(session)
+    mvc.perform(get("/authorize").session(session)
         .param("scope", "openid profile read:/ read:/that/thing write:/")
         .param("response_type", "code")
         .param("client_id", clientId)

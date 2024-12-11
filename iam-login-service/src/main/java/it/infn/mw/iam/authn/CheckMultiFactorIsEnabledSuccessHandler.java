@@ -25,6 +25,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.WebAttributes;
@@ -42,6 +44,8 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
  * called
  */
 public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSuccessHandler {
+
+  private static final Logger logger = LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
 
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
@@ -68,8 +72,7 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
     boolean isPreAuthenticated = isPreAuthenticated(authentication);
 
     if (response.isCommitted()) {
-      System.out
-        .println("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
+      logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
     } else {

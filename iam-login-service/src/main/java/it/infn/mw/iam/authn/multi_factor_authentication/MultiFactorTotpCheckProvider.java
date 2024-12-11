@@ -62,7 +62,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     try {
       valid = totpMfaService.verifyTotp(account, totp);
     } catch (MfaSecretNotFoundException e) {
-      throw e;
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
     }
 
     if (!valid) {

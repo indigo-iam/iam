@@ -106,7 +106,7 @@ public class MultiFactorSettingsTests {
   }
 
   @Test
-  public void testGetSettings() throws Exception {
+  public void testGetSettings() {
     String accessToken = passwordTokenGetter().port(iamPort)
       .username(testUser.getUserName())
       .password(USER_PASSWORD)
