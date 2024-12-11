@@ -35,7 +35,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -99,6 +101,42 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
+  public void testAuthenticationFailureDueToUnsupportedAuthnMethod() throws Exception {
+    Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    Authentication mockAuthenticatedToken =
+        new ExtendedAuthenticationToken("username", null, new ArrayList<>());
+    when(authenticationManager.authenticate(any(Authentication.class)))
+      .thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("GET");
+
+    assertThrows(AuthenticationServiceException.class,
+        () -> multiFactorVerificationFilter.attemptAuthentication(request, response));
+  }
+
+  @Test
+  public void testAuthenticationFailureDueToBadAuthn() throws Exception {
+    Authentication mockAuth = mock(UsernamePasswordAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    Authentication mockAuthenticatedToken =
+        new UsernamePasswordAuthenticationToken("username", null, new ArrayList<>());
+    when(authenticationManager.authenticate(any(Authentication.class)))
+      .thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("POST");
+
+    assertThrows(AuthenticationServiceException.class,
+        () -> multiFactorVerificationFilter.attemptAuthentication(request, response));
+  }
+
+  @Test
   public void testAuthenticationFailureDueToInvalidTOTP() throws Exception {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
@@ -116,7 +154,7 @@ public class MultiFactorVerificationFilterTests {
   }
 
   @Test
-  public void testAuthenticationFailureWhenTotpIsNull() throws Exception {
+  public void testAuthenticationFailureWhenTotpIsNull() {
     Authentication mockAuth = mock(ExtendedAuthenticationToken.class);
     when(mockAuth.getName()).thenReturn("username");
 
