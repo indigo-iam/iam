@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -69,6 +70,11 @@ public class MultiFactorVerificationFilterTests {
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    SecurityContextHolder.clearContext();
   }
 
   @Test
