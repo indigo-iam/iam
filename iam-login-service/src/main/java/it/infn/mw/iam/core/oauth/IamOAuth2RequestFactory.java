@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -53,7 +54,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
-  protected static final String[] AUDIENCE_KEYS = {"aud", "audience"};
+  protected static final List<String> AUDIENCE_KEYS = Arrays.asList("aud", "audience");
   public static final String RESOURCE = "resource";
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
@@ -89,22 +90,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    if (inputParams.containsKey(RESOURCE) && !authzRequest.getExtensions().containsKey(AUD)) {
-
-      String resourceParams = inputParams.get(RESOURCE);
-
-      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
-      authzRequest.getExtensions().put(AUD, resourceParams);
-
-    } else {
-      for (String audienceKey : AUDIENCE_KEYS) {
-        if (inputParams.containsKey(audienceKey)
-            && !authzRequest.getExtensions().containsKey(AUD)) {
-          authzRequest.getExtensions().put(AUD, inputParams.get(audienceKey));
-          break;
-        }
-      }
-    }
+    handleAudienceRequest(inputParams, authzRequest.getExtensions());
 
     return authzRequest;
 
@@ -130,24 +116,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     handlePasswordGrantAuthenticationTimestamp(request);
 
-    if (tokenRequest.getRequestParameters().containsKey(RESOURCE)
-        && !request.getExtensions().containsKey(AUD)) {
-
-      String resourceParams = tokenRequest.getRequestParameters().get(RESOURCE);
-      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
-
-      request.getExtensions().put(AUD, resourceParams);
-
-    } else {
-      for (String audienceKey : AUDIENCE_KEYS) {
-        if (tokenRequest.getRequestParameters().containsKey(audienceKey)
-            && !request.getExtensions().containsKey(AUD)) {
-
-          request.getExtensions().put(AUD, tokenRequest.getRequestParameters().get(audienceKey));
-          break;
-        }
-      }
-    }
+    handleAudienceRequest(tokenRequest.getRequestParameters(), request.getExtensions());
 
     profileResolver.resolveProfile(client.getClientId())
       .getRequestValidator()
@@ -185,6 +154,26 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
 
     return new TokenRequest(requestParameters, clientId, scopes, grantType);
+  }
+
+  private void handleAudienceRequest(Map<String, String> requestParameters,
+      Map<String, Serializable> extensions) {
+
+    if (requestParameters.containsKey(RESOURCE) && !extensions.containsKey(AUD)) {
+
+      String resourceParams = requestParameters.get(RESOURCE);
+      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
+      extensions.put(AUD, resourceParams);
+
+    } else {
+
+      AUDIENCE_KEYS.forEach(aud -> {
+        if (requestParameters.containsKey(aud) && !extensions.containsKey(AUD)) {
+          extensions.put(AUD, requestParameters.get(aud));
+        }
+      });
+    }
+
   }
 
   public static void validateUrl(String url) {
