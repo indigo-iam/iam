@@ -115,8 +115,10 @@ public class VomsProperties {
     private long maxAcLifetimeInSeconds = TimeUnit.HOURS.toSeconds(12);
 
     private Boolean useLegacyFqanEncoding = Boolean.FALSE;
-    
+
     private String optionalGroupLabel = "wlcg.optional-group";
+
+    private String vomsRoleLabel = "voms.role";
 
     public String getVoName() {
       return voName;
@@ -149,19 +151,27 @@ public class VomsProperties {
     public void setMaxAcLifetimeInSeconds(long maxAcLifetimeInSeconds) {
       this.maxAcLifetimeInSeconds = maxAcLifetimeInSeconds;
     }
-    
+
     public String getOptionalGroupLabel() {
       return optionalGroupLabel;
     }
-    
+
     public void setOptionalGroupLabel(String optionalGroupLabel) {
       this.optionalGroupLabel = optionalGroupLabel;
     }
-    
+
+    public String getVomsRoleLabel() {
+      return vomsRoleLabel;
+    }
+
+    public void setVomsRoleLabel(String vomsRoleLabel) {
+      this.vomsRoleLabel = vomsRoleLabel;
+    }
+
     public void setUseLegacyFqanEncoding(Boolean useLegacyFqanEncoding) {
       this.useLegacyFqanEncoding = useLegacyFqanEncoding;
     }
-    
+
     public Boolean getUseLegacyFqanEncoding() {
       return useLegacyFqanEncoding;
     }

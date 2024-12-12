@@ -55,6 +55,7 @@ import it.infn.mw.voms.properties.VomsProperties;
 public class TestSupport {
 
   public static final String VOMS_ROLE_LABEL = "voms.role";
+  public static final String OPTIONAL_GROUP_LABEL = "voms.role";
 
   public static final String SERVER_NAME = "voms.example";
   public static final String TLS_PROTOCOL = "TLSv1.2";
@@ -249,6 +250,13 @@ public class TestSupport {
   protected IamGroup createRoleGroup(IamGroup parent, String name) {
     IamGroup g = createChildGroup(parent, name);
     g.getLabels().add(IamLabel.builder().name(VOMS_ROLE_LABEL).build());
+    groupRepo.save(g);
+    return g;
+  }
+
+  protected IamGroup createOptionalGroup(IamGroup parent, String name) {
+    IamGroup g = createChildGroup(parent, name);
+    g.getLabels().add(IamLabel.builder().name(OPTIONAL_GROUP_LABEL).build());
     groupRepo.save(g);
     return g;
   }

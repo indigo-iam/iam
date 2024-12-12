@@ -243,6 +243,32 @@ public class VomsAcTests extends TestSupport {
     assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
   }
 
+  @Test
+  public void optionalGroupIsNotReturnedForUser() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup subGroup = createChildGroup(rootGroup, "sub");
+    IamGroup optionalGroup = createOptionalGroup(subGroup, "optional");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, subGroup);
+    addAccountToGroup(testAccount, optionalGroup);
+
+    byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(false));
+    VOMSAttribute attrs = getAttributeCertificate(response);
+    assertThat(attrs.getFQANs(), hasSize(2));
+    assertThat(attrs.getFQANs(), hasItem("/test"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
+    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+  }
+
 
   @Test
   public void requestedFqanOrderEnforced() throws Exception {
