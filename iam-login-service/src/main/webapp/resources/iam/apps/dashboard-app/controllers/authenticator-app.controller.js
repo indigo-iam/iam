@@ -70,6 +70,10 @@
 
     authAppCtrl.message = '';
 
+    authAppCtrl.clearError = function () {
+      $scope.operationResult = null;
+    };
+
     authAppCtrl.submitEnable = function () {
       authAppCtrl.requestPending = true;
       AuthenticatorAppService
@@ -119,6 +123,10 @@
     function dismiss() { return $uibModalInstance.dismiss('Cancel'); }
 
     authAppCtrl.message = '';
+
+    authAppCtrl.clearError = function () {
+      $scope.operationResult = null;
+    };
 
     authAppCtrl.submitDisable = function () {
       authAppCtrl.requestPending = true;

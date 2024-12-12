@@ -20,7 +20,7 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
 public class AuthenticatorAppDisabledEvent extends MultiFactorEvent {
 
-  public static final String TEMPLATE = "Authenticator app MFA disabled on  account '%s'";
+  public static final String TEMPLATE = "Authenticator app MFA disabled on account '%s'";
 
   private static final long serialVersionUID = 1L;
 

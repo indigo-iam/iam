@@ -66,7 +66,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     }
 
     if (!valid) {
-      throw new BadCredentialsException("Bad code");
+      throw new BadCredentialsException("Bad TOTP");
     }
 
     return createSuccessfulAuthentication(token);

@@ -60,7 +60,7 @@ public class AuthenticatorAppSettingsController {
   public static final String ENABLE_URL = BASE_URL + "/enable";
   public static final String DISABLE_URL = BASE_URL + "/disable";
   public static final String DISABLE_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
-  public static final String BAD_CODE = "Bad code";
+  public static final String BAD_CODE = "Bad TOTP";
   public static final String CODE_GENERATION_ERROR = "Could not generate QR code";
   public static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
 

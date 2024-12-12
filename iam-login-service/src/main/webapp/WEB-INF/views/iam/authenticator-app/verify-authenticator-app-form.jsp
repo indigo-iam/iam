@@ -19,14 +19,14 @@
 <div>
   <form class="verify-form" action="/iam/verify" method="post">
     <div class="verify-preamble text-muted">
-      For your security, please enter a code from your authenticator app
+      For your security, please enter a TOTP from your authenticator
     </div>
     <div class="form-group">
       <div class="input-group">
         <span class="input-group-addon">
           <i class="glyphicon glyphicon-lock"></i>
         </span>
-        <input id="totp" class="form-control" type="text" inputmode="numeric" placeholder="Code" autocomplete="off"
+        <input id="totp" class="form-control" type="text" inputmode="numeric" placeholder="TOTP" autocomplete="off"
           spellcheck="false" name="totp" autofocus>
       </div>
     </div>

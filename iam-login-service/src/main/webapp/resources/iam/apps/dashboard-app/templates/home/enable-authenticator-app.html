@@ -35,10 +35,11 @@
         <label class="control-label" for="code">TOTP</label>
       </div>
       <div class="col-sm-9"  ng-class="{'has-error': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'has-success': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}">
-        <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="authAppCtrl.user.code" required ng-minlength="authAppCtrl.codeMinlength" />
+        <input type="text" inputmode="numeric" name="code" class="form-control" ng-model="authAppCtrl.user.code" ng-change="authAppCtrl.clearError()" required ng-minlength="authAppCtrl.codeMinlength" />
         <span class="glyphicon form-control-feedback" ng-class="{'glyphicon-remove': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$invalid, 'glyphicon-ok': authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$valid}" style="right: 15px"></span>
         <span class="help-block" ng-show="authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$error.required"> This is a required field</span>
         <span class="help-block" ng-show="authenticatorAppForm.code.$dirty && authenticatorAppForm.code.$error.minlength">Minimum length required is {{authAppCtrl.codeMinlength}}</span>
+        <span class="help-block" ng-show="operationResult" style="color: #a94442;">{{ operationResult.text }}</span>
       </div>
     </div>
    </div>
