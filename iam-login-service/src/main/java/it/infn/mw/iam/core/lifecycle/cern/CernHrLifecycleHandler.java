@@ -194,16 +194,9 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   }
 
   private void syncAccountInformation(IamAccount a, VOPersonDTO p) {
-
-    LOG.debug("Syncing IAM account '{}' with CERN HR record id '{}'", a.getUsername(), p.getId());
-
-    LOG.debug("Updating Given Name for {} to {} ...", a.getUsername(), p.getFirstName());
     accountService.setAccountGivenName(a, p.getFirstName());
-    LOG.debug("Updating Family Name for {} to {} ...", a.getUsername(), p.getName());
     accountService.setAccountFamilyName(a, p.getName());
-
     if (!isSkipEmailSynch(a)) {
-      LOG.debug("Updating Email for {} to {} ...", a.getUsername(), p.getEmail());
       try {
         accountService.setAccountEmail(a, p.getEmail());
       } catch (EmailAlreadyBoundException e) {
@@ -238,14 +231,11 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   private void setCernStatusLabel(IamAccount a, CernStatus status, String message) {
     IamLabel statusLabel = CernHrLifecycleUtils.buildCernStatusLabel(status);
     IamLabel messageLabel = CernHrLifecycleUtils.buildCernMessageLabel(message);
-    LOG.debug("Setting CERN label {} to account '{}' ...", statusLabel, a.getUsername());
     accountService.addLabel(a, statusLabel);
-    LOG.debug("Setting CERN label {} to account '{}' ...", statusLabel, a.getUsername());
     accountService.addLabel(a, messageLabel);
   }
 
   private void restoreAccount(IamAccount a) {
-    LOG.debug("Restoring account '{}'", a.getUsername());
     accountService.restoreAccount(a);
     IamLabel statusLabel = CernHrLifecycleUtils.buildLifecycleStatusLabel();
     accountService.deleteLabel(a, statusLabel);
@@ -253,13 +243,11 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   private void syncInstitute(IamAccount a, InstituteDTO institute) {
     IamLabel instituteLabel = CernHrLifecycleUtils.buildInstituteLabel(institute);
-    LOG.debug("Setting CERN label {} to account '{}' ...", instituteLabel, a.getUsername());
     accountService.addLabel(a, instituteLabel);
   }
 
   private void syncAccountEndTime(IamAccount a, Date endDate) {
     if (!isSkipEndDateSynch(a)) {
-      LOG.debug("Updating end-time for '{}' to {} ...", a.getUsername(), endDate);
       accountService.setAccountEndTime(a, endDate);
     }
   }
@@ -268,7 +256,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     Date currentDate = new Date();
     if (a.isActive() && a.getEndTime().after(currentDate)) {
       LOG.warn("User {} has a valid membership but cannot be found on HR db", a.getUsername());
-      LOG.debug("Updating end-time for '{}' to {} ...", a.getUsername(), currentDate);
       accountService.setAccountEndTime(a, currentDate);
     }
   }
