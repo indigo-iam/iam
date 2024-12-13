@@ -18,16 +18,14 @@ package it.infn.mw.iam.test.lifecycle.cern;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.EXPIRED_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.HR_DB_API_ERROR;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.IGNORE_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PARTICIPATION_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PERSON_FOUND_MESSAGE;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.VALID_MESSAGE;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.EXPIRED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.IGNORED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.MEMBER;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.SYNCHRONIZED_MESSAGE;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.CernStatus.IGNORED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
+import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_INSTITUTE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_TIMESTAMP;
@@ -74,6 +72,7 @@ import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler;
+import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.CernStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -175,12 +174,12 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(EXPIRED.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(EXPIRED_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -194,11 +193,11 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     cernStatusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(EXPIRED.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     cernMessageLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(EXPIRED_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     cernTimestampLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
     assertThat(cernTimestampLabel.isPresent(), is(false));
@@ -226,12 +225,12 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(EXPIRED.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(EXPIRED_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -267,16 +266,24 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(VALID_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
     assertThat(cernTimestampLabel.isPresent(), is(false));
+
+    Optional<IamLabel> cernInstituteLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_INSTITUTE);
+    assertThat(cernInstituteLabel.isPresent(), is(true));
+    assertThat(cernInstituteLabel.get().getValue(),
+        is("Istituto Nazionale di Fisica Nucleare, Bologna, IT"));
+    
+  
   }
 
   @Test
@@ -309,12 +316,12 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(VALID_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -347,12 +354,12 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(VALID_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -384,12 +391,12 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernStatusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> cernMessageLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(VALID_MESSAGE));
+    assertThat(cernMessageLabel.get().getValue(), is(SYNCHRONIZED_MESSAGE));
 
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -425,10 +432,10 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> iamStatusLabel = testAccount.getLabelByName(LIFECYCLE_STATUS_LABEL);
 
     assertThat(cernStatusLabel.isPresent(), is(true));
-    assertThat(cernStatusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(cernStatusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     assertThat(cernMessageLabel.isPresent(), is(true));
-    assertThat(cernMessageLabel.get().getValue(), is(format(VALID_MESSAGE)));
+    assertThat(cernMessageLabel.get().getValue(), is(format(SYNCHRONIZED_MESSAGE)));
 
     assertThat(cernTimestampLabel.isPresent(), is(false));
     assertThat(iamStatusLabel.isPresent(), is(false));
@@ -453,7 +460,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ERROR.name()));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.CernStatus.ERROR.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -480,7 +487,8 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ID_NOT_FOUND.name()));
+    assertThat(statusLabel.get().getValue(),
+        is(CernHrLifecycleHandler.CernStatus.NOT_FOUND.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -509,7 +517,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
 
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(CernHrLifecycleHandler.Status.EXP_NOT_FOUND.name()));
+        is(CernHrLifecycleHandler.CernStatus.NOT_MEMBER.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -537,7 +545,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> statusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(MEMBER.name()));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.OK.name()));
 
     Optional<IamLabel> timestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
@@ -599,7 +607,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
           account.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
 
       assertThat(statusLabel.isPresent(), is(true));
-      assertThat(statusLabel.get().getValue(), is(MEMBER.name()));
+      assertThat(statusLabel.get().getValue(), is(CernStatus.OK.name()));
 
       assertThat(timestampLabel.isPresent(), is(false));
     }

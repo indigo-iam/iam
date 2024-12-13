@@ -48,11 +48,14 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.threeten.extra.Hours;
+import org.threeten.extra.MutableClock;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
+import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -70,7 +73,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @TestPropertySource(properties = {
 // @formatter:off
     "cern.task.pageSize=5",
-    "cern.on-person-id-not-found=disable_user",
     "cern.on-participation-not-found=disable_user"
   // @formatter:on
 })
@@ -83,7 +85,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
     @Bean
     @Primary
     Clock mockClock() {
-      return Clock.fixed(NOW, ZoneId.systemDefault());
+      return MutableClock.of(NOW, ZoneId.systemDefault());
     }
 
     @Bean
@@ -140,15 +142,17 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
   }
 
   @Test
-  public void testCernPersonIdNotFoundMeansUserIsDisabled() {
+  public void testCernPersonIdNotFoundMeansUserEndTimeIsResetToCurrentDate() {
 
+    Date currentEndTime = cernUser.getEndTime();
     when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
 
     cernHrLifecycleHandler.run();
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
 
-    assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.isActive(), is(true));
+    assertThat(testAccount.getEndTime().compareTo(currentEndTime) < 0, is(true));
 
     Optional<IamLabel> statusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
@@ -158,17 +162,32 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.Status.ID_NOT_FOUND.name()));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.CernStatus.NOT_FOUND.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PERSON_FOUND_MESSAGE, CERN_PERSON_ID)));
 
+    ((MutableClock) clock).add(Hours.of(36));
+
+    expiredAccountsHandler.run();
+ 
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+
+    Optional<IamLabel> lifecycleStatusLabel =
+        testAccount.getLabelByName(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL);
+
+    assertThat(lifecycleStatusLabel.isPresent(), is(true));
+    assertThat(lifecycleStatusLabel.get().getValue(), is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
   }
 
   @Test
-  public void testNoParticipationIsFoundMeansUserIsDisabled() {
+  public void testNoParticipationIsFoundMeansUserEndTimeIsResetToCurrentDate() {
+
+    Date currentEndTime = cernUser.getEndTime();
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenReturn(Optional.of(noParticipationsVoPerson(CERN_PERSON_ID)));
@@ -177,7 +196,9 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
 
     IamAccount testAccount = loadAccount(CERN_USER_UUID);
 
-    assertThat(testAccount.isActive(), is(false));
+    assertThat(testAccount.isActive(), is(true));
+    assertThat(testAccount.getEndTime().compareTo(currentEndTime) < 0, is(true));
+
     Optional<IamLabel> statusLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
     Optional<IamLabel> timestampLabel =
@@ -187,12 +208,26 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
 
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(CernHrLifecycleHandler.Status.EXP_NOT_FOUND.name()));
+        is(CernHrLifecycleHandler.CernStatus.NOT_MEMBER.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PARTICIPATION_MESSAGE, "test")));
+
+    ((MutableClock) clock).add(Hours.of(36));
+
+    expiredAccountsHandler.run();
+ 
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+
+    Optional<IamLabel> lifecycleStatusLabel =
+        testAccount.getLabelByName(ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL);
+
+    assertThat(lifecycleStatusLabel.isPresent(), is(true));
+    assertThat(lifecycleStatusLabel.get().getValue(), is(AccountLifecycleStatus.PENDING_SUSPENSION.name()));
 
   }
 
