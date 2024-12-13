@@ -55,7 +55,7 @@ import it.infn.mw.voms.properties.VomsProperties;
 public class TestSupport {
 
   public static final String VOMS_ROLE_LABEL = "voms.role";
-  public static final String OPTIONAL_GROUP_LABEL = "voms.role";
+  public static final String OPTIONAL_GROUP_LABEL = "wlcg.optional-group";
 
   public static final String SERVER_NAME = "voms.example";
   public static final String TLS_PROTOCOL = "TLSv1.2";
