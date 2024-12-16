@@ -299,7 +299,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   @Test
   @WithMockPreAuthenticatedUser
   public void testEnableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
-    String totp = "123456";
+    String totp = "654321";
 
     mvc.perform(post(ENABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }
@@ -416,7 +416,7 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
   @Test
   @WithMockPreAuthenticatedUser
   public void testDisableAuthenticatorAppPreAuthenticationIsUnauthorized() throws Exception {
-    String totp = "123456";
+    String totp = "654321";
 
     mvc.perform(post(DISABLE_URL).param("code", totp)).andExpect(status().isUnauthorized());
   }

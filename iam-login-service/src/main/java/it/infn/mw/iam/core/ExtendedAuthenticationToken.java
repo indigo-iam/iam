@@ -17,6 +17,7 @@ package it.infn.mw.iam.core;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -46,8 +47,8 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
 public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 1L;
-  private final Object principal;
-  private Object credentials;
+  private transient Object principal;
+  private transient Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
@@ -63,15 +64,6 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     super(authorities);
     this.principal = principal;
     this.credentials = credentials;
-  }
-
-  public ExtendedAuthenticationToken(ExtendedAuthenticationToken other) {
-    super(other.getAuthorities());
-    this.principal = other.getPrincipal();
-    this.credentials = other.getCredentials();
-    this.authenticationMethodReferences = other.getAuthenticationMethodReferences();
-    this.totp = other.getTotp();
-    this.fullyAuthenticatedAuthorities = other.getFullyAuthenticatedAuthorities();
   }
 
   public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
@@ -108,6 +100,32 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   @Override
   public Object getPrincipal() {
     return this.principal;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof ExtendedAuthenticationToken)) {
+      return false;
+    }
+    if (!super.equals(obj)) {
+      return false;
+    }
+    ExtendedAuthenticationToken that = (ExtendedAuthenticationToken) obj;
+
+    return Objects.equals(this.principal, that.principal)
+        && Objects.equals(this.credentials, that.credentials)
+        && Objects.equals(this.authenticationMethodReferences, that.authenticationMethodReferences)
+        && Objects.equals(this.totp, that.totp)
+        && Objects.equals(this.fullyAuthenticatedAuthorities, that.fullyAuthenticatedAuthorities);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), principal, credentials, authenticationMethodReferences,
+        totp, fullyAuthenticatedAuthorities);
   }
 
   @Override
