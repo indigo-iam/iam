@@ -34,11 +34,10 @@ public class DefaultIamVomsAccountResolver implements IamVOMSAccountResolver {
   public Optional<IamAccount> resolveAccountFromRequest(VOMSRequestContext requestContext) {
 
     String certificateSubject = requestContext.getRequest().getRequesterSubject();
-
-    String certiifcateIssuer = requestContext.getRequest().getRequesterIssuer();
+    String certificateIssuer = requestContext.getRequest().getRequesterIssuer();
 
     Optional<IamX509Certificate> cert =
-        certificateRepo.findBySubjectDnAndIssuerDn(certificateSubject, certiifcateIssuer);
+        certificateRepo.findBySubjectDnAndIssuerDn(certificateSubject, certificateIssuer);
 
     if (cert.isEmpty()) {
       return Optional.empty();
