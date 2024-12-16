@@ -31,6 +31,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -48,8 +49,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.threeten.extra.Hours;
-import org.threeten.extra.MutableClock;
+
+import com.mercateo.test.clock.TestClock;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
@@ -71,9 +72,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     CernAccountLifecycleDisableUserTests.TestConfig.class})
 @TestPropertySource(properties = {
-// @formatter:off
+  // @formatter:off
     "cern.task.pageSize=5",
-    "cern.on-participation-not-found=disable_user"
   // @formatter:on
 })
 @ActiveProfiles(value = {"h2-test", "cern"})
@@ -85,7 +85,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
     @Bean
     @Primary
     Clock mockClock() {
-      return MutableClock.of(NOW, ZoneId.systemDefault());
+      return TestClock.fixed(NOW, ZoneId.systemDefault());
     }
 
     @Bean
@@ -169,7 +169,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PERSON_FOUND_MESSAGE, CERN_PERSON_ID)));
 
-    ((MutableClock) clock).add(Hours.of(36));
+    ((TestClock) clock).fastForward(Duration.ofHours(36));
 
     expiredAccountsHandler.run();
  
@@ -215,7 +215,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PARTICIPATION_MESSAGE, "test")));
 
-    ((MutableClock) clock).add(Hours.of(36));
+    ((TestClock) clock).fastForward(Duration.ofHours(36));
 
     expiredAccountsHandler.run();
  

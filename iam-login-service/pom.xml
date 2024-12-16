@@ -34,7 +34,6 @@
 
   <properties>
     <test-clock.version>1.0.2</test-clock.version>
-    <threeten-extra.version>1.8.0</threeten-extra.version>
     <eclipselink.version>2.7.9</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
 
@@ -405,12 +404,6 @@
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.threeten</groupId>
-      <artifactId>threeten-extra</artifactId>
-      <version>${threeten-extra.version}</version>
     </dependency>
 
   </dependencies>
