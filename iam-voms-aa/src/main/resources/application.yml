@@ -41,5 +41,6 @@ voms:
     host: ${server.address}
     port: ${server.port}
     vo-name: test
-    optional-group-label: voms.role
+    optional-group-label: wlcg.optional-group
+    voms-role-label: voms.role
     use-legacy-fqan-encoding: false
