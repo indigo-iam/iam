@@ -18,24 +18,33 @@ package it.infn.mw.voms.aa.impl;
 import java.util.Optional;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.voms.aa.VOMSRequestContext;
 
 public class DefaultIamVomsAccountResolver implements IamVOMSAccountResolver {
 
-  IamAccountRepository accountRepo;
-  
-  public DefaultIamVomsAccountResolver(IamAccountRepository repo) {
-    this.accountRepo = repo;
+  IamX509CertificateRepository certificateRepo;
+
+  public DefaultIamVomsAccountResolver(IamX509CertificateRepository repo) {
+    this.certificateRepo = repo;
   }
-  
+
   @Override
   public Optional<IamAccount> resolveAccountFromRequest(VOMSRequestContext requestContext) {
-    
+
     String certificateSubject = requestContext.getRequest().getRequesterSubject();
-    
-    return accountRepo.findByCertificateSubject(certificateSubject);
-    
+
+    String certiifcateIssuer = requestContext.getRequest().getRequesterIssuer();
+
+    Optional<IamX509Certificate> cert =
+        certificateRepo.findBySubjectDnAndIssuerDn(certificateSubject, certiifcateIssuer);
+
+    if (cert.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(cert.get().getAccount());
+
   }
 
 }

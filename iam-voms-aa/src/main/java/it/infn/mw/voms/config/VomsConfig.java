@@ -32,7 +32,7 @@ import eu.emi.security.authn.x509.impl.PEMCredential;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.InactiveAccountAuthenticationHander;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.voms.aa.AttributeAuthority;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.ThreadLocalACGenerator;
@@ -97,8 +97,8 @@ public class VomsConfig {
   }
 
   @Bean
-  IamVOMSAccountResolver iamAccountResolver(IamAccountRepository accountRepo) {
-    return new DefaultIamVomsAccountResolver(accountRepo);
+  IamVOMSAccountResolver iamAccountResolver(IamX509CertificateRepository certificateRepo) {
+    return new DefaultIamVomsAccountResolver(certificateRepo);
   }
 
   @Bean
