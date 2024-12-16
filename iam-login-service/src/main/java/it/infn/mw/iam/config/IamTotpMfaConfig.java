@@ -46,8 +46,6 @@ import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationF
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationSuccessHandler;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-// TODO add admin config options from properties file
-
 /**
  * Beans for handling TOTP MFA functionality
  */
