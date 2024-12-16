@@ -243,6 +243,59 @@ public class VomsAcTests extends TestSupport {
     assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
   }
 
+  @Test
+  public void optionalGroupIsNotReturnedForUser() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup subGroup = createChildGroup(rootGroup, "sub");
+    IamGroup optionalGroup = createOptionalGroup(subGroup, "optional");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, subGroup);
+    addAccountToGroup(testAccount, optionalGroup);
+
+    byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(false));
+    VOMSAttribute attrs = getAttributeCertificate(response);
+    assertThat(attrs.getFQANs(), hasSize(2));
+    assertThat(attrs.getFQANs(), hasItem("/test"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
+    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+  }
+
+  @Test
+  public void optionalGroupIsReturnedForUserIfRequested() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup subGroup = createChildGroup(rootGroup, "sub");
+    IamGroup optionalGroup = createOptionalGroup(subGroup, "optional");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, subGroup);
+    addAccountToGroup(testAccount, optionalGroup);
+
+    byte[] xmlResponse = mvc
+      .perform(get("/generate-ac").headers(test0VOMSHeaders()).param("fqans", "/test/sub/optional"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(false));
+    VOMSAttribute attrs = getAttributeCertificate(response);
+    assertThat(attrs.getFQANs(), hasSize(3));
+    assertThat(attrs.getFQANs(), hasItem("/test"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub/optional"));
+    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+  }
 
   @Test
   public void requestedFqanOrderEnforced() throws Exception {
@@ -300,6 +353,34 @@ public class VomsAcTests extends TestSupport {
     assertThat(attrs.getFQANs(), hasSize(4));
     assertThat(attrs.getFQANs(),
         contains("/test/Role=VO-Admin", "/test", "/test/sub", "/test/sub/subsub"));
+    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+
+  }
+
+  @Test
+  public void roleRequestInAnOptionalGroupWorks() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup optionalGroup = createOptionalGroup(rootGroup, "optional");
+    IamGroup roleGroup = createRoleGroup(optionalGroup, "VO-Admin");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, optionalGroup);
+    addAccountToGroup(testAccount, roleGroup);
+
+    byte[] xmlResponse = mvc
+      .perform(get("/generate-ac").headers(test0VOMSHeaders())
+        .param("fqans", "/test/optional/Role=VO-Admin"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(false));
+    VOMSAttribute attrs = getAttributeCertificate(response);
+    assertThat(attrs.getFQANs(), hasSize(2));
+    assertThat(attrs.getFQANs(), contains("/test/optional/Role=VO-Admin", "/test"));
     assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
 
   }
