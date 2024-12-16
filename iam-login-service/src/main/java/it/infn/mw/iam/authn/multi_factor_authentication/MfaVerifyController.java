@@ -33,8 +33,6 @@ import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-//TODO when unauthenticated and navigating to other pages like /dashboard, we redirect to /login. But here we show up as unauthorized. Can we replicate the behaviour of /dashboard?
-
 /**
  * Presents the step-up authentication page for verifying identity after successful username +
  * password authentication. Only accessible if the user is pre-authenticated, i.e. has authenticated

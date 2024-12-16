@@ -227,10 +227,9 @@ public class AuthenticatorAppSettingsController {
   private String generateQRCodeFromSecret(String secret, String username)
       throws QrGenerationException {
 
-    // TODO add in admin configuration through properties file
     QrData data = new QrData.Builder().label(username)
       .secret(secret)
-      .issuer("IAM Test")
+      .issuer("INDIGO IAM")
       .algorithm(HashingAlgorithm.SHA1)
       .digits(6)
       .period(30)

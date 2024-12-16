@@ -108,7 +108,6 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isOk());
 
-    // TODO called twice for some reason?
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).addTotpMfaSecret(account);
   }
@@ -127,7 +126,6 @@ public class AuthenticatorAppSettingsControllerTests extends MultiFactorTestSupp
 
     mvc.perform(put(ADD_SECRET_URL)).andExpect(status().isConflict());
 
-    // TODO called twice for some reason?
     verify(accountRepository, times(2)).findByUsername(TEST_USERNAME);
     verify(totpMfaService, times(1)).addTotpMfaSecret(account);
   }
