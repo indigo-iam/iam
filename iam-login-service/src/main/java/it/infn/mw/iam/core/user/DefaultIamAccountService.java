@@ -18,17 +18,19 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
+import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
@@ -45,15 +47,23 @@ import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
+import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
+import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
+import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.attribute.AccountAttributeRemovedEvent;
 import it.infn.mw.iam.audit.events.account.attribute.AccountAttributeSetEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipAddedEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
+import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
+import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -81,11 +91,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private ApplicationEventPublisher eventPublisher;
   private final OAuth2TokenEntityService tokenService;
   private final IamAccountClientRepository accountClientRepo;
+  private final NotificationFactory notificationFactory;
+  private final IamProperties iamProperties;
+  private final DefaultIamGroupService iamGroupService;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo) {
+      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      NotificationFactory notificationFactory, IamProperties iamProperties,
+      DefaultIamGroupService iamGroupService) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -95,6 +110,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.eventPublisher = eventPublisher;
     this.tokenService = tokenService;
     this.accountClientRepo = accountClientRepo;
+    this.notificationFactory = notificationFactory;
+    this.iamProperties = iamProperties;
+    this.iamGroupService = iamGroupService;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -178,7 +196,20 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     eventPublisher.publishEvent(new AccountCreatedEvent(this, account,
         "Account created for user " + account.getUsername()));
 
+    addToDefaultGroups(account);
     return account;
+  }
+
+  private void addToDefaultGroups(IamAccount account) {
+    List<DefaultGroup> defaultGroups = iamProperties.getRegistration().getDefaultGroups();
+    if (Objects.nonNull(defaultGroups)) {
+      defaultGroups.forEach(group -> {
+        if ("INSERT".equalsIgnoreCase(group.getEnrollment())) {
+          iamGroupService.findByName(group.getName())
+            .ifPresent(iamGroup -> addToGroup(account, iamGroup));
+        }
+      });
+    }
   }
 
   protected void removeClientLinks(IamAccount account) {
@@ -352,14 +383,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public IamAccount setLabel(IamAccount account, IamLabel label) {
+  public IamAccount addLabel(IamAccount account, IamLabel label) {
+
+    if (account.hasLabelWithValue(label)) {
+      return account;
+    }
     account.getLabels().remove(label);
     account.getLabels().add(label);
 
     account.touch();
-
     accountRepo.save(account);
-
     labelSetEvent(account, label);
 
     return account;
@@ -379,21 +412,59 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
+  public IamAccount setAccountGivenName(IamAccount account, String givenName) {
+    checkNotNull(account, "Cannot set givenName on a null account");
+    if (ObjectUtils.notEqual(account.getUserInfo().getGivenName(), givenName)) {
+      account.getUserInfo().setGivenName(givenName);
+      account.touch();
+      accountRepo.save(account);
+      eventPublisher.publishEvent(new GivenNameReplacedEvent(this, account, givenName));
+    }
+    return account;
+  }
+
+  @Override
+  public IamAccount setAccountFamilyName(IamAccount account, String familyName) {
+    checkNotNull(account, "Cannot set familyName on a null account");
+    if (ObjectUtils.notEqual(account.getUserInfo().getFamilyName(), familyName)) {
+      account.getUserInfo().setFamilyName(familyName);
+      account.touch();
+      accountRepo.save(account);
+      eventPublisher.publishEvent(new FamilyNameReplacedEvent(this, account, familyName));
+    }
+    return account;
+  }
+
+  @Override
+  public IamAccount setAccountEmail(IamAccount account, String email)
+      throws EmailAlreadyBoundException {
+    checkNotNull(account, "Cannot set email on a null account");
+    checkNotNull(email, "Cannot set null email");
+    if (ObjectUtils.notEqual(account.getUserInfo().getEmail(), email)) {
+      Optional<IamAccount> o = accountRepo.findByEmailWithDifferentUUID(email, account.getUuid());
+      if (o.isPresent()) {
+        throw new EmailAlreadyBoundException(email, account.getUsername(), o.get().getUsername());
+      }
+      account.getUserInfo().setEmail(email);
+      account.touch();
+      accountRepo.save(account);
+      eventPublisher.publishEvent(new EmailReplacedEvent(this, account, email));
+    }
+    return account;
+  }
+
+  @Override
   public IamAccount setAccountEndTime(IamAccount account, Date endTime) {
     checkNotNull(account, "Cannot set endTime on a null account");
 
-    final Date previousEndTime = account.getEndTime();
-    account.setEndTime(endTime);
-    account.touch();
-
-    account.removeLabelByName(LIFECYCLE_STATUS_LABEL);
-
-    accountRepo.save(account);
-
-    eventPublisher
-      .publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime, String
-        .format("Account endTime set to '%s' for user '%s'", endTime, account.getUsername())));
-
+    Date previousEndTime = account.getEndTime();
+    if (ObjectUtils.notEqual(previousEndTime, endTime)) {
+      account.setEndTime(endTime);
+      account.touch();
+      accountRepo.save(account);
+      eventPublisher.publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime,
+          format("Account endTime set to '%s' for user '%s'", endTime, account.getUsername())));
+    }
     return account;
   }
 
@@ -403,6 +474,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountDisabledEvent(this, account));
+    notificationFactory.createAccountSuspendedMessage(account);
     return account;
   }
 
@@ -412,6 +484,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     account.touch();
     accountRepo.save(account);
     eventPublisher.publishEvent(new AccountRestoredEvent(this, account));
+    notificationFactory.createAccountRestoredMessage(account);
     return account;
   }
 

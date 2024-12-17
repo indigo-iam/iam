@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -77,13 +78,13 @@ public interface IamAccountService {
   List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp);
 
   /**
-   * Sets a label for a given account
+   * Add a label for a given account or replace the value of an existent one
    * 
    * @param account
    * @param label
    * @return the updated account
    */
-  IamAccount setLabel(IamAccount account, IamLabel label);
+  IamAccount addLabel(IamAccount account, IamLabel label);
 
   /**
    * Deletes a label for a given account
@@ -93,7 +94,32 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount deleteLabel(IamAccount account, IamLabel label);
-  
+
+  /**
+   * Sets Given Name for a given account
+   * @param account
+   * @param givenName
+   * @return the updated account
+   */
+  IamAccount setAccountGivenName(IamAccount account, String givenName);
+
+  /**
+   * Sets Family Name for a given account
+   * @param account
+   * @param familyName
+   * @return the updated account
+   */
+  IamAccount setAccountFamilyName(IamAccount account, String familyName);
+
+  /**
+   * Sets Email for a given account
+   * @param account
+   * @param email
+   * @throw EmailAlreadyBoundException
+   * @return the updated account
+   */
+  IamAccount setAccountEmail(IamAccount account, String email) throws EmailAlreadyBoundException;
+
   /**
    * Sets end time for a given account
    * @param account
@@ -101,7 +127,7 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount setAccountEndTime(IamAccount account, Date endTime);
-  
+
   /**
    * Disables account
    * @param account

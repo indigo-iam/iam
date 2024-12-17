@@ -1,5 +1,103 @@
 # Changelog
 
+## 1.10.2 (2024-09-30)
+
+## What's Changed
+
+* Add devcontainer configuration https://github.com/indigo-iam/iam/pull/835
+* Track refresh tokens in access token AUDIT logs https://github.com/indigo-iam/iam/pull/838
+* Combine CERN HR logic with internal life-cycle https://github.com/indigo-iam/iam/pull/844
+
+## 1.10.1 (2024-08-22)
+
+## What's Fixed
+
+* Fix repeated suspensions https://github.com/indigo-iam/iam/pull/831
+* Fix typo in AUDIT log for suspended accounts https://github.com/indigo-iam/iam/pull/832
+* Upgrade AngularJS version https://github.com/indigo-iam/iam/pull/820
+* Fix AUP signature validity https://github.com/indigo-iam/iam/pull/834
+
+## 1.10.0 (2024-08-05)
+
+### What's Changed
+
+* Send an email when client status changes https://github.com/indigo-iam/iam/pull/802
+* Add a statistical anonymous endpoint https://github.com/indigo-iam/iam/pull/790
+* PATCH to change AUP signature time works also for client credentials https://github.com/indigo-iam/iam/pull/804
+* Add AUP and user's lifecycle missing email notifications https://github.com/indigo-iam/iam/pull/787
+* Add groups enrollment logic to be applied after users registration https://github.com/indigo-iam/iam/pull/793
+* Add the organization name in all email notifications subjects https://github.com/indigo-iam/iam/pull/810
+* Improve password quality check https://github.com/indigo-iam/iam/pull/719
+* Allow to totally disable cache https://github.com/indigo-iam/iam/pull/778
+
+### Bug Fixes
+
+* Refresh token flow not allowed for suspended clients https://github.com/indigo-iam/iam/pull/814
+* Update angular-jwt script link https://github.com/indigo-iam/iam/pull/822
+* Fix error 500 on old mitreId user interface https://github.com/indigo-iam/iam/pull/808
+
+### Configuration Fixes
+
+* Prefix all necessary env variables with IAM_ https://github.com/indigo-iam/iam/pull/807
+    * As described into #807, the environment variables `DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS`, `DEFAULT_DEVICE_CODE_VALIDITY_SECONDS`, `DEFAULT_ID_TOKEN_VALIDITY_SECONDS` and `DEFAULT_REFRESH_TOKEN_VALIDITY_SECONDS` have been renamed with `IAM_` prefix.
+* Fix client track-last-used setting location in .yaml https://github.com/indigo-iam/iam/pull/795
+    * The client's "last-used" tracking has been disabled by default. You can turn it on by setting `IAM_CLIENT_TRACK_LAST_USED` as true. This feature allows administrators to see how many days have last since last token was issued for each client.
+* The `redis-cache.enabled` property has been moved to `cache.redis.enabled`. This property is set by the same environment variable `IAM_REDIS_CACHE_ENABLED` so configurations that relies on this variable are not affected.
+
+### Documentation Fixes
+
+* VOMS-AA replica deployment example provided https://github.com/indigo-iam/iam/pull/729
+
+## 1.9.0 (2024-06-06)
+
+### What's Changed
+
+* Show unrestricted scopes into well-known endpoint https://github.com/indigo-iam/iam/pull/628
+* Fix account lifecycle workflow https://github.com/indigo-iam/iam/pull/746
+* Administrators can disable a client https://github.com/indigo-iam/iam/pull/747
+* Change VOMS warning message when requesting a too long proxy https://github.com/indigo-iam/iam/pull/756
+* VO members can re-sign the AUP at any time https://github.com/indigo-iam/iam/pull/757
+* Add delete signature and sign on behalf https://github.com/indigo-iam/iam/pull/777
+* Increase SAML response skew from 60 to 300 secs https://github.com/indigo-iam/iam/pull/780
+* Multiplatform docker https://github.com/indigo-iam/iam/pull/761
+* (_Experimental_\*) Fix audit log for issued access tokens and add refresh token event https://github.com/indigo-iam/iam/pull/774
+* Fix authorization on SCIM me endpoint https://github.com/indigo-iam/iam/pull/764
+* (_Experimental_\*) Add attributes and managed groups to the SCIM user https://github.com/indigo-iam/iam/pull/764
+* (_Experimental_\*) Add authorities list to SCIM user https://github.com/indigo-iam/iam/pull/788
+* Add last used property to clients https://github.com/indigo-iam/iam/pull/675
+* Display how much time is left to AUP expiry https://github.com/indigo-iam/iam/pull/783
+* Allow to add nickname as attribute during a registration request https://github.com/indigo-iam/iam/pull/789
+
+\* The introduced AUDIT messages and info to the SCIM user must be considered as experimental and they may be changed in next RC/releases in a backward incompatible way
+
+### Notes
+
+SCIM users response can now be extended in order to list also:
+- user's attributes
+- user's authorities
+- user's managed groups
+
+In order to include authorities and|or managed groups into SCIM users details you need to enable them through the following properties:
+
+```
+scim:
+  include_authorities: true
+  include_managed_groups: true
+```
+or through the environment variables:
+
+```
+IAM_SCIM_INCLUDE_AUTHORITIES=true
+IAM_SCIM_INCLUDE_MANAGED_GROUPS=true
+```
+
+Attributes can be included into SCIM user response in the same way the labels are:
+
+```
+scim.include_attributes[0].name=attribute-name
+scim.include_attributes[1].name=another-attribute-name
+```
+
 ## 1.8.4 (2024-03-25)
 
 ### Added
@@ -441,8 +539,6 @@ the interface back as soon as these issues are resolved (#211).
 
 - IAM now depends on MitreID connect v. 1.3.2.cnaf.rc0 (#180)
 
-[iam-docs]: https://indigo-iam.github.io/docs
-
 ## 1.1.0 (2017-9-29)
 
 ### Added
@@ -583,6 +679,7 @@ Dockerhub.
 Documentation on how to build and run the service can be found in the [IAM
 GitBook manual][gitbook-manual] or on [Github][github-doc].
 
+[iam-docs]: https://indigo-iam.github.io/docs
 [iam-image]: https://hub.docker.com/r/indigodatacloud/iam-login-service
 [mitre]: https://github.com/mitreid-connect/OpenID-Connect-Java-Spring-Server
 [scim]: http://www.simplecloud.info

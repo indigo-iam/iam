@@ -17,9 +17,7 @@ package it.infn.mw.iam.api.aup.model;
 
 import java.util.Date;
 
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.URL;
@@ -30,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 import it.infn.mw.iam.api.validators.NoQueryParamsUrl;
 
+@AupRemindersAndSignature
 public class AupDTO {
 
   @NotBlank(message = "Invalid AUP: the AUP URL cannot be blank")
@@ -43,9 +42,9 @@ public class AupDTO {
       message = "Invalid AUP: the description string must be at most 128 characters long")
   String description;
 
-  @NotNull(message = "Invalid AUP: signatureValidityInDays is required")
-  @Min(value = 0L, message = "Invalid AUP: signatureValidityInDays must be >= 0")
   Long signatureValidityInDays;
+
+  String aupRemindersInDays = "30,15,1";
 
   @JsonSerialize(using = JsonDateSerializer.class)
   Date creationTime;
@@ -57,13 +56,15 @@ public class AupDTO {
       @JsonProperty("description") String description,
       @JsonProperty("signatureValidityInDays") Long signatureValidityInDays,
       @JsonProperty("creationTime") Date creationTime,
-      @JsonProperty("lastUpdateTime") Date lastUpdateTime) {
+      @JsonProperty("lastUpdateTime") Date lastUpdateTime,
+      @JsonProperty("aupRemindersInDays") String aupRemindersInDays) {
     this.url = url;
     this.description = description;
     this.signatureValidityInDays = signatureValidityInDays;
     this.creationTime = creationTime;
     this.lastUpdateTime = lastUpdateTime;
     this.text = text;
+    this.aupRemindersInDays = aupRemindersInDays;
   }
 
   public String getDescription() {
@@ -99,6 +100,14 @@ public class AupDTO {
 
   public void setSignatureValidityInDays(Long signatureValidityInDays) {
     this.signatureValidityInDays = signatureValidityInDays;
+  }
+
+  public String getAupRemindersInDays() {
+    return aupRemindersInDays;
+  }
+
+  public void setAupRemindersInDays(String aupRemindersInDays) {
+    this.aupRemindersInDays = aupRemindersInDays;
   }
 
 

@@ -1,0 +1,31 @@
+[mysqld]
+server-id = 2
+log_bin = mysql-bin
+binlog_do_db = iam
+read_only = 1
+relay_log = 7309661fdc26-relay-bin
+
+general_log = 1
+general_log_file = /var/log/mysql/replica.log
+
+replicate-do-table=iam.iam_account
+replicate-do-table=iam.iam_account_attrs
+replicate-do-table=iam.iam_account_authority
+replicate-do-table=iam.iam_account_group
+replicate-do-table=iam.iam_address
+replicate-do-table=iam.iam_authority
+replicate-do-table=iam.iam_aup
+replicate-do-table=iam.iam_aup_signature
+replicate-do-table=iam.iam_group
+replicate-do-table=iam.iam_group_labels
+replicate-do-table=iam.iam_oidc_id
+replicate-do-table=iam.iam_reg_request
+replicate-do-table=iam.iam_saml_id
+replicate-do-table=iam.iam_ssh_key
+replicate-do-table=iam.iam_user_info
+replicate-do-table=iam.iam_x509_cert
+replicate-do-table=iam.iam_x509_proxy
+
+ssl_ca=/etc/grid-security/certificates/igi-test-ca.pem
+ssl_cert=/certs/voms.test.example.cert.pem
+ssl_key=/certs/voms.test.example.key.pem

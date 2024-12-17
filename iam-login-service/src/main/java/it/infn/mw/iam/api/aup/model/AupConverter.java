@@ -32,13 +32,19 @@ public class AupConverter implements Converter<AupDTO, IamAup> {
     aup.setSignatureValidityInDays(dto.getSignatureValidityInDays());
     aup.setUrl(dto.getUrl());
     aup.setText(dto.getText());
+    if (dto.getAupRemindersInDays() == null) {
+      aup.setAupRemindersInDays("");
+    } else {
+      aup.setAupRemindersInDays(dto.getAupRemindersInDays());
+    }
     return aup;
   }
 
   @Override
   public AupDTO dtoFromEntity(IamAup entity) {
     return new AupDTO(entity.getUrl(), entity.getText(), entity.getDescription(),
-        entity.getSignatureValidityInDays(), entity.getCreationTime(), entity.getLastUpdateTime());
+        entity.getSignatureValidityInDays(), entity.getCreationTime(), entity.getLastUpdateTime(),
+        entity.getAupRemindersInDays());
   }
 
 }

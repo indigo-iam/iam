@@ -73,7 +73,8 @@
         self.reset = function() {
             self.aupVal = {
                 url: self.aup.url,
-                signatureValidityInDays: self.aup.signatureValidityInDays
+                signatureValidityInDays: self.aup.signatureValidityInDays,
+                aupRemindersInDays: self.aup.aupRemindersInDays
             };
         };
 
@@ -82,6 +83,9 @@
         self.doSaveAup = function() {
             self.error = undefined;
             self.enabled = false;
+            if(self.aupVal.signatureValidityInDays == 0 || !self.aupVal.aupRemindersInDays) {
+                self.aupVal.aupRemindersInDays = "";
+            }
             AupService.updateAup(self.aupVal)
                 .then(function(res) {
                     $uibModalInstance.close('AUP updated succesfully');
@@ -104,7 +108,8 @@
         self.reset = function() {
             self.aupVal = {
                 url: "",
-                signatureValidityInDays: 0
+                signatureValidityInDays: 0,
+                aupRemindersInDays: ""
             };
         };
 
@@ -113,6 +118,9 @@
         self.doCreateAup = function() {
             self.error = undefined;
             self.enabled = false;
+            if(self.aupVal.signatureValidityInDays == 0 || !self.aupVal.aupRemindersInDays) {
+                self.aupVal.aupRemindersInDays = "";
+            }
             AupService.createAup(self.aupVal)
                 .then(function(res) {
                     $uibModalInstance.close('AUP created succesfully');
