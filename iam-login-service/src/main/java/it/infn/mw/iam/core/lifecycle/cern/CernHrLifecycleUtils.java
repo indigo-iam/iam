@@ -27,10 +27,12 @@ import java.util.Set;
 
 import org.joda.time.DateTimeComparator;
 
+import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
-import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status;
+import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.CernStatus;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
 public class CernHrLifecycleUtils {
@@ -43,6 +45,7 @@ public class CernHrLifecycleUtils {
   public static final String LABEL_IGNORE = "ignore";
   public static final String LABEL_SKIP_EMAIL_SYNCH = "skip-email-synch";
   public static final String LABEL_SKIP_END_DATE_SYNCH = "skip-end-date-synch";
+  public static final String LABEL_INSTITUTE = "institute";
 
   private CernHrLifecycleUtils() {}
 
@@ -51,7 +54,7 @@ public class CernHrLifecycleUtils {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_ACTION).build();
   }
 
-  public static IamLabel buildCernStatusLabel(Status status) {
+  public static IamLabel buildCernStatusLabel(CernStatus status) {
 
     return IamLabel.builder()
       .prefix(LABEL_CERN_PREFIX)
@@ -101,5 +104,18 @@ public class CernHrLifecycleUtils {
       return true;
     }
     return DateTimeComparator.getDateOnlyInstance().compare(endTime, new Date()) >= 0;
+  }
+
+  public static boolean isAccountIgnored(IamAccount a) {
+    return a.hasLabel(buildCernIgnoreLabel());
+  }
+
+  public static IamLabel buildInstituteLabel(InstituteDTO i) {
+    String fullInstitute = String.format("%s, %s, %s", i.getName(), i.getTown(), i.getCountry());
+    return IamLabel.builder()
+      .prefix(LABEL_CERN_PREFIX)
+      .name(LABEL_INSTITUTE)
+      .value(fullInstitute)
+      .build();
   }
 }
