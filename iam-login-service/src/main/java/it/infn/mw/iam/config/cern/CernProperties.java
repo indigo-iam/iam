@@ -100,10 +100,6 @@ public class CernProperties {
     }
   }
 
-  public enum CernHrActionsOnUser {
-    NO_ACTION, DISABLE_USER;
-  }
-
   @NotBlank
   private String ssoIssuer = "https://auth.cern.ch/auth/realms/cern";
 
@@ -112,10 +108,6 @@ public class CernProperties {
 
   @NotBlank
   private String experimentName = "test";
-
-  private CernHrActionsOnUser onPersonIdNotFound = CernHrActionsOnUser.NO_ACTION;
-
-  private CernHrActionsOnUser onParticipationNotFound = CernHrActionsOnUser.NO_ACTION;
 
   @Valid
   private HrDbApiProperties hrApi = new HrDbApiProperties();
@@ -161,22 +153,6 @@ public class CernProperties {
 
   public void setTask(HrSynchTaskProperties task) {
     this.task = task;
-  }
-
-  public CernHrActionsOnUser getOnPersonIdNotFound() {
-    return onPersonIdNotFound;
-  }
-
-  public void setOnPersonIdNotFound(CernHrActionsOnUser onPersonIdNotFound) {
-    this.onPersonIdNotFound = onPersonIdNotFound;
-  }
-
-  public CernHrActionsOnUser getOnParticipationNotFound() {
-    return onParticipationNotFound;
-  }
-
-  public void setOnParticipationNotFound(CernHrActionsOnUser onParticipationNotFound) {
-    this.onParticipationNotFound = onParticipationNotFound;
   }
 
 }
