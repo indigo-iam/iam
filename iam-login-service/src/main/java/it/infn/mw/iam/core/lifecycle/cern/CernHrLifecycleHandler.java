@@ -15,16 +15,9 @@
  */
 package it.infn.mw.iam.core.lifecycle.cern;
 
-import static it.infn.mw.iam.config.cern.CernProperties.CernHrActionsOnUser.DISABLE_USER;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.PENDING_REMOVAL;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus.SUSPENDED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.ERROR;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.EXPIRED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.EXP_NOT_FOUND;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.ID_NOT_FOUND;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.IGNORED;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status.MEMBER;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_EMAIL_SYNCH;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_SKIP_END_DATE_SYNCH;
@@ -48,11 +41,11 @@ import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
+import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.config.cern.CernProperties;
-import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -70,8 +63,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public static final String NO_PERSON_FOUND_MESSAGE = "No person id %s found on HR DB";
   public static final String NO_PARTICIPATION_MESSAGE =
       "Account end-time not updated: no participation to %s found";
-  public static final String EXPIRED_MESSAGE = "Account participation to the experiment is expired";
-  public static final String VALID_MESSAGE = "Account has a valid participation to the experiment";
+  public static final String SYNCHRONIZED_MESSAGE =
+      "Account's membership to the experiment synchronized";
 
   public static final String HR_DB_API_ERROR = "Account not updated: HR DB error";
 
@@ -82,8 +75,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
 
-  public enum Status {
-    IGNORED, ERROR, ID_NOT_FOUND, EXP_NOT_FOUND, EXPIRED, MEMBER
+  public enum CernStatus {
+    IGNORED, ERROR, NOT_FOUND, NOT_MEMBER, OK
   }
 
   private final CernProperties cernProperties;
@@ -99,52 +92,53 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     this.hrDb = hrDb;
   }
 
-  public void handleAccount(String cernPersonId, IamAccount account) {
+  public void handleAccount(String cernPersonId, String experiment, IamAccount a) {
 
-    LOG.debug("Handling account {}", account.getUsername());
-    LOG.debug("Account CERN person id {} for experiment {}", cernPersonId,
-        cernProperties.getExperimentName());
+    LOG.debug("Handling IAM account (username: {} , uuid: {})", a.getUsername(), a.getUuid());
+    LOG.debug("Synchronize with CERN person id {} ({})", cernPersonId, experiment);
 
-    if (isAccountIgnored(account)) {
-      ignoreAccount(account);
+    deleteDeprecatedLabels(a);
+
+    if (CernHrLifecycleUtils.isAccountIgnored(a)) {
+      LOG.debug("Ignoring account '{}'", a.getUsername());
+      setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
       return;
     }
-
-    /* remove deprecated labels: to be removed with a migration into next IAM release */
-    accountService.deleteLabel(account, CernHrLifecycleUtils.buildCernTimestampLabel());
-    accountService.deleteLabel(account, CernHrLifecycleUtils.buildCernActionLabel());
 
     Optional<VOPersonDTO> voPerson = Optional.empty();
     try {
       voPerson = hrDb.getHrDbPersonRecord(cernPersonId);
     } catch (CernHrDbApiError e) {
-      handleApiError(account, e);
+      LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
+      setCernStatusLabel(a, CernStatus.ERROR, format(HR_DB_API_ERROR));
       return;
     }
     if (voPerson.isEmpty()) {
-      handleNoPersonIdFound(account, cernPersonId);
+      LOG.debug("No record found for person id {}", cernPersonId);
+      setCernStatusLabel(a, CernStatus.NOT_FOUND, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
+      expireIfActiveAndValid(a);
       return;
     }
 
-    syncAccountInformation(account, voPerson.get());
+    syncAccountInformation(a, voPerson.get());
 
-    Optional<ParticipationDTO> ep = CernHrLifecycleUtils.getMostRecentMembership(
-        voPerson.get().getParticipations(), cernProperties.getExperimentName());
+    Optional<ParticipationDTO> ep = CernHrLifecycleUtils
+      .getMostRecentMembership(voPerson.get().getParticipations(), experiment);
 
     if (ep.isEmpty()) {
-      handleNoParticipation(account, cernPersonId);
+      LOG.warn("No membership to '{}' found for person id {}", experiment, cernPersonId);
+      setCernStatusLabel(a, CernStatus.NOT_MEMBER, format(NO_PARTICIPATION_MESSAGE, experiment));
+      expireIfActiveAndValid(a);
       return;
     }
 
-    syncAccountEndTime(account, ep.get().getEndDate());
+    syncInstitute(a, ep.get().getInstitute());
+    syncAccountEndTime(a, ep.get().getEndDate());
+    setCernStatusLabel(a, CernStatus.OK, format(SYNCHRONIZED_MESSAGE));
 
-    if (CernHrLifecycleUtils.isActiveMembership(account.getEndTime())) {
-      setCernStatusLabel(account, MEMBER, format(VALID_MESSAGE));
-      if (!account.isActive() && accountWasSuspendedByIamLifecycleJob(account)) {
-        restoreAccount(account);
-      }
-    } else {
-      setCernStatusLabel(account, EXPIRED, format(EXPIRED_MESSAGE));
+    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && !a.isActive()
+        && accountWasSuspendedByIamLifecycleJob(a)) {
+      restoreAccount(a);
     }
   }
 
@@ -164,7 +158,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       if (accountsPage.hasContent()) {
         for (IamAccount account : accountsPage.getContent()) {
           try {
-            handleAccount(getCernPersonId(account), account);
+            handleAccount(getCernPersonId(account), cernProperties.getExperimentName(), account);
           } catch (RuntimeException e) {
             LOG.error("Error during CERN HR lifecycle handler: {}", e.getMessage());
           }
@@ -193,17 +187,16 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
   }
 
+  private void deleteDeprecatedLabels(IamAccount a) {
+    /* remove deprecated labels: to be removed with a migration into next IAM release */
+    accountService.deleteLabel(a, CernHrLifecycleUtils.buildCernTimestampLabel());
+    accountService.deleteLabel(a, CernHrLifecycleUtils.buildCernActionLabel());
+  }
+
   private void syncAccountInformation(IamAccount a, VOPersonDTO p) {
-
-    LOG.debug("Syncing IAM account '{}' with CERN HR record id '{}'", a.getUsername(), p.getId());
-
-    LOG.debug("Updating Given Name for {} to {} ...", a.getUsername(), p.getFirstName());
     accountService.setAccountGivenName(a, p.getFirstName());
-    LOG.debug("Updating Family Name for {} to {} ...", a.getUsername(), p.getName());
     accountService.setAccountFamilyName(a, p.getName());
-
     if (!isSkipEmailSynch(a)) {
-      LOG.debug("Updating Email for {} to {} ...", a.getUsername(), p.getEmail());
       try {
         accountService.setAccountEmail(a, p.getEmail());
       } catch (EmailAlreadyBoundException e) {
@@ -227,10 +220,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     return cernPersonIdLabel.get().getValue();
   }
 
-  private boolean isAccountIgnored(IamAccount a) {
-    return a.hasLabel(CernHrLifecycleUtils.buildCernIgnoreLabel());
-  }
-
   private boolean isSkipEmailSynch(IamAccount a) {
     return a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_SKIP_EMAIL_SYNCH).isPresent();
   }
@@ -239,68 +228,35 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     return a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_SKIP_END_DATE_SYNCH).isPresent();
   }
 
-  private void setCernStatusLabel(IamAccount a, Status status, String message) {
+  private void setCernStatusLabel(IamAccount a, CernStatus status, String message) {
     IamLabel statusLabel = CernHrLifecycleUtils.buildCernStatusLabel(status);
     IamLabel messageLabel = CernHrLifecycleUtils.buildCernMessageLabel(message);
-    LOG.debug("Setting CERN label {} to account '{}' ...", statusLabel, a.getUsername());
     accountService.addLabel(a, statusLabel);
-    LOG.debug("Setting CERN label {} to account '{}' ...", statusLabel, a.getUsername());
     accountService.addLabel(a, messageLabel);
   }
 
-  private void ignoreAccount(IamAccount a) {
-    LOG.debug("Ignoring account '{}'", a.getUsername());
-    setCernStatusLabel(a, IGNORED, IGNORE_MESSAGE);
-  }
-
-  private void disableAccount(IamAccount a) {
-    LOG.debug("Disabling account '{}'", a.getUsername());
-    accountService.disableAccount(a);
-    IamLabel statusLabel =
-        CernHrLifecycleUtils.buildLifecycleStatusLabel(AccountLifecycleStatus.SUSPENDED);
-    accountService.addLabel(a, statusLabel);
-  }
-
   private void restoreAccount(IamAccount a) {
-    LOG.debug("Restoring account '{}'", a.getUsername());
     accountService.restoreAccount(a);
     IamLabel statusLabel = CernHrLifecycleUtils.buildLifecycleStatusLabel();
     accountService.deleteLabel(a, statusLabel);
   }
 
+  private void syncInstitute(IamAccount a, InstituteDTO institute) {
+    IamLabel instituteLabel = CernHrLifecycleUtils.buildInstituteLabel(institute);
+    accountService.addLabel(a, instituteLabel);
+  }
+
   private void syncAccountEndTime(IamAccount a, Date endDate) {
     if (!isSkipEndDateSynch(a)) {
-      LOG.debug("Updating end-time for '{}' to {} ...", a.getUsername(), endDate);
       accountService.setAccountEndTime(a, endDate);
     }
   }
 
-  private void handleApiError(IamAccount account, CernHrDbApiError e) {
-    LOG.error("Error contacting HR DB api: {}", e.getMessage(), e);
-    setCernStatusLabel(account, ERROR, format(HR_DB_API_ERROR));
-  }
-
-  private void handleNoPersonIdFound(IamAccount a, String cernPersonId) {
-    LOG.warn("No record found for person id {}", cernPersonId);
-    setCernStatusLabel(a, ID_NOT_FOUND, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
-    if (DISABLE_USER.equals(cernProperties.getOnPersonIdNotFound())) {
-      disableAccount(a);
-    }
-  }
-
-  private void handleNoParticipation(IamAccount a, String cernPersonId) {
-    LOG.warn("No membership to '{}' found for person id {}", cernProperties.getExperimentName(),
-        cernPersonId);
-    setCernStatusLabel(a, EXP_NOT_FOUND,
-        format(NO_PARTICIPATION_MESSAGE, cernProperties.getExperimentName()));
-    switch (cernProperties.getOnParticipationNotFound()) {
-      case DISABLE_USER:
-        if (a.isActive()) {
-          disableAccount(a);
-        }
-        break;
-      case NO_ACTION:
-      default:
+  private void expireIfActiveAndValid(IamAccount a) {
+    Date currentDate = new Date();
+    if (a.isActive() && a.getEndTime().after(currentDate)) {
+      LOG.warn("User {} has a valid membership but cannot be found on HR db", a.getUsername());
+      accountService.setAccountEndTime(a, currentDate);
     }
   }
 }
