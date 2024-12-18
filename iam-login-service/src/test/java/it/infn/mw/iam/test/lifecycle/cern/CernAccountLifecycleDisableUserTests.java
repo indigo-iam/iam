@@ -162,7 +162,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.CernStatus.NOT_FOUND.name()));
+    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -208,7 +208,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
 
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(CernHrLifecycleHandler.CernStatus.NOT_MEMBER.name()));
+        is(CernHrLifecycleHandler.CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
