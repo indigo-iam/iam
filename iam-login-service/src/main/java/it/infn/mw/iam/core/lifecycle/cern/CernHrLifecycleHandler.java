@@ -76,7 +76,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
 
   public enum CernStatus {
-    IGNORED, ERROR, NOT_FOUND, NOT_MEMBER, OK
+    IGNORED, ERROR, EXPIRED, VO_MEMBER
   }
 
   private final CernProperties cernProperties;
@@ -100,7 +100,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     deleteDeprecatedLabels(a);
 
     if (CernHrLifecycleUtils.isAccountIgnored(a)) {
-      LOG.debug("Ignoring account '{}'", a.getUsername());
       setCernStatusLabel(a, CernStatus.IGNORED, IGNORE_MESSAGE);
       return;
     }
@@ -114,9 +113,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
     if (voPerson.isEmpty()) {
-      LOG.debug("No record found for person id {}", cernPersonId);
-      setCernStatusLabel(a, CernStatus.NOT_FOUND, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
-      expireIfActiveAndValid(a);
+      expireIfActiveAndMember(a);
+      setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
       return;
     }
 
@@ -126,19 +124,24 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       .getMostRecentMembership(voPerson.get().getParticipations(), experiment);
 
     if (ep.isEmpty()) {
-      LOG.warn("No membership to '{}' found for person id {}", experiment, cernPersonId);
-      setCernStatusLabel(a, CernStatus.NOT_MEMBER, format(NO_PARTICIPATION_MESSAGE, experiment));
-      expireIfActiveAndValid(a);
+      expireIfActiveAndMember(a);
+      setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PARTICIPATION_MESSAGE, experiment));
       return;
     }
 
     syncInstitute(a, ep.get().getInstitute());
     syncAccountEndTime(a, ep.get().getEndDate());
-    setCernStatusLabel(a, CernStatus.OK, format(SYNCHRONIZED_MESSAGE));
+    setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
 
     if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
       restoreAccount(a);
+    }
+  }
+
+  private void expireIfActiveAndMember(IamAccount a) {
+    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && a.isActive()) {
+      expireAccount(a);
     }
   }
 
@@ -252,11 +255,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     }
   }
 
-  private void expireIfActiveAndValid(IamAccount a) {
-    Date currentDate = new Date();
-    if (a.isActive() && a.getEndTime().after(currentDate)) {
-      LOG.warn("User {} has a valid membership but cannot be found on HR db", a.getUsername());
-      accountService.setAccountEndTime(a, currentDate);
-    }
+  private void expireAccount(IamAccount a) {
+    accountService.setAccountEndTime(a, new Date());
   }
 }
