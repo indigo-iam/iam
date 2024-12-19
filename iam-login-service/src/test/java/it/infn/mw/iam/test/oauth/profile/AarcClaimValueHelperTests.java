@@ -86,7 +86,6 @@ public class AarcClaimValueHelperTests {
     g.setName("test");
     groupService.createGroup(g);
 
-
     when(userInfo.getGroups()).thenReturn(Sets.newHashSet(g));
 
     Set<String> urns = helper.resolveGroups(userInfo);

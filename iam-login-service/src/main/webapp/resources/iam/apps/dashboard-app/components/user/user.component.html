@@ -68,12 +68,17 @@
 
                             <!-- Trigger AUP acceptance -->
                             <user-request-aup-signature user="$ctrl.user" aup="$ctrl.aup"></user-request-aup-signature>
-
+                             
+                            <!-- Disable multi-factor authentication settings -->
+                            <user-disable-mfa user="$ctrl.user" ng-if="!$ctrl.isMe() && $ctrl.user.isMfaActive"></user-disable-mfa>
                         </div>
 
                         <!-- Send reset password email or change password-->
                         <user-password user="$ctrl.user"></user-password>
                         <aup-resign user="$ctrl.user" ng-if="$ctrl.isMe()"></aup-resign>
+
+                        <!-- Change multi-factor authentication settings -->
+                        <user-mfa ng-if="$ctrl.isMfaSettingsBtnEnabled()" user="$ctrl.user"></user-mfa>
 
                     </div>
                 </div>

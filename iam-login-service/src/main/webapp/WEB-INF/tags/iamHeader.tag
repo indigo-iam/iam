@@ -119,4 +119,8 @@ function getRefreshTokenValiditySeconds() {
 function getClientTrackLastUsed() {
   return ${clientTrackLastUsed};
 }
+
+function getMfaSettingsBtnEnabled() {
+  return ${loginPageConfiguration.mfaSettingsBtnEnabled};
+}
 </script>

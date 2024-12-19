@@ -27,12 +27,15 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.config.saml.IamSamlProperties;
 import it.infn.mw.iam.core.web.loginpage.LoginPageConfiguration;
+import it.infn.mw.iam.core.web.multi_factor_authentication.MultiFactorVerificationPageConfiguration;
 import it.infn.mw.iam.rcauth.RCAuthProperties;
 
 @Component
 public class IamViewInfoInterceptor implements HandlerInterceptor {
 
   public static final String LOGIN_PAGE_CONFIGURATION_KEY = "loginPageConfiguration";
+  public static final String MULTI_FACTOR_VERIFICATION_KEY =
+      "multiFactorVerificationPageConfiguration";
   public static final String ORGANISATION_NAME_KEY = "iamOrganisationName";
   public static final String IAM_SAML_PROPERTIES_KEY = "iamSamlProperties";
   public static final String IAM_OIDC_PROPERTIES_KEY = "iamOidcProperties";
@@ -52,13 +55,16 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
 
   @Value("${iam.organisation.name}")
   String organisationName;
-  
+
   @Autowired
   LoginPageConfiguration loginPageConfiguration;
 
   @Autowired
+  MultiFactorVerificationPageConfiguration multiFactorVerificationPageConfiguration;
+
+  @Autowired
   IamSamlProperties samlProperties;
-  
+
   @Autowired
   RCAuthProperties rcAuthProperties;
 
@@ -71,16 +77,18 @@ public class IamViewInfoInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
       throws Exception {
-    
+
     request.setAttribute(IAM_VERSION_KEY, iamVersion);
     request.setAttribute(GIT_COMMIT_ID_KEY, gitCommitId);
 
     request.setAttribute(ORGANISATION_NAME_KEY, organisationName);
-    
+
     request.setAttribute(LOGIN_PAGE_CONFIGURATION_KEY, loginPageConfiguration);
-    
+
+    request.setAttribute(MULTI_FACTOR_VERIFICATION_KEY, multiFactorVerificationPageConfiguration);
+
     request.setAttribute(IAM_SAML_PROPERTIES_KEY, samlProperties);
-    
+
     request.setAttribute(RCAUTH_ENABLED_KEY, rcAuthProperties.isEnabled());
 
     request.setAttribute(CLIENT_DEFAULTS_PROPERTIES_KEY, clientRegistrationProperties.getClientDefaults());
