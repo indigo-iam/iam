@@ -46,7 +46,13 @@
                 5 characters long</span>
             <span class="help-block" ng-show="rejReq.motivation.$dirty && rejReq.motivation.$error.maxlength">The
                 motivation cannot exceed
-                256 characters</span>
+                256 characters</span>   
+        </div>
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" ng-model="$ctrl.doNotSendEmail"/>
+                Do not send email to the user
+            </label>
         </div>
     </form>
 </div>
