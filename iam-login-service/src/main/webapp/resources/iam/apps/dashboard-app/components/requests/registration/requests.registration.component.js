@@ -22,6 +22,7 @@ function DialogController(
 
   self.motivation = '';
   self.busy = false;
+  self.doNotSendEmail = false;
   self.requests = requests;
   self.cancel = cancel;
   self.approve = approve;
@@ -40,7 +41,7 @@ function DialogController(
   function reject() {
     self.busy = true;
     var result =
-        RegistrationRequestService.bulkReject(self.requests, self.motivation);
+        RegistrationRequestService.bulkReject(self.requests, self.motivation, self.doNotSendEmail);
     $uibModalInstance.close(result);
   }
 }
