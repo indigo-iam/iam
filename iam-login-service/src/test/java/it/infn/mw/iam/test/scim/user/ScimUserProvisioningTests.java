@@ -339,6 +339,5 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
       .andExpect(jsonPath("$.detail",
           containsString("email user1@test.org already assigned to another user")));
 
-
   }
 }

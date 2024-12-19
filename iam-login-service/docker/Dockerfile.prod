@@ -1,4 +1,5 @@
 FROM eclipse-temurin:17 as builder
+
 RUN mkdir /indigo-iam
 WORKDIR /indigo-iam
 COPY iam-login-service.war /indigo-iam/

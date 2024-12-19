@@ -44,27 +44,27 @@ public class IamAccountServiceTestSupport {
 
   public static final String TEST_OIDC_ID_ISSUER = "oidcIssuer";
   public static final String TEST_OIDC_ID_SUBJECT = "oidcSubject";
-  
+
   public static final String TEST_SSH_KEY_VALUE_1 = "ssh-key-value-1";
   public static final String TEST_SSH_KEY_VALUE_2 = "ssh-key-value-2";
-  
+
   public static final String TEST_X509_CERTIFICATE_VALUE_1 = "x509-cert-value-1";
   public static final String TEST_X509_CERTIFICATE_SUBJECT_1 = "x509-cert-subject-1";
   public static final String TEST_X509_CERTIFICATE_ISSUER_1 = "x509-cert-issuer-1";
   public static final String TEST_X509_CERTIFICATE_LABEL_1 = "x509-cert-label-1";
-  
+
   public static final String TEST_X509_CERTIFICATE_VALUE_2 = "x509-cert-value-2";
   public static final String TEST_X509_CERTIFICATE_SUBJECT_2 = "x509-cert-subject-2";
   public static final String TEST_X509_CERTIFICATE_ISSUER_2 = "x509-cert-issuer-2";
   public static final String TEST_X509_CERTIFICATE_LABEL_2 = "x509-cert-label-2";
-  
-  
+
+
   protected final IamAccount TEST_ACCOUNT;
   protected final IamAccount CICCIO_ACCOUNT;
   protected final IamAuthority ROLE_USER_AUTHORITY;
   protected final IamSamlId TEST_SAML_ID;
   protected final IamOidcId TEST_OIDC_ID;
-  
+
   protected final IamSshKey TEST_SSH_KEY_1;
   protected final IamSshKey TEST_SSH_KEY_2;
   protected final IamX509Certificate TEST_X509_CERTIFICATE_1;
@@ -77,7 +77,7 @@ public class IamAccountServiceTestSupport {
     TEST_ACCOUNT.getUserInfo().setEmail(TEST_EMAIL);
     TEST_ACCOUNT.getUserInfo().setGivenName(TEST_GIVEN_NAME);
     TEST_ACCOUNT.getUserInfo().setFamilyName(TEST_FAMILY_NAME);
-    
+
     ROLE_USER_AUTHORITY = new IamAuthority("ROLE_USER");
 
     CICCIO_ACCOUNT = IamAccount.newAccount();
@@ -89,27 +89,22 @@ public class IamAccountServiceTestSupport {
 
     TEST_SAML_ID =
         new IamSamlId(TEST_SAML_ID_IDP_ID, TEST_SAML_ID_ATTRIBUTE_ID, TEST_SAML_ID_USER_ID);
-    
-    TEST_OIDC_ID = 
-        new IamOidcId(TEST_OIDC_ID_ISSUER, TEST_OIDC_ID_SUBJECT);
-    
-    TEST_SSH_KEY_1 = 
-        new IamSshKey(TEST_SSH_KEY_VALUE_1);
 
-    TEST_SSH_KEY_2 = 
-        new IamSshKey(TEST_SSH_KEY_VALUE_2);
-    
-    TEST_X509_CERTIFICATE_1 =
-        new IamX509Certificate();
-    
+    TEST_OIDC_ID = new IamOidcId(TEST_OIDC_ID_ISSUER, TEST_OIDC_ID_SUBJECT);
+
+    TEST_SSH_KEY_1 = new IamSshKey(TEST_SSH_KEY_VALUE_1);
+
+    TEST_SSH_KEY_2 = new IamSshKey(TEST_SSH_KEY_VALUE_2);
+
+    TEST_X509_CERTIFICATE_1 = new IamX509Certificate();
+
     TEST_X509_CERTIFICATE_1.setLabel(TEST_X509_CERTIFICATE_LABEL_1);
     TEST_X509_CERTIFICATE_1.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_1);
     TEST_X509_CERTIFICATE_1.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_1);
     TEST_X509_CERTIFICATE_1.setCertificate(TEST_X509_CERTIFICATE_VALUE_1);
-    
-    TEST_X509_CERTIFICATE_2 =
-        new IamX509Certificate();
-    
+
+    TEST_X509_CERTIFICATE_2 = new IamX509Certificate();
+
     TEST_X509_CERTIFICATE_2.setLabel(TEST_X509_CERTIFICATE_LABEL_2);
     TEST_X509_CERTIFICATE_2.setSubjectDn(TEST_X509_CERTIFICATE_SUBJECT_2);
     TEST_X509_CERTIFICATE_2.setIssuerDn(TEST_X509_CERTIFICATE_ISSUER_2);
@@ -124,8 +119,8 @@ public class IamAccountServiceTestSupport {
     newAccount.getUserInfo().setGivenName(account.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(account.getUserInfo().getFamilyName());
 
+    newAccount.touch();
+
     return newAccount;
   }
- 
-  
 }
