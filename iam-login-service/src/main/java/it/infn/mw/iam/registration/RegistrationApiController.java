@@ -127,9 +127,9 @@ public class RegistrationApiController {
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @PostMapping(value = "/registration/reject/{uuid}")
   public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
-      @RequestParam(required = false) String motivation) {
+      @RequestParam(required = false) String motivation, @RequestParam(required = false) boolean doNotSendEmail) {
 
-    return service.rejectRequest(uuid, Optional.ofNullable(motivation));
+    return service.rejectRequest(uuid, Optional.ofNullable(motivation), doNotSendEmail);
   }
 
   @GetMapping(value = "/registration/verify/{token}")
