@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +39,8 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -79,6 +82,12 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
+    if (authn instanceof ExtendedAuthenticationToken) {
+      Set<IamAuthenticationMethodReference> amrSet =
+          ((ExtendedAuthenticationToken) authn).getAuthenticationMethodReferences();
+      authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+    }
+
     for (String audienceKey : AUDIENCE_KEYS) {
       if (inputParams.containsKey(audienceKey)) {
         if (!authzRequest.getExtensions().containsKey(AUD)) {
@@ -91,6 +100,21 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     return authzRequest;
 
+  }
+
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet) {
+    String amrClaim = "";
+    Iterator<IamAuthenticationMethodReference> it = amrSet.iterator();
+    while (it.hasNext()) {
+      IamAuthenticationMethodReference current = it.next();
+      StringBuilder amrClaimBuilder = new StringBuilder(amrClaim);
+      amrClaimBuilder.append(current.getName()).append("+");
+      amrClaim = amrClaimBuilder.toString();
+    }
+
+    // Remove trailing + symbol at end of string
+    amrClaim = amrClaim.substring(0, amrClaim.length() - 1);
+    return amrClaim;
   }
 
   private void handlePasswordGrantAuthenticationTimestamp(OAuth2Request request) {
