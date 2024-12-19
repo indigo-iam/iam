@@ -107,13 +107,13 @@ public class RegistrationFlowNotificationTests {
   private MockMvc mvc;
 
   @Before
-  public void setUp() throws InterruptedException {
+  public void setUp() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
   }
 
   @After
-  public void tearDown() throws InterruptedException {
+  public void tearDown() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }

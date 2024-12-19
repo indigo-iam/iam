@@ -33,7 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -88,7 +87,7 @@ public class AuthorizationCodeIntegrationTests {
 
   @Test
   public void testAuthzCodeAudienceSupport()
-      throws JsonProcessingException, IOException, ParseException {
+      throws IOException, ParseException {
 
     String[] audienceKeys = {"aud", "audience"};
 
@@ -197,7 +196,7 @@ public class AuthorizationCodeIntegrationTests {
 
   @Test
   public void testRefreshTokenAfterAuthzCodeWorks()
-      throws JsonProcessingException, IOException, ParseException {
+      throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()

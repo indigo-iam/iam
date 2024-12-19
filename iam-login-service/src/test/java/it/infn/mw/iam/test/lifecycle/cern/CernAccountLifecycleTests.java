@@ -44,6 +44,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 
 import org.junit.After;
@@ -585,7 +586,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   public void testPaginationWorks() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
-      .thenReturn(Optional.of(voPerson(String.valueOf((long) Math.random() * 100L))));
+      .thenReturn(Optional.of(voPerson(String.valueOf(new Random().nextLong() % 100L))));
 
     Pageable pageRequest = PageRequest.of(0, 10, Direction.ASC, "username");
     Page<IamAccount> accountPage = repo.findAll(pageRequest);
