@@ -482,11 +482,6 @@ public class X509TestSupport {
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader()))
       .thenReturn("TLS");
 
-    // Mockito
-    // .when(request
-    // .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SERVER_NAME.getHeader()))
-    // .thenReturn("serverName");
-
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader()))
