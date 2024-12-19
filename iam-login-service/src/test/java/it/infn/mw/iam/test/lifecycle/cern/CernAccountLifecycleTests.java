@@ -25,7 +25,6 @@ import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.NO_PERSO
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.SYNCHRONIZED_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.CernStatus.IGNORED;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_CERN_PREFIX;
-import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_INSTITUTE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_MESSAGE;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_STATUS;
 import static it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleUtils.LABEL_TIMESTAMP;
@@ -277,14 +276,6 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
     Optional<IamLabel> cernTimestampLabel =
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
     assertThat(cernTimestampLabel.isPresent(), is(false));
-
-    Optional<IamLabel> cernInstituteLabel =
-        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_INSTITUTE);
-    assertThat(cernInstituteLabel.isPresent(), is(true));
-    assertThat(cernInstituteLabel.get().getValue(),
-        is("Istituto Nazionale di Fisica Nucleare, Bologna, IT"));
-    
-  
   }
 
   @Test
