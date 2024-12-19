@@ -1,0 +1,59 @@
+<!--
+
+    Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<form class="form-horizontal" ng-submit="userMfaCtrl.submit()"
+	name="userMfaForm">
+
+	<div class="modal-header">
+		<h3 class="modal-title">Edit multi-factor authentication
+			for {{userMfaCtrl.userToEdit.name.formatted}}</h3>
+	</div>
+
+	<div class="modal-body">
+
+		<div class="form-group">
+			<label class="control-label col-sm-2" for="authenticator-app">Authenticator</label>
+			&nbsp;
+			<tr>
+				<td class="text-right">
+					<span class="label label-success"
+					ng-show="userMfaCtrl.authenticatorAppActive"> <i
+						class="fa fa-check"></i> Enabled
+				</span>&nbsp;
+					<button class="btn btn-danger" type="button"
+						name="disable-authenticator-app"
+						id="disable-authenticator-app-btn"
+						ng-show="userMfaCtrl.authenticatorAppActive"
+						ng-click="userMfaCtrl.disableAuthenticatorApp()">Disable</button>
+					<span class="label label-danger"
+					ng-show="!userMfaCtrl.authenticatorAppActive"> <i
+						class="fa fa-check"></i> Disabled
+				</span>&nbsp;
+					<button class="btn btn-success" type="button"
+						name="enable-authenticator-app" id="enable-authenticator-app-btn"
+						ng-show="!userMfaCtrl.authenticatorAppActive"
+						ng-click="userMfaCtrl.enableAuthenticatorApp()">Enable</button>
+				</td>
+			</tr>
+		</div>
+	</div>
+
+	<div class="modal-footer">
+		<button class="btn btn-danger" type="button" name="dismiss"
+			id="modal-btn-cancel" ng-click="userMfaCtrl.dismiss()">Cancel</button>
+	</div>
+</form>

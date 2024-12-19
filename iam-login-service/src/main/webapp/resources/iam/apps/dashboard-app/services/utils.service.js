@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-(function() {
+(function () {
 
     'use strict';
 
@@ -29,6 +29,7 @@
             isMe: isMe,
             isAdmin: isAdmin,
             isUser: isUser,
+            isPreAuthenticated: isPreAuthenticated,
             getLoggedUser: getLoggedUser,
             isRegistrationEnabled: isRegistrationEnabled,
             isOidcEnabled: isOidcEnabled,
@@ -40,7 +41,8 @@
             isGroupManagerForGroup: isGroupManagerForGroup,
             isGroupManager: isGroupManager,
             isGroupMember: isGroupMember,
-            username: username
+            username: username,
+            isMfaSettingsBtnEnabled: isMfaSettingsBtnEnabled
         };
 
         return service;
@@ -86,6 +88,11 @@
             return (getUserAuthorities().indexOf("ROLE_USER") != -1);
         }
 
+        function isPreAuthenticated() {
+
+            return (getUserAuthorities().indexOf("ROLE_PRE_AUTHENTICATED") != -1);
+        }
+
         function isGroupManager() {
             const hasGmAuth = getUserAuthorities().filter((c) => c.startsWith('ROLE_GM:'));
 
@@ -113,6 +120,10 @@
         function isSamlEnabled() {
 
             return getSamlEnabled();
+        }
+
+        function isMfaSettingsBtnEnabled() {
+            return getMfaSettingsBtnEnabled();
         }
 
         function buildErrorResult(errorString) {

@@ -203,5 +203,4 @@ public class AccountLifecycleTests extends TestSupport implements LifecycleTestS
     assertThat(accountBefore, is(accountAfter));
   }
 
-
 }

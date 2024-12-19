@@ -20,7 +20,6 @@ import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
@@ -30,8 +29,9 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.Logo;
 import it.infn.mw.iam.config.IamProperties.LoginPageLayout.ExternalAuthnOptions;
+import it.infn.mw.iam.config.IamProperties.Logo;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.config.oidc.OidcProvider;
 import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 
@@ -50,6 +50,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean localAuthenticationVisible;
   private boolean showLinkToLocalAuthn;
   private boolean defaultLoginPageLayout;
+  private boolean mfaSettingsBtnEnabled;
 
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
@@ -57,11 +58,15 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private OidcValidatedProviders providers;
 
   private final IamProperties iamProperties;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  @Autowired
-  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties) {
+  public DefaultLoginPageConfiguration(
+    OidcValidatedProviders providers,
+    IamProperties properties,
+    IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
 
@@ -78,6 +83,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
         .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
+    mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
   }
 
   @Override
@@ -169,6 +175,10 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     return showLinkToLocalAuthn;
   }
 
+  @Override
+  public boolean isMfaSettingsBtnEnabled() {
+    return mfaSettingsBtnEnabled;
+  }
 
   @Override
   public boolean isShowRegistrationButton() {

@@ -92,6 +92,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/passwordreset.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/registration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/utils.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/authenticator-app.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/authorities.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/user.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/load-templates.service.js"></script>
@@ -115,11 +116,14 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/openid-configuration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scopes.service.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/trusts.service.js"></script>
   
-  
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/authenticator-app.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/edit-password.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/user-mfa.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/disable-mfa.controller.js"></script>
 
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/header/header.directive.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/result.component.js"></script>
@@ -136,6 +140,10 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/user.edit.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/edit-user.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/status/user.status.component.js"></script>
+  <script type="text/javascript"
+    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/mfa/user.mfa.component.js"></script>
+    <script type="text/javascript"
+    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/disable-mfa/user.disable-mfa.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/privileges/user.privileges.component.js"></script>
   <script type="text/javascript"

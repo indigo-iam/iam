@@ -17,8 +17,8 @@ package it.infn.mw.iam.test.scim.core.provisioning.user;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -73,7 +73,6 @@ public class ScimUserServiceTests {
   final String TESTUSER_LABEL_NAME = "label-name";
   final String TESTUSER_LABEL_VALUE = "label-value";
   final String PRODUCTION_GROUP_UUID = "c617d586-54e6-411d-8e38-64967798fa8a";
-
   final String TESTUSER_USERNAME = "testProvisioningUser";
   final String TESTUSER_PASSWORD = "password";
   final ScimName TESTUSER_NAME = ScimName.builder().givenName("John").familyName("Lennon").build();

@@ -90,7 +90,7 @@ pipeline {
           post {
             always {
               script {
-                maybeArchiveJUnitReports()
+                maybeArchiveJUnitReportsWithJacoco()
               }
             }
           }

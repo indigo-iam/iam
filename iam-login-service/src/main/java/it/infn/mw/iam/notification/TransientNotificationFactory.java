@@ -406,6 +406,44 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
+  @Override
+  public IamEmailNotification createMfaEnableMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Multi-factor authentication (MFA) enabled";
+
+    IamEmailNotification notification =
+        createMessage("mfaEnable.ftl", model, IamNotificationType.MFA_ENABLE,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createMfaDisableMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
+
+    Map<String, Object> model = new HashMap<>();
+    model.put(RECIPIENT_FIELD, recipient);
+    model.put(ORGANISATION_NAME, organisationName);
+
+    String subject = "Multi-factor authentication (MFA) disabled";
+
+    IamEmailNotification notification =
+        createMessage("mfaDisable.ftl", model, IamNotificationType.MFA_DISABLE,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}", account.getUuid());
+
+    return notification;
+  }
+
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
