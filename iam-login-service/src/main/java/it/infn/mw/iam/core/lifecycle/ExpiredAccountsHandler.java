@@ -188,7 +188,7 @@ public class ExpiredAccountsHandler implements Runnable {
 
   public void handleExpiredAccounts() {
 
-    LOG.debug("Expired accounts handler ... [START]");
+    LOG.info("Expired accounts handler ... [START]");
 
     accountsScheduledForRemoval.clear();
 
@@ -221,7 +221,7 @@ public class ExpiredAccountsHandler implements Runnable {
       removeAccount(a);
     }
 
-    LOG.debug("Expired accounts handler ... [END]");
+    LOG.info("Expired accounts handler ... [END]");
 
   }
 
