@@ -104,7 +104,7 @@ public class OidcExtAuthRegistrationTests {
     request.setUsername(username);
     request.setNotes("Some short notes...");
 
-    byte[] requestBytes = mvc
+    mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
@@ -112,7 +112,6 @@ public class OidcExtAuthRegistrationTests {
       .getResponse()
       .getContentAsByteArray();
 
-    request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
     // If the user tries to authenticate with his external account, he's redirected to the
