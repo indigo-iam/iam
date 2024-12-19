@@ -53,7 +53,7 @@ public class GroupRequestsGetDetailsTests extends GroupRequestsTestUtils {
   public void getGroupRequestDetailsAsAdmin() throws Exception {
     
     GroupRequestDto request = savePendingGroupRequest(TEST_100_USERNAME, TEST_001_GROUPNAME);
-    
+  
     // @formatter:off
     mvc.perform(get(GET_DETAILS_URL, request.getUuid()))
       .andExpect(status().isOk())

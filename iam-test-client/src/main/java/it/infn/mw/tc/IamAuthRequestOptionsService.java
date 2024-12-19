@@ -21,7 +21,6 @@ public class IamAuthRequestOptionsService implements AuthRequestOptionsService {
 
   IamClientApplicationProperties properties;
 
-
   public IamAuthRequestOptionsService(IamClientApplicationProperties properties) {
     this.properties = properties;
   }

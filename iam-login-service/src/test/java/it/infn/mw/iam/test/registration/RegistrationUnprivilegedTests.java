@@ -18,7 +18,11 @@ package it.infn.mw.iam.test.registration;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -49,6 +53,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -273,5 +278,25 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
       .andExpect(model().attributeExists("verificationSuccess"));
   }
 
+  @Test
+  public void testRegistrationFieldReadOnlyGetterAndSetter() {
+    RegistrationFieldProperties properties = new RegistrationFieldProperties();
+
+    assertFalse(properties.isReadOnly());
+
+    properties.setReadOnly(true);
+    assertTrue(properties.isReadOnly());
+  }
+
+  @Test
+  public void testRegistrationFieldExternalAuthAttributeGetterAndSetter() {
+    RegistrationFieldProperties properties = new RegistrationFieldProperties();
+
+    assertNull(properties.getExternalAuthAttribute());
+
+    String testValue = "TestAttribute";
+    properties.setExternalAuthAttribute(testValue);
+    assertEquals(testValue, properties.getExternalAuthAttribute());
+  }
 
 }
