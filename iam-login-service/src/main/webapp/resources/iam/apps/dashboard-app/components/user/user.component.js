@@ -34,6 +34,10 @@
             return Utils.isAdmin();
         };
 
+        self.isMfaSettingsBtnEnabled = function () {
+            return Utils.isMfaSettingsBtnEnabled();
+        };
+
         self.isGroupManager = function () {
             return Utils.isGroupManager();
         };

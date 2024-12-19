@@ -22,6 +22,8 @@ import static org.hamcrest.Matchers.hasSize;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Before;
@@ -84,6 +86,8 @@ public class IamTokenRepositoryTests {
 
     String[] scopes = {};
     Authentication userAuth = null;
+    Map<String, String> requestParameters = new HashMap<String, String>();
+    requestParameters.put("grant_type", "authorization_code");
 
     if (username != null) {
       scopes = SCOPES;
@@ -91,9 +95,9 @@ public class IamTokenRepositoryTests {
     }
 
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
-    OAuth2Authentication auth = new OAuth2Authentication(req, userAuth);
+    req.setRequestParameters(requestParameters);
+    return new OAuth2Authentication(req, userAuth);
 
-    return auth;
   }
 
   private ClientDetailsEntity loadTestClient() {
@@ -101,9 +105,7 @@ public class IamTokenRepositoryTests {
   }
 
   private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username) {
-    OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, username));
-    return token;
+    return tokenService.createAccessToken(oauth2Authentication(client, username));
   }
 
   private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client) {

@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Date;
@@ -763,6 +764,31 @@ public class AupIntegrationTests extends AupTestSupport {
     assertThat(updatedAup.getCreationTime(), new DateEqualModulo1Second(now));
     assertThat(updatedAup.getLastUpdateTime(), new DateEqualModulo1Second(now));
     assertThat(updatedAup.getSignatureValidityInDays(), equalTo(31L));
+  }
+
+  @Test
+  public void anonymousAupSignLinkRedirectsToLoginPage() throws Exception {
+    mvc.perform(get("/iam/aup/sign"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/login"));
+  }
+
+  @Test
+  @WithMockUser(username = "actuator-user", roles = {"ACTUATOR"})
+  public void aupSignLinkForbiddenToActuatorUser() throws Exception {
+    mvc.perform(get("/iam/aup/sign")).andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void aupSignLinkAllowedToUsers() throws Exception {
+    mvc.perform(get("/iam/aup/sign")).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupSignLinkAllowedToAdmins() throws Exception {
+    mvc.perform(get("/iam/aup/sign")).andExpect(status().isOk());
   }
 
 }

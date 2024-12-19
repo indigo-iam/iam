@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    function ClientSecretController(toaster, ClientsService) {
+    function ClientSecretController(ModalService, toaster, ClientsService) {
         var self = this;
         self.showSecret = false;
 
@@ -71,18 +71,34 @@
         }
 
         function rotateClientSecret() {
-            ClientsService.rotateClientSecret(self.client.client_id).then(res => {
-                self.client = res;
-                toaster.pop({
-                    type: 'success',
-                    body: 'Secret rotated for client ' + self.client.client_name
+
+            var modalOptions = {
+                closeButtonText: 'Cancel',
+                actionButtonText: 'Confirm Change',
+                headerText: 'Regenerate Client Secret',
+                bodyText:
+                    `Are you sure you want to change the secret of this client: ` + self.client.client_name+ ` ?`
+            };
+
+            ModalService.showModal({}, modalOptions)
+                .then(
+                    function() {
+                        ClientsService.rotateClientSecret(self.client.client_id).then(res => {
+                            self.client = res;
+                            toaster.pop({
+                                type: 'success',
+                                body: 'Secret rotated for client ' + self.client.client_name
+                            });
+                        }).catch(res => {
+                            toaster.pop({
+                                type: 'error',
+                                body: 'Could not rotate secret for client ' + self.client.client_name
+                            });
+                        });
+                    }
+                ).catch(function(error) { 
+                    console.info("Cancel Regenerate Client Secret");
                 });
-            }).catch(res => {
-                toaster.pop({
-                    type: 'error',
-                    body: 'Could not rotate secret for client ' + self.client.client_name
-                });
-            });
         }
 
         self.$onInit = function () {
@@ -104,7 +120,7 @@
                 newClient: "<",
                 limited: '@'
             },
-            controller: ['toaster', 'ClientsService', ClientSecretController],
+            controller: ['ModalService', 'toaster', 'ClientsService', ClientSecretController],
             controllerAs: '$ctrl'
         };
     }

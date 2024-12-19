@@ -71,6 +71,12 @@
     max-width: 250px;
 }
 
+.verify-form {
+    padding-top: 1em;
+    margin: 0 auto;
+    max-width: 250px;
+}
+
 #sign-aup-form {
     padding-top: 2em;
     margin: 0 auto;
@@ -106,6 +112,11 @@
     max-width: 400px;
 }
 
+#verify-error {
+    margin: 0 auto;
+    max-width: 400px;
+}
+
 #login-external-authn {
     margin: 0 auto;
     padding-top: 2em;
@@ -125,6 +136,17 @@
     max-width: 250px;
 }
 
+#verify-registration-form {
+    padding-top: 2em;
+    margin: 0 auto;
+    text-align: justify;
+    max-width: 400px;
+}
+
+#verify-registration-form p {
+    font-size: larger;
+}
+
 #register-confirm-message {
     padding-top: 2em;
     margin: 0 auto;
@@ -136,8 +158,17 @@
     font-size: larger;
 }
 
+#register-confirm-message p.error {
+    text-align: left;
+    font-weight: bold;
+}
+
 #register-confirm-back-btn {
     margin-top: 2em;
+}
+
+#verify-confirm {
+    margin-top: 2em
 }
 
 .reset-password-form {
@@ -320,7 +351,17 @@ body.skin-blue {
     color: inherit;
 }
 
+.btn-verify {
+    background-color: white;
+    border-color: #ddd;
+    color: inherit;
+}
+
 .btn-login:hover {
+    background-color: white;
+}
+
+.btn-verify:hover {
     background-color: white;
 }
 
@@ -344,6 +385,11 @@ body.skin-blue {
 }
 
 .signin-preamble {
+    margin-bottom: 1em;
+    text-align: center;
+}
+
+.verify-preamble {
     margin-bottom: 1em;
     text-align: center;
 }
@@ -686,16 +732,4 @@ body.skin-blue {
 
 .container-spacer {
     padding-top: 1em !important;
-}
-
-.ca-selected {
-    max-inline-size: 95%; 
-    overflow: hidden;
-}
-
-.ca-choices {
-    max-width: 100%; 
-    overflow: break-word; 
-    text-wrap: pretty; 
-    white-space: normal;
 }

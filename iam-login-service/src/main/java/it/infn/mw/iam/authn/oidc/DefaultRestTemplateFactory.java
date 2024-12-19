@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
 
 public class DefaultRestTemplateFactory implements RestTemplateFactory {
 
-  private ClientHttpRequestFactory httpRequestFactory;
+  final ClientHttpRequestFactory httpRequestFactory;
 
   public DefaultRestTemplateFactory(ClientHttpRequestFactory httpRequestFactory) {
 

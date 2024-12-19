@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -103,6 +104,8 @@ public class IamOAuthConfirmationController {
    */
   private static final Logger logger =
       LoggerFactory.getLogger(IamOAuthConfirmationController.class);
+
+  private static final Set<String> adminScopes = Set.of("iam:admin.read", "iam:admin.write");
 
   public IamOAuthConfirmationController() {
 
@@ -187,6 +190,12 @@ public class IamOAuthConfirmationController {
 
     Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
 
+    // admin scopes are not allowed to clients approved by regular users
+    if (!accountUtils.isAdmin(authUser)) {
+      filteredScopes =
+          filteredScopes.stream().filter(s -> !adminScopes.contains(s)).collect(Collectors.toSet());
+    }
+
     // sort scopes for display based on the inherent order of system scopes
     for (SystemScope s : systemScopes) {
       if (scopeService.fromStrings(filteredScopes).contains(s)) {
@@ -195,7 +204,7 @@ public class IamOAuthConfirmationController {
     }
 
     // add in any scopes that aren't system scopes to the end of the list
-    sortedScopes.addAll(Sets.difference(scopes, systemScopes));
+    sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
     model.put("scopes", sortedScopes);
 
@@ -213,7 +222,6 @@ public class IamOAuthConfirmationController {
         Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
         for (String claim : claims) {
           if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            // TODO: this skips the address claim
             claimValues.put(claim, userJson.get(claim).getAsString());
           }
         }
@@ -230,7 +238,7 @@ public class IamOAuthConfirmationController {
 
 
     // contacts
-    if (client.getContacts() != null) {
+    if (!client.getContacts().isEmpty()) {
       String contacts = Joiner.on(", ").join(client.getContacts());
       model.put("contacts", contacts);
     }

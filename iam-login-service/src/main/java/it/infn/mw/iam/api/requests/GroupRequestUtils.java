@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.api.requests;
 
-import static it.infn.mw.iam.core.IamRequestStatus.PENDING;
+import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,9 +30,9 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.requests.exception.IamRequestValidationError;
-import it.infn.mw.iam.api.requests.model.GroupRequestDTO;
-import it.infn.mw.iam.core.IamRequestStatus;
+import it.infn.mw.iam.api.requests.exception.GroupRequestValidationError;
+import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAuthority;
@@ -48,7 +48,7 @@ public class GroupRequestUtils {
   private IamGroupRequestRepository groupRequestRepository;
 
   @Autowired
-  private IamAccountRepository accountRepository;
+  private IamAccountRepository accoutRepository;
 
   @Autowired
   private AccountUtils accountUtils;
@@ -61,20 +61,20 @@ public class GroupRequestUtils {
 
   public IamGroupRequest getGroupRequest(String requestId) {
     return groupRequestRepository.findByUuid(requestId)
-      .orElseThrow(() -> new IamRequestValidationError(
+      .orElseThrow(() -> new GroupRequestValidationError(
           String.format("Group request with UUID [%s] does not exist", requestId)));
   }
 
-  public void checkRequestAlreadyExist(GroupRequestDTO request) {
+  public void checkRequestAlreadyExist(GroupRequestDto request) {
     
     List<IamGroupRequest> results = groupRequestRepository
       .findByUsernameAndGroup(request.getUsername(), request.getGroupName());
     
     for (IamGroupRequest r: results) {
-      IamRequestStatus status = r.getStatus();
+      IamGroupRequestStatus status = r.getStatus();
       
       if (PENDING.equals(status)) {
-        throw new IamRequestValidationError(
+        throw new GroupRequestValidationError(
             String.format("Group request already exists for [%s, %s]",
                 request.getUsername(), request.getGroupName()));
       }
@@ -88,12 +88,12 @@ public class GroupRequestUtils {
     }
 
     if (Strings.isNullOrEmpty(value)) {
-      throw new IamRequestValidationError("Reject motivation cannot be empty");
+      throw new GroupRequestValidationError("Reject motivation cannot be empty");
     }
   }
 
-  public void checkUserMembership(GroupRequestDTO request) {
-    Optional<IamAccount> userAccount = accountRepository.findByUsername(request.getUsername());
+  public void checkUserMembership(GroupRequestDto request) {
+    Optional<IamAccount> userAccount = accoutRepository.findByUsername(request.getUsername());
     if (userAccount.isPresent()) {
       Optional<IamGroup> group = userAccount.get()
         .getGroups()
@@ -103,7 +103,7 @@ public class GroupRequestUtils {
         .map(IamAccountGroupMembership::getGroup);
 
       if (group.isPresent()) {
-        throw new IamRequestValidationError(
+        throw new GroupRequestValidationError(
             String.format("User [%s] is already member of the group [%s]", request.getUsername(),
                 request.getGroupName()));
       }

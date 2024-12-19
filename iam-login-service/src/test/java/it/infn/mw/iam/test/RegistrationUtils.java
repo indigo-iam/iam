@@ -18,7 +18,6 @@ package it.infn.mw.iam.test;
 import static io.restassured.RestAssured.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-import org.hamcrest.Matchers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -50,33 +49,17 @@ public class RegistrationUtils {
     request.setUsername(username);
     request.setNotes("Some short notes...");
 
-    String responseJson =
-    mvc
+    String responseJson = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(mapper.writeValueAsString(request)))
       .andExpect(MockMvcResultMatchers.status().isOk())
-      .andReturn().getResponse().getContentAsString();
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
     request = mapper.readValue(responseJson, RegistrationRequestDto.class);
-    
-    return request;
-  }
-  
-  public void confirmRegistrationRequest(String confirmationKey, int port) {
 
-    // @formatter:off
-    given()
-      .port(port)
-      .pathParam("token", confirmationKey)
-    .when()
-      .get("/registration/confirm/{token}")
-    .then()
-      .log()
-        .body(true)
-      .statusCode(HttpStatus.OK.value())
-      .body("status", Matchers.equalTo(IamRegistrationRequestStatus.CONFIRMED.name()))
-    ;
-    // @formatter:on
+    return request;
   }
 
   public static RegistrationRequestDto approveRequest(String uuid, int port) {
@@ -109,7 +92,7 @@ public class RegistrationUtils {
         TestUtils.getAccessToken("registration-client", "secret", "registration:write");
 
     // @formatter:off
-    RegistrationRequestDto req =
+    return
     given()
       .port(port)
       .auth()
@@ -126,7 +109,6 @@ public class RegistrationUtils {
       .extract().as(RegistrationRequestDto.class);
     // @formatter:on
 
-    return req;
   }
 
 }

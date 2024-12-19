@@ -49,7 +49,6 @@ import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStr
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.persistence.model.IamCertLinkRequest;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
@@ -65,14 +64,6 @@ public class TransientNotificationFactory implements NotificationFactory {
   private static final String MOTIVATION_FIELD = "motivation";
   private static final String AUP_PATH = "%s/iam/aup/sign";
   private static final String AUP_URL = "aupUrl";
-  private static final String DASHBOARD_FIELD = "indigoDashboardUrl";
-  private static final String DASHBOARD_URL_TEMPLATE = "%s/dashboard#!/requests";
-  private static final String NAME_FIELD = "name";
-  private static final String NOTES_FIELD = "notes";
-  private static final String STATUS_FIELD = "status";
-  private static final String SUBJECT_FIELD = "subject";
-  private static final String ISSUER_FIELD = "issuer";
-
 
   @Value("${iam.baseUrl}")
   private String baseUrl;
@@ -123,6 +114,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     String resetPasswordUrl = String.format("%s%s/%s", baseUrl,
         PasswordResetController.BASE_TOKEN_URL, request.getAccount().getResetKey());
 
+
+
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
 
@@ -166,12 +159,12 @@ public class TransientNotificationFactory implements NotificationFactory {
     String email = request.getAccount().getUserInfo().getEmail();
 
     Map<String, Object> model = new HashMap<>();
-    model.put(NAME_FIELD, name);
+    model.put("name", name);
     model.put(USERNAME_FIELD, username);
     model.put("email", email);
-    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
+    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
-    model.put(NOTES_FIELD, request.getNotes());
+    model.put("notes", request.getNotes());
 
     return createMessage("adminHandleRequest.ftl", model, IamNotificationType.CONFIRMATION,
         properties.getSubject().get("adminHandleRequest"),
@@ -206,11 +199,11 @@ public class TransientNotificationFactory implements NotificationFactory {
     String groupName = groupRequest.getGroup().getName();
 
     Map<String, Object> model = new HashMap<>();
-    model.put(NAME_FIELD, groupRequest.getAccount().getUserInfo().getName());
+    model.put("name", groupRequest.getAccount().getUserInfo().getName());
     model.put(USERNAME_FIELD, groupRequest.getAccount().getUsername());
     model.put(GROUPNAME_FIELD, groupName);
-    model.put(NOTES_FIELD, groupRequest.getNotes());
-    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
+    model.put("notes", groupRequest.getNotes());
+    model.put("indigoDashboardUrl", String.format("%s/dashboard#!/requests", baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject = String.format("New membership request for group %s", groupName);
@@ -230,7 +223,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(GROUPNAME_FIELD, groupName);
-    model.put(STATUS_FIELD, status);
+    model.put("status", status);
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
@@ -253,8 +246,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
     model.put(GROUPNAME_FIELD, groupName);
-    model.put(STATUS_FIELD, status);
-    model.put(MOTIVATION_FIELD, groupRequest.getMotivation());
+    model.put("status", status);
+    model.put("motivation", groupRequest.getMotivation());
     model.put(ORGANISATION_NAME, organisationName);
 
     String subject =
@@ -410,64 +403,45 @@ public class TransientNotificationFactory implements NotificationFactory {
     LOG.debug("Created restoration message for the account {}", account.getUuid());
 
     return notification;
+
   }
 
   @Override
-  public IamEmailNotification createAdminHandleCertLinkRequestMessage(
-      IamCertLinkRequest certLinkRequest) {
-    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "New certificate linking request";
+  public IamEmailNotification createMfaEnableMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
-    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
-    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
-    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
-    model.put(NOTES_FIELD, certLinkRequest.getNotes());
-    model.put(DASHBOARD_FIELD, String.format(DASHBOARD_URL_TEMPLATE, baseUrl));
     model.put(ORGANISATION_NAME, organisationName);
 
-    return createMessage("adminHandleCertLinkRequest.ftl", model,
-        IamNotificationType.CERTIFICATE_LINK, subject,
-        adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+    String subject = "Multi-factor authentication (MFA) enabled";
+
+    IamEmailNotification notification =
+        createMessage("mfaEnable.ftl", model, IamNotificationType.MFA_ENABLE,
+            subject, asList(account.getUserInfo().getEmail()));
+
+    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}", account.getUuid());
+
+    return notification;
   }
 
   @Override
-  public IamEmailNotification createCertLinkApprovedMessage(IamCertLinkRequest certLinkRequest) {
-    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate linking request approved";
+  public IamEmailNotification createMfaDisableMessage(IamAccount account) {
+    String recipient = account.getUserInfo().getName();
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
-    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
-    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
-    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
-    model.put(STATUS_FIELD, certLinkRequest.getStatus().name());
-    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
     model.put(ORGANISATION_NAME, organisationName);
 
-    return createMessage("certLinkApproved.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-        subject, asList(certLinkRequest.getAccount().getUserInfo().getEmail()));
-  }
+    String subject = "Multi-factor authentication (MFA) disabled";
 
-  @Override
-  public IamEmailNotification createCertLinkRejectedMessage(IamCertLinkRequest certLinkRequest) {
-    String recipient = certLinkRequest.getAccount().getUserInfo().getName();
-    String subject = "Certificate linking request rejected";
+    IamEmailNotification notification =
+        createMessage("mfaDisable.ftl", model, IamNotificationType.MFA_DISABLE,
+            subject, asList(account.getUserInfo().getEmail()));
 
-    Map<String, Object> model = new HashMap<>();
-    model.put(RECIPIENT_FIELD, recipient);
-    model.put(NAME_FIELD, certLinkRequest.getAccount().getUserInfo().getName());
-    model.put(SUBJECT_FIELD, certLinkRequest.getCertificate().getSubjectDn());
-    model.put(ISSUER_FIELD, certLinkRequest.getCertificate().getIssuerDn());
-    model.put(STATUS_FIELD, certLinkRequest.getStatus().name());
-    model.put(USERNAME_FIELD, certLinkRequest.getAccount().getUsername());
-    model.put(MOTIVATION_FIELD, certLinkRequest.getMotivation());
-    model.put(ORGANISATION_NAME, organisationName);
+    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}", account.getUuid());
 
-    return createMessage("certLinkRejected.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-        subject, asList(certLinkRequest.getAccount().getUserInfo().getEmail()));
+    return notification;
   }
 
   protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,

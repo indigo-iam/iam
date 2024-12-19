@@ -65,7 +65,6 @@ import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
-import it.infn.mw.iam.api.scim.converter.X509CertificateParser;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
@@ -121,8 +120,8 @@ public class DefaultAccountUpdaterFactoryTests {
   OidcIdConverter oidcConverter = new OidcIdConverter();
   SamlIdConverter samlConverter = new SamlIdConverter();
   SshKeyConverter sshKeyConverter = new SshKeyConverter();
-  X509CertificateConverter x509Converter = new X509CertificateConverter(
-      new X509CertificateParser(new PEMX509CertificateChainParser()));
+  X509CertificateConverter x509Converter =
+      new X509CertificateConverter(new PEMX509CertificateChainParser());
 
   DefaultAccountUpdaterFactory factory;
 
@@ -215,16 +214,16 @@ public class DefaultAccountUpdaterFactoryTests {
 
     when(repo.findBySshKeyValue(NEW)).thenReturn(Optional.empty());
     when(accountService.addSshKey(Mockito.any(), Mockito.any()))
-        .thenAnswer(new Answer<IamAccount>() {
-          @Override
-          public IamAccount answer(InvocationOnMock invocation) throws Throwable {
-            IamAccount account = invocation.getArgument(0, IamAccount.class);
-            IamSshKey key = invocation.getArgument(1, IamSshKey.class);
-            account.getSshKeys().add(key);
-            key.setAccount(account);
-            return account;
-          }
-        });
+      .thenAnswer(new Answer<IamAccount>() {
+        @Override
+        public IamAccount answer(InvocationOnMock invocation) throws Throwable {
+          IamAccount account = invocation.getArgument(0, IamAccount.class);
+          IamSshKey key = invocation.getArgument(1, IamSshKey.class);
+          account.getSshKeys().add(key);
+          key.setAccount(account);
+          return account;
+        }
+      });
 
     List<AccountUpdater> updaters = factory.getUpdatersForPatchOperation(account, op);
 
@@ -264,29 +263,29 @@ public class DefaultAccountUpdaterFactoryTests {
     when(repo.findBySshKeyValue(NEW)).thenReturn(Optional.empty());
 
     when(accountService.addSshKey(Mockito.any(), Mockito.any()))
-        .thenAnswer(new Answer<IamAccount>() {
-          @Override
-          public IamAccount answer(InvocationOnMock invocation) throws Throwable {
-            IamAccount account = invocation.getArgument(0, IamAccount.class);
-            IamSshKey key = invocation.getArgument(1, IamSshKey.class);
-            account.getSshKeys().add(key);
-            key.setAccount(account);
-            return account;
-          }
-        });
+      .thenAnswer(new Answer<IamAccount>() {
+        @Override
+        public IamAccount answer(InvocationOnMock invocation) throws Throwable {
+          IamAccount account = invocation.getArgument(0, IamAccount.class);
+          IamSshKey key = invocation.getArgument(1, IamSshKey.class);
+          account.getSshKeys().add(key);
+          key.setAccount(account);
+          return account;
+        }
+      });
 
     ScimUser user = ScimUser.builder()
-        .buildName(NEW, NEW)
-        .userName(NEW)
-        .active(true)
-        .buildPhoto(NEW)
-        .buildEmail(NEW)
-        .password(NEW)
-        .addOidcId(ScimOidcId.builder().issuer(NEW).subject(NEW).build())
-        .addSamlId(
-            ScimSamlId.builder().idpId(NEW).userId(NEW).attributeId(EPUID.getAttributeName()).build())
-        .addSshKey(ScimSshKey.builder().value(NEW).display(NEW).build())
-        .build();
+      .buildName(NEW, NEW)
+      .userName(NEW)
+      .active(true)
+      .buildPhoto(NEW)
+      .buildEmail(NEW)
+      .password(NEW)
+      .addOidcId(ScimOidcId.builder().issuer(NEW).subject(NEW).build())
+      .addSamlId(
+          ScimSamlId.builder().idpId(NEW).userId(NEW).attributeId(EPUID.getAttributeName()).build())
+      .addSshKey(ScimSshKey.builder().value(NEW).display(NEW).build())
+      .build();
 
     ScimUserPatchRequest req = ScimUserPatchRequest.builder().add(user).build();
 
@@ -337,13 +336,13 @@ public class DefaultAccountUpdaterFactoryTests {
     when(repo.findByEmail(NEW)).thenReturn(Optional.empty());
 
     ScimUser user = ScimUser.builder()
-        .userName(NEW)
-        .active(true)
-        .buildName(NEW, NEW)
-        .buildPhoto(NEW)
-        .buildEmail(NEW)
-        .password(NEW)
-        .build();
+      .userName(NEW)
+      .active(true)
+      .buildName(NEW, NEW)
+      .buildPhoto(NEW)
+      .buildEmail(NEW)
+      .password(NEW)
+      .build();
 
     ScimUserPatchRequest req = ScimUserPatchRequest.builder().replace(user).build();
 
@@ -369,34 +368,34 @@ public class DefaultAccountUpdaterFactoryTests {
   @Test
   public void testPatchRemoveOpMultipleParsing() {
 
-    List<UpdaterType> expectedUpdatersType = Lists.newArrayList(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID,
-        ACCOUNT_REMOVE_SSH_KEY);
+    List<UpdaterType> expectedUpdatersType =
+        Lists.newArrayList(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_REMOVE_SSH_KEY);
 
     IamAccount account = newAccount(OLD);
     account.setOidcIds(newHashSet(new IamOidcId(OLD, OLD)));
     account
-        .setSamlIds(newHashSet(new IamSamlId(OLD, Saml2Attribute.EPUID.getAttributeName(), OLD)));
+      .setSamlIds(newHashSet(new IamSamlId(OLD, Saml2Attribute.EPUID.getAttributeName(), OLD)));
 
     account.setSshKeys(Sets.newHashSet(new IamSshKey(OLD)));
 
     when(accountService.removeSshKey(Mockito.any(), Mockito.any()))
-        .thenAnswer(new Answer<IamAccount>() {
-          @Override
-          public IamAccount answer(InvocationOnMock invocation) throws Throwable {
-            IamAccount account = invocation.getArgument(0, IamAccount.class);
-            IamSshKey key = invocation.getArgument(1, IamSshKey.class);
-            account.getSshKeys().remove(key);
-            key.setAccount(null);
-            return account;
-          }
-        });
+      .thenAnswer(new Answer<IamAccount>() {
+        @Override
+        public IamAccount answer(InvocationOnMock invocation) throws Throwable {
+          IamAccount account = invocation.getArgument(0, IamAccount.class);
+          IamSshKey key = invocation.getArgument(1, IamSshKey.class);
+          account.getSshKeys().remove(key);
+          key.setAccount(null);
+          return account;
+        }
+      });
 
     ScimUser user = ScimUser.builder()
-        .addOidcId(ScimOidcId.builder().issuer(OLD).subject(OLD).build())
-        .addSamlId(
-            ScimSamlId.builder().idpId(OLD).userId(OLD).attributeId(EPUID.getAttributeName()).build())
-        .addSshKey(ScimSshKey.builder().value(OLD).build())
-        .build();
+      .addOidcId(ScimOidcId.builder().issuer(OLD).subject(OLD).build())
+      .addSamlId(
+          ScimSamlId.builder().idpId(OLD).userId(OLD).attributeId(EPUID.getAttributeName()).build())
+      .addSshKey(ScimSshKey.builder().value(OLD).build())
+      .build();
 
     ScimUserPatchRequest req = ScimUserPatchRequest.builder().remove(user).build();
 

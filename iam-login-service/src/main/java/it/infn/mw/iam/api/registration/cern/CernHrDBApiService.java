@@ -15,13 +15,24 @@
  */
 package it.infn.mw.iam.api.registration.cern;
 
+import java.util.Optional;
+
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.client.RestClientException;
 
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 
 @Profile("cern")
 public interface CernHrDBApiService {
 
-  VOPersonDTO getHrDbPersonRecord(String personId);
+  /**
+   * Returns an @Optional object that contains the @VOPersonDTO related to the CERN person ID
+   * provided as parameter or empty if not found.
+   * 
+   * @param personId
+   * @return
+   * @throws RestClientException in case of ApiErrors
+   */
+  Optional<VOPersonDTO> getHrDbPersonRecord(String personId) throws RestClientException;
 
 }

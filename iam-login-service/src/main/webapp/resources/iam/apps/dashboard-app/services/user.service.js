@@ -17,9 +17,9 @@
 
 angular.module('dashboardApp').factory('UserService', UserService);
 
-UserService.$inject = ['$q', '$rootScope', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService'];
+UserService.$inject = ['$q', '$rootScope', 'scimFactory', 'Authorities', 'Utils', 'AupService', 'UsersService', 'GroupsService', 'AuthenticatorAppService'];
 
-function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService) {
+function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService, UsersService, GroupsService, AuthenticatorAppService) {
     var service = {
         getUser: getUser,
         getMe: getMe,
@@ -38,7 +38,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
 
     function getMe() {
         return $q.all([getMeAndAuthorities(),
-        AupService.getAupSignature()
+        AupService.getAupSignature(), AuthenticatorAppService.getMfaSettings()
         ]).then(
             function (result) {
                 var user = result[0];
@@ -51,7 +51,9 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 } else {
                     user.aupSignature = null;
                 }
-
+                if (result[2] !== null) {
+                    user.isMfaActive = result[2];
+                }
                 return user;
             }).catch(function (error) {
                 console.error('Error loading authenticated user information: ', error);
@@ -61,7 +63,9 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
 
     function getUser(userId) {
         return $q
-            .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId)])
+            .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId),
+                AuthenticatorAppService.getMfaSettingsForAccount(userId)
+            ])
             .then(function (result) {
                 var user = result[0].data;
                 user.authorities = result[1].data.authorities;
@@ -73,6 +77,10 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                     }
                 } else {
                     user.aupSignature = null;
+                }
+
+                if (result[3] !== null) {
+                    user.isMfaActive = result[3];
                 }
                 return user;
             })

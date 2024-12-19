@@ -16,17 +16,21 @@
 package it.infn.mw.iam.test.notification;
 
 import static it.infn.mw.iam.test.util.AuthenticationUtils.adminAuthentication;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
@@ -50,6 +54,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
+import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.PersistentUUIDTokenGenerator;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -96,16 +101,19 @@ public class RegistrationFlowNotificationTests {
   @Autowired
   private ObjectMapper mapper;
 
+  @Autowired
+  private IamRegistrationRequestRepository requestRepository;
+
   private MockMvc mvc;
 
   @Before
-  public void setUp() throws InterruptedException {
+  public void setUp() {
     mvc =
         MockMvcBuilders.webAppContextSetup(context).alwaysDo(log()).apply(springSecurity()).build();
   }
 
   @After
-  public void tearDown() throws InterruptedException {
+  public void tearDown() {
     mockOAuth2Filter.cleanupSecurityContext();
     notificationDelivery.clearDeliveredNotifications();
   }
@@ -141,6 +149,14 @@ public class RegistrationFlowNotificationTests {
       .getResponse()
       .getContentAsString();
 
+    String confirmationKey = generator.getLastToken();
+
+    assertThat(requestRepository.findByAccountConfirmationKey(confirmationKey)
+      .get()
+      .getAccount()
+      .getUserInfo()
+      .getEmail(), is("approve_flow@example.org"));
+
     request = mapper.readValue(responseJson, RegistrationRequestDto.class);
 
     notificationDelivery.sendPendingNotifications();
@@ -153,11 +169,21 @@ public class RegistrationFlowNotificationTests {
 
     notificationDelivery.clearDeliveredNotifications();
 
-    String confirmationKey = generator.getLastToken();
+    mvc.perform(head("/registration/verify/{token}", confirmationKey)).andExpect(status().isOk());
 
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
+    mvc.perform(get("/registration/verify/wrongtoken")).andExpect(status().isOk());
 
+    mvc
+      .perform(post("/registration/verify").content("token=wrongtoken")
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
+
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     notificationDelivery.sendPendingNotifications();
 
@@ -170,7 +196,6 @@ public class RegistrationFlowNotificationTests {
     assertThat(message.getReceivers(), hasSize(1));
     assertThat(message.getReceivers().get(0).getEmailAddress(),
         equalTo(properties.getAdminAddress()));
-
 
     notificationDelivery.clearDeliveredNotifications();
 
@@ -191,55 +216,8 @@ public class RegistrationFlowNotificationTests {
 
   @Test
   public void testRejectFlowNoMotivationNotifications() throws Exception {
-    String username = "reject_flow";
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Reject flow");
-    request.setFamilyname("Test");
-    request.setEmail("reject_flow@example.org");
-    request.setUsername(username);
-    request.setNotes("Some short notes...");
-
-    String responseJson = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(mapper.writeValueAsString(request)))
-      .andExpect(MockMvcResultMatchers.status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    request = mapper.readValue(responseJson, RegistrationRequestDto.class);
-
-    notificationDelivery.sendPendingNotifications();
-
-    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
-
-    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
-
-    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
-
-    notificationDelivery.clearDeliveredNotifications();
-
-    String confirmationKey = generator.getLastToken();
-
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
-
-
-    notificationDelivery.sendPendingNotifications();
-
-    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
-
-    message = notificationDelivery.getDeliveredNotifications().get(0);
-
-    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
-
-    assertThat(message.getReceivers(), hasSize(1));
-    assertThat(message.getReceivers().get(0).getEmailAddress(),
-        equalTo(properties.getAdminAddress()));
-
-
-    notificationDelivery.clearDeliveredNotifications();
+    RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
     mvc.perform(post("/registration/reject/{uuid}", request.getUuid())
       .with(authentication(adminAuthentication()))
@@ -249,7 +227,7 @@ public class RegistrationFlowNotificationTests {
 
     assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
 
-    message = notificationDelivery.getDeliveredNotifications().get(0);
+    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
 
     assertThat(message.getSubject(), equalTo(formatSubject("rejected")));
     assertThat(message.getBody(),
@@ -258,56 +236,25 @@ public class RegistrationFlowNotificationTests {
   }
 
   @Test
+  public void testRejectFlowNoNotificationSent() throws Exception {
+    RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
+
+    mvc.perform(post("/registration/reject/{uuid}", request.getUuid())
+      .param("motivation", "Lack of motivation")
+      .param("doNotSendEmail", "true")
+      .with(authentication(adminAuthentication()))
+      .contentType(APPLICATION_JSON)).andExpect(status().isOk());
+
+    notificationDelivery.sendPendingNotifications();
+
+    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(0));
+
+  }
+
+  @Test
   public void testRejectFlowMotivationNotifications() throws Exception {
-    String username = "reject_flow";
 
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Reject flow");
-    request.setFamilyname("Test");
-    request.setEmail("reject_flow@example.org");
-    request.setUsername(username);
-    request.setNotes("Some short notes...");
-
-    String responseJson = mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(mapper.writeValueAsString(request)))
-      .andExpect(MockMvcResultMatchers.status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    request = mapper.readValue(responseJson, RegistrationRequestDto.class);
-
-    notificationDelivery.sendPendingNotifications();
-
-    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
-
-    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
-
-    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
-
-    notificationDelivery.clearDeliveredNotifications();
-
-    String confirmationKey = generator.getLastToken();
-
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey).contentType(APPLICATION_JSON))
-      .andExpect(status().isOk());
-
-
-    notificationDelivery.sendPendingNotifications();
-
-    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
-
-    message = notificationDelivery.getDeliveredNotifications().get(0);
-
-    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
-
-    assertThat(message.getReceivers(), hasSize(1));
-    assertThat(message.getReceivers().get(0).getEmailAddress(),
-        equalTo(properties.getAdminAddress()));
-
-
-    notificationDelivery.clearDeliveredNotifications();
+    RegistrationRequestDto request = createRegistrationRequest(getRequestForRejectFlow());
 
     mvc.perform(
         post("/registration/reject/{uuid}", request.getUuid()).param("motivation", "We hate you")
@@ -319,13 +266,72 @@ public class RegistrationFlowNotificationTests {
 
     assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
 
-    message = notificationDelivery.getDeliveredNotifications().get(0);
+    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
 
     assertThat(message.getSubject(), equalTo(formatSubject("rejected")));
     assertThat(message.getBody(),
         containsString("The administrator has provided the following motivation"));
     assertThat(message.getBody(), containsString("We hate you"));
 
+  }
+
+  private RegistrationRequestDto getRequestForRejectFlow() {
+    RegistrationRequestDto request = new RegistrationRequestDto();
+    request.setGivenname("Reject flow");
+    request.setFamilyname("Test");
+    request.setEmail("reject_flow@example.org");
+    request.setUsername("reject_flow");
+    request.setNotes("Some short notes...");
+
+    return request;
+  }
+
+  private RegistrationRequestDto createRegistrationRequest(RegistrationRequestDto request)
+      throws Exception {
+
+    String responseJson = mvc
+      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
+        .content(mapper.writeValueAsString(request)))
+      .andExpect(MockMvcResultMatchers.status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    request = mapper.readValue(responseJson, RegistrationRequestDto.class);
+
+    notificationDelivery.sendPendingNotifications();
+
+    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+
+    IamEmailNotification message = notificationDelivery.getDeliveredNotifications().get(0);
+
+    assertThat(message.getSubject(), equalTo(formatSubject("confirmation")));
+
+    notificationDelivery.clearDeliveredNotifications();
+
+    String confirmationKey = generator.getLastToken();
+
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
+
+    notificationDelivery.sendPendingNotifications();
+
+    assertThat(notificationDelivery.getDeliveredNotifications(), hasSize(1));
+
+    message = notificationDelivery.getDeliveredNotifications().get(0);
+
+    assertThat(message.getSubject(), equalTo(formatSubject("adminHandleRequest")));
+
+    assertThat(message.getReceivers(), hasSize(1));
+    assertThat(message.getReceivers().get(0).getEmailAddress(),
+        equalTo(properties.getAdminAddress()));
+
+
+    notificationDelivery.clearDeliveredNotifications();
+    return request;
   }
 
 }

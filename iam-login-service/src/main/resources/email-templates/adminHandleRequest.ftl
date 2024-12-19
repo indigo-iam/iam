@@ -12,4 +12,4 @@ You can approve or reject this request by following the link below:
 ${indigoDashboardUrl}
 
 
-The ${organisationName} management service
+The ${organisationName} registration service

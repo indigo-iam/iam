@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
-import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.REJECTED;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -25,9 +24,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNotNull;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.function.Supplier;
@@ -83,7 +84,6 @@ public class RegistrationPrivilegedTests {
 
   @Before
   public void setup() {
-    requestRepo.deleteAll();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -122,11 +122,11 @@ public class RegistrationPrivilegedTests {
   }
 
   private void confirmRegistrationRequest(String confirmationKey) throws Exception {
-    // @formatter:off
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey))
+    mvc
+      .perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status", equalTo(CONFIRMED.name())));
-    // @formatter:on
+      .andExpect(model().attributeExists("verificationSuccess"));
   }
 
   protected RegistrationRequestDto approveRequest(String uuid) throws Exception {
@@ -279,8 +279,10 @@ public class RegistrationPrivilegedTests {
     approveRequest(reg.getUuid());
 
     // @formatter:off
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey))
-      .andExpect(status().isNotFound());
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
     // @formatter:on
   }
 
@@ -294,8 +296,10 @@ public class RegistrationPrivilegedTests {
     String confirmationKey = generator.getLastToken();
     approveRequest(reg.getUuid());
 
-    mvc.perform(get("/registration/confirm/{token}", confirmationKey))
-      .andExpect(status().isNotFound());
+    mvc.perform(post("/registration/verify").content("token=" + confirmationKey)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationFailure"));
 
   }
 

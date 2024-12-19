@@ -53,6 +53,8 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 public class X509TestSupport {
 
   public static final String TEST_0_CERT_PATH = "src/test/resources/x509/test0.cert.pem";
+  public static final String OLD_TEST_0_CERT_PATH = "src/test/resources/x509/oldtest0.cert.pem";
+  public static final String OLD_TEST_0_KEY_PATH = "src/test/resources/x509/oldtest0.key.pem";
   public static final String TEST_0_KEY_PATH = "src/test/resources/x509/test0.key.pem";
 
   public static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
@@ -67,7 +69,7 @@ public class X509TestSupport {
   public static final String TEST_1_SERIAL = "10";
   public static final String TEST_1_V_START = "Sep 26 15:39:36 2012 GMT";
   public static final String TEST_1_V_END = "Sep 24 15:39:36 2022 GMT";
-  
+
   public static final String TEST_NEW_ISSUER = "CN=Test1 CA,O=IGI,C=IT";
 
   public static final String RCAUTH_CA_CERT_PATH = "src/test/resources/x509/rcauth-mock-ca.p12";
@@ -76,14 +78,18 @@ public class X509TestSupport {
   public static final String RCAUTH_CA_SUBJECT = "CN=RCAuth Mock CA,O=INDIGO-IAM,C=IT";
 
   protected X509Certificate TEST_0_CERT;
-  protected String TEST_0_CERT_STRING;
-  protected String TEST_0_CERT_STRING_NGINX;
-
+  protected X509Certificate OLD_TEST_0_CERT;
   protected X509Certificate TEST_1_CERT;
+
+  protected String TEST_0_CERT_STRING;
+  protected String OLD_TEST_0_CERT_STRING;
   protected String TEST_1_CERT_STRING;
+
+  protected String TEST_0_CERT_STRING_NGINX;
   protected String TEST_1_CERT_STRING_NGINX;
 
   protected IamX509Certificate TEST_0_IAM_X509_CERT;
+  protected IamX509Certificate OLD_TEST_0_IAM_X509_CERT;
   protected IamX509Certificate TEST_1_IAM_X509_CERT;
   protected IamX509Certificate TEST_2_IAM_X509_CERT;
 
@@ -91,8 +97,10 @@ public class X509TestSupport {
 
   protected String TEST_0_CERT_LABEL = "TEST 0 cert label";
   protected String TEST_1_CERT_LABEL = "TEST 1 cert label";
+  protected String OLD_TEST_0_CERT_LABEL = "Old TEST 0 cert label";
 
   protected String TEST_USERNAME = "test";
+  protected String TEST_100_USERNAME = "test_100";
   protected String TEST_PASSWORD = "password";
 
   protected X509Credential RCAUTH_CA_CRED;
@@ -111,12 +119,25 @@ public class X509TestSupport {
           new ByteArrayInputStream(TEST_1_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
           Encoding.PEM);
 
+      OLD_TEST_0_CERT_STRING = new String(Files.readAllBytes(Paths.get(OLD_TEST_0_CERT_PATH)));
+
+      OLD_TEST_0_CERT = CertificateUtils.loadCertificate(
+          new ByteArrayInputStream(OLD_TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
+          Encoding.PEM);
+
       TEST_0_IAM_X509_CERT = new IamX509Certificate();
       TEST_0_IAM_X509_CERT.setCertificate(TEST_0_CERT_STRING);
       TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
       TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
       TEST_0_IAM_X509_CERT.setLabel(TEST_0_CERT_LABEL);
       TEST_0_IAM_X509_CERT.setPrimary(false);
+
+      OLD_TEST_0_IAM_X509_CERT = new IamX509Certificate();
+      OLD_TEST_0_IAM_X509_CERT.setCertificate(OLD_TEST_0_CERT_STRING);
+      OLD_TEST_0_IAM_X509_CERT.setSubjectDn(TEST_0_SUBJECT);
+      OLD_TEST_0_IAM_X509_CERT.setIssuerDn(TEST_0_ISSUER);
+      OLD_TEST_0_IAM_X509_CERT.setLabel(OLD_TEST_0_CERT_LABEL);
+      OLD_TEST_0_IAM_X509_CERT.setPrimary(false);
 
       TEST_1_IAM_X509_CERT = new IamX509Certificate();
       TEST_1_IAM_X509_CERT.setCertificate(TEST_1_CERT_STRING);
@@ -176,6 +197,33 @@ public class X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/"))
       .andExpect(authenticated().withUsername("test"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    return session;
+  }
+
+  protected MockHttpSession loginAsTest100UserWithTest0Cert(MockMvc mvc) throws Exception {
+
+    MockHttpSession session =
+        (MockHttpSession) mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
+          .andExpect(status().isFound())
+          .andExpect(redirectedUrl("http://localhost/login"))
+          .andExpect(MockMvcResultMatchers.request()
+            .sessionAttribute(X509_CREDENTIAL_SESSION_KEY, notNullValue()))
+          .andReturn()
+          .getRequest()
+          .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post("/login").session(session)
+        .param("username", TEST_100_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("http://localhost/"))
+      .andExpect(authenticated().withUsername("test_100"))
       .andReturn()
       .getRequest()
       .getSession();
@@ -433,11 +481,6 @@ public class X509TestSupport {
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader()))
       .thenReturn("TLS");
-
-    // Mockito
-    // .when(request
-    // .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SERVER_NAME.getHeader()))
-    // .thenReturn("serverName");
 
     Mockito
       .when(request

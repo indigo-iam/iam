@@ -19,10 +19,10 @@ import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -40,9 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -94,15 +92,17 @@ public class TestTokensUtils {
       String[] scopes) {
 
     Authentication userAuth = null;
+    Map<String, String> requestParameters = new HashMap<String, String>();
+    requestParameters.put("grant_type", "authorization_code");
 
     if (username != null) {
       userAuth = new UsernamePasswordAuthenticationToken(username, "");
     }
 
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
-    OAuth2Authentication auth = new OAuth2Authentication(req, userAuth);
+    req.setRequestParameters(requestParameters);
+    return new OAuth2Authentication(req, userAuth);
 
-    return auth;
   }
 
   public ClientDetailsEntity loadTestClient(String clientId) {
@@ -111,14 +111,12 @@ public class TestTokensUtils {
 
   public IamAccount loadTestUser(String userId) {
     return accountRepository.findByUsername(userId)
-        .orElseThrow(() -> new IamAccountException("User not found"));
+      .orElseThrow(() -> new IamAccountException("User not found"));
   }
 
   public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
       String[] scopes) {
-    OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
-    return token;
+    return tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
   }
 
   public OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
@@ -149,9 +147,7 @@ public class TestTokensUtils {
   }
 
   public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String[] scopes) {
-    OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, null, scopes));
-    return token;
+    return tokenService.createAccessToken(oauth2Authentication(client, null, scopes));
   }
 
   public void clearAllTokens() {
@@ -164,15 +160,13 @@ public class TestTokensUtils {
         AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
   }
 
-  protected ListResponseDTO<AccessToken> getAccessTokenList() throws JsonParseException,
-      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+  protected ListResponseDTO<AccessToken> getAccessTokenList() throws Exception {
 
     return getAccessTokenList(new LinkedMultiValueMap<String, String>());
   }
 
   protected ListResponseDTO<AccessToken> getAccessTokenList(MultiValueMap<String, String> params)
-      throws JsonParseException, JsonMappingException, UnsupportedEncodingException, IOException,
-      Exception {
+      throws Exception {
 
     /* @formatter:off */
     return mapper.readValue(
@@ -186,15 +180,13 @@ public class TestTokensUtils {
     /* @formatter:on */
   }
 
-  protected ListResponseDTO<RefreshToken> getRefreshTokenList() throws JsonParseException,
-      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+  protected ListResponseDTO<RefreshToken> getRefreshTokenList() throws Exception {
 
     return getRefreshTokenList(new LinkedMultiValueMap<String, String>());
   }
 
   protected ListResponseDTO<RefreshToken> getRefreshTokenList(MultiValueMap<String, String> params)
-      throws JsonParseException, JsonMappingException, UnsupportedEncodingException, IOException,
-      Exception {
+      throws Exception {
 
     /* @formatter:off */
     return mapper.readValue(

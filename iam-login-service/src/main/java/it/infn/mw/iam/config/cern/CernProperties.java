@@ -17,8 +17,8 @@ package it.infn.mw.iam.config.cern;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
-
 import javax.validation.constraints.NotBlank;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
@@ -154,4 +154,5 @@ public class CernProperties {
   public void setTask(HrSynchTaskProperties task) {
     this.task = task;
   }
+
 }

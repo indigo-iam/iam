@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.audit.events.account;
 
+import it.infn.mw.iam.audit.events.account.x509.X509CertificateLinkedEvent;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 

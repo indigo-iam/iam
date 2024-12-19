@@ -55,6 +55,7 @@ import it.infn.mw.voms.properties.VomsProperties;
 public class TestSupport {
 
   public static final String VOMS_ROLE_LABEL = "voms.role";
+  public static final String OPTIONAL_GROUP_LABEL = "wlcg.optional-group";
 
   public static final String SERVER_NAME = "voms.example";
   public static final String TLS_PROTOCOL = "TLSv1.2";
@@ -65,6 +66,8 @@ public class TestSupport {
   public static final String TEST_0_SERIAL = "09";
   public static final String TEST_0_V_START = "Sep 26 15:39:34 2012 GMT";
   public static final String TEST_0_V_END = "Sep 24 15:39:34 2022 GMT";
+
+  public static final String TEST_1_ISSUER = "CN=different IGI TEST CA,O=IGI,C=IT";
 
 
   public static final String TEST_0_EEC_PATH = "/certs/test0.cert.pem";
@@ -182,6 +185,22 @@ public class TestSupport {
     return testAccount;
   }
 
+  protected IamAccount setupTestUserWithDifferentCertIssuer() {
+    IamAccount testAccount =
+        accountRepo.findByUsername(TEST).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setLabel("label");
+    cert.setSubjectDn(TEST_0_SUBJECT);
+    cert.setIssuerDn(TEST_1_ISSUER);
+
+    List<IamX509Certificate> certs = Lists.newArrayList(cert);
+    testAccount.linkX509Certificates(certs);
+    accountRepo.save(testAccount);
+
+    return testAccount;
+  }
+
   protected IamGroup createVomsRootGroup() {
     return createGroup(props.getAa().getVoName());
   }
@@ -231,6 +250,13 @@ public class TestSupport {
   protected IamGroup createRoleGroup(IamGroup parent, String name) {
     IamGroup g = createChildGroup(parent, name);
     g.getLabels().add(IamLabel.builder().name(VOMS_ROLE_LABEL).build());
+    groupRepo.save(g);
+    return g;
+  }
+
+  protected IamGroup createOptionalGroup(IamGroup parent, String name) {
+    IamGroup g = createChildGroup(parent, name);
+    g.getLabels().add(IamLabel.builder().name(OPTIONAL_GROUP_LABEL).build());
     groupRepo.save(g);
     return g;
   }

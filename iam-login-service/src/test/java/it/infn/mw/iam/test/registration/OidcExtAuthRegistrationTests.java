@@ -23,8 +23,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertTrue;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,7 +104,7 @@ public class OidcExtAuthRegistrationTests {
     request.setUsername(username);
     request.setNotes("Some short notes...");
 
-    byte[] requestBytes = mvc
+    mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsBytes(request)))
       .andExpect(status().isOk())
@@ -110,7 +112,6 @@ public class OidcExtAuthRegistrationTests {
       .getResponse()
       .getContentAsByteArray();
 
-    request = objectMapper.readValue(requestBytes, RegistrationRequestDto.class);
     String token = generator.getLastToken();
 
     // If the user tries to authenticate with his external account, he's redirected to the
@@ -149,7 +150,10 @@ public class OidcExtAuthRegistrationTests {
         startsWith("Your registration request to indigo-dc was submitted successfully"));
 
     // the same happens after having confirmed the request
-    mvc.perform(get("/registration/confirm/{token}", token)).andExpect(status().isOk());
+    mvc.perform(post("/registration/verify").content("token=" + token)
+        .contentType(APPLICATION_FORM_URLENCODED))
+      .andExpect(status().isOk())
+      .andExpect(model().attributeExists("verificationSuccess"));
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login")

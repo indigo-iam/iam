@@ -15,11 +15,8 @@
  */
 package it.infn.mw.iam.api.account;
 
-import static java.util.Objects.isNull;
-
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +24,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
@@ -35,13 +33,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 public class AccountUtils {
   IamAccountRepository accountRepo;
 
-  @Autowired
   public AccountUtils(IamAccountRepository accountRepo) {
     this.accountRepo = accountRepo;
   }
 
   public boolean isRegisteredUser(Authentication auth) {
-    if (auth == null || auth.getAuthorities() == null) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
     }
 
@@ -49,11 +46,19 @@ public class AccountUtils {
   }
 
   public boolean isAdmin(Authentication auth) {
-    if (auth == null || auth.getAuthorities() == null) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
     }
 
     return auth.getAuthorities().contains(Authorities.ROLE_ADMIN);
+  }
+
+  public boolean isPreAuthenticated(Authentication auth) {
+    if (auth == null || auth.getAuthorities().isEmpty()) {
+      return false;
+    }
+
+    return auth.getAuthorities().contains(Authorities.ROLE_PRE_AUTHENTICATED);
   }
 
   public boolean isAuthenticated() {
@@ -63,7 +68,8 @@ public class AccountUtils {
   }
 
   public boolean isAuthenticated(Authentication auth) {
-    return !(isNull(auth) || auth instanceof AnonymousAuthenticationToken);
+    return auth != null && !(auth instanceof AnonymousAuthenticationToken)
+        && (!(auth instanceof ExtendedAuthenticationToken) || auth.isAuthenticated());
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount(Authentication authn) {
@@ -72,7 +78,7 @@ public class AccountUtils {
     }
 
     Authentication userAuthn = authn;
-    
+
     if (authn instanceof OAuth2Authentication) {
       OAuth2Authentication oauth = (OAuth2Authentication) authn;
       if (oauth.getUserAuthentication() == null) {
@@ -86,13 +92,13 @@ public class AccountUtils {
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount() {
-    
+
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
- 
+
     return getAuthenticatedUserAccount(auth);
   }
-  
-  public Optional<IamAccount> getByAccountId(String accountId){
+
+  public Optional<IamAccount> getByAccountId(String accountId) {
     return accountRepo.findByUuid(accountId);
   }
 }
