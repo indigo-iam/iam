@@ -41,7 +41,6 @@ import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
-import it.infn.mw.iam.api.registration.cern.dto.InstituteDTO;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
@@ -129,7 +128,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
 
-    syncInstitute(a, ep.get().getInstitute());
     syncAccountEndTime(a, ep.get().getEndDate());
     setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
 
@@ -242,11 +240,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     accountService.restoreAccount(a);
     IamLabel statusLabel = CernHrLifecycleUtils.buildLifecycleStatusLabel();
     accountService.deleteLabel(a, statusLabel);
-  }
-
-  private void syncInstitute(IamAccount a, InstituteDTO institute) {
-    IamLabel instituteLabel = CernHrLifecycleUtils.buildInstituteLabel(institute);
-    accountService.addLabel(a, instituteLabel);
   }
 
   private void syncAccountEndTime(IamAccount a, Date endDate) {
