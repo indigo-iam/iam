@@ -36,6 +36,7 @@ import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
@@ -62,21 +63,25 @@ public class AuthenticatorAppSettingsController {
   public static final String DISABLE_URL_FOR_ACCOUNT_ID = BASE_URL + "/reset/{accountId}";
   public static final String BAD_CODE = "Bad TOTP";
   public static final String CODE_GENERATION_ERROR = "Could not generate QR code";
-  public static final String MFA_SECRET_NOT_FOUND_MESSAGE = "No multi-factor secret is attached to this account";
+  public static final String MFA_SECRET_NOT_FOUND_MESSAGE =
+      "No multi-factor secret is attached to this account";
 
   private final IamTotpMfaService service;
   private final IamAccountRepository accountRepository;
   private final QrGenerator qrGenerator;
   private final IamTotpMfaProperties iamTotpMfaProperties;
+  private final IamProperties iamProperties;
   private final NotificationFactory notificationFactory;
 
   public AuthenticatorAppSettingsController(IamTotpMfaService service,
       IamAccountRepository accountRepository, QrGenerator qrGenerator,
-      IamTotpMfaProperties iamTotpMfaProperties, NotificationFactory notificationFactory) {
+      IamTotpMfaProperties iamTotpMfaProperties, IamProperties iamProperties,
+      NotificationFactory notificationFactory) {
     this.service = service;
     this.accountRepository = accountRepository;
     this.qrGenerator = qrGenerator;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
+    this.iamProperties = iamProperties;
     this.notificationFactory = notificationFactory;
   }
 
@@ -95,8 +100,8 @@ public class AuthenticatorAppSettingsController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(username));
 
     IamTotpMfa totpMfa = service.addTotpMfaSecret(account);
-    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(
-        totpMfa.getSecret(), iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(totpMfa.getSecret(),
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
 
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);
@@ -195,7 +200,7 @@ public class AuthenticatorAppSettingsController {
   @ResponseBody
   public void disableAuthenticatorAppForAccount(@PathVariable String accountId) {
     IamAccount account = accountRepository.findByUuid(accountId)
-        .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
+      .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
     service.disableTotpMfa(account);
     notificationFactory.createMfaDisableMessage(account);
   }
@@ -229,7 +234,7 @@ public class AuthenticatorAppSettingsController {
 
     QrData data = new QrData.Builder().label(username)
       .secret(secret)
-      .issuer("INDIGO IAM")
+      .issuer("INDIGO IAM" + " - " + iamProperties.getOrganisation().getName())
       .algorithm(HashingAlgorithm.SHA1)
       .digits(6)
       .period(30)
