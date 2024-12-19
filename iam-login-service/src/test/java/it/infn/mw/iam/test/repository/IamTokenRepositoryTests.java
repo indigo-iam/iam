@@ -96,9 +96,8 @@ public class IamTokenRepositoryTests {
 
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
     req.setRequestParameters(requestParameters);
-    OAuth2Authentication auth = new OAuth2Authentication(req, userAuth);
+    return new OAuth2Authentication(req, userAuth);
 
-    return auth;
   }
 
   private ClientDetailsEntity loadTestClient() {
@@ -106,9 +105,7 @@ public class IamTokenRepositoryTests {
   }
 
   private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username) {
-    OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, username));
-    return token;
+    return tokenService.createAccessToken(oauth2Authentication(client, username));
   }
 
   private OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client) {

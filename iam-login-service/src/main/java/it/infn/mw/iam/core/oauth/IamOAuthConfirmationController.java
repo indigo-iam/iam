@@ -222,7 +222,6 @@ public class IamOAuthConfirmationController {
         Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
         for (String claim : claims) {
           if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            // TODO: this skips the address claim
             claimValues.put(claim, userJson.get(claim).getAsString());
           }
         }

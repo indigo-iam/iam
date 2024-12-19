@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
-import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.REJECTED;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -85,7 +84,6 @@ public class RegistrationPrivilegedTests {
 
   @Before
   public void setup() {
-    requestRepo.deleteAll();
     mockOAuth2Filter.cleanupSecurityContext();
   }
 

@@ -17,11 +17,10 @@ package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.DEFAULT_IDP_ID;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,7 +35,6 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
@@ -70,7 +68,7 @@ public class ExternalAuthenticationRegistrationTests {
 
   @Test
   @WithMockOIDCUser
-  public void testExtAuthOIDC() throws JsonProcessingException, Exception {
+  public void testExtAuthOIDC() throws Exception {
 
     String username = "test-oidc-subject";
 
@@ -118,7 +116,7 @@ public class ExternalAuthenticationRegistrationTests {
 
   @Test
   @WithMockSAMLUser
-  public void testExtAuthSAML() throws JsonProcessingException, Exception {
+  public void testExtAuthSAML() throws Exception {
 
     String username = "test-saml-user";
 
