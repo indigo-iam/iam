@@ -70,13 +70,12 @@ public class IamSecurityExpressionMethods {
     boolean groupManager = authentication.getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
-    return groupManager && isRequestWithoutToken();
+    return groupManager;
   }
 
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
-    return account.isPresent() && account.get().getUuid().equals(userUuid)
-        && isRequestWithoutToken();
+    return account.isPresent() && account.get().getUuid().equals(userUuid);
   }
 
   public boolean canManageGroupRequest(String requestId) {
