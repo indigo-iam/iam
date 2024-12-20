@@ -15,13 +15,18 @@
  */
 package it.infn.mw.iam.audit.events.account.multi_factor_authentication;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import it.infn.mw.iam.audit.events.account.AccountEvent;
+import it.infn.mw.iam.audit.utils.IamTotpMfaSerializer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 
 public class MultiFactorEvent extends AccountEvent {
 
   private static final long serialVersionUID = 1L;
+
+  @JsonSerialize(using=IamTotpMfaSerializer.class)
   private final IamTotpMfa totpMfa;
 
   protected MultiFactorEvent(Object source, IamAccount account, IamTotpMfa totpMfa,
