@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
@@ -460,6 +461,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     Date previousEndTime = account.getEndTime();
     if (ObjectUtils.notEqual(previousEndTime, endTime)) {
       account.setEndTime(endTime);
+      account.removeLabelByName(LIFECYCLE_STATUS_LABEL);
       account.touch();
       accountRepo.save(account);
       eventPublisher.publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime,

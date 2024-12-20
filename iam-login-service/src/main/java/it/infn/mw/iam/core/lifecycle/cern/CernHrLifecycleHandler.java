@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import org.joda.time.DateTimeComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -128,17 +129,16 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
 
-    syncAccountEndTime(a, ep.get().getEndDate());
-    setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
-
-    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && !a.isActive()
+    if (CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
       restoreAccount(a);
     }
+    syncAccountEndTime(a, ep.get().getEndDate());
+    setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
   }
 
   private void expireIfActiveAndMember(IamAccount a) {
-    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && a.isActive()) {
+    if (DateTimeComparator.getInstance().compare(a.getEndTime(), new Date()) > 0 && a.isActive()) {
       expireAccount(a);
     }
   }
@@ -238,8 +238,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   private void restoreAccount(IamAccount a) {
     accountService.restoreAccount(a);
-    IamLabel statusLabel = CernHrLifecycleUtils.buildLifecycleStatusLabel();
-    accountService.deleteLabel(a, statusLabel);
   }
 
   private void syncAccountEndTime(IamAccount a, Date endDate) {
