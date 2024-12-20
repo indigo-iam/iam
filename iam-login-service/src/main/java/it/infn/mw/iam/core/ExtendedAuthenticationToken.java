@@ -47,8 +47,8 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
 public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
 
   private static final long serialVersionUID = 1L;
-  private transient Object principal;
-  private transient Object credentials;
+  private Object principal;
+  private Object credentials;
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
