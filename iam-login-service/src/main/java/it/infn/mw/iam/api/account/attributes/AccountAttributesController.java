@@ -19,20 +19,19 @@ import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationE
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,7 +56,6 @@ public class AccountAttributesController {
   final IamAccountService accountService;
   final AttributeDTOConverter converter;
 
-  @Autowired
   public AccountAttributesController(IamAccountService accountService,
       AttributeDTOConverter converter) {
     this.converter = converter;
@@ -71,7 +69,7 @@ public class AccountAttributesController {
     }
   }
 
-  @RequestMapping(value = "/iam/account/{id}/attributes", method = RequestMethod.GET)
+  @GetMapping(value = "/iam/account/{id}/attributes")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.isUser(#id) or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
   public List<AttributeDTO> getAttributes(@PathVariable String id) {
 
@@ -84,7 +82,7 @@ public class AccountAttributesController {
     return results;
   }
 
-  @RequestMapping(value = "/iam/account/{id}/attributes", method = PUT)
+  @PutMapping(value = "/iam/account/{id}/attributes")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute,
       final BindingResult validationResult) {

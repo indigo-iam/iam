@@ -20,13 +20,13 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,7 +50,6 @@ public class AccountGroupManagerController {
   final IamGroupRepository groupRepository;
   final UserConverter userConverter;
 
-  @Autowired
   public AccountGroupManagerController(AccountGroupManagerService service,
       IamAccountRepository accountRepo, IamGroupRepository groupRepository,
       UserConverter userConverter) {
@@ -60,9 +59,7 @@ public class AccountGroupManagerController {
     this.userConverter = userConverter;
   }
 
-
-
-  @RequestMapping(value = "/iam/account/{accountId}/managed-groups", method = RequestMethod.GET)
+  @GetMapping(value = "/iam/account/{accountId}/managed-groups")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#accountId)")
   public AccountManagedGroupsDTO getAccountManagedGroupsInformation(
       @PathVariable String accountId) {
@@ -72,8 +69,7 @@ public class AccountGroupManagerController {
     return service.getManagedGroupInfoForAccount(account);
   }
 
-  @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
-      method = RequestMethod.POST)
+  @PostMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.CREATED)
   public void addManagedGroupToAccount(@PathVariable String accountId,
@@ -88,8 +84,7 @@ public class AccountGroupManagerController {
     service.addManagedGroupForAccount(account, group);
   }
 
-  @RequestMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}",
-      method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/iam/account/{accountId}/managed-groups/{groupId}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void removeManagedGroupFromAccount(@PathVariable String accountId,
@@ -104,7 +99,7 @@ public class AccountGroupManagerController {
     service.removeManagedGroupForAccount(account, group);
   }
 
-  @RequestMapping(value = "/iam/group/{groupId}/group-managers", method=RequestMethod.GET)
+  @GetMapping(value = "/iam/group/{groupId}/group-managers")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#groupId)")
   public List<ScimUser> getGroupManagersForGroup(@PathVariable String groupId) {
     IamGroup group = groupRepository.findByUuid(groupId)
