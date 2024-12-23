@@ -16,7 +16,6 @@
 package it.infn.mw.iam.api.account.group_manager;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -108,7 +107,7 @@ public class AccountGroupManagerController {
     return service.getGroupManagersForGroup(group)
       .stream()
       .map(userConverter::dtoFromEntity)
-      .collect(Collectors.toList());
+      .toList();
 
   }
 
