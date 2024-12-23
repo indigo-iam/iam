@@ -75,10 +75,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
 
-  public enum CernStatus {
-    IGNORED, ERROR, EXPIRED, VO_MEMBER
-  }
-
   private final CernProperties cernProperties;
   private final IamAccountRepository accountRepo;
   private final IamAccountService accountService;

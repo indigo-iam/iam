@@ -58,6 +58,7 @@ import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
 import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler;
+import it.infn.mw.iam.core.lifecycle.cern.CernStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -162,7 +163,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(), is(CernHrLifecycleHandler.CernStatus.EXPIRED.name()));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -208,7 +209,7 @@ public class CernAccountLifecycleDisableUserTests extends TestSupport
 
     assertThat(statusLabel.isPresent(), is(true));
     assertThat(statusLabel.get().getValue(),
-        is(CernHrLifecycleHandler.CernStatus.EXPIRED.name()));
+        is(CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 

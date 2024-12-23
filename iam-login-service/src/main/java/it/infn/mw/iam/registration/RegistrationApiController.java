@@ -42,7 +42,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
@@ -97,7 +96,6 @@ public class RegistrationApiController {
 
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @GetMapping(value = "/registration/list")
-  @ResponseBody
   public List<RegistrationRequestDto> listRequests(
       @RequestParam(value = "status", required = false) IamRegistrationRequestStatus status) {
 
@@ -106,7 +104,6 @@ public class RegistrationApiController {
 
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @GetMapping(value = "/registration/list/pending")
-  @ResponseBody
   public List<RegistrationRequestDto> listPendingRequests() {
 
     return service.listPendingRequests();

@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -101,14 +100,12 @@ public class GroupLabelsController {
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidLabelError.class)
-  @ResponseBody
   public ErrorDTO handleValidationError(InvalidLabelError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 
   @ResponseStatus(code = HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoSuchGroupError.class)
-  @ResponseBody
   public ErrorDTO handleNotFoundError(NoSuchGroupError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
