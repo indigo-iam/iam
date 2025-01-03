@@ -43,7 +43,7 @@ public class TestSupport {
 
   public static final String TEST_001_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980001";
   public static final String TEST_002_GROUP_UUID = "c617d586-54e6-411d-8e38-649677980002";
-  
+
   public static final String ADMIN_USER = "admin";
   public static final String ADMIN_USER_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
 
@@ -81,6 +81,8 @@ public class TestSupport {
   public static final ResultMatcher INVALID_NAME_ERROR_MESSAGE =
       jsonPath("$.error", containsString("invalid name (does not match"));
 
+  public static final ResultMatcher INVALID_VALUE_ERROR_MESSAGE = jsonPath("$.error",
+      containsString("Invalid label: The string must not contain any new line or carriage return"));
 
   public static final ResultMatcher NAME_TOO_LONG_ERROR_MESSAGE =
       jsonPath("$.error", containsString("invalid name length"));
