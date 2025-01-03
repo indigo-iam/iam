@@ -401,6 +401,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public IamAccount deleteLabel(IamAccount account, IamLabel label) {
+
     boolean labelRemoved = account.getLabels().remove(label);
 
     if (labelRemoved) {
