@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.api.account.attributes;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -67,6 +68,7 @@ public class AccountAttributesTests {
   public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
   public static final ResultMatcher FORBIDDEN = status().isForbidden();
   public static final ResultMatcher NOT_FOUND = status().isNotFound();
+  public static final ResultMatcher BAD_REQUEST = status().isBadRequest();
 
   public static final String TEST_USER = "test";
   public static final String TEST_100_USER = "test_100";
@@ -145,7 +147,7 @@ public class AccountAttributesTests {
 
     mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, testAccount.getUuid())).andExpect(OK);
   }
-  
+
   @Test
   @WithMockUser(username = "test", roles = "USER")
   public void managingAttributesRequiresPrivilegedUser() throws Exception {
@@ -389,5 +391,59 @@ public class AccountAttributesTests {
       List<AttributeDTO> results = mapper.readValue(resultString, LIST_OF_ATTRIBUTE_DTO);
       attrs.forEach(a -> assertThat(results, hasItem(a)));
     }
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = "ADMIN")
+  public void attributeValidationTests() throws Exception {
+
+    AttributeDTO noNameAttribute = AttributeDTO.newInstance(null, ATTR_VALUE);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, noNameAttribute).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(noNameAttribute)))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("must not be blank")));
+
+    final String SOME_INVALID_NAMES[] =
+        {"-pippo", "/ciccio/paglia", ".starts-with-dot", "carriage\nreturn", "another\rreturn"};
+
+    for (String name : SOME_INVALID_NAMES) {
+      AttributeDTO invalidAttribute = AttributeDTO.newInstance(name, ATTR_VALUE);
+      mvc
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, invalidAttribute).contentType(APPLICATION_JSON)
+          .content(mapper.writeValueAsString(invalidAttribute)))
+        .andExpect(BAD_REQUEST)
+        .andExpect(jsonPath("$.error", containsString("invalid name (does not match with regexp")));
+    }
+
+    final String SOME_INVALID_VALES[] = {"carriage\nreturn", "another\rreturn"};
+
+    for (String value : SOME_INVALID_VALES) {
+      AttributeDTO invalidAttribute = AttributeDTO.newInstance(ATTR_NAME, value);
+      mvc
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, invalidAttribute).contentType(APPLICATION_JSON)
+          .content(mapper.writeValueAsString(invalidAttribute)))
+        .andExpect(BAD_REQUEST)
+        .andExpect(jsonPath("$.error",
+            containsString("The string must not contain any new line or carriage return")));
+    }
+
+    AttributeDTO longNameAttribute = AttributeDTO.newInstance(randomAlphabetic(65), ATTR_VALUE);
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, longNameAttribute).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(longNameAttribute)))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("name cannot be longer than 64 chars")));
+
+
+    AttributeDTO longValueAttribute = AttributeDTO.newInstance(ATTR_NAME, randomAlphabetic(257));
+
+    mvc
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, longValueAttribute).contentType(APPLICATION_JSON)
+        .content(mapper.writeValueAsString(longValueAttribute)))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("value cannot be longer than 256 chars")));
   }
 }
