@@ -30,6 +30,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
+
 public class IamX509PreauthenticationProcessingFilter
     extends AbstractPreAuthenticatedProcessingFilter {
 
@@ -39,19 +43,24 @@ public class IamX509PreauthenticationProcessingFilter
   public static final String X509_CREDENTIAL_SESSION_KEY = "IAM_X509_CRED";
   public static final String X509_ERROR_KEY = "IAM_X509_AUTHN_ERROR";
   public static final String X509_CAN_LOGIN_KEY = "IAM_X509_CAN_LOGIN";
-  
+  public static final String X509_SUSPENDED_ACCOUNT_KEY = "IAM_X509_SUSPENDED_ACCOUNT";
+
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
-  
+
   private final X509AuthenticationCredentialExtractor credentialExtractor;
-  
+
   private final AuthenticationSuccessHandler successHandler;
 
+  private final IamX509CertificateRepository certificateRepo;
+
   public IamX509PreauthenticationProcessingFilter(X509AuthenticationCredentialExtractor extractor,
-      AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler) {
+      AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler,
+      IamX509CertificateRepository certificateRepo) {
     setCheckForPrincipalChanges(false);
     setAuthenticationManager(authenticationManager);
     this.credentialExtractor = extractor;
     this.successHandler = successHandler;
+    this.certificateRepo = certificateRepo;
   }
 
   protected boolean x509AuthenticationRequested(HttpServletRequest request) {
@@ -104,6 +113,19 @@ public class IamX509PreauthenticationProcessingFilter
       return null;
     }
 
+    Optional<IamX509Certificate> cert = certificateRepo
+      .findBySubjectDnAndIssuerDn(credential.get().getSubject(), credential.get().getIssuer());
+
+    if (cert.isEmpty()) {
+      return null;
+    }
+
+    IamAccount account = cert.get().getAccount();
+
+    if (!account.isActive()) {
+      request.setAttribute(X509_SUSPENDED_ACCOUNT_KEY, Boolean.TRUE);
+    }
+
     credential.ifPresent(this::logX509CredentialInfo);
     return credential.get().getSubject();
   }
@@ -119,17 +141,17 @@ public class IamX509PreauthenticationProcessingFilter
       Authentication authentication) {
 
     request.setAttribute(X509_CAN_LOGIN_KEY, Boolean.TRUE);
-    
+
     if (x509AuthenticationRequested(request)) {
-      
+
       try {
         super.successfulAuthentication(request, response, authentication);
         successHandler.onAuthenticationSuccess(request, response, authentication);
-        
+
       } catch (IOException | ServletException e) {
         throw new X509AuthenticationError(e);
       }
     }
   }
-  
+
 }
