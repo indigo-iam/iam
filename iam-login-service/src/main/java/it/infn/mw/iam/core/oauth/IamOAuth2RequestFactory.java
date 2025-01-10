@@ -17,7 +17,8 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +38,8 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
@@ -85,7 +88,11 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     if (authn instanceof ExtendedAuthenticationToken) {
       Set<IamAuthenticationMethodReference> amrSet =
           ((ExtendedAuthenticationToken) authn).getAuthenticationMethodReferences();
-      authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+      try {
+        authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Failed to convert amr set to JSON array", e);
+      }
     }
 
     for (String audienceKey : AUDIENCE_KEYS) {
@@ -102,19 +109,15 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   }
 
-  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet) {
-    String amrClaim = "";
-    Iterator<IamAuthenticationMethodReference> it = amrSet.iterator();
-    while (it.hasNext()) {
-      IamAuthenticationMethodReference current = it.next();
-      StringBuilder amrClaimBuilder = new StringBuilder(amrClaim);
-      amrClaimBuilder.append(current.getName()).append("+");
-      amrClaim = amrClaimBuilder.toString();
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)
+      throws JsonProcessingException {
+    List<String> amrList = new ArrayList<>();
+    for (IamAuthenticationMethodReference amr : amrSet) {
+      amrList.add(amr.getName());
     }
 
-    // Remove trailing + symbol at end of string
-    amrClaim = amrClaim.substring(0, amrClaim.length() - 1);
-    return amrClaim;
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(amrList);
   }
 
   private void handlePasswordGrantAuthenticationTimestamp(OAuth2Request request) {

@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth.profile.iam;
 
 import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
 
+import java.util.List;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -24,6 +25,8 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -46,7 +49,6 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     this.claimValueHelper = claimValueHelper;
   }
 
-
   @Override
   public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
@@ -62,10 +64,17 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim != null && amrClaim instanceof String) {
-      idClaims.claim("amr", amrClaim);
+      try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> amrList =
+            objectMapper.readValue((String) amrClaim, new TypeReference<List<String>>() {});
+
+        idClaims.claim("amr", amrList);
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to deserialize amr claim", e);
+      }
+
+      includeLabelsInIdToken(idClaims, account);
     }
-
-    includeLabelsInIdToken(idClaims, account);
   }
-
 }
