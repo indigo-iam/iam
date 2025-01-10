@@ -41,7 +41,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
-  public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
+  public static final Logger LOG = LoggerFactory.getLogger(IamJWTProfileIdTokenCustomizer.class);
 
   protected final ScopeClaimTranslationService scopeClaimConverter;
   protected final ClaimValueHelper claimValueHelper;
