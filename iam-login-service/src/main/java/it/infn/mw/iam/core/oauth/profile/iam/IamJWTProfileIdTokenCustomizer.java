@@ -23,6 +23,8 @@ import java.util.Set;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -37,6 +40,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
+
+  public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
   protected final ScopeClaimTranslationService scopeClaimConverter;
   protected final ClaimValueHelper claimValueHelper;
@@ -63,15 +68,15 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
     Object amrClaim = request.getExtensions().get("amr");
 
-    if (amrClaim != null && amrClaim instanceof String) {
+    if (amrClaim instanceof String amrString) {
       try {
         ObjectMapper objectMapper = new ObjectMapper();
         List<String> amrList =
-            objectMapper.readValue((String) amrClaim, new TypeReference<List<String>>() {});
+            objectMapper.readValue(amrString, new TypeReference<List<String>>() {});
 
         idClaims.claim("amr", amrList);
       } catch (Exception e) {
-        throw new RuntimeException("Failed to deserialize amr claim", e);
+        LOG.error("Failed to deserialize amr claim", e);
       }
     }
 

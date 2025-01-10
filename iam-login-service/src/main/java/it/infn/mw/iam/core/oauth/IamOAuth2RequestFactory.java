@@ -85,13 +85,13 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    if (authn instanceof ExtendedAuthenticationToken) {
+    if (authn instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       Set<IamAuthenticationMethodReference> amrSet =
-          ((ExtendedAuthenticationToken) authn).getAuthenticationMethodReferences();
+          extendedAuthenticationToken.getAuthenticationMethodReferences();
       try {
         authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
       } catch (JsonProcessingException e) {
-        throw new RuntimeException("Failed to convert amr set to JSON array", e);
+        LOG.error("Failed to convert amr set to JSON array", e);
       }
     }
 
