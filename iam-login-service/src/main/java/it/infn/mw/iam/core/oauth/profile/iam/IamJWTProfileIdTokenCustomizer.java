@@ -73,8 +73,8 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       } catch (Exception e) {
         throw new RuntimeException("Failed to deserialize amr claim", e);
       }
-
-      includeLabelsInIdToken(idClaims, account);
     }
+
+    includeLabelsInIdToken(idClaims, account);
   }
 }
