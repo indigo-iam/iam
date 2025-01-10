@@ -453,7 +453,15 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/login"));
 
+    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/login?error=failure"));
+
     resolvedAccount.setActive(true);
+
+    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"));
 
   }
 
