@@ -16,6 +16,8 @@
 package it.infn.mw.iam.persistence.model;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.logicalOr;
+import static java.util.Objects.isNull;
 
 import java.io.Serializable;
 import java.time.Clock;
@@ -47,6 +49,8 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
+
+import org.joda.time.DateTimeComparator;
 
 import com.google.common.base.Preconditions;
 
@@ -612,5 +616,9 @@ public class IamAccount implements Serializable {
 
   public void setEndTime(Date endTime) {
     this.endTime = endTime;
+  }
+
+  public boolean isValid() {
+    return logicalOr(isNull(endTime), DateTimeComparator.getInstance().compare(endTime, new Date()) > 0);
   }
 }

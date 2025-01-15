@@ -27,10 +27,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,7 +80,7 @@ public class ScimUserController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes) {
@@ -99,15 +103,14 @@ public class ScimUserController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.GET,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimUser getUser(@PathVariable final String id) {
 
     return userProvisioningService.getById(id);
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(method = RequestMethod.POST, consumes = ScimConstants.SCIM_CONTENT_TYPE,
+  @PostMapping(consumes = ScimConstants.SCIM_CONTENT_TYPE,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.CREATED)
   public MappingJacksonValue create(
@@ -121,8 +124,8 @@ public class ScimUserController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.PUT,
-      consumes = ScimConstants.SCIM_CONTENT_TYPE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PutMapping(value = "/{id}", consumes = ScimConstants.SCIM_CONTENT_TYPE,
+      produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.OK)
   public ScimUser replaceUser(@PathVariable final String id,
       @RequestBody @Validated(ScimUser.NewUserValidation.class) final ScimUser user,
@@ -135,8 +138,7 @@ public class ScimUserController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.PATCH,
-      consumes = ScimConstants.SCIM_CONTENT_TYPE)
+  @PatchMapping(value = "/{id}", consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateUser(@PathVariable final String id,
       @RequestBody @Validated(ScimUser.UpdateUserValidation.class) final ScimUserPatchRequest patchRequest,
@@ -149,7 +151,7 @@ public class ScimUserController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteUser(@PathVariable final String id) {
 

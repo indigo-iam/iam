@@ -31,6 +31,7 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -478,8 +479,7 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(),
-        is(CernStatus.EXPIRED.name()));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
@@ -489,7 +489,47 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
   }
 
   @Test
-  public void testApiReturnsVoPersonWithNoParticipationsIsHandled() {
+  public void testNullEndTimeAndNoVoPersonFoundOnHR() {
+
+    when(hrDb.getHrDbPersonRecord(anyString())).thenReturn(Optional.empty());
+
+    IamAccount testAccount = loadAccount(CERN_USER_UUID);
+    testAccount.setEndTime(null);
+    repo.save(testAccount);
+
+    cernHrLifecycleHandler.run();
+
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+    Optional<IamLabel> statusLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    Optional<IamLabel> timestampLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_TIMESTAMP);
+    Optional<IamLabel> messageLabel =
+        testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
+
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
+
+    assertThat(timestampLabel.isPresent(), is(false));
+
+    assertThat(messageLabel.isPresent(), is(true));
+    assertThat(messageLabel.get().getValue(), is(format(NO_PERSON_FOUND_MESSAGE, CERN_PERSON_ID)));
+
+    cernHrLifecycleHandler.run();
+
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+    statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
+
+  }
+
+  @Test
+  public void testVoPersonWithNoValidParticipationIsHandled() {
 
     when(hrDb.getHrDbPersonRecord(anyString()))
       .thenReturn(Optional.of(noParticipationsVoPerson(CERN_PERSON_ID)));
@@ -507,14 +547,35 @@ public class CernAccountLifecycleTests extends TestSupport implements LifecycleT
         testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_MESSAGE);
 
     assertThat(statusLabel.isPresent(), is(true));
-    assertThat(statusLabel.get().getValue(),
-        is(CernStatus.EXPIRED.name()));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
 
     assertThat(timestampLabel.isPresent(), is(false));
 
     assertThat(messageLabel.isPresent(), is(true));
     assertThat(messageLabel.get().getValue(), is(format(NO_PARTICIPATION_MESSAGE, "test")));
 
+    cernHrLifecycleHandler.run();
+
+    testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+    statusLabel = testAccount.getLabelByPrefixAndName(LABEL_CERN_PREFIX, LABEL_STATUS);
+    assertThat(statusLabel.isPresent(), is(true));
+    assertThat(statusLabel.get().getValue(), is(CernStatus.EXPIRED.name()));
+  }
+
+  @Test
+  public void testNoEmailVoPersonIsReturned() {
+
+    when(hrDb.getHrDbPersonRecord(anyString()))
+      .thenReturn(Optional.of(noEmailVoPerson(CERN_PERSON_ID)));
+
+    cernHrLifecycleHandler.run();
+
+    IamAccount testAccount = loadAccount(CERN_USER_UUID);
+
+    assertThat(testAccount.isActive(), is(true));
+    assertNotNull(testAccount.getUserInfo().getEmail());
   }
 
   @Test
