@@ -441,7 +441,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public IamAccount setAccountEmail(IamAccount account, String email)
       throws EmailAlreadyBoundException {
     checkNotNull(account, "Cannot set email on a null account");
-    checkNotNull(email, "Cannot set null email");
+    checkNotNull(email, "Cannot set null email on account");
     if (ObjectUtils.notEqual(account.getUserInfo().getEmail(), email)) {
       Optional<IamAccount> o = accountRepo.findByEmailWithDifferentUUID(email, account.getUuid());
       if (o.isPresent()) {
