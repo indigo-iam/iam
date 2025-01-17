@@ -67,16 +67,14 @@ public class IamSecurityExpressionMethods {
   }
 
   public boolean isGroupManager(String groupUuid) {
-    boolean groupManager = authentication.getAuthorities()
+    return authentication.getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
-    return groupManager && isRequestWithoutToken();
   }
 
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
-    return account.isPresent() && account.get().getUuid().equals(userUuid)
-        && isRequestWithoutToken();
+    return account.isPresent() && account.get().getUuid().equals(userUuid);
   }
 
   public boolean canManageGroupRequest(String requestId) {
@@ -105,8 +103,7 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasScope(String scope) {
 
-    if (authentication instanceof OAuth2Authentication) {
-      OAuth2Authentication oauth = (OAuth2Authentication) authentication;
+    if (authentication instanceof OAuth2Authentication oauth) {
       return scopeResolver.resolveScope(oauth).stream().anyMatch(s -> s.equals(scope));
     }
     return false;

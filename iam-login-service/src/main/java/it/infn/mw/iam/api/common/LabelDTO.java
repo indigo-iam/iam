@@ -16,12 +16,13 @@
 package it.infn.mw.iam.api.common;
 
 import javax.annotation.Generated;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
-import javax.validation.constraints.NotBlank;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import it.infn.mw.iam.api.common.validator.NoNewLineOrCarriageReturn;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class LabelDTO {
@@ -43,6 +44,7 @@ public class LabelDTO {
   private String name;
 
   @Size(max = 64, message = "invalid value length")
+  @NoNewLineOrCarriageReturn
   private String value;
 
   public LabelDTO() {}

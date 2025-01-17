@@ -16,8 +16,11 @@
 package it.infn.mw.iam.api.common;
 
 import javax.annotation.Generated;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+
+import it.infn.mw.iam.api.common.validator.NoNewLineOrCarriageReturn;
 
 
 
@@ -28,9 +31,11 @@ public class AttributeDTO {
   @Size(max = 64, message = "name cannot be longer than 64 chars")
   @Pattern(regexp = NAME_REGEXP,
       message = "invalid name (does not match with regexp: '" + NAME_REGEXP + "')")
+  @NotBlank
   private String name;
 
   @Size(max = 256, message = "value cannot be longer than 256 chars")
+  @NoNewLineOrCarriageReturn
   private String value;
 
   public AttributeDTO() {

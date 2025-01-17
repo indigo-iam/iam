@@ -36,6 +36,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import com.google.common.collect.Lists;
 
@@ -43,7 +44,6 @@ import it.infn.mw.iam.api.registration.cern.CernHrDBApiService;
 import it.infn.mw.iam.api.registration.cern.CernHrDbApiError;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.api.registration.cern.dto.VOPersonDTO;
-import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.config.cern.CernProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
@@ -73,10 +73,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       Lists.newArrayList(SUSPENDED.name(), PENDING_REMOVAL.name());
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrLifecycleHandler.class);
-
-  public enum CernStatus {
-    IGNORED, ERROR, EXPIRED, VO_MEMBER
-  }
 
   private final CernProperties cernProperties;
   private final IamAccountRepository accountRepo;
@@ -112,8 +108,10 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       return;
     }
     if (voPerson.isEmpty()) {
-      expireIfActiveAndMember(a);
       setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PERSON_FOUND_MESSAGE, cernPersonId));
+      if (a.isValid()) {
+        expireAccount(a);
+      }
       return;
     }
 
@@ -123,24 +121,19 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       .getMostRecentMembership(voPerson.get().getParticipations(), experiment);
 
     if (ep.isEmpty()) {
-      expireIfActiveAndMember(a);
       setCernStatusLabel(a, CernStatus.EXPIRED, format(NO_PARTICIPATION_MESSAGE, experiment));
+      if (a.isValid()) {
+        expireAccount(a);
+      }
       return;
     }
 
-    syncAccountEndTime(a, ep.get().getEndDate());
-    setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
-
-    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && !a.isActive()
+    if (CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
       restoreAccount(a);
     }
-  }
-
-  private void expireIfActiveAndMember(IamAccount a) {
-    if (CernHrLifecycleUtils.isActiveMembership(a.getEndTime()) && a.isActive()) {
-      expireAccount(a);
-    }
+    syncAccountEndTime(a, ep.get().getEndDate());
+    setCernStatusLabel(a, CernStatus.VO_MEMBER, format(SYNCHRONIZED_MESSAGE));
   }
 
   @Override
@@ -157,11 +150,11 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       LOG.debug("accountsPage: {}", accountsPage);
 
       if (accountsPage.hasContent()) {
-        for (IamAccount account : accountsPage.getContent()) {
+        for (IamAccount a : accountsPage.getContent()) {
           try {
-            handleAccount(getCernPersonId(account), cernProperties.getExperimentName(), account);
+            handleAccount(getCernPersonId(a), cernProperties.getExperimentName(), a);
           } catch (RuntimeException e) {
-            LOG.error("Error during CERN HR lifecycle handler: {}", e.getMessage());
+            LOG.error("Error during CERN HR lifecycle handler on account {}: {}", a, e.getMessage());
           }
         }
       }
@@ -200,9 +193,9 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
     if (!isSkipEmailSynch(a)) {
       try {
         accountService.setAccountEmail(a, p.getEmail());
-      } catch (EmailAlreadyBoundException e) {
-        LOG.error(e.getMessage());
-      }
+      } catch (EmailAlreadyBoundException | NullPointerException e) {
+        LOG.error("Error on setting email for account {}: {}", a.getUuid(), e.getMessage());
+      } 
     }
   }
 
@@ -214,10 +207,7 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
   private String getCernPersonId(IamAccount a) {
     Optional<IamLabel> cernPersonIdLabel =
         a.getLabelByPrefixAndName(LABEL_CERN_PREFIX, cernProperties.getPersonIdClaim());
-    if (cernPersonIdLabel.isEmpty()) {
-      LOG.error("Account '{}' should have CERN person id label set!", a.getUsername());
-      throw new IllegalArgumentException(INVALID_ACCOUNT_MESSAGE);
-    }
+    Assert.isTrue(cernPersonIdLabel.isPresent(), INVALID_ACCOUNT_MESSAGE);
     return cernPersonIdLabel.get().getValue();
   }
 
@@ -238,8 +228,6 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
 
   private void restoreAccount(IamAccount a) {
     accountService.restoreAccount(a);
-    IamLabel statusLabel = CernHrLifecycleUtils.buildLifecycleStatusLabel();
-    accountService.deleteLabel(a, statusLabel);
   }
 
   private void syncAccountEndTime(IamAccount a, Date endDate) {

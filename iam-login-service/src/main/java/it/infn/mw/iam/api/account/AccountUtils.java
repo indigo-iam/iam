@@ -79,8 +79,7 @@ public class AccountUtils {
 
     Authentication userAuthn = authn;
 
-    if (authn instanceof OAuth2Authentication) {
-      OAuth2Authentication oauth = (OAuth2Authentication) authn;
+    if (authn instanceof OAuth2Authentication oauth) {
       if (oauth.getUserAuthentication() == null) {
         return Optional.empty();
       }

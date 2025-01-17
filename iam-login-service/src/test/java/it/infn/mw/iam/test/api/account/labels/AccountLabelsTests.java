@@ -340,7 +340,7 @@ public class AccountLabelsTests extends TestSupport {
   public void labelValidationTests() throws Exception {
 
     final String[] SOME_INVALID_PREFIXES = {"aword", "-starts-with-dash.com", "ends-with-dash-.com",
-        "contains_underscore.org", "contains/slashes.org"};
+        "contains_underscore.org", "contains/slashes.org", "carriage\nreturn", "another\rreturn"};
 
     for (String p : SOME_INVALID_PREFIXES) {
       LabelDTO l = LabelDTO.builder().prefix(p).value(LABEL_VALUE).name(LABEL_NAME).build();
@@ -359,7 +359,8 @@ public class AccountLabelsTests extends TestSupport {
       .andExpect(BAD_REQUEST)
       .andExpect(NAME_REQUIRED_ERROR_MESSAGE);
 
-    final String[] SOME_INVALID_NAMES = {"-pippo", "/ciccio/paglia", ".starts-with-dot"};
+    final String SOME_INVALID_NAMES[] =
+        {"-pippo", "/ciccio/paglia", ".starts-with-dot", "carriage\nreturn", "another\rreturn"};
 
     for (String in : SOME_INVALID_NAMES) {
       LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(in).build();
@@ -368,6 +369,17 @@ public class AccountLabelsTests extends TestSupport {
           .content(mapper.writeValueAsString(invalidNameLabel)))
         .andExpect(BAD_REQUEST)
         .andExpect(INVALID_NAME_ERROR_MESSAGE);
+    }
+
+    final String SOME_INVALID_VALUES[] = {"carriage\nreturn", "another\rreturn"};
+
+    for (String v : SOME_INVALID_VALUES) {
+      LabelDTO invalidNameLabel = LabelDTO.builder().prefix(LABEL_PREFIX).name(LABEL_NAME).value(v).build();
+      mvc
+        .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
+          .content(mapper.writeValueAsString(invalidNameLabel)))
+        .andExpect(BAD_REQUEST)
+        .andExpect(INVALID_VALUE_ERROR_MESSAGE);
     }
 
     LabelDTO longNameLabel =

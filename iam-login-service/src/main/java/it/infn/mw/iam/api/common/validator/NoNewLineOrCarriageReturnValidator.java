@@ -13,30 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.account;
+package it.infn.mw.iam.api.common.validator;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 
-import it.infn.mw.iam.persistence.model.IamAccount;
+public class NoNewLineOrCarriageReturnValidator implements ConstraintValidator<NoNewLineOrCarriageReturn, String> {
 
-public class X509CertificateUnlinkedEvent extends AccountEvent {
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-
-
-  private final String certificateSubject;
-
-  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
-      String certificateSubject) {
-    super(source, account, message);
-    this.certificateSubject = sanitize(certificateSubject);
+  public NoNewLineOrCarriageReturnValidator() {
+    // Empty on purpose
   }
 
-  public String getCertificateSubject() {
-    return certificateSubject;
+  @Override
+  public void initialize(NoNewLineOrCarriageReturn constraintAnnotation) {
+    // Empty on purpose
+  }
+
+  @Override
+  public boolean isValid(String value, ConstraintValidatorContext context) {
+    return value == null || !value.matches(".*(?:[ \r\n\t].*)+");
   }
 
 }
