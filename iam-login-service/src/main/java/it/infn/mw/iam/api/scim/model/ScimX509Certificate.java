@@ -42,7 +42,6 @@ public class ScimX509Certificate {
   private final String issuerDn;
 
   @JsonFilter("pemEncodedCertificateFilter")
-  @PemContent(message = "Invalid PEM encoded certificate")
   private final String pemEncodedCertificate;
 
   @JsonSerialize(using = JsonDateSerializer.class)
