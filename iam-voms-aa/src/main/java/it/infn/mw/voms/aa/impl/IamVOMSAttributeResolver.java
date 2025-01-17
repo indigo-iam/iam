@@ -38,10 +38,12 @@ public class IamVOMSAttributeResolver implements AttributeResolver {
   public static final Logger LOG = LoggerFactory.getLogger(IamVOMSAttributeResolver.class);
 
   private final IamLabel vomsRoleLabel;
+  private final IamLabel optionalGroupLabel;
   private final FQANEncoding fqanEncoding;
 
   public IamVOMSAttributeResolver(VomsProperties properties, FQANEncoding fqanEncoding) {
-    vomsRoleLabel = IamLabel.builder().name(properties.getAa().getOptionalGroupLabel()).build();
+    vomsRoleLabel = IamLabel.builder().name(properties.getAa().getVomsRoleLabel()).build();
+    optionalGroupLabel = IamLabel.builder().name(properties.getAa().getOptionalGroupLabel()).build();
     this.fqanEncoding = fqanEncoding;
   }
 
@@ -49,7 +51,7 @@ public class IamVOMSAttributeResolver implements AttributeResolver {
     final String voName = context.getVOName();
     final boolean nameMatches = g.getName().equals(voName) || g.getName().startsWith(voName + "/");
 
-    return nameMatches && !g.getLabels().contains(vomsRoleLabel);
+    return nameMatches && !g.getLabels().contains(vomsRoleLabel) && !g.getLabels().contains(optionalGroupLabel);
   }
 
   protected void noSuchUserError(VOMSRequestContext context) {

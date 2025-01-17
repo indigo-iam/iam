@@ -27,6 +27,12 @@ public class AuthenticationUtils {
   }
 
   public static Authentication userAuthentication() {
-    return new UsernamePasswordAuthenticationToken("test", "", AuthorityUtils.createAuthorityList("ROLE_USER"));
+    return new UsernamePasswordAuthenticationToken("test", "",
+        AuthorityUtils.createAuthorityList("ROLE_USER"));
+  }
+
+  public static Authentication preAuthenticatedAuthentication() {
+    return new UsernamePasswordAuthenticationToken("test_pre_authenticated", "",
+        AuthorityUtils.createAuthorityList("ROLE_PRE_AUTHENTICATED"));
   }
 }

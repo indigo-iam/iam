@@ -71,6 +71,12 @@
     max-width: 250px;
 }
 
+.verify-form {
+    padding-top: 1em;
+    margin: 0 auto;
+    max-width: 250px;
+}
+
 #sign-aup-form {
     padding-top: 2em;
     margin: 0 auto;
@@ -102,6 +108,11 @@
 }
 
 #login-error {
+    margin: 0 auto;
+    max-width: 400px;
+}
+
+#verify-error {
     margin: 0 auto;
     max-width: 400px;
 }
@@ -154,6 +165,10 @@
 
 #register-confirm-back-btn {
     margin-top: 2em;
+}
+
+#verify-confirm {
+    margin-top: 2em
 }
 
 .reset-password-form {
@@ -336,7 +351,17 @@ body.skin-blue {
     color: inherit;
 }
 
+.btn-verify {
+    background-color: white;
+    border-color: #ddd;
+    color: inherit;
+}
+
 .btn-login:hover {
+    background-color: white;
+}
+
+.btn-verify:hover {
     background-color: white;
 }
 
@@ -360,6 +385,11 @@ body.skin-blue {
 }
 
 .signin-preamble {
+    margin-bottom: 1em;
+    text-align: center;
+}
+
+.verify-preamble {
     margin-bottom: 1em;
     text-align: center;
 }

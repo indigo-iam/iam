@@ -1,8 +1,44 @@
 # Changelog
 
+## 1.11.0 (2024-12-19)
+
+### What's Changed
+
+* Add confirmation before rotate client secret by @SteDev2 in https://github.com/indigo-iam/iam/pull/875
+* Fix account mapping in VOMS AA by @rmiccoli in https://github.com/indigo-iam/iam/pull/872
+* Add POST endpoint for registration requests confirmation by @enricovianello in https://github.com/indigo-iam/iam/pull/881
+* Fix CERN lifecycle handler by @enricovianello in https://github.com/indigo-iam/iam/pull/871, https://github.com/indigo-iam/iam/pull/896
+* Grant admin scopes to admin-approved clients only by @rmiccoli in https://github.com/indigo-iam/iam/commit/6bbaccd4e85cc1dc1659ea10fa31dd5307b2dc62
+* Client-credentials flow won't create a refresh token by @rmiccoli in https://github.com/indigo-iam/OpenID-Connect-Java-Spring-Server/pull/22
+* Redirect to login page when signing AUP by @federicaagostini in https://github.com/indigo-iam/iam/commit/5acde91cd333d139991e2ba1ee6d5fe062d986a0
+* Fix missing update of matchingPolicy by @garaimanoj in https://github.com/indigo-iam/iam/commit/f15ef57b1e11f3f08e1b5cb2462520efd3c1108d
+* Find account by certificate sub and iss in VOMS AA by @rmiccoli in https://github.com/indigo-iam/iam/pull/897
+* Exclude IAM optional groups from VOMS AC by @rmiccoli in https://github.com/indigo-iam/iam/pull/894
+* Find account by certificate sub and iss in VOMS AA by @rmiccoli in https://github.com/indigo-iam/iam/pull/897
+* Prevent the issue of broken SAML login flow by @DonaldChung-HK in https://github.com/indigo-iam/iam/pull/885
+
+### Added
+
+* (_Experimental_*) Implement MFA by @sam-glendenning, @rmiccoli, @garaimanoj, @Sae126V in https://github.com/indigo-iam/iam/pull/733
+
+(*) This initial release featuring Multi-Factor Authentication is experimental and will be enhanced and expanded with new features in future releases, based also on user feedback.
+
+### MFA experimental feature summary
+
+* Each authenticated user can enable/disable MFA through a button in their homepage
+  * user will use an authenticator, as it is required to generate the time-based one-time passwords (TOTPs) necessary for authentication
+* If issues arise with the authenticator, the IAM administrator can disable MFA for a user
+* Authenticator working for local authentication only
+  * integration with X.509 certificates and external providers not yet supported
+* Encryption and decryption of MFA secrets
+
+#### Configuration
+
+The `mfa` Spring profile is used to enable MFA functionality. By default, MFA is disabled for all users.
+
 ## 1.10.2 (2024-09-30)
 
-## What's Changed
+### What's Changed
 
 * Add devcontainer configuration https://github.com/indigo-iam/iam/pull/835
 * Track refresh tokens in access token AUDIT logs https://github.com/indigo-iam/iam/pull/838
@@ -10,7 +46,7 @@
 
 ## 1.10.1 (2024-08-22)
 
-## What's Fixed
+### What's Fixed
 
 * Fix repeated suspensions https://github.com/indigo-iam/iam/pull/831
 * Fix typo in AUDIT log for suspended accounts https://github.com/indigo-iam/iam/pull/832
@@ -259,13 +295,16 @@ fixes several bugs for the IAM login service.
 ## 1.7.2 (2021-12-03)
 
 This release provides a single dependency change for the IAM login service
-application.
 
 ### Added
 
 * Upgrade flyway to version 4.2.0. This is needed to enable a smooth transition to the flyway version that will come with IAM v1.8.0 (which moves to Spring boot 2.5.x) (#443)
 
 ## 1.7.1 (2021-09-13)
+
+This release provides changes and bug fixes to the IAM test client application.
+
+### Added
 
 This release provides changes and bug fixes to the IAM test client application.
 

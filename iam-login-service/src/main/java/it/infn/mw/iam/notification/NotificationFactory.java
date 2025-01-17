@@ -58,6 +58,10 @@ public interface NotificationFactory {
 
   IamEmailNotification createAccountRestoredMessage(IamAccount account);
 
+  IamEmailNotification createMfaDisableMessage(IamAccount account);
+
+  IamEmailNotification createMfaEnableMessage(IamAccount account);
+
   IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
 
   IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);

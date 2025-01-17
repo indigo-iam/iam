@@ -18,22 +18,20 @@ package it.infn.mw.iam.api.group;
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -58,7 +56,6 @@ public class GroupLabelsController {
   final IamGroupService service;
   final LabelDTOConverter converter;
 
-  @Autowired
   public GroupLabelsController(IamGroupService service, LabelDTOConverter converter) {
     this.service = service;
     this.converter = converter;
@@ -70,7 +67,7 @@ public class GroupLabelsController {
     }
   }
 
-  @RequestMapping(method = GET)
+  @GetMapping
   @PreAuthorize("hasRole('ADMIN') or #iam.isGroupManager(#id)")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
@@ -83,7 +80,7 @@ public class GroupLabelsController {
     return results;
   }
 
-  @RequestMapping(method = PUT)
+  @PutMapping
   public void setLabel(@PathVariable String id, @RequestBody @Validated LabelDTO label,
       BindingResult validationResult) {
     handleValidationError(validationResult);
@@ -92,7 +89,7 @@ public class GroupLabelsController {
     service.addLabel(group, converter.entityFromDto(label));
   }
 
-  @RequestMapping(method = DELETE)
+  @DeleteMapping
   @ResponseStatus(NO_CONTENT)
   public void deleteLabel(@PathVariable String id, @Validated LabelDTO label,
       BindingResult validationResult) {
@@ -103,14 +100,12 @@ public class GroupLabelsController {
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidLabelError.class)
-  @ResponseBody
   public ErrorDTO handleValidationError(InvalidLabelError e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 
   @ResponseStatus(code = HttpStatus.NOT_FOUND)
   @ExceptionHandler(NoSuchGroupError.class)
-  @ResponseBody
   public ErrorDTO handleNotFoundError(NoSuchGroupError e) {
     return ErrorDTO.fromString(e.getMessage());
   }

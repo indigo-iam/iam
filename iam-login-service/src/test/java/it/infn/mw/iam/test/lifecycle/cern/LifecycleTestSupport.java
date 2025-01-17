@@ -106,10 +106,16 @@ public interface LifecycleTestSupport {
         Sets.newHashSet(getExpiredParticipation("test", 40)));
   }
 
+  default VOPersonDTO noEmailVoPerson(String personId) {
+    VOPersonDTO personDTO = voPerson(personId);
+    personDTO.setEmail(null);
+    return personDTO;
+  }
+
   default InstituteDTO getTestInstitute() {
     InstituteDTO i = new InstituteDTO();
     i.setId("000001");
-    i.setName("INFN");
+    i.setName("Istituto Nazionale di Fisica Nucleare");
     i.setCountry("IT");
     i.setTown("Bologna");
     return i;

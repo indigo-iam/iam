@@ -17,6 +17,7 @@ package it.infn.mw.iam.config.security;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
+import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import javax.servlet.RequestDispatcher;
 
@@ -41,18 +42,22 @@ import org.springframework.security.data.repository.query.SecurityEvaluationCont
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
+import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
+import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
+import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
@@ -62,14 +67,13 @@ import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 @Configuration
 @EnableWebSecurity
 public class IamWebSecurityConfig {
-  
-  
 
   @Bean
   public SecurityEvaluationContextExtension contextExtension() {
@@ -105,6 +109,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamAccountRepository accountRepo;
+    
+    @Autowired
+    private IamTotpMfaRepository totpMfaRepository;
 
     @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
@@ -121,7 +128,7 @@ public class IamWebSecurityConfig {
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
-      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder));
+      auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, totpMfaRepository));
       // @formatter:on
     }
 
@@ -175,6 +182,12 @@ public class IamWebSecurityConfig {
             .authenticationEntryPoint(entryPoint())
         .and()
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+
+          // Need to replace the UsernamePasswordAuthenticationFilter because we are now making use of the ExtendedAuthenticationToken globally
+          .addFilterAt(extendedAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+          // Applied in the OAuth2 login flow
+          .addFilterAfter(extendedHttpServletRequestFilter(), UsernamePasswordAuthenticationFilter.class)
         .logout()
           .logoutUrl("/logout")
         .and().anonymous()
@@ -190,19 +203,29 @@ public class IamWebSecurityConfig {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
-    public AuthenticationSuccessHandler successHandler() {
-      AuthenticationSuccessHandler delegate =
-          new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
+    public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
+      return new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler(),
+          failureHandler());
+    }
 
-      return new EnforceAupSignatureSuccessHandler(delegate, aupSignatureCheckService, accountUtils,
-          accountRepo);
+    public ExtendedHttpServletRequestFilter extendedHttpServletRequestFilter() {
+      return new ExtendedHttpServletRequestFilter();
+    }
+
+    public AuthenticationSuccessHandler successHandler() {
+      return new CheckMultiFactorIsEnabledSuccessHandler(accountUtils, iamBaseUrl,
+          aupSignatureCheckService, accountRepo);
+    }
+
+    public AuthenticationFailureHandler failureHandler() {
+      return new SimpleUrlAuthenticationFailureHandler("/login?error=failure");
     }
   }
 
   @Configuration
   @Order(101)
   public static class RegistrationConfig extends WebSecurityConfigurerAdapter {
-    
+
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
     @Autowired
@@ -324,6 +347,39 @@ public class IamWebSecurityConfig {
     @Override
     public void configure(final WebSecurity builder) throws Exception {
       builder.debug(true);
+    }
+  }
+
+  /**
+   * Configure the login flow for the step-up authentication. This takes place at the /iam/verify
+   * endpoint
+   */
+  @Configuration
+  @Order(102)
+  public static class MultiFactorConfigurationAdapter extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    @Qualifier("MultiFactorVerificationFilter")
+    private MultiFactorVerificationFilter multiFactorVerificationFilter;
+
+    public AuthenticationEntryPoint mfaAuthenticationEntryPoint() {
+      return new LoginUrlAuthenticationEntryPoint(MFA_VERIFY_URL);
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http.antMatcher(MFA_VERIFY_URL + "**")
+        .authorizeRequests()
+        .anyRequest()
+        .hasRole("PRE_AUTHENTICATED")
+        .and()
+        .formLogin()
+        .failureUrl(MFA_VERIFY_URL + "?error=failure")
+        .and()
+        .exceptionHandling()
+        .authenticationEntryPoint(mfaAuthenticationEntryPoint())
+        .and()
+        .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
     }
   }
 }

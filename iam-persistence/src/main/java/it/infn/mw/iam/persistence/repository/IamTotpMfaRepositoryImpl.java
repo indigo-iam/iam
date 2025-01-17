@@ -33,5 +33,4 @@ public class IamTotpMfaRepositoryImpl implements IamTotpMfaRepositoryCustom {
   public Optional<IamTotpMfa> findByAccount(IamAccount account) {
     return repo.findByAccountId(account.getId());
   }
-
 }

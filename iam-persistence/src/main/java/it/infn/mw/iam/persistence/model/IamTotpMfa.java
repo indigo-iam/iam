@@ -17,17 +17,13 @@ package it.infn.mw.iam.persistence.model;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -43,7 +39,8 @@ public class IamTotpMfa implements Serializable {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @OneToOne()
+  @OneToOne
+  @JoinColumn(name = "account_id")
   private IamAccount account;
 
   @Column(name = "secret", nullable = false)
@@ -59,10 +56,6 @@ public class IamTotpMfa implements Serializable {
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "last_update_time", nullable = false)
   private Date lastUpdateTime;
-
-  @OneToMany(mappedBy = "totpMfa", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
-      orphanRemoval = true)
-  private Set<IamTotpRecoveryCode> recoveryCodes = new HashSet<>();
 
   public IamTotpMfa() {
     Date now = new Date();
@@ -134,15 +127,6 @@ public class IamTotpMfa implements Serializable {
   public void touch() {
 
     setLastUpdateTime(new Date());
-  }
-
-  public Set<IamTotpRecoveryCode> getRecoveryCodes() {
-    return recoveryCodes;
-  }
-
-  public void setRecoveryCodes(final Set<IamTotpRecoveryCode> recoveryCodes) {
-    this.recoveryCodes.clear();
-    this.recoveryCodes.addAll(recoveryCodes);
   }
 
   @Override

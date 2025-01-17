@@ -47,9 +47,8 @@ import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
 
@@ -64,15 +63,10 @@ import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-/**
- * @author jricher
- *
- */
 @SuppressWarnings("deprecation")
 @Controller
 @SessionAttributes("authorizationRequest")
 public class IamOAuthConfirmationController {
-
 
   @Autowired
   private ClientDetailsEntityService clientService;
@@ -116,7 +110,7 @@ public class IamOAuthConfirmationController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(path = "/oauth/confirm_access", method = RequestMethod.GET)
+  @GetMapping(path = "/oauth/confirm_access")
   public String confimAccess(Map<String, Object> model,
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {
@@ -148,26 +142,7 @@ public class IamOAuthConfirmationController {
 
     if (prompts.contains("none")) {
       // if we've got a redirect URI then we'll send it
-
-      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
-
-      try {
-        URIBuilder uriBuilder = new URIBuilder(url);
-
-        uriBuilder.addParameter("error", "interaction_required");
-        if (!Strings.isNullOrEmpty(authRequest.getState())) {
-          uriBuilder.addParameter("state", authRequest.getState()); // copy the state parameter if
-                                                                    // one was given
-        }
-
-        status.setComplete();
-        return "redirect:" + uriBuilder.toString();
-
-      } catch (URISyntaxException e) {
-        logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
-        model.put("code", HttpStatus.FORBIDDEN);
-        return HttpCodeView.VIEWNAME;
-      }
+      return handleRedirectOrFail(model, authRequest, status, client);
     }
 
     model.put("auth_request", authRequest);
@@ -181,22 +156,43 @@ public class IamOAuthConfirmationController {
     // pre-process the scopes
     Set<SystemScope> scopes = scopeService.fromStrings(authRequest.getScope());
 
-    Set<SystemScope> sortedScopes = new LinkedHashSet<>(scopes.size());
     Set<SystemScope> systemScopes = scopeService.getAll();
 
-    // filter requested scopes according to the scope policy
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
-      .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
+    Set<String> filteredScopes = getFilteredScopes(scopes, authUser);
 
-    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+    Set<SystemScope> sortedScopes = getSortedScopes(systemScopes, filteredScopes);
 
-    // admin scopes are not allowed to clients approved by regular users
-    if (!accountUtils.isAdmin(authUser)) {
-      filteredScopes =
-          filteredScopes.stream().filter(s -> !adminScopes.contains(s)).collect(Collectors.toSet());
+    model.put("scopes", sortedScopes);
+
+    authRequest.setScope(scopeService.toStrings(sortedScopes));
+
+    model.put("claims", getClaimsForScopes(sortedScopes, authUser.getName()));
+
+    // client stats
+    Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
+    model.put("count", count);
+
+    // contacts
+    if (!client.getContacts().isEmpty()) {
+      String contacts = Joiner.on(", ").join(client.getContacts());
+      model.put("contacts", contacts);
     }
 
-    // sort scopes for display based on the inherent order of system scopes
+    // if the client is over a week old and has more than one registration, don't give such a big
+    // warning instead, tag as "Generally Recognized As Safe" (gras)
+    Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
+    Boolean expression =
+        count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
+    model.put("gras", expression);
+
+    return "iam/approveClient";
+  }
+
+  private Set<SystemScope> getSortedScopes(Set<SystemScope> systemScopes,
+      Set<String> filteredScopes) {
+
+    Set<SystemScope> sortedScopes = new LinkedHashSet<>(systemScopes.size());
+
     for (SystemScope s : systemScopes) {
       if (scopeService.fromStrings(filteredScopes).contains(s)) {
         sortedScopes.add(s);
@@ -206,52 +202,70 @@ public class IamOAuthConfirmationController {
     // add in any scopes that aren't system scopes to the end of the list
     sortedScopes.addAll(Sets.difference(scopeService.fromStrings(filteredScopes), systemScopes));
 
-    model.put("scopes", sortedScopes);
+    return sortedScopes;
+  }
 
-    authRequest.setScope(scopeService.toStrings(sortedScopes));
+  private Set<String> getFilteredScopes(Set<SystemScope> scopes, Authentication authUser)
+      throws NoSuchAccountError {
 
-    // get the userinfo claims for each scope
-    UserInfo user = userInfoService.getByUsername(authUser.getName());
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(authUser)
+      .orElseThrow(() -> NoSuchAccountError.forUsername(authUser.getName()));
+
+    Set<String> filteredScopes = pdp.filterScopes(scopeService.toStrings(scopes), account);
+
+    if (!accountUtils.isAdmin(authUser)) {
+      filteredScopes =
+          filteredScopes.stream().filter(s -> !adminScopes.contains(s)).collect(Collectors.toSet());
+    }
+    return filteredScopes;
+  }
+
+  private Map<String, Map<String, String>> getClaimsForScopes(Set<SystemScope> sortedScopes,
+      String username) {
+
+    UserInfo user = userInfoService.getByUsername(username);
+
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
-    if (user != null) {
-      JsonObject userJson = user.toJson();
+    if (user == null) {
+      return claimsForScopes;
+    }
 
-      for (SystemScope systemScope : sortedScopes) {
-        Map<String, String> claimValues = new HashMap<>();
+    JsonObject userJson = user.toJson();
+    for (SystemScope systemScope : sortedScopes) {
+      Map<String, String> claimValues = new HashMap<>();
 
-        Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
-        for (String claim : claims) {
-          if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
-            // TODO: this skips the address claim
-            claimValues.put(claim, userJson.get(claim).getAsString());
-          }
+      Set<String> claims = scopeClaimTranslationService.getClaimsForScope(systemScope.getValue());
+      for (String claim : claims) {
+        if (userJson.has(claim) && userJson.get(claim).isJsonPrimitive()) {
+          claimValues.put(claim, userJson.get(claim).getAsString());
         }
-
-        claimsForScopes.put(systemScope.getValue(), claimValues);
       }
+      claimsForScopes.put(systemScope.getValue(), claimValues);
     }
+    return claimsForScopes;
+  }
 
-    model.put("claims", claimsForScopes);
+  private String handleRedirectOrFail(Map<String, Object> model, AuthorizationRequest authRequest,
+      SessionStatus status, ClientDetailsEntity client) {
 
-    // client stats
-    Integer count = statsService.getCountForClientId(client.getClientId()).getApprovedSiteCount();
-    model.put("count", count);
+    String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
 
+    try {
+      URIBuilder uriBuilder = new URIBuilder(url);
 
-    // contacts
-    if (!client.getContacts().isEmpty()) {
-      String contacts = Joiner.on(", ").join(client.getContacts());
-      model.put("contacts", contacts);
+      uriBuilder.addParameter("error", "interaction_required");
+      if (!Strings.isNullOrEmpty(authRequest.getState())) {
+        uriBuilder.addParameter("state", authRequest.getState());
+      }
+
+      status.setComplete();
+      return "redirect:" + uriBuilder.toString();
+
+    } catch (URISyntaxException e) {
+      logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
+      model.put("code", HttpStatus.FORBIDDEN);
+      return HttpCodeView.VIEWNAME;
     }
-
-    // if the client is over a week old and has more than one registration, don't give such a big
-    // warning
-    // instead, tag as "Generally Recognized As Safe" (gras)
-    Date lastWeek = new Date(System.currentTimeMillis() - (60 * 60 * 24 * 7 * 1000));
-    Boolean expression = count > 1 && client.getCreatedAt() != null && client.getCreatedAt().before(lastWeek);
-    model.put("gras", expression);
-
-    return "iam/approveClient";
   }
 
   /**

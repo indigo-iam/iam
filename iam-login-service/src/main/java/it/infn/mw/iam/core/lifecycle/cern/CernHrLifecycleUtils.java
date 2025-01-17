@@ -30,7 +30,7 @@ import org.joda.time.DateTimeComparator;
 import it.infn.mw.iam.api.registration.cern.dto.ParticipationDTO;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.AccountLifecycleStatus;
-import it.infn.mw.iam.core.lifecycle.cern.CernHrLifecycleHandler.Status;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
 
 public class CernHrLifecycleUtils {
@@ -51,7 +51,7 @@ public class CernHrLifecycleUtils {
     return IamLabel.builder().prefix(LABEL_CERN_PREFIX).name(LABEL_ACTION).build();
   }
 
-  public static IamLabel buildCernStatusLabel(Status status) {
+  public static IamLabel buildCernStatusLabel(CernStatus status) {
 
     return IamLabel.builder()
       .prefix(LABEL_CERN_PREFIX)
@@ -101,5 +101,9 @@ public class CernHrLifecycleUtils {
       return true;
     }
     return DateTimeComparator.getDateOnlyInstance().compare(endTime, new Date()) >= 0;
+  }
+
+  public static boolean isAccountIgnored(IamAccount a) {
+    return a.hasLabel(buildCernIgnoreLabel());
   }
 }
