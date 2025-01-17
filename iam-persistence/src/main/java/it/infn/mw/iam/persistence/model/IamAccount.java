@@ -52,6 +52,7 @@ import javax.validation.constraints.NotNull;
 
 import org.joda.time.DateTimeComparator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 
 @Entity
