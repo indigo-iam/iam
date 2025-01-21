@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.authzcode;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,6 +34,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -87,7 +89,7 @@ public class AuthorizationCodeIntegrationTests {
 
   @Test
   public void testAuthzCodeAudienceSupport()
-      throws IOException, ParseException {
+      throws JsonProcessingException, IOException, ParseException {
 
     String[] audienceKeys = {"aud", "audience"};
 
@@ -163,7 +165,7 @@ public class AuthorizationCodeIntegrationTests {
         .get(0);
 
       // @formatter:off
-      ValidatableResponse resp3 = RestAssured.given()
+      ValidatableResponse resp3= RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -196,7 +198,7 @@ public class AuthorizationCodeIntegrationTests {
 
   @Test
   public void testRefreshTokenAfterAuthzCodeWorks()
-      throws IOException {
+      throws JsonProcessingException, IOException, ParseException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -271,7 +273,7 @@ public class AuthorizationCodeIntegrationTests {
       .get(0);
 
     // @formatter:off
-      ValidatableResponse resp3 = RestAssured.given()
+      ValidatableResponse resp3= RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -421,7 +423,7 @@ public class AuthorizationCodeIntegrationTests {
     .then()
         .statusCode(HttpStatus.OK.value());
 
-    ValidatableResponse resp8= RestAssured.given()
+    RestAssured.given()
         .formParam("grant_type", "refresh_token")
         .formParam("refresh_token", refreshToken)
         .formParam("scope", "openid iam:admin.read iam:admin.write")
@@ -431,42 +433,10 @@ public class AuthorizationCodeIntegrationTests {
       .when()
         .post(tokenUrl)
       .then()
-      .statusCode(HttpStatus.OK.value());
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error",equalTo("invalid_scope"))
+      .body("error_description", equalTo("Up-scoping is not allowed."));
       // @formatter:on
-
-    refreshedToken =
-        mapper.readTree(resp8.extract().body().asString()).get("access_token").asText();
-    
-// @formatter:off
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/me/authorities")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/api/clients")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/scope_policies")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-        // @formatter:on
-
 
   }
 
