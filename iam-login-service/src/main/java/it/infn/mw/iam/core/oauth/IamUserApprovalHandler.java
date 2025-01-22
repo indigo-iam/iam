@@ -52,21 +52,12 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.service.ClientService;
-
 @SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
   @Autowired
   private ClientDetailsEntityService clientDetailsService;
-
-  @Autowired
-  private ClientService clientService;
-
-  @Autowired
-  private AccountUtils accountUtils;
 
   @Autowired
   private ApprovedSiteService approvedSiteService;
