@@ -89,6 +89,8 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (7, 'offline_access'),
   (7, 'scim:read'),
   (7, 'scim:write'),
+  (7, 'iam:admin.read'),
+  (7, 'iam:admin.write'),
   (8, 'openid'),
   (8, 'profile'),
   (8, 'email'),
