@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -1035,8 +1035,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
       .getContentAsString();
 
     responseJson = mapper.readTree(response);
-    assertFalse(
-        responseJson.get(0).get("accessDate").equals(responseJson.get(0).get("creationDate")));
+    assertNotEquals(responseJson.get(0).get("accessDate"), responseJson.get(0).get("creationDate"));
 
   }
 

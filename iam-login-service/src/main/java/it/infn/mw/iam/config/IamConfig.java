@@ -28,11 +28,15 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
+import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
+import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
+import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -167,15 +171,15 @@ public class IamConfig {
 
   @Bean(name = "kcJwtProfile")
   JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, UserInfoService userInfoService, ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
+      ScopeClaimTranslationService converter, UserInfoService userInfoService,
+      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
     KeycloakProfileAccessTokenBuilder atBuilder =
         new KeycloakProfileAccessTokenBuilder(props, groupHelper);
 
-    KeycloakUserinfoHelper uiHelper =
-        new KeycloakUserinfoHelper(props, userInfoService);
+    KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
     KeycloakIdTokenCustomizer idHelper =
         new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
@@ -183,7 +187,7 @@ public class IamConfig {
     BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
         new DefaultIntrospectionResultAssembler(), registry, groupHelper);
 
-	return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+    return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
   @Bean(name = "iamJwtProfile")
@@ -223,8 +227,7 @@ public class IamConfig {
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
       @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
-      @Qualifier("kcJwtProfile") JWTProfile kcProfile,
-      IamProperties properties,
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties,
       ClientDetailsService clientDetailsService) {
 
     JWTProfile defaultProfile = iamProfile;
@@ -285,8 +288,7 @@ public class IamConfig {
   FilterRegistrationBean<EnforceAupFilter> aupSignatureCheckFilter(AUPSignatureCheckService service,
       AccountUtils utils, IamAupRepository repo) {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
-    FilterRegistrationBean<EnforceAupFilter> frb =
-        new FilterRegistrationBean<>(aupFilter);
+    FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
@@ -294,9 +296,11 @@ public class IamConfig {
 
 
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, SystemScopeRepository scopeRepo) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
+      SystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), scopeRepo);
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
+        scopeRepo);
   }
 
   @Bean
@@ -310,10 +314,13 @@ public class IamConfig {
   UsernameValidator usernameRegExpValidator() {
     return new UsernameValidator();
   }
-  
+
   @Bean
-  UserApprovalHandler iamUserApprovalHandler() {
-    return new IamUserApprovalHandler();
+  UserApprovalHandler iamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
+      ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
+      SystemScopeService systemScopeService) {
+    return new IamUserApprovalHandler(clientDetailsService, approvedSiteService,
+        whitelistedSiteService, systemScopeService);
   }
 
   @Bean(destroyMethod = "shutdown")

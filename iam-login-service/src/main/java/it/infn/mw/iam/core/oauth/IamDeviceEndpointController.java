@@ -50,7 +50,6 @@ import org.mitre.openid.connect.view.JsonEntityView;
 import org.mitre.openid.connect.view.JsonErrorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -64,8 +63,8 @@ import org.springframework.security.oauth2.provider.approval.UserApprovalHandler
 import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.api.account.AccountUtils;
@@ -79,34 +78,33 @@ public class IamDeviceEndpointController {
 
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
-  @Autowired
-  private ClientDetailsEntityService clientEntityService;
+  private final ClientDetailsEntityService clientEntityService;
+  private final SystemScopeService scopeService;
+  private final ConfigurationPropertiesBean config;
+  private final DeviceCodeService deviceCodeService;
+  private final DefaultOAuth2RequestFactory oAuth2RequestFactory;
+  private final UserApprovalHandler iamUserApprovalHandler;
+  private final IamUserApprovalUtils userApprovalUtils;
+  private final AccountUtils accountUtils;
+  private final ScopePolicyPDP pdp;
 
-  @Autowired
-  private SystemScopeService scopeService;
+  public IamDeviceEndpointController(ClientDetailsEntityService clientEntityService,
+      SystemScopeService scopeService, ConfigurationPropertiesBean config,
+      DeviceCodeService deviceCodeService, DefaultOAuth2RequestFactory oAuth2RequestFactory,
+      UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
+      AccountUtils accountUtils, ScopePolicyPDP pdp) {
+    this.clientEntityService = clientEntityService;
+    this.scopeService = scopeService;
+    this.config = config;
+    this.deviceCodeService = deviceCodeService;
+    this.oAuth2RequestFactory = oAuth2RequestFactory;
+    this.iamUserApprovalHandler = iamUserApprovalHandler;
+    this.userApprovalUtils = userApprovalUtils;
+    this.accountUtils = accountUtils;
+    this.pdp = pdp;
+  }
 
-  @Autowired
-  private ConfigurationPropertiesBean config;
-
-  @Autowired
-  private DeviceCodeService deviceCodeService;
-
-  @Autowired
-  private DefaultOAuth2RequestFactory oAuth2RequestFactory;
-
-  @Autowired
-  private UserApprovalHandler iamUserApprovalHandler;
-
-  @Autowired
-  private IamUserApprovalUtils userApprovalUtils;
-
-  @Autowired
-  private AccountUtils accountUtils;
-
-  @Autowired
-  private ScopePolicyPDP pdp;
-
-  @RequestMapping(value = "/" + DEVICE_CODE_URL, method = RequestMethod.POST,
+  @PostMapping(value = "/" + DEVICE_CODE_URL,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public String requestDeviceCode(@RequestParam("client_id") String clientId,
@@ -175,7 +173,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_CODE_URL, method = RequestMethod.GET)
+  @GetMapping("/" + USER_CODE_URL)
   public String requestUserCode(
       @RequestParam(value = "user_code", required = false) String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
@@ -189,7 +187,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_CODE_URL + "/verify", method = RequestMethod.POST)
+  @PostMapping("/" + USER_CODE_URL + "/verify")
   public String readUserCode(@RequestParam("user_code") String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
 
@@ -241,7 +239,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(value = "/" + USER_CODE_URL + "/approve", method = RequestMethod.POST)
+  @PostMapping("/" + USER_CODE_URL + "/approve")
   public String approveDevice(@RequestParam("user_code") String userCode,
       @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
       @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
@@ -264,7 +262,7 @@ public class IamDeviceEndpointController {
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
     model.put("client", client);
 
-    if (!approve) {
+    if (Boolean.FALSE.equals(approve)) {
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
       return DEVICE_APPROVED_PAGE;
     }

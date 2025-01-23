@@ -43,9 +43,8 @@ import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
 
@@ -75,7 +74,7 @@ public class IamOAuthConfirmationController {
 
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @RequestMapping(path = AUTHZ_CODE_URL, method = RequestMethod.GET)
+  @GetMapping(AUTHZ_CODE_URL)
   public String confimAccess(Map<String, Object> model,
       @ModelAttribute("authorizationRequest") AuthorizationRequest authRequest,
       Authentication authUser, SessionStatus status) {

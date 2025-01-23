@@ -40,7 +40,6 @@ import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
@@ -56,18 +55,19 @@ import com.google.common.collect.Sets;
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
 
-  @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  private final ClientDetailsEntityService clientDetailsService;
+  private final ApprovedSiteService approvedSiteService;
+  private final WhitelistedSiteService whitelistedSiteService;
+  private final SystemScopeService systemScopeService;
 
-  @Autowired
-  private ApprovedSiteService approvedSiteService;
-
-  @Autowired
-  private WhitelistedSiteService whitelistedSiteService;
-
-  @Autowired
-  private SystemScopeService systemScopeService;
-
+  public IamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
+      ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
+      SystemScopeService systemScopeService) {
+    this.clientDetailsService = clientDetailsService;
+    this.approvedSiteService = approvedSiteService;
+    this.whitelistedSiteService = whitelistedSiteService;
+    this.systemScopeService = systemScopeService;
+  }
 
   @Override
   public boolean isApproved(AuthorizationRequest authorizationRequest,
