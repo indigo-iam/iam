@@ -77,13 +77,13 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
   @Autowired
   private ObjectMapper objectMapper;
 
-  private String getTokenResponse(String client_id, String client_secret, String username,
+  private String getTokenResponse(String clientId, String clientSecret, String username,
       String password, String scopes) throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic(client_id, client_secret))
-        .param("client_id", client_id)
+        .with(httpBasic(clientId, clientSecret))
+        .param("client_id", clientId)
         .param("scope", scopes))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.user_code").isString())
@@ -149,7 +149,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .getSession();
 
     return mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(client_id, client_secret))
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", DEVICE_CODE_GRANT_TYPE)
         .param("device_code", deviceCode))
       .andReturn()
