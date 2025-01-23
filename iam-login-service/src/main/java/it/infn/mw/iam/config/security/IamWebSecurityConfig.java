@@ -21,6 +21,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyControll
 
 import javax.servlet.RequestDispatcher;
 
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,11 +56,14 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
+import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedAuthenticationFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.ExtendedHttpServletRequestFilter;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OidcAuthenticationProvider;
 import it.infn.mw.iam.authn.oidc.OidcClientFilter;
+import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
+import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationProvider;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
@@ -128,10 +132,20 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamProperties iamProperties;
+    
+    @Autowired
+    private OidcUserDetailsService oidcUserDetailsService;
+    
+    @Autowired
+    private AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
+    
+    @Autowired
+    private SessionTimeoutHelper sessionTimeoutHelper;
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
       // @formatter:off
+      auth.authenticationProvider(new OidcAuthenticationProvider(oidcUserDetailsService, tokenValidatorService, sessionTimeoutHelper, accountRepo, totpMfaRepository));
       auth.authenticationProvider(new IamLocalAuthenticationProvider(iamProperties, iamUserDetailsService, passwordEncoder, accountRepo, totpMfaRepository));
       // @formatter:on
     }
@@ -282,6 +296,18 @@ public class IamWebSecurityConfig {
   @Configuration
   @Order(105)
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
+    
+    @Value("${iam.baseUrl}")
+    private String iamBaseUrl;
+    
+    @Autowired
+    private IamAccountRepository accountRepo;
+
+    @Autowired
+    private AUPSignatureCheckService aupSignatureCheckService;
+
+    @Autowired
+    private AccountUtils accountUtils;
 
     @Autowired
     @Qualifier("OIDCAuthenticationManager")
@@ -311,6 +337,8 @@ public class IamWebSecurityConfig {
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
+      
+      oidcFilter.setAuthenticationSuccessHandler(successHandler());
       // @formatter:off
       http
         .antMatcher("/openid_connect_login**")
@@ -325,6 +353,11 @@ public class IamWebSecurityConfig {
             .enableSessionUrlRewriting(false)
             .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
+    }
+    
+    public AuthenticationSuccessHandler successHandler() {
+      return new CheckMultiFactorIsEnabledSuccessHandler(accountUtils, iamBaseUrl,
+          aupSignatureCheckService, accountRepo);
     }
   }
 
