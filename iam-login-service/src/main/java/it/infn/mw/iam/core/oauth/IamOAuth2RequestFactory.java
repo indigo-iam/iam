@@ -19,12 +19,14 @@ import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +40,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 
@@ -49,6 +52,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   protected static final String[] AUDIENCE_KEYS = {"aud", "audience"};
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
+  public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write");
 
   private final IamScopeFilter scopeFilter;
 
@@ -56,6 +60,9 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  private AccountUtils accountUtils;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
       IamScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
@@ -65,17 +72,23 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     this.profileResolver = profileResolver;
   }
 
-
   @Override
   public AuthorizationRequest createAuthorizationRequest(Map<String, String> inputParams) {
 
     Authentication authn = SecurityContextHolder.getContext().getAuthentication();
 
     if (authn != null && !(authn instanceof AnonymousAuthenticationToken)) {
-      final Set<String> requestedScopes =
+      Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
       scopeFilter.filterScopes(requestedScopes, authn);
+
+      if (!accountUtils.isAdmin(authn)) {
+        requestedScopes = requestedScopes.stream()
+          .filter(s -> !ADMIN_SCOPES.contains(s))
+          .collect(Collectors.toSet());
+      }
+
       inputParams.put(OAuth2Utils.SCOPE, joiner.join(requestedScopes));
     }
 

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.ADMIN_SCOPES;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
@@ -32,6 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
 
@@ -39,7 +41,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -215,7 +216,7 @@ public class IamDeviceEndpointController {
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
-    Set<String> filteredScopes = filterScopes(scopeService.fromStrings(dc.getScope()), authn);
+    Set<String> filteredScopes = filterScopes(dc.getScope(), authn);
     filteredScopes = userApprovalUtils.sortScopes(scopeService.fromStrings(filteredScopes));
 
     authorizationRequest.setScope(filteredScopes);
@@ -291,12 +292,22 @@ public class IamDeviceEndpointController {
     }
   }
 
-  private Set<String> filterScopes(Set<SystemScope> scopes, Authentication authentication) {
+  private Set<String> filterScopes(Set<String> scopes, Authentication authentication) {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
 
-    return pdp.filterScopes(scopeService.toStrings(scopes), account);
+    Set<String> filteredScopes = pdp.filterScopes(scopes, account);
+
+    if (!accountUtils.isAdmin(authentication)) {
+      filteredScopes = filteredScopes.stream()
+        .filter(s -> !ADMIN_SCOPES.contains(s))
+        .collect(Collectors.toSet());
+    }
+
+    scopes.retainAll(filteredScopes);
+
+    return scopes;
   }
 
   private void setModelForConsentPage(ModelMap model, Authentication authn, DeviceCode dc,
