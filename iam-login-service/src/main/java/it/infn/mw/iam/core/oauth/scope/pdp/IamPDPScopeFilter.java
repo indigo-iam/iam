@@ -17,7 +17,6 @@ package it.infn.mw.iam.core.oauth.scope.pdp;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.core.Authentication;
@@ -32,8 +31,6 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Component
 @ConditionalOnProperty(name = "iam.enableScopeAuthz", havingValue = "true")
 public class IamPDPScopeFilter implements IamScopeFilter {
-
-  private static final Set<String> adminScopes = Set.of("iam:admin.read", "iam:admin.write");
 
   final ScopePolicyPDP pdp;
   final IamAccountRepository accountRepo;
@@ -73,12 +70,6 @@ public class IamPDPScopeFilter implements IamScopeFilter {
 
     if (maybeAccount.isPresent()) {
       Set<String> filteredScopes = pdp.filterScopes(scopes, maybeAccount.get());
-
-      if (!accountUtils.isAdmin(authn)) {
-        filteredScopes = filteredScopes.stream()
-          .filter(s -> !adminScopes.contains(s))
-          .collect(Collectors.toSet());
-      }
 
       scopes.retainAll(filteredScopes);
     }

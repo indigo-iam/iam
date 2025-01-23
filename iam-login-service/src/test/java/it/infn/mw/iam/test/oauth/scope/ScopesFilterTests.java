@@ -167,7 +167,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
       .extract().body().asString();
     // @formatter:on
 
-      assertThat(responseBody, not(containsString("scope_email")));
+      assertThat(responseBody, not(containsString("scope.email")));
     } finally {
       policyScopeRepo.delete(up);
     }
