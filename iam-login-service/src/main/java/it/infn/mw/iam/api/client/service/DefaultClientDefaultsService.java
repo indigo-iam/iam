@@ -24,14 +24,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.model.IamClient.AuthMethod;
 
 @Service
 public class DefaultClientDefaultsService implements ClientDefaultsService {
@@ -49,7 +49,7 @@ public class DefaultClientDefaultsService implements ClientDefaultsService {
   }
 
   @Override
-  public ClientDetailsEntity setupClientDefaults(ClientDetailsEntity client) {
+  public IamClient setupClientDefaults(IamClient client) {
 
     if (isNull(client.getClientId())) {
       client.setClientId(UUID.randomUUID().toString());

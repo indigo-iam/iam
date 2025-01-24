@@ -15,12 +15,6 @@
  */
 package it.infn.mw.iam.api.tokens.converter;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,24 +24,30 @@ import it.infn.mw.iam.api.tokens.model.ClientRef;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.api.tokens.model.UserRef;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthenticationHolder;
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.model.IamRefreshToken;
+import it.infn.mw.iam.persistence.model.SavedUserAuthentication;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Component
 public class TokensConverter {
 
   @Autowired
-  private ClientDetailsEntityService clientDetailsService;
+  private IamAccountRepository accountRepository;
 
   @Autowired
-  private IamAccountRepository accountRepository;
+  private IamClientRepository clientRepository;
 
   @Autowired
   private ScimResourceLocationProvider scimResourceLocationProvider;
 
-  public AccessToken toAccessToken(OAuth2AccessTokenEntity at) {
+  public AccessToken toAccessToken(IamAccessToken at) {
 
-    AuthenticationHolderEntity ah = at.getAuthenticationHolder();
+    IamAuthenticationHolder ah = at.getAuthenticationHolder();
 
     ClientRef clientRef = buildClientRef(ah.getClientId());
     UserRef userRef = buildUserRef(ah.getUserAuth());
@@ -61,9 +61,9 @@ public class TokensConverter {
         .build();
   }
 
-  public RefreshToken toRefreshToken(OAuth2RefreshTokenEntity rt) {
+  public RefreshToken toRefreshToken(IamRefreshToken rt) {
 
-    AuthenticationHolderEntity ah = rt.getAuthenticationHolder();
+    IamAuthenticationHolder ah = rt.getAuthenticationHolder();
 
     ClientRef clientRef = buildClientRef(ah.getClientId());
     
@@ -84,7 +84,9 @@ public class TokensConverter {
       return null;
     }
 
-    ClientDetailsEntity cd = clientDetailsService.loadClientByClientId(clientId);
+    IamClient cd = clientRepository.findByClientId(clientId)
+      .orElseThrow(
+          () -> new IllegalArgumentException("Client for clientId" + clientId + " not found"));
 
     return ClientRef.builder()
         .id(cd.getId())

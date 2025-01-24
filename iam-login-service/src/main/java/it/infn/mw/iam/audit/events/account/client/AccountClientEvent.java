@@ -15,28 +15,27 @@
  */
 package it.infn.mw.iam.audit.events.account.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.audit.utils.IamClientSerializer;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public abstract class AccountClientEvent extends AccountEvent {
 
   private static final long serialVersionUID = 1L;
 
   @JsonSerialize(using = IamClientSerializer.class)
-  private final ClientDetailsEntity client;
+  private final IamClient client;
 
-  public AccountClientEvent(Object source, IamAccount account, ClientDetailsEntity client,
+  public AccountClientEvent(Object source, IamAccount account, IamClient client,
       String message) {
     super(source, account, message);
     this.client = client;
   }
 
-  public ClientDetailsEntity getClient() {
+  public IamClient getClient() {
     return client;
   }
 }

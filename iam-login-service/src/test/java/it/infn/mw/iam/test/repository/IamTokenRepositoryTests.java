@@ -44,8 +44,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamRefreshTokenRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
@@ -64,10 +64,10 @@ public class IamTokenRepositoryTests {
   public static final String[] SCOPES = {"openid", "profile", "offline_access", "iam:admin.read"};
 
   @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepo;
+  private IamAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private IamRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
   private AuthenticationHolderRepository authenticationHolderRepo;

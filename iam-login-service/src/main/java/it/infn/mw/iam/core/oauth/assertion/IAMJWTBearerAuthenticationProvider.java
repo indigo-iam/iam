@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.assertion;
 
-import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
@@ -25,13 +24,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.assertion.JWTBearerAssertionAuthenticationToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -48,6 +42,12 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.jwt.signer.ClientKeyCacheService;
+import it.infn.mw.iam.core.jwt.signer.JWTSigningAndValidationService;
+import it.infn.mw.iam.core.oidc.JWTBearerAssertionAuthenticationToken;
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.model.IamClient.AuthMethod;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvider {
 
@@ -61,16 +61,16 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
   private static final String INVALID_SIGNATURE_ALGO = "Invalid signature algorithm: %s";
 
   private final Clock clock;
-  private final ClientDetailsEntityService clientService;
+  private final IamClientRepository clientRepository;
   private final ClientKeyCacheService validators;
 
   private final String tokenEndpoint;
 
   public IAMJWTBearerAuthenticationProvider(Clock clock, IamProperties iamProperties,
-      ClientDetailsEntityService clientService, ClientKeyCacheService validators) {
+      IamClientRepository clientRepository, ClientKeyCacheService validators) {
 
     this.clock = clock;
-    this.clientService = clientService;
+    this.clientRepository = clientRepository;
     this.validators = validators;
 
     if (iamProperties.getIssuer().endsWith("/")) {
@@ -85,7 +85,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     return String.format(INVALID_SIGNATURE_ALGO, alg.getName());
   }
 
-  private void clientAuthMethodChecks(ClientDetailsEntity client, SignedJWT jws) {
+  private void clientAuthMethodChecks(IamClient client, SignedJWT jws) {
 
     if (client.getTokenEndpointAuthMethod() == null
         || client.getTokenEndpointAuthMethod().equals(AuthMethod.NONE)
@@ -113,13 +113,13 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     }
   }
 
-  private void signatureChecks(ClientDetailsEntity client, SignedJWT jws) {
+  private void signatureChecks(IamClient client, SignedJWT jws) {
     JWSAlgorithm alg = jws.getHeader().getAlgorithm();
 
     JWTSigningAndValidationService validator =
         Optional.ofNullable(validators.getValidator(client, alg))
           .orElseThrow(() -> new AuthenticationServiceException(
-              format("Unable to resolve validator for client '%s' and algorithm '%s'",
+              String.format("Unable to resolve validator for client '%s' and algorithm '%s'",
                   client.getClientId(), alg.getName())));
 
     if (!validator.validateSignature(jws)) {
@@ -132,7 +132,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
         String.format("invalid jwt bearer assertion: %s", msg));
   }
 
-  private void assertionChecks(ClientDetailsEntity client, SignedJWT jws) throws ParseException {
+  private void assertionChecks(IamClient client, SignedJWT jws) throws ParseException {
 
     JWTClaimsSet jwtClaims = jws.getJWTClaimsSet();
 
@@ -187,14 +187,10 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     JWTBearerAssertionAuthenticationToken jwtAuth =
         (JWTBearerAssertionAuthenticationToken) authentication;
 
-    ClientDetailsEntity client = clientService.loadClientByClientId(jwtAuth.getName());
-
-    if (isNull(client)) {
-      throw new UsernameNotFoundException("Unknown client: " + jwtAuth.getName());
-    }
+    IamClient client = clientRepository.findByClientId(jwtAuth.getName())
+      .orElseThrow(unknownClientError(jwtAuth.getName()));
 
     try {
-
 
       final JWT jwt = jwtAuth.getJwt();
 
@@ -230,4 +226,7 @@ public class IAMJWTBearerAuthenticationProvider implements AuthenticationProvide
     return JWTBearerAssertionAuthenticationToken.class.isAssignableFrom(authentication);
   }
 
+  private Supplier<UsernameNotFoundException> unknownClientError(String clientId) {
+    return () -> new UsernameNotFoundException("Unknown client: " + clientId);
+  }
 }

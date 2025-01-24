@@ -29,8 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +45,7 @@ import com.nimbusds.jose.jwk.JWK;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.error.NoSuchKeyError;
 import it.infn.mw.iam.core.error.StartupError;
+import it.infn.mw.iam.core.jwt.encryption.JWTEncryptionAndDecryptionService;
 
 
 public class IamJWTEncryptionService implements JWTEncryptionAndDecryptionService {

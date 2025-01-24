@@ -19,79 +19,80 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
-public interface IamOAuthAccessTokenRepository
-  extends PagingAndSortingRepository<OAuth2AccessTokenEntity, Long> {
-  
-  @Query("select t from OAuth2AccessTokenEntity t where t.tokenValueHash = :atHash")
-  Optional<OAuth2AccessTokenEntity> findByTokenValue(@Param("atHash") String atHash);
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 
-  @Query("select t from OAuth2AccessTokenEntity t where t.authenticationHolder.userAuth.name = :userId "
+public interface IamOAuthAccessTokenRepository
+  extends PagingAndSortingRepository<IamAccessToken, Long> {
+  
+  @Query("select t from IamAccessToken t where t.tokenValueHash = :atHash")
+  Optional<IamAccessToken> findByTokenValue(@Param("atHash") String atHash);
+
+  @Query("select t from IamAccessToken t where t.authenticationHolder.userAuth.name = :userId "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp)")
-  List<OAuth2AccessTokenEntity> findValidAccessTokensForUser(
+  List<IamAccessToken> findValidAccessTokensForUser(
     @Param("userId") String userId, @Param("timestamp") Date timestamp);
 
-  @Query("select t from OAuth2AccessTokenEntity t "
+  @Query("select t from IamAccessToken t "
     + "where (t.authenticationHolder.userAuth.name = :userId) "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
-  Page<OAuth2AccessTokenEntity> findValidAccessTokensForUser(
+  Page<IamAccessToken> findValidAccessTokensForUser(
     @Param("userId") String userId, @Param("timestamp") Date timestamp,
     Pageable op);
 
-  @Query("select t from OAuth2AccessTokenEntity t "
+  @Query("select t from IamAccessToken t "
     + "where (t.authenticationHolder.clientId = :clientId) "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
-  Page<OAuth2AccessTokenEntity> findValidAccessTokensForClient(
+  Page<IamAccessToken> findValidAccessTokensForClient(
     @Param("clientId") String clientId, @Param("timestamp") Date timestamp,
     Pageable op);
 
-  @Query("select t from OAuth2AccessTokenEntity t "
+  @Query("select t from IamAccessToken t "
     + "where (t.authenticationHolder.userAuth.name = :userId) "
     + "and (t.authenticationHolder.clientId = :clientId) "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration")
-  Page<OAuth2AccessTokenEntity> findValidAccessTokensForUserAndClient(
+  Page<IamAccessToken> findValidAccessTokensForUserAndClient(
 
     @Param("userId") String userId, @Param("clientId") String clientId,
 
     @Param("timestamp") Date timestamp, Pageable op);
 
-  @Query("select distinct t from OAuth2AccessTokenEntity t "
+  @Query("select distinct t from IamAccessToken t "
     + "where (t.scope not in ('registration-token', 'resource-token')) "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp) order by t.expiration ")
-  Page<OAuth2AccessTokenEntity> findAllValidAccessTokens(
+  Page<IamAccessToken> findAllValidAccessTokens(
     @Param("timestamp") Date timestamp, Pageable op);
 
-  @Query("select count(t) from OAuth2AccessTokenEntity t "
+  @Query("select count(t) from IamAccessToken t "
     + "where (t.expiration is NOT NULL and t.expiration > :timestamp)")
   long countValidAccessTokens(@Param("timestamp") Date timestamp);
 
-  @Query("select count(t) from OAuth2AccessTokenEntity t "
+  @Query("select count(t) from IamAccessToken t "
     + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.userAuth.name = :userId)")
   long countValidAccessTokensForUser(@Param("userId") String userId,
     @Param("timestamp") Date timestamp);
 
-  @Query("select count(t) from OAuth2AccessTokenEntity t "
+  @Query("select count(t) from IamAccessToken t "
     + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.clientId = :clientId)")
   long countValidAccessTokensForClient(@Param("clientId") String clientId,
     @Param("timestamp") Date timestamp);
 
-  @Query("select count(t) from OAuth2AccessTokenEntity t "
+  @Query("select count(t) from IamAccessToken t "
     + "where (t.expiration is NOT NULL and t.expiration > :timestamp) "
     + "and (t.authenticationHolder.userAuth.name = :userId) "
     + "and (t.authenticationHolder.clientId = :clientId)")
   long countValidAccessTokensForUserAndClient(@Param("userId") String userId,
     @Param("clientId") String clientId, @Param("timestamp") Date timestamp);
 
-  @Query("select t from OAuth2AccessTokenEntity t where t.authenticationHolder.id in ("
+  @Query("select t from IamAccessToken t where t.authenticationHolder.id in ("
     + "select sua.id from SavedUserAuthentication sua where sua.name not in ("
     + "select a.username from IamAccount a))")
-  List<OAuth2AccessTokenEntity> findOrphanedTokens();
+  List<IamAccessToken> findOrphanedTokens();
 }

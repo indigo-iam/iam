@@ -51,8 +51,8 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamRefreshTokenRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
@@ -62,10 +62,10 @@ public class TestTokensUtils {
   protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
 
   @Autowired
-  protected IamOAuthAccessTokenRepository accessTokenRepository;
+  protected IamAccessTokenRepository accessTokenRepository;
 
   @Autowired
-  protected IamOAuthRefreshTokenRepository refreshTokenRepository;
+  protected IamRefreshTokenRepository refreshTokenRepository;
 
   @Autowired
   private ClientDetailsEntityService clientDetailsService;

@@ -19,7 +19,6 @@ import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +27,7 @@ import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
+import it.infn.mw.iam.persistence.model.IamAuthenticationHolder;
 
 @SuppressWarnings("deprecation")
 public class TokenEvent extends IamAuditApplicationEvent {
@@ -41,7 +41,7 @@ public class TokenEvent extends IamAuditApplicationEvent {
   private final String grantType;
   private transient Map<String, Object> payload;
 
-  public TokenEvent(Object source, JWT token, AuthenticationHolderEntity authenticationHolder, String message) {
+  public TokenEvent(Object source, JWT token, IamAuthenticationHolder authenticationHolder, String message) {
     super(IamEventCategory.TOKEN, source, message);
 
     // subject will contains user-name or client name

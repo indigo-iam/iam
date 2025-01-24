@@ -15,13 +15,13 @@
  */
 package it.infn.mw.iam.audit.events.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public class ClientRegistrationAccessTokenRotatedEvent extends ClientUpdatedEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public ClientRegistrationAccessTokenRotatedEvent(Object source, ClientDetailsEntity client) {
+  public ClientRegistrationAccessTokenRotatedEvent(Object source, IamClient client) {
     super(source, client, "Client registration access token rotated");
   }
 

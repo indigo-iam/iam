@@ -40,7 +40,7 @@ import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamRefreshTokenRepository;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
@@ -66,7 +66,7 @@ public class RefreshTokenGetListTests extends TestTokensUtils {
   private ScimResourceLocationProvider scimResourceLocationProvider;
 
   @Autowired
-  private IamOAuthRefreshTokenRepository tokenRepository;
+  private IamRefreshTokenRepository tokenRepository;
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;

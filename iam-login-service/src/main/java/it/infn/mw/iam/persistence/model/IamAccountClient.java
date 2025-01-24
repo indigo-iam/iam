@@ -29,13 +29,10 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
 /**
  * 
  * This entity is the login-service component as it needs to "see" the ClientDetailsEntity mitreid
  * Entity, which is not accessible in the iam-persistence scope.
- * 
  *
  */
 @Entity
@@ -54,7 +51,7 @@ public class IamAccountClient {
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "client_id", nullable = false, updatable = false)
-  private ClientDetailsEntity client;
+  private IamClient client;
 
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "creation_time", nullable = false, updatable = false)
@@ -84,11 +81,11 @@ public class IamAccountClient {
     this.creationTime = creationTime;
   }
 
-  public ClientDetailsEntity getClient() {
+  public IamClient getClient() {
     return client;
   }
 
-  public void setClient(ClientDetailsEntity client) {
+  public void setClient(IamClient client) {
     this.client = client;
   }
 

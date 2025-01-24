@@ -32,9 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -43,6 +40,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.client.management.service.OAuth2TokenService;
 import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
@@ -65,6 +63,7 @@ import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -72,6 +71,7 @@ import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamOidcId;
+import it.infn.mw.iam.persistence.model.IamRefreshToken;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
@@ -90,7 +90,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAuthoritiesRepository authoritiesRepo;
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
-  private final OAuth2TokenEntityService tokenService;
+  private final OAuth2TokenService tokenService;
   private final IamAccountClientRepository accountClientRepo;
   private final NotificationFactory notificationFactory;
   private final IamProperties iamProperties;
@@ -99,7 +99,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      OAuth2TokenService tokenService, IamAccountClientRepository accountClientRepo,
       NotificationFactory notificationFactory, IamProperties iamProperties,
       DefaultIamGroupService iamGroupService) {
 
@@ -216,23 +216,18 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   protected void removeClientLinks(IamAccount account) {
 
     accountClientRepo.deleteByAccount(account);
-
   }
-
 
   protected void deleteTokensForAccount(IamAccount account) {
 
-    Set<OAuth2AccessTokenEntity> accessTokens =
-        tokenService.getAllAccessTokensForUser(account.getUsername());
+    List<IamAccessToken> accessTokens = tokenService.getAllAccessTokensForUser(account.getUsername());
+    List<IamRefreshToken> refreshTokens = tokenService.getAllRefreshTokensForUser(account.getUsername());
 
-    Set<OAuth2RefreshTokenEntity> refreshTokens =
-        tokenService.getAllRefreshTokensForUser(account.getUsername());
-
-    for (OAuth2AccessTokenEntity t : accessTokens) {
+    for (IamAccessToken t : accessTokens) {
       tokenService.revokeAccessToken(t);
     }
 
-    for (OAuth2RefreshTokenEntity t : refreshTokens) {
+    for (IamRefreshToken t : refreshTokens) {
       tokenService.revokeRefreshToken(t);
     }
   }

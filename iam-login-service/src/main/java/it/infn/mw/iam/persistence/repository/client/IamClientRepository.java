@@ -18,16 +18,16 @@ package it.infn.mw.iam.persistence.repository.client;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
+import it.infn.mw.iam.persistence.model.IamClient;
+
 public interface IamClientRepository
-    extends PagingAndSortingRepository<ClientDetailsEntity, Long>,
-    JpaSpecificationExecutor<ClientDetailsEntity> {
+    extends PagingAndSortingRepository<IamClient, Long>, JpaSpecificationExecutor<IamClient> {
 
-  Optional<ClientDetailsEntity> findByClientId(String clientId);
+  Optional<IamClient> findByClientId(String clientId);
 
-  List<ClientDetailsEntity> findByClientNameLike(String clientName);
+  List<IamClient> findByClientNameLike(String clientName);
 
 }

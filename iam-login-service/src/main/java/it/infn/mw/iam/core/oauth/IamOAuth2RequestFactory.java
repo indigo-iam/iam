@@ -20,9 +20,6 @@ import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
-import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -35,14 +32,17 @@ import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 
 import com.google.common.base.Joiner;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.AuthenticationTimeStamper;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 @SuppressWarnings("deprecation")
-public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
+public class IamOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
@@ -156,7 +156,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         throw new InvalidRequestException(
             "The scope parameter is required for a token exchange request!");
       } else {
-        ClientDetails clientDetails = clientDetailsService.loadClientByClientId(clientId);
+        IamClient clientDetails = clientDetailsService.loadClientByClientId(clientId);
         scopes = clientDetails.getScope();
       }
     }

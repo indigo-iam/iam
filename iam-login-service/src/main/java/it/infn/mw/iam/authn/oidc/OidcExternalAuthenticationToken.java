@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 import com.google.common.collect.Maps;
@@ -35,6 +34,7 @@ import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class OidcExternalAuthenticationToken

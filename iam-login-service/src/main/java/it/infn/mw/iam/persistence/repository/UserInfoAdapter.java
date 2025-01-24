@@ -17,15 +17,13 @@ package it.infn.mw.iam.persistence.repository;
 
 import static java.lang.String.format;
 
-import org.mitre.openid.connect.model.Address;
-import org.mitre.openid.connect.model.UserInfo;
-
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.authn.oidc.model.Address;
+import it.infn.mw.iam.authn.oidc.model.UserInfo;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 public class UserInfoAdapter implements UserInfo {
-
 
   private static final long serialVersionUID = 1L;
 
@@ -106,8 +104,6 @@ public class UserInfoAdapter implements UserInfo {
   public String getZoneinfo() {
     return userinfo.getZoneinfo();
   }
-
- 
 
   public void setBirthdate(String birthdate) {
     userinfo.setBirthdate(birthdate);

@@ -15,14 +15,14 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import it.infn.mw.iam.persistence.model.IamRefreshToken;
 
 
 public class RefreshTokenIssuedEvent extends TokenEvent {
 
   private static final long serialVersionUID = 7801697305119146714L;
 
-  public RefreshTokenIssuedEvent(Object source, OAuth2RefreshTokenEntity token) {
+  public RefreshTokenIssuedEvent(Object source, IamRefreshToken token) {
     super(source, token.getJwt(), token.getAuthenticationHolder(), "Issue refresh token");
   }
 

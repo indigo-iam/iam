@@ -266,6 +266,10 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
 
     <!-- DB -->
     <dependency>
@@ -277,17 +281,6 @@
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
-    </dependency>
-
-    <!-- Mitre -->
-    <dependency>
-      <groupId>org.mitre</groupId>
-      <artifactId>openid-connect-server</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mitre</groupId>
-      <artifactId>openid-connect-client</artifactId>
     </dependency>
 
     <dependency>

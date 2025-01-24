@@ -15,8 +15,7 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
-import org.mitre.openid.connect.model.Address;
-
+import it.infn.mw.iam.authn.oidc.model.Address;
 import it.infn.mw.iam.persistence.model.IamAddress;
 
 public class AddressAdapter implements Address {

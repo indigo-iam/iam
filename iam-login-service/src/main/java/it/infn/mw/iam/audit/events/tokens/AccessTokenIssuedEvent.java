@@ -17,11 +17,11 @@ package it.infn.mw.iam.audit.events.tokens;
 
 import java.text.ParseException;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.nimbusds.jose.JWSHeader;
+
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 
 
 @JsonPropertyOrder({"timestamp", "@type", "category", "principal", "message", "scopes", "subject",
@@ -33,7 +33,7 @@ public class AccessTokenIssuedEvent extends TokenEvent {
   private final HeaderDTO header = new HeaderDTO();
   private String refreshTokenJti;
 
-  public AccessTokenIssuedEvent(Object source, OAuth2AccessTokenEntity token) {
+  public AccessTokenIssuedEvent(Object source, IamAccessToken token) {
     super(source, token.getJwt(), token.getAuthenticationHolder(), "Issue access token");
 
     this.header.setAlg(token.getJwt().getHeader().getAlgorithm().getName());

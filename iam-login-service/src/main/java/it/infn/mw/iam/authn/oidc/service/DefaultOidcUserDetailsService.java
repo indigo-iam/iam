@@ -20,8 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -30,17 +28,16 @@ import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class DefaultOidcUserDetailsService implements OidcUserDetailsService {
 
+  private IamAccountRepository repo;
+  private InactiveAccountAuthenticationHander inactiveAccountHandler;
 
-  IamAccountRepository repo;
-  InactiveAccountAuthenticationHander inactiveAccountHandler;
-
-  @Autowired
   public DefaultOidcUserDetailsService(IamAccountRepository repo,
       InactiveAccountAuthenticationHander handler) {
     this.repo = repo;

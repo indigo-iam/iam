@@ -21,17 +21,17 @@ import static it.infn.mw.iam.audit.utils.JsonSerializerUtils.serializeStringArra
 import java.io.IOException;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-public class IamClientSerializer extends JsonSerializer<ClientDetailsEntity> {
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.model.IamClient.AuthMethod;
+
+public class IamClientSerializer extends JsonSerializer<IamClient> {
 
   @Override
-  public void serialize(ClientDetailsEntity value, JsonGenerator gen,
+  public void serialize(IamClient value, JsonGenerator gen,
       SerializerProvider serializers) throws IOException {
     gen.writeStartObject();
 

@@ -48,8 +48,8 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamRefreshTokenRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
@@ -80,10 +80,10 @@ public class ResourceOwnerPasswordCredentialsTests {
   private OAuth2TokenEntityService tokenService;
 
   @Autowired
-  private IamOAuthAccessTokenRepository accessTokenRepo;
+  private IamAccessTokenRepository accessTokenRepo;
 
   @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private IamRefreshTokenRepository refreshTokenRepo;
 
   @Autowired
   private MockMvc mvc;

@@ -16,29 +16,30 @@
 package it.infn.mw.iam.core.client;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Supplier;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+
 @SuppressWarnings("deprecation")
-public class IAMClientUserDetailsService implements ClientUserDetailsService {
+public class IamClientUserDetailsService implements UserDetailsService {
   private static final GrantedAuthority ROLE_CLIENT = new SimpleGrantedAuthority("ROLE_CLIENT");
 
-  private final ClientDetailsEntityService clientService;
+  private final IamClientRepository clientRepository;
 
-  public IAMClientUserDetailsService(ClientDetailsEntityService clientService) {
-    this.clientService = clientService;
+  public IamClientUserDetailsService(IamClientRepository clientRepository) {
+    this.clientRepository = clientRepository;
   }
 
   private Supplier<UsernameNotFoundException> unknownClientError(String clientId) {
@@ -49,7 +50,7 @@ public class IAMClientUserDetailsService implements ClientUserDetailsService {
   public UserDetails loadUserByUsername(String clientId) throws UsernameNotFoundException {
 
     try {
-      ClientDetailsEntity client = Optional.ofNullable(clientService.loadClientByClientId(clientId))
+      IamClient client = clientRepository.findByClientId(clientId)
         .orElseThrow(unknownClientError(clientId));
 
       final String password = Strings.nullToEmpty(client.getClientSecret());
@@ -68,12 +69,6 @@ public class IAMClientUserDetailsService implements ClientUserDetailsService {
     } catch (InvalidClientException e) {
       throw unknownClientError(clientId).get();
     }
-  }
-
-  @Override
-  public ClientDetailsEntityService getClientDetailsService() {
-
-    return clientService;
   }
 
 }

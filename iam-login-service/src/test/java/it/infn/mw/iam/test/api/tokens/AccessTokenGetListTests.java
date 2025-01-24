@@ -45,7 +45,7 @@ import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamAccessTokenRepository;
 import it.infn.mw.iam.test.util.DateEqualModulo1Second;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -70,7 +70,7 @@ public class AccessTokenGetListTests extends TestTokensUtils {
   private ScimResourceLocationProvider scimResourceLocationProvider;
 
   @Autowired
-  private IamOAuthAccessTokenRepository tokenRepository;
+  private IamAccessTokenRepository tokenRepository;
 
   @Autowired
   private DefaultClientService clientService;

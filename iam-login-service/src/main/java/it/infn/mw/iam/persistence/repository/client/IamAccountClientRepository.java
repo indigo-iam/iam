@@ -17,7 +17,6 @@ package it.infn.mw.iam.persistence.repository.client;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -26,15 +25,16 @@ import org.springframework.data.repository.CrudRepository;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public interface IamAccountClientRepository
     extends CrudRepository<IamAccountClient, Long>, JpaSpecificationExecutor<IamAccountClient> {
 
   @Query("select ac.client from IamAccountClient ac where ac.client.clientId = :clientId")
-  Page<ClientDetailsEntity> findClientByClientClientId(String clientId, Pageable pageable);
+  Page<IamClient> findClientByClientClientId(String clientId, Pageable pageable);
 
   @Query("select ac.client from IamAccountClient ac where ac.account = :account")
-  Page<ClientDetailsEntity> findClientByAccount(IamAccount account, Pageable pageable);
+  Page<IamClient> findClientByAccount(IamAccount account, Pageable pageable);
 
   Page<IamAccountClient> findByClientClientId(String clientId, Pageable pageable);
 
@@ -44,7 +44,7 @@ public interface IamAccountClientRepository
 
   Page<IamAccountClient> findByAccountUuid(String uuid, Pageable pageable);
 
-  Optional<IamAccountClient> findByAccountAndClient(IamAccount account, ClientDetailsEntity client);
+  Optional<IamAccountClient> findByAccountAndClient(IamAccount account, IamClient client);
 
   Optional<IamAccountClient> findByAccountAndClientId(IamAccount account, long clientId);
 

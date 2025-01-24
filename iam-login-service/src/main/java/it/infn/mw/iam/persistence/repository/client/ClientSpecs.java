@@ -15,16 +15,15 @@
  */
 package it.infn.mw.iam.persistence.repository.client;
 
-
-
 import static javax.persistence.criteria.JoinType.LEFT;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import it.infn.mw.iam.api.client.search.ClientSearchForm;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public class ClientSpecs {
+
   static final String CLIENT_ID = "clientId";
   static final String CLIENT_NAME = "clientName";
   static final String DYNAMICALLY_REGISTERED = "dynamicallyRegistered";
@@ -52,9 +51,9 @@ public class ClientSpecs {
     return "%" + filter + "%";
   }
 
-  public static Specification<ClientDetailsEntity> fromSearchForm(ClientSearchForm searchForm) {
+  public static Specification<IamClient> fromSearchForm(ClientSearchForm searchForm) {
 
-    Specification<ClientDetailsEntity> spec;
+    Specification<IamClient> spec;
 
     switch (searchForm.getSearchType()) {
       case contacts:
@@ -83,19 +82,19 @@ public class ClientSpecs {
   }
 
 
-  public static Specification<ClientDetailsEntity> isDynamicallyRegistered() {
+  public static Specification<IamClient> isDynamicallyRegistered() {
     return (root, query, builder) -> builder.isTrue(root.get(DYNAMICALLY_REGISTERED));
   }
 
-  public static Specification<ClientDetailsEntity> hasClientIdLike(String filter) {
+  public static Specification<IamClient> hasClientIdLike(String filter) {
     return (root, query, builder) -> builder.like(root.get(CLIENT_ID), wildcardify(filter));
   }
 
-  public static Specification<ClientDetailsEntity> hasClientNameLike(String filter) {
+  public static Specification<IamClient> hasClientNameLike(String filter) {
     return (root, query, builder) -> builder.like(root.get(CLIENT_NAME), wildcardify(filter));
   }
 
-  public static Specification<ClientDetailsEntity> hasContactLike(String filter) {
+  public static Specification<IamClient> hasContactLike(String filter) {
     return (root, query, builder) -> {
       query.distinct(true);
       return builder.like(builder.lower(root.joinSet(CONTACTS, LEFT)),
@@ -103,21 +102,21 @@ public class ClientSpecs {
     };
   }
 
-  public static Specification<ClientDetailsEntity> hasGrantTypeLike(String grantType) {
+  public static Specification<IamClient> hasGrantTypeLike(String grantType) {
     return (root, query, builder) -> {
       query.distinct(true);
       return builder.like(root.joinSet(GRANT_TYPES), wildcardify(grantType));
     };
   }
 
-  public static Specification<ClientDetailsEntity> hasScopeLike(String scope) {
+  public static Specification<IamClient> hasScopeLike(String scope) {
     return (root, query, builder) -> {
       query.distinct(true);   
       return builder.like(root.joinSet(SCOPE), wildcardify(scope));
     };
   }
 
-  public static Specification<ClientDetailsEntity> hasRedirectUriLike(String redirectUri) {
+  public static Specification<IamClient> hasRedirectUriLike(String redirectUri) {
     return (root, query, builder) -> {
       query.distinct(true);
       return builder.like(root.joinSet(REDIRECT_URIS), wildcardify(redirectUri));

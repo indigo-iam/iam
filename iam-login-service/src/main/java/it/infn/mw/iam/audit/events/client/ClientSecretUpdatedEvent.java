@@ -15,13 +15,13 @@
  */
 package it.infn.mw.iam.audit.events.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public class ClientSecretUpdatedEvent extends ClientUpdatedEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public ClientSecretUpdatedEvent(Object source, ClientDetailsEntity client) {
+  public ClientSecretUpdatedEvent(Object source, IamClient client) {
     super(source, client, "Client secret updated");
   }
 

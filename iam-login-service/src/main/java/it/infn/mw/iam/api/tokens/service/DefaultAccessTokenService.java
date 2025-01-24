@@ -20,54 +20,57 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.tokens.converter.TokensConverter;
 import it.infn.mw.iam.api.tokens.exception.TokenNotFoundException;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.service.paging.TokensPageRequest;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
+import it.infn.mw.iam.persistence.repository.IamAccessTokenRepository;
 
 @Service
 public class DefaultAccessTokenService extends AbstractTokenService<AccessToken> {
 
   @Autowired
+  private IamTokenService tokenService;
+
+  @Autowired
   private TokensConverter tokensConverter;
 
   @Autowired
-  private DefaultOAuth2ProviderTokenService tokenService;
-
-  @Autowired
-  private IamOAuthAccessTokenRepository tokenRepository;
+  private IamAccessTokenRepository tokenRepository;
 
   @Override
   public AccessToken getTokenById(Long id) {
 
-    OAuth2AccessTokenEntity at =
-        getAccessTokenById(id).orElseThrow(() -> new TokenNotFoundException(id));
+    IamAccessToken at =
+        tokenRepository.findById(id).orElseThrow(() -> new TokenNotFoundException(id));
     return tokensConverter.toAccessToken(at);
   }
 
   @Override
   public void revokeTokenById(Long id) {
 
-    OAuth2AccessTokenEntity at =
-        getAccessTokenById(id).orElseThrow(() -> new TokenNotFoundException(id));
+    IamAccessToken at =
+        tokenRepository.findById(id).orElseThrow(() -> new TokenNotFoundException(id));
     tokenService.revokeAccessToken(at);
   }
 
-  private Optional<OAuth2AccessTokenEntity> getAccessTokenById(Long accessTokenId) {
+  private Optional<IamAccessToken> getAccessTokenById(Long id) {
 
-    OAuth2AccessTokenEntity at = tokenService.getAccessTokenById(accessTokenId);
+    IamAccessToken at =
+        tokenRepository.findById(id).orElseThrow(() -> new TokenNotFoundException(id));
     return Optional.ofNullable(at);
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokens(OffsetPageable op) {
+  private Page<IamAccessToken> getAllValidTokens(OffsetPageable op) {
 
     return tokenRepository.findAllValidAccessTokens(new Date(), op);
   }
@@ -77,7 +80,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokens(new Date());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForUser(String userId, OffsetPageable op) {
+  private Page<IamAccessToken> getAllValidTokensForUser(String userId, OffsetPageable op) {
 
     return tokenRepository.findValidAccessTokensForUser(userId, new Date(), op);
   }
@@ -87,8 +90,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokensForUser(userId, new Date());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForClient(String clientId,
-      OffsetPageable op) {
+  private Page<IamAccessToken> getAllValidTokensForClient(String clientId, OffsetPageable op) {
 
     return tokenRepository.findValidAccessTokensForClient(clientId, new Date(), op);
   }
@@ -98,8 +100,8 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     return tokenRepository.countValidAccessTokensForClient(clientId, new Date());
   }
 
-  private Page<OAuth2AccessTokenEntity> getAllValidTokensForUserAndClient(String userId,
-      String clientId, OffsetPageable op) {
+  private Page<IamAccessToken> getAllValidTokensForUserAndClient(String userId, String clientId,
+      OffsetPageable op) {
 
     return tokenRepository.findValidAccessTokensForUserAndClient(userId, clientId, new Date(), op);
   }
@@ -112,10 +114,14 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
   private ListResponseDTO<AccessToken> buildCountResponse(long countResponse) {
 
     return new ListResponseDTO.Builder<AccessToken>().totalResults(countResponse)
-        .resources(Collections.emptyList()).startIndex(1).itemsPerPage(0).build();
+      .resources(Collections.emptyList())
+      .startIndex(1)
+      .itemsPerPage(0)
+      .build();
   }
 
-  private ListResponseDTO<AccessToken> buildListResponse(Page<OAuth2AccessTokenEntity> entities, OffsetPageable op) {
+  private ListResponseDTO<AccessToken> buildListResponse(Page<IamAccessToken> entities,
+      OffsetPageable op) {
 
     List<AccessToken> resources = new ArrayList<>();
     entities.getContent().forEach(a -> resources.add(tokensConverter.toAccessToken(a)));
@@ -132,7 +138,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokens(op);
+    Page<IamAccessToken> entities = getAllValidTokens(op);
     return buildListResponse(entities, op);
   }
 
@@ -147,7 +153,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokensForUser(userId, op);
+    Page<IamAccessToken> entities = getAllValidTokensForUser(userId, op);
     return buildListResponse(entities, op);
   }
 
@@ -162,7 +168,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities = getAllValidTokensForClient(clientId, op);
+    Page<IamAccessToken> entities = getAllValidTokensForClient(clientId, op);
     return buildListResponse(entities, op);
   }
 
@@ -177,8 +183,7 @@ public class DefaultAccessTokenService extends AbstractTokenService<AccessToken>
     }
 
     OffsetPageable op = getOffsetPageable(pageRequest);
-    Page<OAuth2AccessTokenEntity> entities =
-        getAllValidTokensForUserAndClient(userId, clientId, op);
+    Page<IamAccessToken> entities = getAllValidTokensForUserAndClient(userId, clientId, op);
     return buildListResponse(entities, op);
   }
 

@@ -23,9 +23,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
-import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -38,6 +35,9 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
+import it.infn.mw.iam.persistence.model.IamClient;
+import it.infn.mw.iam.persistence.model.IamClient.AuthMethod;
+import it.infn.mw.iam.persistence.model.PKCEAlgorithm;
 
 @Component
 public class ClientConverter {
@@ -64,9 +64,9 @@ public class ClientConverter {
   }
 
 
-  public ClientDetailsEntity entityFromClientManagementRequest(RegisteredClientDTO dto)
+  public IamClient entityFromClientManagementRequest(RegisteredClientDTO dto)
       throws ParseException {
-    ClientDetailsEntity client = entityFromRegistrationRequest(dto);
+    IamClient client = entityFromRegistrationRequest(dto);
 
     if (dto.getAccessTokenValiditySeconds() != null && dto.getAccessTokenValiditySeconds() > 0) {
       client.setAccessTokenValiditySeconds(dto.getAccessTokenValiditySeconds());
@@ -103,7 +103,7 @@ public class ClientConverter {
 
 
 
-  public RegisteredClientDTO registeredClientDtoFromEntity(ClientDetailsEntity entity) {
+  public RegisteredClientDTO registeredClientDtoFromEntity(IamClient entity) {
     RegisteredClientDTO clientDTO = new RegisteredClientDTO();
 
     clientDTO.setClientId(entity.getClientId());
@@ -172,10 +172,10 @@ public class ClientConverter {
     return clientDTO;
   }
 
-  public ClientDetailsEntity entityFromRegistrationRequest(RegisteredClientDTO dto)
+  public IamClient entityFromRegistrationRequest(RegisteredClientDTO dto)
       throws ParseException {
 
-    ClientDetailsEntity client = new ClientDetailsEntity();
+    IamClient client = new IamClient();
 
     client.setClientId(dto.getClientId());
     client.setClientDescription(dto.getClientDescription());
@@ -236,7 +236,7 @@ public class ClientConverter {
     return client;
   }
 
-  public RegisteredClientDTO registrationResponseFromClient(ClientDetailsEntity entity) {
+  public RegisteredClientDTO registrationResponseFromClient(IamClient entity) {
     RegisteredClientDTO response = registeredClientDtoFromEntity(entity);
     response.setRegistrationClientUri(
         String.format("%s/%s", clientRegistrationBaseUrl, entity.getClientId()));

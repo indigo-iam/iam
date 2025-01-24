@@ -76,6 +76,11 @@
       <artifactId>gson</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework.security.oauth</groupId>
+      <artifactId>spring-security-oauth2</artifactId>
+    </dependency>
+
     <!-- DB -->
     <dependency>
       <groupId>org.flywaydb</groupId>
@@ -111,6 +116,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-joda</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
     </dependency>
 
   </dependencies>

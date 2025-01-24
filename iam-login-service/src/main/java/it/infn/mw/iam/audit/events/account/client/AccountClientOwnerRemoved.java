@@ -15,15 +15,14 @@
  */
 package it.infn.mw.iam.audit.events.account.client;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public class AccountClientOwnerRemoved extends AccountClientEvent {
 
   private static final long serialVersionUID = 1L;
 
-  public AccountClientOwnerRemoved(Object source, IamAccount account, ClientDetailsEntity client) {
+  public AccountClientOwnerRemoved(Object source, IamAccount account, IamClient client) {
     super(source, account, client, "Owner removed from client");
   }
 

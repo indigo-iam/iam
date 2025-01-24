@@ -15,7 +15,8 @@
  */
 package it.infn.mw.iam.authn.oidc.service;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.model.OIDCAuthenticationToken;
+
 @FunctionalInterface
 public interface OidcUserDetailsService {
 

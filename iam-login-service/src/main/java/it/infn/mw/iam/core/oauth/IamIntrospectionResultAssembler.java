@@ -15,26 +15,40 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static com.google.common.collect.Maps.newLinkedHashMap;
+
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
+
+import it.infn.mw.iam.authn.oidc.model.UserInfo;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.core.oauth.service.IntrospectionResultAssembler;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
+import it.infn.mw.iam.persistence.model.IamRefreshToken;
 
-public class IamIntrospectionResultAssembler extends DefaultIntrospectionResultAssembler {
+@SuppressWarnings("deprecation")
+public class IamIntrospectionResultAssembler implements IntrospectionResultAssembler {
 
-  final JWTProfileResolver profileResolver;
+  public static final Logger LOG = LoggerFactory.getLogger(IamTokenService.class);
+
+  private final JWTProfileResolver profileResolver;
 
   public IamIntrospectionResultAssembler(JWTProfileResolver profileResolver) {
     this.profileResolver = profileResolver;
   }
 
   @Override
-  public Map<String, Object> assembleFrom(OAuth2AccessTokenEntity accessToken, UserInfo userInfo,
+  public Map<String, Object> assembleFrom(IamAccessToken accessToken, UserInfo userInfo,
       Set<String> authScopes) {
 
     JWTProfile profile = profileResolver.resolveProfile(accessToken.getClient().getClientId());
@@ -42,4 +56,41 @@ public class IamIntrospectionResultAssembler extends DefaultIntrospectionResultA
       .assembleIntrospectionResult(accessToken, userInfo, authScopes);
   }
 
+  @Override
+  public Map<String, Object> assembleFrom(IamRefreshToken refreshToken, UserInfo userInfo, Set<String> authScopes) {
+
+      Map<String, Object> result = newLinkedHashMap();
+      OAuth2Authentication authentication = refreshToken.getAuthenticationHolder().getAuthentication();
+
+      result.put(ACTIVE, true);
+
+      Set<String> scopes = Sets.intersection(authScopes, authentication.getOAuth2Request().getScope());
+
+      result.put(SCOPE, Joiner.on(SCOPE_SEPARATOR).join(scopes));
+
+      if (refreshToken.getExpiration() != null) {
+          try {
+              result.put(EXPIRES_AT, dateFormat.valueToString(refreshToken.getExpiration()));
+              result.put(EXP, refreshToken.getExpiration().getTime() / 1000L);
+          } catch (ParseException e) {
+              LOG.error("Parse exception in token introspection", e);
+          }
+      }
+
+      if (userInfo != null) {
+          // if we have a UserInfo, use that for the subject
+          result.put(SUB, userInfo.getSub());
+      } else {
+          // otherwise, use the authentication's username
+          result.put(SUB, authentication.getName());
+      }
+
+      if(authentication.getUserAuthentication() != null) {
+          result.put(USER_ID, authentication.getUserAuthentication().getName());
+      }
+
+      result.put(CLIENT_ID, authentication.getOAuth2Request().getClientId());
+
+      return result;
+  }
 }

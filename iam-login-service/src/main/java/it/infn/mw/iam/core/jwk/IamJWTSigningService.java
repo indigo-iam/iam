@@ -30,8 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.util.Strings;
-import org.mitre.jose.keystore.JWKSetKeyStore;
-import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +42,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties.JWKProperties;
 import it.infn.mw.iam.core.error.StartupError;
+import it.infn.mw.iam.core.jwt.signer.JWTSigningAndValidationService;
 
 
 public class IamJWTSigningService implements JWTSigningAndValidationService {

@@ -18,11 +18,11 @@ package it.infn.mw.iam.core.oauth.profile;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
+import it.infn.mw.iam.authn.oidc.model.UserInfo;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 
 public interface IntrospectionResultHelper {
 
-  Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
+  Map<String, Object> assembleIntrospectionResult(IamAccessToken accessToken,
       UserInfo userInfo, Set<String> authScopes);
 }

@@ -17,8 +17,8 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+import static it.infn.mw.iam.persistence.model.IamClient.AuthMethod.NONE;
 import static java.util.Objects.isNull;
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 
 import java.text.ParseException;
 import java.time.Clock;
@@ -29,9 +29,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,11 +53,15 @@ import it.infn.mw.iam.audit.events.client.ClientRemovedEvent;
 import it.infn.mw.iam.audit.events.client.ClientSecretUpdatedEvent;
 import it.infn.mw.iam.audit.events.client.ClientStatusChangedEvent;
 import it.infn.mw.iam.audit.events.client.ClientUpdatedEvent;
+import it.infn.mw.iam.config.client_registration.ClientRegistrationProperties;
 import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.persistence.model.IamAccessToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.model.IamClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Service
 @Validated
@@ -69,27 +70,27 @@ public class DefaultClientManagementService implements ClientManagementService {
   private final Clock clock;
   private final ClientService clientService;
   private final ClientConverter converter;
-  private final ClientDefaultsService defaultsService;
   private final UserConverter userConverter;
   private final IamAccountRepository accountRepo;
   private final OIDCTokenService oidcTokenService;
   private final IamTokenService tokenService;
+  private final IamClientRepository clientRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final NotificationFactory notificationFactory;
 
-  public DefaultClientManagementService(Clock clock, ClientService clientService,
+  public DefaultClientManagementService(Clock clock, ClientService clientService, ClientRegistrationProperties properties,
       ClientConverter converter, ClientDefaultsService defaultsService, UserConverter userConverter,
       IamAccountRepository accountRepo, OIDCTokenService oidcTokenService,
-      IamTokenService tokenService, ApplicationEventPublisher aep,
-      NotificationFactory notificationFactory) {
+      IamTokenService tokenService, IamClientRepository clientRepository,
+      ApplicationEventPublisher aep, NotificationFactory notificationFactory) {
     this.clock = clock;
     this.clientService = clientService;
     this.converter = converter;
-    this.defaultsService = defaultsService;
     this.userConverter = userConverter;
     this.accountRepo = accountRepo;
     this.oidcTokenService = oidcTokenService;
     this.tokenService = tokenService;
+    this.clientRepository = clientRepository;
     this.eventPublisher = aep;
     this.notificationFactory = notificationFactory;
   }
@@ -97,7 +98,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public ListResponseDTO<RegisteredClientDTO> retrieveAllClients(Pageable pageable) {
 
-    Page<ClientDetailsEntity> pagedResults = clientService.findAll(pageable);
+    Page<IamClient> pagedResults = clientRepository.findAll(pageable);
 
     ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
 
@@ -112,21 +113,20 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public Optional<RegisteredClientDTO> retrieveClientByClientId(String clientId) {
-    return clientService.findClientByClientId(clientId)
-      .map(converter::registeredClientDtoFromEntity);
+    return clientRepository.findByClientId(clientId).map(converter::registeredClientDtoFromEntity);
   }
 
   @Validated(OnClientCreation.class)
   @Override
   public RegisteredClientDTO saveNewClient(RegisteredClientDTO client) throws ParseException {
 
-    ClientDetailsEntity entity = converter.entityFromClientManagementRequest(client);
+    IamClient entity = converter.entityFromClientManagementRequest(client);
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
 
-    defaultsService.setupClientDefaults(entity);
-    entity = clientService.saveNewClient(entity);
+    clientService.setupClientDefaults(entity);
+    entity = clientRepository.save(entity);
 
     return converter.registeredClientDtoFromEntity(entity);
   }
@@ -134,17 +134,17 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public void deleteClientByClientId(String clientId) {
 
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    IamClient client = clientRepository.findByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    clientService.deleteClient(client);
+    clientRepository.delete(client);
     eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
   }
 
   @Override
   public void updateClientStatus(String clientId, boolean status, String userId) {
 
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    IamClient client = clientRepository.findByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     client = clientService.updateClientStatus(client, status, userId);
     String message = "Client " + (status ? "enabled" : "disabled");
@@ -165,10 +165,10 @@ public class DefaultClientManagementService implements ClientManagementService {
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO client)
       throws ParseException {
 
-    ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
+    IamClient oldClient = clientRepository.findByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(client);
+    IamClient newClient = converter.entityFromClientManagementRequest(client);
 
     newClient.setId(oldClient.getId());
     newClient.setCreatedAt(oldClient.getCreatedAt());
@@ -180,7 +180,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
       newClient.setClientSecret(null);
     } else if (isNull(client.getClientSecret())) {
-      client.setClientSecret(defaultsService.generateClientSecret());
+      client.setClientSecret(clientService.generateClientSecret());
     }
 
     newClient = clientService.updateClient(newClient);
@@ -192,7 +192,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   public ListResponseDTO<RegisteredClientDTO> retrieveAllDynamicallyRegisteredClients(
       Pageable pageable) {
 
-    Page<ClientDetailsEntity> pagedResults = clientService.findAllDynamicallyRegistered(pageable);
+    Page<IamClient> pagedResults = clientService.findAllDynamicallyRegistered(pageable);
 
     ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
 
@@ -207,10 +207,10 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public RegisteredClientDTO generateNewClientSecret(String clientId) {
-    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+    IamClient client = clientRepository.findByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(defaultsService.generateClientSecret());
+    client.setClientSecret(clientService.generateClientSecret());
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
     return converter.registeredClientDtoFromEntity(client);
@@ -235,8 +235,9 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void assignClientOwner(String clientId, String accountId) {
-    ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+
+    IamClient client =
+        clientRepository.findByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
     clientService.linkClientToAccount(client, account);
 
@@ -245,8 +246,8 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Override
   public void removeClientOwner(String clientId, String accountId) {
-    ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+    IamClient client =
+        clientRepository.findByClientId(clientId).orElseThrow(clientNotFound(clientId));
     IamAccount account = accountRepo.findByUuid(accountId).orElseThrow(accountNotFound(accountId));
     clientService.unlinkClientFromAccount(client, account);
 
@@ -254,19 +255,18 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
 
-  private OAuth2AccessTokenEntity createRegistrationAccessTokenForClient(
-      ClientDetailsEntity client) {
-    OAuth2AccessTokenEntity token = oidcTokenService.createRegistrationAccessToken(client);
+  private IamAccessToken createRegistrationAccessTokenForClient(IamClient client) {
+    IamAccessToken token = oidcTokenService.createRegistrationAccessToken(client);
     return tokenService.saveAccessToken(token);
 
   }
 
   @Override
   public RegisteredClientDTO rotateRegistrationAccessToken(@NotBlank String clientId) {
-    ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+    IamClient client =
+        clientRepository.findByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    OAuth2AccessTokenEntity rat =
+    IamAccessToken rat =
         Optional.ofNullable(oidcTokenService.rotateRegistrationAccessTokenForClient(client))
           .orElse(createRegistrationAccessTokenForClient(client));
 
@@ -279,5 +279,4 @@ public class DefaultClientManagementService implements ClientManagementService {
 
     return response;
   }
-
 }

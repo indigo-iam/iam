@@ -17,35 +17,39 @@ package it.infn.mw.iam.api.client.service;
 
 import java.util.Optional;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.model.IamClient;
 
 public interface ClientService {
 
-  Page<ClientDetailsEntity> findAllDynamicallyRegistered(Pageable page);
+  Page<IamClient> findAllDynamicallyRegistered(Pageable page);
 
-  Page<ClientDetailsEntity> findAll(Pageable page);
+  Page<IamClient> findAll(Pageable page);
 
-  Optional<ClientDetailsEntity> findClientByClientId(String clientId);
+  Optional<IamClient> findClientByClientId(String clientId);
 
-  Optional<ClientDetailsEntity> findClientByClientIdAndAccount(String clientId,
+  Optional<IamClient> findClientByClientIdAndAccount(String clientId,
       IamAccount acccount);
 
   Page<IamAccountClient> findClientOwners(String clientId, Pageable page);
 
-  ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner);
+  IamClient linkClientToAccount(IamClient client, IamAccount owner);
 
-  ClientDetailsEntity unlinkClientFromAccount(ClientDetailsEntity client, IamAccount owner);
+  IamClient unlinkClientFromAccount(IamClient client, IamAccount owner);
 
-  ClientDetailsEntity saveNewClient(ClientDetailsEntity client);
+  IamClient saveNewClient(IamClient client);
 
-  ClientDetailsEntity updateClient(ClientDetailsEntity client);
+  IamClient updateClient(IamClient client);
 
-  ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId);
+  IamClient updateClientStatus(IamClient client, boolean status, String userId);
 
-  void deleteClient(ClientDetailsEntity client);
+  void deleteClient(IamClient client);
+
+  IamClient setupClientDefaults(IamClient client);
+
+  String generateClientSecret();
 }
