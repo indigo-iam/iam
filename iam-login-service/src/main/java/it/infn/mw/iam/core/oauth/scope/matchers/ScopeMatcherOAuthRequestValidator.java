@@ -35,7 +35,7 @@ public class ScopeMatcherOAuthRequestValidator implements OAuth2RequestValidator
     this.registry = matcherRegistry;
   }
 
-  public void validateScope(Set<String> requestedScopes, ClientDetails client) {
+  private void validateScope(Set<String> requestedScopes, ClientDetails client) {
 
     Set<ScopeMatcher> scopeMatchers = registry.findMatchersForClient(client);
     for (String s : requestedScopes) {

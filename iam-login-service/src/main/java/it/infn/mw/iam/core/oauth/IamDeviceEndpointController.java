@@ -55,6 +55,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
+import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -69,7 +70,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -88,14 +88,12 @@ public class IamDeviceEndpointController {
   private final IamUserApprovalUtils userApprovalUtils;
   private final AccountUtils accountUtils;
   private final ScopePolicyPDP pdp;
-  private final ScopeMatcherOAuthRequestValidator scopeMatcherRequestValidator;
 
   public IamDeviceEndpointController(ClientDetailsEntityService clientEntityService,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, DefaultOAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      AccountUtils accountUtils, ScopePolicyPDP pdp,
-      ScopeMatcherOAuthRequestValidator scopeMatcherRequestValidator) {
+      AccountUtils accountUtils, ScopePolicyPDP pdp) {
     this.clientEntityService = clientEntityService;
     this.scopeService = scopeService;
     this.config = config;
@@ -105,7 +103,6 @@ public class IamDeviceEndpointController {
     this.userApprovalUtils = userApprovalUtils;
     this.accountUtils = accountUtils;
     this.pdp = pdp;
-    this.scopeMatcherRequestValidator = scopeMatcherRequestValidator;
   }
 
   @PostMapping(value = "/" + DEVICE_CODE_URL,
@@ -127,8 +124,13 @@ public class IamDeviceEndpointController {
     }
 
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(scope);
+    Set<String> allowedScopes = client.getScope();
 
-    scopeMatcherRequestValidator.validateScope(requestedScopes, client);
+    if (!scopeService.scopesMatch(allowedScopes, requestedScopes)) {
+      logger.error("Client asked for {} but is allowed {}", requestedScopes, allowedScopes);
+      throw new InvalidScopeException(
+          String.format("Scope not allowed for client '%s'", client.getClientId()));
+    }
 
     try {
       DeviceCode dc = deviceCodeService.createNewDeviceCode(requestedScopes, client, parameters);
@@ -220,7 +222,7 @@ public class IamDeviceEndpointController {
     authorizationRequest.setClientId(client.getClientId());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
-    
+
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
 
