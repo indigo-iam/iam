@@ -95,6 +95,21 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
   }
 
+  @Test
+  public void testDeviceCodeWithoutAllowedScope() throws Exception {
+
+    mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid not-allowed-scope"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
+      .andExpect(jsonPath("$.error_description",
+          equalTo("Scope 'not-allowed-scope' not allowed for client 'device-code-client'")));
+
+  }
+
 
   @Test
   public void testDeviceCodeNoApproval() throws Exception {

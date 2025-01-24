@@ -69,6 +69,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -87,12 +88,14 @@ public class IamDeviceEndpointController {
   private final IamUserApprovalUtils userApprovalUtils;
   private final AccountUtils accountUtils;
   private final ScopePolicyPDP pdp;
+  private final ScopeMatcherOAuthRequestValidator scopeMatcherRequestValidator;
 
   public IamDeviceEndpointController(ClientDetailsEntityService clientEntityService,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, DefaultOAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      AccountUtils accountUtils, ScopePolicyPDP pdp) {
+      AccountUtils accountUtils, ScopePolicyPDP pdp,
+      ScopeMatcherOAuthRequestValidator scopeMatcherRequestValidator) {
     this.clientEntityService = clientEntityService;
     this.scopeService = scopeService;
     this.config = config;
@@ -102,6 +105,7 @@ public class IamDeviceEndpointController {
     this.userApprovalUtils = userApprovalUtils;
     this.accountUtils = accountUtils;
     this.pdp = pdp;
+    this.scopeMatcherRequestValidator = scopeMatcherRequestValidator;
   }
 
   @PostMapping(value = "/" + DEVICE_CODE_URL,
@@ -123,14 +127,8 @@ public class IamDeviceEndpointController {
     }
 
     Set<String> requestedScopes = OAuth2Utils.parseParameterList(scope);
-    Set<String> allowedScopes = client.getScope();
 
-    if (!scopeService.scopesMatch(allowedScopes, requestedScopes)) {
-      logger.error("Client asked for {} but is allowed {}", requestedScopes, allowedScopes);
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      model.put(JsonErrorView.ERROR, "invalid_scope");
-      return JsonErrorView.VIEWNAME;
-    }
+    scopeMatcherRequestValidator.validateScope(requestedScopes, client);
 
     try {
       DeviceCode dc = deviceCodeService.createNewDeviceCode(requestedScopes, client, parameters);
