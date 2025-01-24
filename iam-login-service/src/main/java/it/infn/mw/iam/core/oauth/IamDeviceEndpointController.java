@@ -220,6 +220,11 @@ public class IamDeviceEndpointController {
     authorizationRequest.setClientId(client.getClientId());
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
+    
+    OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
+    OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
+
+    deviceCodeService.approveDeviceCode(dc, o2Auth);
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
         || authorizationRequest.isApproved()) {
@@ -267,8 +272,6 @@ public class IamDeviceEndpointController {
 
     OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
-
-    deviceCodeService.approveDeviceCode(dc, o2Auth);
 
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, o2Auth);
