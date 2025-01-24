@@ -19,8 +19,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -41,6 +43,9 @@ import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
 
 @SuppressWarnings("deprecation")
 public class IamTokenEnhancer extends ConnectTokenEnhancer {
+
+  @Autowired
+  private AuthenticationHolderRepository authenticationHolderRepository;
 
   @Autowired
   private UserInfoService userInfoService;
@@ -82,9 +87,16 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
     scopeFilter.filterScopes(accessToken.getScope(), authentication);
 
+    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
+    authHolder.setAuthentication(authentication);
+    authHolder.setScope(accessToken.getScope());
+    authHolder = authenticationHolderRepository.save(authHolder);
+
     Instant tokenIssueInstant = clock.instant();
 
     OAuth2AccessTokenEntity accessTokenEntity = (OAuth2AccessTokenEntity) accessToken;
+
+    accessTokenEntity.setAuthenticationHolder(authHolder);
 
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
