@@ -106,7 +106,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("Scope 'not-allowed-scope' not allowed for client 'device-code-client'")));
+          equalTo("Scope not allowed for client 'device-code-client'")));
 
   }
 
@@ -193,15 +193,36 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .getSession();
 
 
-    mvc
-      .perform(
-          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
-            .param("device_code", deviceCode))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error", equalTo("authorization_pending")))
-      .andExpect(jsonPath("$.error_description",
-          equalTo("Authorization pending for code: " + deviceCode)));
+    response = mvc
+        .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+          .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+          .param("client_id", "device-code-client")
+          .param("scope", "openid profile offline_access"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.user_code").isString())
+        .andExpect(jsonPath("$.device_code").isString())
+        .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+      responseJson = mapper.readTree(response);
+
+      userCode = responseJson.get("user_code").asText();
+      deviceCode = responseJson.get("device_code").asText();
+
+      session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
+        .andExpect(status().isOk())
+        .andExpect(view().name("requestUserCode"))
+        .andReturn()
+        .getRequest()
+        .getSession();
+
+      mvc
+        .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+        .andExpect(status().isOk())
+        .andExpect(view().name("iam/approveDevice"));
+
   }
 
 
