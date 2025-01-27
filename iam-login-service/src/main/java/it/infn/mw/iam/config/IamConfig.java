@@ -92,6 +92,8 @@ import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
+import it.infn.mw.iam.core.oauth.scope.pdp.DefaultScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -292,8 +294,6 @@ public class IamConfig {
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
-
-
 
   @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,

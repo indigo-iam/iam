@@ -127,6 +127,7 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (12, 'offline_access'),
   (12, 'storage.read:/'),
   (12, 'storage.write:/'),
+  (12, 'iam:admin.read'),
   (13, 'openid'),
   (13, 'profile'),
   (13, 'email'),

@@ -43,7 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
@@ -66,7 +66,7 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   IamAccountRepository accountRepo;
 
   @Autowired
-  ScopePolicyPDP pdp;
+  ScopeFilter pdp;
 
   @Autowired
   private MockMvc mvc;

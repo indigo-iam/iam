@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth;
+package it.infn.mw.iam.core.oauth.device;
 
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.ADMIN_SCOPES;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
@@ -33,7 +32,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
 
@@ -41,6 +39,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.exception.DeviceCodeCreationException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
+import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -71,8 +70,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
-import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.core.oauth.IamUserApprovalUtils;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
 @SuppressWarnings("deprecation")
 @Controller
@@ -88,13 +87,14 @@ public class IamDeviceEndpointController {
   private final UserApprovalHandler iamUserApprovalHandler;
   private final IamUserApprovalUtils userApprovalUtils;
   private final AccountUtils accountUtils;
-  private final ScopePolicyPDP pdp;
+  private final ScopeFilter scopeFilter;
+  private final DeviceCodeRepository deviceCodeRepository;
 
   public IamDeviceEndpointController(ClientDetailsEntityService clientEntityService,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, DefaultOAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      AccountUtils accountUtils, ScopePolicyPDP pdp) {
+      AccountUtils accountUtils, ScopeFilter scopeFilter, DeviceCodeRepository deviceCodeRepository) {
     this.clientEntityService = clientEntityService;
     this.scopeService = scopeService;
     this.config = config;
@@ -103,7 +103,8 @@ public class IamDeviceEndpointController {
     this.iamUserApprovalHandler = iamUserApprovalHandler;
     this.userApprovalUtils = userApprovalUtils;
     this.accountUtils = accountUtils;
-    this.pdp = pdp;
+    this.scopeFilter = scopeFilter;
+    this.deviceCodeRepository = deviceCodeRepository;
   }
 
   @PostMapping(value = "/" + DEVICE_CODE_URL,
@@ -174,7 +175,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @GetMapping("/" + USER_CODE_URL)
+  @GetMapping(value = "/" + USER_CODE_URL)
   public String requestUserCode(
       @RequestParam(value = "user_code", required = false) String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
@@ -188,7 +189,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @PostMapping("/" + USER_CODE_URL + "/verify")
+  @PostMapping(value = "/" + USER_CODE_URL + "/verify")
   public String readUserCode(@RequestParam("user_code") String userCode, ModelMap model,
       HttpSession session, Authentication authn) {
 
@@ -219,6 +220,9 @@ public class IamDeviceEndpointController {
     Set<String> filteredScopes = filterScopes(dc.getScope(), authn);
     filteredScopes = userApprovalUtils.sortScopes(scopeService.fromStrings(filteredScopes));
 
+    dc.setScope(filteredScopes);
+    deviceCodeRepository.save(dc);
+
     authorizationRequest.setScope(filteredScopes);
     authorizationRequest.setClientId(client.getClientId());
 
@@ -236,7 +240,7 @@ public class IamDeviceEndpointController {
       return DEVICE_APPROVED_PAGE;
     }
 
-    setModelForConsentPage(model, authn, dc, filteredScopes, client);
+    setModelForConsentPage(model, authn, dc, client);
 
     session.setAttribute("authorizationRequest", authorizationRequest);
     session.setAttribute("deviceCode", dc);
@@ -245,7 +249,7 @@ public class IamDeviceEndpointController {
   }
 
   @PreAuthorize("hasRole('ROLE_USER')")
-  @PostMapping("/" + USER_CODE_URL + "/approve")
+  @PostMapping(value = "/" + USER_CODE_URL + "/approve")
   public String approveDevice(@RequestParam("user_code") String userCode,
       @RequestParam(value = OAuth2Utils.USER_OAUTH_APPROVAL) Boolean approve,
       @RequestParam(value = REMEMBER_PARAMETER_KEY, required = false) String remember,
@@ -294,28 +298,19 @@ public class IamDeviceEndpointController {
 
   private Set<String> filterScopes(Set<String> scopes, Authentication authentication) {
 
-    IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication)
+    accountUtils.getAuthenticatedUserAccount(authentication)
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
 
-    Set<String> filteredScopes = pdp.filterScopes(scopes, account);
-
-    if (!accountUtils.isAdmin(authentication)) {
-      filteredScopes = filteredScopes.stream()
-        .filter(s -> !ADMIN_SCOPES.contains(s))
-        .collect(Collectors.toSet());
-    }
-
-    scopes.retainAll(filteredScopes);
+    scopes.retainAll(scopeFilter.filterScopes(scopes, authentication));
 
     return scopes;
   }
 
-  private void setModelForConsentPage(ModelMap model, Authentication authn, DeviceCode dc,
-      Set<String> scopes, ClientDetailsEntity client) {
+  private void setModelForConsentPage(ModelMap model, Authentication authn, DeviceCode dc, ClientDetailsEntity client) {
 
     model.put("dc", dc);
-    model.put("scopes", scopeService.fromStrings(scopes));
-    model.put("claims", userApprovalUtils.claimsForScopes(authn, scopeService.fromStrings(scopes)));
+    model.put("scopes", scopeService.fromStrings(dc.getScope()));
+    model.put("claims", userApprovalUtils.claimsForScopes(authn, scopeService.fromStrings(dc.getScope())));
 
     Integer count = userApprovalUtils.approvedSiteCount(client.getClientId());
 
@@ -324,7 +319,7 @@ public class IamDeviceEndpointController {
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
 
     // just for tests validation
-    model.put("scope", OAuth2Utils.formatParameterList(scopes));
+    model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));
   }
 
   private void setAuthzRequestAfterApproval(AuthorizationRequest authorizationRequest,
