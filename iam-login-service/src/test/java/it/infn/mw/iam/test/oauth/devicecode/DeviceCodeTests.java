@@ -209,7 +209,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       responseJson = mapper.readTree(response);
 
       userCode = responseJson.get("user_code").asText();
-      deviceCode = responseJson.get("device_code").asText();
 
       session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
         .andExpect(status().isOk())

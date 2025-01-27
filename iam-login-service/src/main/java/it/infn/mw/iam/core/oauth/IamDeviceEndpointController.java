@@ -267,7 +267,7 @@ public class IamDeviceEndpointController {
     ClientDetailsEntity client = clientEntityService.loadClientByClientId(dc.getClientId());
     model.put("client", client);
 
-    if (Boolean.FALSE.equals(approve)) {
+    if (Boolean.FALSE.equals(approve) || approve == null) {
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, false);
       return DEVICE_APPROVED_PAGE;
     }

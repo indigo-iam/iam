@@ -27,7 +27,6 @@ import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.StatsService;
 import org.mitre.openid.connect.service.UserInfoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -38,18 +37,18 @@ import com.google.gson.JsonObject;
 @Component
 public class IamUserApprovalUtils {
 
-  @Autowired
-  private SystemScopeService scopeService;
+  private final SystemScopeService scopeService;
+  private final StatsService statsService;
+  private final ScopeClaimTranslationService scopeClaimTranslationService;
+  private final UserInfoService userInfoService;
 
-  @Autowired
-  private StatsService statsService;
-
-  @Autowired
-  private ScopeClaimTranslationService scopeClaimTranslationService;
-
-  @Autowired
-  private UserInfoService userInfoService;
-
+  public IamUserApprovalUtils(SystemScopeService scopeService, StatsService statsService,
+      ScopeClaimTranslationService scopeClaimTranslationService, UserInfoService userInfoService) {
+    this.scopeService = scopeService;
+    this.statsService = statsService;
+    this.scopeClaimTranslationService = scopeClaimTranslationService;
+    this.userInfoService = userInfoService;
+  }
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
 
