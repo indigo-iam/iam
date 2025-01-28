@@ -85,7 +85,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 
@@ -162,8 +162,7 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  OAuth2RequestFactory requestFactory(IamScopeFilter scopeFilter,
-      JWTProfileResolver profileResolver) {
+  OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
     return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver);
   }
 

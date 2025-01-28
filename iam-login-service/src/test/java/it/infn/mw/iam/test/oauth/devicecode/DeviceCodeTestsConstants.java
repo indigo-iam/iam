@@ -40,4 +40,7 @@ public interface DeviceCodeTestsConstants {
   
   public static final String WRONG_VERIFICATION_URI_COMPLETE = "/device?user_code=";
 
+  public static final String ADMIN_USERNAME = "admin";
+  public static final String ADMIN_PASSWORD = "password";
+
 }
