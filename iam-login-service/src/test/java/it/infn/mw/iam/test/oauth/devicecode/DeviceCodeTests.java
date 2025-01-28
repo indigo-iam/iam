@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -398,7 +399,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertTrue(claims.getAudience().size() == 1);
+    assertEquals(1, claims.getAudience().size());
     assertTrue(claims.getAudience().contains("example-audience"));
   }
 

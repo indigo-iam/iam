@@ -180,12 +180,10 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   }
 
   private void setAuthTime(AuthorizationRequest authorizationRequest) {
+
     ServletRequestAttributes attr =
         (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
 
-    if (attr == null) {
-      return;
-    }
     HttpSession session = attr.getRequest().getSession();
     if (session == null) {
       return;
