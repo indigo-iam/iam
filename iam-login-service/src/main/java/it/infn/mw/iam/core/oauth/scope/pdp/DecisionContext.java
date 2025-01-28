@@ -85,7 +85,8 @@ public class DecisionContext {
     }
     if (EQ.equals(p.getMatchingPolicy())) {
       return p.getScopes().contains(scope);
-    } else if (REGEXP.equals(p.getMatchingPolicy())) {
+    } 
+    if (REGEXP.equals(p.getMatchingPolicy())) {
       boolean foundMatch = false;
       for (String ps : p.getScopes()) {
         try {
@@ -98,7 +99,8 @@ public class DecisionContext {
         }
       }
       return foundMatch;
-    } else if (PATH.equals(p.getMatchingPolicy())) {
+    }
+    if (PATH.equals(p.getMatchingPolicy())) {
       boolean foundMatch = false;
       for (String ps : p.getScopes()) {
         ScopeMatcher m;
@@ -112,10 +114,9 @@ public class DecisionContext {
         }
       }
       return foundMatch;
-    } else {
-      throw new IllegalArgumentException(
-          "Unknown scope policy matching policy: " + p.getMatchingPolicy());
     }
+    throw new IllegalArgumentException(
+      "Unknown scope policy matching policy: " + p.getMatchingPolicy());
   }
 
   protected void applyScopePolicy(String scope, IamScopePolicy p, IamAccount a) {

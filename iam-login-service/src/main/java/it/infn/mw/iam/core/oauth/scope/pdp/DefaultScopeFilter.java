@@ -49,6 +49,8 @@ public class DefaultScopeFilter implements ScopeFilter {
 
   public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write");
 
+  private static final Set<String> EXCLUDED_SCOPES = Set.of("openid");
+
   private Cache<String, ScopeMatcher> matchersCache =
       CacheBuilder.newBuilder().maximumSize(30).build();
 
@@ -83,6 +85,7 @@ public class DefaultScopeFilter implements ScopeFilter {
     if (config.isEnableScopeAuthz()) {
       filteredScopes.retainAll(scopePolicies(filteredScopes, account));
     }
+    filteredScopes.addAll(excludedScopes(requestedScopes));
     return filteredScopes;
   }
 
@@ -102,6 +105,14 @@ public class DefaultScopeFilter implements ScopeFilter {
         oldRequest.getResourceIds(), oldRequest.getRedirectUri(), oldRequest.getResponseTypes(),
         oldRequest.getExtensions());
     return new OAuth2Authentication(updatedRequest, authn.getUserAuthentication());
+  }
+
+  private Set<String> excludedScopes(Set<String> requestedScopes) {
+
+    return EXCLUDED_SCOPES.stream()
+      .distinct()
+      .filter(requestedScopes::contains)
+      .collect(Collectors.toSet());
   }
 
   private Set<String> adminPolicies(Set<String> requestedScopes, IamAccount account) {

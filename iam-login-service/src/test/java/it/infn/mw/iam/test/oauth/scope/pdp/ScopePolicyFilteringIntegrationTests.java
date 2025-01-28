@@ -125,8 +125,19 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
         .param("password", "password")
         .param("scope", "openid scim:read"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.scope").doesNotExist())
-      .andExpect(jsonPath("$.id_token").doesNotExist());
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", equalTo("openid")))
+      .andExpect(jsonPath("$.id_token").exists());
+
+    mvc
+    .perform(post("/token").with(httpBasic(clientId, clientSecret))
+      .param("grant_type", "password")
+      .param("username", "test")
+      .param("password", "password")
+      .param("scope", "profile scim:read"))
+    .andExpect(status().isOk())
+    .andExpect(jsonPath("$.scope").doesNotExist())
+    .andExpect(jsonPath("$.id_token").doesNotExist());
   }
 
   @Test

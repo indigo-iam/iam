@@ -19,6 +19,7 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -130,7 +131,8 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     Set<String> filteredScopes =
         pdp.filterScopes(Sets.newHashSet(OPENID, PROFILE, SCIM_WRITE), testAccount);
-    assertThat(filteredScopes, hasSize(0));
+    assertThat(filteredScopes, hasSize(1));
+    assertThat(filteredScopes, hasItem(OPENID));
 
   }
 
