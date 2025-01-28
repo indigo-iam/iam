@@ -293,8 +293,6 @@ public class IamConfig {
     return frb;
   }
 
-
-
   @Bean
   ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
       SystemScopeRepository scopeRepo) {

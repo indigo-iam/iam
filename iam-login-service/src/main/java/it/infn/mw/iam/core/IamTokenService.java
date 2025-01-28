@@ -38,9 +38,11 @@ import com.google.common.collect.Sets;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
+@SuppressWarnings("deprecation")
 @Service("defaultOAuth2ProviderTokenService")
 @Primary
 public class IamTokenService extends DefaultOAuth2ProviderTokenService {
@@ -51,16 +53,18 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
+  private final ScopeFilter scopeFilter;
 
 
   public IamTokenService(IamOAuthAccessTokenRepository atRepo,
       IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
-      IamProperties iamProperties) {
+      IamProperties iamProperties, ScopeFilter scopeFilter) {
 
     this.accessTokenRepo = atRepo;
     this.refreshTokenRepo = rtRepo;
     this.eventPublisher = publisher;
     this.iamProperties = iamProperties;
+    this.scopeFilter = scopeFilter;
   }
 
   @Override
@@ -90,10 +94,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
-    OAuth2AccessTokenEntity token = super.createAccessToken(authentication);
+    OAuth2AccessTokenEntity token = super.createAccessToken(scopeFilter.filterScopes(authentication));
 
     if (iamProperties.getClient().isTrackLastUsed()) {
       updateClientLastUsed(token);
@@ -107,14 +110,13 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
       AuthenticationHolderEntity authHolder) {
 
-    OAuth2RefreshTokenEntity token = super.createRefreshToken(client, authHolder);
+    OAuth2RefreshTokenEntity token = super.createRefreshToken(client, scopeFilter.filterScopes(authHolder));
 
     eventPublisher.publishEvent(new RefreshTokenIssuedEvent(this, token));
     return token;
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public OAuth2AccessTokenEntity refreshAccessToken(String refreshTokenValue,
       TokenRequest authRequest) {
 

@@ -26,11 +26,15 @@ import org.springframework.stereotype.Component;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 @Component
 public class AccountUtils {
+
+  private static final IamAuthority ROLE_ADMIN = new IamAuthority("ROLE_ADMIN");
+
   IamAccountRepository accountRepo;
 
   public AccountUtils(IamAccountRepository accountRepo) {
@@ -53,6 +57,14 @@ public class AccountUtils {
     return auth.getAuthorities().contains(Authorities.ROLE_ADMIN);
   }
 
+  public boolean isAdmin(IamAccount account) {
+    if (account == null || account.getAuthorities().isEmpty()) {
+      return false;
+    }
+
+    return account.getAuthorities().contains(ROLE_ADMIN);
+  }
+
   public boolean isPreAuthenticated(Authentication auth) {
     if (auth == null || auth.getAuthorities().isEmpty()) {
       return false;
@@ -73,6 +85,7 @@ public class AccountUtils {
   }
 
   public Optional<IamAccount> getAuthenticatedUserAccount(Authentication authn) {
+
     if (!isAuthenticated(authn)) {
       return Optional.empty();
     }

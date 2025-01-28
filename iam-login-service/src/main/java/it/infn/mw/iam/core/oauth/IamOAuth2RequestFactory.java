@@ -39,7 +39,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import com.google.common.base.Joiner;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
 @SuppressWarnings("deprecation")
 public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
@@ -50,7 +50,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
 
-  private final IamScopeFilter scopeFilter;
+  private final ScopeFilter scopeFilter;
 
   private final JWTProfileResolver profileResolver;
 
@@ -58,13 +58,12 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   private final ClientDetailsEntityService clientDetailsService;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
-      IamScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
+      ScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.profileResolver = profileResolver;
   }
-
 
   @Override
   public AuthorizationRequest createAuthorizationRequest(Map<String, String> inputParams) {
@@ -72,11 +71,10 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     Authentication authn = SecurityContextHolder.getContext().getAuthentication();
 
     if (authn != null && !(authn instanceof AnonymousAuthenticationToken)) {
-      final Set<String> requestedScopes =
+      Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
-      scopeFilter.filterScopes(requestedScopes, authn);
-      inputParams.put(OAuth2Utils.SCOPE, joiner.join(requestedScopes));
+      inputParams.put(OAuth2Utils.SCOPE, joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
@@ -138,6 +136,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public TokenRequest createTokenRequest(Map<String, String> requestParameters,
       ClientDetails authenticatedClient) {
 
+    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
+
     String clientId = requestParameters.get(OAuth2Utils.CLIENT_ID);
     if (clientId == null) {
       clientId = authenticatedClient.getClientId();
@@ -161,7 +161,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    return new TokenRequest(requestParameters, clientId, scopes, grantType);
+    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn), grantType);
   }
-
 }

@@ -17,19 +17,25 @@ package it.infn.mw.iam.test.oauth.authzcode;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -40,6 +46,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
@@ -53,6 +60,9 @@ public class AuthorizationCodeIntegrationTests {
   @Autowired
   ObjectMapper mapper;
 
+  @Autowired
+  private IamOAuthRefreshTokenRepository refreshTokenRepository;
+
   public static final String TEST_CLIENT_ID = "client";
   public static final String TEST_CLIENT_SECRET = "secret";
   public static final String TEST_CLIENT_REDIRECT_URI =
@@ -65,7 +75,7 @@ public class AuthorizationCodeIntegrationTests {
   public static final String SCOPE =
       "openid profile scim:read scim:write offline_access iam:admin.read iam:admin.write";
 
-  public static final String TEST_USER_ID = "test";
+  public static final String TEST_USER_NAME = "test";
   public static final String TEST_USER_PASSWORD = "password";
 
   private String loginUrl;
@@ -112,8 +122,8 @@ public class AuthorizationCodeIntegrationTests {
 
       // @formatter:off
       RestAssured.given()
-        .formParam("username", "test")
-        .formParam("password", "password")
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
@@ -195,6 +205,8 @@ public class AuthorizationCodeIntegrationTests {
   @Test
   public void testRefreshTokenAfterAuthzCodeWorks() throws IOException {
 
+    refreshTokenRepository.deleteAll();
+
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
         .queryParam("response_type", RESPONSE_TYPE_CODE)
@@ -213,8 +225,8 @@ public class AuthorizationCodeIntegrationTests {
 
     // @formatter:off
       RestAssured.given()
-        .formParam("username", "test")
-        .formParam("password", "password")
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
         .formParam("submit", "Login")
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .redirects().follow(false)
@@ -274,6 +286,14 @@ public class AuthorizationCodeIntegrationTests {
       .then()
       .statusCode(HttpStatus.OK.value());
       // @formatter:on
+
+    List<OAuth2RefreshTokenEntity> refreshTokens = refreshTokenRepository
+      .findValidRefreshTokensForUserAndClient(TEST_USER_NAME, TEST_CLIENT_ID, new Date(),
+          Pageable.unpaged())
+      .getContent();
+    assertThat(refreshTokens, hasSize(1));
+    assertThat(refreshTokens.get(0).getAuthenticationHolder().getScope(),
+        not(hasItems("iam:admin.read", "iam:admin.write")));
 
     String refreshToken =
         mapper.readTree(resp3.extract().body().asString()).get("refresh_token").asText();

@@ -37,8 +37,6 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
-
 @SuppressWarnings("deprecation")
 public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
@@ -47,9 +45,6 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   @Autowired
   private OIDCTokenService connectTokenService;
-
-  @Autowired
-  private IamScopeFilter scopeFilter;
 
   @Autowired
   private JWTProfileResolver profileResolver;
@@ -79,8 +74,6 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     String clientId = originalAuthRequest.getClientId();
 
     UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, clientId);
-
-    scopeFilter.filterScopes(accessToken.getScope(), authentication);
 
     Instant tokenIssueInstant = clock.instant();
 

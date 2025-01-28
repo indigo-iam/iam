@@ -67,7 +67,7 @@ public class WhitelistedSiteTests extends EndpointsTestUtils implements DeviceCo
   @Test
   public void testWhitelistedSiteWithDeviceCodeDoesNotPromptToConsentPage() throws Exception {
 
-    WhitelistedSite ws = getApprovedSiteFor("admin", DEVICE_CODE_CLIENT_ID,
+    WhitelistedSite ws = getApprovedSiteFor(ADMIN_USERNAME, DEVICE_CODE_CLIENT_ID,
         Sets.newLinkedHashSet("openid", "profile"));
     ws = whitelistedSiteService.saveNew(ws);
 
@@ -102,8 +102,8 @@ public class WhitelistedSiteTests extends EndpointsTestUtils implements DeviceCo
       .getSession();
 
     session = (MockHttpSession) mvc
-      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
+      .perform(post(LOGIN_URL).param("username", ADMIN_USERNAME)
+        .param("password", ADMIN_PASSWORD)
         .param("submit", "Login")
         .session(session))
       .andExpect(status().is3xxRedirection())
