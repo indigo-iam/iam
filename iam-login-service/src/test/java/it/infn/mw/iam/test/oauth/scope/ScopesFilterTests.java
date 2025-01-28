@@ -40,7 +40,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopePolicyPDP;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -77,7 +77,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
   EntityManager em;
 
   @Autowired
-  ScopePolicyPDP pdp;
+  ScopeFilter pdp;
 
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
@@ -167,7 +167,7 @@ public class ScopesFilterTests extends ScopePolicyTestUtils {
       .extract().body().asString();
     // @formatter:on
 
-      assertThat(responseBody, not(containsString("scope_email")));
+      assertThat(responseBody, not(containsString("scope.email")));
     } finally {
       policyScopeRepo.delete(up);
     }

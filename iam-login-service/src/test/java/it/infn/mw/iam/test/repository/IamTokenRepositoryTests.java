@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -59,7 +61,7 @@ public class IamTokenRepositoryTests {
   public static final String ISSUER = "issuer";
   public static final String TEST_CLIEND_ID = "token-lookup-client";
 
-  public static final String[] SCOPES = {"openid", "profile", "offline_access"};
+  public static final String[] SCOPES = {"openid", "profile", "offline_access", "iam:admin.read"};
 
   @Autowired
   private IamOAuthAccessTokenRepository accessTokenRepo;
@@ -142,7 +144,7 @@ public class IamTokenRepositoryTests {
     Date yesterday = cal.getTime();
 
     at.setExpiration(yesterday);
-    
+
     at.getRefreshToken().setExpiration(yesterday);
 
     tokenService.saveAccessToken(at);
@@ -213,4 +215,25 @@ public class IamTokenRepositoryTests {
     assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
   }
 
+  @Test
+  public void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() {
+    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
+    accessTokenRepo.save(at);
+    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
+    refreshTokenRepo.save(rt);
+    AuthenticationHolderEntity aht = at.getAuthenticationHolder();
+    authenticationHolderRepo.save(aht);
+    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("openid"));
+    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("profile"));
+    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("offline_access"));
+    assertFalse(
+        authenticationHolderRepo.getById(aht.getId()).getScope().contains("iam:admin.read"));
+    AuthenticationHolderEntity ahr = rt.getAuthenticationHolder();
+    authenticationHolderRepo.save(ahr);
+    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("openid"));
+    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("profile"));
+    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("offline_access"));
+    assertFalse(
+        authenticationHolderRepo.getById(ahr.getId()).getScope().contains("iam:admin.read"));
+  }
 }
