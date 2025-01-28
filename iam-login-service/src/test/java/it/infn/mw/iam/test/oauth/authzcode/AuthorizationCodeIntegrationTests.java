@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.authzcode;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -86,8 +87,7 @@ public class AuthorizationCodeIntegrationTests {
   }
 
   @Test
-  public void testAuthzCodeAudienceSupport()
-      throws IOException, ParseException {
+  public void testAuthzCodeAudienceSupport() throws IOException, ParseException {
 
     String[] audienceKeys = {"aud", "audience"};
 
@@ -146,8 +146,6 @@ public class AuthorizationCodeIntegrationTests {
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .formParam("user_oauth_approval", "true")
         .formParam("authorize", "Authorize")
-        .formParam("scope_openid", "openid")
-        .formParam("scope_profile", "profile")
         .formParam("remember", "none")
         .redirects().follow(false)
       .when()
@@ -163,7 +161,7 @@ public class AuthorizationCodeIntegrationTests {
         .get(0);
 
       // @formatter:off
-      ValidatableResponse resp3 = RestAssured.given()
+      ValidatableResponse resp3= RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -195,8 +193,7 @@ public class AuthorizationCodeIntegrationTests {
   }
 
   @Test
-  public void testRefreshTokenAfterAuthzCodeWorks()
-      throws IOException {
+  public void testRefreshTokenAfterAuthzCodeWorks() throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -249,13 +246,6 @@ public class AuthorizationCodeIntegrationTests {
         .cookie(resp1.extract().detailedCookie("JSESSIONID"))
         .formParam("user_oauth_approval", "true")
         .formParam("authorize", "Authorize")
-        .formParam("scope_openid", "openid")
-        .formParam("scope_profile", "profile")
-        .formParam("scope_offline_access", "offline_access")
-        .formParam("scope_scim_read", "scim:read")
-        .formParam("scope_scim_write", "scim:write")
-        .formParam("scope_iam_admin_read", "iam:admin.read")
-        .formParam("scope_iam_admin_write", "iam:admin.write")
         .formParam("remember", "none")
         .redirects().follow(false)
       .when()
@@ -271,7 +261,7 @@ public class AuthorizationCodeIntegrationTests {
       .get(0);
 
     // @formatter:off
-      ValidatableResponse resp3 = RestAssured.given()
+      ValidatableResponse resp3= RestAssured.given()
         .formParam("grant_type", "authorization_code")
         .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
         .formParam("code", authzCode)
@@ -421,7 +411,7 @@ public class AuthorizationCodeIntegrationTests {
     .then()
         .statusCode(HttpStatus.OK.value());
 
-    ValidatableResponse resp8= RestAssured.given()
+    RestAssured.given()
         .formParam("grant_type", "refresh_token")
         .formParam("refresh_token", refreshToken)
         .formParam("scope", "openid iam:admin.read iam:admin.write")
@@ -431,42 +421,10 @@ public class AuthorizationCodeIntegrationTests {
       .when()
         .post(tokenUrl)
       .then()
-      .statusCode(HttpStatus.OK.value());
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error",equalTo("invalid_scope"))
+      .body("error_description", equalTo("Up-scoping is not allowed."));
       // @formatter:on
-
-    refreshedToken =
-        mapper.readTree(resp8.extract().body().asString()).get("access_token").asText();
-    
-// @formatter:off
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/me/authorities")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/api/clients")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/iam/scope_policies")
-    .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-        // @formatter:on
-
 
   }
 
