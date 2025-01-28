@@ -16,15 +16,12 @@
 package it.infn.mw.iam.test.oauth.devicecode;
 
 import static it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.REGISTER_ENDPOINT;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -188,7 +185,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_scope")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("Scope not allowed for client 'device-code-client'")));
+          equalTo("One or more requested scope is not allowed for client 'device-code-client'")));
 
   }
 
@@ -401,8 +398,8 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(1));
-    assertThat(claims.getAudience(), contains("example-audience"));
+    assertTrue(claims.getAudience().size() == 1);
+    assertTrue(claims.getAudience().contains("example-audience"));
   }
 
   @Test
@@ -557,7 +554,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     ClientDetailsEntity newClient =
         clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
 
-    assertThat(newClient, notNullValue());
+    assertNotNull(newClient);
 
     RequestPostProcessor clientBasicAuth =
         httpBasic(newClient.getClientId(), newClient.getClientSecret());
@@ -597,10 +594,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     ClientDetailsEntity newClient =
         clientRepo.findByClientId(registrationResponse.getClientId()).orElseThrow();
 
-    assertThat(newClient, notNullValue());
-
-    RequestPostProcessor clientBasicAuth =
-        httpBasic(newClient.getClientId(), newClient.getClientSecret());
+    assertNotNull(newClient);
 
     String tokenResponse = getTokenResponse(newClient.getClientId(), newClient.getClientSecret(),
         TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");

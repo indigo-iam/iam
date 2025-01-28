@@ -25,20 +25,19 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT_S
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.view.HttpCodeView;
+import org.mitre.openid.connect.view.JsonErrorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
@@ -51,27 +50,33 @@ import org.springframework.web.bind.support.SessionStatus;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+
 
 @SuppressWarnings("deprecation")
 @Controller
 @SessionAttributes("authorizationRequest")
 public class IamOAuthConfirmationController {
 
-  @Autowired
-  private ClientDetailsEntityService clientService;
-
-  @Autowired
-  private SystemScopeService scopeService;
-
-  @Autowired
-  private RedirectResolver redirectResolver;
-
-  @Autowired
-  private IamUserApprovalUtils userApprovalUtils;
-
   private static final Logger logger =
       LoggerFactory.getLogger(IamOAuthConfirmationController.class);
 
+  private IamClientRepository clientRepository;
+
+  private SystemScopeService scopeService;
+
+  private RedirectResolver redirectResolver;
+
+  private IamUserApprovalUtils userApprovalUtils;
+
+  public IamOAuthConfirmationController(IamClientRepository clientRepository, SystemScopeService scopeService,
+      RedirectResolver redirectResolver, IamUserApprovalUtils userApprovalUtils) {
+
+    this.clientRepository = clientRepository;
+    this.scopeService = scopeService;
+    this.redirectResolver = redirectResolver;
+    this.userApprovalUtils = userApprovalUtils;
+  }
 
   @PreAuthorize("hasRole('ROLE_USER')")
   @GetMapping(AUTHZ_CODE_URL)
@@ -81,30 +86,23 @@ public class IamOAuthConfirmationController {
 
     String prompt = (String) authRequest.getExtensions().get(PROMPT);
     List<String> prompts = Splitter.on(PROMPT_SEPARATOR).splitToList(Strings.nullToEmpty(prompt));
-    ClientDetailsEntity client = null;
 
-    try {
-      client = clientService.loadClientByClientId(authRequest.getClientId());
-    } catch (OAuth2Exception e) {
-      logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client", e);
+    String clientId = authRequest.getClientId();
+    if (clientId == null || clientId.isBlank()) {
       model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
-      return HttpCodeView.VIEWNAME;
-    } catch (IllegalArgumentException e) {
-      logger.error(
-          "confirmAccess: IllegalArgumentException was thrown when attempting to load client", e);
-      model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
+      model.put(JsonErrorView.ERROR, "invalid_client");
+      model.put(JsonErrorView.ERROR_MESSAGE, "Null client id");
       return HttpCodeView.VIEWNAME;
     }
-
-    if (client == null) {
-      logger.error("confirmAccess: could not find client {}", authRequest.getClientId());
+    Optional<ClientDetailsEntity> client = clientRepository.findByClientId(clientId);
+    if (client.isEmpty()) {
       model.put(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
       return HttpCodeView.VIEWNAME;
     }
 
     if (prompts.contains("none")) {
 
-      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client);
+      String url = redirectResolver.resolveRedirect(authRequest.getRedirectUri(), client.get());
 
       try {
         URIBuilder uriBuilder = new URIBuilder(url);
@@ -124,8 +122,6 @@ public class IamOAuthConfirmationController {
       }
     }
 
-    model.put("client", client);
-
     // the authorization request already contains PDP filtered
     // scopes among the request parameters due to the
     // IamOAuth2RequestFactory.createAuthorizationRequest() object
@@ -135,7 +131,7 @@ public class IamOAuthConfirmationController {
 
     authRequest.setScope(scopes);
 
-    setModelForConsentPage(model, authRequest, authUser, client);
+    setModelForConsentPage(model, authRequest, authUser, client.get());
 
     return APPROVE_AUTHZ_PAGE;
   }
@@ -143,6 +139,7 @@ public class IamOAuthConfirmationController {
   private void setModelForConsentPage(Map<String, Object> model, AuthorizationRequest authRequest,
       Authentication authUser, ClientDetailsEntity client) {
 
+    model.put("client", client);
     model.put("auth_request", authRequest);
     model.put("redirect_uri", authRequest.getRedirectUri());
     model.put("scopes", scopeService.fromStrings(authRequest.getScope()));
