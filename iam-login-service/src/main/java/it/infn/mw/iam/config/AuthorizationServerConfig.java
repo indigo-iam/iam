@@ -87,7 +87,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   private OAuth2RequestValidator requestValidator;
 
   @Autowired
-  private UserApprovalHandler approvalHandler;
+  private UserApprovalHandler iamUserApprovalHandler;
 
   @Autowired
   private PasswordEncoder passwordEncoder;
@@ -176,7 +176,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
       .pathMapping("/oauth/token", "/token")
       .pathMapping("/oauth/authorize", "/authorize")
       .tokenServices(tokenServices)
-      .userApprovalHandler(approvalHandler)
+      .userApprovalHandler(iamUserApprovalHandler)
       .requestFactory(requestFactory)
       .tokenGranter(tokenGranter())
       .authorizationCodeServices(authorizationCodeServices);

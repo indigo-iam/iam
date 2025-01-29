@@ -28,15 +28,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
-import org.mitre.openid.connect.service.WhitelistedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -51,7 +47,6 @@ import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
-import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -61,7 +56,6 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
-import it.infn.mw.iam.core.oauth.IamUserApprovalHandler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
@@ -313,14 +307,6 @@ public class IamConfig {
     return new UsernameValidator();
   }
 
-  @Bean
-  UserApprovalHandler iamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
-      ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
-      SystemScopeService systemScopeService) {
-    return new IamUserApprovalHandler(clientDetailsService, approvedSiteService,
-        whitelistedSiteService, systemScopeService);
-  }
-
   @Bean(destroyMethod = "shutdown")
   ScheduledExecutorService taskScheduler() {
     return Executors.newSingleThreadScheduledExecutor();
@@ -332,5 +318,4 @@ public class IamConfig {
     cs.setSameSite(null);
     return cs;
   }
-
 }
