@@ -16,6 +16,8 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.validateUrl;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
@@ -49,6 +52,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
   public static final String AUDIENCE = "audience";
+  public static final String RESOURCE = "resource";
   public static final String AUD_KEY = "aud";
   public static final String SCOPE_CLAIM_NAME = "scope";
 
@@ -123,6 +127,20 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return false;
   }
 
+  protected boolean hasValidRefreshTokenResourceRequest(OAuth2Authentication authentication) {
+
+    TokenRequest refreshTokenRequest = authentication.getOAuth2Request().getRefreshTokenRequest();
+
+    if (!(isNull(refreshTokenRequest)
+        || isNull(refreshTokenRequest.getRequestParameters().get(RESOURCE)))) {
+      final String audience = refreshTokenRequest.getRequestParameters().get(RESOURCE);
+      splitBySpace(audience).forEach(aud -> validateUrl(aud));
+      return true;
+    }
+
+    return false;
+  }
+
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
     final String audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
     return !isNullOrEmpty(audience);
@@ -159,6 +177,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
         .getRefreshTokenRequest()
         .getRequestParameters()
         .get(AUDIENCE);
+    }
+
+    if (hasValidRefreshTokenResourceRequest(authentication)) {
+      audience = authentication.getOAuth2Request()
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(RESOURCE);
     }
 
     if (!isNullOrEmpty(audience)) {

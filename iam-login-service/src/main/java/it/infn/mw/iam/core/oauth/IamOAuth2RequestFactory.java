@@ -17,6 +17,13 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +45,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -46,7 +54,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
-  protected static final String[] AUDIENCE_KEYS = {"aud", "audience"};
+  protected static final List<String> AUDIENCE_KEYS = Arrays.asList("aud", "audience");
+  public static final String RESOURCE = "resource";
   public static final String AUD = "aud";
   public static final String PASSWORD_GRANT = "password";
 
@@ -74,20 +83,13 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
-      inputParams.put(OAuth2Utils.SCOPE, joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
+      inputParams.put(OAuth2Utils.SCOPE,
+          joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (inputParams.containsKey(audienceKey)) {
-        if (!authzRequest.getExtensions().containsKey(AUD)) {
-          authzRequest.getExtensions().put(AUD, inputParams.get(audienceKey));
-        }
-
-        break;
-      }
-    }
+    handleAudienceRequest(inputParams, authzRequest.getExtensions());
 
     return authzRequest;
 
@@ -113,16 +115,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     handlePasswordGrantAuthenticationTimestamp(request);
 
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (tokenRequest.getRequestParameters().containsKey(audienceKey)) {
-
-        if (!request.getExtensions().containsKey(AUD)) {
-          request.getExtensions().put(AUD, tokenRequest.getRequestParameters().get(audienceKey));
-        }
-
-        break;
-      }
-    }
+    handleAudienceRequest(tokenRequest.getRequestParameters(), request.getExtensions());
 
     profileResolver.resolveProfile(client.getClientId())
       .getRequestValidator()
@@ -161,6 +154,48 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn), grantType);
+    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn),
+        grantType);
+  }
+
+  private void handleAudienceRequest(Map<String, String> requestParameters,
+      Map<String, Serializable> extensions) {
+
+    if (requestParameters.containsKey(RESOURCE) && !extensions.containsKey(AUD)) {
+
+      String resourceParams = requestParameters.get(RESOURCE);
+      splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
+      extensions.put(AUD, resourceParams);
+
+    } else {
+
+      AUDIENCE_KEYS.forEach(aud -> {
+        if (requestParameters.containsKey(aud) && !extensions.containsKey(AUD)) {
+          extensions.put(AUD, requestParameters.get(aud));
+        }
+      });
+    }
+
+  }
+
+  public static void validateUrl(String url) {
+    try {
+      URI validURI = new URL(url).toURI();
+
+      if (validURI.getRawQuery() != null) {
+        throw new InvalidResourceError("The resource indicator contains a query component: " + url);
+      }
+      if (validURI.getRawFragment() != null) {
+        throw new InvalidResourceError(
+            "The resource indicator contains a fragment component: " + url);
+      }
+
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new InvalidResourceError("Not a valid URI: " + url);
+    }
+  }
+
+  public static List<String> splitBySpace(String str) {
+    return Arrays.asList(str.split(" "));
   }
 }

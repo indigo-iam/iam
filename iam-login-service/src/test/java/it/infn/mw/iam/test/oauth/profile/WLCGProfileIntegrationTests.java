@@ -272,6 +272,71 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
+  public void testWlcgProfileResourceIndicator() throws Exception {
+
+
+    String accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(CLIENT_ID)
+      .clientSecret(CLIENT_SECRET)
+      .username(USERNAME)
+      .password(PASSWORD)
+      .scope("openid profile")
+      .resource("http://example1.org http://example2.org")
+      .getAccessTokenValue();
+
+    JWT token = JWTParser.parse(accessToken);
+
+    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
+    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getAudience(), hasSize(2));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
+
+    accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(CLIENT_ID)
+      .clientSecret(CLIENT_SECRET)
+      .username(USERNAME)
+      .password(PASSWORD)
+      .scope("openid profile")
+      .resource("http://example1.org http://example2.org")
+      .audience("aud1 aud2")
+      .getAccessTokenValue();
+
+    token = JWTParser.parse(accessToken);
+
+    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
+    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getAudience(), hasSize(2));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
+
+    accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(CLIENT_ID)
+      .clientSecret(CLIENT_SECRET)
+      .username(USERNAME)
+      .password(PASSWORD)
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    token = JWTParser.parse(accessToken);
+
+    assertThat(token.getJWTClaimsSet().getClaim("scope"), is("openid profile"));
+    assertThat(token.getJWTClaimsSet().getClaim("nbf"), notNullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.ver"), is("1.0"));
+    assertThat(token.getJWTClaimsSet().getClaim("groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim("wlcg.groups"), nullValue());
+    assertThat(token.getJWTClaimsSet().getAudience(), hasSize(1));
+    assertThat(token.getJWTClaimsSet().getAudience(), hasItem("https://wlcg.cern.ch/jwt/v1/any"));
+
+  }
+
+  @Test
   public void testWlcgProfileGroups() throws Exception {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile wlcg.groups"));
 
