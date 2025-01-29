@@ -19,6 +19,7 @@ import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
+import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
 import org.mitre.openid.connect.web.RootController;
@@ -47,9 +48,6 @@ import it.infn.mw.iam.core.util.IamBanner;
     "it.infn.mw.iam.authn",
     "it.infn.mw.iam.persistence", 
     "it.infn.mw.iam.core",
-    "it.infn.mw.iam.core.web.wellknown",
-    "it.infn.mw.iam.core.oauth.scope",
-    "it.infn.mw.iam.core.time",
     "it.infn.mw.iam.api", 
     "it.infn.mw.iam.registration", 
     "it.infn.mw.iam.dashboard",
@@ -80,7 +78,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=OAuthConfirmationController.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=DeviceEndpoint.class)
+        value=DeviceEndpoint.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=TofuUserApprovalHandler.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(
@@ -94,8 +94,8 @@ public class IamLoginService {
   public static void main(final String[] args) {
     SpringApplication iamLoginService = new SpringApplication(IamLoginService.class);
     iamLoginService.setBanner(new IamBanner(new ClassPathResource("iam-banner.txt")));
+    iamLoginService.addListeners(new ApplicationFailedEventListener());
     iamLoginService.run(args);
-
   }
 
   @Bean
