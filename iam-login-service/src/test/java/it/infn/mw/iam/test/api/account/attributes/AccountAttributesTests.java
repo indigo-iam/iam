@@ -176,6 +176,16 @@ public class AccountAttributesTests {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void gettingAttributesWorksForAdminUser() throws Exception {
+    gettingAttributesWorks();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void gettingAttributesWorksForReaderUser() throws Exception {
+    gettingAttributesWorks();
+  }
+
+  public void gettingAttributesWorks() throws Exception {
     IamAccount testAccount =
         repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
@@ -312,7 +322,7 @@ public class AccountAttributesTests {
     attr.setValue(ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
+      .perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(attr)))
       .andExpect(FORBIDDEN)
       .andExpect(jsonPath("$.error", equalTo("access_denied")))

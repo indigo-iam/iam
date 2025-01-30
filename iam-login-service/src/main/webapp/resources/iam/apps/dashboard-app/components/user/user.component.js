@@ -46,6 +46,10 @@
             return Utils.userIsVoAdmin(self.user);
         };
 
+        self.userIsReader = function () {
+            return Utils.userIsReader(self.user);
+        };
+
         self.isMe = function () {
             return Utils.isMe(self.user.id);
         };

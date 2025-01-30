@@ -103,7 +103,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
             $rootScope.loggedUser.me = r.data;
         }));
 
-        if (Utils.isAdmin()) {
+        if (Utils.isAdmin() || Utils.isReader()) {
             promises.push(
                 UsersService.getUsersCount().then(function (r) {
                     $rootScope.usersCount = r.data.totalResults;

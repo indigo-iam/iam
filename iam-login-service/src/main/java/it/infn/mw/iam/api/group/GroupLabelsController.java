@@ -68,7 +68,7 @@ public class GroupLabelsController {
   }
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('READER') or #iam.isGroupManager(#id)")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
     IamGroup group = service.findByUuid(id).orElseThrow(() -> NoSuchGroupError.forUuid(id));
