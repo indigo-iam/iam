@@ -20,15 +20,16 @@ import static java.lang.String.format;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,7 +48,6 @@ public class AccountAuthorityController {
   final IamAccountRepository iamAccountRepository;
   final AccountAuthorityService authorityService;
 
-  @Autowired
   public AccountAuthorityController(IamAccountRepository iamRepo, AccountAuthorityService aas) {
     this.iamAccountRepository = iamRepo;
     this.authorityService = aas;
@@ -68,15 +68,15 @@ public class AccountAuthorityController {
       .orElseThrow(() -> new NoSuchAccountError(format("No account found for name '%s'", name)));
   }
 
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_USER')")
-  @RequestMapping(value = "/me/authorities", method = RequestMethod.GET)
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @GetMapping(value = "/me/authorities")
   public AuthoritySetDTO getAuthoritiesForMe(Authentication authn) {
     return AuthoritySetDTO
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountByName(authn.getName())));
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
-  @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.GET)
+  @GetMapping(value = "/account/{id}/authorities")
   @ResponseBody
   public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable("id") String id) {
     return AuthoritySetDTO
@@ -84,7 +84,7 @@ public class AccountAuthorityController {
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.POST)
+  @PostMapping(value = "/account/{id}/authorities")
   public void addAuthorityToAccount(@PathVariable("id") String id, @Valid AuthorityDTO authority,
       BindingResult validationResult) {
 
@@ -97,7 +97,7 @@ public class AccountAuthorityController {
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/account/{id}/authorities", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/account/{id}/authorities")
   public void removeAuthorityFromAccount(@PathVariable("id") String id,
       @Valid AuthorityDTO authority, BindingResult validationResult) {
 

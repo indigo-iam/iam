@@ -36,6 +36,7 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 public class IamSecurityExpressionMethods {
 
   private static final String ROLE_GM = "ROLE_GM:";
+  private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
   private final Authentication authentication;
   private final AccountUtils accountUtils;
@@ -72,37 +73,62 @@ public class IamSecurityExpressionMethods {
       .anyMatch(a -> a.getAuthority().equals(ROLE_GM + groupUuid));
   }
 
+  public boolean isAdmin() {
+    return authentication.getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals(ROLE_ADMIN));
+  }
+
   public boolean isUser(String userUuid) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     return account.isPresent() && account.get().getUuid().equals(userUuid);
   }
 
   public boolean canManageGroupRequest(String requestId) {
+    if (isAdmin()) {
+      return true;
+    }
     Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
-
-    return groupRequest.isPresent() && isGroupManager(groupRequest.get().getGroup().getUuid());
+    if (groupRequest.isEmpty()) {
+      return false;
+    }
+    if (isGroupManager(groupRequest.get().getGroup().getUuid())) {
+      return true;
+    }
+    return false;
   }
 
   public boolean canAccessGroupRequest(String requestId) {
+    if (isAdmin()) {
+      return true;
+    }
     Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
-    Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
-
-
-    return userAccount.isPresent() && groupRequest.isPresent()
-        && (groupRequest.get().getAccount().getUuid().equals(userAccount.get().getUuid())
-            || isGroupManager(groupRequest.get().getGroup().getUuid()));
+    if (groupRequest.isEmpty()) {
+      return false;
+    }
+    if (isGroupManager(groupRequest.get().getGroup().getUuid())) {
+      return true;
+    }
+    return isUser(groupRequest.get().getAccount().getUuid());
   }
 
   public boolean userCanDeleteGroupRequest(String requestId) {
-    Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
 
-    return groupRequest.isPresent() && ((canAccessGroupRequest(requestId)
-        && IamGroupRequestStatus.PENDING.equals(groupRequest.get().getStatus()))
-        || canManageGroupRequest(requestId));
+    if (isAdmin()) {
+      return true;
+    }
+    Optional<IamGroupRequest> groupRequest = groupRequestUtils.getOptionalGroupRequest(requestId);
+    if (groupRequest.isEmpty()) {
+      return false;
+    }
+    if (isGroupManager(groupRequest.get().getGroup().getUuid())) {
+      return true;
+    }
+    return isUser(groupRequest.get().getAccount().getUuid())
+        && IamGroupRequestStatus.PENDING.equals(groupRequest.get().getStatus());
   }
 
   public boolean hasScope(String scope) {
-
     if (authentication instanceof OAuth2Authentication oauth) {
       return scopeResolver.resolveScope(oauth).stream().anyMatch(s -> s.equals(scope));
     }
@@ -110,7 +136,6 @@ public class IamSecurityExpressionMethods {
   }
 
   public boolean isRequestWithoutToken() {
-
     return !(authentication instanceof OAuth2Authentication);
   }
 

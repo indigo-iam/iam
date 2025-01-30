@@ -16,19 +16,17 @@
 package it.infn.mw.iam.api.proxy;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.stringifyValidationError;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.security.Principal;
 
 import javax.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,7 +41,6 @@ public class ProxyCertificatesApiController {
   
   final ProxyCertificateService service;
 
-  @Autowired
   public ProxyCertificatesApiController(ProxyCertificateService service) {
     this.service = service;
   }
@@ -54,7 +51,7 @@ public class ProxyCertificatesApiController {
     }
   }
 
-  @RequestMapping(method=POST, value=PROXY_API_PATH)
+  @PostMapping(value=PROXY_API_PATH)
   @PreAuthorize("#iam.hasScope('proxy:generate') and hasRole('USER')")
   public ProxyCertificateDTO generateProxy(Principal authenticatedUser,
       @Valid ProxyCertificateRequestDTO request, BindingResult bindingResult) {

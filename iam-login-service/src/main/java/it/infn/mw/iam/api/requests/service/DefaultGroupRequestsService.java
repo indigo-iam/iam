@@ -174,6 +174,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   @Override
   public ListResponseDTO<GroupRequestDto> listGroupRequests(String username, String groupName,
       String status, OffsetPageable pageRequest) {
+
     Optional<String> usernameFilter = Optional.ofNullable(username);
     Optional<String> groupNameFilter = Optional.ofNullable(groupName);
     Optional<String> statusFilter = Optional.ofNullable(status);
