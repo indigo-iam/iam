@@ -217,6 +217,7 @@ public class IamDeviceEndpointController {
     OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
 
     approveDevice(dc, o2Auth, authorizationRequest);
+    model.put("client", client);
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
         || authorizationRequest.isApproved()) {
@@ -283,7 +284,6 @@ public class IamDeviceEndpointController {
       ClientDetailsEntity client) {
 
     Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
-    model.put("client", client);
     model.put("dc", dc);
     model.put("scopes", scopes);
     model.put("claims", userApprovalUtils.claimsForScopes(authn, scopes));
