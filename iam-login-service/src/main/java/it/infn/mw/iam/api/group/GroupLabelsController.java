@@ -46,7 +46,6 @@ import it.infn.mw.iam.core.group.error.NoSuchGroupError;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping(GroupLabelsController.RESOURCE)
 public class GroupLabelsController {
 
@@ -68,7 +67,7 @@ public class GroupLabelsController {
   }
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN') or #iam.isGroupManager(#id)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
   public List<LabelDTO> getLabels(@PathVariable String id) {
 
     IamGroup group = service.findByUuid(id).orElseThrow(() -> NoSuchGroupError.forUuid(id));
@@ -81,6 +80,7 @@ public class GroupLabelsController {
   }
 
   @PutMapping
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setLabel(@PathVariable String id, @RequestBody @Validated LabelDTO label,
       BindingResult validationResult) {
     handleValidationError(validationResult);
@@ -90,6 +90,7 @@ public class GroupLabelsController {
   }
 
   @DeleteMapping
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(NO_CONTENT)
   public void deleteLabel(@PathVariable String id, @Validated LabelDTO label,
       BindingResult validationResult) {

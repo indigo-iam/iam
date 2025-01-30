@@ -15,24 +15,21 @@
  */
 package it.infn.mw.iam.api.group;
 
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,22 +49,20 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 
 @RestController
 public class GroupController {
-  
+
   public static final String INVALID_GROUP = "Invalid group: ";
   public static final String INVALID_ATTRIBUTE = "Invalid attribute: ";
-  
+
   final IamGroupService groupService;
   final GroupDTOConverter converter;
   final AttributeDTOConverter attributeConverter;
-  
-  @Autowired
+
   public GroupController(IamGroupService groupService, GroupDTOConverter converter, AttributeDTOConverter attrConverter) {
     this.groupService = groupService;
     this.converter = converter;
     this.attributeConverter = attrConverter;
   }
-  
-  
+
   private String buildValidationErrorMessage(String prefix, BindingResult result) {
     StringBuilder sb = new StringBuilder(prefix);
     if (result.hasGlobalErrors()) {
@@ -75,38 +70,38 @@ public class GroupController {
     } else {
       sb.append(result.getFieldErrors().stream().map(FieldError::getDefaultMessage).collect(Collectors.joining(",")));
     }
-    
     return sb.toString();
   }
+
   private void handleValidationError(String prefix, BindingResult result) {
     if (result.hasErrors()) {
       throw new InvalidGroupError(buildValidationErrorMessage(prefix, result));
     }
   }
-  
-  @RequestMapping(value = "/iam/group", method = POST)
+
+  @PostMapping(value = "/iam/group")
   @ResponseStatus(value = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public GroupDTO createGroup(@RequestBody @Validated(CreateGroup.class) GroupDTO group, final BindingResult validationResult) {
-    
+
     handleValidationError(INVALID_GROUP,validationResult);
-    
+
     IamGroup entity = converter.entityFromDto(group);
     entity = groupService.createGroup(entity);
     return converter.dtoFromEntity(entity);
   }
   
-  @RequestMapping(value = "/iam/group/{id}", method = PUT)
+  @PutMapping(value = "/iam/group/{id}")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
   public GroupDTO updateGroup(@PathVariable String id, @RequestBody @Validated(UpdateGroup.class) GroupDTO group, final BindingResult validationResult) {
     handleValidationError(INVALID_GROUP, validationResult);
-    
+
     IamGroup entity = groupService.findByUuid(id).orElseThrow(()->NoSuchGroupError.forUuid(id));
     entity = groupService.setDescription(entity, group.getDescription());
     return converter.dtoFromEntity(entity);  
   }
-  
-  @RequestMapping(value = "/iam/group/{id}/attributes", method=RequestMethod.GET)
+
+  @GetMapping(value = "/iam/group/{id}/attributes")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isGroupManager(#id)")
   public List<AttributeDTO> getAttributes(@PathVariable String id){
     
@@ -118,7 +113,7 @@ public class GroupController {
     return results;
   }
   
-  @RequestMapping(value = "/iam/group/{id}/attributes", method= PUT)
+  @PutMapping(value = "/iam/group/{id}/attributes")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void setAttribute(@PathVariable String id, @RequestBody @Validated AttributeDTO attribute, final BindingResult validationResult) {
     handleValidationError(INVALID_ATTRIBUTE,validationResult);
@@ -129,7 +124,7 @@ public class GroupController {
     entity.getAttributes().add(attr);
   }
   
-  @RequestMapping(value = "/iam/group/{id}/attributes", method=DELETE)
+  @DeleteMapping(value = "/iam/group/{id}/attributes")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void deleteAttribute(@PathVariable String id, @Validated AttributeDTO attribute, final BindingResult validationResult) {

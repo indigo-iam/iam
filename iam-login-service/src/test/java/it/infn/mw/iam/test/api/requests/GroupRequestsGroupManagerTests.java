@@ -49,12 +49,6 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
   private static final String GROUP_MANAGER_ROLE_001 = "GM:" + TEST_001_GROUP_UUID;
   private static final String GROUP_MANAGER_ROLE_002 = "GM:" + TEST_002_GROUP_UUID;
 
-  private static final String APPROVE_URL = "/iam/group_requests/{uuid}/approve";
-  private static final String REJECT_URL = "/iam/group_requests/{uuid}/reject";
-  private static final String GET_DETAILS_URL = "/iam/group_requests/{uuid}";
-  private static final String LIST_REQUESTS_URL = "/iam/group_requests";
-  private final static String DELETE_URL = "/iam/group_requests/{uuid}";
-
   @Autowired
   private MockMvc mvc;
 
@@ -86,7 +80,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME);
 
-    mvc.perform(get(LIST_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
+    mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", equalTo(5)))
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
@@ -111,7 +105,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
     savePendingGroupRequest(TEST_100_USERNAME, TEST_002_GROUPNAME);
     savePendingGroupRequest(TEST_101_USERNAME, TEST_002_GROUPNAME);
 
-    mvc.perform(get(LIST_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
+    mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", equalTo(3)))
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
@@ -131,7 +125,7 @@ public class GroupRequestsGroupManagerTests extends GroupRequestsTestUtils {
     savePendingGroupRequest(TEST_101_USERNAME, TEST_001_GROUPNAME);
     savePendingGroupRequest(TEST_102_USERNAME, TEST_001_GROUPNAME);
 
-    mvc.perform(get(LIST_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
+    mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.totalResults", equalTo(0)))
       .andExpect(jsonPath("$.Resources", hasSize(0)));
