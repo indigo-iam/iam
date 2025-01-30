@@ -17,6 +17,9 @@
 	<div class="well" style="text-align: center">
 
 		<h1><spring:message code="device.request_code.header"/></h1>
+		<p>This is the first step to authorize a client to act on your behalf.
+		 Please, insert the <b>user_code</b> in the box below.<br/>
+		 No permission will be granted to the client until final confirmation is given on the next page.</p>
 
 	<c:if test="${ error != null }">
 		<c:choose>
