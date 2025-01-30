@@ -18,16 +18,13 @@ package it.infn.mw.iam.api.account.find;
 import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
 import static java.util.Objects.isNull;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,13 +50,11 @@ public class FindAccountController {
 
   final FindAccountService service;
 
-  @Autowired
   public FindAccountController(FindAccountService service) {
     this.service = service;
   }
 
-  @RequestMapping(method = GET, value = FIND_BY_LABEL_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_BY_LABEL_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByLabel(@RequestParam(required = true) String name,
       @RequestParam(required = false) String value,
       @RequestParam(required = false) final Integer count,
@@ -68,32 +63,25 @@ public class FindAccountController {
     return service.findAccountByLabel(name, value, buildPageRequest(count, startIndex, 100));
   }
 
-  @RequestMapping(method = GET, value = FIND_BY_EMAIL_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_BY_EMAIL_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByEmail(@RequestParam(required = true) String email) {
     return service.findAccountByEmail(email);
   }
 
-  @RequestMapping(method = GET, value = FIND_BY_USERNAME_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_BY_USERNAME_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByUsername(@RequestParam(required = true) String username) {
     return service.findAccountByUsername(username);
   }
 
-  @RequestMapping(method = GET, value = FIND_BY_CERT_SUBJECT_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_BY_CERT_SUBJECT_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByCertSubject(
       @RequestParam(required = true) String certificateSubject) {
     return service.findAccountByCertificateSubject(certificateSubject);
   }
 
-
-  @RequestMapping(method = GET, value = FIND_BY_GROUP_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_BY_GROUP_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByGroup(@PathVariable String groupUuid,
-      @Validated PaginatedRequestWithFilterForm form,
-      BindingResult formValidationResult) {
-
+      @Validated PaginatedRequestWithFilterForm form, BindingResult formValidationResult) {
 
     handleValidationError(INVALID_FIND_ACCOUNT_REQUEST, formValidationResult);
 
@@ -101,14 +89,11 @@ public class FindAccountController {
 
     if (isNull(form.getFilter())) {
       return service.findAccountByGroupUuid(groupUuid, pr);
-    } else {
-      return service.findAccountByGroupUuidWithFilter(groupUuid, form.getFilter(), pr);
     }
+    return service.findAccountByGroupUuidWithFilter(groupUuid, form.getFilter(), pr);
   }
 
-
-  @RequestMapping(method = GET, value = FIND_NOT_IN_GROUP_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = FIND_NOT_IN_GROUP_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findNotInGroup(@PathVariable String groupUuid,
       @Validated PaginatedRequestWithFilterForm form, BindingResult formValidationResult) {
 
@@ -118,9 +103,8 @@ public class FindAccountController {
 
     if (isNull(form.getFilter())) {
       return service.findAccountNotInGroup(groupUuid, pr);
-    } else {
-      return service.findAccountNotInGroupWithFilter(groupUuid, form.getFilter(), pr);
     }
+    return service.findAccountNotInGroupWithFilter(groupUuid, form.getFilter(), pr);
   }
 
   @GetMapping(value = FIND_BY_UUID_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)

@@ -18,8 +18,6 @@ package it.infn.mw.iam.api.scope_policy.validation;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class IamAccountIdValidator implements ConstraintValidator<IamAccountId, String>{
@@ -27,7 +25,6 @@ public class IamAccountIdValidator implements ConstraintValidator<IamAccountId, 
   private final IamAccountRepository accountRepo;
   private boolean nullable;
   
-  @Autowired
   public IamAccountIdValidator(IamAccountRepository accountRepo) {
     this.accountRepo = accountRepo;
   }

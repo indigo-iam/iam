@@ -20,14 +20,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,14 +52,13 @@ public class AccountSearchController extends AbstractSearchController<ScimUser, 
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("id", "displayName", "meta", "name",
           "userName", "active", "emails", "photos", "groups")));
 
-  @Autowired
   public AccountSearchController(PagedResourceService<IamAccount> service,
       Converter<ScimUser, IamAccount> converter) {
 
     super(service, converter);
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public MappingJacksonValue getUsers(
       @RequestParam(required = false, defaultValue = DEFAULT_START_INDEX_STRING) int startIndex,
       @RequestParam(required = false, defaultValue = DEFAULT_ITEMS_PER_PAGE_STRING) int count,

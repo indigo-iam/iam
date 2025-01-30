@@ -29,8 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,7 +52,7 @@ public class PasswordUpdateController {
   private PasswordResetService service;
 
   @PreAuthorize("hasRole('USER')")
-  @RequestMapping(method = RequestMethod.POST, path=BASE_URL)
+  @PostMapping(path=BASE_URL)
   @ResponseBody
   public void updatePassword(@ModelAttribute @Valid PasswordDTO password,
       BindingResult validationResults) {

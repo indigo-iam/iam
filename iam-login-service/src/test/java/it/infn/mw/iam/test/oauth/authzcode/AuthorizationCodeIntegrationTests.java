@@ -368,7 +368,7 @@ public class AuthorizationCodeIntegrationTests {
       RestAssured.given()
           .header("Authorization", "Bearer " + refreshedToken)
       .when()
-          .get("/iam/me/authorities")
+          .get("/iam/account/80e5fb8d-b7c8-451a-89ba-346ae278a66f/authorities")
       .then()
           .statusCode(HttpStatus.FORBIDDEN.value());
 

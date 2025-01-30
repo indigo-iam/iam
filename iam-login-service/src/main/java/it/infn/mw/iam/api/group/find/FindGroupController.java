@@ -16,16 +16,15 @@
 package it.infn.mw.iam.api.group.find;
 
 import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,11 +34,9 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestWithFilterForm;
-import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 public class FindGroupController {
 
   public static final int PAGE_SIZE = 200;
@@ -53,7 +50,6 @@ public class FindGroupController {
 
   final FindGroupService service;
 
-  @Autowired
   public FindGroupController(FindGroupService service) {
     this.service = service;
   }
@@ -68,9 +64,8 @@ public class FindGroupController {
     return result;
   }
 
-
-  @RequestMapping(method = GET, value = FIND_BY_LABEL_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @GetMapping(value = FIND_BY_LABEL_RESOURCE, produces = SCIM_CONTENT_TYPE)
   public MappingJacksonValue findByLabel(@RequestParam(required = true) String name,
       @RequestParam(required = false) String value,
       @RequestParam(required = false) final Integer count,
@@ -81,15 +76,15 @@ public class FindGroupController {
 
   }
 
-  @RequestMapping(method = GET, value = FIND_BY_NAME_RESOURCE,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @GetMapping(value = FIND_BY_NAME_RESOURCE, produces = SCIM_CONTENT_TYPE)
   public MappingJacksonValue findByName(@RequestParam(required = true) String name) {
 
     return filterOutMembers(service.findGroupByName(name));
   }
 
-  @RequestMapping(method = GET, value = FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  @GetMapping(value = FIND_UNSUBSCRIBED_GROUPS_FOR_ACCOUNT, produces = SCIM_CONTENT_TYPE)
   public MappingJacksonValue findUnsubscribedGroupsForAccount(@PathVariable String accountUuid,
       @Validated PaginatedRequestWithFilterForm form, BindingResult formValidationResult) {
 
