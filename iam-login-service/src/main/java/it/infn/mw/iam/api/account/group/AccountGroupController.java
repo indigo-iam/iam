@@ -17,17 +17,15 @@ package it.infn.mw.iam.api.account.group;
 
 import static it.infn.mw.iam.api.account.group.ErrorSuppliers.noSuchAccount;
 import static it.infn.mw.iam.api.account.group.ErrorSuppliers.noSuchGroup;
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -48,14 +46,13 @@ public class AccountGroupController {
   private final IamGroupService groupService;
   private final GroupRequestsService groupRequestsService;
 
-  @Autowired
   public AccountGroupController(IamAccountService accountService, IamGroupService groupService, GroupRequestsService groupRequestsService) {
     this.accountService = accountService;
     this.groupService = groupService;
     this.groupRequestsService = groupRequestsService;
   }
 
-  @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = POST)
+  @PostMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}")
   @ResponseStatus(value = HttpStatus.CREATED)
   @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #iam.hasScope('iam:admin.write')")
   public void addAccountToGroup(@PathVariable String accountUuid, @PathVariable String groupUuid) {
@@ -73,7 +70,7 @@ public class AccountGroupController {
     }
   }
 
-  @RequestMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}", method = DELETE)
+  @DeleteMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasAdminOrGMDashboardRoleOfGroup(#groupUuid) or #iam.hasScope('iam:admin.write')")
   public void removeAccountFromGroup(@PathVariable String accountUuid,

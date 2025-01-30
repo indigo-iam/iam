@@ -24,14 +24,13 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,7 +41,7 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 
 @RestController
 @Transactional
-@PreAuthorize("hasAnyRole('ADMIN', 'USER') or #iam.hasScope('iam:admin.read')")
+@PreAuthorize("hasRole('USER') or #iam.hasScope('iam:admin.read')")
 @RequestMapping(GroupSearchController.GROUP_SEARCH_ENDPOINT)
 public class GroupSearchController extends AbstractSearchController<ScimGroup, IamGroup> {
 
@@ -58,14 +57,13 @@ public class GroupSearchController extends AbstractSearchController<ScimGroup, I
   static final Set<String> INCLUDED_ATTRIBUTES =
       Collections.unmodifiableSet(new HashSet<>(asList("id", "displayName", "meta", INDIGO_GROUP_SCHEMA)));
 
-  @Autowired
   public GroupSearchController(PagedResourceService<IamGroup> service,
       Converter<ScimGroup, IamGroup> converter) {
 
     super(service, converter);
   }
 
-  @RequestMapping(method = RequestMethod.GET)
+  @GetMapping
   public MappingJacksonValue getGroups(
       @RequestParam(required = false, defaultValue = DEFAULT_START_INDEX_STRING) int startIndex,
       @RequestParam(required = false, defaultValue = DEFAULT_ITEMS_PER_PAGE_STRING) int count,

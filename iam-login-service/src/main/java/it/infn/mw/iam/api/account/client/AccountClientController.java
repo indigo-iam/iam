@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.account.client;
 
 import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -33,21 +32,18 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
 
 @RestController
-@PreAuthorize("hasRole('USER')")
 public class AccountClientController {
   public static final String INVALID_PAGINATION_REQUEST = "Invalid pagination request";
 
   final ClientSearchService clientSearchService;
 
-
-  @Autowired
   public AccountClientController(ClientSearchService clientSearchService) {
 
     this.clientSearchService = clientSearchService;
   }
 
-
   @JsonView(ClientViews.Limited.class)
+  @PreAuthorize("hasRole('USER')")
   @GetMapping("/iam/account/me/clients")
   public ListResponseDTO<RegisteredClientDTO> getOwnedClients(@Validated PaginatedRequestForm form,
       final BindingResult validationResult) {

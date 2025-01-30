@@ -138,12 +138,6 @@ public class AccountClientEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(scopes = {"iam.admin:read"}, user = "admin", authorities = {"ROLE_ADMIN", "ROLE_USER"})
-  public void myClientsWorksForAdminsWithTokenAndScopeAdminTest() throws Exception {
-    getMyClientsWorksForAdmins();
-  }
-
-  @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN", "ROLE_USER"})
   public void myClientsWorksForAdminsWithTokenTest() throws Exception {
     getMyClientsWorksForAdmins();
