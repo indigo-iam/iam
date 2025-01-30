@@ -478,6 +478,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
 
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
     dc.setExpiration(new Date());
+    session.setAttribute("deviceCode", dc);
 
     mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)

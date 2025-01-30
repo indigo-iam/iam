@@ -36,11 +36,23 @@ import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 
 public class GroupRequestsTestUtils {
 
+  protected final static String BASE_URL = "/iam/group_requests";
+  protected final static String CREATE_URL = BASE_URL;
+  protected final static String LIST_ALL_REQUESTS_URL = BASE_URL;
+  protected final static String GET_DETAILS_URL = BASE_URL + "/{uuid}";
+  protected final static String DELETE_URL = GET_DETAILS_URL;
+  protected static final String APPROVE_URL = GET_DETAILS_URL + "/approve";
+  protected static final String REJECT_URL = GET_DETAILS_URL + "/reject";
+
   protected final static String TEST_ADMIN = "admin";
   protected final static String TEST_ADMIN_UUID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
   protected final static String TEST_ADMIN_FULL_NAME = "Admin User";
+  protected final static String TEST_USERNAME = "test";
+  protected final static String TEST_USERUUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
   protected final static String TEST_100_USERNAME = "test_100";
+  protected final static String TEST_100_USERUUID = "f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a";
   protected final static String TEST_101_USERNAME = "test_101";
+  protected final static String TEST_101_USERUUID = "1a78b3b8-22d2-4746-9269-df55aceb036f";
   protected final static String TEST_102_USERNAME = "test_102";
   protected final static String TEST_103_USERNAME = "test_103";
   protected final static String TEST_001_GROUPNAME = "Test-001";
@@ -66,11 +78,11 @@ public class GroupRequestsTestUtils {
   @Autowired
   protected ObjectMapper mapper;
 
-  protected GroupRequestDto buildGroupRequest(String groupName) {
+  protected GroupRequestDto buildGroupRequest(String userUuid, String groupName) {
     GroupRequestDto request = new GroupRequestDto();
     request.setGroupName(groupName);
     request.setNotes(TEST_NOTES);
-
+    request.setUserUuid(userUuid);
     return request;
   }
 

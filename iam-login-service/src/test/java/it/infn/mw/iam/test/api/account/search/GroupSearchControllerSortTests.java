@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -79,15 +80,31 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithInvalidSortDirection() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsWithInvalidSortDirectionWithToken() throws JsonParseException,
+      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsWithInvalidSortDirection();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsWithInvalidSortDirectionWithUser() throws JsonParseException,
+      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsWithInvalidSortDirection();
+  }
+
+  private void testSearchGroupsWithInvalidSortDirection() throws JsonParseException,
+      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortDirection", "pippo"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortDirection", "pippo"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -97,15 +114,32 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsSortByNameAsc() throws JsonParseException, JsonMappingException,
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsSortByNameAscWithToken() throws JsonParseException,
+      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsSortByNameAsc();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsSortByNameAscWithUser() throws JsonParseException,
+      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsSortByNameAsc();
+  }
+
+  private void testSearchGroupsSortByNameAsc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortBy", "name").param("sortDirection", "asc"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortBy", "name")
+        .param("sortDirection", "asc"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -115,15 +149,32 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsSortByNameDesc() throws JsonParseException, JsonMappingException,
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsSortByNameDescWithToken() throws JsonParseException, JsonMappingException,
+      UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsSortByNameDesc();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsSortByNameDescWithUser() throws JsonParseException, JsonMappingException,
+      UnsupportedEncodingException, IOException, Exception {
+
+    testSearchGroupsSortByNameDesc();
+  }
+
+  private void testSearchGroupsSortByNameDesc() throws JsonParseException, JsonMappingException,
       UnsupportedEncodingException, IOException, Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortBy", "name").param("sortDirection", "desc"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortBy", "name")
+        .param("sortDirection", "desc"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));

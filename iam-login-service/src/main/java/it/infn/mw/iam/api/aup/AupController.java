@@ -66,7 +66,7 @@ public class AupController {
 
   @PostMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.CREATED)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_ADMIN') or #iam.hasScope('iam:admin.write')")
   public void createAup(@Valid @RequestBody AupDTO aup, BindingResult validationResult) {
     if (service.findAup().isPresent()) {
       throw new AupAlreadyExistsError();
@@ -81,7 +81,7 @@ public class AupController {
 
   @PatchMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.OK)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_ADMIN') or #iam.hasScope('iam:admin.write')")
   public AupDTO updateAup(@Valid @RequestBody AupDTO aup, BindingResult validationResult) {
 
     if (validationResult.hasErrors()) {
@@ -94,7 +94,7 @@ public class AupController {
 
   @PostMapping(value = "/iam/aup/touch")
   @ResponseStatus(code = HttpStatus.OK)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_ADMIN') or #iam.hasScope('iam:admin.write')")
   public AupDTO touchAup() {
 
     IamAup updatedAup = service.touchAup();
@@ -103,7 +103,7 @@ public class AupController {
 
   @DeleteMapping(value = "/iam/aup")
   @ResponseStatus(code = HttpStatus.NO_CONTENT)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasDashboardRole('ROLE_ADMIN') or #iam.hasScope('iam:admin.write')")
   public void deleteAup() {
     service.deleteAup();
   }
