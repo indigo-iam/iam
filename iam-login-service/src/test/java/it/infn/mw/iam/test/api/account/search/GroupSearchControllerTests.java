@@ -26,8 +26,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.junit.After;
@@ -40,10 +38,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
@@ -90,8 +86,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getFirstPageOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getFirstPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -109,8 +104,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getSecondPageOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getSecondPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -129,8 +123,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithCustomStartIndexAndCount() throws JsonParseException,
-      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+  public void getGroupsWithCustomStartIndexAndCount() throws Exception {
 
     long expectedSize = groupRepository.count();
     int startIndex = 3;
@@ -152,8 +145,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getCountOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getCountOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -172,8 +164,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getFirstFilteredPageOfGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getFirstFilteredPageOfGroups() throws Exception {
 
     final String filter = "duction";
     OffsetPageable op = new OffsetPageable(0, 10);
@@ -199,8 +190,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getCountOfFilteredGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getCountOfFilteredGroups() throws Exception {
 
     final String filter = "duction";
     long expectedSize = 1;
@@ -227,8 +217,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithNegativeStartIndex() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getGroupsWithNegativeStartIndex() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -247,8 +236,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithStartIndexZero() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getGroupsWithStartIndexZero() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -267,8 +255,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithCountBiggerThanPageSize() throws JsonParseException,
-      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+  public void getGroupsWithCountBiggerThanPageSize() throws Exception {
 
     long expectedSize = groupRepository.count();
 
@@ -288,8 +275,7 @@ public class GroupSearchControllerTests {
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
-  public void getGroupsWithNegativeCount() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  public void getGroupsWithNegativeCount() throws Exception {
 
     long expectedSize = groupRepository.count();
 

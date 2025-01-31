@@ -45,7 +45,6 @@ import it.infn.mw.iam.api.proxy.ProxyCertificateDTO;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.rcauth.x509.ProxyGenerationError;
 import it.infn.mw.iam.rcauth.x509.ProxyHelperService;
 
@@ -59,8 +58,7 @@ public class AccountProxyCertificatesController {
   private final ProxyHelperService proxyHelperService;
 
   public AccountProxyCertificatesController(AccountUtils accountUtils,
-      IamAccountRepository accountRepo, AccountLinkingService linkingService,
-      ProxyHelperService proxyHelperService) {
+      AccountLinkingService linkingService, ProxyHelperService proxyHelperService) {
     this.accountUtils = accountUtils;
     this.linkingService = linkingService;
     this.proxyHelperService = proxyHelperService;
