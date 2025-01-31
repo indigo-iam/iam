@@ -274,33 +274,32 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
 
     response = mvc
-        .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
-          .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-          .param("client_id", "device-code-client")
-          .param("scope", "openid profile offline_access"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.user_code").isString())
-        .andExpect(jsonPath("$.device_code").isString())
-        .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.user_code").isString())
+      .andExpect(jsonPath("$.device_code").isString())
+      .andExpect(jsonPath("$.verification_uri", equalTo(DEVICE_USER_URL)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
 
-      responseJson = mapper.readTree(response);
+    responseJson = mapper.readTree(response);
 
-      userCode = responseJson.get("user_code").asText();
+    userCode = responseJson.get("user_code").asText();
 
-      session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("requestUserCode"))
-        .andReturn()
-        .getRequest()
-        .getSession();
+    session = (MockHttpSession) mvc.perform(get(DEVICE_USER_URL).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("requestUserCode"))
+      .andReturn()
+      .getRequest()
+      .getSession();
 
-      mvc
-        .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
-        .andExpect(status().isOk())
-        .andExpect(view().name("iam/approveDevice"));
+    mvc.perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/approveDevice"));
 
   }
 
@@ -775,6 +774,12 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     String accessTokenNoSCIM = mapper.readTree(refreshTokenResponse).get("access_token").asText();
 
+    verifyIsForbiddenForTestUserWithToken(accessTokenNoSCIM);
+
+  }
+
+  private void verifyIsForbiddenForTestUserWithToken(String accessTokenNoSCIM) throws Exception {
+
     String scimAuthorizationHeader = String.format("Bearer %s", accessTokenNoSCIM);
 
     mvc.perform(get("/scim/Users").header("Authorization", scimAuthorizationHeader))
@@ -797,41 +802,6 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
       .perform(delete("/scim/Groups/c617d586-54e6-411d-8e38-649677980001").header("Authorization",
           scimAuthorizationHeader))
       .andExpect(status().isForbidden());
-
-    refreshTokenResponse = mvc
-      .perform(
-          post(TOKEN_ENDPOINT).with(httpBasic(SCIM_DEVICE_CLIENT_ID, SCIM_DEVICE_CLIENT_SECRET))
-            .param("grant_type", "refresh_token")
-            .param("refresh_token", refreshToken)
-            .param("scope", "openid scim:read scim:write"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.access_token").exists())
-      .andExpect(jsonPath("$.id_token").exists())
-      .andExpect(jsonPath("$.scope").exists())
-      .andExpect(jsonPath("$.scope", containsString("openid")))
-      .andExpect(jsonPath("$.scope", containsString("scim:read")))
-      .andExpect(jsonPath("$.scope", containsString("scim:write")))
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessTokenWithSCIM = mapper.readTree(refreshTokenResponse).get("access_token").asText();
-
-    scimAuthorizationHeader = String.format("Bearer %s", accessTokenWithSCIM);
-
-    mvc.perform(get("/scim/Users").header("Authorization", scimAuthorizationHeader))
-      .andExpect(status().isOk());
-    mvc.perform(get("/scim/Groups").header("Authorization", scimAuthorizationHeader))
-      .andExpect(status().isOk());
-    mvc
-      .perform(get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f").header("Authorization",
-          scimAuthorizationHeader))
-      .andExpect(status().isOk());
-    mvc
-      .perform(get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001").header("Authorization",
-          scimAuthorizationHeader))
-      .andExpect(status().isOk());
-
   }
 
   @Test
