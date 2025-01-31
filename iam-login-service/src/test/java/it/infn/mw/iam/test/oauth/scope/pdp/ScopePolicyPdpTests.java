@@ -96,9 +96,14 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     Set<String> filteredScopes =
         pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:read"), testAccount);
 
-    assertThat(filteredScopes, hasSize(3));
-    assertThat(filteredScopes, hasItems("openid", "profile", "scim:read"));
+    assertThat(filteredScopes, hasSize(2));
+    assertThat(filteredScopes, hasItems("openid", "profile"));
 
+    filteredScopes =
+        pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
+
+    assertThat(filteredScopes, hasSize(2));
+    assertThat(filteredScopes, hasItems("openid", "profile"));
   }
 
   @Test
@@ -107,14 +112,14 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
 
     IamScopePolicy up = initDenyScopePolicy();
     up.linkAccount(testAccount);
-    up.getScopes().add(SCIM_WRITE);
+    up.getScopes().add(PROFILE);
 
     policyScopeRepo.save(up);
 
     Set<String> filteredScopes =
         pdp.filterScopes(Sets.newHashSet("openid", "profile", "scim:write"), testAccount);
-    assertThat(filteredScopes, hasSize(2));
-    assertThat(filteredScopes, hasItems("openid", "profile"));
+    assertThat(filteredScopes, hasSize(1));
+    assertThat(filteredScopes, hasItems("openid"));
   }
 
   @Test
@@ -204,8 +209,8 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
     Set<String> filteredScopes = pdp
       .filterScopes(Sets.newHashSet("openid", "profile", "scim:write", "scim:read"), testAccount);
 
-    assertThat(filteredScopes, hasSize(4));
-    assertThat(filteredScopes, hasItems("openid", "profile", "scim:write", "scim:read"));
+    assertThat(filteredScopes, hasSize(2));
+    assertThat(filteredScopes, hasItems("openid", "profile"));
   }
 
   @Test
