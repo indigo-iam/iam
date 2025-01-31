@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.expression;
 
 import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.expression.OAuth2MethodSecurityExpressionHandler;
@@ -34,7 +33,6 @@ public class IamMethodSecurityExpressionHandler extends OAuth2MethodSecurityExpr
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
-  @Autowired
   public IamMethodSecurityExpressionHandler(AccountUtils accountUtils,
       GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
     this.accountUtils = accountUtils;
