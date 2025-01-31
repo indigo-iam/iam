@@ -207,64 +207,61 @@ public class AuthorizationCodeIntegrationTests {
 
     refreshTokenRepository.deleteAll();
 
-    // @formatter:off
-      ValidatableResponse resp1 = RestAssured.given()
-        .queryParam("response_type", RESPONSE_TYPE_CODE)
-        .queryParam("client_id", TEST_CLIENT_ID)
-        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .queryParam("scope", SCOPE)
-        .queryParam("nonce", "1")
-        .queryParam("state", "1")
-        .redirects().follow(false)
+    ValidatableResponse resp1 = RestAssured.given()
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
       .when()
-        .get(authorizeUrl)
+      .get(authorizeUrl)
       .then()
-        .statusCode(HttpStatus.FOUND.value())
-        .header("Location", is(loginUrl));
-      // @formatter:on
+      .statusCode(HttpStatus.FOUND.value())
+      .header("Location", is(loginUrl));
 
-    // @formatter:off
-      RestAssured.given()
-        .formParam("username", TEST_USER_NAME)
-        .formParam("password", TEST_USER_PASSWORD)
-        .formParam("submit", "Login")
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .redirects().follow(false)
+    RestAssured.given()
+      .formParam("username", TEST_USER_NAME)
+      .formParam("password", TEST_USER_PASSWORD)
+      .formParam("submit", "Login")
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .redirects()
+      .follow(false)
       .when()
-        .post(loginUrl)
+      .post(loginUrl)
       .then()
-        .statusCode(HttpStatus.FOUND.value());
-      // @formatter:on
+      .statusCode(HttpStatus.FOUND.value());
 
-    // @formatter:off
-      RestAssured.given()
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .queryParam("response_type", RESPONSE_TYPE_CODE)
-        .queryParam("client_id", TEST_CLIENT_ID)
-        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .queryParam("scope", SCOPE)
-        .queryParam("nonce", "1")
-        .queryParam("state", "1")
-        .redirects().follow(false)
+    RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .queryParam("response_type", RESPONSE_TYPE_CODE)
+      .queryParam("client_id", TEST_CLIENT_ID)
+      .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .queryParam("scope", SCOPE)
+      .queryParam("nonce", "1")
+      .queryParam("state", "1")
+      .redirects()
+      .follow(false)
       .when()
-        .get(authorizeUrl)
+      .get(authorizeUrl)
       .then()
-        .log().all()
-        .statusCode(HttpStatus.OK.value());
-      // @formatter:on
+      .log()
+      .all()
+      .statusCode(HttpStatus.OK.value());
 
-    // @formatter:off
-      ValidatableResponse resp2 = RestAssured.given()
-        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
-        .formParam("user_oauth_approval", "true")
-        .formParam("authorize", "Authorize")
-        .formParam("remember", "none")
-        .redirects().follow(false)
+    ValidatableResponse resp2 = RestAssured.given()
+      .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+      .formParam("user_oauth_approval", "true")
+      .formParam("authorize", "Authorize")
+      .formParam("remember", "none")
+      .redirects()
+      .follow(false)
       .when()
-        .post(authorizeUrl)
+      .post(authorizeUrl)
       .then()
-        .statusCode(HttpStatus.SEE_OTHER.value());
-      // @formatter:on
+      .statusCode(HttpStatus.SEE_OTHER.value());
 
     String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
       .build()
@@ -272,20 +269,18 @@ public class AuthorizationCodeIntegrationTests {
       .get("code")
       .get(0);
 
-    // @formatter:off
-      ValidatableResponse resp3= RestAssured.given()
-        .formParam("grant_type", "authorization_code")
-        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .formParam("code", authzCode)
-        .formParam("state", "1")
-        .auth()
-          .preemptive()
-            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+    ValidatableResponse resp3 = RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-        .post(tokenUrl)
+      .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
-      // @formatter:on
 
     List<OAuth2RefreshTokenEntity> refreshTokens = refreshTokenRepository
       .findValidRefreshTokensForUserAndClient(TEST_USER_NAME, TEST_CLIENT_ID, new Date(),
@@ -293,158 +288,145 @@ public class AuthorizationCodeIntegrationTests {
       .getContent();
     assertThat(refreshTokens, hasSize(1));
     assertThat(refreshTokens.get(0).getAuthenticationHolder().getScope(),
-        not(hasItems("iam:admin.read", "iam:admin.write")));
+        not(hasItems("iam:admin.read", "iam:admin.write", "scim:read", "scim:write")));
 
     String refreshToken =
         mapper.readTree(resp3.extract().body().asString()).get("refresh_token").asText();
 
-    // @formatter:off
-      ValidatableResponse resp4 = RestAssured.given()
-        .formParam("grant_type", "refresh_token")
-        .formParam("refresh_token", refreshToken)
-        .formParam("scope", "openid")
-        .auth()
-        .preemptive()
-          .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+    ValidatableResponse resp4 = RestAssured.given()
+      .formParam("grant_type", "refresh_token")
+      .formParam("refresh_token", refreshToken)
+      .formParam("scope", "openid")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-        .post(tokenUrl)
+      .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
-      // @formatter:on
 
     String refreshedToken =
         mapper.readTree(resp4.extract().body().asString()).get("access_token").asText();
 
-   // @formatter:off
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-        .get("/scim/Users")
-      .then()
-        .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .get("/scim/Groups")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .delete("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .delete("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
-      .when()
-          .get("/iam/account/80e5fb8d-b7c8-451a-89ba-346ae278a66f/authorities")
-      .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
+    verifyForbiddenEndpointsForTestUserWithToken(refreshedToken);
 
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
+    RestAssured.given()
+      .formParam("grant_type", "refresh_token")
+      .formParam("refresh_token", refreshToken)
+      .formParam("scope", "openid iam:admin.read iam:admin.write")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-          .get("/iam/api/clients")
+      .post(tokenUrl)
       .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      RestAssured.given()
-          .header("Authorization", "Bearer " + refreshedToken)
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error", equalTo("invalid_scope"))
+      .body("error_description", equalTo("Up-scoping is not allowed."));
+
+    RestAssured.given()
+      .formParam("grant_type", "refresh_token")
+      .formParam("refresh_token", refreshToken)
+      .formParam("scope", "openid scim:read scim:write")
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-          .get("/iam/scope_policies")
+      .post(tokenUrl)
       .then()
-          .statusCode(HttpStatus.FORBIDDEN.value());
-      
-      ValidatableResponse resp7= RestAssured.given()
-        .formParam("grant_type", "refresh_token")
-        .formParam("refresh_token", refreshToken)
-        .formParam("scope", "openid scim:read scim:write")
-        .auth()
-        .preemptive()
-          .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .statusCode(HttpStatus.BAD_REQUEST.value())
+      .body("error", equalTo("invalid_scope"))
+      .body("error_description", equalTo("Up-scoping is not allowed."));
+
+    ValidatableResponse resp7 = RestAssured.given()
+      .formParam("grant_type", "refresh_token")
+      .formParam("refresh_token", refreshToken)
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-        .post(tokenUrl)
+      .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
-      // @formatter:on
 
     refreshedToken =
         mapper.readTree(resp7.extract().body().asString()).get("access_token").asText();
 
- // @formatter:off
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-      .get("/scim/Users")
-    .then()
-      .statusCode(HttpStatus.OK.value());
-    
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/scim/Groups")
-    .then()
-        .statusCode(HttpStatus.OK.value());
-    
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
-    .then()
-        .statusCode(HttpStatus.OK.value());
-    
-    RestAssured.given()
-        .header("Authorization", "Bearer " + refreshedToken)
-    .when()
-        .get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
-    .then()
-        .statusCode(HttpStatus.OK.value());
+    verifyForbiddenEndpointsForTestUserWithToken(refreshedToken);
+
+  }
+
+  private void verifyForbiddenEndpointsForTestUserWithToken(String token) {
 
     RestAssured.given()
-        .formParam("grant_type", "refresh_token")
-        .formParam("refresh_token", refreshToken)
-        .formParam("scope", "openid iam:admin.read iam:admin.write")
-        .auth()
-        .preemptive()
-          .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .header("Authorization", "Bearer " + token)
       .when()
-        .post(tokenUrl)
+      .get("/scim/Users")
       .then()
-      .statusCode(HttpStatus.BAD_REQUEST.value())
-      .body("error",equalTo("invalid_scope"))
-      .body("error_description", equalTo("Up-scoping is not allowed."));
-      // @formatter:on
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/scim/Groups")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .delete("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .delete("/scim/Groups/c617d586-54e6-411d-8e38-649677980001")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/iam/group/c617d586-54e6-411d-8e38-649677980001/attributes")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/iam/account/80e5fb8d-b7c8-451a-89ba-346ae278a66f/authorities")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/iam/api/clients")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
+
+    RestAssured.given()
+      .header("Authorization", "Bearer " + token)
+      .when()
+      .get("/iam/scope_policies")
+      .then()
+      .statusCode(HttpStatus.FORBIDDEN.value());
 
   }
 
