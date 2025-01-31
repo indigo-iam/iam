@@ -92,10 +92,7 @@ public class IamSecurityExpressionMethods {
     if (groupRequest.isEmpty()) {
       return false;
     }
-    if (isGroupManager(groupRequest.get().getGroup().getUuid())) {
-      return true;
-    }
-    return false;
+    return isGroupManager(groupRequest.get().getGroup().getUuid());
   }
 
   public boolean canAccessGroupRequest(String requestId) {
