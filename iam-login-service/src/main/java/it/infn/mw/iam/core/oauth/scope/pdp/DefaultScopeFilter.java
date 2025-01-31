@@ -47,7 +47,7 @@ public class DefaultScopeFilter implements ScopeFilter {
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultScopeFilter.class);
 
-  public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write");
+  public static final Set<String> ADMIN_SCOPES = Set.of("iam:admin.read", "iam:admin.write", "scim:read", "scim:write");
 
   private static final Set<String> EXCLUDED_SCOPES = Set.of("openid");
 
