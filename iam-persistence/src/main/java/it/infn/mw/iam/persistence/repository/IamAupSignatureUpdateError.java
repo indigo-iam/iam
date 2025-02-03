@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core;
+package it.infn.mw.iam.persistence.repository;
 
-public enum IamNotificationType {
-  CONFIRMATION, RESETPASSWD, ACTIVATED, REJECTED, GROUP_MEMBERSHIP, AUP_REMINDER, AUP_EXPIRATION, AUP_SIGNATURE_REQUEST,
-   ACCOUNT_SUSPENDED, ACCOUNT_RESTORED, CLIENT_STATUS, CERTIFICATE_LINK, MFA_ENABLE, MFA_DISABLE,
-  SET_SERVICE_ACCOUNT, REVOKE_SERVICE_ACCOUNT
+import it.infn.mw.iam.persistence.model.IamAccount;
+
+public class IamAupSignatureUpdateError extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public IamAupSignatureUpdateError(IamAccount account) {
+    super(String.format("As user '%s' is a service account, AUP signature operation not allowed", account.getUsername()));
+  }
 }

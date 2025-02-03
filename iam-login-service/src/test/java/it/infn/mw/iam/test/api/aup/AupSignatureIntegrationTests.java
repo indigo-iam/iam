@@ -438,4 +438,16 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
   }
 
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSignAupThrowExceptionForServiceAccount() throws Exception {
+       
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    testAccount.setServiceAccount(true);
+    accountRepo.save(testAccount);
+
+    mvc.perform(post("/iam/aup/sign"))
+    .andExpect(status().isMethodNotAllowed());
+  }
+
 }

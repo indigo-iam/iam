@@ -17,6 +17,8 @@ package it.infn.mw.iam.test.repository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Date;
 
@@ -31,6 +33,7 @@ import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 import it.infn.mw.iam.test.api.aup.AupTestSupport;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
@@ -109,6 +112,40 @@ public class IamAupSignatureRepositoryTests extends AupTestSupport {
     Date updateTime = new Date();
     IamAupSignature sig = repo.createSignatureForAccount(aup, testAccount, updateTime);
     assertThat(sig.getSignatureTime(), equalTo(updateTime));
+  }
+
+  @Test
+  public void testServiceAccountThrowsExceptionOnAUPSignatureCreation() {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = findTestAccount();
+    testAccount.setServiceAccount(true);
+
+    Exception exception = assertThrows(IamAupSignatureUpdateError.class,
+        () -> repo.createSignatureForAccount(aup, testAccount, new Date()));
+
+    String expectedMessage = "As user 'test' is a service account, AUP signature operation not allowed";
+    String actualMessage = exception.getMessage();
+
+    assertTrue(actualMessage.contains(expectedMessage));
+  }
+
+  
+  @Test
+  public void testServiceAccountThrowsExceptionOnDeleteSignatureForAccount() {
+    IamAup aup = buildDefaultAup();
+    aupRepo.save(aup);
+    IamAccount testAccount = findTestAccount();
+    repo.createSignatureForAccount(aup, testAccount, new Date());
+    testAccount.setServiceAccount(true);
+
+    Exception exception = assertThrows(IamAupSignatureUpdateError.class,
+        () -> repo.deleteSignatureForAccount(aup, testAccount));
+
+    String expectedMessage = "As user 'test' is a service account, AUP signature operation not allowed";
+    String actualMessage = exception.getMessage();
+
+    assertTrue(actualMessage.contains(expectedMessage));
   }
 
 }

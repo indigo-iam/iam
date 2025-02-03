@@ -24,6 +24,7 @@ public enum UpdaterType {
   ACCOUNT_REPLACE_PICTURE("Replace user picture"),
   ACCOUNT_REPLACE_USERNAME("Replace user username"),
   ACCOUNT_REPLACE_ACTIVE("Replace user active status"),
+  ACCOUNT_REPLACE_SERVICE_ACCOUNT("Replace user service account status"),
 
   ACCOUNT_ADD_OIDC_ID("Add OpenID Connect account to user"),
   ACCOUNT_ADD_SAML_ID("Add SAML account to user"),

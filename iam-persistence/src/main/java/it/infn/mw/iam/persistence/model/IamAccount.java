@@ -154,6 +154,9 @@ public class IamAccount implements Serializable {
       name = "iam_account_labels", joinColumns = @JoinColumn(name = "account_id"))
   private Set<IamLabel> labels = new HashSet<>();
 
+  @Column(name = "service_account")
+  private boolean serviceAccount;
+
   public IamAccount() {
     // empty constructor
   }
@@ -620,5 +623,13 @@ public class IamAccount implements Serializable {
 
   public boolean isValid() {
     return logicalOr(isNull(endTime), DateTimeComparator.getInstance().compare(endTime, new Date()) > 0);
+  }
+
+  public boolean isServiceAccount() {
+    return serviceAccount;
+  }
+
+  public void setServiceAccount(boolean serviceAccount) {
+    this.serviceAccount = serviceAccount;
   }
 }
