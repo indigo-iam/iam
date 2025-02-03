@@ -36,6 +36,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,6 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -644,8 +644,8 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-lookup-client"));
     
-    JSONObject innerActClaim = (JSONObject) actClaim.get("act");
-    assertThat(innerActClaim.getAsString("sub"), is("token-exchange-actor"));
+    JSONObject innerActClaim = (JSONObject) JSONObject.wrap(actClaim.get("act"));
+    assertThat(innerActClaim.getString("sub"), is("token-exchange-actor"));
     
 
   }
