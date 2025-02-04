@@ -17,6 +17,8 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,8 +38,12 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -79,6 +85,16 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
+    if (authn instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
+      Set<IamAuthenticationMethodReference> amrSet =
+          extendedAuthenticationToken.getAuthenticationMethodReferences();
+      try {
+        authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+      } catch (JsonProcessingException e) {
+        LOG.error("Failed to convert amr set to JSON array", e);
+      }
+    }
+
     for (String audienceKey : AUDIENCE_KEYS) {
       if (inputParams.containsKey(audienceKey)) {
         if (!authzRequest.getExtensions().containsKey(AUD)) {
@@ -91,6 +107,17 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     return authzRequest;
 
+  }
+
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)
+      throws JsonProcessingException {
+    List<String> amrList = new ArrayList<>();
+    for (IamAuthenticationMethodReference amr : amrSet) {
+      amrList.add(amr.getName());
+    }
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(amrList);
   }
 
   private void handlePasswordGrantAuthenticationTimestamp(OAuth2Request request) {

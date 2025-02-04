@@ -17,7 +17,6 @@ package it.infn.mw.iam.audit.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,7 +32,6 @@ public class Jackson2AuditDataSerializer implements AuditDataSerializer {
   
   final ObjectMapper mapper;
   
-  @Autowired
   public Jackson2AuditDataSerializer(ObjectMapper mapper) {
     this.mapper = mapper;
   }

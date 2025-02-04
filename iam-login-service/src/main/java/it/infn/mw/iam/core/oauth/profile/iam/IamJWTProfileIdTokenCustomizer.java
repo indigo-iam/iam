@@ -17,13 +17,18 @@ package it.infn.mw.iam.core.oauth.profile.iam;
 
 import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
 
+import java.util.List;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -35,6 +40,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
+  public static final Logger LOG = LoggerFactory.getLogger(IamJWTProfileIdTokenCustomizer.class);
+
   protected final ScopeClaimTranslationService scopeClaimConverter;
   protected final ClaimValueHelper claimValueHelper;
 
@@ -45,7 +52,6 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }
-
 
   @Override
   public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
@@ -59,7 +65,20 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       .filter(ADDITIONAL_CLAIMS::contains)
       .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
 
+    Object amrClaim = request.getExtensions().get("amr");
+
+    if (amrClaim instanceof String amrString) {
+      try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> amrList =
+            objectMapper.readValue(amrString, new TypeReference<List<String>>() {});
+
+        idClaims.claim("amr", amrList);
+      } catch (Exception e) {
+        LOG.error("Failed to deserialize amr claim", e);
+      }
+    }
+
     includeLabelsInIdToken(idClaims, account);
   }
-
 }
