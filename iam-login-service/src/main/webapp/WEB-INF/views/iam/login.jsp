@@ -216,9 +216,14 @@
             <div id="x509-authn-info">
                 You have been successfully authenticated as<br>
                 <strong>${IAM_X509_CRED.subject}</strong>
-                <c:if test="${!IAM_X509_CAN_LOGIN}">
+                <c:if test="${!IAM_X509_CAN_LOGIN && !IAM_X509_SUSPENDED_ACCOUNT}">
                     <p>
                     This certificate is not linked to any account in this organization
+                    </p>
+                </c:if>
+                <c:if test="${IAM_X509_SUSPENDED_ACCOUNT}">
+                    <p>
+                    This certificate is linked to a suspended account in this organization
                     </p>
                 </c:if>
           </div>
