@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth.authzcode;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.core.authority.AuthorityUtils.commaSeparatedStringToAuthorityList;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
@@ -34,6 +35,8 @@ import java.util.Date;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mock.web.MockHttpSession;
@@ -45,8 +48,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
@@ -80,6 +86,34 @@ public class AuthorizationCodeTests {
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  private ClientService clientService;
+
+  @Autowired
+  private ClientDetailsEntityService clientDetailsService;
+
+  @Autowired
+  IamAccountRepository accountRepo;
+
+  @Autowired
+  private IamClientRepository clientRepo;
+
+  private void removeTestClientOwners() {
+
+    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername("test_199").get());
+    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername("test_200").get());
+  }
+
+  private void setTestClientOwners() {
+
+    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername("test_199").get());
+    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername("test_200").get());
+  }
 
   @Test
   public void testOidcAuthorizationCodeFlowExternalHint() throws Exception {
@@ -236,6 +270,147 @@ public class AuthorizationCodeTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.Resources", is(empty())));
+
+  }
+
+  @Test
+  public void testOidcAgentClientNotLinkedToUserWhoNotApproved() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:test-client");
+    clientRepo.save(entity);
+    removeTestClientOwners();
+
+    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
+        commaSeparatedStringToAuthorityList("ROLE_USER"));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+        .param("client_id", TEST_CLIENT_ID)
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("nonce", "1")
+        .param("state", "1")
+        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post("/authorize").session(session)
+        .param("user_oauth_approval", "false")
+        .param("scope_openid", "openid")
+        .param("scope_profile", "profile")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .with(csrf()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
+
+    entity.setClientName("Test Client");
+    clientRepo.save(entity);
+    setTestClientOwners();
+
+  }
+
+  @Test
+  public void testOidcAgentClientNotAlreadyLinkedToUser() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:test-client");
+    clientRepo.save(entity);
+
+    removeTestClientOwners();
+
+    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
+        commaSeparatedStringToAuthorityList("ROLE_USER"));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+        .param("client_id", TEST_CLIENT_ID)
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("nonce", "1")
+        .param("state", "1")
+        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post("/authorize").session(session)
+        .param("user_oauth_approval", "true")
+        .param("scope.openid", "true")
+        .param("scope.profile", "true")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .with(csrf()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources", not(empty())))
+      .andExpect(jsonPath("$.Resources[0].client_id", is(TEST_CLIENT_ID)));
+
+    entity.setClientName("Test Client");
+    clientRepo.save(entity);
+
+    setTestClientOwners();
+
+  }
+
+  @Test
+  public void testOidcAgentClientAlreadyLinkedToUser() throws Exception {
+
+    ClientDetailsEntity entity = clientRepo.findByClientId(TEST_CLIENT_ID).orElseThrow();
+    entity.setClientName("oidc-agent:test-client");
+    clientRepo.save(entity);
+
+    User testUser = new User(TEST_USER_ID, TEST_USER_PASSWORD,
+        commaSeparatedStringToAuthorityList("ROLE_USER"));
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get(AUTHORIZE_URL).param("response_type", RESPONSE_TYPE_CODE)
+        .param("client_id", TEST_CLIENT_ID)
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("scope", SCOPE)
+        .param("nonce", "1")
+        .param("state", "1")
+        .with(SecurityMockMvcRequestPostProcessors.user(testUser)))
+      .andExpect(status().isOk())
+      .andExpect(forwardedUrl("/oauth/confirm_access"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc
+      .perform(post("/authorize").session(session)
+        .param("user_oauth_approval", "true")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .with(csrf()))
+      .andExpect(status().is3xxRedirection())
+      .andReturn();
+
+    mvc.perform(get("/iam/account/me/clients").session(session))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.Resources", is(empty())));
+
+    entity.setClientName("Test Client");
+    clientRepo.save(entity);
 
   }
 
