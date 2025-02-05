@@ -77,7 +77,7 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
     if (isExternalUnregisteredUser(authentication)) {
-      response.sendRedirect("/start-registration");
+      response.sendRedirect("/");
     } else {
       handle(request, response, authentication);
       clearAuthenticationAttributes(request);
