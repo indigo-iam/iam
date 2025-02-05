@@ -29,12 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.error.InvalidExternalAuthenticationTokenError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -45,7 +49,16 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
  */
 public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSuccessHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
+
+  public static final String EXT_AUTHN_UNREGISTERED_USER_ROLE = "EXT_AUTH_UNREGISTERED";
+
+  public static final String EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING =
+      "ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE;
+
+  public static final GrantedAuthority EXT_AUTHN_UNREGISTERED_USER_AUTH =
+      new SimpleGrantedAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING);
 
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
@@ -63,8 +76,23 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
-    handle(request, response, authentication);
-    clearAuthenticationAttributes(request);
+    if (isExternalUnregisteredUser(authentication)) {
+      response.sendRedirect("/start-registration");
+    } else {
+      handle(request, response, authentication);
+      clearAuthenticationAttributes(request);
+    }
+  }
+
+  protected boolean isExternalUnregisteredUser(Authentication authentication) {
+
+    if (!(authentication instanceof AbstractExternalAuthenticationToken<?>)
+        && !(authentication instanceof ExtendedAuthenticationToken)) {
+      throw new InvalidExternalAuthenticationTokenError("Invalid token type: " + authentication);
+    }
+
+    return authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH);
+
   }
 
   protected void handle(HttpServletRequest request, HttpServletResponse response,
@@ -74,6 +102,10 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else if (isPreAuthenticated) {
+      authentication.setAuthenticated(true);
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      request.getSession()
+        .setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
       response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
