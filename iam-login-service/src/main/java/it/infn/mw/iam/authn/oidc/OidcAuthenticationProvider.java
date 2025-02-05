@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -82,7 +81,6 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     Optional<IamAccount> account = accountRepo.findByUsername(user.getUsername());
     if (account.isPresent()) {
 
-      // OidcExternalAuthenticationToken extToken;
       ExtendedAuthenticationToken extToken;
 
       IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference("oidc");
@@ -94,29 +92,20 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
       // Checking to see if we can find an active MFA secret attached to the user's account. If so,
       // MFA is enabled on the account
       if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-        List<GrantedAuthority> currentAuthorities = new ArrayList<>();
         // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify
         // endpoint
-        currentAuthorities.add(Authorities.ROLE_PRE_AUTHENTICATED);
-        currentAuthorities.addAll(user.getAuthorities());
+        List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
+        Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>(user.getAuthorities());
 
         // Construct a new authentication object for the PRE_AUTHENTICATED user
-        // extToken = new OidcExternalAuthenticationToken(token,
-        // Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
-        // account.get().getUsername(), null, currentAuthorities);
-        // extToken.setAuthenticated(false);
-
         extToken = new ExtendedAuthenticationToken(account.get().getUsername(),
             authentication.getCredentials(), currentAuthorities);
         extToken.setAuthenticationMethodReferences(refs);
         extToken.setAuthenticated(false);
+        extToken.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       } else {
         // MFA is not enabled on this account, construct a new authentication object for the FULLY
         // AUTHENTICATED user, granting their normal authorities
-        // extToken = new OidcExternalAuthenticationToken(token,
-        // Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
-        // account.get().getUsername(), null, user.getAuthorities());
-
         extToken = new ExtendedAuthenticationToken(account.get().getUsername(),
             authentication.getCredentials(), user.getAuthorities());
         extToken.setAuthenticationMethodReferences(refs);
@@ -130,10 +119,11 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
           null, user.getAuthorities());
     }
   }
-  
+
   @Override
   public boolean supports(Class<?> authentication) {
-    return (ExtendedAuthenticationToken.class.isAssignableFrom(authentication) || PendingOIDCAuthenticationToken.class.isAssignableFrom(authentication));
+    return (ExtendedAuthenticationToken.class.isAssignableFrom(authentication)
+        || PendingOIDCAuthenticationToken.class.isAssignableFrom(authentication));
   }
 
 }
