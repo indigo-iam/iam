@@ -337,8 +337,8 @@ public class IamWebSecurityConfig {
           .permitAll()
         .and()
           .sessionManagement()
-          .sessionFixation().migrateSession()
-          .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
+          .enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
     }
 
