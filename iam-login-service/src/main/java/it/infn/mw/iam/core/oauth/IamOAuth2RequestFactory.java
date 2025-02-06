@@ -22,12 +22,14 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
@@ -65,13 +67,18 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsEntityService clientDetailsService;
+  private final DeviceCodeService deviceCodeService;
+
+  // private final AuthenticationHolderEntity authHolder;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
-      ScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
+      ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
+      DeviceCodeService deviceCodeService) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.profileResolver = profileResolver;
+    this.deviceCodeService = deviceCodeService;
   }
 
   @Override
@@ -89,7 +96,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    handleAudienceRequest(inputParams, authzRequest.getExtensions());
+    handleAuthorizationAudienceRequest(inputParams, authzRequest.getExtensions());
 
     return authzRequest;
 
@@ -115,7 +122,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     handlePasswordGrantAuthenticationTimestamp(request);
 
-    handleAudienceRequest(tokenRequest.getRequestParameters(), request.getExtensions());
+    handleOAuth2AudienceRequest(tokenRequest.getRequestParameters(), request.getExtensions(),
+        client);
 
     profileResolver.resolveProfile(client.getClientId())
       .getRequestValidator()
@@ -158,7 +166,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         grantType);
   }
 
-  private void handleAudienceRequest(Map<String, String> requestParameters,
+  private void handleAuthorizationAudienceRequest(Map<String, String> requestParameters,
       Map<String, Serializable> extensions) {
 
     if (requestParameters.containsKey(RESOURCE) && !extensions.containsKey(AUD)) {
@@ -166,6 +174,40 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       String resourceParams = requestParameters.get(RESOURCE);
       splitBySpace(resourceParams).forEach(aud -> validateUrl(aud));
       extensions.put(AUD, resourceParams);
+
+    } else {
+
+      AUDIENCE_KEYS.forEach(aud -> {
+        if (requestParameters.containsKey(aud) && !extensions.containsKey(AUD)) {
+          extensions.put(AUD, requestParameters.get(aud));
+        }
+      });
+    }
+
+  }
+
+  private void handleOAuth2AudienceRequest(Map<String, String> requestParameters,
+      Map<String, Serializable> extensions, ClientDetails client) {
+
+    if (requestParameters.containsKey(RESOURCE) && !extensions.containsKey(AUD)) {
+
+      List<String> oauth2ResourceParams = splitBySpace(requestParameters.get(RESOURCE));
+      oauth2ResourceParams.forEach(aud -> validateUrl(aud));
+
+      String dc = requestParameters.get("device_code");
+      Map<String, String> authzRequestParams = deviceCodeService.findDeviceCode(dc, client)
+        .getAuthenticationHolder()
+        .getRequestParameters();
+
+      List<String> authzResourceParams = splitBySpace(authzRequestParams.get(RESOURCE));
+      oauth2ResourceParams.retainAll(authzResourceParams);
+
+      String allowedResource = String.join(" ", oauth2ResourceParams);
+      if (!allowedResource.isEmpty()) {
+        extensions.put(AUD, allowedResource);
+      } else {
+        throw new InvalidResourceError("The requested resource was not originally granted");
+      }
 
     } else {
 
@@ -196,6 +238,14 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   }
 
   public static List<String> splitBySpace(String str) {
-    return Arrays.asList(str.split(" "));
+
+    if (str != null) {
+      ArrayList<String> mutableList = new ArrayList<String>();
+      mutableList.addAll(List.of(str.split(" ")));
+      return mutableList;
+    }
+
+    return new ArrayList<String>();
   }
+
 }
