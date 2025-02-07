@@ -56,6 +56,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -173,6 +174,12 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     implements SchedulingConfigurer, InitializingBean, DisposableBean {
 
   public static final Logger LOG = LoggerFactory.getLogger(SamlConfig.class);
+
+  @Value("${iam.baseUrl}")
+  private String iamBaseUrl;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
 
   @Autowired
   private ResourceLoader resourceLoader;
@@ -684,9 +691,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Bean
   @Qualifier("metadata")
-  CachingMetadataManager metadata(
-      @Qualifier("samlMetadataFetchTimer") Timer metadataFetchTimer, ParserPool parserPool)
-      throws MetadataProviderException, IOException, ResourceException {
+  CachingMetadataManager metadata(@Qualifier("samlMetadataFetchTimer") Timer metadataFetchTimer,
+      ParserPool parserPool) throws MetadataProviderException, IOException, ResourceException {
 
     CachingMetadataManager manager =
         new IamCachingMetadataManager(metadataProviders(metadataFetchTimer, parserPool));
@@ -728,7 +734,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     EnforceAupSignatureSuccessHandler aup =
         new EnforceAupSignatureSuccessHandler(sa, aupSignatureCheckService, accountUtils, repo);
 
-    return new ExternalAuthenticationSuccessHandler(aup, "/");
+    return new ExternalAuthenticationSuccessHandler(aup, "/", accountUtils, iamBaseUrl,
+        aupSignatureCheckService, accountRepo);
   }
 
 

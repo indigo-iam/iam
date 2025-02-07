@@ -158,7 +158,8 @@ public class OidcConfiguration {
     EnforceAupSignatureSuccessHandler successHandler = new EnforceAupSignatureSuccessHandler(sa,
         aupSignatureCheckService, accountUtils, accountRepo);
 
-    return new ExternalAuthenticationSuccessHandler(successHandler, "/");
+    return new ExternalAuthenticationSuccessHandler(successHandler, "/", accountUtils, iamBaseUrl,
+        aupSignatureCheckService, accountRepo);
   }
 
   @Bean(name = "OIDCAuthenticationManager")
@@ -258,8 +259,7 @@ public class OidcConfiguration {
   }
 
   @Bean
-  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory,
-      ObjectMapper mapper) {
+  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }
 }

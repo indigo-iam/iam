@@ -320,7 +320,6 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-      oidcFilter.setAuthenticationSuccessHandler(successHandler());
       // @formatter:off
       http
         .antMatcher("/openid_connect_login**")
@@ -336,11 +335,6 @@ public class IamWebSecurityConfig {
           .enableSessionUrlRewriting(false)
           .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
-    }
-
-    public AuthenticationSuccessHandler successHandler() {
-      return new CheckMultiFactorIsEnabledSuccessHandler(accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo);
     }
   }
 
