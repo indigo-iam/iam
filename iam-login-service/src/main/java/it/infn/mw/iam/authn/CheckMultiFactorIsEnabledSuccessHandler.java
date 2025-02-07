@@ -30,15 +30,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.error.InvalidExternalAuthenticationTokenError;
 import it.infn.mw.iam.authn.util.Authorities;
-import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -76,23 +73,8 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException, ServletException {
-    if (isExternalUnregisteredUser(authentication)) {
-      response.sendRedirect("/");
-    } else {
-      handle(request, response, authentication);
-      clearAuthenticationAttributes(request);
-    }
-  }
-
-  protected boolean isExternalUnregisteredUser(Authentication authentication) {
-
-    if (!(authentication instanceof AbstractExternalAuthenticationToken<?>)
-        && !(authentication instanceof ExtendedAuthenticationToken)) {
-      throw new InvalidExternalAuthenticationTokenError("Invalid token type: " + authentication);
-    }
-
-    return authentication.getAuthorities().contains(EXT_AUTHN_UNREGISTERED_USER_AUTH);
-
+    handle(request, response, authentication);
+    clearAuthenticationAttributes(request);
   }
 
   protected void handle(HttpServletRequest request, HttpServletResponse response,
@@ -102,10 +84,6 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else if (isPreAuthenticated) {
-      authentication.setAuthenticated(true);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      request.getSession()
-        .setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
       response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
