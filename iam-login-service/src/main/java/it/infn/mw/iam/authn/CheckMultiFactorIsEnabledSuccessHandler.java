@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
@@ -48,14 +47,6 @@ public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSu
 
   private static final Logger logger =
       LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
-
-  public static final String EXT_AUTHN_UNREGISTERED_USER_ROLE = "EXT_AUTH_UNREGISTERED";
-
-  public static final String EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING =
-      "ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE;
-
-  public static final GrantedAuthority EXT_AUTHN_UNREGISTERED_USER_AUTH =
-      new SimpleGrantedAuthority(EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING);
 
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
