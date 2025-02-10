@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
@@ -45,17 +44,15 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
   private static final Logger logger =
       LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
 
-  private final AuthenticationSuccessHandler delegate;
   private final String unregisteredUserTargetURL;
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
 
-  public ExternalAuthenticationSuccessHandler(AuthenticationSuccessHandler delegate,
-      String unregisteredUserTargetURL, AccountUtils accountUtils, String iamBaseUrl,
+  public ExternalAuthenticationSuccessHandler(String unregisteredUserTargetURL,
+      AccountUtils accountUtils, String iamBaseUrl,
       AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo) {
-    this.delegate = delegate;
     this.unregisteredUserTargetURL = unregisteredUserTargetURL;
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
@@ -99,10 +96,6 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
     if (response.isCommitted()) {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else if (isPreAuthenticated) {
-      authentication.setAuthenticated(true);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      request.getSession()
-        .setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
       response.sendRedirect(MFA_VERIFY_URL);
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);

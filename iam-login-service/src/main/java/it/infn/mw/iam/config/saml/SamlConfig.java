@@ -124,17 +124,14 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.saml.CleanInactiveProvisionedAccounts;
 import it.infn.mw.iam.authn.saml.DefaultMappingPropertiesResolver;
@@ -728,13 +725,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   @Bean
   AuthenticationSuccessHandler samlAuthenticationSuccessHandler() {
 
-    RootIsDashboardSuccessHandler sa = new RootIsDashboardSuccessHandler(iamProperties.getBaseUrl(),
-        new HttpSessionRequestCache());
-
-    EnforceAupSignatureSuccessHandler aup =
-        new EnforceAupSignatureSuccessHandler(sa, aupSignatureCheckService, accountUtils, repo);
-
-    return new ExternalAuthenticationSuccessHandler(aup, "/", accountUtils, iamBaseUrl,
+    return new ExternalAuthenticationSuccessHandler("/", accountUtils, iamBaseUrl,
         aupSignatureCheckService, accountRepo);
   }
 
