@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -51,8 +50,6 @@ import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
-
 /**
  * A slightly modified version of mitreid client filter that allows to provide a custom
  * {@link ClientHttpRequestFactory} object. This is needed to accomodate SSL connections to
@@ -61,8 +58,6 @@ import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
  */
 @SuppressWarnings("deprecation")
 public class OidcClientFilter extends OIDCAuthenticationFilter {
-  
-  private CheckMultiFactorIsEnabledSuccessHandler successHandler;
 
   public static class OidcProviderConfiguration {
 
@@ -228,21 +223,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
         new PendingOIDCAuthenticationToken(idClaims.getSubject(), idClaims.getIssuer(),
             config.serverConfig, idToken, accessTokenValue, refreshTokenValue);
 
-    Authentication authentication = getAuthenticationManager().authenticate(oidcToken);
-
-    // Trigger the success handler
-    if (successHandler != null) {
-        try {
-            successHandler.onAuthenticationSuccess(request, response, authentication);
-        } catch (IOException e) {
-            throw new AuthenticationServiceException("Error in success handler", e);
-        } catch (ServletException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-    }
-
-    return authentication;
+    return getAuthenticationManager().authenticate(oidcToken);
 
   }
 
@@ -418,10 +399,5 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
   public void setTokenRequestor(OidcTokenRequestor tokenRequestor) {
     this.tokenRequestor = tokenRequestor;
   }
-
-  public void setAuthenticationSuccessHandler(CheckMultiFactorIsEnabledSuccessHandler successHandler) {
-      super.setAuthenticationSuccessHandler(successHandler);
-  }
-
 
 }
