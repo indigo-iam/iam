@@ -48,18 +48,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
@@ -152,13 +149,7 @@ public class OidcConfiguration {
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
   AuthenticationSuccessHandler successHandler() {
 
-    RootIsDashboardSuccessHandler sa =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
-
-    EnforceAupSignatureSuccessHandler successHandler = new EnforceAupSignatureSuccessHandler(sa,
-        aupSignatureCheckService, accountUtils, accountRepo);
-
-    return new ExternalAuthenticationSuccessHandler(successHandler, "/", accountUtils, iamBaseUrl,
+    return new ExternalAuthenticationSuccessHandler("/", accountUtils, iamBaseUrl,
         aupSignatureCheckService, accountRepo);
   }
 
