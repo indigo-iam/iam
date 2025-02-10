@@ -38,7 +38,6 @@ import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.error.InvalidExternalAuthenticationTokenError;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
-import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 public class ExternalAuthenticationHandlerSupport implements AccountLinkingConstants {
 
@@ -60,7 +59,7 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
       ExternalAuthenticationHandlerSupport.class.getName() + ".DONE";
 
   public static final String EXT_AUTHN_UNREGISTERED_USER_ROLE = "EXT_AUTH_UNREGISTERED";
-  
+
   public static final String EXT_AUTHN_UNREGISTERED_USER_AUTH_STRING = "ROLE_" + EXT_AUTHN_UNREGISTERED_USER_ROLE;
 
   public static final GrantedAuthority EXT_AUTHN_UNREGISTERED_USER_AUTH =
@@ -88,7 +87,7 @@ public class ExternalAuthenticationHandlerSupport implements AccountLinkingConst
 
   protected boolean isExternalUnregisteredUser(Authentication authentication) {
 
-    if (!(authentication instanceof AbstractExternalAuthenticationToken<?>) && !(authentication instanceof ExtendedAuthenticationToken)) {
+    if (!(authentication instanceof AbstractExternalAuthenticationToken<?>)) {
       throw new InvalidExternalAuthenticationTokenError("Invalid token type: " + authentication);
     }
 

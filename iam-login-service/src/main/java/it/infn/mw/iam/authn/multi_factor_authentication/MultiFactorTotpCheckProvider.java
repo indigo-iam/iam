@@ -23,8 +23,10 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -47,9 +49,15 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) authentication;
+    if (authentication instanceof ExtendedAuthenticationToken
+        || authentication instanceof OidcExternalAuthenticationToken) {
+      return processAuthentication(authentication);
+    }
+    return null;
+  }
 
-    String totp = token.getTotp();
+  private Authentication processAuthentication(Authentication authentication) {
+    String totp = getTotp(authentication);
     if (totp == null) {
       return null;
     }
@@ -57,31 +65,57 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
 
-    boolean valid = false;
-
-    try {
-      valid = totpMfaService.verifyTotp(account, totp);
-    } catch (MfaSecretNotFoundException e) {
-      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
-    }
-
-    if (!valid) {
+    if (!isValidTotp(account, totp)) {
       throw new BadCredentialsException("Bad TOTP");
     }
 
-    return createSuccessfulAuthentication(token);
+    return createSuccessfulAuthentication(authentication);
   }
 
-  protected Authentication createSuccessfulAuthentication(ExtendedAuthenticationToken token) {
+  private String getTotp(Authentication authentication) {
+    if (authentication instanceof ExtendedAuthenticationToken) {
+      return ((ExtendedAuthenticationToken) authentication).getTotp();
+    } else if (authentication instanceof OidcExternalAuthenticationToken) {
+      return ((OidcExternalAuthenticationToken) authentication).getTotp();
+    }
+    return null;
+  }
+
+  private boolean isValidTotp(IamAccount account, String totp) {
+    try {
+      return totpMfaService.verifyTotp(account, totp);
+    } catch (MfaSecretNotFoundException e) {
+      throw new MfaSecretNotFoundException("No multi-factor secret is attached to this account");
+    }
+  }
+
+  private Authentication createSuccessfulAuthentication(Authentication authentication) {
     IamAuthenticationMethodReference otp =
         new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
-    Set<IamAuthenticationMethodReference> refs = token.getAuthenticationMethodReferences();
-    refs.add(otp);
-    token.setAuthenticationMethodReferences(refs);
 
-    ExtendedAuthenticationToken newToken = new ExtendedAuthenticationToken(token.getPrincipal(),
-        token.getCredentials(), token.getFullyAuthenticatedAuthorities());
-    newToken.setAuthenticationMethodReferences(token.getAuthenticationMethodReferences());
+    Set<IamAuthenticationMethodReference> refs;
+    Object principal, credentials;
+    Set<GrantedAuthority> authorities;
+
+    if (authentication instanceof ExtendedAuthenticationToken) {
+      ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) authentication;
+      refs = token.getAuthenticationMethodReferences();
+      principal = token.getPrincipal();
+      credentials = token.getCredentials();
+      authorities = token.getFullyAuthenticatedAuthorities();
+    } else {
+      OidcExternalAuthenticationToken token = (OidcExternalAuthenticationToken) authentication;
+      refs = token.getAuthenticationMethodReferences();
+      principal = token.getPrincipal();
+      credentials = token.getCredentials();
+      authorities = token.getFullyAuthenticatedAuthorities();
+    }
+
+    refs.add(otp);
+
+    ExtendedAuthenticationToken newToken =
+        new ExtendedAuthenticationToken(principal, credentials, authorities);
+    newToken.setAuthenticationMethodReferences(refs);
     newToken.setAuthenticated(true);
 
     return newToken;
@@ -89,6 +123,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return authentication.equals(ExtendedAuthenticationToken.class);
+    return ExtendedAuthenticationToken.class.isAssignableFrom(authentication)
+        || OidcExternalAuthenticationToken.class.isAssignableFrom(authentication);
   }
 }

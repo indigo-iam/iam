@@ -36,7 +36,6 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
 import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
-import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -81,7 +80,7 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     Optional<IamAccount> account = accountRepo.findByUsername(user.getUsername());
     if (account.isPresent()) {
 
-      ExtendedAuthenticationToken extToken;
+      OidcExternalAuthenticationToken extToken;
 
       IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference("oidc");
       Set<IamAuthenticationMethodReference> refs = new HashSet<>();
@@ -98,18 +97,18 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
         Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>(user.getAuthorities());
 
         // Construct a new authentication object for the PRE_AUTHENTICATED user
-        extToken = new ExtendedAuthenticationToken(account.get().getUsername(),
-            authentication.getCredentials(), currentAuthorities);
+        extToken = new OidcExternalAuthenticationToken(token,
+            Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
+            account.get().getUsername(), null, currentAuthorities);
         extToken.setAuthenticationMethodReferences(refs);
-        extToken.setAuthenticated(false);
         extToken.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
       } else {
         // MFA is not enabled on this account, construct a new authentication object for the FULLY
         // AUTHENTICATED user, granting their normal authorities
-        extToken = new ExtendedAuthenticationToken(account.get().getUsername(),
-            authentication.getCredentials(), user.getAuthorities());
+        extToken = new OidcExternalAuthenticationToken(token,
+            Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
+            account.get().getUsername(), null, user.getAuthorities());
         extToken.setAuthenticationMethodReferences(refs);
-        extToken.setAuthenticated(true);
       }
 
       return extToken;
@@ -122,8 +121,8 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
   @Override
   public boolean supports(Class<?> authentication) {
-    return (ExtendedAuthenticationToken.class.isAssignableFrom(authentication)
-        || PendingOIDCAuthenticationToken.class.isAssignableFrom(authentication));
+    return (PendingOIDCAuthenticationToken.class.isAssignableFrom(authentication)
+        || OidcExternalAuthenticationToken.class.isAssignableFrom(authentication));
   }
 
 }
