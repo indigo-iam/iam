@@ -168,8 +168,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcUserRedirectToMfaVerifyPageIfMfaIsActive() throws JOSEException,
-      JsonProcessingException, RestClientException, UnsupportedEncodingException {
+  public void testOidcUserRedirectToMfaVerifyPageIfMfaIsActive()
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
