@@ -32,10 +32,6 @@ import java.util.function.Supplier;
 
 import javax.validation.constraints.NotBlank;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;

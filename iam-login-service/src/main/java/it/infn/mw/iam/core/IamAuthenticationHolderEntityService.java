@@ -18,10 +18,6 @@ package it.infn.mw.iam.core;
 import java.util.List;
 import java.util.Map;
 
-import org.mitre.data.PageCriteria;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.repository.AuthenticationHolderRepository;
-import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;

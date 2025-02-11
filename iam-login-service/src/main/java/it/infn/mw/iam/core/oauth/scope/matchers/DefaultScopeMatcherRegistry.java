@@ -15,14 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.scope.matchers;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
-import com.google.common.collect.Sets;
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
+import it.infn.mw.iam.persistence.model.SystemScope;
 
 @SuppressWarnings("deprecation")
 public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
@@ -31,21 +32,20 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   private final Set<ScopeMatcher> customMatchers;
 
-  private final SystemScopeRepository scopeRepo;
+  private final SystemScopeService scopeService;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, SystemScopeRepository scopeRepo) {
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, SystemScopeService scopeService) {
     this.customMatchers = customMatchers;
-    this.scopeRepo = scopeRepo;
+    this.scopeService = scopeService;
   }
 
   @Override
   @Cacheable(value = SCOPE_CACHE_KEY, key = "{#client?.id}")
   public Set<ScopeMatcher> findMatchersForClient(ClientDetails client) {
-    Set<ScopeMatcher> result = Sets.newHashSet();
+    Set<ScopeMatcher> result = new HashSet<ScopeMatcher>();
 
     for (String s : client.getScope()) {
       result.add(findMatcherForScope(s));
-
     }
 
     return result;
@@ -54,7 +54,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
   @Override
   public ScopeMatcher findMatcherForScope(String scope) {
 
-    Set<SystemScope> systemScopes = scopeRepo.getAll();
+    List<SystemScope> systemScopes = scopeService.getAll();
 
     return customMatchers.stream()
       .filter(s -> systemScopes.toString().contains(scope))

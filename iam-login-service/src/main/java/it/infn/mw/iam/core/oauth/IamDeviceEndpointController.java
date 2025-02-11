@@ -23,7 +23,6 @@ import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REQUEST_USER_CODE_STRING;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.USER_CODE_URL;
-import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,19 +36,6 @@ import java.util.Set;
 import javax.servlet.http.HttpSession;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.mitre.oauth2.exception.DeviceCodeCreationException;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.DeviceCode;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.oauth2.service.DeviceCodeService;
-import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.token.DeviceTokenGranter;
-import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.JsonEntityView;
-import org.mitre.openid.connect.view.JsonErrorView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -69,6 +55,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.core.oauth.scope.SystemScopeService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
