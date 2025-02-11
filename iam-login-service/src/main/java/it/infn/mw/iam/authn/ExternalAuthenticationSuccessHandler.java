@@ -42,7 +42,7 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
     implements AuthenticationSuccessHandler {
 
   private static final Logger logger =
-      LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
+      LoggerFactory.getLogger(ExternalAuthenticationSuccessHandler.class);
 
   private final String unregisteredUserTargetURL;
   private final AccountUtils accountUtils;
@@ -83,7 +83,6 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
       } else {
         handle(request, response, authentication);
         clearAuthenticationAttributes(request);
-        // delegate.onAuthenticationSuccess(request, response, authentication);
       }
 
     }
