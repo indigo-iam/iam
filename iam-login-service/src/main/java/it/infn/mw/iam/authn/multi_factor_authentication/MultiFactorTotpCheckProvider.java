@@ -73,10 +73,10 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   }
 
   private String getTotp(Authentication authentication) {
-    if (authentication instanceof ExtendedAuthenticationToken) {
-      return ((ExtendedAuthenticationToken) authentication).getTotp();
-    } else if (authentication instanceof OidcExternalAuthenticationToken) {
-      return ((OidcExternalAuthenticationToken) authentication).getTotp();
+    if (authentication instanceof ExtendedAuthenticationToken extendedToken) {
+      return extendedToken.getTotp();
+    } else if (authentication instanceof OidcExternalAuthenticationToken oidcToken) {
+      return oidcToken.getTotp();
     }
     return null;
   }
@@ -94,11 +94,11 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
         new IamAuthenticationMethodReference(ONE_TIME_PASSWORD.getValue());
 
     Set<IamAuthenticationMethodReference> refs;
-    Object principal, credentials;
+    Object principal;
+    Object credentials;
     Set<GrantedAuthority> authorities;
 
-    if (authentication instanceof ExtendedAuthenticationToken) {
-      ExtendedAuthenticationToken token = (ExtendedAuthenticationToken) authentication;
+    if (authentication instanceof ExtendedAuthenticationToken token) {
       refs = token.getAuthenticationMethodReferences();
       principal = token.getPrincipal();
       credentials = token.getCredentials();

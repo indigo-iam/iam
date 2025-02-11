@@ -86,10 +86,12 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       throw new ProviderNotFoundException("No valid TOTP code was received");
     }
 
-    if (auth instanceof ExtendedAuthenticationToken) {
-      ((ExtendedAuthenticationToken) auth).setTotp(totp);
-    } else if (auth instanceof OidcExternalAuthenticationToken) {
-      ((OidcExternalAuthenticationToken) auth).setTotp(totp);
+    if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
+      extendedAuthenticationToken.setTotp(totp);
+      auth = extendedAuthenticationToken;
+    } else if (auth instanceof OidcExternalAuthenticationToken oidcExternalAuthenticationToken) {
+      oidcExternalAuthenticationToken.setTotp(totp);
+      auth = oidcExternalAuthenticationToken;
     }
 
     Authentication fullAuthentication = getAuthenticationManager().authenticate(auth);
