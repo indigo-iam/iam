@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -44,6 +45,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 public class MultiFactorVerificationFilterTests {
@@ -88,6 +90,28 @@ public class MultiFactorVerificationFilterTests {
 
     Authentication mockAuthenticatedToken =
         new ExtendedAuthenticationToken("username", null, new ArrayList<>());
+    when(authenticationManager.authenticate(any(Authentication.class)))
+      .thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("totp")).thenReturn("123456");
+
+    Authentication result = multiFactorVerificationFilter.attemptAuthentication(request, response);
+
+    assertNotNull(result);
+    assertEquals(mockAuthenticatedToken, result);
+  }
+
+  @Test
+  public void testOidcAuthenticationSuccess() throws Exception {
+    OIDCAuthenticationToken mockOidcToken = mock(OIDCAuthenticationToken.class);
+    Authentication mockAuth = mock(OidcExternalAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+
+    Authentication mockAuthenticatedToken =
+        new OidcExternalAuthenticationToken(mockOidcToken, "username", null);
     when(authenticationManager.authenticate(any(Authentication.class)))
       .thenReturn(mockAuthenticatedToken);
 
