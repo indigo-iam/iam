@@ -85,6 +85,10 @@ public class OidcExternalAuthenticationTestsSupport {
     return baseIamURL() + "/login";
   }
 
+  protected String mfaVerifyPageURL() {
+    return baseIamURL() + "/iam/verify";
+  }
+
   protected ClientHttpRequestFactory noRedirectHttpRequestFactory() {
 
     SimpleClientHttpRequestFactory rf = new SimpleClientHttpRequestFactory() {
