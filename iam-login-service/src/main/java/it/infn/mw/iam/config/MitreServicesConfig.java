@@ -24,7 +24,7 @@ import org.mitre.jwt.assertion.impl.SelfAssertionValidator;
 import org.mitre.jwt.signer.service.impl.ClientKeyCacheService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.jwt.signer.service.impl.SymmetricKeyJWTValidatorCacheService;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
@@ -164,9 +164,9 @@ public class MitreServicesConfig {
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
-      DeviceCodeService deviceCodeService) {
+      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository) {
     return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver,
-        deviceCodeService);
+        deviceCodeService, authzCodeRepository);
   }
 
   @Bean

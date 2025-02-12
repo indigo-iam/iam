@@ -621,7 +621,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", "device-code-client")
-        .param("scope", "openid profile"))
+        .param("scope", "openid profile")
+        .param("resource", "http://example.org"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -730,7 +731,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     assertThat(claims.getAudience(), contains("http://example2.org"));
 
   }
-  
+
   @Test
   public void testResourceIndicatorNotOriginallyGrantedDevideCodeFlow() throws Exception {
     String response = mvc
@@ -750,24 +751,16 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     approveDeviceCode(userCode);
 
-    String tokenResponse = mvc
+    mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
             .param("grant_type", DEVICE_CODE_GRANT_TYPE)
             .param("device_code", deviceCode)
             .param("resource", "http://example3.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
-
-    String accessToken = tokenResponseJson.get("access_token").asText();
-    JWT token = JWTParser.parse(accessToken);
-    JWTClaimsSet claims = token.getJWTClaimsSet();
-
-    assertThat(claims.getAudience(), empty());
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description")
+        .value("The requested resource was not originally granted"));
 
   }
 

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
@@ -68,17 +69,17 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsEntityService clientDetailsService;
   private final DeviceCodeService deviceCodeService;
-
-  // private final AuthenticationHolderEntity authHolder;
+  private final AuthorizationCodeRepository authzCodeRepository;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
       ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
-      DeviceCodeService deviceCodeService) {
+      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.profileResolver = profileResolver;
     this.deviceCodeService = deviceCodeService;
+    this.authzCodeRepository = authzCodeRepository;
   }
 
   @Override
@@ -194,21 +195,28 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       List<String> oauth2ResourceParams = splitBySpace(requestParameters.get(RESOURCE));
       oauth2ResourceParams.forEach(aud -> validateUrl(aud));
 
-      String dc = requestParameters.get("device_code");
-      Map<String, String> authzRequestParams = deviceCodeService.findDeviceCode(dc, client)
-        .getAuthenticationHolder()
-        .getRequestParameters();
+      if (requestParameters.containsKey("grant_type") && requestParameters
+        .get("grant_type") == "urn:ietf:params:oauth:grant-type:device_code") {
 
-      List<String> authzResourceParams = splitBySpace(authzRequestParams.get(RESOURCE));
-      oauth2ResourceParams.retainAll(authzResourceParams);
+        String dc = requestParameters.get("device_code");
+        Map<String, String> authzRequestParams = deviceCodeService.findDeviceCode(dc, client)
+          .getAuthenticationHolder()
+          .getRequestParameters();
 
-      String allowedResource = String.join(" ", oauth2ResourceParams);
-      if (!allowedResource.isEmpty()) {
-        extensions.put(AUD, allowedResource);
+        setAllowedResource(oauth2ResourceParams, authzRequestParams, extensions);
+
+      } else if (requestParameters.containsKey("grant_type")
+          && requestParameters.get("grant_type") == "authorization_code") {
+
+        Map<String, String> authzRequestParams =
+            authzCodeRepository.getByCode(requestParameters.get("authorization_code"))
+              .getAuthenticationHolder()
+              .getRequestParameters();
+
+        setAllowedResource(oauth2ResourceParams, authzRequestParams, extensions);
       } else {
-        throw new InvalidResourceError("The requested resource was not originally granted");
+        extensions.put(AUD, String.join(" ", oauth2ResourceParams));
       }
-
     } else {
 
       AUDIENCE_KEYS.forEach(aud -> {
@@ -218,6 +226,20 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       });
     }
 
+  }
+
+  private void setAllowedResource(List<String> oauth2ResourceParams,
+      Map<String, String> authzRequestParams, Map<String, Serializable> extensions) {
+
+    List<String> authzResourceParams = splitBySpace(authzRequestParams.get(RESOURCE));
+    oauth2ResourceParams.retainAll(authzResourceParams);
+
+    String allowedResource = String.join(" ", oauth2ResourceParams);
+    if (!allowedResource.isEmpty()) {
+      extensions.put(AUD, allowedResource);
+    } else {
+      throw new InvalidResourceError("The requested resource was not originally granted");
+    }
   }
 
   public static void validateUrl(String url) {
