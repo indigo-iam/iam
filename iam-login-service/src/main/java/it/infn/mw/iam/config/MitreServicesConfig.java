@@ -164,9 +164,10 @@ public class MitreServicesConfig {
 
   @Bean
   OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
-      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository) {
+      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
+      OAuth2TokenEntityService tokenServices) {
     return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver,
-        deviceCodeService, authzCodeRepository);
+        deviceCodeService, authzCodeRepository, tokenServices);
   }
 
   @Bean
