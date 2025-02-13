@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.voms.aa.AttributeAuthority;
 import it.infn.mw.voms.aa.RequestContextFactory;
@@ -58,8 +57,7 @@ public class VOMSController extends VOMSControllerSupport {
   private final AUPSignatureCheckService signatureCheckService;
 
   public VOMSController(AttributeAuthority aa, VomsProperties props, ACGenerator acGenerator,
-      VOMSResponseBuilder responseBuilder, IamAccountRepository accountRepo,
-      AUPSignatureCheckService signatureCheckService) {
+      VOMSResponseBuilder responseBuilder, AUPSignatureCheckService signatureCheckService) {
     this.aa = aa;
     this.vomsProperties = props;
     this.acGenerator = acGenerator;
