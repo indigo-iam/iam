@@ -119,8 +119,10 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   }
 
   private void addAudience(Builder builder, OAuth2Authentication authentication) {
-    if (!(hasAudienceRequest(authentication) || hasRefreshTokenAudienceRequest(authentication)
-        || hasValidRefreshTokenResourceRequest(authentication))) {
+    if (!(hasAudienceRequest(authentication) || hasResourceRequest(authentication)
+        || (isRefreshTokenRequest(authentication) && hasRefreshTokenAudienceRequest(authentication))
+        || (isRefreshTokenRequest(authentication)
+            && hasRefreshTokenResourceRequest(authentication)))) {
       builder.audience(ALL_AUDIENCES_VALUE);
     }
   }

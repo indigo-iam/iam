@@ -16,16 +16,18 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
-import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.validateUrl;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
@@ -51,9 +53,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
+  protected static final List<String> AUD_KEYS = Arrays.asList("aud", "audience");
   public static final String AUDIENCE = "audience";
   public static final String RESOURCE = "resource";
-  public static final String AUD_KEY = "aud";
   public static final String SCOPE_CLAIM_NAME = "scope";
 
   public static final String ACT_CLAIM_NAME = "act";
@@ -116,34 +118,41 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
   }
 
-  protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
-    if (!isNull(authentication.getOAuth2Request().getRefreshTokenRequest())) {
-      final String audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUDIENCE);
-      return !isNullOrEmpty(audience);
-    }
-    return false;
+  protected boolean isRefreshTokenRequest(OAuth2Authentication authentication) {
+    return !isNull(authentication.getOAuth2Request().getRefreshTokenRequest());
   }
 
-  protected boolean hasValidRefreshTokenResourceRequest(OAuth2Authentication authentication) {
+  protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
+    final String audience = authentication.getOAuth2Request()
+      .getRefreshTokenRequest()
+      .getRequestParameters()
+      .get(AUDIENCE);
 
-    TokenRequest refreshTokenRequest = authentication.getOAuth2Request().getRefreshTokenRequest();
+    return !isNullOrEmpty(audience);
+  }
 
-    if (!(isNull(refreshTokenRequest)
-        || isNull(refreshTokenRequest.getRequestParameters().get(RESOURCE)))) {
-      final String audience = refreshTokenRequest.getRequestParameters().get(RESOURCE);
-      splitBySpace(audience).forEach(aud -> validateUrl(aud));
-      return true;
-    }
+  protected boolean hasRefreshTokenResourceRequest(OAuth2Authentication authentication) {
+    final String audience = authentication.getOAuth2Request()
+      .getRefreshTokenRequest()
+      .getRequestParameters()
+      .get(RESOURCE);
 
-    return false;
+    return !isNullOrEmpty(audience);
   }
 
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
-    final String audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
-    return !isNullOrEmpty(audience);
+
+    final Set<String> audience = AUD_KEYS.stream()
+      .filter(aud -> authentication.getOAuth2Request().getRequestParameters().containsKey(aud))
+      .collect(Collectors.toSet());
+
+    return !audience.isEmpty();
+  }
+
+  protected boolean hasResourceRequest(OAuth2Authentication authentication) {
+    final String resource =
+        (String) authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
+    return !isNullOrEmpty(resource);
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
@@ -168,22 +177,31 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     String audience = null;
 
-    if (hasAudienceRequest(authentication)) {
-      audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
-    }
+    if (isRefreshTokenRequest(authentication)) {
 
-    if (hasRefreshTokenAudienceRequest(authentication)) {
-      audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUDIENCE);
-    }
-
-    if (hasValidRefreshTokenResourceRequest(authentication)) {
-      audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(RESOURCE);
+      if (hasRefreshTokenResourceRequest(authentication)) {
+        audience = authentication.getOAuth2Request()
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(RESOURCE);
+      } else if (hasRefreshTokenAudienceRequest(authentication)) {
+        audience = authentication.getOAuth2Request()
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(AUDIENCE);
+      }
+    } else if (hasResourceRequest(authentication)) {
+      
+      audience = (String) authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
+      
+    } else if (hasAudienceRequest(authentication)) {
+      
+      for (String aud : AUD_KEYS) {
+        if (authentication.getOAuth2Request().getRequestParameters().containsKey(aud)) {
+          audience = authentication.getOAuth2Request().getRequestParameters().get(aud);
+          break;
+        }
+      }
     }
 
     if (!isNullOrEmpty(audience)) {
