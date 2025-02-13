@@ -148,8 +148,13 @@ public class VOMSController extends VOMSControllerSupport {
   }
 
   private String requestToString(VOMSRequest request) {
-    String reqSubject = request.getRequesterSubject();
-    String reqIssuer = request.getRequesterIssuer();
-    return String.format("VOMSRequest [requesterSubject = %s, requestedIssuer = %s, requestedFQANs = %s]", reqSubject, reqIssuer, request.getRequestedFQANs());
+    String reqSubject = sanitize(request.getRequesterSubject());
+    String reqIssuer = sanitize(request.getRequesterIssuer());
+    String requestedFqans = sanitize(request.getRequestedFQANs().toString());
+    return String.format("VOMSRequest [requesterSubject = %s, requestedIssuer = %s, requestedFQANs = %s]", reqSubject, reqIssuer, requestedFqans);
+  }
+
+  private String sanitize(String str) {
+    return str.replaceAll("[\n\r]", "_");
   }
 }
