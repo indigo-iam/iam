@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
@@ -175,34 +174,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
-    String audience = null;
-
-    if (isRefreshTokenRequest(authentication)) {
-
-      if (hasRefreshTokenResourceRequest(authentication)) {
-        audience = authentication.getOAuth2Request()
-          .getRefreshTokenRequest()
-          .getRequestParameters()
-          .get(RESOURCE);
-      } else if (hasRefreshTokenAudienceRequest(authentication)) {
-        audience = authentication.getOAuth2Request()
-          .getRefreshTokenRequest()
-          .getRequestParameters()
-          .get(AUDIENCE);
-      }
-    } else if (hasResourceRequest(authentication)) {
-      
-      audience = (String) authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
-      
-    } else if (hasAudienceRequest(authentication)) {
-      
-      for (String aud : AUD_KEYS) {
-        if (authentication.getOAuth2Request().getRequestParameters().containsKey(aud)) {
-          audience = authentication.getOAuth2Request().getRequestParameters().get(aud);
-          break;
-        }
-      }
-    }
+    String audience = getAudience(authentication);
 
     if (!isNullOrEmpty(audience)) {
       builder.audience(splitter.splitToList(audience));
@@ -215,5 +187,30 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return builder;
   }
 
+  private String getAudience(OAuth2Authentication authentication) {
+    if (isRefreshTokenRequest(authentication)) {
+      return getFirstNonEmpty(
+          authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters(),
+          RESOURCE, AUDIENCE);
+    }
+
+    if (hasResourceRequest(authentication)) {
+      return authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
+    }
+
+    return AUD_KEYS.stream()
+      .map(key -> authentication.getOAuth2Request().getRequestParameters().get(key))
+      .filter(value -> !isNullOrEmpty(value))
+      .findFirst()
+      .orElse(null);
+  }
+
+  private String getFirstNonEmpty(Map<String, String> params, String... keys) {
+    return Arrays.stream(keys)
+      .map(params::get)
+      .filter(value -> !isNullOrEmpty(value))
+      .findFirst()
+      .orElse(null);
+  }
 
 }
