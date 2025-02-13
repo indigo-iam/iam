@@ -493,7 +493,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
         .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access"))
+        .param("scope", "openid profile offline_access")
+        .param("resource", "https://example.org"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -521,22 +522,6 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     assertThat(claims.getAudience().size(), equalTo(1));
     assertThat(claims.getAudience(), hasItem("https://example.org"));
 
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
-
-    token = JWTParser.parse(accessToken);
-    claims = token.getJWTClaimsSet();
-
-    assertThat(claims.getAudience(), empty());
   }
 
   @Test
@@ -578,7 +563,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testDefaultResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+  public void testEmptyResourceIndicatorRequestRTFlowAfterPassword() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)
@@ -586,7 +571,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile offline_access")
-        .param("resource", "https://example1.org https://example2.org"))
+        .param("resource", "https://example.org"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -609,10 +594,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
-    assertThat(claims.getAudience(), hasItem("https://example1.org"));
-    assertThat(claims.getAudience(), hasItem("https://example2.org"));
+    assertThat(claims.getAudience(), empty());
   }
 
   @Test
@@ -655,23 +637,28 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     assertThat(claims.getAudience().size(), equalTo(1));
     assertThat(claims.getAudience(), contains("http://example.org"));
 
-    response = mvc
+  }
+
+  @Test
+  public void testEmptyResourceIndicatorRequestDevideCodeFlow() throws Exception {
+    String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("client_id", "device-code-client")
-        .param("scope", "openid profile"))
+        .param("scope", "openid profile")
+        .param("resource", "http://example.org"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
       .getContentAsString();
 
-    responseJson = mapper.readTree(response);
-    userCode = responseJson.get("user_code").asText();
-    deviceCode = responseJson.get("device_code").asText();
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
 
     approveDeviceCode(userCode);
 
-    tokenResponse = mvc
+    String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
             .param("grant_type", DEVICE_CODE_GRANT_TYPE)
@@ -681,11 +668,11 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getResponse()
       .getContentAsString();
 
-    tokenResponseJson = mapper.readTree(tokenResponse);
+    JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
 
-    accessToken = tokenResponseJson.get("access_token").asText();
-    token = JWTParser.parse(accessToken);
-    claims = token.getJWTClaimsSet();
+    String accessToken = tokenResponseJson.get("access_token").asText();
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertThat(claims.getAudience(), empty());
   }
@@ -765,7 +752,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testDefaultResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  public void testEmptyResourceIndicatorRequestRTFlowAfterDevideCode() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -808,15 +795,13 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getResponse()
       .getContentAsString();
 
-    String accessToken = mapper.readTree(tokenResponse).get("access_token").asText();
+    tokenResponseJson = mapper.readTree(tokenResponse);
+    String accessToken = tokenResponseJson.get("access_token").asText();
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
-    assertThat(claims.getAudience(), hasItem("http://example1.org"));
-    assertThat(claims.getAudience(), hasItem("http://example2.org"));
+    assertThat(claims.getAudience(), empty());
 
   }
 
