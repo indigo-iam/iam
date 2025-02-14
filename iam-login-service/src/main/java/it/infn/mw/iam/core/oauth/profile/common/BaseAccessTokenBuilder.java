@@ -52,8 +52,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
-  protected static final List<String> AUD_KEYS = Arrays.asList("aud", "audience");
   public static final String AUDIENCE = "audience";
+  protected static final List<String> AUD_KEYS = Arrays.asList("aud", AUDIENCE);
   public static final String RESOURCE = "resource";
   public static final String SCOPE_CLAIM_NAME = "scope";
 
@@ -149,8 +149,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected boolean hasResourceRequest(OAuth2Authentication authentication) {
-    final String resource =
-        (String) authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
+    final String resource = authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
     return !isNullOrEmpty(resource);
   }
 

@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.error;
 
 import org.springframework.security.oauth2.common.exceptions.ClientAuthenticationException;
 
+@SuppressWarnings("deprecation")
 public class InvalidResourceError extends ClientAuthenticationException {
 
   private static final long serialVersionUID = 1L;

@@ -308,8 +308,7 @@ public class AuthorizationCodeIntegrationTests {
   }
 
   @Test
-  public void testAuthzCodeResourceIndicatorNotOriginallyGranted()
-      throws IOException, ParseException {
+  public void testAuthzCodeResourceIndicatorNotOriginallyGranted() {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -744,7 +743,8 @@ public class AuthorizationCodeIntegrationTests {
   }
 
   @Test
-  public void testNarrowerResourceIndicatorRTFlowAfterAuthzCode() throws IOException, ParseException {
+  public void testNarrowerResourceIndicatorRTFlowAfterAuthzCode()
+      throws IOException, ParseException {
 
     refreshTokenRepository.deleteAll();
 

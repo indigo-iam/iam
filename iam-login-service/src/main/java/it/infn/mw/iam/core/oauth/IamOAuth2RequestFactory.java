@@ -22,12 +22,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
@@ -58,13 +56,16 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
-  protected static final List<String> AUDIENCE_KEYS = Arrays.asList("aud", "audience");
   public static final String RESOURCE = "resource";
-  public static final String AUD = "aud";
+
   public static final String PASSWORD_GRANT = "password";
   public static final String AUTHZ_CODE_GRANT = "authorization_code";
   public static final String DEVICE_CODE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   public static final String REFRESH_TOKEN_GRANT = "refresh_token";
+
+  public static final String AUTHZ_CODE_KEY = "code";
+  public static final String DEVICE_CODE_KEY = "device_code";
+  public static final String REFRESH_TOKEN_KEY = "refresh_token";
 
   private final ScopeFilter scopeFilter;
 
@@ -119,12 +120,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
   }
 
-  /**
-   * This implementation extends what's already done by MitreID implementation with audience request
-   * parameter handling (both "aud" and "audience" are accepted).
-   *
-   * 
-   */
+
   @Override
   public OAuth2Request createOAuth2Request(ClientDetails client, TokenRequest tokenRequest) {
 
@@ -188,7 +184,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     switch (grantType) {
       case AUTHZ_CODE_GRANT:
-        authzRequestParams = authzCodeRepository.getByCode(requestParameters.get("code"))
+        authzRequestParams = authzCodeRepository.getByCode(requestParameters.get(AUTHZ_CODE_KEY))
           .getAuthenticationHolder()
           .getRequestParameters();
         checkAllowedResource(tokenResourceParams, authzRequestParams);
@@ -196,20 +192,21 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
       case DEVICE_CODE_GRANT:
         authzRequestParams =
-            deviceCodeService.findDeviceCode(requestParameters.get("device_code"), client)
+            deviceCodeService.findDeviceCode(requestParameters.get(DEVICE_CODE_KEY), client)
               .getAuthenticationHolder()
               .getRequestParameters();
         checkAllowedResource(tokenResourceParams, authzRequestParams);
         break;
 
       case REFRESH_TOKEN_GRANT:
-        OAuth2RefreshTokenEntity entity =
-            tokenServices.getRefreshToken(requestParameters.get("refresh_token"));
-        authzRequestParams = tokenServices.getRefreshToken(requestParameters.get("refresh_token"))
+        authzRequestParams = tokenServices.getRefreshToken(requestParameters.get(REFRESH_TOKEN_KEY))
           .getAuthenticationHolder()
           .getRequestParameters();
         checkAllowedResource(tokenResourceParams, authzRequestParams);
         break;
+
+      default:
+        return;
     }
 
   }
@@ -246,12 +243,12 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static List<String> splitBySpace(String str) {
 
     if (str != null) {
-      ArrayList<String> mutableList = new ArrayList<String>();
+      ArrayList<String> mutableList = new ArrayList<>();
       mutableList.addAll(List.of(str.split(" ")));
       return mutableList;
     }
 
-    return new ArrayList<String>();
+    return new ArrayList<>();
   }
 
 }
