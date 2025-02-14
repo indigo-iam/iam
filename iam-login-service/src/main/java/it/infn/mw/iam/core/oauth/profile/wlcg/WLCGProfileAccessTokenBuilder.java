@@ -21,7 +21,9 @@ import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
@@ -125,9 +127,23 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   }
 
   private boolean hasAnyAudience(OAuth2Authentication authentication) {
-    return hasAudienceRequest(authentication) || hasResourceRequest(authentication)
-        || (isRefreshTokenRequest(authentication) && (hasRefreshTokenAudienceRequest(authentication)
-            || hasRefreshTokenResourceRequest(authentication)));
+    return hasAudienceRequest(authentication) || (isRefreshTokenRequest(authentication)
+        && hasRefreshTokenAudienceRequest(authentication));
+  }
+
+  private boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
+    return hasAnyAudienceRequest(
+        authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters());
+  }
+
+  private boolean hasAudienceRequest(OAuth2Authentication authentication) {
+    return hasAnyAudienceRequest(authentication.getOAuth2Request().getRequestParameters());
+  }
+
+  private boolean hasAnyAudienceRequest(Map<String, String> params) {
+    final Set<String> audience =
+        AUD_KEYS.stream().filter(aud -> params.containsKey(aud)).collect(Collectors.toSet());
+    return !audience.isEmpty();
   }
 
 }

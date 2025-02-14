@@ -25,9 +25,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
@@ -52,11 +50,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
-  public static final String AUDIENCE = "audience";
-  protected static final List<String> AUD_KEYS = Arrays.asList("aud", AUDIENCE);
-  public static final String RESOURCE = "resource";
+  protected static final List<String> AUD_KEYS = Arrays.asList("resource", "aud", "audience");
   public static final String SCOPE_CLAIM_NAME = "scope";
-
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
   public static final String SPACE = " ";
@@ -117,40 +112,23 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
   }
 
+  private String getAudience(OAuth2Authentication authentication) {
+    return isRefreshTokenRequest(authentication)
+        ? getFirstNotEmptyAudience(
+            authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters())
+        : getFirstNotEmptyAudience(authentication.getOAuth2Request().getRequestParameters());
+  }
+
   protected boolean isRefreshTokenRequest(OAuth2Authentication authentication) {
     return !isNull(authentication.getOAuth2Request().getRefreshTokenRequest());
   }
 
-  protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
-    final String audience = authentication.getOAuth2Request()
-      .getRefreshTokenRequest()
-      .getRequestParameters()
-      .get(AUDIENCE);
-
-    return !isNullOrEmpty(audience);
-  }
-
-  protected boolean hasRefreshTokenResourceRequest(OAuth2Authentication authentication) {
-    final String audience = authentication.getOAuth2Request()
-      .getRefreshTokenRequest()
-      .getRequestParameters()
-      .get(RESOURCE);
-
-    return !isNullOrEmpty(audience);
-  }
-
-  protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
-
-    final Set<String> audience = AUD_KEYS.stream()
-      .filter(aud -> authentication.getOAuth2Request().getRequestParameters().containsKey(aud))
-      .collect(Collectors.toSet());
-
-    return !audience.isEmpty();
-  }
-
-  protected boolean hasResourceRequest(OAuth2Authentication authentication) {
-    final String resource = authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
-    return !isNullOrEmpty(resource);
+  private String getFirstNotEmptyAudience(Map<String, String> params) {
+    return AUD_KEYS.stream()
+      .map(key -> params.get(key))
+      .filter(value -> !isNullOrEmpty(value))
+      .findFirst()
+      .orElse(null);
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
@@ -184,32 +162,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     return builder;
-  }
-
-  private String getAudience(OAuth2Authentication authentication) {
-    if (isRefreshTokenRequest(authentication)) {
-      return getFirstNonEmpty(
-          authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters(),
-          RESOURCE, AUDIENCE);
-    }
-
-    if (hasResourceRequest(authentication)) {
-      return authentication.getOAuth2Request().getRequestParameters().get(RESOURCE);
-    }
-
-    return AUD_KEYS.stream()
-      .map(key -> authentication.getOAuth2Request().getRequestParameters().get(key))
-      .filter(value -> !isNullOrEmpty(value))
-      .findFirst()
-      .orElse(null);
-  }
-
-  private String getFirstNonEmpty(Map<String, String> params, String... keys) {
-    return Arrays.stream(keys)
-      .map(params::get)
-      .filter(value -> !isNullOrEmpty(value))
-      .findFirst()
-      .orElse(null);
   }
 
 }

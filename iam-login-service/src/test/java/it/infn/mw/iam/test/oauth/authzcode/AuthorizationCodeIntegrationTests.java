@@ -494,7 +494,7 @@ public class AuthorizationCodeIntegrationTests {
 
   }
 
-  @Ignore("Need to be fixed")
+  @Ignore("Needs to be fixed")
   @Test
   public void testAuthzCodeEmptyResourceIndicator() throws IOException, ParseException {
 
