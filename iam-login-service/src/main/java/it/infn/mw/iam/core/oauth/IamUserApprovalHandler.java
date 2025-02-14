@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.REMEMBER_PARAMETER_KEY;
-
 import static java.lang.String.valueOf;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.APPROVED_SITE;
 import static org.mitre.openid.connect.request.ConnectRequestParameters.PROMPT;
@@ -53,6 +52,10 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.persistence.model.IamAccount;
+
 @SuppressWarnings("deprecation")
 @Component("iamUserApprovalHandler")
 public class IamUserApprovalHandler implements UserApprovalHandler {
@@ -61,14 +64,21 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
   private final ApprovedSiteService approvedSiteService;
   private final WhitelistedSiteService whitelistedSiteService;
   private final SystemScopeService systemScopeService;
+  private final AccountUtils accountUtils;
+  private final ClientService clientService;
+
+  public static final String OIDC_AGENT_PREFIX_NAME = "oidc-agent:";
 
   public IamUserApprovalHandler(ClientDetailsEntityService clientDetailsService,
       ApprovedSiteService approvedSiteService, WhitelistedSiteService whitelistedSiteService,
-      SystemScopeService systemScopeService) {
+      SystemScopeService systemScopeService, AccountUtils accountUtils,
+      ClientService clientService) {
     this.clientDetailsService = clientDetailsService;
     this.approvedSiteService = approvedSiteService;
     this.whitelistedSiteService = whitelistedSiteService;
     this.systemScopeService = systemScopeService;
+    this.accountUtils = accountUtils;
+    this.clientService = clientService;
   }
 
   @Override
@@ -175,6 +185,13 @@ public class IamUserApprovalHandler implements UserApprovalHandler {
     }
 
     setAuthTime(authorizationRequest);
+
+    IamAccount account = accountUtils.getAuthenticatedUserAccount(userAuthentication).orElseThrow();
+
+    if (client.getClientName().startsWith(OIDC_AGENT_PREFIX_NAME)
+        && clientService.findClientOwners(clientId, null).isEmpty()) {
+      clientService.linkClientToAccount(client, account);
+    }
 
     return authorizationRequest;
   }
