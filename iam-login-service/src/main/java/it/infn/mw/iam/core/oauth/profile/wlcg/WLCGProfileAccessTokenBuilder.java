@@ -142,7 +142,7 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   private boolean hasAnyAudienceRequest(Map<String, String> params) {
     final Set<String> audience =
-        AUD_KEYS.stream().filter(aud -> params.containsKey(aud)).collect(Collectors.toSet());
+        AUD_KEYS.stream().filter(params::containsKey).collect(Collectors.toSet());
     return !audience.isEmpty();
   }
 

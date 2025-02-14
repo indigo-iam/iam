@@ -125,7 +125,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   private String getFirstNotEmptyAudience(Map<String, String> params) {
     return AUD_KEYS.stream()
-      .map(key -> params.get(key))
+      .map(params::get)
       .filter(value -> !isNullOrEmpty(value))
       .findFirst()
       .orElse(null);
