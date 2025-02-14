@@ -45,7 +45,8 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
  */
 public class CheckMultiFactorIsEnabledSuccessHandler implements AuthenticationSuccessHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(CheckMultiFactorIsEnabledSuccessHandler.class);
 
   private final AccountUtils accountUtils;
   private final String iamBaseUrl;

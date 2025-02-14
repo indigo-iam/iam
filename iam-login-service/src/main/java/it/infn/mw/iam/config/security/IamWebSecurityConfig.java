@@ -76,7 +76,7 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 public class IamWebSecurityConfig {
 
   @Bean
-  public SecurityEvaluationContextExtension contextExtension() {
+  SecurityEvaluationContextExtension contextExtension() {
     return new SecurityEvaluationContextExtension();
   }
 
@@ -109,7 +109,7 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamAccountRepository accountRepo;
-    
+
     @Autowired
     private IamTotpMfaRepository totpMfaRepository;
 
@@ -279,6 +279,18 @@ public class IamWebSecurityConfig {
   @Order(105)
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
+    @Value("${iam.baseUrl}")
+    private String iamBaseUrl;
+
+    @Autowired
+    private IamAccountRepository accountRepo;
+
+    @Autowired
+    private AUPSignatureCheckService aupSignatureCheckService;
+
+    @Autowired
+    private AccountUtils accountUtils;
+
     @Autowired
     @Qualifier("OIDCAuthenticationManager")
     private AuthenticationManager oidcAuthManager;
@@ -307,19 +319,21 @@ public class IamWebSecurityConfig {
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
+
       // @formatter:off
       http
         .antMatcher("/openid_connect_login**")
           .exceptionHandling()
             .authenticationEntryPoint(authenticationEntryPoint())
         .and()
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class).authorizeRequests()
+          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
+          .authorizeRequests()
         .antMatchers("/openid_connect_login**")
           .permitAll()
         .and()
           .sessionManagement()
-            .enableSessionUrlRewriting(false)
-            .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
+          .enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
     }
   }

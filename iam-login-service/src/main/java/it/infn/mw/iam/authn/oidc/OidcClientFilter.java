@@ -400,5 +400,4 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     this.tokenRequestor = tokenRequestor;
   }
 
-
 }

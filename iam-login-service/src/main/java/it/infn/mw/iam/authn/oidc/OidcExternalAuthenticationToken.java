@@ -23,7 +23,10 @@ import static java.util.Objects.isNull;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -35,6 +38,7 @@ import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class OidcExternalAuthenticationToken
@@ -42,14 +46,101 @@ public class OidcExternalAuthenticationToken
 
   private static final long serialVersionUID = -1297301102973236138L;
 
+  private Object principal;
+  private Object credentials;
+  private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
+  private String totp;
+  private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
+
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Object principal,
       Object credentials) {
     super(authn, principal, credentials);
+    this.principal = principal;
+    this.credentials = credentials;
   }
 
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Date tokenExpiration,
       Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
     super(authn, tokenExpiration, principal, credentials, authorities);
+    this.principal = principal;
+    this.credentials = credentials;
+  }
+
+  public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
+    return fullyAuthenticatedAuthorities;
+  }
+
+  public void setFullyAuthenticatedAuthorities(
+      Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
+    this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
+  }
+
+  public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
+    return authenticationMethodReferences;
+  }
+
+  public void setAuthenticationMethodReferences(
+      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
+    this.authenticationMethodReferences = authenticationMethodReferences;
+  }
+
+  public String getTotp() {
+    return totp;
+  }
+
+  public void setTotp(String totp) {
+    this.totp = totp;
+  }
+
+  @Override
+  public Object getCredentials() {
+    return this.credentials;
+  }
+
+  @Override
+  public Object getPrincipal() {
+    return this.principal;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof OidcExternalAuthenticationToken)) {
+      return false;
+    }
+    if (!super.equals(obj)) {
+      return false;
+    }
+    OidcExternalAuthenticationToken that = (OidcExternalAuthenticationToken) obj;
+
+    return Objects.equals(this.principal, that.principal)
+        && Objects.equals(this.credentials, that.credentials)
+        && Objects.equals(this.authenticationMethodReferences, that.authenticationMethodReferences)
+        && Objects.equals(this.totp, that.totp)
+        && Objects.equals(this.fullyAuthenticatedAuthorities, that.fullyAuthenticatedAuthorities);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), principal, credentials, authenticationMethodReferences,
+        totp, fullyAuthenticatedAuthorities);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getClass().getSimpleName()).append(" [");
+    sb.append("Principal=").append(getPrincipal()).append(", ");
+    sb.append("Credentials=[PROTECTED], ");
+    sb.append("Authenticated=").append(isAuthenticated()).append(", ");
+    sb.append("Details=").append(getDetails()).append(", ");
+    sb.append("Granted Authorities=").append(this.getAuthorities()).append(", ");
+    sb.append("Authentication Method References=").append(this.getAuthenticationMethodReferences());
+    sb.append("TOTP=").append(this.getTotp());
+    sb.append("]");
+    return sb.toString();
   }
 
   @Override
@@ -59,7 +150,6 @@ public class OidcExternalAuthenticationToken
 
   @Override
   public ExternalAuthenticationRegistrationInfo toExernalAuthenticationRegistrationInfo() {
-
     ExternalAuthenticationRegistrationInfo ri =
         new ExternalAuthenticationRegistrationInfo(ExternalAuthenticationType.OIDC);
 
@@ -75,7 +165,6 @@ public class OidcExternalAuthenticationToken
     }
 
     ri.getAdditionalAttributes().putAll(buildAuthnInfoMap());
-
     return ri;
   }
 
@@ -98,5 +187,4 @@ public class OidcExternalAuthenticationToken
 
     return infoMap;
   }
-
 }
