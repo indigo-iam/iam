@@ -17,10 +17,19 @@ package it.infn.mw.iam.core.oauth;
 
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.mitre.oauth2.service.DeviceCodeService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.request.ConnectOAuth2RequestFactory;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.slf4j.Logger;
@@ -38,6 +47,7 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -46,9 +56,16 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
-  protected static final String[] AUDIENCE_KEYS = {"aud", "audience"};
-  public static final String AUD = "aud";
+  public static final String RESOURCE = "resource";
+
   public static final String PASSWORD_GRANT = "password";
+  public static final String AUTHZ_CODE_GRANT = "authorization_code";
+  public static final String DEVICE_CODE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
+  public static final String REFRESH_TOKEN_GRANT = "refresh_token";
+
+  public static final String AUTHZ_CODE_KEY = "code";
+  public static final String DEVICE_CODE_KEY = "device_code";
+  public static final String REFRESH_TOKEN_KEY = "refresh_token";
 
   private final ScopeFilter scopeFilter;
 
@@ -56,13 +73,21 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   private final Joiner joiner = Joiner.on(' ');
   private final ClientDetailsEntityService clientDetailsService;
+  private final DeviceCodeService deviceCodeService;
+  private final AuthorizationCodeRepository authzCodeRepository;
+  private final OAuth2TokenEntityService tokenServices;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
-      ScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
+      ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
+      DeviceCodeService deviceCodeService, AuthorizationCodeRepository authzCodeRepository,
+      OAuth2TokenEntityService tokenServices) {
     super(clientDetailsService);
     this.clientDetailsService = clientDetailsService;
     this.scopeFilter = scopeFilter;
     this.profileResolver = profileResolver;
+    this.deviceCodeService = deviceCodeService;
+    this.authzCodeRepository = authzCodeRepository;
+    this.tokenServices = tokenServices;
   }
 
   @Override
@@ -74,19 +99,14 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
-      inputParams.put(OAuth2Utils.SCOPE, joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
+      inputParams.put(OAuth2Utils.SCOPE,
+          joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (inputParams.containsKey(audienceKey)) {
-        if (!authzRequest.getExtensions().containsKey(AUD)) {
-          authzRequest.getExtensions().put(AUD, inputParams.get(audienceKey));
-        }
-
-        break;
-      }
+    if (inputParams.containsKey(RESOURCE)) {
+      splitBySpace(inputParams.get(RESOURCE)).forEach(aud -> validateUrl(aud));
     }
 
     return authzRequest;
@@ -100,29 +120,13 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
   }
 
-  /**
-   * This implementation extends what's already done by MitreID implementation with audience request
-   * parameter handling (both "aud" and "audience" are accepted).
-   *
-   * 
-   */
+
   @Override
   public OAuth2Request createOAuth2Request(ClientDetails client, TokenRequest tokenRequest) {
 
     OAuth2Request request = super.createOAuth2Request(client, tokenRequest);
 
     handlePasswordGrantAuthenticationTimestamp(request);
-
-    for (String audienceKey : AUDIENCE_KEYS) {
-      if (tokenRequest.getRequestParameters().containsKey(audienceKey)) {
-
-        if (!request.getExtensions().containsKey(AUD)) {
-          request.getExtensions().put(AUD, tokenRequest.getRequestParameters().get(audienceKey));
-        }
-
-        break;
-      }
-    }
 
     profileResolver.resolveProfile(client.getClientId())
       .getRequestValidator()
@@ -161,6 +165,90 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn), grantType);
+    if (requestParameters.containsKey(RESOURCE)) {
+      handleTokenResourceRequest(requestParameters, authenticatedClient);
+    }
+
+    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn),
+        grantType);
   }
+
+  private void handleTokenResourceRequest(Map<String, String> requestParameters,
+      ClientDetails client) {
+
+    List<String> tokenResourceParams = splitBySpace(requestParameters.get(RESOURCE));
+    tokenResourceParams.forEach(aud -> validateUrl(aud));
+
+    String grantType = requestParameters.get(OAuth2Utils.GRANT_TYPE);
+    Map<String, String> authzRequestParams = null;
+
+    switch (grantType) {
+      case AUTHZ_CODE_GRANT:
+        authzRequestParams = authzCodeRepository.getByCode(requestParameters.get(AUTHZ_CODE_KEY))
+          .getAuthenticationHolder()
+          .getRequestParameters();
+        checkAllowedResource(tokenResourceParams, authzRequestParams);
+        break;
+
+      case DEVICE_CODE_GRANT:
+        authzRequestParams =
+            deviceCodeService.findDeviceCode(requestParameters.get(DEVICE_CODE_KEY), client)
+              .getAuthenticationHolder()
+              .getRequestParameters();
+        checkAllowedResource(tokenResourceParams, authzRequestParams);
+        break;
+
+      case REFRESH_TOKEN_GRANT:
+        authzRequestParams = tokenServices.getRefreshToken(requestParameters.get(REFRESH_TOKEN_KEY))
+          .getAuthenticationHolder()
+          .getRequestParameters();
+        checkAllowedResource(tokenResourceParams, authzRequestParams);
+        break;
+
+      default:
+        return;
+    }
+
+  }
+
+  private void checkAllowedResource(List<String> tokenResourceParams,
+      Map<String, String> authzRequestParams) {
+
+    List<String> authzResourceParams = splitBySpace(authzRequestParams.get(RESOURCE));
+    tokenResourceParams.retainAll(authzResourceParams);
+
+    String allowedResource = String.join(" ", tokenResourceParams);
+    if (allowedResource.isEmpty()) {
+      throw new InvalidResourceError("The requested resource was not originally granted");
+    }
+  }
+
+  public static void validateUrl(String url) {
+    try {
+      URI validURI = new URL(url).toURI();
+
+      if (validURI.getRawQuery() != null) {
+        throw new InvalidResourceError("The resource indicator contains a query component: " + url);
+      }
+      if (validURI.getRawFragment() != null) {
+        throw new InvalidResourceError(
+            "The resource indicator contains a fragment component: " + url);
+      }
+
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new InvalidResourceError("Not a valid URI: " + url);
+    }
+  }
+
+  public static List<String> splitBySpace(String str) {
+
+    if (str != null) {
+      ArrayList<String> mutableList = new ArrayList<>();
+      mutableList.addAll(List.of(str.split(" ")));
+      return mutableList;
+    }
+
+    return new ArrayList<>();
+  }
+
 }
