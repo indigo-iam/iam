@@ -15,8 +15,10 @@
  */
 package it.infn.mw.voms.api;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
-import java.util.Date;
+import java.text.SimpleDateFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import it.infn.mw.voms.aa.RequestContextFactory;
 import it.infn.mw.voms.aa.VOMSErrorMessage;
 import it.infn.mw.voms.aa.VOMSRequest;
 import it.infn.mw.voms.aa.VOMSRequestContext;
+import it.infn.mw.voms.aa.VOMSResponse;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
 import it.infn.mw.voms.properties.VomsProperties;
@@ -49,6 +52,9 @@ public class VOMSController extends VOMSControllerSupport {
   private final Logger log = LoggerFactory.getLogger(VOMSController.class);
 
   public static final String LEGACY_VOMS_APIS_UA = "voms APIs 2.0";
+
+  private static final SimpleDateFormat DATE_FORMAT =
+      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
   private final VomsProperties vomsProperties;
   private final AttributeAuthority aa;
@@ -104,6 +110,7 @@ public class VOMSController extends VOMSControllerSupport {
         (IamX509AuthenticationCredential) authentication.getCredentials();
 
     VOMSRequestContext context = initVomsRequestContext(cred, request, userAgent);
+    logRequest(context);
 
     if (!aa.getAttributes(context)) {
 
@@ -115,7 +122,7 @@ public class VOMSController extends VOMSControllerSupport {
       } else {
         responseString = responseBuilder.createErrorResponse(em);
       }
-      logFailure(context, em);
+      logOutcome(context);
       return responseString;
     } else {
       IamAccount user = context.getIamAccount();
@@ -124,35 +131,57 @@ public class VOMSController extends VOMSControllerSupport {
         return responseBuilder.createErrorResponse(em);
       }
       byte[] acBytes = acGenerator.generateVOMSAC(context);
-      String responseString = responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
-      logSuccess(context);
+      String responseString =
+          responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
+      logOutcome(context);
       return responseString;
     }
   }
 
-  private void logFailure(VOMSRequestContext context, VOMSErrorMessage em) {
-    String username = context.getIamAccount().getUsername();
-    String requestStr = requestToString(context.getRequest());
-    log.info("{} by user '{}' failed with error: {}", requestStr, username, em.getError().getDefaultMessage());
-  }
-
-  private void logSuccess(VOMSRequestContext context) {
-    String username = context.getIamAccount().getUsername();
-    String requestStr = requestToString(context.getRequest());
-    String issuedFQANS = context.getResponse().getIssuedFQANs().toString();
-    Date notAfter = context.getResponse().getNotAfter();
-    Date notBefore = context.getResponse().getNotBefore();
-    log.info("{} by user '{}' successful ended with: FQANS = {}, NotAfter = {}, NotBefore = {}", requestStr, username, issuedFQANS, notAfter, notBefore);
-  }
-
-  private String requestToString(VOMSRequest request) {
-    String reqSubject = sanitize(request.getRequesterSubject());
-    String reqIssuer = sanitize(request.getRequesterIssuer());
-    String requestedFqans = sanitize(request.getRequestedFQANs().toString());
-    return String.format("VOMSRequest [requesterSubject = %s, requestedIssuer = %s, requestedFQANs = %s]", reqSubject, reqIssuer, requestedFqans);
+  private void logRequest(VOMSRequestContext c) {
+    VOMSRequest r = c.getRequest();
+    log.debug(
+        "VOMSRequest: [holderIssuer: {}, holderSubject: {}, requesterIssuer: {}, requesterSubject: {}, attributes: {}, FQANs: {}, validity: {}, targets: {}]",
+        sanitize(r.getHolderIssuer()), sanitize(r.getHolderSubject()),
+        sanitize(r.getRequesterIssuer()), sanitize(r.getRequesterSubject()),
+        r.getRequestAttributes(), r.getRequestedFQANs(), r.getRequestedValidity(), r.getTargets());
   }
 
   private String sanitize(String str) {
     return str.replaceAll("[\n\r]", "_");
+  }
+
+  private String userStr(VOMSRequestContext c) {
+    String username = c.getIamAccount().getUsername();
+    String uuid = c.getIamAccount().getUuid();
+    String reqSubject = sanitize(c.getRequest().getRequesterSubject());
+    String reqIssuer = sanitize(c.getRequest().getRequesterIssuer());
+    return format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
+        reqSubject, reqIssuer);
+  }
+
+  private String errorResponse(VOMSRequestContext c) {
+    return format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
+        c.getResponse().getErrorMessages());
+  }
+
+  private String successResponse(VOMSRequestContext c) {
+    VOMSResponse r = c.getResponse();
+    return format(
+        "[outcome: %s, VO: %s, uri: %s, targets: %s, issuedFQANs: %s, notAfter: %s, notBefore: %s]",
+        r.getOutcome().name(), c.getVOName(), c.getHost() + ":" + c.getPort(),
+        r.getTargets().toString(), r.getIssuedFQANs().toString(),
+        DATE_FORMAT.format(r.getNotAfter()), DATE_FORMAT.format(r.getNotBefore()));
+  }
+
+  private void logOutcome(VOMSRequestContext c) {
+    switch (c.getResponse().getOutcome()) {
+      case SUCCESS:
+        log.info("User {} got successful VOMS response {} ", userStr(c), successResponse(c));
+        break;
+      case FAILURE:
+        log.info("User {} got failure VOMS response {}", userStr(c), errorResponse(c));
+        break;
+    }
   }
 }
