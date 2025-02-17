@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -193,7 +194,7 @@ public class AuthorizationCodeIntegrationTests {
 
       JWT atJwt = JWTParser.parse(accessToken);
       JWT itJwt = JWTParser.parse(idToken);
-      
+
       assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
       assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("example-audience"));
 
@@ -924,4 +925,360 @@ public class AuthorizationCodeIntegrationTests {
 
   }
 
+  @Test
+  public void testNullAuthorizationCode() throws IOException, ParseException {
+
+    // @formatter:off
+      ValidatableResponse resp1 = RestAssured.given()
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value())
+        .header("Location", is(loginUrl));
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
+        .formParam("submit", "Login")
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .redirects().follow(false)
+      .when()
+        .post(loginUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .log().all()
+        .statusCode(HttpStatus.OK.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .formParam("user_oauth_approval", "true")
+        .formParam("authorize", "Authorize")
+        .formParam("remember", "none")
+        .redirects().follow(false)
+      .when()
+        .post(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.SEE_OTHER.value());
+      // @formatter:on
+
+    // @formatter:off
+      ValidatableResponse resp2= RestAssured.given()
+        .formParam("grant_type", "authorization_code")
+        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .formParam("state", "1")
+        .auth()
+          .preemptive()
+            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.BAD_REQUEST.value());
+      
+      String error =
+          mapper.readTree(resp2.extract().body().asString()).get("error").asText();
+      String errorMessage =
+          mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
+
+      assertTrue(error.equals("invalid_request"));
+      assertTrue(errorMessage.equals("An authorization code must be supplied."));
+
+  }
+  
+  @Test
+  public void testFakeAuthorizationCode() throws IOException, ParseException {
+
+    // @formatter:off
+      ValidatableResponse resp1 = RestAssured.given()
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value())
+        .header("Location", is(loginUrl));
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
+        .formParam("submit", "Login")
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .redirects().follow(false)
+      .when()
+        .post(loginUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .log().all()
+        .statusCode(HttpStatus.OK.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .formParam("user_oauth_approval", "true")
+        .formParam("authorize", "Authorize")
+        .formParam("remember", "none")
+        .redirects().follow(false)
+      .when()
+        .post(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.SEE_OTHER.value());
+      // @formatter:on
+
+    // @formatter:off
+      ValidatableResponse resp2= RestAssured.given()
+        .formParam("grant_type", "authorization_code")
+        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .formParam("state", "1")
+        .formParam("code", "1234")
+        .auth()
+          .preemptive()
+            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.BAD_REQUEST.value());
+      
+      String error =
+          mapper.readTree(resp2.extract().body().asString()).get("error").asText();
+      String errorMessage =
+          mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
+
+      assertTrue(error.equals("invalid_grant"));
+      assertTrue(errorMessage.equals("JpaAuthorizationCodeRepository: no authorization code found for value 1234"));
+
+  }
+
+  @Test
+  public void testRedirectURIMismatch() throws IOException, ParseException {
+
+    // @formatter:off
+      ValidatableResponse resp1 = RestAssured.given()
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value())
+        .header("Location", is(loginUrl));
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
+        .formParam("submit", "Login")
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .redirects().follow(false)
+      .when()
+        .post(loginUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .log().all()
+        .statusCode(HttpStatus.OK.value());
+      // @formatter:on
+
+    // @formatter:off
+      ValidatableResponse resp2 = RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .formParam("user_oauth_approval", "true")
+        .formParam("authorize", "Authorize")
+        .formParam("remember", "none")
+        .redirects().follow(false)
+      .when()
+        .post(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.SEE_OTHER.value());
+      // @formatter:on
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
+      .build()
+      .getQueryParams()
+      .get("code")
+      .get(0);
+
+    // @formatter:off
+      ValidatableResponse resp3 = RestAssured.given()
+        .formParam("grant_type", "authorization_code")
+        .formParam("redirect_uri", "http://fake.redirect.uri.org")
+        .formParam("state", "1")
+        .formParam("code", authzCode)
+        .auth()
+          .preemptive()
+            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.BAD_REQUEST.value());
+      
+      String error =
+          mapper.readTree(resp3.extract().body().asString()).get("error").asText();
+      String errorMessage =
+          mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
+
+      assertTrue(error.equals("invalid_grant"));
+      assertTrue(errorMessage.equals("Redirect URI mismatch."));
+
+  }
+  
+  @Test
+  public void testClientIDMismatch() throws IOException, ParseException {
+
+    // @formatter:off
+      ValidatableResponse resp1 = RestAssured.given()
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value())
+        .header("Location", is(loginUrl));
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .formParam("username", TEST_USER_NAME)
+        .formParam("password", TEST_USER_PASSWORD)
+        .formParam("submit", "Login")
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .redirects().follow(false)
+      .when()
+        .post(loginUrl)
+      .then()
+        .statusCode(HttpStatus.FOUND.value());
+      // @formatter:on
+
+    // @formatter:off
+      RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .queryParam("response_type", RESPONSE_TYPE_CODE)
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", SCOPE)
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .redirects().follow(false)
+      .when()
+        .get(authorizeUrl)
+      .then()
+        .log().all()
+        .statusCode(HttpStatus.OK.value());
+      // @formatter:on
+
+    // @formatter:off
+      ValidatableResponse resp2 = RestAssured.given()
+        .cookie(resp1.extract().detailedCookie("JSESSIONID"))
+        .formParam("user_oauth_approval", "true")
+        .formParam("authorize", "Authorize")
+        .formParam("remember", "none")
+        .redirects().follow(false)
+      .when()
+        .post(authorizeUrl)
+      .then()
+        .statusCode(HttpStatus.SEE_OTHER.value());
+      // @formatter:on
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(resp2.extract().header("Location"))
+      .build()
+      .getQueryParams()
+      .get("code")
+      .get(0);
+
+    // @formatter:off
+      ValidatableResponse resp3 = RestAssured.given()
+        .formParam("grant_type", "authorization_code")
+        .formParam("client_id", "fake-client-id")
+        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .formParam("state", "1")
+        .formParam("code", authzCode)
+        .auth()
+          .preemptive()
+            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+      .when()
+        .post(tokenUrl)
+      .then()
+      .statusCode(HttpStatus.UNAUTHORIZED.value());
+      
+      String error =
+          mapper.readTree(resp3.extract().body().asString()).get("error").asText();
+      String errorMessage =
+          mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
+
+      assertTrue(error.equals("invalid_client"));
+      assertTrue(errorMessage.equals("Given client ID does not match authenticated client"));
+
+  }
+  
 }
