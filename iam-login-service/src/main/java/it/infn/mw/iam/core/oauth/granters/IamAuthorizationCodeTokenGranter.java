@@ -87,7 +87,7 @@ public class IamAuthorizationCodeTokenGranter extends AbstractTokenGranter {
     }
 
     Map<String, String> combinedParameters =
-        new HashMap<String, String>(pendingOAuth2Request.getRequestParameters());
+        new HashMap<>(pendingOAuth2Request.getRequestParameters());
     combinedParameters.putAll(parameters);
 
     if (combinedParameters.containsKey(RESOURCE) && !parameters.containsKey(RESOURCE)) {

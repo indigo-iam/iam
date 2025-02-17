@@ -31,7 +31,6 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
@@ -194,7 +193,7 @@ public class AuthorizationCodeIntegrationTests {
 
       JWT atJwt = JWTParser.parse(accessToken);
       JWT itJwt = JWTParser.parse(idToken);
-
+      
       assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
       assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("example-audience"));
 
