@@ -23,7 +23,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -926,7 +926,7 @@ public class AuthorizationCodeIntegrationTests {
   }
 
   @Test
-  public void testNullAuthorizationCode() throws IOException, ParseException {
+  public void testNullAuthorizationCode() throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -1005,13 +1005,13 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
 
-      assertTrue(error.equals("invalid_request"));
-      assertTrue(errorMessage.equals("An authorization code must be supplied."));
+      assertEquals(error, "invalid_request");
+      assertEquals(errorMessage, "An authorization code must be supplied.");
 
   }
   
   @Test
-  public void testFakeAuthorizationCode() throws IOException, ParseException {
+  public void testFakeAuthorizationCode() throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -1091,13 +1091,13 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
 
-      assertTrue(error.equals("invalid_grant"));
-      assertTrue(errorMessage.equals("JpaAuthorizationCodeRepository: no authorization code found for value 1234"));
+      assertEquals(error, "invalid_grant");
+      assertEquals(errorMessage, "JpaAuthorizationCodeRepository: no authorization code found for value 1234");
 
   }
 
   @Test
-  public void testRedirectURIMismatch() throws IOException, ParseException {
+  public void testRedirectURIMismatch() throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -1183,8 +1183,8 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
 
-      assertTrue(error.equals("invalid_grant"));
-      assertTrue(errorMessage.equals("Redirect URI mismatch."));
+      assertEquals(error, "invalid_grant");
+      assertEquals(errorMessage, "Redirect URI mismatch.");
 
   }
   
@@ -1276,8 +1276,8 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
 
-      assertTrue(error.equals("invalid_client"));
-      assertTrue(errorMessage.equals("Given client ID does not match authenticated client"));
+      assertEquals(error, "invalid_client");
+      assertEquals(errorMessage, "Given client ID does not match authenticated client");
 
   }
   
