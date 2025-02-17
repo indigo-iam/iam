@@ -47,13 +47,13 @@ import org.springframework.security.oauth2.provider.TokenGranter;
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenGranter;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
-import org.springframework.security.oauth2.provider.code.AuthorizationCodeTokenGranter;
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
+import it.infn.mw.iam.core.oauth.granters.IamAuthorizationCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamDeviceCodeTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
@@ -155,7 +155,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     tokenExchangeGranter.setExchangePdp(tokenExchangePdp);
 
     return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
-        new AuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+        new IamAuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
             clientDetailsService, requestFactory),
         new ImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
         refreshTokenGranter,

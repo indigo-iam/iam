@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -796,6 +797,92 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .getContentAsString();
 
     tokenResponseJson = mapper.readTree(tokenResponse);
+    String accessToken = tokenResponseJson.get("access_token").asText();
+
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertThat(claims.getAudience(), empty());
+
+  }
+
+  @Test
+  public void testAuthzCodeEmptyResourceIndicator() throws Exception {
+
+    MockHttpSession session = (MockHttpSession) mvc
+      .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .queryParam("response_type", "code")
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", "openid profile offline_access")
+        .queryParam("resource", "http://example1.org http://example2.org")
+        .queryParam("nonce", "1")
+        .queryParam("state", "1"))
+      .andExpect(redirectedUrl("http://localhost:8080/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc.perform(get("http://localhost:8080/login").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/login"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(post(LOGIN_URL).param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("submit", "Login")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    session = (MockHttpSession) mvc
+      .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .queryParam("response_type", "code")
+        .queryParam("client_id", TEST_CLIENT_ID)
+        .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .queryParam("scope", "openid profile offline_access")
+        .queryParam("resource", "http://example1.org http://example2.org")
+        .queryParam("nonce", "1")
+        .queryParam("state", "1")
+        .session(session))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    String authzCodeResponse = mvc
+      .perform(post("http://localhost:8080/authorize").param("user_oauth_approval", "true")
+        .param("authorize", "Authorize")
+        .param("remember", "none")
+        .session(session))
+      .andExpect(status().is3xxRedirection())
+      .andReturn().getResponse().getHeader("Location");
+
+    String authzCode = UriComponentsBuilder.fromHttpUrl(authzCodeResponse)
+        .build()
+        .getQueryParams()
+        .get("code")
+        .get(0);
+
+    String tokenResponse = mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))
+        .param("grant_type", "authorization_code")
+        .param("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+        .param("code", authzCode)
+        .param("state", "1"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
     String accessToken = tokenResponseJson.get("access_token").asText();
 
     JWT token = JWTParser.parse(accessToken);
