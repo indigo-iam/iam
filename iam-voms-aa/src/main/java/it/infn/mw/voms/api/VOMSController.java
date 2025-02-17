@@ -40,6 +40,7 @@ import it.infn.mw.voms.aa.VOMSErrorMessage;
 import it.infn.mw.voms.aa.VOMSRequest;
 import it.infn.mw.voms.aa.VOMSRequestContext;
 import it.infn.mw.voms.aa.VOMSResponse;
+import it.infn.mw.voms.aa.VOMSResponse.Outcome;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
 import it.infn.mw.voms.properties.VomsProperties;
@@ -53,8 +54,7 @@ public class VOMSController extends VOMSControllerSupport {
 
   public static final String LEGACY_VOMS_APIS_UA = "voms APIs 2.0";
 
-  private static final SimpleDateFormat DATE_FORMAT =
-      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
   private final VomsProperties vomsProperties;
   private final AttributeAuthority aa;
@@ -139,12 +139,14 @@ public class VOMSController extends VOMSControllerSupport {
   }
 
   private void logRequest(VOMSRequestContext c) {
-    VOMSRequest r = c.getRequest();
-    log.debug(
-        "VOMSRequest: [holderIssuer: {}, holderSubject: {}, requesterIssuer: {}, requesterSubject: {}, attributes: {}, FQANs: {}, validity: {}, targets: {}]",
-        sanitize(r.getHolderIssuer()), sanitize(r.getHolderSubject()),
-        sanitize(r.getRequesterIssuer()), sanitize(r.getRequesterSubject()),
-        r.getRequestAttributes(), r.getRequestedFQANs(), r.getRequestedValidity(), r.getTargets());
+    if (log.isDebugEnabled()) {
+      VOMSRequest r = c.getRequest();
+      log.debug(
+          "VOMSRequest: [holderIssuer: {}, holderSubject: {}, requesterIssuer: {}, requesterSubject: {}, attributes: {}, FQANs: {}, validity: {}, targets: {}]",
+          sanitize(r.getHolderIssuer()), sanitize(r.getHolderSubject()),
+          sanitize(r.getRequesterIssuer()), sanitize(r.getRequesterSubject()),
+          r.getRequestAttributes(), r.getRequestedFQANs(), r.getRequestedValidity(), r.getTargets());
+    }
   }
 
   private String sanitize(String str) {
@@ -154,34 +156,33 @@ public class VOMSController extends VOMSControllerSupport {
   private String userStr(VOMSRequestContext c) {
     String username = c.getIamAccount().getUsername();
     String uuid = c.getIamAccount().getUuid();
-    String reqSubject = sanitize(c.getRequest().getRequesterSubject());
-    String reqIssuer = sanitize(c.getRequest().getRequesterIssuer());
-    return format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
-        reqSubject, reqIssuer);
+    String reqSubject = c.getRequest().getRequesterSubject();
+    String reqIssuer = c.getRequest().getRequesterIssuer();
+    return sanitize(format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
+        reqSubject, reqIssuer));
   }
 
   private String errorResponse(VOMSRequestContext c) {
-    return format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
-        c.getResponse().getErrorMessages());
+    return sanitize(format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
+        c.getResponse().getErrorMessages()));
   }
 
   private String successResponse(VOMSRequestContext c) {
     VOMSResponse r = c.getResponse();
-    return format(
+    return sanitize(format(
         "[outcome: %s, VO: %s, uri: %s, targets: %s, issuedFQANs: %s, notAfter: %s, notBefore: %s]",
         r.getOutcome().name(), c.getVOName(), c.getHost() + ":" + c.getPort(),
         r.getTargets().toString(), r.getIssuedFQANs().toString(),
-        DATE_FORMAT.format(r.getNotAfter()), DATE_FORMAT.format(r.getNotBefore()));
+        dateFormat.format(r.getNotAfter()), dateFormat.format(r.getNotBefore())));
   }
 
   private void logOutcome(VOMSRequestContext c) {
-    switch (c.getResponse().getOutcome()) {
-      case SUCCESS:
+    if (log.isInfoEnabled()) {
+      if (Outcome.SUCCESS.equals(c.getResponse().getOutcome())) {
         log.info("User {} got successful VOMS response {} ", userStr(c), successResponse(c));
-        break;
-      case FAILURE:
+      } else {
         log.info("User {} got failure VOMS response {}", userStr(c), errorResponse(c));
-        break;
+      }
     }
   }
 }
