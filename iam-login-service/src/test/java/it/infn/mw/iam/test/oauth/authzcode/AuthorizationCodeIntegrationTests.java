@@ -1005,8 +1005,8 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
 
-      assertEquals(error, "invalid_request");
-      assertEquals(errorMessage, "An authorization code must be supplied.");
+      assertEquals("invalid_request", error);
+      assertEquals("An authorization code must be supplied.", errorMessage);
 
   }
   
@@ -1091,8 +1091,8 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp2.extract().body().asString()).get("error_description").asText();
 
-      assertEquals(error, "invalid_grant");
-      assertEquals(errorMessage, "JpaAuthorizationCodeRepository: no authorization code found for value 1234");
+      assertEquals("invalid_grant", error);
+      assertEquals("JpaAuthorizationCodeRepository: no authorization code found for value 1234", errorMessage);
 
   }
 
@@ -1183,13 +1183,13 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
 
-      assertEquals(error, "invalid_grant");
-      assertEquals(errorMessage, "Redirect URI mismatch.");
+      assertEquals("invalid_grant", error);
+      assertEquals("Redirect URI mismatch.", errorMessage);
 
   }
   
   @Test
-  public void testClientIDMismatch() throws IOException, ParseException {
+  public void testClientIDMismatch() throws IOException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -1276,8 +1276,8 @@ public class AuthorizationCodeIntegrationTests {
       String errorMessage =
           mapper.readTree(resp3.extract().body().asString()).get("error_description").asText();
 
-      assertEquals(error, "invalid_client");
-      assertEquals(errorMessage, "Given client ID does not match authenticated client");
+      assertEquals("invalid_client", error);
+      assertEquals("Given client ID does not match authenticated client", errorMessage);
 
   }
   
