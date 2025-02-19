@@ -89,6 +89,8 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
 
     }
 
+    addAcrClaimIfNeeded(accessToken, result);
+
     return result;
   }
 

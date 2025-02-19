@@ -47,13 +47,14 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
     addIssuerClaim(result);
     addAudience(result, accessToken);
     addScopeClaim(result, filterScopes(accessToken, authScopes));
-    
-    Set<String> groups =
-        groupHelper.resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo());
+
+    Set<String> groups = groupHelper.resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo());
 
     if (!groups.isEmpty()) {
       result.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
     }
+
+    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }
