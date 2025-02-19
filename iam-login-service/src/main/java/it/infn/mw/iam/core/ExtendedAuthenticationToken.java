@@ -44,7 +44,8 @@ import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodR
  * far, they will only officially have an authority of PRE_AUTHENTICATED
  * </ul>
  */
-public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
+public class ExtendedAuthenticationToken extends AbstractAuthenticationToken
+    implements CommonAuthenticationToken {
 
   private static final long serialVersionUID = 1L;
   private Object principal;
@@ -67,28 +68,34 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     this.credentials = credentials;
   }
 
+  @Override
   public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
     return fullyAuthenticatedAuthorities;
   }
 
+  @Override
   public void setFullyAuthenticatedAuthorities(
       Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
     this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
   }
 
+  @Override
   public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
     return authenticationMethodReferences;
   }
 
+  @Override
   public void setAuthenticationMethodReferences(
       Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
+  @Override
   public String getTotp() {
     return totp;
   }
 
+  @Override
   public void setTotp(String totp) {
     this.totp = totp;
   }

@@ -39,10 +39,12 @@ import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.core.CommonAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class OidcExternalAuthenticationToken
-    extends AbstractExternalAuthenticationToken<OIDCAuthenticationToken> {
+    extends AbstractExternalAuthenticationToken<OIDCAuthenticationToken>
+    implements CommonAuthenticationToken {
 
   private static final long serialVersionUID = -1297301102973236138L;
 
@@ -66,28 +68,34 @@ public class OidcExternalAuthenticationToken
     this.credentials = credentials;
   }
 
+  @Override
   public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
     return fullyAuthenticatedAuthorities;
   }
 
+  @Override
   public void setFullyAuthenticatedAuthorities(
       Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
     this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
   }
 
+  @Override
   public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
     return authenticationMethodReferences;
   }
 
+  @Override
   public void setAuthenticationMethodReferences(
       Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
     this.authenticationMethodReferences = authenticationMethodReferences;
   }
 
+  @Override
   public String getTotp() {
     return totp;
   }
 
+  @Override
   public void setTotp(String totp) {
     this.totp = totp;
   }

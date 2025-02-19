@@ -34,8 +34,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.core.CommonAuthenticationToken;
 
 /**
  * Used in the MFA verification flow. Receives either a TOTP and constructs the authentication
@@ -70,8 +69,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
     }
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (!(auth instanceof ExtendedAuthenticationToken)
-        && !(auth instanceof OidcExternalAuthenticationToken)) {
+    if (!(auth instanceof CommonAuthenticationToken)) {
       throw new AuthenticationServiceException("Bad authentication");
     }
 
@@ -86,10 +84,8 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
       throw new ProviderNotFoundException("No valid TOTP code was received");
     }
 
-    if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
-      extendedAuthenticationToken.setTotp(totp);
-    } else if (auth instanceof OidcExternalAuthenticationToken oidcExternalAuthenticationToken) {
-      oidcExternalAuthenticationToken.setTotp(totp);
+    if (auth instanceof CommonAuthenticationToken token) {
+      token.setTotp(totp);
     }
 
     Authentication fullAuthentication = getAuthenticationManager().authenticate(auth);
