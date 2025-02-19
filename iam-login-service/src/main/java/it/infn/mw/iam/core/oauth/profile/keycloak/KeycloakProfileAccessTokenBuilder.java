@@ -70,6 +70,7 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
         builder.claim(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groupNames);
       }
     }
+
     return builder.build();
   }
 }
