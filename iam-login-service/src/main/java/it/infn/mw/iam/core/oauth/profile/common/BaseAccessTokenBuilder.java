@@ -170,4 +170,11 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return builder;
   }
 
+  protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
+    Object amr = authentication.getOAuth2Request().getExtensions().get("amr");
+
+    if (amr instanceof String && ((String) amr).contains("otp")) {
+      builder.claim("acr", "https://referds.org/profile/MFA");
+    }
+  }
 }
