@@ -40,7 +40,8 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   final KeycloakGroupHelper groupHelper;
 
-  public KeycloakProfileAccessTokenBuilder(IamProperties properties, KeycloakGroupHelper groupHelper) {
+  public KeycloakProfileAccessTokenBuilder(IamProperties properties,
+      KeycloakGroupHelper groupHelper) {
     super(properties);
     this.groupHelper = groupHelper;
   }
@@ -66,6 +67,8 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
         builder.claim(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groupNames);
       }
     }
+
+    addAcrClaimIfNeeded(builder, authentication);
 
     return builder.build();
   }

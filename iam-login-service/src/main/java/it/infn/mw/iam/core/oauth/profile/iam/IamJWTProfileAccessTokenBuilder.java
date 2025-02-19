@@ -70,6 +70,8 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       builder.notBeforeTime(Date.from(issueTime));
     }
 
+    addAcrClaimIfNeeded(builder, authentication);
+
     return builder.build();
   }
 
