@@ -59,7 +59,7 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       .filter(ADDITIONAL_CLAIMS::contains)
       .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
 
-    includeAmrClaim(request, idClaims);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims);
 
     includeLabelsInIdToken(idClaims, account);
   }

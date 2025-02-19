@@ -76,7 +76,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
     }
   }
 
-  protected final void includeAmrClaim(OAuth2Request request, Builder idClaims) {
+  protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder) {
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim instanceof String amrString) {
@@ -85,7 +85,11 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
         List<String> amrList =
             objectMapper.readValue(amrString, new TypeReference<List<String>>() {});
 
-        idClaims.claim("amr", amrList);
+        builder.claim("amr", amrList);
+
+        if (amrString.contains("otp")) {
+          builder.claim("acr", "https://referds.org/profile/MFA");
+        }
       } catch (Exception e) {
         LOG.error("Failed to deserialize amr claim", e);
       }
