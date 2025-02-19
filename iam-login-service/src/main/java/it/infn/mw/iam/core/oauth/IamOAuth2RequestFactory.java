@@ -52,9 +52,13 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
 import it.infn.mw.iam.core.error.InvalidResourceError;
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.core.CommonAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -114,8 +118,29 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     validateAndUpdateAudienceRequest(inputParams);
 
-    return super.createAuthorizationRequest(inputParams);
+    AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
+    if (authn instanceof CommonAuthenticationToken token) {
+      Set<IamAuthenticationMethodReference> amrSet = token.getAuthenticationMethodReferences();
+      try {
+        authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+      } catch (JsonProcessingException e) {
+        LOG.error("Failed to convert amr set to JSON array", e);
+      }
+    }
+
+    return authzRequest;
+  }
+
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)
+      throws JsonProcessingException {
+    List<String> amrList = new ArrayList<>();
+    for (IamAuthenticationMethodReference amr : amrSet) {
+      amrList.add(amr.getName());
+    }
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(amrList);
   }
 
   private void handlePasswordGrantAuthenticationTimestamp(OAuth2Request request) {
