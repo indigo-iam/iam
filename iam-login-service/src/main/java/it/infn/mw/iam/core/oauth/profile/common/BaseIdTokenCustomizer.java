@@ -18,8 +18,15 @@ package it.infn.mw.iam.core.oauth.profile.common;
 import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
 import static java.util.Objects.isNull;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -31,6 +38,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
+
+  public static final Logger LOG = LoggerFactory.getLogger(BaseIdTokenCustomizer.class);
 
   private final IamAccountRepository accountRepo;
   private final IamProperties properties;
@@ -63,6 +72,22 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
         if (label.isPresent()) {
           idClaims.claim(includeLabel.getClaimName(), label.get().getValue());
         }
+      }
+    }
+  }
+
+  protected final void includeAmrClaim(OAuth2Request request, Builder idClaims) {
+    Object amrClaim = request.getExtensions().get("amr");
+
+    if (amrClaim instanceof String amrString) {
+      try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<String> amrList =
+            objectMapper.readValue(amrString, new TypeReference<List<String>>() {});
+
+        idClaims.claim("amr", amrList);
+      } catch (Exception e) {
+        LOG.error("Failed to deserialize amr claim", e);
       }
     }
   }
