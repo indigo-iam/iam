@@ -134,7 +134,7 @@ public class OidcAccountLinkingMultiProviderTests {
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce);
+        nonce, null);
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_01_ISSUER)
@@ -191,7 +191,7 @@ public class OidcAccountLinkingMultiProviderTests {
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce);
+        nonce, null);
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_01_ISSUER)
@@ -230,7 +230,7 @@ public class OidcAccountLinkingMultiProviderTests {
     nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_02_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce);
+        nonce, null);
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_02_ISSUER)
