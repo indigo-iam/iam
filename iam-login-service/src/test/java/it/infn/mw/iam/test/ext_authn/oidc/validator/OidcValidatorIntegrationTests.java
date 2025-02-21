@@ -91,7 +91,7 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
     String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "unregistered", ru.nonce);
+        "unregistered", ru.nonce, null);
 
     prepareSuccessResponse(tokenResponse);
 
