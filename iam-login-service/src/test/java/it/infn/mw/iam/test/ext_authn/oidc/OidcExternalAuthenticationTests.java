@@ -77,7 +77,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
     String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "unregistered", ru.nonce);
+        "unregistered", ru.nonce, null);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -127,7 +127,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
     String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "test-user", ru.nonce);
+        "test-user", ru.nonce, null);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -183,7 +183,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
     String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "test-with-mfa", ru.nonce);
+        "test-with-mfa", ru.nonce, null);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -194,6 +194,36 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(mfaVerifyPageURL()));
+
+  }
+
+  @Test
+  public void testOidcUserRedirectToHomeIfMfaIsActiveAndAcrPresentInIdToken()
+      throws JOSEException, JsonProcessingException, RestClientException {
+
+    RestTemplate rt = noRedirectRestTemplate();
+    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+
+    checkAuthorizationEndpointRedirect(response);
+    HttpHeaders requestHeaders = new HttpHeaders();
+
+    String sessionCookie = extractSessionCookie(response);
+    requestHeaders.add("Cookie", sessionCookie);
+
+    CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
+
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
+        "test-with-mfa", ru.nonce, "acr");
+
+    prepareSuccessResponse(tokenResponse);
+
+    response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
+    verifyMockServerCalls();
+
+    assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
+    assertNotNull(response.getHeaders().getLocation());
+
+    assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
 
   }
 

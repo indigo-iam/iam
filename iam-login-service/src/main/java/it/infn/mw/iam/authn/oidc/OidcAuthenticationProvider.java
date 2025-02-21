@@ -15,11 +15,13 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mitre.openid.connect.client.OIDCAuthenticationProvider;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
@@ -37,6 +40,7 @@ import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -88,9 +92,17 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
       Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
 
+      boolean isAcrPresent = false;
+
+      try {
+        isAcrPresent = token.getIdToken().getJWTClaimsSet().getClaim("acr") != null;
+      } catch (ParseException e) {
+        LOG.error("Error parsing JWT claims: {}", e.getMessage());
+      }
+
       // Checking to see if we can find an active MFA secret attached to the user's account. If so,
       // MFA is enabled on the account
-      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive() && !isAcrPresent) {
         // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify
         // endpoint
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
@@ -107,7 +119,7 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
         // AUTHENTICATED user, granting their normal authorities
         extToken = new OidcExternalAuthenticationToken(token,
             Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
-            account.get().getUsername(), null, user.getAuthorities());
+            account.get().getUsername(), null, convert(account.get().getAuthorities()));
         extToken.setAuthenticationMethodReferences(refs);
       }
 
@@ -117,6 +129,12 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
           Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()), user.getUsername(),
           null, user.getAuthorities());
     }
+  }
+
+  private List<GrantedAuthority> convert(Set<IamAuthority> authorities) {
+    return authorities.stream()
+      .map(auth -> new SimpleGrantedAuthority(auth.getAuthority()))
+      .collect(Collectors.toList());
   }
 
   @Override
