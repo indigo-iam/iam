@@ -58,7 +58,7 @@ public class OidcExternalAuthenticationTokenTests {
     OidcExternalAuthenticationToken token2 =
         new OidcExternalAuthenticationToken(mockAuthn, "user1", "password");
     assertThat(token1.equals(token2)).isTrue();
-    assertThat(token1.hashCode()).isEqualTo(token2.hashCode());
+    assertThat(token1.hashCode()).hasSameHashCodeAs(token2.hashCode());
   }
 
   @Test
