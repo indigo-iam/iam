@@ -17,6 +17,8 @@ package it.infn.mw.iam.config;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
@@ -33,6 +35,8 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
@@ -65,6 +69,8 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @Configuration
 @EnableAuthorizationServer
 public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
+
+  private static final short DEFAULT_ROUND = 12;
 
   @Autowired
   @Qualifier("iamUserDetailsService")
@@ -115,10 +121,20 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     return new IamAuthenticationEventPublisher();
   }
 
+  @Bean(name = "passwordEncoder")
+  public PasswordEncoder passwordEncoder() {
+    String encodingId = "bcrypt";
+    Map<String, PasswordEncoder> encoders = new HashMap<>();
+    encoders.put(encodingId, new BCryptPasswordEncoder(DEFAULT_ROUND));
+    // encoders.put("noop", NoOpPasswordEncoder.getInstance());
+    return new DelegatingPasswordEncoder(encodingId, encoders);
+  }
+
   @Bean(name = "authenticationManager")
   AuthenticationManager authenticationManager() {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setPasswordEncoder(passwordEncoder());
     provider.setUserDetailsService(iamUserDetailsService);
     provider.setPasswordEncoder(passwordEncoder);
 
@@ -127,7 +143,6 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     pm.setAuthenticationEventPublisher(iamAuthenticationEventPublisher());
     return pm;
-
   }
 
   @Bean
@@ -187,16 +202,11 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   public void configure(final ClientDetailsServiceConfigurer clients) throws Exception {
 
     clients.withClientDetails(clientDetailsService);
-
   }
 
   @Override
   public void configure(final AuthorizationServerSecurityConfigurer security) throws Exception {
 
     security.allowFormAuthenticationForClients();
-
-
   }
-
-
 }
