@@ -251,8 +251,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     String fullName;
     if (oldGroup.getParentGroup() != null) {
-      String parentGroupName = oldGroup.getParentGroup().getName();
-      fullName = String.format("%s/%s", parentGroupName, scimItemToBeReplaced.getDisplayName());
+      fullName = String.format("%s/%s", oldGroup.getParentGroup().getName(), displayName);
 
       fullNameSanityChecks(fullName);
       newGroup.setName(fullName);
