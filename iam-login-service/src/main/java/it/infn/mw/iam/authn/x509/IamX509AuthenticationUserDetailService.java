@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.authn.x509;
 
+import java.util.Optional;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,10 @@ import org.springframework.stereotype.Service;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Service
 public class IamX509AuthenticationUserDetailService
@@ -37,18 +43,29 @@ public class IamX509AuthenticationUserDetailService
       LoggerFactory.getLogger(IamX509AuthenticationUserDetailService.class);
 
   IamAccountRepository accountRepository;
+  IamTotpMfaRepository totpMfaRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
 
   @Autowired
-  public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
+  public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
       InactiveAccountAuthenticationHander handler) {
     this.accountRepository = accountRepository;
+    this.totpMfaRepository = totpMfaRepository;
     this.inactiveAccountHandler = handler;
   }
 
   protected UserDetails buildUserFromIamAccount(IamAccount account) {
 
     inactiveAccountHandler.handleInactiveAccount(account);
+
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    
+    if(totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()){
+      Set<IamAuthority> currentAuthorities = account.getAuthorities();
+      // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
+      currentAuthorities.add(new IamAuthority("ROLE_PRE_AUTHENTICATED"));
+      account.setAuthorities(currentAuthorities);
+    }
 
     return AuthenticationUtils.userFromIamAccount(account);
   }

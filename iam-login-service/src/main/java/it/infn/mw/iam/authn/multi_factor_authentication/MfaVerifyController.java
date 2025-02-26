@@ -15,23 +15,37 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.X509;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.ExtendedX509AuthenticationToken;
 
 /**
  * Presents the step-up authentication page for verifying identity after successful username +
@@ -60,6 +74,26 @@ public class MfaVerifyController {
     MultiFactorSettingsDTO dto = populateMfaSettings(account);
     model.addAttribute("factors", dto.toJson());
 
+    SecurityContext context = SecurityContextHolder.getContext();
+    
+    if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
+     Set<GrantedAuthority> fullyAuthenticatedAuthorities = authentication.getAuthorities()
+        .stream()
+        .collect(Collectors.toSet());
+      User user = (User) preAuthenticatedAuthenticationToken.getPrincipal();
+      IamAuthenticationMethodReference pwd =
+        new IamAuthenticationMethodReference(X509.getValue());
+      Set<IamAuthenticationMethodReference> refs = new HashSet<>();
+      refs.add(pwd);
+  
+    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(user.getUsername(), user.getPassword(),
+      fullyAuthenticatedAuthorities);
+      token.setAuthenticated(false);
+      token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
+      token.setAuthenticationMethodReferences(refs);
+      token.setGeneratedFromX509(true);
+      context.setAuthentication(token);
+    }
     return "iam/verify-mfa";
   }
 

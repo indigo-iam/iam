@@ -52,6 +52,7 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
+  private boolean generatedFromX509;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -100,6 +101,14 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   @Override
   public Object getPrincipal() {
     return this.principal;
+  }
+
+  public boolean isGeneratedFromX509() {
+    return generatedFromX509;
+  }
+
+  public void setGeneratedFromX509(boolean generatedFromX509) {
+    this.generatedFromX509 = generatedFromX509;
   }
 
   @Override
