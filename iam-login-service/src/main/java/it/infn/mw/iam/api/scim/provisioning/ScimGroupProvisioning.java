@@ -258,6 +258,23 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
     IamGroup newGroup = converter.entityFromDto(scimItemToBeReplaced);
+
+    String fullName;
+    if (oldGroup.getParentGroup() != null) {
+      String parentGroupName = oldGroup.getParentGroup().getName();
+      fullName = String.format("%s/%s", parentGroupName, scimItemToBeReplaced.getDisplayName());
+
+      fullNameSanityChecks(fullName);
+      newGroup.setName(fullName);
+    } else {
+      fullName = displayName;
+    }
+
+    if (oldGroup.getChildrenGroups() != null) {
+      oldGroup.getChildrenGroups()
+        .forEach(child -> updateGroupAndDescendants(child, oldGroup.getName(), fullName));
+    }
+
     groupService.updateGroup(oldGroup, newGroup);
 
     return converter.dtoFromEntity(newGroup);
@@ -318,6 +335,19 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     results.resources(resources);
     return results.build();
 
+  }
+
+  private void updateGroupAndDescendants(IamGroup group, String oldGroupName, String newGroupName) {
+    if (group.getName().startsWith(oldGroupName + "/")) {
+      String relativeName = group.getName().substring(oldGroupName.length());
+      String updatedName = newGroupName + relativeName;
+      group.setName(updatedName);
+    }
+
+    if (group.getChildrenGroups() != null) {
+      group.getChildrenGroups()
+        .forEach(child -> updateGroupAndDescendants(child, oldGroupName, newGroupName));
+    }
   }
 
 }
