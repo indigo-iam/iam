@@ -260,7 +260,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       fullName = displayName;
     }
 
-    if (oldGroup.getChildrenGroups() != null) {
+    if (!oldGroup.getChildrenGroups().isEmpty()) {
       oldGroup.getChildrenGroups()
         .forEach(child -> updateGroupAndDescendants(child, oldGroup.getName(), fullName));
     }
