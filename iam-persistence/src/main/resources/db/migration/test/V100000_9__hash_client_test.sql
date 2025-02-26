@@ -1,0 +1,2 @@
+UPDATE client_details SET client_secret = '$2a$12$P6AOS2.9DS6L.VaI1qjWnuVFbqUlpU449WDpISytV23H2ANUq0Gtu' WHERE client_secret = 'secret';
+UPDATE client_details SET client_secret = '$2a$12$I4lKKnqnZ0FPqiIf/5WyzONevtVwA/RjftzmhMDhRZPTT4NiRcMsa' WHERE client_secret = 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7';
