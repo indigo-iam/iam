@@ -37,6 +37,7 @@ import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationSer
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,17 +65,33 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
+import it.infn.mw.iam.authn.oidc.service.DefaultOidcUserDetailsService;
+import it.infn.mw.iam.authn.oidc.service.JustInTimeProvisioningOIDCUserDetailsService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
+@EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
 public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
+
+  @Autowired
+  private AUPSignatureCheckService aupSignatureCheckService;
+
+  @Autowired
+  private AccountUtils accountUtils;
+
+  @Autowired
+  private IamOidcJITAccountProvisioningProperties jitProperties;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -147,13 +164,12 @@ public class OidcConfiguration {
 
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
-      SessionTimeoutHelper timeoutHelper, IamAccountRepository accountRepo,
-      InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository) {
+      OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
+      AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper) {
 
-    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(validator, timeoutHelper,
-        accountRepo, inactiveAccountHandler, totpMfaRepository);
+    OidcAuthenticationProvider provider =
+        new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 
@@ -224,6 +240,18 @@ public class OidcConfiguration {
   }
 
   @Bean
+  OidcUserDetailsService oidcUserDetailsService(IamAccountRepository repo,
+      InactiveAccountAuthenticationHander handler, IamAccountService accountService) {
+
+    if (jitProperties.isEnabled()) {
+      return new JustInTimeProvisioningOIDCUserDetailsService(repo, handler, accountService,
+          jitProperties.getTrustedIdpsAsOptionalSet());
+    }
+
+    return new DefaultOidcUserDetailsService(repo, handler);
+  }
+
+  @Bean
   UserInfoFetcher userInfoFetcher() {
     return new UserInfoFetcher();
   }
@@ -232,4 +260,5 @@ public class OidcConfiguration {
   OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }
+
 }
