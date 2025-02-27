@@ -28,3 +28,10 @@ oidc:
       style: btn-social btn-google
       image:
         fa-icon: google
+
+  jit-account-provisioning:
+    enabled: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_ENABLED:false}
+    trusted-idps: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_TRUSTED_IDPS:all}
+    cleanup-task-enabled: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_ENABLED:false}
+    cleanup-task-period-sec: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_CLEANUP_TASK_PERIOD_SEC:86400}
+    inactive-account-lifetime-days:  ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_INACTIVE_ACCOUNT_LIFETIME_DAYS:15}
