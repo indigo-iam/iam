@@ -76,15 +76,15 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    boolean isGeneratedFromX509 = false;
+    boolean isPreAuthenticated = false;
     if(authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken){
-      isGeneratedFromX509 = extendedAuthenticationToken.isGeneratedFromX509();
+      isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
     
     // The first step is to validate the default login credentials. Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
-    if (!isGeneratedFromX509) {
+    if (!isPreAuthenticated) {
       UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
           authentication.getPrincipal(), authentication.getCredentials());
       authentication = super.authenticate(userpassToken);

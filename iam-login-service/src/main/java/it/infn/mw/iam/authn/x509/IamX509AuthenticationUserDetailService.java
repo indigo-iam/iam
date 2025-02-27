@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.authn.x509;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -61,13 +62,16 @@ public class IamX509AuthenticationUserDetailService
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
     
     if(totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()){
-      Set<IamAuthority> currentAuthorities = account.getAuthorities();
-      // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify endpoint
-      currentAuthorities.add(new IamAuthority("ROLE_PRE_AUTHENTICATED"));
-      account.setAuthorities(currentAuthorities);
+      addPreAuthenticatedRole(account);
     }
-
+    
     return AuthenticationUtils.userFromIamAccount(account);
+  }
+
+  private void addPreAuthenticatedRole(IamAccount account) {
+    Set<IamAuthority> currentAuthorities = new HashSet<>(account.getAuthorities());
+    currentAuthorities.add(new IamAuthority("ROLE_PRE_AUTHENTICATED"));
+    account.setAuthorities(currentAuthorities);
   }
 
   @Override
