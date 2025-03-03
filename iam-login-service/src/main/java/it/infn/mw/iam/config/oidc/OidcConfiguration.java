@@ -90,9 +90,6 @@ public class OidcConfiguration {
   @Autowired
   private AccountUtils accountUtils;
 
-  @Autowired
-  private IamOidcJITAccountProvisioningProperties jitProperties;
-
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
   @Bean
@@ -241,7 +238,8 @@ public class OidcConfiguration {
 
   @Bean
   OidcUserDetailsService oidcUserDetailsService(IamAccountRepository repo,
-      InactiveAccountAuthenticationHander handler, IamAccountService accountService) {
+      InactiveAccountAuthenticationHander handler, IamAccountService accountService,
+      IamOidcJITAccountProvisioningProperties jitProperties) {
 
     if (jitProperties.isEnabled()) {
       return new JustInTimeProvisioningOIDCUserDetailsService(repo, handler, accountService,
