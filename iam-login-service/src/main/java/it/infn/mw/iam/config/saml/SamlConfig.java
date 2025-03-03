@@ -194,9 +194,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   private AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator;
 
   @Autowired
-  private IamAccountRepository repo;
-
-  @Autowired
   private IamAccountService accountService;
 
   @Autowired
@@ -895,7 +892,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(samlAuthenticationProvider(resolver, repo, inactiveAccountHandler,
+    auth.authenticationProvider(samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler,
         mappingResolver, validator, sessionTimeoutHelper));
   }
 

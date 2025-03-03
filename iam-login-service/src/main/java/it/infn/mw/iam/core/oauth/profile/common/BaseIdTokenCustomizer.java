@@ -47,7 +47,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
   private final IamProperties properties;
   private final IamTotpMfaRepository totpMfaRepository;
 
-  public BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties,
+  protected BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties,
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepo = accountRepo;
     this.properties = properties;
