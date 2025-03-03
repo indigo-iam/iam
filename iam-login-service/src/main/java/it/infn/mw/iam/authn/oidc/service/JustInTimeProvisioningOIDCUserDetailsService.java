@@ -58,7 +58,7 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
   }
 
   private IamAccount provisionAccount(OIDCAuthenticationToken token) {
-    checkTrustedIdp(token.getIssuer().toString());
+    checkTrustedIdp(token.getIssuer());
     checkRequiredClaims(token);
 
     IamAccount newAccount = IamAccount.newAccount();
@@ -84,7 +84,7 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
 
   @Override
   public Object loadUserByOIDC(OIDCAuthenticationToken token) {
-    Optional<IamAccount> account = repo.findByOidcId(token.getIssuer().toString(), token.getSub());
+    Optional<IamAccount> account = repo.findByOidcId(token.getIssuer(), token.getSub());
 
     if (account.isPresent()) {
       return buildUserFromIamAccount(account.get());
