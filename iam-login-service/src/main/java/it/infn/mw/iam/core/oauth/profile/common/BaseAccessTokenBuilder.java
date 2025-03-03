@@ -69,7 +69,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   protected final AccountUtils accountUtils;
 
-  public BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+  protected BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
       AccountUtils accountUtils) {
     this.properties = properties;
     this.totpMfaRepository = totpMfaRepository;
