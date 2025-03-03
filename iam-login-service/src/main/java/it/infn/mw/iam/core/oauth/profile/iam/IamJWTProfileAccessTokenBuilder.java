@@ -30,8 +30,10 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -41,8 +43,9 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   protected final ClaimValueHelper claimValueHelper;
 
   public IamJWTProfileAccessTokenBuilder(IamProperties properties,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper) {
-    super(properties);
+    super(properties, totpMfaRepository, accountUtils);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.authn.oidc;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.EXT_OIDC_PROVIDER;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.HashSet;
@@ -86,7 +87,8 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
       OidcExternalAuthenticationToken extToken;
 
-      IamAuthenticationMethodReference pwd = new IamAuthenticationMethodReference("oidc");
+      IamAuthenticationMethodReference pwd =
+          new IamAuthenticationMethodReference(EXT_OIDC_PROVIDER.getValue());
       Set<IamAuthenticationMethodReference> refs = new HashSet<>();
       refs.add(pwd);
 

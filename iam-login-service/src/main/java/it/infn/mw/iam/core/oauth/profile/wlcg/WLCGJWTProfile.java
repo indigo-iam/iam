@@ -20,6 +20,7 @@ import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
@@ -31,6 +32,7 @@ import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class WLCGJWTProfile implements JWTProfile, RequestValidator {
@@ -44,16 +46,16 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
   private final IntrospectionResultHelper introspectionHelper;
   private final WLCGGroupHelper groupHelper;
 
-  public WLCGJWTProfile(IamProperties properties, UserInfoService userInfoService,
-      IamAccountRepository accountRepo, WLCGGroupHelper groupHelper,
-      AttributeMapHelper attributeHelper,
+  public WLCGJWTProfile(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, UserInfoService userInfoService, IamAccountRepository accountRepo,
+      WLCGGroupHelper groupHelper, AttributeMapHelper attributeHelper,
       IntrospectionResultAssembler defaultAssembler, ScopeMatcherRegistry registry,
       ScopeClaimTranslationService claimTranslationService, ClaimValueHelper claimValueHelper) {
-    accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(properties, groupHelper, attributeHelper);
+    accessTokenBuilder = new WLCGProfileAccessTokenBuilder(properties, totpMfaRepository,
+        accountUtils, groupHelper, attributeHelper);
 
     idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo, claimTranslationService,
-        claimValueHelper, groupHelper, properties);
+        claimValueHelper, groupHelper, properties, totpMfaRepository);
 
     userInfoHelper = new WLCGUserinfoHelper(properties, userInfoService);
     introspectionHelper =

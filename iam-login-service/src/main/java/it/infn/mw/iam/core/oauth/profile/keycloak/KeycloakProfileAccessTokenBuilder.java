@@ -29,8 +29,10 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -41,8 +43,9 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   final KeycloakGroupHelper groupHelper;
 
   public KeycloakProfileAccessTokenBuilder(IamProperties properties,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
       KeycloakGroupHelper groupHelper) {
-    super(properties);
+    super(properties, totpMfaRepository, accountUtils);
     this.groupHelper = groupHelper;
   }
 

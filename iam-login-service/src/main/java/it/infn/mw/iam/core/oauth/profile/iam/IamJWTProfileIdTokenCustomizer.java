@@ -31,6 +31,7 @@ import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
@@ -40,8 +41,8 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
   public IamJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
-      IamProperties properties) {
-    super(accountRepo, properties);
+      IamProperties properties, IamTotpMfaRepository totpMfaRepository) {
+    super(accountRepo, properties, totpMfaRepository);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }
@@ -59,7 +60,7 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       .filter(ADDITIONAL_CLAIMS::contains)
       .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
 
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, account);
 
     includeLabelsInIdToken(idClaims, account);
   }
