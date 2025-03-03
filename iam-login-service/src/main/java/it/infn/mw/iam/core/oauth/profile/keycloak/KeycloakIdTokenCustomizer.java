@@ -30,6 +30,7 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
@@ -38,8 +39,9 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public KeycloakIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
-      KeycloakGroupHelper groupHelper, IamProperties properties) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
+      KeycloakGroupHelper groupHelper, IamProperties properties,
+      IamTotpMfaRepository totpMfaRepository) {
+    super(accountRepo, scopeClaimConverter, claimValueHelper, properties, totpMfaRepository);
     this.groupHelper = groupHelper;
   }
 
@@ -59,8 +61,9 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     // Drop group claims as set by IAM JWT profile
     idClaims.claim("groups", null);
 
-    includeLabelsInIdToken(idClaims, account);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, account);
 
+    includeLabelsInIdToken(idClaims, account);
   }
 
 }

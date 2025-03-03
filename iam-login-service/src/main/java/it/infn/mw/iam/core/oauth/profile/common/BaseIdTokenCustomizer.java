@@ -34,7 +34,9 @@ import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
@@ -43,10 +45,13 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   private final IamAccountRepository accountRepo;
   private final IamProperties properties;
+  private final IamTotpMfaRepository totpMfaRepository;
 
-  public BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties) {
+  public BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties,
+      IamTotpMfaRepository totpMfaRepository) {
     this.accountRepo = accountRepo;
     this.properties = properties;
+    this.totpMfaRepository = totpMfaRepository;
   }
 
   public IamAccountRepository getAccountRepo() {
@@ -76,7 +81,8 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
     }
   }
 
-  protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder) {
+  protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
+      IamAccount account) {
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim instanceof String amrString) {
@@ -87,12 +93,15 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
         builder.claim("amr", amrList);
 
-        if (amrString.contains("otp")) {
-          builder.claim("acr", "https://referds.org/profile/MFA");
-        }
       } catch (Exception e) {
         LOG.error("Failed to deserialize amr claim", e);
       }
+    }
+
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+
+    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+      builder.claim("acr", "https://referds.org/profile/MFA");
     }
   }
 

@@ -24,6 +24,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -41,8 +42,12 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
@@ -60,8 +65,15 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
 
-  public BaseAccessTokenBuilder(IamProperties properties) {
+  protected final IamTotpMfaRepository totpMfaRepository;
+
+  protected final AccountUtils accountUtils;
+
+  public BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils) {
     this.properties = properties;
+    this.totpMfaRepository = totpMfaRepository;
+    this.accountUtils = accountUtils;
   }
 
 
@@ -171,10 +183,14 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
-    Object amr = authentication.getOAuth2Request().getExtensions().get("amr");
 
-    if (amr instanceof String amrString && amrString.contains("otp")) {
-      builder.claim("acr", "https://referds.org/profile/MFA");
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authentication);
+    if (account.isPresent()) {
+      Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
+
+      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+        builder.claim("acr", "https://referds.org/profile/MFA");
+      }
     }
   }
 }
