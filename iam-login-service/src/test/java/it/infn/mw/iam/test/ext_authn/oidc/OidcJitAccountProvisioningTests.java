@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,7 +36,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.test.context.TestPropertySource;
 
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.oidc.service.JustInTimeProvisioningOIDCUserDetailsService;
@@ -46,7 +44,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @RunWith(MockitoJUnitRunner.class)
-@TestPropertySource(properties = {"oidc.jit-account-provisioning.enabled=true"})
 public class OidcJitAccountProvisioningTests {
 
   @Mock
@@ -124,7 +121,7 @@ public class OidcJitAccountProvisioningTests {
   public void loadUserByOIDCUntrustedIdpThrowsException() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
-    when(token.getIssuer()).thenReturn(URI.create("https://untrusted-idp.com").toString());
+    when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
 
     assertThrows(UsernameNotFoundException.class, () -> service.loadUserByOIDC(token));
   }
@@ -133,7 +130,7 @@ public class OidcJitAccountProvisioningTests {
   public void loadUserByOIDCMissingClaimsThrowsException() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
-    when(token.getIssuer()).thenReturn(URI.create("https://trusted-idp.com").toString());
+    when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getUserInfo()).thenReturn(mock(UserInfo.class));
 
     UserInfo userInfo = token.getUserInfo();
