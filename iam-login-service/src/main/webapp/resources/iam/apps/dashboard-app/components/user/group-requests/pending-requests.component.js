@@ -78,7 +78,7 @@
         }
 
         function loadGroupRequests() {
-            return GroupRequestsService.getAllPendingGroupRequestsForAuthenticatedUser().then(function (reqs) {
+            return GroupRequestsService.getAllPendingGroupRequestsForUser(self.user.userName).then(function (reqs) {
                 self.groupRequests = reqs;
             });
         }

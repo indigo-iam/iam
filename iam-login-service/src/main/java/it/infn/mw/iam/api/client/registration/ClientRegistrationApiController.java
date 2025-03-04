@@ -23,7 +23,6 @@ import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -57,7 +56,6 @@ public class ClientRegistrationApiController {
 
   private final ClientRegistrationService service;
 
-  @Autowired
   public ClientRegistrationApiController(ClientRegistrationService service) {
     this.service = service;
   }

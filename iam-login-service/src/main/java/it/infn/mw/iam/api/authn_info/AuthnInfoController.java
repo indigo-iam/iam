@@ -19,8 +19,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
@@ -31,7 +30,7 @@ public class AuthnInfoController {
 
   public static final String BASE_RESOURCE = "/iam/authn-info";
 
-  @RequestMapping(value=BASE_RESOURCE, method=RequestMethod.GET)
+  @GetMapping(value=BASE_RESOURCE)
   @PreAuthorize("hasRole('" + EXT_AUTHN_UNREGISTERED_USER_ROLE + "')")
   public ExternalAuthenticationRegistrationInfo getAuthenticationInfo() {
 

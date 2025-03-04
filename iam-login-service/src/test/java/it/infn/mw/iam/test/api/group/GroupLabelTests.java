@@ -130,9 +130,9 @@ public class GroupLabelTests extends TestSupport {
       .andExpect(jsonPath("$").isArray())
       .andExpect(jsonPath("$").isEmpty());
   }
-  
+
   @Test
-  @WithMockOAuthUser(user="admin", authorities= {"ROLE_ADMIN", "ROLE_USER"})
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
   public void gettingLabelsWorksForAdminOAuthUser() throws Exception {
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 

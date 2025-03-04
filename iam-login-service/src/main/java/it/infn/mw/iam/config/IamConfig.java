@@ -165,15 +165,15 @@ public class IamConfig {
 
   @Bean(name = "kcJwtProfile")
   JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, UserInfoService userInfoService, ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
+      ScopeClaimTranslationService converter, UserInfoService userInfoService,
+      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
     KeycloakProfileAccessTokenBuilder atBuilder =
         new KeycloakProfileAccessTokenBuilder(props, groupHelper);
 
-    KeycloakUserinfoHelper uiHelper =
-        new KeycloakUserinfoHelper(props, userInfoService);
+    KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
     KeycloakIdTokenCustomizer idHelper =
         new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
@@ -181,7 +181,7 @@ public class IamConfig {
     BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
         new DefaultIntrospectionResultAssembler(), registry, groupHelper);
 
-	return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
+    return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
   @Bean(name = "iamJwtProfile")
@@ -221,8 +221,7 @@ public class IamConfig {
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
       @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
-      @Qualifier("kcJwtProfile") JWTProfile kcProfile,
-      IamProperties properties,
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties,
       ClientDetailsService clientDetailsService) {
 
     JWTProfile defaultProfile = iamProfile;
@@ -283,18 +282,17 @@ public class IamConfig {
   FilterRegistrationBean<EnforceAupFilter> aupSignatureCheckFilter(AUPSignatureCheckService service,
       AccountUtils utils, IamAupRepository repo) {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
-    FilterRegistrationBean<EnforceAupFilter> frb =
-        new FilterRegistrationBean<>(aupFilter);
+    FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
 
-
-
   @Bean
-  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties, SystemScopeRepository scopeRepo) {
+  ScopeMatcherRegistry customScopeMatchersRegistry(ScopeMatchersProperties properties,
+      SystemScopeRepository scopeRepo) {
     ScopeMatchersPropertiesParser parser = new ScopeMatchersPropertiesParser();
-    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties), scopeRepo);
+    return new DefaultScopeMatcherRegistry(parser.parseScopeMatchersProperties(properties),
+        scopeRepo);
   }
 
   @Bean
@@ -320,5 +318,4 @@ public class IamConfig {
     cs.setSameSite(null);
     return cs;
   }
-
 }

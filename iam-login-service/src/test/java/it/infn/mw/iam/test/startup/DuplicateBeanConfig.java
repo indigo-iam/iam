@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.scope.pdp;
+package it.infn.mw.iam.test.startup;
 
-import java.util.Set;
+import org.mitre.openid.connect.token.TofuUserApprovalHandler;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 
-import org.springframework.security.core.Authentication;
+@SuppressWarnings("deprecation")
+@Configuration
+public class DuplicateBeanConfig {
 
-@FunctionalInterface
-public interface IamScopeFilter {
-  
-  public void filterScopes(Set<String> scopes, Authentication authn);
-
+  @Bean
+  UserApprovalHandler userApprovalHandler2() {
+    return new TofuUserApprovalHandler();
+  }
 }

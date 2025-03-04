@@ -59,7 +59,6 @@ import org.mitre.openid.connect.service.impl.MITREidDataService_1_2;
 import org.mitre.openid.connect.service.impl.MatchLoginHintsAgainstUsers;
 import org.mitre.openid.connect.service.impl.UUIDPairwiseIdentiferService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
-import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.mitre.openid.connect.web.ServerConfigInterceptor;
 import org.mitre.uma.service.ResourceSetService;
@@ -70,7 +69,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
-import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
@@ -87,7 +85,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.core.oauth.scope.pdp.IamScopeFilter;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 
@@ -108,7 +106,7 @@ public class MitreServicesConfig {
   private String topbarTitle;
 
   @Bean
-  public ConfigurationPropertiesBean config(IamProperties properties) {
+  ConfigurationPropertiesBean config(IamProperties properties) {
 
     ConfigurationPropertiesBean config = new ConfigurationPropertiesBean();
 
@@ -129,15 +127,16 @@ public class MitreServicesConfig {
 
     config.setForceHttps(false);
     config.setLocale(Locale.ENGLISH);
-    
-    config.setAllowCompleteDeviceCodeUri(properties.getDeviceCode().getAllowCompleteVerificationUri());
+
+    config
+      .setAllowCompleteDeviceCodeUri(properties.getDeviceCode().getAllowCompleteVerificationUri());
 
     return config;
   }
 
 
   @Bean
-  public UIConfiguration uiConfiguration() {
+  UIConfiguration uiConfiguration() {
 
     Set<String> jsFiles =
         Sets.newHashSet("resources/js/client.js", "resources/js/grant.js", "resources/js/scope.js",
@@ -163,14 +162,7 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  UserApprovalHandler tofuApprovalHandler() {
-
-    return new TofuUserApprovalHandler();
-  }
-
-  @Bean
-  OAuth2RequestFactory requestFactory(IamScopeFilter scopeFilter,
-      JWTProfileResolver profileResolver) {
+  OAuth2RequestFactory requestFactory(ScopeFilter scopeFilter, JWTProfileResolver profileResolver) {
     return new IamOAuth2RequestFactory(clientDetailsEntityService(), scopeFilter, profileResolver);
   }
 
@@ -188,47 +180,46 @@ public class MitreServicesConfig {
 
 
   @Bean(name = "mitreUserInfoInterceptor")
-  public IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {
+  IamUserInfoInterceptor userInfoInterceptor(UserInfoService service) {
 
     return new IamUserInfoInterceptor(service);
   }
 
   @Bean(name = "mitreServerConfigInterceptor")
-  public ServerConfigInterceptor serverConfigInterceptor() {
+  ServerConfigInterceptor serverConfigInterceptor() {
 
     return new ServerConfigInterceptor();
   }
 
   @Bean
-  public FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
+  FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
       AuthorizationRequestFilter f) {
 
-    FilterRegistrationBean<AuthorizationRequestFilter> b =
-        new FilterRegistrationBean<>(f);
+    FilterRegistrationBean<AuthorizationRequestFilter> b = new FilterRegistrationBean<>(f);
     b.setEnabled(false);
     return b;
   }
 
   @Bean(name = "mitreAuthzRequestFilter")
-  public AuthorizationRequestFilter authorizationRequestFilter() {
+  AuthorizationRequestFilter authorizationRequestFilter() {
 
     return new AuthorizationRequestFilter();
   }
 
   @Bean
-  public AuthenticationTimeStamper timestamper() {
+  AuthenticationTimeStamper timestamper() {
 
     return new AuthenticationTimeStamper();
   }
 
   @Bean
-  public Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
+  Http403ForbiddenEntryPoint http403ForbiddenEntryPoint() {
 
     return new Http403ForbiddenEntryPoint();
   }
 
   @Bean
-  public OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
+  OAuth2AuthenticationEntryPoint oauth2AuthenticationEntryPoint() {
 
     OAuth2AuthenticationEntryPoint entryPoint = new OAuth2AuthenticationEntryPoint();
     entryPoint.setRealmName("openidconnect");
@@ -236,20 +227,20 @@ public class MitreServicesConfig {
   }
 
   @Bean
-  public TokenEnhancer defaultTokenEnhancer() {
+  TokenEnhancer defaultTokenEnhancer() {
 
     return new ConnectTokenEnhancer();
   }
 
   @Bean(name = "clientUserDetailsService")
-  public ClientUserDetailsService defaultClientUserDetailsService(
+  ClientUserDetailsService defaultClientUserDetailsService(
       ClientDetailsEntityService clientService) {
 
     return new IAMClientUserDetailsService(clientService);
   }
 
   @Bean
-  public DynamicClientValidationService clientValidationService(ScopeMatcherRegistry registry,
+  DynamicClientValidationService clientValidationService(ScopeMatcherRegistry registry,
       SystemScopeService scopeService, BlacklistedSiteService blacklistService,
       ConfigurationPropertiesBean config,
       @Qualifier("clientAssertionValidator") AssertionValidator validator,
