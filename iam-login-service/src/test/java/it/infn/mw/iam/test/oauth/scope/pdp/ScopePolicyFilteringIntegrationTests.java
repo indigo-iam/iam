@@ -35,6 +35,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -71,6 +72,9 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  protected ObjectMapper mapper;
 
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
@@ -109,8 +113,6 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
 
     IamScopePolicy up = initDenyScopePolicy();
     up.setAccount(testAccount);
-    up.setRule(PolicyRule.DENY);
-
     scopePolicyRepo.save(up);
 
     String clientId = "password-grant";
@@ -121,10 +123,21 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
         .param("grant_type", "password")
         .param("username", "test")
         .param("password", "password")
-        .param("scope", "openid profile scim:read"))
+        .param("scope", "openid scim:read"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.scope").doesNotExist())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", equalTo("openid")))
       .andExpect(jsonPath("$.id_token").exists());
+
+    mvc
+    .perform(post("/token").with(httpBasic(clientId, clientSecret))
+      .param("grant_type", "password")
+      .param("username", "test")
+      .param("password", "password")
+      .param("scope", "profile scim:read"))
+    .andExpect(status().isOk())
+    .andExpect(jsonPath("$.scope").doesNotExist())
+    .andExpect(jsonPath("$.id_token").doesNotExist());
   }
 
   @Test
@@ -134,7 +147,6 @@ public class ScopePolicyFilteringIntegrationTests extends ScopePolicyTestUtils {
 
     IamScopePolicy up = initDenyScopePolicy();
     up.setAccount(testAccount);
-    up.setRule(PolicyRule.DENY);
     up.setScopes(Sets.newHashSet("read-tasks"));
 
     scopePolicyRepo.save(up);

@@ -17,15 +17,13 @@ package it.infn.mw.iam.test.api.account.search;
 
 import static it.infn.mw.iam.api.account.search.AbstractSearchController.DEFAULT_ITEMS_PER_PAGE;
 import static it.infn.mw.iam.api.account.search.GroupSearchController.GROUP_SEARCH_ENDPOINT;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.junit.After;
@@ -33,13 +31,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -79,15 +76,28 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithInvalidSortDirection() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsWithInvalidSortDirectionWithToken() throws Exception {
+
+    testSearchGroupsWithInvalidSortDirection();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsWithInvalidSortDirectionWithUser() throws Exception {
+
+    testSearchGroupsWithInvalidSortDirection();
+  }
+
+  private void testSearchGroupsWithInvalidSortDirection() throws Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortDirection", "pippo"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortDirection", "pippo"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -97,15 +107,29 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsSortByNameAsc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsSortByNameAscWithToken() throws Exception {
+
+    testSearchGroupsSortByNameAsc();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsSortByNameAscWithUser() throws Exception {
+
+    testSearchGroupsSortByNameAsc();
+  }
+
+  private void testSearchGroupsSortByNameAsc() throws Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortBy", "name").param("sortDirection", "asc"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortBy", "name")
+        .param("sortDirection", "asc"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -115,15 +139,29 @@ public class GroupSearchControllerSortTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsSortByNameDesc() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
+  public void testSearchGroupsSortByNameDescWithToken() throws Exception {
+
+    testSearchGroupsSortByNameDesc();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSearchGroupsSortByNameDescWithUser() throws Exception {
+
+    testSearchGroupsSortByNameDesc();
+  }
+
+  private void testSearchGroupsSortByNameDesc() throws Exception {
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("sortBy", "name").param("sortDirection", "desc"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("sortBy", "name")
+        .param("sortDirection", "desc"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(groupRepository.count()));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));

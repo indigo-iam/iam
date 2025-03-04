@@ -17,29 +17,27 @@ package it.infn.mw.iam.api.requests.model;
 
 import java.util.Date;
 
-import javax.validation.constraints.NotEmpty;
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import it.infn.mw.iam.api.requests.validator.GroupRequest;
 import it.infn.mw.iam.api.validators.IamGroupName;
-import it.infn.mw.iam.api.validators.IamGroupRequestNotes;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@GroupRequest
+@Valid
 public class GroupRequestDto {
 
   private String uuid;
 
   private String username;
-  
+
   private String userUuid;
   
   private String userFullName;
 
-  @NotEmpty
   @IamGroupName(message = "Invalid membership request: group does not exist")
   private String groupName;
   
@@ -47,8 +45,7 @@ public class GroupRequestDto {
 
   private String status;
 
-  @NotEmpty
-  @IamGroupRequestNotes(message = "Invalid membership request: notes cannot be empty")
+  @NotBlank(message = "Invalid membership request: notes cannot be empty")
   private String notes;
 
   private String motivation;

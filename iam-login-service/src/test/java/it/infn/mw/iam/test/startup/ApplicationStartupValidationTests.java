@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.scope.pdp;
+package it.infn.mw.iam.test.startup;
 
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
+import org.junit.Test;
+import org.springframework.beans.BeansException;
 
-@Component
-@ConditionalOnProperty(name="iam.enableScopeAuthz", havingValue="false", matchIfMissing=true)
-public class IamNullScopeFilter implements IamScopeFilter {
+import it.infn.mw.iam.IamLoginService;
 
-  @Override
-  public void filterScopes(Set<String> scopes, Authentication authn) {
-    // do nothing
+public class ApplicationStartupValidationTests {
+
+  @Test(expected = BeansException.class)
+  public void testFailureOnStatupDueToWrongEnum() {
+
+    IamLoginService.main(new String[] {"--iam.jwt-profile.default-profile=pippo"});
+  }
+
+  @Test
+  public void testSuccessStatup() {
+
+    assertDoesNotThrow(() -> IamLoginService.main(new String[] {}));
   }
 
 }

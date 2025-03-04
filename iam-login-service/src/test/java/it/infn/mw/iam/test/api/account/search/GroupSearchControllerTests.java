@@ -20,14 +20,12 @@ import static it.infn.mw.iam.api.account.search.GroupSearchController.GROUP_SEAR
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import org.junit.After;
@@ -36,13 +34,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 
@@ -52,7 +49,6 @@ import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -89,16 +85,17 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getFirstPageOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getFirstPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
-    ListResponseDTO<ScimGroup> response = mapper.readValue(
-        mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+    ListResponseDTO<ScimGroup> response = mapper
+      .readValue(mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -106,17 +103,18 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getSecondPageOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getSecondPageOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
-    ListResponseDTO<ScimGroup> response = mapper.readValue(
-        mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", String.valueOf(DEFAULT_ITEMS_PER_PAGE))).andExpect(status().isOk())
-            .andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+    ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", String.valueOf(DEFAULT_ITEMS_PER_PAGE)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(DEFAULT_ITEMS_PER_PAGE));
@@ -124,19 +122,21 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithCustomStartIndexAndCount() throws JsonParseException,
-      JsonMappingException, UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getGroupsWithCustomStartIndexAndCount() throws Exception {
 
     long expectedSize = groupRepository.count();
     int startIndex = 3;
     int count = 2;
 
-    ListResponseDTO<ScimGroup> response = mapper.readValue(
-        mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", String.valueOf(startIndex)).param("count", String.valueOf(count)))
-            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+    ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", String.valueOf(startIndex))
+        .param("count", String.valueOf(count)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(count));
     assertThat(response.getStartIndex(), equalTo(startIndex));
@@ -144,17 +144,18 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getCountOfAllGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getCountOfAllGroups() throws Exception {
 
     long expectedSize = groupRepository.count();
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("count", "0"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(
+          get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE).param("count", "0"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources(), is(empty()));
     assertThat(response.getStartIndex(), nullValue());
@@ -162,19 +163,21 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getFirstFilteredPageOfGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getFirstFilteredPageOfGroups() throws Exception {
 
     final String filter = "duction";
     OffsetPageable op = new OffsetPageable(0, 10);
-    Page<IamGroup> page = groupRepository.findByNameIgnoreCaseContainingOrUuidIgnoreCaseContaining(filter, filter, op);
+    Page<IamGroup> page = groupRepository
+      .findByNameIgnoreCaseContainingOrUuidIgnoreCaseContaining(filter, filter, op);
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("filter", filter))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("filter", filter))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
 
     assertThat(response.getResources().size(), equalTo(1));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -186,19 +189,20 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getCountOfFilteredGroups() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getCountOfFilteredGroups() throws Exception {
 
     final String filter = "duction";
     long expectedSize = 1;
 
-    ListResponseDTO<ScimGroup> response =
-        mapper.readValue(
-            mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-                .param("count", "0").param("filter", filter)).andExpect(status().isOk()).andReturn()
-                .getResponse().getContentAsString(),
-            new TypeReference<ListResponseDTO<ScimGroup>>() {});
+    ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "0")
+        .param("filter", filter))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources(), is(empty()));
     assertThat(response.getStartIndex(), nullValue());
@@ -208,21 +212,22 @@ public class GroupSearchControllerTests {
   @Test
   public void getGroupsAsAnonymousUser() throws Exception {
     mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-        .andExpect(status().isUnauthorized());
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithNegativeStartIndex() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getGroupsWithNegativeStartIndex() throws Exception {
 
     long expectedSize = groupRepository.count();
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", "-1"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", "-1"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -230,17 +235,18 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithStartIndexZero() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getGroupsWithStartIndexZero() throws Exception {
 
     long expectedSize = groupRepository.count();
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", "0"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", "0"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -248,18 +254,18 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithCountBiggerThanPageSize() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getGroupsWithCountBiggerThanPageSize() throws Exception {
 
     long expectedSize = groupRepository.count();
 
-    ListResponseDTO<ScimGroup> response =
-        mapper.readValue(
-            mvc.perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-                .param("count", "" + DEFAULT_ITEMS_PER_PAGE * 2)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(),
-            new TypeReference<ListResponseDTO<ScimGroup>>() {});
+    ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "" + DEFAULT_ITEMS_PER_PAGE * 2))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getResources().get(0).getIndigoGroup(), not(nullValue()));
@@ -268,17 +274,18 @@ public class GroupSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"})
-  public void getGroupsWithNegativeCount() throws JsonParseException, JsonMappingException,
-      UnsupportedEncodingException, IOException, Exception {
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void getGroupsWithNegativeCount() throws Exception {
 
     long expectedSize = groupRepository.count();
 
     ListResponseDTO<ScimGroup> response = mapper.readValue(mvc
-        .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("count", "-1"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimGroup>>() {});
+      .perform(get(GROUP_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "-1"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimGroup>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));

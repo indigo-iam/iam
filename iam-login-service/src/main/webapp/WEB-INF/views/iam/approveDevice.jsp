@@ -109,7 +109,7 @@
 			</c:if>
 
 			<form name="confirmationForm"
-				action="${pageContext.request.contextPath.endsWith('/') ? pageContext.request.contextPath : pageContext.request.contextPath.concat('/') }authorize"
+				action="${pageContext.request.contextPath.endsWith('/') ? pageContext.request.contextPath : pageContext.request.contextPath.concat('/') }device/approve"
 				method="post">
 				&nbsp;
 				<div class="row">
@@ -187,33 +187,15 @@
 							code="approve.remember.next_time" />
 					</label>
 					<hr>
-					<div style="font-size: 12px; text-align: center;">
-						<c:choose>
-							<c:when test="${ empty client.redirectUris }">
-								<div class="alert alert-block alert-error">
-									<h4>
-										<i class="icon-info-sign"></i>
-										<spring:message code="approve.warning" />
-										:
-									</h4>
-									<spring:message code="approve.no_redirect_uri" />
-									<spring:message code="Authorizing will redirect to" />
-									<b><p>${ fn:escapeXml(redirect_uri) }</p></b>
-								</div>
-							</c:when>
-							<c:otherwise>
-								<spring:message code="Authorizing will redirect to" />
-								<b><p>${ fn:escapeXml(redirect_uri) }</p></b>
-							</c:otherwise>
-						</c:choose>
-					</div>
 					<div style="text-align: center;">
 						<spring:message code="approve.label.authorize"
 							var="authorize_label" />
 						<spring:message code="approve.label.deny" var="deny_label" />
 						<input id="user_oauth_approval" name="user_oauth_approval"
-							value="true" type="hidden" /> <input type="hidden"
-							name="${_csrf.parameterName}" value="${_csrf.token}" /> <input
+							value="true" type="hidden" />
+						<input type="hidden" name="user_code" value="${ dc.userCode }" />
+						<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+						<input
 							name="authorize" value="${authorize_label}" type="submit"
 							onclick="$('#user_oauth_approval').attr('value',true)"
 							class="btn btn-success btn-large" /> &nbsp; <input name="deny"

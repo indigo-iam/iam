@@ -132,7 +132,7 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(user="admin", authorities= {"ROLE_ADMIN", "ROLE_USER"})
+  @WithMockOAuthUser(scopes = {"iam:admin.read"})
   public void gettingLabelsWorksForAdminOAuthUser() throws Exception {
     gettingLabelsWorks();
   }

@@ -26,10 +26,14 @@ import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,15 +78,14 @@ public class ScimGroupController extends ScimControllerSupport {
   ScimGroupProvisioning groupProvisioningService;
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.GET,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = "/{id}", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimGroup getGroup(@PathVariable final String id) {
 
     return groupProvisioningService.getById(id);
   }
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
-  @RequestMapping(method = RequestMethod.GET, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listGroups(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes) {
@@ -105,7 +108,7 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(method = RequestMethod.POST, consumes = ScimConstants.SCIM_CONTENT_TYPE,
+  @PostMapping(consumes = ScimConstants.SCIM_CONTENT_TYPE,
       produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.CREATED)
   public ScimGroup create(@RequestBody @Validated final ScimGroup group,
@@ -116,8 +119,8 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  @RequestMapping(value = "/{id}", method = RequestMethod.PUT,
-      consumes = ScimConstants.SCIM_CONTENT_TYPE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PutMapping(value = "/{id}", consumes = ScimConstants.SCIM_CONTENT_TYPE,
+      produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.OK)
   public ScimGroup replaceGroup(@PathVariable final String id,
       @RequestBody @Validated final ScimGroup group, final BindingResult validationResult) {
@@ -125,12 +128,10 @@ public class ScimGroupController extends ScimControllerSupport {
     handleValidationError(INVALID_GROUP_MSG, validationResult);
 
     return groupProvisioningService.replace(id, group);
-
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id)")
-  @RequestMapping(value = "/{id}", method = RequestMethod.PATCH,
-      consumes = ScimConstants.SCIM_CONTENT_TYPE)
+  @PatchMapping(value = "/{id}", consumes = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void updateGroup(@PathVariable final String id,
       @RequestBody @Validated final ScimGroupPatchRequest groupPatchRequest,
@@ -142,7 +143,7 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:write') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id)")
-  @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
+  @DeleteMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteGroup(@PathVariable final String id) {
 
@@ -151,8 +152,7 @@ public class ScimGroupController extends ScimControllerSupport {
 
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
-  @RequestMapping(value = "/{id}/members", method = RequestMethod.GET,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = "/{id}/members", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listMembers(@PathVariable final String id,
       @RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex) {
@@ -162,8 +162,7 @@ public class ScimGroupController extends ScimControllerSupport {
   }
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAdminOrGMDashboardRoleOfGroup(#id) or #iam.hasDashboardRole('ROLE_READER')")
-  @RequestMapping(value = "/{id}/subgroups", method = RequestMethod.GET,
-      produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @GetMapping(value = "/{id}/subgroups", produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ScimListResponse<ScimMemberRef> listSubgroups(@PathVariable final String id,
       @RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex) {

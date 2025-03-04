@@ -100,7 +100,7 @@ public class AupSignatureController {
   }
 
   @PostMapping(value = "/iam/aup/signature")
-  @PreAuthorize("#iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("hasRole('ROLE_USER')")
   @ResponseStatus(code = HttpStatus.CREATED)
   public void signAup() throws AccountNotFoundException {
 
@@ -114,7 +114,7 @@ public class AupSignatureController {
   }
 
   @GetMapping(value = "/iam/aup/signature")
-  @PreAuthorize("#iam.hasDashboardRole('ROLE_USER')")
+  @PreAuthorize("hasRole('ROLE_USER')")
   public AupSignatureDTO getSignature() throws AccountNotFoundException {
 
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
