@@ -25,7 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
@@ -77,9 +76,7 @@ public class MfaVerifyController {
   private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
     Set<GrantedAuthority> authenticatedAuthorities = new HashSet<>(
         preAuthenticatedAuthenticationToken.getAuthorities());
-    if (preAuthenticatedAuthenticationToken.getPrincipal() instanceof User) {
-      User user = (User) preAuthenticatedAuthenticationToken.getPrincipal();
-
+    if (preAuthenticatedAuthenticationToken.getPrincipal() instanceof User user) {
       ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(user.getUsername(), "SECRET",
           authenticatedAuthorities);
       token.setAuthenticated(false);
