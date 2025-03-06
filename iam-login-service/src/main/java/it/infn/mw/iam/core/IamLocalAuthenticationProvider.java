@@ -81,7 +81,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
     
-    // The first step is to validate the default login credentials. Therefore, we convert the
+    // If not preauthenticated then the first step is to validate the default login credentials. Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
     if (!isPreAuthenticated) {

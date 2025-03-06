@@ -75,18 +75,19 @@ public class MfaVerifyController {
   }
 
   private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
-    SecurityContext context = SecurityContextHolder.getContext();
     Set<GrantedAuthority> authenticatedAuthorities = new HashSet<>(
         preAuthenticatedAuthenticationToken.getAuthorities());
-    User user = (User) preAuthenticatedAuthenticationToken.getPrincipal();
+    if (preAuthenticatedAuthenticationToken.getPrincipal() instanceof User) {
+      User user = (User) preAuthenticatedAuthenticationToken.getPrincipal();
 
-    ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(user.getUsername(), "SECRET",
-        authenticatedAuthorities);
-    token.setAuthenticated(false);
-    token.setAuthenticationMethodReferences(Set.of(
-        new IamAuthenticationMethodReference(X509.getValue())));
-    token.setPreAuthenticated(true);
-    context.setAuthentication(token);
+      ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(user.getUsername(), "SECRET",
+          authenticatedAuthorities);
+      token.setAuthenticated(false);
+      token.setAuthenticationMethodReferences(Set.of(
+          new IamAuthenticationMethodReference(X509.getValue())));
+      token.setPreAuthenticated(true);
+      SecurityContextHolder.getContext().setAuthentication(token);
+    }
   }
 
   /**

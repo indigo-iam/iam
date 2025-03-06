@@ -107,8 +107,8 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
     return preAuthenticated;
   }
 
-  public void setPreAuthenticated(boolean generatedFromX509) {
-    this.preAuthenticated = generatedFromX509;
+  public void setPreAuthenticated(boolean preAuthenticated) {
+    this.preAuthenticated = preAuthenticated;
   }
 
   @Override
