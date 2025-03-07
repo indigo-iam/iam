@@ -117,7 +117,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test(expected = MfaSecretAlreadyBoundException.class)
-  public void testAddMfaSecret_whenMfaSecretAssignedFails() {
+  public void testAddMfaSecretWhenMfaSecretAssignedFails() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
     try {
@@ -139,7 +139,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testAddTotpMfaSecret_whenPasswordIsEmpty() {
+  public void testAddTotpMfaSecretWhenPasswordIsEmpty() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
     when(iamTotpMfaProperties.getPasswordToEncryptOrDecrypt()).thenReturn("");
 
@@ -178,7 +178,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test(expected = TotpMfaAlreadyEnabledException.class)
-  public void testEnableTotpMfa_whenTotpMfaEnabledFails() {
+  public void testEnableTotpMfaWhenTotpMfaEnabledFails() {
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
 
     try {
@@ -190,7 +190,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test(expected = MfaSecretNotFoundException.class)
-  public void testEnablesTotpMfa_whenNoMfaSecretAssignedFails() {
+  public void testEnablesTotpMfaWhenNoMfaSecretAssignedFails() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
@@ -221,7 +221,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test(expected = MfaSecretNotFoundException.class)
-  public void testDisablesTotpMfa_whenNoMfaSecretAssignedFails() {
+  public void testDisablesTotpMfaWhenNoMfaSecretAssignedFails() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
@@ -235,7 +235,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotp_WithNoMultiFactorSecretAttached() {
+  public void testVerifyTotpWithNoMultiFactorSecretAttached() {
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.empty());
 
     IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
@@ -260,7 +260,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotp_WithEmptyPasswordForDecryption() {
+  public void testVerifyTotpWithEmptyPasswordForDecryption() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
@@ -277,7 +277,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
   }
 
   @Test
-  public void testVerifyTotp_WithCodeNotValid() {
+  public void testVerifyTotpWithCodeNotValid() {
     IamTotpMfa totpMfa = cloneTotpMfa(TOTP_MFA);
 
     when(repository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(totpMfa));
