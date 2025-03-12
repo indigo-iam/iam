@@ -119,10 +119,8 @@ public class DefaultX509AuthenticationCredentialExtractor
 
     headerNamesSanityChecks(request);
 
-    String pemCertificateString = clientCertHeaderContent.replace('\t', '\n');
-    
     X509CertificateChainParsingResult chain =
-        certChainParser.parseChainFromString(pemCertificateString);
+        certChainParser.parseChainFromString(clientCertHeaderContent);
     
     IamX509AuthenticationCredential.Builder credBuilder =
         new IamX509AuthenticationCredential.Builder();
