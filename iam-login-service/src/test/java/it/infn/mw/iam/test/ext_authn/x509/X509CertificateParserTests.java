@@ -23,8 +23,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.Test;
 
 import it.infn.mw.iam.authn.x509.CertificateParsingError;
-import it.infn.mw.iam.authn.x509.PEMX509CertificateChainParser;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParser;
+import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 
 public class X509CertificateParserTests extends X509TestSupport {
@@ -32,7 +32,7 @@ public class X509CertificateParserTests extends X509TestSupport {
 
   @Test
   public void testCertificateParsing() {
-    X509CertificateChainParser parser = new PEMX509CertificateChainParser();
+    X509CertificateChainParser parser = new X509CertificateChainParserImpl();
     X509CertificateChainParsingResult result = parser.parseChainFromString(TEST_0_CERT_STRING);
 
     assertThat(result.getChain(), arrayWithSize(1));
@@ -42,22 +42,22 @@ public class X509CertificateParserTests extends X509TestSupport {
 
   @Test(expected = CertificateParsingError.class)
   public void testCertificateParsingFailsWithGarbage() {
-    X509CertificateChainParser parser = new PEMX509CertificateChainParser();
+    X509CertificateChainParser parser = new X509CertificateChainParserImpl();
     try {
       parser.parseChainFromString("48327498dsahtdsadasgyr9");
     } catch (RuntimeException e) {
-      assertThat(e.getMessage(), containsString("PEM data not found"));
+      assertThat(e.getMessage(), containsString("No valid certificates found"));
       throw e;
     }
   }
 
   @Test(expected = CertificateParsingError.class)
   public void testCertificateParsingFailsWithEmptyString() {
-    X509CertificateChainParser parser = new PEMX509CertificateChainParser();
+    X509CertificateChainParser parser = new X509CertificateChainParserImpl();
     try {
       parser.parseChainFromString("");
     } catch (RuntimeException e) {
-      assertThat(e.getMessage(), containsString("PEM data not found"));
+      assertThat(e.getMessage(), containsString("No valid certificates found"));
       throw e;
     }
   }

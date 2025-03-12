@@ -33,7 +33,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import it.infn.mw.iam.authn.x509.DefaultX509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
-import it.infn.mw.iam.authn.x509.PEMX509CertificateChainParser;
+import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult.Status;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -44,7 +44,7 @@ public class X509CredentialExtractorTests extends X509TestSupport {
   HttpServletRequest request;
 
   DefaultX509AuthenticationCredentialExtractor extractor =
-      new DefaultX509AuthenticationCredentialExtractor(new PEMX509CertificateChainParser());
+      new DefaultX509AuthenticationCredentialExtractor(new X509CertificateChainParserImpl());
 
   @Test
   public void testEmptyHeaders() {
