@@ -78,11 +78,16 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
   }
 
   private X509CertificateChainParsingResult parseDER(String derString) {
-    byte[] derBytes = Base64.getDecoder().decode(derString);
-    ByteArrayInputStream inputStream = new ByteArrayInputStream(derBytes);
-
     try {
+      byte[] derBytes = Base64.getDecoder().decode(derString);
+      ByteArrayInputStream inputStream = new ByteArrayInputStream(derBytes);
+
       X509Certificate[] chain = CertificateUtils.loadCertificateChain(inputStream, Encoding.DER);
+
+      if (chain == null || chain.length == 0) {
+        throw new CertificateParsingError(
+            "Failed to parse certificate: No valid certificates found");
+      }
 
       ByteArrayOutputStream pemOutputStream = new ByteArrayOutputStream();
       CertificateUtils.saveCertificateChain(pemOutputStream, chain, Encoding.PEM);
