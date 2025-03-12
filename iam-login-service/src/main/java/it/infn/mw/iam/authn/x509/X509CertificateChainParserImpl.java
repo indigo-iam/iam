@@ -31,6 +31,8 @@ import org.springframework.stereotype.Component;
 import eu.emi.security.authn.x509.impl.CertificateUtils;
 import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding;
 
+import org.bouncycastle.util.encoders.DecoderException;
+
 @Component
 public class X509CertificateChainParserImpl implements X509CertificateChainParser {
 
@@ -49,7 +51,7 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
   }
 
   private boolean isPEMFormat(String certString) {
-    return certString.contains("-----BEGIN CERTIFICATE-----");
+    return certString.contains("-----BEGIN");
   }
 
 
@@ -69,10 +71,9 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
       X509Certificate[] chain = CertificateUtils.loadCertificateChain(stream, Encoding.PEM);
       return X509CertificateChainParsingResult.from(pemString, chain);
 
-    } catch (IOException e) {
+    } catch (IOException | DecoderException e) {
       final String errorMessage =
           String.format("Error parsing certificate chain: %s", e.getMessage());
-
       throw new CertificateParsingError(errorMessage, e);
     }
   }
@@ -86,7 +87,7 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
 
       if (chain == null || chain.length == 0) {
         throw new CertificateParsingError(
-            "Failed to parse certificate: No valid certificates found");
+            "Error parsing certificate chain: No valid certificates found");
       }
 
       ByteArrayOutputStream pemOutputStream = new ByteArrayOutputStream();
@@ -94,9 +95,9 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
       String pemString = pemOutputStream.toString(StandardCharsets.US_ASCII);
 
       return X509CertificateChainParsingResult.from(pemString, chain);
-    } catch (IOException e) {
+    } catch (IOException | DecoderException e) {
       final String errorMessage =
-          String.format("Error parsing certificate chain in : %s", e.getMessage());
+          String.format("Error parsing certificate chain: %s", e.getMessage());
 
       throw new CertificateParsingError(errorMessage, e);
     }

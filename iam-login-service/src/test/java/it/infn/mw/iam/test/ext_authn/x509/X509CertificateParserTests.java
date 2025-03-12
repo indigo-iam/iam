@@ -52,6 +52,19 @@ public class X509CertificateParserTests extends X509TestSupport {
   }
 
   @Test(expected = CertificateParsingError.class)
+  public void testCertificateParsingFailsWithGarbagePEM() {
+    String garbagePemString =
+        "-----BEGIN CERTIFICATE-----\ngYSByZWFsIGNlcnRpZmljYXRlCg==\n-----END CERTIFICATE-----";
+    X509CertificateChainParser parser = new X509CertificateChainParserImpl();
+    try {
+      parser.parseChainFromString(garbagePemString);
+    } catch (RuntimeException e) {
+      assertThat(e.getMessage(), containsString("unable to decode base64 string"));
+      throw e;
+    }
+  }
+
+  @Test(expected = CertificateParsingError.class)
   public void testCertificateParsingFailsWithEmptyString() {
     X509CertificateChainParser parser = new X509CertificateChainParserImpl();
     try {
