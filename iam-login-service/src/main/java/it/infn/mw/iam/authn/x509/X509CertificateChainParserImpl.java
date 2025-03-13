@@ -26,12 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 
+import org.bouncycastle.util.encoders.DecoderException;
 import org.springframework.stereotype.Component;
 
 import eu.emi.security.authn.x509.impl.CertificateUtils;
 import eu.emi.security.authn.x509.impl.CertificateUtils.Encoding;
-
-import org.bouncycastle.util.encoders.DecoderException;
 
 @Component
 public class X509CertificateChainParserImpl implements X509CertificateChainParser {
@@ -95,7 +94,7 @@ public class X509CertificateChainParserImpl implements X509CertificateChainParse
       String pemString = pemOutputStream.toString(StandardCharsets.US_ASCII);
 
       return X509CertificateChainParsingResult.from(pemString, chain);
-    } catch (IOException | DecoderException e) {
+    } catch (IOException | DecoderException | IllegalArgumentException e) {
       final String errorMessage =
           String.format("Error parsing certificate chain: %s", e.getMessage());
 
