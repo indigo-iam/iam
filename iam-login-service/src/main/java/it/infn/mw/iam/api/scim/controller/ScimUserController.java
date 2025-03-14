@@ -50,6 +50,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
+import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -62,8 +63,22 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 public class ScimUserController extends ScimControllerSupport {
 
   // All the supported attribute Operators
-  private enum attributeOperators{
+  private enum AttributeOperators{
     eq
+  }
+
+  // All the supported filter attributes
+  private enum Attributes{
+    // All related to the name of the user
+    familyName, 
+    formatted,
+    givenName,
+    displayName,
+    userName,
+
+    // Other info
+    active, 
+    emails
   }
 
   @Autowired
@@ -86,6 +101,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
+
   private ArrayList<String> parseFilters(final String filtersParameter) {
 
     ArrayList<String> result = new ArrayList<String>();
@@ -94,15 +110,13 @@ public class ScimUserController extends ScimControllerSupport {
       String copyParam = filtersParameter.toLowerCase();
 
       // Iterating over all defined enums 
-      for(attributeOperators operator : attributeOperators.values()){
+      for(AttributeOperators operator : AttributeOperators.values()){
 
         // Looking for the first instance of the given operator in the request
         int index = copyParam.indexOf(operator.toString());
 
         // If there is an occurence and it's surrounded by spaces
         if(index > 0 && copyParam.charAt(index-1) == ' ' && copyParam.charAt(index + operator.name().length()) == ' '){
-          
-          // Then the value before is the parameter
 
           // The parameter before is then from the start until the first space
           String parameter = copyParam.substring(0, index -1);
@@ -118,26 +132,54 @@ public class ScimUserController extends ScimControllerSupport {
         }
 
       }
-
-      // Fuck, ok, I can't find a solution at the moment with regex
-      //result = Sets.newHashSet(copyParam.split("(?= and )(?= or )"));
-
-      // okay, a dumb solution is better then no solution
-      // I can look for sub strings for the logical operators, i.e. look for "and", "or" and "not"
-      // in the string and check that the index before and after the ones found are space characters
-    
-      // if I know the location (using indexOf) then I can find the text and split accordingly 
-      // Though this is a dumb implemenentation....
-
-      // I can also drop the logical operators for know and only focus on the attribute operators
-      // this removes the issue, though then you can only query one parameter at a time and only 
-      // for one thing
-
-
-    // Okay We're going with the simple implementation of the attribute operators for now. 
     }
     return result;
   }
+
+  // If returning true that means that the user fulfills the criteria
+  private boolean filterEvaluation(ArrayList<String> parsedFilters, ScimUser user){
+
+    for(Attributes attribute : Attributes.values()){
+      
+      if(attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
+        
+        switch(attribute){
+          case givenName:
+            return (user.getName().getGivenName().equalsIgnoreCase(parsedFilters.get(2)));
+          
+          case familyName:
+            return (user.getName().getFamilyName().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case userName:
+            return (user.getUserName().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case formatted:
+            return (user.getName().getFormatted().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case displayName: 
+            return (user.getDisplayName().equalsIgnoreCase(parsedFilters.get(2)));
+            
+          case emails:
+            for(ScimEmail email : user.getEmails()){
+              if(email.getValue().equalsIgnoreCase(parsedFilters.get(2))){
+                return true;
+              }
+            }
+            return false;
+
+          case active:
+            return user.getActive().toString().equalsIgnoreCase(parsedFilters.get(2));
+          
+        }
+      } 
+    }
+    return false; 
+  }
+
+
+
+
+
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
@@ -150,25 +192,19 @@ public class ScimUserController extends ScimControllerSupport {
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
     ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
-    
-
-    
-
-
-    // The wrapper seems to have all the users within it
-    // Also the attributes is sorting the values in here, so that must mean that I can do the same
-    // i.e. I don't have to filter it before it arrives to this point. 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
 
     if (filters != null) {
-      // Then similar to the parseAttributes, it needs to parse the filters
+
 
       ArrayList<String> filter = parseFilters(filters);
-      ArrayList<ScimUser> filteredUsers = new ArrayList<ScimUser>();
+      ArrayList<ScimUser> filteredUsers = new ArrayList<>();
 
-      // I need to run through all users and check that the name corresponds
+      // I need to run through all users and check if the given user fulfills the filter criteria
       for(ScimUser user : result.getResources()){
-        if(!user.getName().getGivenName().equalsIgnoreCase(filter.get(2))){
+
+        // If they don't fulfill the given criteria then their added to the removal list
+        if(!filterEvaluation(filter, user)){
           filteredUsers.add(user);
         }
       }
@@ -178,9 +214,6 @@ public class ScimUserController extends ScimControllerSupport {
 
     }
 
-
-    // This is the part where it cuts down the amount of attributes
-    // i.e. I need to query the list similarly to how they remove from it
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
 
