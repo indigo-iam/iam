@@ -19,6 +19,8 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -59,6 +61,11 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 @Transactional
 public class ScimUserController extends ScimControllerSupport {
 
+  // All the supported attribute Operators
+  private enum attributeOperators{
+    eq
+  }
+
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
@@ -79,17 +86,101 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
+  private ArrayList<String> parseFilters(final String filtersParameter) {
+
+    ArrayList<String> result = new ArrayList<String>();
+
+    if (!Strings.isNullOrEmpty(filtersParameter)) {
+      String copyParam = filtersParameter.toLowerCase();
+
+      // Iterating over all defined enums 
+      for(attributeOperators operator : attributeOperators.values()){
+
+        // Looking for the first instance of the given operator in the request
+        int index = copyParam.indexOf(operator.toString());
+
+        // If there is an occurence and it's surrounded by spaces
+        if(index > 0 && copyParam.charAt(index-1) == ' ' && copyParam.charAt(index + operator.name().length()) == ' '){
+          
+          // Then the value before is the parameter
+
+          // The parameter before is then from the start until the first space
+          String parameter = copyParam.substring(0, index -1);
+
+          // The value is from the operator until the end
+          String value = copyParam.substring(index + operator.name().length() + 1, copyParam.length());
+          
+          
+          result.add(parameter);
+          result.add(operator.name());
+          result.add(value);
+      
+        }
+
+      }
+
+      // Fuck, ok, I can't find a solution at the moment with regex
+      //result = Sets.newHashSet(copyParam.split("(?= and )(?= or )"));
+
+      // okay, a dumb solution is better then no solution
+      // I can look for sub strings for the logical operators, i.e. look for "and", "or" and "not"
+      // in the string and check that the index before and after the ones found are space characters
+    
+      // if I know the location (using indexOf) then I can find the text and split accordingly 
+      // Though this is a dumb implemenentation....
+
+      // I can also drop the logical operators for know and only focus on the attribute operators
+      // this removes the issue, though then you can only query one parameter at a time and only 
+      // for one thing
+
+
+    // Okay We're going with the simple implementation of the attribute operators for now. 
+    }
+    return result;
+  }
+
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
-      @RequestParam(required = false) final String attributes) {
+      @RequestParam(required = false) final String attributes,
+      @RequestParam(required = false) final String filters){
+      
 
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
     ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
+    
+
+    
+
+
+    // The wrapper seems to have all the users within it
+    // Also the attributes is sorting the values in here, so that must mean that I can do the same
+    // i.e. I don't have to filter it before it arrives to this point. 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
 
+    if (filters != null) {
+      // Then similar to the parseAttributes, it needs to parse the filters
+
+      ArrayList<String> filter = parseFilters(filters);
+      ArrayList<ScimUser> filteredUsers = new ArrayList<ScimUser>();
+
+      // I need to run through all users and check that the name corresponds
+      for(ScimUser user : result.getResources()){
+        if(!user.getName().getGivenName().equalsIgnoreCase(filter.get(2))){
+          filteredUsers.add(user);
+        }
+      }
+
+      result.getResources().removeAll(filteredUsers);
+      wrapper = new MappingJacksonValue(result);
+
+    }
+
+
+    // This is the part where it cuts down the amount of attributes
+    // i.e. I need to query the list similarly to how they remove from it
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
 
