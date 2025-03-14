@@ -27,7 +27,7 @@ public class IamAuthenticationMethodReference implements Serializable {
     // Consult here for standardised reference values -
     // https://datatracker.ietf.org/doc/html/rfc8176
 
-    PASSWORD("pwd"), ONE_TIME_PASSWORD("otp"), X509("x509");
+    PASSWORD("pwd"), ONE_TIME_PASSWORD("otp"), X509("swk");
 
     private final String value;
 
