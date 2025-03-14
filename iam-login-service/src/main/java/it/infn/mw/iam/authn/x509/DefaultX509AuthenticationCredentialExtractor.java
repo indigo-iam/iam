@@ -121,7 +121,7 @@ public class DefaultX509AuthenticationCredentialExtractor
 
     X509CertificateChainParsingResult chain =
         certChainParser.parseChainFromString(clientCertHeaderContent);
-
+    
     IamX509AuthenticationCredential.Builder credBuilder =
         new IamX509AuthenticationCredential.Builder();
 
