@@ -50,6 +50,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
+import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -62,8 +63,22 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 public class ScimUserController extends ScimControllerSupport {
 
   // All the supported attribute Operators
-  private enum attributeOperators{
+  private enum AttributeOperators{
     eq
+  }
+
+  // All the supported filter attributes
+  private enum Attributes{
+    // All related to the name of the user
+    familyName, 
+    formatted,
+    givenName,
+    displayName,
+    userName,
+
+    // Other info
+    active, 
+    emails
   }
 
   @Autowired
@@ -97,26 +112,20 @@ public class ScimUserController extends ScimControllerSupport {
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
     ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
-    
-
-    
-
-
-    // The wrapper seems to have all the users within it
-    // Also the attributes is sorting the values in here, so that must mean that I can do the same
-    // i.e. I don't have to filter it before it arrives to this point. 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
     if (filters != null) {
-      // Then similar to the parseAttributes, it needs to parse the filters
+
 
       ArrayList<String> filter = parseFilters(filters);
-      ArrayList<ScimUser> filteredUsers = new ArrayList<ScimUser>();
+      ArrayList<ScimUser> filteredUsers = new ArrayList<>();
 
-      // I need to run through all users and check that the name corresponds
+      // I need to run through all users and check if the given user fulfills the filter criteria
       for(ScimUser user : result.getResources()){
-        if(!user.getName().getGivenName().equalsIgnoreCase(filter.get(2))){
+
+        // If they don't fulfill the given criteria then their added to the removal list
+        if(!filterEvaluation(filter, user)){
           filteredUsers.add(user);
         }
       }
@@ -126,9 +135,6 @@ public class ScimUserController extends ScimControllerSupport {
 
     }
 
-
-    // This is the part where it cuts down the amount of attributes
-    // i.e. I need to query the list similarly to how they remove from it
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
