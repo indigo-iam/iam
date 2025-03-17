@@ -200,6 +200,43 @@ public class ScimUserProvisioning
     return builder.build();
   }
 
+  // Method to remove filtered users from the Users list
+  public ScimListResponse<ScimUser> listCustom(final ScimPageRequest params, ArrayList<ScimUser> filteredUsers){
+
+    ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
+
+    if (params.getCount() == 0) {
+
+      long totalResults = accountRepository.count();
+      builder.totalResults(totalResults);
+
+    } else {
+
+      OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
+
+      Page<IamAccount> results = accountRepository.findAll(op);
+
+      List<ScimUser> resources = new ArrayList<>();
+
+      // Only add the user if they are NOT in the filtered users list
+      results.getContent().forEach(a ->{
+        ScimUser user = userConverter.dtoFromEntity(a);
+        if(!filteredUsers.contains(user)){
+          resources.add(userConverter.dtoFromEntity(a));
+        }
+      }); 
+
+      builder.resources(resources);
+
+      // Custom method to set total Results as it is different from the value in the page 
+      builder.customSetTotalResults((long) results.getContent().size() - (long) filteredUsers.size());
+      builder.customFromPage(results, op);
+
+    }
+
+    return builder.build();
+  }
+
   @Override
   public ScimUser replace(final String uuid, final ScimUser scimItemToBeUpdated) {
 
