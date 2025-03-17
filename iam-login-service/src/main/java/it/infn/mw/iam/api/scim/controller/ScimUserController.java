@@ -20,7 +20,6 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -117,20 +116,34 @@ public class ScimUserController extends ScimControllerSupport {
 
     if (filters != null) {
 
+      // Total Users to search through
+      int totalUsers = Math.toIntExact(result.getTotalResults());
+
+
+      // Need to check count value as it overrides the current value of all users
+      // it's just meant to limit the amount of users displayed, not cut the result
+
+      
+      // New page request with all users
+      ScimPageRequest prTemp = buildcustomUserPageRequest(count,startIndex,totalUsers);
+
+      result = userProvisioningService.list(prTemp);
 
       ArrayList<String> filter = parseFilters(filters);
       ArrayList<ScimUser> filteredUsers = new ArrayList<>();
 
-      // I need to run through all users and check if the given user fulfills the filter criteria
+      // Finding all users that DO NOT fulfill the criteria
       for(ScimUser user : result.getResources()){
 
-        // If they don't fulfill the given criteria then their added to the removal list
+        // If they don't fulfill the criteria then the user is added to the removal list
         if(!filterEvaluation(filter, user)){
           filteredUsers.add(user);
         }
       }
 
-      result.getResources().removeAll(filteredUsers);
+      // Building the list of users, but making sure to remove the users filtered out
+      result = userProvisioningService.listCustom(prTemp,filteredUsers);
+
       wrapper = new MappingJacksonValue(result);
 
     }
