@@ -35,6 +35,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNA
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -201,7 +202,7 @@ public class ScimUserProvisioning
   }
 
   // Method to remove filtered users from the Users list
-  public ScimListResponse<ScimUser> listCustom(final ScimPageRequest params, ArrayList<ScimUser> filteredUsers){
+  public ScimListResponse<ScimUser> listCustom(final ScimPageRequest params, ArrayList<ScimUser> filteredUsers, final ScimPageRequest userParams){
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
@@ -219,18 +220,54 @@ public class ScimUserProvisioning
       List<ScimUser> resources = new ArrayList<>();
 
       // Only add the user if they are NOT in the filtered users list
-      results.getContent().forEach(a ->{
-        ScimUser user = userConverter.dtoFromEntity(a);
+      for(IamAccount account : results.getContent()){
+
+        ScimUser user = userConverter.dtoFromEntity(account);
+
+        // Users will only be displayed if the following criteria is met
+
+        // 1. The given user must NOT be among them to be filtered out
+
         if(!filteredUsers.contains(user)){
-          resources.add(userConverter.dtoFromEntity(a));
+          resources.add(userConverter.dtoFromEntity(account));
         }
-      }); 
+      }
+
+      // 2. If the startIndex is within size of the filtered users remove all users from the front 
+      //    untill the start index
+
+      if(resources.size()>userParams.getStartIndex()){
+        resources.subList(0, userParams.getStartIndex()).clear();
+      }
+
+      // 3. If the count is larger than the remaining filtered users, then users will be removed
+      //    from the back of the list until it is the correct size
+
+      while(resources.size() > userParams.getCount() ){
+        resources.remove(resources.get(resources.size()-1));
+      }
+
+
+
+      
+
+      /*
+
+      // 3. The index of the current value in the full list needs to be higher than the start index and startIndex can not exceed the total results. 
+      if(resources.size()>userParams.getStartIndex()-1){
+        for(ScimUser user: resources){
+          if(resources.indexOf(user)<userParams.getStartIndex() - 1){
+            resources.remove(user);
+          }
+        }
+      }
+        */
+      
 
       builder.resources(resources);
 
       // Custom method to set total Results as it is different from the value in the page 
-      builder.customSetTotalResults((long) results.getContent().size() - (long) filteredUsers.size());
-      builder.customFromPage(results, op);
+      builder.customSet((long) results.getContent().size() - (long) filteredUsers.size(), resources.size(), userParams.getStartIndex() ); 
 
     }
 
