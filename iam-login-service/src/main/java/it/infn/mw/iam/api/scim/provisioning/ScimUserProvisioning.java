@@ -248,22 +248,6 @@ public class ScimUserProvisioning
       while(resources.size() > userParams.getCount() ){
         resources.remove(resources.get(resources.size()-1));
       }
-
-
-
-      
-
-      /*
-
-      // 3. The index of the current value in the full list needs to be higher than the start index and startIndex can not exceed the total results. 
-      if(resources.size()>userParams.getStartIndex()-1){
-        for(ScimUser user: resources){
-          if(resources.indexOf(user)<userParams.getStartIndex() - 1){
-            resources.remove(user);
-          }
-        }
-      }
-        */
       
 
       builder.resources(resources);
