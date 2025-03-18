@@ -125,7 +125,7 @@ public class ScimUserController extends ScimControllerSupport {
 
       
       // New page request with all users
-      ScimPageRequest prTemp = buildcustomUserPageRequest(count,startIndex,totalUsers);
+      ScimPageRequest prTemp = buildcustomUserPageRequest(totalUsers,0,totalUsers);
 
       result = userProvisioningService.list(prTemp);
 
@@ -141,8 +141,17 @@ public class ScimUserController extends ScimControllerSupport {
         }
       }
 
+
+      // I need to add additional parameters, so that it takes the count and startIndex
+      // from the user into account
+
+      // Below is the the ScimPageReqiuest with the custom builder as the original one has
+      // a hard limit of 100
+
+      ScimPageRequest prReal = buildcustomUserPageRequest(count,startIndex,totalUsers);
+
       // Building the list of users, but making sure to remove the users filtered out
-      result = userProvisioningService.listCustom(prTemp,filteredUsers);
+      result = userProvisioningService.listCustom(prTemp,filteredUsers, prReal);
 
       wrapper = new MappingJacksonValue(result);
 
