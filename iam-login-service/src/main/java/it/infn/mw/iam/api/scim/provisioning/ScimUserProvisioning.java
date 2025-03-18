@@ -36,6 +36,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNA
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
