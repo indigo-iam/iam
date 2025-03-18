@@ -140,7 +140,7 @@ public class ScimUserController extends ScimControllerSupport {
 
     for(Attributes attribute : Attributes.values()){
       
-      if(attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      if(parsedFilters.size()== 3 && attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
         
         switch(attribute){
           case givenName:
