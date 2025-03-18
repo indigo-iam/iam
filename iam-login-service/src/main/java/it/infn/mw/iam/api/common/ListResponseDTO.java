@@ -102,14 +102,6 @@ public class ListResponseDTO<T> {
       return this;
     }
 
-    /* 
-    public <S> Builder<T> customFromPage(Page<S> page, Pageable op) {
-      this.itemsPerPage = page.getNumberOfElements();
-      this.startIndex = (int) op.getOffset() + 1;
-      return this;
-    }
-      */
-
 
     public <S> Builder<T> fromPage(Page<S> page, Pageable op) {
       this.totalResults = page.getTotalElements();
