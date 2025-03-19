@@ -80,7 +80,7 @@ public class IamTestClientConfiguration {
     filter.setAuthRequestOptionsService(authOptions());
     filter.setAuthRequestUrlBuilder(new IamAuthRequestUrlBuilder());
     filter.setHttpRequestFactory(httpRequestFactory());
-
+    filter.setProperties(iamClientConfig);
 
 
     filter.setAuthenticationFailureHandler(new SaveAuhenticationError());

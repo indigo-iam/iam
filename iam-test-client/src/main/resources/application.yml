@@ -28,3 +28,4 @@ iam:
     clientSecret: ${IAM_CLIENT_SECRET:secret}
     redirectUris: ${IAM_CLIENT_REDIRECT_URIS:http://localhost:9090/iam-test-client/openid_connect_login}
     scope: ${IAM_CLIENT_SCOPES:openid profile email offline_access}
+    resource: ${IAM_CLIENT_RESOURCE:}
