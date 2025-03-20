@@ -58,7 +58,8 @@ import com.google.common.base.Joiner;
 
 import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
-import it.infn.mw.iam.core.CommonAuthenticationToken;
+import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
@@ -120,16 +121,25 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
-    if (authn instanceof CommonAuthenticationToken token) {
-      Set<IamAuthenticationMethodReference> amrSet = token.getAuthenticationMethodReferences();
-      try {
-        authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
-      } catch (JsonProcessingException e) {
-        LOG.error("Failed to convert amr set to JSON array", e);
-      }
+    Set<IamAuthenticationMethodReference> amrSet;
+    if (authn instanceof ExtendedAuthenticationToken extendedToken) {
+      amrSet = extendedToken.getAuthenticationMethodReferences();
+      processToken(amrSet, authzRequest);
+    } else if (authn instanceof OidcExternalAuthenticationToken oidcToken) {
+      amrSet = oidcToken.getAuthenticationMethodReferences();
+      processToken(amrSet, authzRequest);
     }
 
     return authzRequest;
+  }
+
+  private void processToken(Set<IamAuthenticationMethodReference> amrSet,
+      AuthorizationRequest authzRequest) {
+    try {
+      authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+    } catch (JsonProcessingException e) {
+      LOG.error("Failed to convert amr set to JSON array", e);
+    }
   }
 
   private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)

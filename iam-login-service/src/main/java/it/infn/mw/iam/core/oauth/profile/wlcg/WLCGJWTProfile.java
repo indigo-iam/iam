@@ -29,7 +29,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.RequestValidator;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -50,7 +50,7 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
       AccountUtils accountUtils, UserInfoService userInfoService, IamAccountRepository accountRepo,
       WLCGGroupHelper groupHelper, AttributeMapHelper attributeHelper,
       IntrospectionResultAssembler defaultAssembler, ScopeMatcherRegistry registry,
-      ScopeClaimTranslationService claimTranslationService, ClaimValueHelper claimValueHelper) {
+      ScopeClaimTranslationService claimTranslationService, IamClaimValueHelper claimValueHelper) {
     accessTokenBuilder = new WLCGProfileAccessTokenBuilder(properties, totpMfaRepository,
         accountUtils, groupHelper, attributeHelper);
 

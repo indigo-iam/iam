@@ -25,7 +25,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -38,7 +38,7 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
   private final KeycloakGroupHelper groupHelper;
 
   public KeycloakIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
       KeycloakGroupHelper groupHelper, IamProperties properties,
       IamTotpMfaRepository totpMfaRepository) {
     super(accountRepo, scopeClaimConverter, claimValueHelper, properties, totpMfaRepository);

@@ -22,11 +22,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @Component
-public class ClaimValueHelper {
+public class IamClaimValueHelper implements ClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS =
       Set.of("name", "email", "preferred_username", "organisation_name", "groups", "attr");
@@ -37,6 +38,7 @@ public class ClaimValueHelper {
   @Autowired
   AttributeMapHelper attrHelper;
 
+  @Override
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
 
     switch (claim) {

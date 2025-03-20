@@ -41,7 +41,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
@@ -62,7 +62,7 @@ public class IamAccessTokenBuilderTests {
   ScopeClaimTranslationService scService;
 
   @Mock
-  ClaimValueHelper claimValueHelper;
+  IamClaimValueHelper claimValueHelper;
 
   @Mock
   OAuth2AccessTokenEntity tokenEntity;
