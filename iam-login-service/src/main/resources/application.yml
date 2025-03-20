@@ -210,6 +210,7 @@ notification:
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
   admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
+  subject-prefix: \[${iam.organisation.name} IAM]
   subject:
     confirmation: Confirm your ${iam.organisation.name} registration request
     activated: Your ${iam.organisation.name} account is now active
