@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.api.account.find;
 
-import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
 import static it.infn.mw.iam.api.utils.FindUtils.responseFromOptional;
+import static it.infn.mw.iam.api.utils.FindUtils.responseFromPage;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -26,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
@@ -113,8 +114,7 @@ public class DefaultFindAccountService implements FindAccountService {
   }
 
   @Override
-  public ScimListResponse<ScimUser> findAccountNotInGroup(String groupUuid,
-      Pageable pageable) {
+  public ScimListResponse<ScimUser> findAccountNotInGroup(String groupUuid, Pageable pageable) {
     IamGroup group = groupRepo.findByUuid(groupUuid).orElseThrow(groupNotFoundError(groupUuid));
     Page<IamAccount> results = repo.findNotInGroup(group.getUuid(), pageable);
     return responseFromPage(results, converter, pageable);
@@ -139,5 +139,11 @@ public class DefaultFindAccountService implements FindAccountService {
   public ScimListResponse<ScimUser> findAccountByUuid(String uuid) {
     Optional<IamAccount> account = repo.findByUuid(uuid);
     return responseFromOptional(account, converter);
+  }
+
+  @Override
+  public ScimListResponse<ScimUser> findAccountByAuthority(String authority, Pageable pageable) {
+    Page<IamAccount> account = repo.findByAuthority(authority, pageable);
+    return responseFromPage(account, converter, pageable);
   }
 }

@@ -47,6 +47,7 @@ public class FindAccountController {
   public static final String FIND_BY_GROUP_RESOURCE = "/iam/account/find/bygroup/{groupUuid}";
   public static final String FIND_NOT_IN_GROUP_RESOURCE =
       "/iam/account/find/notingroup/{groupUuid}";
+  public static final String FIND_BY_AUTHORITY_RESOURCE = "/iam/account/find/byauthority";
 
   final FindAccountService service;
 
@@ -111,4 +112,18 @@ public class FindAccountController {
   public ListResponseDTO<ScimUser> findByUuid(@PathVariable String accountUuid) {
     return service.findAccountByUuid(accountUuid);
   }
+
+  @GetMapping(value = FIND_BY_AUTHORITY_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  public ListResponseDTO<ScimUser> findByAuthority(@RequestParam(required = true) String authority,
+      @RequestParam(required = false) String value,
+      @RequestParam(required = false) final Integer count,
+      @RequestParam(required = false) final Integer startIndex) {
+
+    if (!authority.toUpperCase().startsWith("ROLE_")) {
+      authority = "ROLE_".concat(authority);
+    }
+
+    return service.findAccountByAuthority(authority, buildPageRequest(count, startIndex, 10));
+  }
+
 }
