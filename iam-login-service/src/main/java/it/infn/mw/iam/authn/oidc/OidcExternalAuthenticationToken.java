@@ -43,31 +43,14 @@ public class OidcExternalAuthenticationToken
 
   private static final long serialVersionUID = -1297301102973236138L;
 
-  private Object principal;
-  private Object credentials;
-
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Object principal,
       Object credentials) {
     super(authn, principal, credentials);
-    this.principal = principal;
-    this.credentials = credentials;
   }
 
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Date tokenExpiration,
       Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
     super(authn, tokenExpiration, principal, credentials, authorities);
-    this.principal = principal;
-    this.credentials = credentials;
-  }
-
-  @Override
-  public Object getCredentials() {
-    return this.credentials;
-  }
-
-  @Override
-  public Object getPrincipal() {
-    return this.principal;
   }
 
   @Override
@@ -83,17 +66,18 @@ public class OidcExternalAuthenticationToken
     }
     OidcExternalAuthenticationToken that = (OidcExternalAuthenticationToken) obj;
 
-    return Objects.equals(this.principal, that.principal)
-        && Objects.equals(this.credentials, that.credentials)
-        && Objects.equals(this.getAuthenticationMethodReferences(), that.getAuthenticationMethodReferences())
-        && Objects.equals(this.getTotp(), that.getTotp())
-        && Objects.equals(this.getFullyAuthenticatedAuthorities(), that.getFullyAuthenticatedAuthorities());
+    return Objects.equals(this.getPrincipal(), that.getPrincipal())
+        && Objects.equals(this.getCredentials(), that.getCredentials())
+        && Objects.equals(this.getAuthenticationMethodReferences(),
+            that.getAuthenticationMethodReferences())
+        && Objects.equals(this.getTotp(), that.getTotp()) && Objects
+          .equals(this.getFullyAuthenticatedAuthorities(), that.getFullyAuthenticatedAuthorities());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), principal, credentials, getAuthenticationMethodReferences(),
-        getTotp(), getFullyAuthenticatedAuthorities());
+    return Objects.hash(super.hashCode(), getPrincipal(), getCredentials(),
+        getAuthenticationMethodReferences(), getTotp(), getFullyAuthenticatedAuthorities());
   }
 
   @Override
