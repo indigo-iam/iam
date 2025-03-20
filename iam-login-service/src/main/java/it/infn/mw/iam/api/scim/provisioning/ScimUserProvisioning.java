@@ -416,6 +416,8 @@ public class ScimUserProvisioning
       throw invalidFilter(filter);
     }
 
+    // Based on the filter I should call the gi
+
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
     OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
