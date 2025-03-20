@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
 
 import java.util.Set;
 
@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -47,7 +48,6 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     this.claimValueHelper = claimValueHelper;
   }
 
-
   @Override
   public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
@@ -63,6 +63,7 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, account);
 
     includeLabelsInIdToken(idClaims, account);
-  }
 
+    idClaims.claim("voperson_id", account.getUserInfo().getSub());
+  }
 }

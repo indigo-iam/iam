@@ -27,7 +27,6 @@ import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
-import it.infn.mw.iam.core.CommonAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -50,7 +49,8 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-    if (authentication instanceof CommonAuthenticationToken) {
+    if (authentication instanceof ExtendedAuthenticationToken
+        || authentication instanceof OidcExternalAuthenticationToken) {
       return processAuthentication(authentication);
     }
     return null;
@@ -73,8 +73,10 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   }
 
   private String getTotp(Authentication authentication) {
-    if (authentication instanceof CommonAuthenticationToken token) {
-      return token.getTotp();
+    if (authentication instanceof ExtendedAuthenticationToken extendedToken) {
+      return extendedToken.getTotp();
+    } else if (authentication instanceof OidcExternalAuthenticationToken oidcToken) {
+      return oidcToken.getTotp();
     }
     return null;
   }

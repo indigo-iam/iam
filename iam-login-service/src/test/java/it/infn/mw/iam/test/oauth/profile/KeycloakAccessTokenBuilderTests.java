@@ -41,7 +41,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -63,7 +63,7 @@ public class KeycloakAccessTokenBuilderTests {
   ScopeClaimTranslationService scService;
 
   @Mock
-  ClaimValueHelper claimValueHelper;
+  IamClaimValueHelper claimValueHelper;
 
   @Mock
   OAuth2AccessTokenEntity tokenEntity;

@@ -23,10 +23,8 @@ import static java.util.Objects.isNull;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -38,21 +36,15 @@ import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoBuilder;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
-import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
-import it.infn.mw.iam.core.CommonAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class OidcExternalAuthenticationToken
-    extends AbstractExternalAuthenticationToken<OIDCAuthenticationToken>
-    implements CommonAuthenticationToken {
+    extends AbstractExternalAuthenticationToken<OIDCAuthenticationToken> {
 
   private static final long serialVersionUID = -1297301102973236138L;
 
   private Object principal;
   private Object credentials;
-  private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
-  private String totp;
-  private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
 
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Object principal,
       Object credentials) {
@@ -66,38 +58,6 @@ public class OidcExternalAuthenticationToken
     super(authn, tokenExpiration, principal, credentials, authorities);
     this.principal = principal;
     this.credentials = credentials;
-  }
-
-  @Override
-  public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
-    return fullyAuthenticatedAuthorities;
-  }
-
-  @Override
-  public void setFullyAuthenticatedAuthorities(
-      Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
-    this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
-  }
-
-  @Override
-  public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
-    return authenticationMethodReferences;
-  }
-
-  @Override
-  public void setAuthenticationMethodReferences(
-      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
-    this.authenticationMethodReferences = authenticationMethodReferences;
-  }
-
-  @Override
-  public String getTotp() {
-    return totp;
-  }
-
-  @Override
-  public void setTotp(String totp) {
-    this.totp = totp;
   }
 
   @Override
@@ -125,15 +85,15 @@ public class OidcExternalAuthenticationToken
 
     return Objects.equals(this.principal, that.principal)
         && Objects.equals(this.credentials, that.credentials)
-        && Objects.equals(this.authenticationMethodReferences, that.authenticationMethodReferences)
-        && Objects.equals(this.totp, that.totp)
-        && Objects.equals(this.fullyAuthenticatedAuthorities, that.fullyAuthenticatedAuthorities);
+        && Objects.equals(this.getAuthenticationMethodReferences(), that.getAuthenticationMethodReferences())
+        && Objects.equals(this.getTotp(), that.getTotp())
+        && Objects.equals(this.getFullyAuthenticatedAuthorities(), that.getFullyAuthenticatedAuthorities());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), principal, credentials, authenticationMethodReferences,
-        totp, fullyAuthenticatedAuthorities);
+    return Objects.hash(super.hashCode(), principal, credentials, getAuthenticationMethodReferences(),
+        getTotp(), getFullyAuthenticatedAuthorities());
   }
 
   @Override

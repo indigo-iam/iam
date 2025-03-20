@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
 import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
@@ -40,11 +40,11 @@ import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final ClaimValueHelper claimValueHelper;
+  protected final IamClaimValueHelper claimValueHelper;
 
   public IamJWTProfileAccessTokenBuilder(IamProperties properties,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
-      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper) {
+      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper) {
     super(properties, totpMfaRepository, accountUtils);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;

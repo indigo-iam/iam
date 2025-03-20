@@ -68,7 +68,7 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileTokenIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
@@ -169,7 +169,7 @@ public class IamConfig {
   JWTProfile kcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
       AccountUtils accountUtils, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, UserInfoService userInfoService,
-      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
+      ScopeMatcherRegistry registry, IamClaimValueHelper claimHelper) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
@@ -190,7 +190,7 @@ public class IamConfig {
   @Bean(name = "iamJwtProfile")
   JWTProfile iamJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
       AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, ClaimValueHelper claimHelper,
+      ScopeClaimTranslationService converter, IamClaimValueHelper claimHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry) {
 
@@ -215,7 +215,7 @@ public class IamConfig {
       ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
-      ClaimValueHelper claimValueHelper) {
+      IamClaimValueHelper claimValueHelper) {
 
     return new WLCGJWTProfile(props, totpMfaRepository, accountUtils, userInfoService, accountRepo,
         new WLCGGroupHelper(), attributeMapHelper, new DefaultIntrospectionResultAssembler(),
