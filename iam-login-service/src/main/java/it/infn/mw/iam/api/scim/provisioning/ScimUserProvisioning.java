@@ -339,9 +339,9 @@ public class ScimUserProvisioning
     return builder.build();
   }
 
+  //Cannot out the method in interface as same interface is used for groups that does not have a search option 
 
   // Method to fetch users according to a filter
-  @Override
   public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter){
 
 
@@ -350,6 +350,8 @@ public class ScimUserProvisioning
     if(!filterEvaluation(parsedFilters)){
       throw invalidFilter(filter);
     }
+
+    // Based on the filter I should call the gi
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 

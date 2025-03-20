@@ -16,7 +16,6 @@
 package it.infn.mw.iam.api.scim.provisioning;
 
 import java.util.List;
-import java.util.ArrayList;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -36,6 +35,7 @@ public interface ScimProvisioning<T, E> {
 
   ScimListResponse<T> list(ScimPageRequest params);
 
-  ScimListResponse<T> customList(ScimPageRequest params, String filter);
+  // The method below cannot exist until it is also implemented for ScimGroupProvisioning.java
+  //ScimListResponse<T> customList(ScimPageRequest params, String filter);
 
 }
