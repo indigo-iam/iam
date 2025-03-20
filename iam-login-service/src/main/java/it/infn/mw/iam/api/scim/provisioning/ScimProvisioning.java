@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.provisioning;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -34,5 +35,7 @@ public interface ScimProvisioning<T, E> {
   void delete(String id);
 
   ScimListResponse<T> list(ScimPageRequest params);
+
+  ScimListResponse<T> customList(ScimPageRequest params, String filter);
 
 }
