@@ -43,6 +43,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.google.common.base.Strings;
+
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
@@ -105,6 +107,131 @@ public class ScimUserProvisioning
         x509CertificateConverter, usernameValidator);
   }
 
+
+  // All the supported attribute Operators
+  private enum AttributeOperators{
+    eq,
+    co
+  }
+
+  // All the supported filter attributes
+  private enum Attributes{
+    // All related to the name of the user
+    familyName, 
+    formatted,
+    givenName,
+    displayName,
+    userName,
+
+    // Other info
+    active, 
+    emails
+  }
+
+
+
+
+  private ArrayList<String> parseFilters(final String filtersParameter) {
+
+    ArrayList<String> result = new ArrayList<>();
+
+    if (!Strings.isNullOrEmpty(filtersParameter)) {
+      // Iterating over all defined enums 
+      for(AttributeOperators operator : AttributeOperators.values()){
+
+        // Looking for the first instance of the given operator in the request
+        int index = filtersParameter.indexOf(operator.toString());
+
+        // If there is an occurence and it's surrounded by spaces
+        if(index > 0 && filtersParameter.charAt(index-1) == ' ' && filtersParameter.charAt(index + operator.name().length()) == ' '){
+
+          // The parameter before the index is then from the start until the first space
+          String parameter = filtersParameter.substring(0, index -1);
+
+          // The value is from the operator until the end
+          String value = filtersParameter.substring(index + operator.name().length() + 1, filtersParameter.length());
+          
+          result.add(parameter);
+          result.add(operator.name());
+          result.add(value);
+      
+        }
+      }
+    }
+    return result;
+  }
+
+
+
+  private boolean filterEvaluation(ArrayList<String> parsedFilters){
+    if(parsedFilters.size()==3){
+      for(Attributes attribute : Attributes.values()){  
+        if(attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
+          for(AttributeOperators operator : AttributeOperators.values()){
+            if(operator.toString().equalsIgnoreCase(parsedFilters.get(1))){
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+
+
+
+
+
+
+
+
+
+
+  // This is just for me to remember the paths - that way I can actually see the Joins I need to make
+
+  /*
+  // If returning true then the filters have the correct format and the user mathes the filter
+  private boolean filterEvaluation(ArrayList<String> parsedFilters, ScimUser user){
+
+    for(Attributes attribute : Attributes.values()){
+      
+      if(parsedFilters.size()== 3 && attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
+        
+        switch(attribute){
+          case givenName:
+            return (user.getName().getGivenName().equalsIgnoreCase(parsedFilters.get(2)));
+          
+          case familyName:
+            return (user.getName().getFamilyName().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case userName:
+            return (user.getUserName().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case formatted:
+            return (user.getName().getFormatted().equalsIgnoreCase(parsedFilters.get(2)));
+
+          case displayName: 
+            return (user.getDisplayName().equalsIgnoreCase(parsedFilters.get(2)));
+            
+          case emails:
+            for(ScimEmail email : user.getEmails()){
+              if(email.getValue().equalsIgnoreCase(parsedFilters.get(2))){
+                return true;
+              }
+            }
+            return false;
+
+          case active:
+            return user.getActive().toString().equalsIgnoreCase(parsedFilters.get(2));
+          
+        }
+      } 
+    }
+    return false; 
+  }
+  */
+
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
   }
@@ -122,6 +249,16 @@ public class ScimUserProvisioning
 
   private ScimResourceNotFoundException noUserMappedToId(String id) {
     return new ScimResourceNotFoundException(String.format("No user mapped to id '%s'", id));
+  }
+
+  private ScimResourceNotFoundException noUserMappedToGivenName (String name){
+    return new ScimResourceNotFoundException(String.format("No user mapped to givenName \"%s\"",name));
+  }
+
+  private IllegalArgumentException invalidFilter(String filter){
+    return new IllegalArgumentException(
+      String.format("the filter \"%s\" does not fulfill the filtering convention",filter)
+    );
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -200,59 +337,38 @@ public class ScimUserProvisioning
     return builder.build();
   }
 
-  // Method to remove filtered users from the Users list
-  public ScimListResponse<ScimUser> listCustom(final ScimPageRequest params, ArrayList<ScimUser> filteredUsers, final ScimPageRequest userParams){
+
+  // Method to fetch users according to a filter
+  @Override
+  public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter){
+
+
+    ArrayList<String> parsedFilters = parseFilters(filter);
+ 
+    if(!filterEvaluation(parsedFilters)){
+      throw invalidFilter(filter);
+    }
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
-    if (params.getCount() == 0) {
+    OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
 
-      long totalResults = accountRepository.count();
-      builder.totalResults(totalResults);
+    Page<IamAccount> results = accountRepository.findAll(op);
 
-    } else {
+    // It will only throw in case of a database error, i.e. not able to do anything from the database
+    Page<IamAccount> temp = accountRepository.findByGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));
 
-      OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
-
-      Page<IamAccount> results = accountRepository.findAll(op);
-
-      List<ScimUser> resources = new ArrayList<>();
-
-      // Only add the user if they are NOT in the filtered users list
-      for(IamAccount account : results.getContent()){
-
-        ScimUser user = userConverter.dtoFromEntity(account);
-
-        // Users will only be displayed if the following criteria is met
-
-        // 1. The given user must NOT be among them to be filtered out
-
-        if(!filteredUsers.contains(user)){
-          resources.add(userConverter.dtoFromEntity(account));
-        }
-      }
-
-      // 2. If the startIndex is within size of the filtered users remove all users from the front 
-      //    untill the start index
-
-      if(resources.size()>userParams.getStartIndex()){
-        resources.subList(0, userParams.getStartIndex()).clear();
-      }
-
-      // 3. If the count is larger than the remaining filtered users, then users will be removed
-      //    from the back of the list until it is the correct size
-
-      while(resources.size() > userParams.getCount() ){
-        resources.remove(resources.get(resources.size()-1));
-      }
-      
-
-      builder.resources(resources);
-
-      // Custom method to set total Results as it is different from the value in the page 
-      builder.customSet((long) results.getContent().size() - (long) filteredUsers.size(), resources.size(), userParams.getStartIndex() ); 
-
+    if(temp.getContent().isEmpty()){
+      throw noUserMappedToGivenName(parsedFilters.get(2));
     }
+
+    List<ScimUser> resources = new ArrayList<>();
+
+    temp.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
+
+    builder.resources(resources);
+    builder.fromPage(results, op);
+
 
     return builder.build();
   }

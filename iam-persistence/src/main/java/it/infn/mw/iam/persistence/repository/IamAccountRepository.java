@@ -29,12 +29,28 @@ import org.springframework.data.repository.query.Param;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 
+
+
+// I need to do the JPQL queries here to find only the data needed. 
+// This should ease the computation on the server and also lessen all my custom methods
+
+// This is DTO - Data Transfer Object 
+// I need to read into this as it is different from having an entity manager (which from most articles seems to be 
+// the standard way of doing things)
+
+
+
+
+
 public interface IamAccountRepository
     extends PagingAndSortingRepository<IamAccount, Long>, IamAccountRepositoryCustom {
 
   Optional<IamAccount> findByUuid(@Param("uuid") String uuid);
 
   Optional<IamAccount> findByUsername(@Param("username") String username);
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
+  Optional<Page<IamAccount>> findByGivenName(@Param("givenName") String givenName, @Param("op") Pageable op );
 
   @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
       + "and si.attributeId = :attributeId and si.userId = :userId")

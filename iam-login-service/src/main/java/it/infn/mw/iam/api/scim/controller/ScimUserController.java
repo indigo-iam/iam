@@ -19,7 +19,6 @@ import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleVa
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,7 +48,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.model.ScimConstants;
-import it.infn.mw.iam.api.scim.model.ScimEmail;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
@@ -61,24 +59,6 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 @Transactional
 public class ScimUserController extends ScimControllerSupport {
 
-  // All the supported attribute Operators
-  private enum AttributeOperators{
-    eq
-  }
-
-  // All the supported filter attributes
-  private enum Attributes{
-    // All related to the name of the user
-    familyName, 
-    formatted,
-    givenName,
-    displayName,
-    userName,
-
-    // Other info
-    active, 
-    emails
-  }
 
   @Autowired
   ScimUserProvisioning userProvisioningService;
@@ -99,86 +79,7 @@ public class ScimUserController extends ScimControllerSupport {
     result.add("id");
     return result;
   }
-
-
-  private ArrayList<String> parseFilters(final String filtersParameter) {
-
-    ArrayList<String> result = new ArrayList<>();
-
-    if (!Strings.isNullOrEmpty(filtersParameter)) {
-      String copyParam = filtersParameter.toLowerCase();
-
-      // Iterating over all defined enums 
-      for(AttributeOperators operator : AttributeOperators.values()){
-
-        // Looking for the first instance of the given operator in the request
-        int index = copyParam.indexOf(operator.toString());
-
-        // If there is an occurence and it's surrounded by spaces
-        if(index > 0 && copyParam.charAt(index-1) == ' ' && copyParam.charAt(index + operator.name().length()) == ' '){
-
-          // The parameter before the index is then from the start until the first space
-          String parameter = copyParam.substring(0, index -1);
-
-          // The value is from the operator until the end
-          String value = copyParam.substring(index + operator.name().length() + 1, copyParam.length());
-          
-          
-          result.add(parameter);
-          result.add(operator.name());
-          result.add(value);
-      
-        }
-
-      }
-    }
-    return result;
-  }
-
-  // If returning true that means that the user fulfills the criteria
-  private boolean filterEvaluation(ArrayList<String> parsedFilters, ScimUser user){
-
-    for(Attributes attribute : Attributes.values()){
-      
-      if(parsedFilters.size()== 3 && attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
-        
-        switch(attribute){
-          case givenName:
-            return (user.getName().getGivenName().equalsIgnoreCase(parsedFilters.get(2)));
-          
-          case familyName:
-            return (user.getName().getFamilyName().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case userName:
-            return (user.getUserName().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case formatted:
-            return (user.getName().getFormatted().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case displayName: 
-            return (user.getDisplayName().equalsIgnoreCase(parsedFilters.get(2)));
-            
-          case emails:
-            for(ScimEmail email : user.getEmails()){
-              if(email.getValue().equalsIgnoreCase(parsedFilters.get(2))){
-                return true;
-              }
-            }
-            return false;
-
-          case active:
-            return user.getActive().toString().equalsIgnoreCase(parsedFilters.get(2));
-          
-        }
-      } 
-    }
-    return false; 
-  }
-
-
-
-
-
+  
 
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
@@ -186,51 +87,23 @@ public class ScimUserController extends ScimControllerSupport {
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes,
       @RequestParam(required = false) final String filters){
-      
 
-    ScimPageRequest pr = buildUserPageRequest(count, startIndex);
-    ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
-    MappingJacksonValue wrapper = new MappingJacksonValue(result);
+    MappingJacksonValue wrapper;
+    
 
     if (filters != null) {
 
-      // Total Users to search through
-      int totalUsers = Math.toIntExact(result.getTotalResults());
+      ScimPageRequest pr = buildUserPageRequest(count,startIndex);
 
+      ScimListResponse<ScimUser> result = userProvisioningService.customList(pr,filters);
 
-      // Need to check count value as it overrides the current value of all users
-      // it's just meant to limit the amount of users displayed, not cut the result
+      wrapper = new MappingJacksonValue(result);
 
-      
-      // New page request with all users
-      ScimPageRequest prTemp = buildcustomUserPageRequest(totalUsers,0,totalUsers);
+    }else{
 
-      result = userProvisioningService.list(prTemp);
-
-      ArrayList<String> filter = parseFilters(filters);
-      ArrayList<ScimUser> filteredUsers = new ArrayList<>();
-
-      // Finding all users that DO NOT fulfill the criteria
-      for(ScimUser user : result.getResources()){
-
-        // If they don't fulfill the criteria then the user is added to the removal list
-        if(!filterEvaluation(filter, user)){
-          filteredUsers.add(user);
-        }
-      }
-
-
-      // I need to add additional parameters, so that it takes the count and startIndex
-      // from the user into account
-
-      // Below is the the ScimPageReqiuest with the custom builder as the original one has
-      // a hard limit of 100
-
-      ScimPageRequest prReal = buildcustomUserPageRequest(count,startIndex,totalUsers);
-
-      // Building the list of users, but making sure to remove the users filtered out
-      result = userProvisioningService.listCustom(prTemp,filteredUsers, prReal);
+      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
+      ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
 
       wrapper = new MappingJacksonValue(result);
 
