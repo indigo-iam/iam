@@ -128,7 +128,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
@@ -160,7 +160,6 @@ import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.time.SystemTimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @Configuration
 @Order(value = Ordered.LOWEST_PRECEDENCE)
@@ -209,10 +208,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   private InactiveAccountAuthenticationHander inactiveAccountHandler;
 
   @Autowired
-  private AUPSignatureCheckService aupSignatureCheckService;
-
-  @Autowired
-  private AccountUtils accountUtils;
+  private AuthenticationSuccessHandlerHelper helper;
 
   @Autowired
   private SSOProfileOptionsResolver optionsResolver;
@@ -722,8 +718,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   @Bean
   AuthenticationSuccessHandler samlAuthenticationSuccessHandler() {
 
-    return new ExternalAuthenticationSuccessHandler("/", accountUtils, iamBaseUrl,
-        aupSignatureCheckService, accountRepo);
+    return new ExternalAuthenticationSuccessHandler("/", helper);
   }
 
 
@@ -892,8 +887,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler,
-        mappingResolver, validator, sessionTimeoutHelper));
+    auth.authenticationProvider(samlAuthenticationProvider(resolver, accountRepo,
+        inactiveAccountHandler, mappingResolver, validator, sessionTimeoutHelper));
   }
 
   private void scheduleProvisionedAccountsCleanup(final ScheduledTaskRegistrar taskRegistrar) {
