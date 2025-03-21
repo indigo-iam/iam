@@ -53,7 +53,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
@@ -72,7 +72,6 @@ import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @Configuration
 public class OidcConfiguration {
@@ -81,13 +80,7 @@ public class OidcConfiguration {
   private String iamBaseUrl;
 
   @Autowired
-  private IamAccountRepository accountRepo;
-
-  @Autowired
-  private AUPSignatureCheckService aupSignatureCheckService;
-
-  @Autowired
-  private AccountUtils accountUtils;
+  private AuthenticationSuccessHandlerHelper helper;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -149,8 +142,7 @@ public class OidcConfiguration {
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
   AuthenticationSuccessHandler successHandler() {
 
-    return new ExternalAuthenticationSuccessHandler("/", accountUtils, iamBaseUrl,
-        aupSignatureCheckService, accountRepo);
+    return new ExternalAuthenticationSuccessHandler("/", helper);
   }
 
   @Bean(name = "OIDCAuthenticationManager")
