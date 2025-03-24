@@ -35,7 +35,6 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -78,9 +77,6 @@ public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
-
-  @Autowired
-  private AuthenticationSuccessHandlerHelper helper;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -140,7 +136,7 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
-  AuthenticationSuccessHandler successHandler() {
+  AuthenticationSuccessHandler successHandler(AuthenticationSuccessHandlerHelper helper) {
 
     return new ExternalAuthenticationSuccessHandler("/", helper);
   }
