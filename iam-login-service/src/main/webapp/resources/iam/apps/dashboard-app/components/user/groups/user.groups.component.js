@@ -25,12 +25,14 @@
             self.userGroupLabels = {};
             self.labelName = labelName;
 
-            angular.forEach(self.user.groups, function(g){
-                self.groupLabels(g.value).then(function(res){
-                    self.userGroupLabels[g.value] = res;
+            if(self.isVoAdmin()) {
+                angular.forEach(self.user.groups, function(g) {
+                    self.groupLabels(g.value).then(function(res){
+                        self.userGroupLabels[g.value] = res;
+                    });
                 });
-            });  
-    };
+            }
+        };
 
         self.isVoAdmin = function () { return self.userCtrl.isVoAdmin(); };
 
