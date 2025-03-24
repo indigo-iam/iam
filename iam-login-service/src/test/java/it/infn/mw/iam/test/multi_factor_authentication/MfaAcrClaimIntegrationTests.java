@@ -54,8 +54,8 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
     OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    assertEquals(accessToken.getJwt().getJWTClaimsSet().getClaim("acr"),
-        "https://referds.org/profile/MFA");
+    assertEquals("https://referds.org/profile/MFA",
+        accessToken.getJwt().getJWTClaimsSet().getClaim("acr"));
 
     mvc
       .perform(post("/introspect").with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))
