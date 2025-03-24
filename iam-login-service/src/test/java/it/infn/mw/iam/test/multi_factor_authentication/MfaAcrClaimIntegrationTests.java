@@ -16,13 +16,11 @@
 package it.infn.mw.iam.test.multi_factor_authentication;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.text.ParseException;
 
 import org.junit.After;
 import org.junit.Test;
@@ -51,15 +49,13 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
   }
 
   @Test
-  public void testAcrClaimInTokensAndIntrospectionWhenMfaEnabled() throws ParseException, Exception {
+  public void testAcrClaimInTokensAndIntrospectionWhenMfaEnabled() throws Exception {
 
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
     OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    assertTrue(accessToken.getJwt()
-      .getJWTClaimsSet()
-      .getClaim("acr")
-      .equals("https://referds.org/profile/MFA"));
+    assertEquals(accessToken.getJwt().getJWTClaimsSet().getClaim("acr"),
+        "https://referds.org/profile/MFA");
 
     mvc
       .perform(post("/introspect").with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))

@@ -17,7 +17,6 @@ package it.infn.mw.iam.core.oauth.profile.iam;
 
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,11 +31,14 @@ public class IamClaimValueHelper implements ClaimValueHelper {
   public static final Set<String> ADDITIONAL_CLAIMS =
       Set.of("name", "email", "preferred_username", "organisation_name", "groups", "attr");
 
-  @Value("${iam.organisation.name}")
-  String organisationName;
+  private final String organisationName;
+  private final AttributeMapHelper attrHelper;
 
-  @Autowired
-  AttributeMapHelper attrHelper;
+  public IamClaimValueHelper(@Value("${iam.organisation.name}") String organisationName,
+      AttributeMapHelper attrHelper) {
+    this.organisationName = organisationName;
+    this.attrHelper = attrHelper;
+  }
 
   @Override
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
