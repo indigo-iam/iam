@@ -31,16 +31,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 
 
-// I need to do the JPQL queries here to find only the data needed. 
-// This should ease the computation on the server and also lessen all my custom methods
-
-// This is DTO - Data Transfer Object 
-// I need to read into this as it is different from having an entity manager (which from most articles seems to be 
-// the standard way of doing things)
-
-
-
-
 
 public interface IamAccountRepository
     extends PagingAndSortingRepository<IamAccount, Long>, IamAccountRepositoryCustom {
@@ -51,6 +41,33 @@ public interface IamAccountRepository
 
   @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
   Optional<Page<IamAccount>> findByGivenName(@Param("givenName") String givenName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
+  Optional<Page<IamAccount>> containsGivenName(@Param("givenName") String givenName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
+  Optional<Page<IamAccount>> findByFamilyName(@Param("familyName") String familyName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a  where a.active = :active")
+  Optional<Page<IamAccount>> findByActive(@Param("active") Boolean active, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a where lower(a.active) LIKE lower(concat('%', :active, '%'))")
+  Optional<Page<IamAccount>> containsActive(@Param("active") Boolean active, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
+  Optional<Page<IamAccount>> containsFamilyName(@Param("familyName") String familyName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a  where a.username = :UserName")
+  Optional<Page<IamAccount>> findByUsername(@Param("UserName") String UserName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :UserName, '%'))")
+  Optional<Page<IamAccount>> containsUsername(@Param("UserName") String UserName, @Param("op") Pageable op );
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress order by a.username ASC")
+  Optional<Page<IamAccount>> findByEmail(@Param("emailAddress") String emailAddress, @Param("op") Pageable op);
+
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
+  Optional<Page<IamAccount>> containsEmail(@Param("emailAddress") String emailAddress, @Param("op") Pageable op );
 
   @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
       + "and si.attributeId = :attributeId and si.userId = :userId")

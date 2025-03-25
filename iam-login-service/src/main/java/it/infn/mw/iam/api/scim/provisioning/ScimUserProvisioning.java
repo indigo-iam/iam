@@ -52,6 +52,7 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -118,10 +119,8 @@ public class ScimUserProvisioning
   private enum Attributes{
     // All related to the name of the user
     familyName, 
-    formatted,
     givenName,
-    displayName,
-    userName,
+    username,
 
     // Other info
     active, 
@@ -139,28 +138,36 @@ public class ScimUserProvisioning
       // Iterating over all defined enums 
       for(AttributeOperators operator : AttributeOperators.values()){
 
-        // Looking for the first instance of the given operator in the request
-        int index = filtersParameter.indexOf(operator.toString());
+        int from = 0;
 
-        // If there is an occurence and it's surrounded by spaces
-        if(index > 0 && filtersParameter.charAt(index-1) == ' ' && filtersParameter.charAt(index + operator.name().length()) == ' '){
+        // Need to look at all instances that corresponds to the operator
+        while(-1 != filtersParameter.indexOf(operator.toString(), from)){
 
-          // The parameter before the index is then from the start until the first space
-          String parameter = filtersParameter.substring(0, index -1);
+           // Looking for the first instance of the given operator in the request
+          int index = filtersParameter.indexOf(operator.toString());
 
-          // The value is from the operator until the end
-          String value = filtersParameter.substring(index + operator.name().length() + 1, filtersParameter.length());
-          
-          result.add(parameter);
-          result.add(operator.name());
-          result.add(value);
+          // If there is an occurence and it's surrounded by spaces
+          if(index > 0 && filtersParameter.charAt(index-1) == ' ' && filtersParameter.charAt(index + operator.name().length()) == ' '){
+
+            // The parameter before the index is then from the start until the first space
+            String parameter = filtersParameter.substring(0, index -1);
+
+            // The value is from the operator until the end
+            String value = filtersParameter.substring(index + operator.name().length() + 1, filtersParameter.length());
+            
+            result.add(parameter);
+            result.add(operator.name());
+            result.add(value);
+            return result;
       
+          }else{
+            from = index;
+          }
         }
       }
     }
     return result;
   }
-
 
 
   private boolean filterEvaluation(ArrayList<String> parsedFilters){
@@ -172,6 +179,7 @@ public class ScimUserProvisioning
               return true;
             }
           }
+          return false;
         }
       }
     }
@@ -181,56 +189,79 @@ public class ScimUserProvisioning
 
 
 
+  private Page<IamAccount> filterSearch(OffsetPageable op, ArrayList<String> parsedFilters){
 
+    Page<IamAccount> result = null; 
 
+    // Figuring out the operator
+    if(AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.get(1))){
 
+      // Figuring out the attribute
+      if(Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))){
 
+        // retrieving the results
+        result = accountRepository.findByGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));  
 
+      }else if(Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))){
 
-
-  // This is just for me to remember the paths - that way I can actually see the Joins I need to make
-
-  /*
-  // If returning true then the filters have the correct format and the user mathes the filter
-  private boolean filterEvaluation(ArrayList<String> parsedFilters, ScimUser user){
-
-    for(Attributes attribute : Attributes.values()){
-      
-      if(parsedFilters.size()== 3 && attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
-        
-        switch(attribute){
-          case givenName:
-            return (user.getName().getGivenName().equalsIgnoreCase(parsedFilters.get(2)));
-          
-          case familyName:
-            return (user.getName().getFamilyName().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case userName:
-            return (user.getUserName().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case formatted:
-            return (user.getName().getFormatted().equalsIgnoreCase(parsedFilters.get(2)));
-
-          case displayName: 
-            return (user.getDisplayName().equalsIgnoreCase(parsedFilters.get(2)));
-            
-          case emails:
-            for(ScimEmail email : user.getEmails()){
-              if(email.getValue().equalsIgnoreCase(parsedFilters.get(2))){
-                return true;
-              }
-            }
-            return false;
-
-          case active:
-            return user.getActive().toString().equalsIgnoreCase(parsedFilters.get(2));
-          
+        if((parsedFilters.get(2).equalsIgnoreCase("false") || parsedFilters.get(2).equalsIgnoreCase("true"))){
+        result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.get(2)),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
+        }else{
+          throw invalidValue(parsedFilters.get(2));
         }
-      } 
+
+      }else if(Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.findByEmail(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
+
+      }else if(Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.findByUsername(parsedFilters.get(2), op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
+
+      }else if(Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.findByFamilyName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));
+      }
+
+    }else if(AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.get(1))){
+
+      // Figuring out the attribute
+      if(Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        // retrieving the results
+        result = accountRepository.containsGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+
+      }else if(Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        if((parsedFilters.get(2).equalsIgnoreCase("false") || parsedFilters.get(2).equalsIgnoreCase("true"))){
+          result = accountRepository.containsActive(Boolean.valueOf(parsedFilters.get(2)),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));
+        }else{
+          throw invalidValue(parsedFilters.get(2));
+        }
+        
+      }else if(Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.containsEmail(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+
+      }else if(Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.containsUsername(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+
+      }else if(Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+
+        result = accountRepository.containsFamilyName(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+
+      }
     }
-    return false; 
+  
+    if(result != null && result.getContent().isEmpty()){
+      throw noUsersMappedToValue(parsedFilters);
+    }else if(result == null){
+      throw missingSupport(parsedFilters);
+    }
+    return result;
   }
-  */
+  
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
@@ -255,9 +286,32 @@ public class ScimUserProvisioning
     return new ScimResourceNotFoundException(String.format("No user mapped to givenName \"%s\"",name));
   }
 
+  private ScimResourceNotFoundException noUsersMappedToGivenName(String name){
+    return new ScimResourceNotFoundException(String.format("There are no users mapped to the givenName \"%s\"",name));
+  }
+
+  private ScimResourceNotFoundException noUsersMappedToValue(ArrayList<String> filter){
+    return new ScimResourceNotFoundException(
+      String.format("the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.", filter.get(0),filter.get(1),filter.get(2))
+    );
+  }
+
+  private IllegalArgumentException invalidValue(String value){
+    return new IllegalArgumentException(
+      String.format("the value \"%s\" does not fulfill the filtering convention",value)
+    );
+  }
+
+
   private IllegalArgumentException invalidFilter(String filter){
     return new IllegalArgumentException(
       String.format("the filter \"%s\" does not fulfill the filtering convention",filter)
+    );
+  }
+
+  private ScimFilterUnsupportedException missingSupport(ArrayList<String> filter){
+    return new ScimFilterUnsupportedException(
+      String.format("the filter \"%s,%s,%s\" is within the documentation, but is missing current support.", filter.get(0),filter.get(1),filter.get(2))
     );
   }
 
@@ -337,7 +391,8 @@ public class ScimUserProvisioning
     return builder.build();
   }
 
-  //Cannot out the method in interface as same interface is used for groups that does not have a search option 
+
+  //Cannot add the method in the interface as same interface is used for groups that does not have a search option 
 
   // Method to fetch users according to a filter
   public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter){
@@ -349,28 +404,18 @@ public class ScimUserProvisioning
       throw invalidFilter(filter);
     }
 
-    // Based on the filter I should call the gi
-
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
     OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
 
-    Page<IamAccount> results = accountRepository.findAll(op);
-
-    // It will only throw in case of a database error, i.e. not able to do anything from the database
-    Page<IamAccount> temp = accountRepository.findByGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));
-
-    if(temp.getContent().isEmpty()){
-      throw noUserMappedToGivenName(parsedFilters.get(2));
-    }
+    Page<IamAccount> results = filterSearch(op,parsedFilters);
 
     List<ScimUser> resources = new ArrayList<>();
 
-    temp.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
+    results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
 
     builder.resources(resources);
     builder.fromPage(results, op);
-
 
     return builder.build();
   }
