@@ -178,6 +178,7 @@ public class ScimUserProvisioning
           if (operator.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
             return true;
           }
+          return false;
         }
         return false;
       }
@@ -415,8 +416,6 @@ public class ScimUserProvisioning
     if (!filterEvaluation(parsedFilters)) {
       throw invalidFilter(filter);
     }
-
-    // Based on the filter I should call the gi
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
