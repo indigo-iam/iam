@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config.security;
 
+import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
 import static java.util.Collections.singletonList;
 import static org.springframework.http.HttpMethod.OPTIONS;
 
@@ -32,7 +33,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
@@ -50,7 +50,6 @@ import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
 public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter {
 
   public static final String TOKEN_ENDPOINT = "/token";
-  private static final short DEFAULT_ROUND = 12;
 
   @Autowired
   private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
@@ -72,7 +71,7 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
     auth.userDetailsService(userDetailsService)
-      .passwordEncoder(new BCryptPasswordEncoder(DEFAULT_ROUND));
+      .passwordEncoder(bcrypt());
   }
 
   @Bean

@@ -70,8 +70,6 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 @EnableAuthorizationServer
 public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
 
-  private static final short DEFAULT_ROUND = 12;
-
   @Autowired
   @Qualifier("iamUserDetailsService")
   private UserDetailsService iamUserDetailsService;
@@ -125,7 +123,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   public PasswordEncoder passwordEncoder() {
     String encodingId = "bcrypt";
     Map<String, PasswordEncoder> encoders = new HashMap<>();
-    encoders.put(encodingId, new BCryptPasswordEncoder(DEFAULT_ROUND));
+    encoders.put(encodingId, new BCryptPasswordEncoder());
     // encoders.put("noop", NoOpPasswordEncoder.getInstance());
     return new DelegatingPasswordEncoder(encodingId, encoders);
   }

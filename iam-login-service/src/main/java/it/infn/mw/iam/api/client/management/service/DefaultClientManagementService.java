@@ -17,6 +17,7 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
 import static java.util.Objects.isNull;
 import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 
@@ -120,15 +121,20 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public RegisteredClientDTO saveNewClient(RegisteredClientDTO client) throws ParseException {
 
+    String secret = defaultsService.generateClientSecret();
+
     ClientDetailsEntity entity = converter.entityFromClientManagementRequest(client);
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
+    entity.setClientSecret(bcrypt().encode(secret));
     entity.setActive(true);
 
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
-    return converter.registeredClientDtoFromEntity(entity);
+    RegisteredClientDTO newClientResponse = converter.registeredClientDtoFromEntity(entity);
+    newClientResponse.setClientSecret(secret);
+    return newClientResponse;
   }
 
   @Override
@@ -181,6 +187,8 @@ public class DefaultClientManagementService implements ClientManagementService {
       newClient.setClientSecret(null);
     } else if (isNull(client.getClientSecret())) {
       client.setClientSecret(defaultsService.generateClientSecret());
+    } else {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
     }
 
     newClient = clientService.updateClient(newClient);
@@ -210,10 +218,14 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(defaultsService.generateClientSecret());
+    String pwd = defaultsService.generateClientSecret();
+    client.setClientSecret(pwd);
+    client.setClientSecret(bcrypt().encode(pwd));
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
-    return converter.registeredClientDtoFromEntity(client);
+    RegisteredClientDTO clientWithSecret = converter.registeredClientDtoFromEntity(client);
+    clientWithSecret.setClientSecret(pwd);
+    return clientWithSecret;
   }
 
   @Override
