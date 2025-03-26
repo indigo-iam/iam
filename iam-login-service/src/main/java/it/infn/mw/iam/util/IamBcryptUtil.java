@@ -35,4 +35,9 @@ public class IamBcryptUtil {
     System.out.println(encoder.encode(args[0]));
   }
 
+  public static final BCryptPasswordEncoder bcrypt() {
+    final short DEFAULT_ROUND = 12;
+    return new BCryptPasswordEncoder(DEFAULT_ROUND);
+  }
+
 }

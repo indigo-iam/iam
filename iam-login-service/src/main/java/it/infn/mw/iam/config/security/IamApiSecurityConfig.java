@@ -47,8 +47,6 @@ import it.infn.mw.iam.core.oauth.FormClientCredentialsAuthenticationFilter;
 @Configuration
 public class IamApiSecurityConfig {
 
-  private static final short DEFAULT_ROUND = 12;
-
   @Configuration
   @Order(20)
   public static class IamProxyCertificateApiConfig extends WebSecurityConfigurerAdapter {
@@ -68,7 +66,7 @@ public class IamApiSecurityConfig {
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(new BCryptPasswordEncoder(DEFAULT_ROUND));
+        .passwordEncoder(new BCryptPasswordEncoder());
     }
 
     @Override
