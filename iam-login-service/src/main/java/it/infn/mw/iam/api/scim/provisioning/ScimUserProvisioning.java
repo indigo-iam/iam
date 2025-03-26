@@ -310,7 +310,6 @@ public class ScimUserProvisioning
         String.format("the value \"%s\" does not fulfill the filtering convention", value));
   }
 
-
   private IllegalArgumentException invalidFilter(String filter) {
     return new IllegalArgumentException(
         String.format("the filter \"%s\" does not fulfill the filtering convention", filter));
