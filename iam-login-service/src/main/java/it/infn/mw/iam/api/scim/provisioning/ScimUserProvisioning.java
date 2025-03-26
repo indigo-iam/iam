@@ -235,11 +235,9 @@ public class ScimUserProvisioning
 
       }else if(Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))){
 
-        if((parsedFilters.get(2).equalsIgnoreCase("false") || parsedFilters.get(2).equalsIgnoreCase("true"))){
-          result = accountRepository.containsActive(Boolean.valueOf(parsedFilters.get(2)),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));
-        }else{
-          throw invalidValue(parsedFilters.get(2));
-        }
+        // Contains on a boolean value makes no sense, gonna throw an error
+        throw invalidOperator(parsedFilters.get(1));
+
         
       }else if(Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))){
 
@@ -308,6 +306,12 @@ public class ScimUserProvisioning
   private IllegalArgumentException invalidFilter(String filter){
     return new IllegalArgumentException(
       String.format("the filter \"%s\" does not fulfill the filtering convention",filter)
+    );
+  }
+
+  private IllegalArgumentException invalidOperator(String operator){
+    return new IllegalArgumentException(
+      String.format("the operator \"%s\" can not be used with the given filtering attribute",operator)
     );
   }
 
