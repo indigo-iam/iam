@@ -486,7 +486,7 @@ public class TransientNotificationFactory implements NotificationFactory {
       IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
     try {
-      String formattedSubject = String.format("[%s IAM] %s", organisationName, subject);
+      String formattedSubject = String.format("%s %s", properties.getSubjectPrefix(), subject);
       Template template = freeMarkerConfiguration.getTemplate(templateName);
       String body = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
 
