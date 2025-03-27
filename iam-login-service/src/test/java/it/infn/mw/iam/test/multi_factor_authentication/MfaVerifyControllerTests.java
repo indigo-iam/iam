@@ -25,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -32,7 +34,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -107,5 +114,25 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
   @WithMockUser
   public void testGetMfaVerifyViewWithFullAuthenticationIsForbidden() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL)).andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test-mfa-user", authorities = { "ROLE_USER" })
+  public void testForPreAuthenticatedAuthenticationTokenAuthenticatedSetToFalse() throws Exception {
+    List<GrantedAuthority> currentAuthorities = Collections
+        .singletonList(new SimpleGrantedAuthority("ROLE_PRE_AUTHENTICATED"));
+    User testUser = new User("test-mfa-user", "SECRET", currentAuthorities);
+
+    PreAuthenticatedAuthenticationToken token = new PreAuthenticatedAuthenticationToken(testUser,
+        "test-credentials", currentAuthorities);
+    SecurityContextHolder.getContext().setAuthentication(token);
+
+    when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+    mvc.perform(get(MFA_VERIFY_URL))
+        .andExpect(status().isOk())
+        .andExpect(model().attributeExists("factors"));
+
+    mvc.perform(get("/dashboard"))
+        .andExpect(status().isForbidden());   
   }
 }
