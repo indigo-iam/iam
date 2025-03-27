@@ -115,7 +115,6 @@ public class FindAccountController {
 
   @GetMapping(value = FIND_BY_AUTHORITY_RESOURCE, produces = ScimConstants.SCIM_CONTENT_TYPE)
   public ListResponseDTO<ScimUser> findByAuthority(@RequestParam(required = true) String authority,
-      @RequestParam(required = false) String value,
       @RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex) {
 
