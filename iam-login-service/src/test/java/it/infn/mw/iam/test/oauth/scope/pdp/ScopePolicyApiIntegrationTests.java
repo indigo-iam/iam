@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -109,7 +110,17 @@ public class ScopePolicyApiIntegrationTests extends ScopePolicyTestUtils {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin.read")
-  public void listPolicyWorksForAdminUserTest() throws Exception {
+  public void testListPolicyWorksForAdminUser() throws Exception {
+    listPolicyWorks();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void testListPolicyWorksForReader() throws Exception {
+    listPolicyWorks();
+  }
+
+  public void listPolicyWorks() throws Exception {
     mvc.perform(get("/iam/scope_policies"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$").isArray())

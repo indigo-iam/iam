@@ -25,8 +25,8 @@
         <div ng-if="!$ctrl.user.groups.length">No groups found</div>
         <div class="row iam-user-group-row" ng-repeat="group in $ctrl.user.groups | orderBy:'display' ">
             <div class="iam-user-group-detail col-xs-6 col-sm-6">
-                <a ui-sref="group({id: group.value})" ng-if="$ctrl.isVoAdmin()">{{group.display}}</a>
-                <span ng-if="!$ctrl.isVoAdmin()">{{group.display}}</span>
+                <a ui-sref="group({id: group.value})" ng-if="$ctrl.isVoAdmin() || $root.loggedUser.isReader">{{group.display}}</a>
+                <span ng-if="!$ctrl.isVoAdmin() && !$root.loggedUser.isReader">{{group.display}}</span>
             </div>
 
             <div class="iam-user-group-labels col-xs-4 col-sm-4">

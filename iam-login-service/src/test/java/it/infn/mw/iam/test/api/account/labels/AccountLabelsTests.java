@@ -127,6 +127,16 @@ public class AccountLabelsTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void gettingLabelsWorksForReaderUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_100_USER_UUID)).andExpect(OK);
 

@@ -75,7 +75,7 @@ public class AccountAuthorityController {
       .fromAuthorities(authorityService.getAccountAuthorities(findAccountByName(authn.getName())));
   }
 
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
   @GetMapping(value = "/account/{id}/authorities")
   @ResponseBody
   public AuthoritySetDTO getAuthoritiesForAccount(@PathVariable("id") String id) {
