@@ -375,6 +375,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(status().isOk());
     mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test").roles("USER")))
       .andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test_100").roles("READER")))
+      .andExpect(status().isOk());
     mvc
       .perform(
           get("/iam/aup/signature/" + TEST_USER_UUID).with(user("admin").roles("USER", "ADMIN")))

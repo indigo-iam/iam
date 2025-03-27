@@ -18,6 +18,8 @@ package it.infn.mw.iam.test.scim.group;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -102,6 +104,39 @@ public class ScimGroupManagerTests {
 
     mvc.perform(get(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).content(SCIM_CONTENT_TYPE))
       .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void roleReaderCanSeeGroup() throws Exception {
+    mvc.perform(get(GROUP_URI + "/{uuid}", TEST_001_GROUP_ID).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.id", equalTo(TEST_001_GROUP_ID)));
+
+    mvc.perform(get(GROUP_URI + "/{uuid}", TEST_002_GROUP_ID).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.id", equalTo(TEST_002_GROUP_ID)));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void roleReaderCanSeeListOfGroups() throws Exception {
+    mvc.perform(get(GROUP_URI).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.Resources").isArray())
+      .andExpect(jsonPath("$.Resources", hasSize(greaterThan(1))));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "READER")
+  public void roleReaderCanSeeGroupMembers() throws Exception {
+    mvc.perform(get(GROUP_URI+ "/{uuid}/members", TEST_001_GROUP_ID ).content(SCIM_CONTENT_TYPE))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.Resources").isArray());
   }
 
   @Test

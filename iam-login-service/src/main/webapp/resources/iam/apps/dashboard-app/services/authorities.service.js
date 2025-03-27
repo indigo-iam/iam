@@ -22,10 +22,13 @@ Authorities.$inject = ['$http', '$interpolate'];
 function Authorities($http, $interpolate) {
     var AUTH_RESOURCE = $interpolate("/iam/account/{{id}}/authorities");
     var ADMIN_ROLE_RESOURCE = $interpolate("/iam/account/{{id}}/authorities?authority=ROLE_ADMIN");
+    var READER_ROLE_RESOURCE = $interpolate("/iam/account/{{id}}/authorities?authority=ROLE_READER");
 
     var service = {
         assignAdminPrivileges: assignAdminPrivileges,
         revokeAdminPrivileges: revokeAdminPrivileges,
+        assignMonitoringPrivileges: assignMonitoringPrivileges,
+        revokeMonitoringPrivileges: revokeMonitoringPrivileges,
         getAuthorities: getAuthorities
     };
 
@@ -50,6 +53,20 @@ function Authorities($http, $interpolate) {
     function revokeAdminPrivileges(accountId) {
 
         return $http.delete(adminRoleResourcePath(accountId));
+    }
+
+    function readerRoleResourcePath(accountId) {
+        return READER_ROLE_RESOURCE({
+            id: accountId
+        });
+    }
+
+    function assignMonitoringPrivileges(accountId) {
+        return $http.post(readerRoleResourcePath(accountId));
+    }
+
+    function revokeMonitoringPrivileges(accountId) {
+        return $http.delete(readerRoleResourcePath(accountId));
     }
 
     function getAuthorities(accountId) {

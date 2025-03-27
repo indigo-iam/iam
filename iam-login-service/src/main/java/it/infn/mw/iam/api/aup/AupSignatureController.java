@@ -127,7 +127,7 @@ public class AupSignatureController {
   }
 
   @GetMapping(value = "/iam/aup/signature/{accountId}")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER') or #iam.isUser(#accountId)")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId)
       throws AccountNotFoundException {
 
