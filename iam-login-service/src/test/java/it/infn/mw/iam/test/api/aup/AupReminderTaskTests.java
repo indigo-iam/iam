@@ -224,4 +224,78 @@ public class AupReminderTaskTests extends AupTestSupport {
         equalTo(0));
 
   }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupExpirationEmailNotSentForServiceAccount() {
+    IamAup aup = buildDefaultAup();
+    aup.setSignatureValidityInDays(2L);
+
+    LocalDate today = LocalDate.now();
+    LocalDate twoDaysAgo = today.minusDays(2);
+
+    Date date = Date.from(twoDaysAgo.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    aup.setCreationTime(date);
+    aup.setLastUpdateTime(date);
+    aupRepo.save(aup);
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    signatureRepo.createSignatureForAccount(aup, testAccount, date);
+
+    testAccount.setServiceAccount(true);  
+    accountRepo.save(testAccount);
+
+    assertThat(
+        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
+        equalTo(0));
+
+    aupReminderTask.sendAupReminders();
+    notificationDelivery.sendPendingNotifications();
+    assertThat(
+        notificationRepo.countAupExpirationMessPerAccount(testAccount.getUserInfo().getEmail()),
+        equalTo(0));
+
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void aupReminderEmailNotSentForServiceAccount() {
+    IamAup aup = buildDefaultAup();
+    aup.setSignatureValidityInDays(30L);
+    aupRepo.save(aup);
+
+    Date now = new Date();
+    mockTimeProvider.setTime(now.getTime());
+    LocalDate today = LocalDate.now();
+    LocalDate tomorrow = today.plusDays(1);
+    Date tomorrowDate = Date.from(tomorrow.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+    IamAccount testAccount = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
+    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(5));
+
+    assertThat(service.needsAupSignature(testAccount), is(true));
+
+    signatureRepo.createSignatureForAccount(aup, testAccount,
+        new Date(mockTimeProvider.currentTimeMillis()));
+
+    assertThat(service.needsAupSignature(testAccount), is(false));
+
+    testAccount.setServiceAccount(true);  
+    accountRepo.save(testAccount);
+
+    mockTimeProvider.setTime(now.getTime() + TimeUnit.MINUTES.toMillis(10));
+
+    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
+        tomorrowDate), equalTo(0));
+
+    aupReminderTask.sendAupReminders();
+    notificationDelivery.sendPendingNotifications();
+    assertThat(notificationRepo.countAupRemindersPerAccount(testAccount.getUserInfo().getEmail(),
+        tomorrowDate), equalTo(0));
+
+  }
 }

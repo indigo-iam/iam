@@ -23,6 +23,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.time.Instant;
 import java.util.Date;
@@ -32,7 +35,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -45,6 +50,7 @@ import it.infn.mw.iam.api.scim.updater.builders.Adders;
 import it.infn.mw.iam.api.scim.updater.builders.Removers;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
 import it.infn.mw.iam.api.scim.updater.util.CollectionHelpers;
+import it.infn.mw.iam.audit.events.account.ServiceAccountReplacedEvent;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -106,6 +112,9 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   @Autowired
   private UsernameValidator usernameValidator;
+
+  @Mock
+  private ApplicationEventPublisher publisher;
 
   private IamAccount account;
   private IamAccount other;
@@ -877,5 +886,29 @@ public class AccountUpdatersTests extends X509TestSupport {
 
     assertThat(u.update(), is(true));
     assertThat(u.update(), is(false));
+  }
+
+  @Test
+  public void testServiceAccountReplacerWorks() {
+
+    account.setServiceAccount(false);
+    accountRepo.save(account);
+
+    Updater u = accountReplacers().serviceAccount(true);
+    assertThat(u.update(), is(true));
+    assertThat(u.update(), is(false));
+  }
+
+  @Test
+  public void testPublishEventIsCalledWithServiceAccountReplacedEvent() {
+
+    account.setServiceAccount(false);
+    accountRepo.save(account);
+
+    Updater u = accountReplacers().serviceAccount(true);
+    assertThat(u.update(), is(true));
+    
+    u.publishUpdateEvent(this, publisher);
+    verify(publisher, times(1)).publishEvent(any(ServiceAccountReplacedEvent.class));
   }
 }

@@ -61,4 +61,8 @@ public interface NotificationFactory {
   IamEmailNotification createMfaDisableMessage(IamAccount account);
 
   IamEmailNotification createMfaEnableMessage(IamAccount account);
+
+  IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
+
+  IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
 }
