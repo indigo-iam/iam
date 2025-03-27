@@ -172,7 +172,7 @@
 						<p style="margin-top: 10px">
 							<c:choose>
 								<c:when test="${ not empty resource  }">
-									<c:out value="${ resource }" />
+									<b><i><c:out value="Resource:"/></i></b> <c:out value="${ resource }" />
 								</c:when>
 							</c:choose>
 						</p>
