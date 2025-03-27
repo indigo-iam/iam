@@ -47,4 +47,6 @@ public interface FindAccountService {
       Pageable pageable);
       
   ScimListResponse<ScimUser> findAccountByUuid(String uuid);
+  
+  ScimListResponse<ScimUser> findAccountByAuthority(String authority, Pageable pageable);
 }
