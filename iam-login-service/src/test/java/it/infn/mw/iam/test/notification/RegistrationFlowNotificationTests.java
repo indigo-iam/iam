@@ -68,7 +68,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class,
     NotificationTestConfig.class}, webEnvironment = WebEnvironment.MOCK)
 @WithAnonymousUser
-@TestPropertySource(properties = {"notification.disable=false"})
+@TestPropertySource(properties = {"notification.disable=false", "notification.subject-prefix=INDIGO IAM"})
 public class RegistrationFlowNotificationTests {
 
   @Autowired
@@ -119,7 +119,7 @@ public class RegistrationFlowNotificationTests {
   }
 
   public String formatSubject(String key) {
-    return String.format("[%s IAM] %s", organisationName, properties.getSubject().get(key));
+    return String.format("%s %s", properties.getSubjectPrefix(), properties.getSubject().get(key));
   }
 
   @Test
