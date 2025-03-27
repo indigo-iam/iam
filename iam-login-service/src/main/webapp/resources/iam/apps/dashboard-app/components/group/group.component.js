@@ -22,11 +22,13 @@
         self.loadGroup = loadGroup;
         self.id = $state.params.id;
         self.voAdmin = false;
+        self.isReader = false;
         self.groupManager = false;
 
         self.$onInit = function () {
             self.groupManager = Utils.isGroupManagerForGroup(self.group.id);
             self.voAdmin = Utils.isAdmin();
+            self.isReader = Utils.isReader();
         };
 
         function loadGroup() {

@@ -22,13 +22,17 @@
 
 		<div class="row iam-div-row"
 			ng-repeat="member in $ctrl.members | orderBy:'display' ">
-			<div ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isGroupManager"
+			<div ng-if="$root.loggedUser.isAdmin || $root.loggedUser.isGroupManager || $root.loggedUser.isReader"
 				class="iam-detail col-xs-8 col-sm-8">
 				<a ui-sref="user({id: member.value})">{{member.display}}</a>
 			</div>
 			<div class="iam-actions col-xs-4 col-sm-4 text-right">
-				<button class="btn btn-danger btn-xs"
+				<button class="btn btn-danger btn-xs" ng-if="!$root.loggedUser.isReader"
 					ng-click="$ctrl.deleteMember(member)">
+					<i class="fa fa-times"></i>
+				</button>
+				<button disabled class="btn btn-danger btn-xs" ng-if="$root.loggedUser.isReader"
+					style="cursor: not-allowed;">
 					<i class="fa fa-times"></i>
 				</button>
 			</div>
