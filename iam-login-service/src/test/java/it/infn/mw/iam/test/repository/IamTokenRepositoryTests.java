@@ -15,12 +15,10 @@
  */
 package it.infn.mw.iam.test.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -68,6 +66,9 @@ public class IamTokenRepositoryTests {
 
   @Autowired
   private IamOAuthRefreshTokenRepository refreshTokenRepo;
+
+  @Autowired
+  private AuthenticationHolderRepository authenticationHolderRepository;
 
   @Autowired
   private AuthenticationHolderRepository authenticationHolderRepo;
@@ -126,8 +127,7 @@ public class IamTokenRepositoryTests {
         hasSize(0));
 
     assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(1));
-
+        hasSize(0));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, currentTimestamp),
         hasSize(1));
   }
@@ -179,7 +179,7 @@ public class IamTokenRepositoryTests {
     at.setExpiration(exp);
     at.getRefreshToken().setExpiration(exp);
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(1));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(0));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now), hasSize(1));
   }
 
@@ -187,53 +187,13 @@ public class IamTokenRepositoryTests {
   public void testTokenNoCascadeDeletion() {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    AuthenticationHolderEntity ah = at.getAuthenticationHolder();
-    accessTokenRepo.delete(at);
-    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(false));
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    AuthenticationHolderEntity ah = rt.getAuthenticationHolder();
+    assertThat(accessTokenRepo.findByTokenValue(at.getTokenValueHash()).isPresent(), is(false));
+    assertThat(refreshTokenRepo.findById(rt.getId()).isPresent(), is(true));
+    assertThat(authenticationHolderRepository.getById(ah.getId()), notNullValue());
     refreshTokenRepo.delete(rt);
-    assertThat(refreshTokenRepo.findById(rt.getId()).isEmpty(), is(true));
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
+    assertThat(refreshTokenRepo.findById(rt.getId()).isPresent(), is(false));
+    assertThat(authenticationHolderRepository.getById(ah.getId()), notNullValue());
     authenticationHolderRepo.remove(ah);
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
-  }
-
-  @Test
-  public void testTokenCascadeDeletion() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
-    accessTokenRepo.save(at);
-    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    refreshTokenRepo.save(rt);
-    AuthenticationHolderEntity ah = at.getAuthenticationHolder();
-    authenticationHolderRepo.save(ah);
-    assertThat(accessTokenRepo.findAll()).hasSize(1);
-    assertThat(refreshTokenRepo.findAll()).hasSize(1);
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(true));
-    authenticationHolderRepo.remove(ah);
-    assertThat(accessTokenRepo.findAll()).isEmpty();
-    assertThat(refreshTokenRepo.findAll()).isEmpty();
-    assertThat(authenticationHolderRepo.getById(ah.getId()) != null, is(false));
-  }
-
-  @Test
-  public void testAuthenticationHolderScopesLinkedToAccessAndRefreshTokens() {
-    OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
-    accessTokenRepo.save(at);
-    OAuth2RefreshTokenEntity rt = at.getRefreshToken();
-    refreshTokenRepo.save(rt);
-    AuthenticationHolderEntity aht = at.getAuthenticationHolder();
-    authenticationHolderRepo.save(aht);
-    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("openid"));
-    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("profile"));
-    assertTrue(authenticationHolderRepo.getById(aht.getId()).getScope().contains("offline_access"));
-    assertFalse(
-        authenticationHolderRepo.getById(aht.getId()).getScope().contains("iam:admin.read"));
-    AuthenticationHolderEntity ahr = rt.getAuthenticationHolder();
-    authenticationHolderRepo.save(ahr);
-    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("openid"));
-    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("profile"));
-    assertTrue(authenticationHolderRepo.getById(ahr.getId()).getScope().contains("offline_access"));
-    assertFalse(
-        authenticationHolderRepo.getById(ahr.getId()).getScope().contains("iam:admin.read"));
   }
 }

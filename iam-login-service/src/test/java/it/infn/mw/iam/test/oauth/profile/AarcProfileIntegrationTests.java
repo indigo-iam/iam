@@ -18,8 +18,8 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
 import static java.lang.String.join;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -36,16 +36,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 import java.util.List;
 import java.util.Set;
-
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -61,13 +60,14 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 
+@SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
     "iam.host=example.org",
     "iam.jwt-profile.default-profile=aarc",
-    // @formatter:on
+// @formatter:on
 })
 public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
@@ -123,7 +123,6 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .getAccessTokenValue();
   }
 
-  @SuppressWarnings("deprecation")
   private String getIdToken(String scopes) throws Exception {
 
     // @formatter:off
@@ -236,6 +235,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -249,7 +249,6 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.family_name", equalTo("User")))
       .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
     // @formatter:on
-
   }
 
   @Test
@@ -262,6 +261,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -289,6 +289,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -385,6 +386,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.voperson_id").isNotEmpty())
@@ -412,6 +414,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -443,6 +446,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))

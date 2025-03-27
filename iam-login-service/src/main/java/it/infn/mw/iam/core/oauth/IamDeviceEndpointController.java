@@ -78,6 +78,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Controller
 public class IamDeviceEndpointController {
 
+  public static final String URL = "devicecode";
+
   public static final Logger logger = LoggerFactory.getLogger(IamDeviceEndpointController.class);
 
   private final IamClientRepository clientRepository;

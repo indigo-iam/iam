@@ -20,18 +20,15 @@ import static java.util.Objects.isNull;
 import java.io.IOException;
 import java.util.Optional;
 
-import javax.servlet.Filter;
 import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.aup.error.AupNotFoundError;
@@ -41,7 +38,7 @@ import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 
-public class EnforceAupFilter implements Filter {
+public class EnforceAupFilter extends OncePerRequestFilter {
 
   public static final Logger LOG = LoggerFactory.getLogger(EnforceAupFilter.class);
 
@@ -63,28 +60,24 @@ public class EnforceAupFilter implements Filter {
     this.aupRepo = aupRepo;
   }
 
-  @Override
-  public void init(FilterConfig filterConfig) throws ServletException {
-    // Empty method
-  }
-
 
   public boolean sessionOlderThanAupCreation(HttpSession session) {
     IamAup aup = aupRepo.findDefaultAup().orElseThrow(AupNotFoundError::new);
     return session.getCreationTime() < aup.getCreationTime().getTime();
   }
 
+  @Override
+  public void destroy() {
+    // Empty method
+  }
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
+  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+      FilterChain chain) throws ServletException, IOException {
 
-    HttpServletRequest req = (HttpServletRequest) request;
-    HttpServletResponse res = (HttpServletResponse) response;
+    HttpSession session = request.getSession(false);
 
-    HttpSession session = req.getSession(false);
-
-    String requestURL = req.getRequestURL().toString();
+    String requestURL = request.getRequestURL().toString();
 
     if (!accountUtils.isAuthenticated() || isNull(session) || requestURL.endsWith(AUP_API_PATH)) {
       chain.doFilter(request, response);
@@ -103,27 +96,22 @@ public class EnforceAupFilter implements Filter {
         chain.doFilter(request, response);
         return;
       }
-      if (!res.isCommitted()) {
-        res.sendRedirect(AUP_SIGN_PATH);
+      if (!response.isCommitted()) {
+        response.sendRedirect(AUP_SIGN_PATH);
       }
       return;
     }
 
     if (signatureCheckService.needsAupSignature(authenticatedUser.get())
-        && !sessionOlderThanAupCreation(session) && !res.isCommitted()) {
+        && !sessionOlderThanAupCreation(session) && !response.isCommitted()) {
 
       session.setAttribute(REQUESTING_SIGNATURE, true);
-      res.sendRedirect(AUP_SIGN_PATH);
+      response.sendRedirect(AUP_SIGN_PATH);
       return;
 
     }
 
     chain.doFilter(request, response);
-  }
-
-  @Override
-  public void destroy() {
-    // Empty method
   }
 
 }

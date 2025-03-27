@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper.ATTR_SCOPE;
 import static java.util.Objects.isNull;
-import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
 import java.util.Date;
@@ -66,7 +65,6 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     builder.notBeforeTime(Date.from(issueTime));
 
-    addScopeClaim(builder, token);
     addWlcgVerClaim(builder);
 
     if (!isNull(userInfo)) {
@@ -90,12 +88,6 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     addAudience(builder);
 
     return builder.build();
-  }
-
-  private void addScopeClaim(Builder builder, OAuth2AccessTokenEntity token) {
-    if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
-    }
   }
 
   private void addWlcgVerClaim(Builder builder) {

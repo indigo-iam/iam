@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.test.TestUtils;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.redis.RedisContainer;
 
 
@@ -47,7 +48,7 @@ import it.infn.mw.iam.test.util.redis.RedisContainer;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = "spring.session.store-type=redis")
 @Disabled
-public class ExternalizedSessionDeviceCodeTests implements DeviceCodeTestsConstants {
+class ExternalizedSessionDeviceCodeTests implements StructuredScopeTestSupportConstants {
 
 
   @LocalServerPort

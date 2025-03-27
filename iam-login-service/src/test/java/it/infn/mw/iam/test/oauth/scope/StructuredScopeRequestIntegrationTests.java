@@ -32,13 +32,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.ActiveProfiles;
@@ -74,7 +75,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   void test() throws Exception {
 
     // @formatter:off
-    mvc.perform(post("/token")
+    mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
@@ -89,7 +90,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   void testIntrospectionResponse() throws Exception {
     // @formatter:off
     String tokenResponse = 
-        mvc.perform(post("/token")
+        mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("grant_type", CLIENT_CREDENTIALS_GRANT_TYPE)
         .param("scope", "storage.read:/a-path storage.write:/another-path"))
@@ -105,7 +106,8 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
     String accessToken = tokenResponseObject.getValue();
     mvc
-      .perform(post("/introspect")
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -235,6 +237,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -255,7 +258,7 @@ class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     assertThat(tokenResponse.getScope(), hasItem("storage.read:/"));
 
     mvc
-      .perform(post("/token").with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
         .param("grant_type", "refresh_token")
         .param("scope", "openid storage.read:/test offline_access")
         .param("refresh_token", tokenResponse.getRefreshToken().getValue()))

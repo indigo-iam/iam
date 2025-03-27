@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
 import static java.util.Objects.isNull;
-import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
 import java.util.Date;
@@ -58,10 +57,6 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
 
     builder.notBeforeTime(Date.from(issueTime));
-
-    if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
-    }
 
     if (!isNull(userInfo)) {
       Set<String> groupNames =

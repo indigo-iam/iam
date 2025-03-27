@@ -26,15 +26,6 @@
       self.loadData();
     };
 
-    self.loadFirstPageOfAccessTokens = function() {
-        return TokensService.getAccessTokens(1,10).then(function(r) {
-            self.accessTokensFirstResponse = r.data;
-            $rootScope.accessTokensCount = r.data.totalResults;
-            console.debug('accessTokensFirstResponse', self.accessTokensFirstResponse);
-            return r.data;
-        });
-    }
-
     self.loadFirstPageOfRefreshTokens = function() {
         return TokensService.getRefreshTokens(1,10).then(function(r) {
             self.refreshTokensFirstResponse = r.data;
@@ -73,10 +64,6 @@
       self.selected = tabNumber;
       if (tabNumber == 0) {
         self.selected = 0;
-        $scope.$broadcast('refreshAccessTokensList');
-      }
-      if (tabNumber == 1) {
-        self.selected = 1;
         $scope.$broadcast('refreshRefreshTokensList');
       }
     }
@@ -107,7 +94,6 @@
                 var promises = [];
                 promises.push(self.loadUsers());
                 promises.push(self.loadClients());
-                promises.push(self.loadFirstPageOfAccessTokens());
                 promises.push(self.loadFirstPageOfRefreshTokens());
                 return $q.all(promises);
             })

@@ -23,7 +23,6 @@ import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.token.ChainedTokenGranter;
 import org.mitre.oauth2.token.JWTAssertionTokenGranter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,16 +34,9 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
-import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
-import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
-import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
-import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
-import org.springframework.security.oauth2.provider.OAuth2RequestValidator;
 import org.springframework.security.oauth2.provider.TokenGranter;
-import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenGranter;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeTokenGranter;
@@ -59,50 +51,12 @@ import it.infn.mw.iam.core.oauth.granters.IamRefreshTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.IamResourceOwnerPasswordTokenGranter;
 import it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter;
 import it.infn.mw.iam.core.util.IamAuthenticationEventPublisher;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
 @Configuration
-@EnableAuthorizationServer
-public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
-
-  @Autowired
-  @Qualifier("iamUserDetailsService")
-  private UserDetailsService iamUserDetailsService;
-
-  @Autowired
-  private OAuth2TokenEntityService tokenServices;
-
-  @Autowired
-  @Qualifier("iamClientDetailsEntityService")
-  private ClientDetailsEntityService clientDetailsService;
-
-  @Autowired
-  private OAuth2RequestFactory requestFactory;
-
-  @Autowired
-  private AuthorizationCodeServices authorizationCodeServices;
-
-  @Autowired
-  private OAuth2RequestValidator requestValidator;
-
-  @Autowired
-  private UserApprovalHandler iamUserApprovalHandler;
-
-  @Autowired
-  private PasswordEncoder passwordEncoder;
-
-  @Autowired
-  private DeviceCodeService deviceCodeService;
-
-  @Autowired
-  private AccountUtils accountUtils;
-
-  @Autowired
-  private AUPSignatureCheckService signatureCheckService;
-
-  @Autowired
-  private TokenExchangePdp tokenExchangePdp;
+public class AuthorizationServerConfig {
 
   @Bean
   WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
@@ -116,10 +70,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   }
 
   @Bean(name = "authenticationManager")
-  AuthenticationManager authenticationManager() {
+  AuthenticationManager authenticationManager(
+      @Qualifier("iamUserDetailsService") UserDetailsService userDetailsService,
+      PasswordEncoder passwordEncoder) {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-    provider.setUserDetailsService(iamUserDetailsService);
+    provider.setUserDetailsService(userDetailsService);
     provider.setPasswordEncoder(passwordEncoder);
 
     ProviderManager pm =
@@ -131,72 +87,43 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   }
 
   @Bean
-  public TokenGranter tokenGranter() {
-
-    AuthenticationManager authenticationManager = authenticationManager();
+  TokenGranter tokenGranter(IamAccountRepository accountRepository,
+      OAuth2TokenEntityService tokenService,
+      @Qualifier("iamClientDetailsEntityService") ClientDetailsEntityService clientDetailsService,
+      OAuth2RequestFactory requestFactory, AuthenticationManager authenticationManager,
+      DeviceCodeService deviceCodeService, AuthorizationCodeServices authorizationCodeServices,
+      AccountUtils accountUtils, AUPSignatureCheckService signatureCheckService,
+      TokenExchangePdp tokenExchangePdp) {
 
     IamResourceOwnerPasswordTokenGranter resourceOwnerPasswordCredentialGranter =
-        new IamResourceOwnerPasswordTokenGranter(authenticationManager, tokenServices,
+        new IamResourceOwnerPasswordTokenGranter(authenticationManager, tokenService,
             clientDetailsService, requestFactory);
 
     resourceOwnerPasswordCredentialGranter.setAccountUtils(accountUtils);
     resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
 
     IamRefreshTokenGranter refreshTokenGranter =
-        new IamRefreshTokenGranter(tokenServices, clientDetailsService, requestFactory);
+        new IamRefreshTokenGranter(tokenService, clientDetailsService, requestFactory);
     refreshTokenGranter.setAccountUtils(accountUtils);
     refreshTokenGranter.setSignatureCheckService(signatureCheckService);
 
     TokenExchangeTokenGranter tokenExchangeGranter =
-        new TokenExchangeTokenGranter(tokenServices, clientDetailsService, requestFactory);
-
-    tokenExchangeGranter.setAccountUtils(accountUtils);
-    tokenExchangeGranter.setSignatureCheckService(signatureCheckService);
-    tokenExchangeGranter.setExchangePdp(tokenExchangePdp);
+        new TokenExchangeTokenGranter(tokenService, clientDetailsService, requestFactory,
+            signatureCheckService, tokenExchangePdp, accountRepository);
 
     return new CompositeTokenGranter(Arrays.<TokenGranter>asList(
-        new AuthorizationCodeTokenGranter(tokenServices, authorizationCodeServices,
+        new AuthorizationCodeTokenGranter(tokenService, authorizationCodeServices,
             clientDetailsService, requestFactory),
-        new ImplicitTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        new ImplicitTokenGranter(tokenService, clientDetailsService, requestFactory),
         refreshTokenGranter,
-        new ClientCredentialsTokenGranter(tokenServices, clientDetailsService, requestFactory),
+        new ClientCredentialsTokenGranter(tokenService, clientDetailsService, requestFactory),
         resourceOwnerPasswordCredentialGranter,
-        new JWTAssertionTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        new ChainedTokenGranter(tokenServices, clientDetailsService, requestFactory),
-        tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenServices, clientDetailsService,
+        new JWTAssertionTokenGranter(tokenService, clientDetailsService, requestFactory),
+        new ChainedTokenGranter(tokenService, clientDetailsService, requestFactory),
+        tokenExchangeGranter, new IamDeviceCodeTokenGranter(tokenService, clientDetailsService,
             requestFactory, deviceCodeService)));
   }
 
-  @Override
-  public void configure(final AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-
-    // @formatter:off
-    endpoints
-      .requestValidator(requestValidator)
-      .pathMapping("/oauth/token", "/token")
-      .pathMapping("/oauth/authorize", "/authorize")
-      .tokenServices(tokenServices)
-      .userApprovalHandler(iamUserApprovalHandler)
-      .requestFactory(requestFactory)
-      .tokenGranter(tokenGranter())
-      .authorizationCodeServices(authorizationCodeServices);
-    // @formatter:on
-  }
-
-  @Override
-  public void configure(final ClientDetailsServiceConfigurer clients) throws Exception {
-
-    clients.withClientDetails(clientDetailsService);
-
-  }
-
-  @Override
-  public void configure(final AuthorizationServerSecurityConfigurer security) throws Exception {
-
-    security.allowFormAuthenticationForClients();
-
-
-  }
 
 
 }

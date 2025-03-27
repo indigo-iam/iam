@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -49,10 +50,11 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
 
 
   @Test
-  public void testTokenIntrospectionEndpointBasicAuthentication() throws Exception {
+  public void testTokenIntrospectionEndpointBasicAuthenticationWithIntrospectionEnabledClient() throws Exception {
     // @formatter:off
     mvc.perform(post(ENDPOINT)
         .with(httpBasic("password-grant", "secret"))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -60,13 +62,13 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointFormAuthentication() throws Exception {
+  public void testTokenIntrospectionEndpointBasicAuthenticationWithIntrospectionDisabledClient() throws Exception {
     // @formatter:off
     mvc.perform(post(ENDPOINT)
-        .param("token", accessToken)
-        .param("client_id", "client-cred")
-        .param("client_secret", "secret"))
-      .andExpect(status().isUnauthorized());
+        .with(httpBasic("no-introspect-client", "secret"))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isForbidden());
     // @formatter:on
   }
 

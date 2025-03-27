@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-
-
 import static java.util.Objects.isNull;
 
 import org.mitre.openid.connect.model.UserInfo;

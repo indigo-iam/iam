@@ -27,14 +27,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@SuppressWarnings("deprecation")
-public class EndpointsTestUtils {
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
-  private static final String DEFAULT_USERNAME = "test";
-  private static final String DEFAULT_PASSWORD = "password";
-  private static final String DEFAULT_CLIENT_ID = "password-grant";
-  private static final String DEFAULT_CLIENT_SECRET = "secret";
-  private static final String DEFAULT_SCOPE = "";
+@SuppressWarnings("deprecation")
+public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
 
   @Autowired
   protected ObjectMapper mapper;
@@ -44,20 +40,25 @@ public class EndpointsTestUtils {
 
   public AccessTokenGetter buildAccessTokenGetter() {
     return new AccessTokenGetter().grantType("password")
-      .clientId(DEFAULT_CLIENT_ID)
-      .clientSecret(DEFAULT_CLIENT_SECRET)
-      .username(DEFAULT_USERNAME)
-      .password(DEFAULT_PASSWORD);
+      .clientId(PASSWORD_CLIENT_ID)
+      .clientSecret(PASSWORD_CLIENT_SECRET)
+      .username(TEST_USERNAME)
+      .password(TEST_PASSWORD);
+  }
+
+  protected DefaultOAuth2AccessToken getPasswordTokenResponse(String scope) throws Exception {
+
+    AccessTokenGetter tg = buildAccessTokenGetter().scope(scope);
+    return tg.getTokenResponseObject();
   }
 
   protected String getPasswordAccessToken(String scope) throws Exception {
 
-    AccessTokenGetter tg = buildAccessTokenGetter().scope(scope);
-    return tg.getAccessTokenValue();
+    return getPasswordTokenResponse(scope).getValue();
   }
 
   protected String getPasswordAccessToken() throws Exception {
-    return getPasswordAccessToken(DEFAULT_SCOPE);
+    return getPasswordAccessToken(EMPTY_SCOPES);
   }
 
   public class AccessTokenGetter {

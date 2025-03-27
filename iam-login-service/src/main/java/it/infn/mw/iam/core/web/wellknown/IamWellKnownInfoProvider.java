@@ -26,10 +26,7 @@ import java.util.Set;
 import org.mitre.jwt.encryption.service.JWTEncryptionAndDecryptionService;
 import org.mitre.oauth2.model.PKCEAlgorithm;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.oauth2.web.DeviceEndpoint;
-import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.RevocationEndpoint;
-import org.mitre.openid.connect.web.UserInfoEndpoint;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +37,9 @@ import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.IamDeviceEndpointController;
+import it.infn.mw.iam.core.oauth.introspection.IamIntrospectionEndpoint;
+import it.infn.mw.iam.core.userinfo.IamUserInfoEndpoint;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @Service
@@ -126,12 +126,12 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
 
     authorizeEndpoint = buildEndpointUrl(AUTHORIZE_ENDPOINT);
     tokenEndpoint = buildEndpointUrl(TOKEN_ENDPOINT);
-    userinfoEndpoint = buildEndpointUrl(UserInfoEndpoint.URL);
+    userinfoEndpoint = buildEndpointUrl(IamUserInfoEndpoint.URL);
     jwkEndpoint = buildEndpointUrl(IamJWKSetPublishingEndpoint.URL);
     clientRegistrationEndpoint = buildEndpointUrl(ClientRegistrationApiController.ENDPOINT);
-    introspectionEndpoint = buildEndpointUrl(IntrospectionEndpoint.URL);
+    introspectionEndpoint = buildEndpointUrl(IamIntrospectionEndpoint.URL);
     revocationEndpoint = buildEndpointUrl(RevocationEndpoint.URL);
-    deviceAuthorizationEndpoint = buildEndpointUrl(DeviceEndpoint.URL);
+    deviceAuthorizationEndpoint = buildEndpointUrl(IamDeviceEndpointController.URL);
     aboutEndpoint = buildEndpointUrl(ABOUT_ENDPOINT);
     scimEndpoint = buildEndpointUrl(SCIM_ENDPOINT);
     updateSupportedScopes();

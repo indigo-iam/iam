@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -34,6 +35,7 @@ import java.util.List;
 import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -126,12 +128,13 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$." + KC_GROUP_CLAIM, containsInAnyOrder("Analysis", "Production")))
       .andExpect(jsonPath("$." + KC_GROUP_CLAIM, hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.iss", equalTo("http://localhost:8080/")))
+      .andExpect(jsonPath("$.iss", equalTo("http://localhost:8080")))
       .andExpect(jsonPath("$.scope", containsString("openid")))
       .andExpect(jsonPath("$.scope", containsString("profile")));
     // @formatter:on
@@ -146,10 +149,12 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.aud", equalTo("myAudience")));
+      .andExpect(jsonPath("$.aud", hasSize(1)))
+      .andExpect(jsonPath("$.aud", contains("myAudience")));
     // @formatter:on
 
   }
@@ -168,6 +173,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessTokenString))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))

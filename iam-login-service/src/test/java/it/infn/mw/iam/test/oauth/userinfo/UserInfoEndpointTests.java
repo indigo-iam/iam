@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.userinfo;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,8 +40,6 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import it.infn.mw.iam.util.ssh.RSAPublicKeyUtils;
-
-
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -97,6 +96,15 @@ public class UserInfoEndpointTests {
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope", contains("openid", "profile")))
+      .andExpect(jsonPath("$.name", is("Test User")))
+      .andExpect(jsonPath("$.nickname", is("test")))
+      .andExpect(jsonPath("$.given_name", is("Test")))
+      .andExpect(jsonPath("$.family_name", is("User")))
+      .andExpect(jsonPath("$.email", is("test@iam.test")))
+      .andExpect(jsonPath("$.email_verified", is(true)))
+      .andExpect(jsonPath("$.groups", contains("Production", "Analysis")))
+      .andExpect(jsonPath("$.preferred_username", is("test")))
       .andExpect(jsonPath("$.organisation_name", is("indigo-dc")));
     // @formatter:on
   }
@@ -139,16 +147,19 @@ public class UserInfoEndpointTests {
     key.setFingerprint(RSAPublicKeyUtils.getSHA256Fingerprint("test"));
 
     accountService.addSshKey(test, key);
+
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.ssh_keys").doesNotExist());
 
+    accountService.removeSshKey(test, key);
   }
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
       scopes = {"openid", "profile", "ssh-keys"})
-  public void userinfoEndpointDoesNotReturnsSshKeysWithAppropriateScope() throws Exception {
+  public void userinfoEndpointReturnsSshKeysWithAppropriateScope() throws Exception {
+
     IamAccount test = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected account not found"));
 
@@ -165,7 +176,6 @@ public class UserInfoEndpointTests {
       .andExpect(
           jsonPath("$.ssh_keys[0].fingerprint", is(RSAPublicKeyUtils.getSHA256Fingerprint("test"))))
       .andExpect(jsonPath("$.ssh_keys[0].value", is("test")));
-
   }
 
 }

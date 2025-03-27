@@ -45,13 +45,13 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.test.oauth.devicecode.DeviceCodeTestsConstants;
+import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
+public class ResourceIndicatorTests implements StructuredScopeTestSupportConstants {
 
   public static final String TEST_USERNAME = "test";
   public static final String TEST_PASSWORD = "password";
@@ -131,8 +131,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile offline_access")
@@ -146,8 +146,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("refresh_token", refreshToken)
         .param(resourceParamRTFlow, resourceValueRTFlow))
       .andExpect(status().isOk())
@@ -163,8 +163,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -190,8 +190,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -218,8 +218,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -250,8 +250,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -267,8 +267,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -284,8 +284,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -302,8 +302,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -320,8 +320,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -338,8 +338,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile")
@@ -356,8 +356,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "https://example.org"))
       .andExpect(status().isOk())
       .andReturn()
@@ -379,8 +379,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "https://example1.org https://example2.org"))
       .andExpect(status().isOk())
       .andReturn()
@@ -404,8 +404,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "https://example1.org https://example2.org")
         .param("audience", "aud1 aud2 aud3"))
       .andExpect(status().isOk())
@@ -433,8 +433,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "resource"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
@@ -447,8 +447,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "http://example.org resource"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
@@ -462,8 +462,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "http://example.org resource")
         .param("audience", "aud1 aud2 aud3"))
       .andExpect(status().isBadRequest())
@@ -477,8 +477,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", ""))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
@@ -492,8 +492,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "http://example.org?query=true"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
@@ -508,8 +508,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
-        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("client_id", CLIENT_CREDENTIALS_CLIENT_ID)
+        .param("client_secret", CLIENT_CREDENTIALS_CLIENT_SECRET)
         .param("resource", "http://example.org#fragment"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
@@ -598,8 +598,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile offline_access")
@@ -613,8 +613,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("refresh_token", refreshToken)
         .param("resource", "https://example3.org"))
       .andExpect(status().isBadRequest())
@@ -628,8 +628,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   public void testEmptyResourceIndicatorRequestRTFlowAfterPassword() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile offline_access")
@@ -643,8 +643,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", PASSWORD_CLIENT_ID)
+        .param("client_secret", PASSWORD_CLIENT_SECRET)
         .param("refresh_token", refreshToken))
       .andExpect(status().isOk())
       .andReturn()

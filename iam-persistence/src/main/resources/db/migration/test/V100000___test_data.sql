@@ -27,7 +27,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
-  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true);
+  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
+  (21, 'no-introspect-client', 'secret', 'No introspection enabled client', false, 3600, 3600, 600, false, 'NONE', false, null, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -159,8 +160,10 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (20, 'phone'),
   (20, 'offline_access'),
   (20, 'storage.read:/'),
-  (20, 'storage.write:/');
-
+  (20, 'storage.write:/'),
+  (21, 'openid'),
+  (21, 'profile'),
+  (21, 'email');
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
@@ -215,16 +218,17 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (20, 'authorization_code'),
   (20, 'password'),
   (20, 'refresh_token'),
-  (20, 'urn:ietf:params:oauth:grant-type:device_code');
-
+  (20, 'urn:ietf:params:oauth:grant-type:device_code'),
+  (21, 'authorization_code'),
+  (21, 'client_credentials');
 
 INSERT INTO client_contact (owner_id, contact) VALUES
   (1, 'admin@example.com'),
   (12, 'test@example.com');
     
-INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
-  (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test'),
-  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa');
+INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, MIDDLENAME, PICTURE, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
+  (2, 'Test', 'User', '', '', 'test@iam.test', true, '1950-01-01','M','test'),
+  (1000, 'Test', 'MFA', '', '', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa');
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
   (2, '80e5fb8d-b7c8-451a-89ba-346ae278a66f', 'test', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),

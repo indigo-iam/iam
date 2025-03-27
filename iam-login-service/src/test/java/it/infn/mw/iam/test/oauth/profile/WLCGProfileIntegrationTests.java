@@ -44,6 +44,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -551,6 +552,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     // Check that token can be introspected properly
     mvc
       .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", tokenResponseObject.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -559,6 +561,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     // without the offline_access scope
     tokenResponse = mvc
       .perform(post("/token").with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("grant_type", TOKEN_EXCHANGE_GRANT_TYPE)
         .param("subject_token", tokenResponseObject.getValue())
         .param("subject_token_type", "urn:ietf:params:oauth:token-type:jwt")
@@ -591,6 +594,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     // Check that token can be introspected properly
     mvc
       .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", tokenResponseObject2.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -600,7 +604,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @Test
   public void testAudiencePreservedAcrossRefresh() throws Exception {
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
@@ -677,7 +682,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getAudience(), hasItem("test-audience"));
 
     tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
+      .perform(post("/token")
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "refresh_token")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("refresh_token", refreshToken))
@@ -716,7 +723,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   public void testUserInfoEndpointReturnsMinimailInformationAcrossRefresh() throws Exception {
 
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token")
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
@@ -730,7 +739,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
 
     tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
+      .perform(post("/token")
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "refresh_token")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("refresh_token", refreshToken)
@@ -774,7 +785,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     accountService.setAttribute(testAccount, TEST_ATTR);
 
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
@@ -800,7 +812,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     accountService.setAttribute(testAccount, TEST_ATTR);
 
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
@@ -823,7 +836,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   public void additionalClaimsAreIncludedInAccessTokenWhenRequested() throws Exception {
 
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
@@ -850,7 +864,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   public void additionalClaimsAreNotIncludedInAccessTokenWhenRNotequested() throws Exception {
 
     String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
+      .perform(post("/token").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("grant_type", "password")
         .param("client_id", CLIENT_ID)
         .param("client_secret", CLIENT_SECRET)
         .param("username", "test")
