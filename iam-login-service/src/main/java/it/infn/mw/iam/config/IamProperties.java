@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -197,7 +198,7 @@ public class IamProperties {
   public static class RegistrationFieldProperties {
     boolean readOnly = false;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour = ExternalAuthAttributeSectionBehaviour.MANDATORY;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -239,7 +240,7 @@ public class IamProperties {
 
     String samlEntityId;
 
-    Map<String, RegistrationFieldProperties> fields;
+    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
 
     List<DefaultGroup> defaultGroups;
 

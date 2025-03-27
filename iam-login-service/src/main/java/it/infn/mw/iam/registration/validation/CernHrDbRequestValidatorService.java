@@ -86,6 +86,13 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
       return invalid("User is not authenticated");
     }
 
+    RegistrationRequestValidationResult noteSanityCheck =
+        super.validateRegistrationRequest(registrationRequest, authentication);
+
+    if (!noteSanityCheck.isOk()) {
+      return error(format("%s", noteSanityCheck.getErrorMessage()));
+    }
+
     ExternalAuthenticationRegistrationInfo auth = authentication.get();
 
     if (!cernProperties.getSsoIssuer().equals(auth.getIssuer())) {

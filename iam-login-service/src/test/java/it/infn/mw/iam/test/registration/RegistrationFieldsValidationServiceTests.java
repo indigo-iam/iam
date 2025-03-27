@@ -86,7 +86,8 @@ public class RegistrationFieldsValidationServiceTests {
 
     when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
 
-    RegistrationRequestValidationResult result = service.validateRegistrationRequest(request, Optional.empty());
+    RegistrationRequestValidationResult result =
+        service.validateRegistrationRequest(request, Optional.empty());
 
     assertTrue(result.isOk());
   }
@@ -113,7 +114,8 @@ public class RegistrationFieldsValidationServiceTests {
 
     when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
 
-    RegistrationRequestValidationResult result = service.validateRegistrationRequest(request, Optional.empty());
+    RegistrationRequestValidationResult result =
+        service.validateRegistrationRequest(request, Optional.empty());
 
     assertEquals("Notes field cannot be null", result.getErrorMessage());
   }
@@ -141,7 +143,8 @@ public class RegistrationFieldsValidationServiceTests {
 
     when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
 
-    RegistrationRequestValidationResult result = service.validateRegistrationRequest(request, Optional.empty());
+    RegistrationRequestValidationResult result =
+        service.validateRegistrationRequest(request, Optional.empty());
 
     assertEquals("Notes field cannot be the empty string", result.getErrorMessage());
   }
@@ -168,7 +171,8 @@ public class RegistrationFieldsValidationServiceTests {
 
     when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
 
-    RegistrationRequestValidationResult result = service.validateRegistrationRequest(request, Optional.empty());
+    RegistrationRequestValidationResult result =
+        service.validateRegistrationRequest(request, Optional.empty());
 
     assertTrue(result.isOk());
   }
@@ -195,7 +199,8 @@ public class RegistrationFieldsValidationServiceTests {
 
     when(iamProperties.getRegistration().getFields()).thenReturn(fieldAttribute);
 
-    RegistrationRequestValidationResult result = service.validateRegistrationRequest(request, Optional.empty());
+    RegistrationRequestValidationResult result =
+        service.validateRegistrationRequest(request, Optional.empty());
 
     assertTrue(result.isOk());
   }
