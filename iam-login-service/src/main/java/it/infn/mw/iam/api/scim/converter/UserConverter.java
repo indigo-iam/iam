@@ -91,6 +91,10 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       account.setActive(scimUser.getActive());
     }
 
+    if (scimUser.hasServiceAccountStatus()) {
+      account.setServiceAccount(scimUser.getIndigoUser().getServiceAccount());
+    }
+
     if (scimUser.getPassword() != null) {
 
       account.setPassword(scimUser.getPassword());
@@ -194,6 +198,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .meta(getScimMeta(entity))
       .name(getScimName(entity))
       .active(entity.isActive())
+      .serviceAccount(entity.isServiceAccount())
       .displayName(entity.getUsername())
       .locale(entity.getUserInfo().getLocale())
       .nickName(entity.getUserInfo().getNickname())
