@@ -52,6 +52,7 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
   private String totp;
   private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
+  private boolean preAuthenticated;
 
   public ExtendedAuthenticationToken(Object principal, Object credentials) {
     super(null);
@@ -100,6 +101,14 @@ public class ExtendedAuthenticationToken extends AbstractAuthenticationToken {
   @Override
   public Object getPrincipal() {
     return this.principal;
+  }
+
+  public boolean isPreAuthenticated() {
+    return preAuthenticated;
+  }
+
+  public void setPreAuthenticated(boolean preAuthenticated) {
+    this.preAuthenticated = preAuthenticated;
   }
 
   @Override

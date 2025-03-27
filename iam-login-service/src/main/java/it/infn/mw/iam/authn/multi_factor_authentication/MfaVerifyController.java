@@ -15,19 +15,26 @@
  */
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
+import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.X509;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
+import java.util.HashSet;
 import java.util.Optional;
-
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -59,8 +66,25 @@ public class MfaVerifyController {
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
     MultiFactorSettingsDTO dto = populateMfaSettings(account);
     model.addAttribute("factors", dto.toJson());
-
+    
+    if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
+      setAuthentication(preAuthenticatedAuthenticationToken);
+    }
     return "iam/verify-mfa";
+  }
+
+  private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
+    Set<GrantedAuthority> authenticatedAuthorities = new HashSet<>(
+        preAuthenticatedAuthenticationToken.getAuthorities());
+    if (preAuthenticatedAuthenticationToken.getPrincipal() instanceof User user) {
+      ExtendedAuthenticationToken token = new ExtendedAuthenticationToken(user.getUsername(), "SECRET",
+          authenticatedAuthorities);
+      token.setAuthenticated(false);
+      token.setAuthenticationMethodReferences(Set.of(
+          new IamAuthenticationMethodReference(X509.getValue())));
+      token.setPreAuthenticated(true);
+      SecurityContextHolder.getContext().setAuthentication(token);
+    }
   }
 
   /**
