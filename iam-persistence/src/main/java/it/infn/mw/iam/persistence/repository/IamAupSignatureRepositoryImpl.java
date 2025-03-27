@@ -68,7 +68,9 @@ public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryC
   @Override
   public IamAupSignature createSignatureForAccount(IamAup aup, IamAccount account,
       Date currentTime) {
-
+    if (account.isServiceAccount()) {
+      throw new IamAupSignatureUpdateError(account);
+    }
     Optional<IamAupSignature> signature = signatureRepo.findByAupAndAccount(aup, account);
 
     if (signature.isEmpty()) {
@@ -79,7 +81,10 @@ public class IamAupSignatureRepositoryImpl implements IamAupSignatureRepositoryC
 
   @Override
   public void deleteSignatureForAccount(IamAup aup, IamAccount account) {
-
+    if (account.isServiceAccount()) {
+      throw new IamAupSignatureUpdateError(account);
+    }
+    
     if (signatureRepo.findByAupAndAccount(aup, account).isPresent()) {
       deleteSignature(account);
       return;
