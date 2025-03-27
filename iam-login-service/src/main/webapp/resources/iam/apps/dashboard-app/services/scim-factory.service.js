@@ -47,7 +47,8 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		updateUser: updateUser,
 		updateMe: updateMe,
 		getAllUsers: getAllUsers,
-		getUserProfileConfig: getUserProfileConfig
+		getUserProfileConfig: getUserProfileConfig,
+		setServiceAccountStatus: setServiceAccountStatus
 	};
 
 	return service;
@@ -581,5 +582,29 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		return $http.patch(urlMe, data, config);
 	};
 
+	function setServiceAccountStatus(userId, status) {
+
+		console.info("Patch user-id, set serviceAccount to ", userId, status);
+
+		var config = {
+			headers: {
+				'Content-Type': 'application/scim+json'
+			}
+		};
+		var data = {
+			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+			operations: [{
+				op: "replace",
+				value: {
+					"urn:indigo-dc:scim:schemas:IndigoUser": {
+						serviceAccount: status
+					}					
+				}
+			}]
+		};
+		var url = urlUsers + '/' + userId;
+
+		return $http.patch(url, data, config);
+	};
 
 }]);
