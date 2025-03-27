@@ -19,11 +19,13 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.joining;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -139,6 +141,19 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
+  protected boolean hasScope(OAuth2Authentication authentication, String scope) {
+    Set<String> scopes = authentication.getOAuth2Request().getScope();
+    return scopes != null && scopes.contains(scope);
+  }
+
+  protected boolean hasEmailScope(OAuth2Authentication authentication) {
+    return hasScope(authentication, "email");
+  }
+
+  protected boolean hasProfileScope(OAuth2Authentication authentication) {
+    return hasScope(authentication, "profile");
+  }
+
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
@@ -176,6 +191,25 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       builder.audience(splitter.splitToList(audience));
     }
 
+    addScopeClaim(builder, token);
+
+    if (userInfo != null) {
+      if (hasEmailScope(authentication)) {
+        builder.claim("email", userInfo.getEmail());
+        builder.claim("email_verified", userInfo.getEmailVerified());
+      }
+
+      if (hasProfileScope(authentication)) {
+        builder.claim("name", userInfo.getName());
+        builder.claim("given_name", userInfo.getGivenName());
+        builder.claim("family_name", userInfo.getFamilyName());
+        builder.claim("middle_name", userInfo.getMiddleName());
+        builder.claim("nickname", userInfo.getNickname());
+        builder.claim("picture", userInfo.getPicture());
+        builder.claim("updated_at", userInfo.getUpdatedTime());
+      }
+    }
+
     if (isTokenExchangeRequest(authentication)) {
       handleClientTokenExchange(builder, token, authentication, userInfo);
     }
@@ -191,6 +225,12 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
         && savedAuth.getAdditionalInfo().get("acr") != null) {
       builder.claim("acr", savedAuth.getAdditionalInfo().get("acr"));
+    }
+  }
+
+  protected void addScopeClaim(Builder builder, OAuth2AccessTokenEntity token) {
+    if (!token.getScope().isEmpty()) {
+      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
     }
   }
 }

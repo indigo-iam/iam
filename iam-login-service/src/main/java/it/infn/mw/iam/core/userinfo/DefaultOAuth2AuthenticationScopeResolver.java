@@ -17,27 +17,20 @@ package it.infn.mw.iam.core.userinfo;
 
 import static java.util.Objects.isNull;
 
+import java.text.ParseException;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.repository.OAuth2TokenRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Component;
+
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 
 @Component
 @SuppressWarnings("deprecation")
 public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2AuthenticationScopeResolver {
-
-  private final OAuth2TokenRepository tokenRepo;
-
-  @Autowired
-  public DefaultOAuth2AuthenticationScopeResolver(OAuth2TokenRepository tokenRepo) {
-    this.tokenRepo = tokenRepo;
-  }
 
   @Override
   public Set<String> resolveScope(OAuth2Authentication auth) {
@@ -48,15 +41,13 @@ public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2Authentic
       return auth.getOAuth2Request().getScope();
     }
 
-    OAuth2AccessTokenEntity accessTokenEntity =
-        tokenRepo.getAccessTokenByValue(details.getTokenValue());
-
-    if (isNull(accessTokenEntity)) {
-      throw new IllegalArgumentException("Invalid token");
-    } else {
-      return accessTokenEntity.getScope();
+    try {
+      String scopeClaim =
+          SignedJWT.parse(details.getTokenValue()).getJWTClaimsSet().getStringClaim("scope");
+      return scopeClaim != null ? Set.of(scopeClaim.split(" ")) : Set.of();
+    } catch (ParseException e) {
+      throw new IllegalArgumentException("Invalid token: " + e.getMessage());
     }
-
   }
 
 }

@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.scim.updater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -38,7 +37,6 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
 import it.infn.mw.iam.api.scim.updater.builders.Replacers;
-import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -106,7 +104,6 @@ public class UsernameUpdaterTests extends TestTokensUtils {
     account = newAccount(OLD);
 
     buildAccessToken(loadTestClient(TEST_CLIENT_ID), OLD, SCOPES);
-    assertThat(accessTokenRepository.count(), equalTo(1L));
 
     Updater u = accountReplacers().username(NEW);
     assertThat(u.update(), is(true));
@@ -114,16 +111,11 @@ public class UsernameUpdaterTests extends TestTokensUtils {
 
     MultiValueMap<String, String> filterOldUsername =
         MultiValueMapBuilder.builder().userId(OLD).build();
-    ListResponseDTO<AccessToken> oldAccessTokens = getAccessTokenList(filterOldUsername);
     ListResponseDTO<RefreshToken> oldRefreshTokens = getRefreshTokenList(filterOldUsername);
 
     MultiValueMap<String, String> filterNewUsername =
         MultiValueMapBuilder.builder().userId(NEW).build();
-    ListResponseDTO<AccessToken> newAccessTokens = getAccessTokenList(filterNewUsername);
     ListResponseDTO<RefreshToken> newRefreshTokens = getRefreshTokenList(filterNewUsername);
-
-    assertThat(oldAccessTokens.getTotalResults(), is(0L));
-    assertThat(newAccessTokens.getTotalResults(), is(1L));
 
     assertThat(oldRefreshTokens.getTotalResults(), is(0L));
     assertThat(newRefreshTokens.getTotalResults(), is(1L));

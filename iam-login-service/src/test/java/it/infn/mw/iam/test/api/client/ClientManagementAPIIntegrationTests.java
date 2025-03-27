@@ -101,17 +101,17 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   private void paginatedGetClientsTest() throws Exception {
     mvc.perform(get(ClientManagementAPIController.ENDPOINT))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(20))
+      .andExpect(jsonPath("$.totalResults").value(21))
       .andExpect(jsonPath("$.itemsPerPage").value(10))
       .andExpect(jsonPath("$.startIndex").value(1))
       .andExpect(jsonPath("$.Resources", hasSize(10)))
       .andExpect(jsonPath("$.Resources[0].client_id").value("admin-client-ro"));
 
-    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "12"))
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "13"))
       .andExpect(OK)
-      .andExpect(jsonPath("$.totalResults").value(20))
+      .andExpect(jsonPath("$.totalResults").value(21))
       .andExpect(jsonPath("$.itemsPerPage").value(9))
-      .andExpect(jsonPath("$.startIndex").value(12))
+      .andExpect(jsonPath("$.startIndex").value(13))
       .andExpect(jsonPath("$.Resources", hasSize(9)))
       .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
   }
@@ -211,10 +211,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(600, client.getDeviceCodeValiditySeconds());
 
     Optional<ClientDetailsEntity> clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -235,10 +238,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(0, client.getRefreshTokenValiditySeconds());
 
     clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
     clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -259,10 +265,13 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertEquals(10, client.getRefreshTokenValiditySeconds());
 
     clientDB = clientRepo.findByClientId(client.getClientId());
-    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
-    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getAccessTokenValiditySeconds(),
+        clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(),
+        clientDB.get().getRefreshTokenValiditySeconds());
     assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
-    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(),
+        clientDB.get().getDeviceCodeValiditySeconds());
 
   }
 
@@ -298,12 +307,12 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void setClientEnableWorks() throws Exception {
 
-   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client")
-    ).andExpect(OK);
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client"))
+      .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
@@ -314,12 +323,12 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
   void setClientDisableWorks() throws Exception {
 
-   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
       .andExpect(jsonPath("$.active").value(true));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client")
-    ).andExpect(OK);
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client"))
+      .andExpect(OK);
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)

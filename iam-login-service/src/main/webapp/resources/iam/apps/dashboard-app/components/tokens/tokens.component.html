@@ -31,26 +31,14 @@
             <div class="col-xs-12">
                 <ul class="nav nav-tabs">
                     <li ng-class="$ctrl.isSelected(0) ? 'active' : ''">
-                        <a href="" ng-click="$ctrl.doSelect(0)" id="tabAccessTokens">
-                            <strong>Access Tokens</strong>&nbsp;&nbsp;<span class="label label-primary" id="atBadge">{{$root.accessTokensCount}}</span>
-                        </a>
-                    </li>
-                    <li ng-class="$ctrl.isSelected(1) ? 'active' : ''">
-                        <a href="" ng-click="$ctrl.doSelect(1)" id="tabRefreshTokens">
+                        <a href="" ng-click="$ctrl.doSelect(0)" id="tabRefreshTokens">
                             <strong>Refresh Tokens</strong>&nbsp;&nbsp;<span class="label label-primary" id="rtBadge">{{$root.refreshTokensCount}}</span>
                         </a>
                     </li>
                 </ul>
                 <br/>
-                <tokens-accesslist
-                    ng-show="$ctrl.isSelected(0)"
-                    total="$ctrl.accessTokensFirstResponse.totalResults"
-                    tokens="$ctrl.accessTokensFirstResponse.Resources"
-                    clients="$ctrl.clients"
-                    users="$ctrl.users">
-                </tokens-accesslist>
                 <tokens-refreshlist
-                    ng-show="$ctrl.isSelected(1)"
+                    ng-show="$ctrl.isSelected(0)"
                     total="$ctrl.refreshTokensFirstResponse.totalResults"
                     tokens="$ctrl.refreshTokensFirstResponse.Resources"
                     clients="$ctrl.clients"

@@ -35,7 +35,7 @@ public class CorsConfig {
         "/token",
         "/introspect",
         "/userinfo",
-        "/revoke/**",
+        "/revoke",
         "/jwk",
         "/devicecode",
         "/.well-known/openid-configuration"

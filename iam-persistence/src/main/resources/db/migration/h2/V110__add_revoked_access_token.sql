@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS iam_revoked_at
+(
+    jti   CHAR(36) NOT NULL,
+    exp   TIMESTAMP   NOT NULL,
+    CONSTRAINT iam_revoked_at_PK PRIMARY KEY (jti)
+);

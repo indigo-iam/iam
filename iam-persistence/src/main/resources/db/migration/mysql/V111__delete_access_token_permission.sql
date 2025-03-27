@@ -1,0 +1,4 @@
+ALTER TABLE access_token_permissions DROP FOREIGN KEY FK_access_token_permissions_permission_id;
+ALTER TABLE access_token_permissions DROP FOREIGN KEY FK_access_token_permissions_access_token_id;
+DROP TABLE permission;
+DROP TABLE access_token_permissions;

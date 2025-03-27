@@ -21,14 +21,6 @@
         'ngSanitize', 'relativeDate', 'ngResource', 'toaster', 'ngclipboard'
     ]);
 
-    // angular.module('dashboardApp').run(function ($rootScope, $templateCache) {
-    //     $rootScope.$on('$viewContentLoaded', function () {
-    //         if ($templateCache) {
-    //             $templateCache.removeAll();
-    //         }
-    //     });
-    // });
-
     angular.module('dashboardApp')
         .run(function (
             $window, $rootScope, $state, $stateParams, $q, $uibModal, $trace, Utils,
@@ -104,9 +96,6 @@
                         status: 'PENDING'
                     }).then(function (r) {
                         $rootScope.pendingGroupMembershipRequests(r);
-                    }));
-                    promises.push(TokensService.getAccessTokensCount().then(function (r) {
-                        $rootScope.accessTokensCount = r.data.totalResults;
                     }));
                     promises.push(TokensService.getRefreshTokensCount().then(function (r) {
                         $rootScope.refreshTokensCount = r.data.totalResults;
