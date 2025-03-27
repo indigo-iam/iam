@@ -187,7 +187,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         authzRequestParams = authzCodeRepository.getByCode(requestParameters.get(AUTHZ_CODE_KEY))
           .getAuthenticationHolder()
           .getRequestParameters();
-        checkAllowedResource(tokenResourceParams, authzRequestParams);
         break;
 
       case DEVICE_CODE_GRANT:
@@ -195,19 +194,19 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
             deviceCodeService.findDeviceCode(requestParameters.get(DEVICE_CODE_KEY), client)
               .getAuthenticationHolder()
               .getRequestParameters();
-        checkAllowedResource(tokenResourceParams, authzRequestParams);
         break;
 
       case REFRESH_TOKEN_GRANT:
         authzRequestParams = tokenServices.getRefreshToken(requestParameters.get(REFRESH_TOKEN_KEY))
           .getAuthenticationHolder()
           .getRequestParameters();
-        checkAllowedResource(tokenResourceParams, authzRequestParams);
         break;
 
       default:
         return;
     }
+
+    checkAllowedResource(tokenResourceParams, authzRequestParams);
 
   }
 
