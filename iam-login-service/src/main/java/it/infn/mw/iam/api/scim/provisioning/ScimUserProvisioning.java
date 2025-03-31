@@ -78,13 +78,13 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
-      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
-      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
-      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
-      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
-      ACCOUNT_REPLACE_SERVICE_ACCOUNT);
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
+          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
+          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
+          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
+          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
+          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT);
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
@@ -112,23 +112,18 @@ public class ScimUserProvisioning
 
 
   // All the supported attribute Operators
-  private enum AttributeOperators{
-    eq,
-    co
+  private enum AttributeOperators {
+    eq, co
   }
 
   // All the supported filter attributes
-  private enum Attributes{
+  private enum Attributes {
     // All related to the name of the user
-    familyName, 
-    givenName,
-    username,
+    familyName, givenName, username,
 
     // Other info
-    active, 
-    emails
+    active, emails
   }
-
 
 
 
@@ -137,34 +132,36 @@ public class ScimUserProvisioning
     ArrayList<String> result = new ArrayList<>();
 
     if (!Strings.isNullOrEmpty(filtersParameter)) {
-      // Iterating over all defined enums 
-      for(AttributeOperators operator : AttributeOperators.values()){
+      // Iterating over all defined enums
+      for (AttributeOperators operator : AttributeOperators.values()) {
 
         int from = 0;
 
         // Need to look at all instances that corresponds to the operator
-        while(-1 != filtersParameter.indexOf(operator.toString(), from)){
+        while (-1 != filtersParameter.indexOf(operator.toString(), from)) {
 
-           // Looking for the first instance of the given operator in the request
+          // Looking for the first instance of the given operator in the request
           int index = filtersParameter.indexOf(operator.toString(), from);
 
-          index = index==0?index=1:index;
+          index = index == 0 ? index = 1 : index;
 
           // If there is an occurence and it's surrounded by spaces
-          if(index > 0 && filtersParameter.charAt(index-1) == ' ' && filtersParameter.charAt(index + operator.name().length()) == ' '){
+          if (index > 0 && filtersParameter.charAt(index - 1) == ' '
+              && filtersParameter.charAt(index + operator.name().length()) == ' ') {
 
             // The parameter before the index is then from the start until the first space
-            String parameter = filtersParameter.substring(0, index -1);
+            String parameter = filtersParameter.substring(0, index - 1);
 
             // The value is from the operator until the end
-            String value = filtersParameter.substring(index + operator.name().length() + 1, filtersParameter.length());
-            
+            String value = filtersParameter.substring(index + operator.name().length() + 1,
+                filtersParameter.length());
+
             result.add(parameter);
             result.add(operator.name());
             result.add(value);
             return result;
-      
-          }else{
+
+          } else {
             from = index;
           }
         }
@@ -174,12 +171,12 @@ public class ScimUserProvisioning
   }
 
 
-  private boolean filterEvaluation(ArrayList<String> parsedFilters){
-    if(parsedFilters.size()==3){
-      for(Attributes attribute : Attributes.values()){  
-        if(attribute.toString().equalsIgnoreCase(parsedFilters.get(0))){
-          for(AttributeOperators operator : AttributeOperators.values()){
-            if(operator.toString().equalsIgnoreCase(parsedFilters.get(1))){
+  private boolean filterEvaluation(ArrayList<String> parsedFilters) {
+    if (parsedFilters.size() == 3) {
+      for (Attributes attribute : Attributes.values()) {
+        if (attribute.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+          for (AttributeOperators operator : AttributeOperators.values()) {
+            if (operator.toString().equalsIgnoreCase(parsedFilters.get(1))) {
               return true;
             }
           }
@@ -192,78 +189,87 @@ public class ScimUserProvisioning
 
 
 
+  private Page<IamAccount> filterSearch(OffsetPageable op, ArrayList<String> parsedFilters) {
 
-  private Page<IamAccount> filterSearch(OffsetPageable op, ArrayList<String> parsedFilters){
-
-    Page<IamAccount> result = null; 
+    Page<IamAccount> result = null;
 
     // Figuring out the operator
-    if(AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.get(1))){
+    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.get(1))) {
 
       // Figuring out the attribute
-      if(Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
         // retrieving the results
-        result = accountRepository.findByGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));  
+        result = accountRepository.findByGivenName(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
 
-      }else if(Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-        if((parsedFilters.get(2).equalsIgnoreCase("false") || parsedFilters.get(2).equalsIgnoreCase("true"))){
-        result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.get(2)),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
-        }else{
+        if ((parsedFilters.get(2).equalsIgnoreCase("false")
+            || parsedFilters.get(2).equalsIgnoreCase("true"))) {
+          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.get(2)), op)
+            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        } else {
           throw invalidValue(parsedFilters.get(2));
         }
 
-      }else if(Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-        result = accountRepository.findByEmail(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
+        result = accountRepository.findByEmail(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
 
-      }else if(Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-        result = accountRepository.findByUsername(parsedFilters.get(2), op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2))); 
+        result = accountRepository.findByUsername(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
 
-      }else if(Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-        result = accountRepository.findByFamilyName(parsedFilters.get(2),op).orElseThrow( ()->noUserMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.findByFamilyName(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
       }
 
-    }else if(AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.get(1))){
+    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.get(1))) {
 
       // Figuring out the attribute
-      if(Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
         // retrieving the results
-        result = accountRepository.containsGivenName(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+        result = accountRepository.containsGivenName(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
 
-      }else if(Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))){
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
         throw invalidOperator(parsedFilters.get(1));
 
-        
-      }else if(Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))){
 
-        result = accountRepository.containsEmail(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-      }else if(Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))){
+        result = accountRepository.containsEmail(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
 
-        result = accountRepository.containsUsername(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))) {
 
-      }else if(Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))){
+        result = accountRepository.containsUsername(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
 
-        result = accountRepository.containsFamilyName(parsedFilters.get(2),op).orElseThrow( ()->noUsersMappedToGivenName(parsedFilters.get(2)));  
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+
+        result = accountRepository.containsFamilyName(parsedFilters.get(2), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
 
       }
     }
-  
-    if(result != null && result.getContent().isEmpty()){
+
+    if (result != null && result.getContent().isEmpty()) {
       throw noUsersMappedToValue(parsedFilters);
-    }else if(result == null){
+    } else if (result == null) {
       throw missingSupport(parsedFilters);
     }
     return result;
   }
-  
+
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
@@ -284,43 +290,42 @@ public class ScimUserProvisioning
     return new ScimResourceNotFoundException(String.format("No user mapped to id '%s'", id));
   }
 
-  private ScimResourceNotFoundException noUserMappedToGivenName (String name){
-    return new ScimResourceNotFoundException(String.format("No user mapped to givenName \"%s\"",name));
-  }
-
-  private ScimResourceNotFoundException noUsersMappedToGivenName(String name){
-    return new ScimResourceNotFoundException(String.format("There are no users mapped to the givenName \"%s\"",name));
-  }
-
-  private ScimResourceNotFoundException noUsersMappedToValue(ArrayList<String> filter){
+  private ScimResourceNotFoundException noUserMappedToGivenName(String name) {
     return new ScimResourceNotFoundException(
-      String.format("the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.", filter.get(0),filter.get(1),filter.get(2))
-    );
+        String.format("No user mapped to givenName \"%s\"", name));
   }
 
-  private IllegalArgumentException invalidValue(String value){
+  private ScimResourceNotFoundException noUsersMappedToGivenName(String name) {
+    return new ScimResourceNotFoundException(
+        String.format("There are no users mapped to the givenName \"%s\"", name));
+  }
+
+  private ScimResourceNotFoundException noUsersMappedToValue(ArrayList<String> filter) {
+    return new ScimResourceNotFoundException(String.format(
+        "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
+        filter.get(0), filter.get(1), filter.get(2)));
+  }
+
+  private IllegalArgumentException invalidValue(String value) {
     return new IllegalArgumentException(
-      String.format("the value \"%s\" does not fulfill the filtering convention",value)
-    );
+        String.format("the value \"%s\" does not fulfill the filtering convention", value));
   }
 
 
-  private IllegalArgumentException invalidFilter(String filter){
+  private IllegalArgumentException invalidFilter(String filter) {
     return new IllegalArgumentException(
-      String.format("the filter \"%s\" does not fulfill the filtering convention",filter)
-    );
+        String.format("the filter \"%s\" does not fulfill the filtering convention", filter));
   }
 
-  private IllegalArgumentException invalidOperator(String operator){
-    return new IllegalArgumentException(
-      String.format("the operator \"%s\" can not be used with the given filtering attribute",operator)
-    );
+  private IllegalArgumentException invalidOperator(String operator) {
+    return new IllegalArgumentException(String
+      .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
   }
 
-  private ScimFilterUnsupportedException missingSupport(ArrayList<String> filter){
-    return new ScimFilterUnsupportedException(
-      String.format("the filter \"%s,%s,%s\" is within the documentation, but is missing current support.", filter.get(0),filter.get(1),filter.get(2))
-    );
+  private ScimFilterUnsupportedException missingSupport(ArrayList<String> filter) {
+    return new ScimFilterUnsupportedException(String.format(
+        "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
+        filter.get(0), filter.get(1), filter.get(2)));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -400,15 +405,16 @@ public class ScimUserProvisioning
   }
 
 
-  //Cannot add the method in the interface as same interface is used for groups that does not have a search option 
+  // Cannot add the method in the interface as same interface is used for groups that does not have
+  // a search option
 
   // Method to fetch users according to a filter
-  public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter){
+  public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter) {
 
 
     ArrayList<String> parsedFilters = parseFilters(filter);
- 
-    if(!filterEvaluation(parsedFilters)){
+
+    if (!filterEvaluation(parsedFilters)) {
       throw invalidFilter(filter);
     }
 
@@ -416,7 +422,7 @@ public class ScimUserProvisioning
 
     OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
 
-    Page<IamAccount> results = filterSearch(op,parsedFilters);
+    Page<IamAccount> results = filterSearch(op, parsedFilters);
 
     List<ScimUser> resources = new ArrayList<>();
 

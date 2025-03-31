@@ -65,14 +65,11 @@ public class ScimUtils {
   public static ScimUser.Builder buildUserWithUUID(String uuid, String username, String email,
       String givenName, String familyName) {
 
-    return ScimUser.builder(username)
-      .id(uuid)
-      .buildEmail(email)
-      .buildName(givenName, familyName);
+    return ScimUser.builder(username).id(uuid).buildEmail(email).buildName(givenName, familyName);
   }
 
-  public static ScimUser.Builder buildUserWithPassword(String username, String password, String email,
-      String givenName, String familyName) {
+  public static ScimUser.Builder buildUserWithPassword(String username, String password,
+      String email, String givenName, String familyName) {
 
     return ScimUser.builder(username)
       .password(password)
@@ -107,7 +104,7 @@ public class ScimUtils {
       return this;
     }
 
-    public ParamsBuilder filters(String filters){
+    public ParamsBuilder filters(String filters) {
       params.add("filters", filters);
       return this;
     }
