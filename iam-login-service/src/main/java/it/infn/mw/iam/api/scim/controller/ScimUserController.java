@@ -109,7 +109,6 @@ public class ScimUserController extends ScimControllerSupport {
 
     }
 
-
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
     if (attributes != null) {
