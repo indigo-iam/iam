@@ -16,103 +16,26 @@
 package it.infn.mw.iam.test.scim.user;
 
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
-import static it.infn.mw.iam.test.scim.ScimUtils.buildUser;
-import static it.infn.mw.iam.test.scim.ScimUtils.buildUserWithPassword;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.aup.AupService;
-import it.infn.mw.iam.api.aup.model.AupDTO;
-import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.test.SshKeyUtils;
-import it.infn.mw.iam.test.X509Utils;
-import it.infn.mw.iam.test.core.CoreControllerTestSupport;
-import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
-import it.infn.mw.iam.test.scim.ScimUtils;
-import it.infn.mw.iam.test.scim.ScimUtils.ParamsBuilder;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
-import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-
-import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
-import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
-import it.infn.mw.iam.api.scim.controller.ScimControllerSupport;
-import it.infn.mw.iam.api.scim.controller.ScimUserController;
-import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
-
-import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
-import static it.infn.mw.iam.api.scim.model.ScimListResponse.SCHEMA;
-import static it.infn.mw.iam.test.TestUtils.TOTAL_USERS_COUNT;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
-
-
-
-import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
-import static it.infn.mw.iam.api.scim.model.ScimListResponse.SCHEMA;
-import static it.infn.mw.iam.test.TestUtils.TOTAL_USERS_COUNT;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
-import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
-
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils.ParamsBuilder;
@@ -120,9 +43,11 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
+import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
+import static it.infn.mw.iam.api.scim.model.ScimListResponse.SCHEMA;
+import static it.infn.mw.iam.test.TestUtils.TOTAL_USERS_COUNT;
 
-import java.lang.System;
-import org.springframework.test.web.servlet.MvcResult;
+
 import org.springframework.http.HttpStatus;
 
 
@@ -615,81 +540,6 @@ public class ScimUserProvisioningFilteringTests {
     ;
    
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-/*
-  @Test
-   public void testReuturnOnlyUsernameRequest() throws Exception {
-
-    // This should get users and test that part
-    scimUtils.getUsers(ParamsBuilder.builder().count(1).attributes("userName").filters("givenName eq Madonna").build());
-
-    // Now I just need the assert bit
-
-
-
-
-
-
-  }
-*/
-
-
-
-
-  /*
-  @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
-  public void testCustomList() throws Exception {
-
-    // Need a instantiation of ScimUserProvisioning and all its necessary attributes
-    //ScimUserProvisioning ScimUserProvisioning = new ScimUserProvisioning();
-
-    //or I make my methods public 
-
-    String filter = "givenName eq Madonna";
-
-    ScimPageRequest pr = controllerSupport.buildUserPageRequest(100,0);
-    
-    ArrayList<String> parsedFilters = provision.parseFilters(filter);
-
-    ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
-    ScimUser createdUser = scimUtils.postUser(user);
-
-    assertThat(user.getUserName(), equalTo(createdUser.getUserName()));
-    assertThat(user.getEmails(), hasSize(equalTo(1)));
-    assertThat(user.getEmails().get(0).getValue(),
-        equalTo(createdUser.getEmails().get(0).getValue()));
-  }
-        */
-
 
 
     
