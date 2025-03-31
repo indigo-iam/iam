@@ -144,7 +144,9 @@ public class ScimUserProvisioning
         while(-1 != filtersParameter.indexOf(operator.toString(), from)){
 
            // Looking for the first instance of the given operator in the request
-          int index = filtersParameter.indexOf(operator.toString());
+          int index = filtersParameter.indexOf(operator.toString(), from);
+
+          index = index==0?index=1:index;
 
           // If there is an occurence and it's surrounded by spaces
           if(index > 0 && filtersParameter.charAt(index-1) == ' ' && filtersParameter.charAt(index + operator.name().length()) == ' '){
