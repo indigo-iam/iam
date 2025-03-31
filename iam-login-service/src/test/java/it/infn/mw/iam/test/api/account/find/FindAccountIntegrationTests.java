@@ -51,7 +51,7 @@ import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
-
+import static it.infn.mw.iam.api.account.find.FindAccountController.FIND_BY_AUTHORITY_RESOURCE;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -101,6 +101,8 @@ public class FindAccountIntegrationTests extends TestSupport {
     mvc.perform(get(FIND_BY_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
     mvc.perform(get(FIND_BY_UUID_RESOURCE, TEST_USER_UUID)).andExpect(UNAUTHORIZED);
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "admin"))
+      .andExpect(UNAUTHORIZED);
 
   }
 
@@ -115,6 +117,7 @@ public class FindAccountIntegrationTests extends TestSupport {
     mvc.perform(get(FIND_BY_USERNAME_RESOURCE).param("username", "test")).andExpect(FORBIDDEN);
     mvc.perform(get(FIND_BY_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
     mvc.perform(get(FIND_NOT_IN_GROUP_RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "admin")).andExpect(FORBIDDEN);
 
   }
 
@@ -252,8 +255,7 @@ public class FindAccountIntegrationTests extends TestSupport {
 
   @Test
   public void findNotInGroupWorks() throws Exception {
-    IamAccount adminAccount =
-        accountRepo.findByUsername(ADMIN_USER)
+    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USER)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
     // Cleanup all group memberships and groups
@@ -306,28 +308,106 @@ public class FindAccountIntegrationTests extends TestSupport {
   }
 
   @Test
+  public void findByAuthorityWorks() throws Exception {
+
+    IamAccount adminAccount = accountRepo.findByUsername(ADMIN_USER)
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    IamAccount gmAccount = accountRepo.findByUsername("manager")
+      .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "admin"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(adminAccount.getUuid())));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "ADMIN"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(adminAccount.getUuid())));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "role_admin"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(adminAccount.getUuid())));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "ROLE_ADMIN"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(adminAccount.getUuid())));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "user"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(252)));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "USER"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(252)));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "role_user"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(252)));
+
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "ROLE_USER"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(252)));
+
+    mvc
+      .perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority",
+          "gm:c617d586-54e6-411d-8e38-64967798fa8a"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
+
+    mvc
+      .perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority",
+          "GM:c617d586-54e6-411d-8e38-64967798fa8a"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
+
+    mvc
+      .perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority",
+          "role_gm:c617d586-54e6-411d-8e38-64967798fa8a"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
+
+    mvc
+      .perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority",
+          "ROLE_GM:c617d586-54e6-411d-8e38-64967798fa8a"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults", is(1)))
+      .andExpect(jsonPath("$.Resources[0].id", is(gmAccount.getUuid())));
+    
+    mvc.perform(get(FIND_BY_AUTHORITY_RESOURCE).param("authority", "not_existing_authority"))
+    .andExpect(OK)
+    .andExpect(jsonPath("$.totalResults", is(0)))
+    .andExpect(jsonPath("$.Resources", emptyIterable()));
+
+  }
+
+  @Test
   @WithMockUser(username = "test", roles = "USER")
   public void findByUUIDForbiddenForUsers() throws Exception {
 
     IamAccount testAccount = accountRepo.findByUuid(TEST_USER_UUID)
       .orElseThrow(assertionError(EXPECTED_ACCOUNT_NOT_FOUND));
 
-    mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid()))
-      .andExpect(FORBIDDEN);
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, testAccount.getUuid())).andExpect(FORBIDDEN);
   }
 
   @Test
   public void emptyResultForUnknownUUIDIfAdmin() throws Exception {
     mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
-       .andExpect(OK)
-       .andExpect(jsonPath("$.totalResults").doesNotExist())
-       .andExpect(jsonPath("$.Resources", emptyIterable()));
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").doesNotExist())
+      .andExpect(jsonPath("$.Resources", emptyIterable()));
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
   public void forbiddenForUnknownUUIDIfUser() throws Exception {
-    mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid"))
-       .andExpect(FORBIDDEN);
+    mvc.perform(get(FIND_BY_UUID_RESOURCE, "unknown_uuid")).andExpect(FORBIDDEN);
   }
 }

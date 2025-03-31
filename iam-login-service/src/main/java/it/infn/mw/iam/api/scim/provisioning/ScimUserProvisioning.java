@@ -30,6 +30,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWORD;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
 
 import java.util.ArrayList;
@@ -82,7 +83,8 @@ public class ScimUserProvisioning
       ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
       ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
       ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE);
+      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
+      ACCOUNT_REPLACE_SERVICE_ACCOUNT);
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
@@ -507,6 +509,13 @@ public class ScimUserProvisioning
         notificationFactory.createAccountRestoredMessage(account);
       } else {
         notificationFactory.createAccountSuspendedMessage(account);
+      }
+    }
+    if (ACCOUNT_REPLACE_SERVICE_ACCOUNT.equals(u.getType())) {
+      if (account.isServiceAccount()) {
+        notificationFactory.createSetAsServiceAccountMessage(account);
+      } else {
+        notificationFactory.createRevokeServiceAccountMessage(account);
       }
     }
   }

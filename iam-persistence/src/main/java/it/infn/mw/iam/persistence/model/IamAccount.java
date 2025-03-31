@@ -52,6 +52,7 @@ import javax.validation.constraints.NotNull;
 
 import org.joda.time.DateTimeComparator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 
 @Entity
@@ -94,6 +95,7 @@ public class IamAccount implements Serializable {
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "user_info_id")
+  @JsonIgnore
   private IamUserInfo userInfo;
 
   @Temporal(TemporalType.TIMESTAMP)
@@ -107,14 +109,17 @@ public class IamAccount implements Serializable {
   private Set<IamAuthority> authorities = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonIgnore
   private Set<IamAccountGroupMembership> groups = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamSamlId> samlIds = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamOidcId> oidcIds = new HashSet<>();
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
@@ -123,6 +128,7 @@ public class IamAccount implements Serializable {
 
   @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.EAGER,
       orphanRemoval = true)
+  @JsonIgnore
   private Set<IamX509Certificate> x509Certificates = new HashSet<>();
 
   @Column(name = "confirmation_key", unique = true, length = 36)
@@ -153,6 +159,9 @@ public class IamAccount implements Serializable {
       indexes = {@Index(columnList = "prefix,name,val"), @Index(columnList = "prefix,name")},
       name = "iam_account_labels", joinColumns = @JoinColumn(name = "account_id"))
   private Set<IamLabel> labels = new HashSet<>();
+
+  @Column(name = "service_account")
+  private boolean serviceAccount;
 
   public IamAccount() {
     // empty constructor
@@ -620,5 +629,13 @@ public class IamAccount implements Serializable {
 
   public boolean isValid() {
     return logicalOr(isNull(endTime), DateTimeComparator.getInstance().compare(endTime, new Date()) > 0);
+  }
+
+  public boolean isServiceAccount() {
+    return serviceAccount;
+  }
+
+  public void setServiceAccount(boolean serviceAccount) {
+    this.serviceAccount = serviceAccount;
   }
 }

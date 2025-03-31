@@ -46,8 +46,16 @@
             return Utils.userIsVoAdmin(self.user);
         };
 
+        self.userIsReader = function () {
+            return Utils.userIsReader(self.user);
+        };
+
         self.isMe = function () {
             return Utils.isMe(self.user.id);
+        };
+
+        self.indigoUser = function () {
+            return self.user['urn:indigo-dc:scim:schemas:IndigoUser'];
         };
 
         self.canManageLinkedAccounts = function () {

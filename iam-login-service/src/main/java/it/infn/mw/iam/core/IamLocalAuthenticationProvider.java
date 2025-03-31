@@ -76,13 +76,20 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
    */
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-
-    // The first step is to validate the default login credentials. Therefore, we convert the
+    boolean isPreAuthenticated = false;
+    if(authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken){
+      isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
+    }
+    
+    // If not preauthenticated then the first step is to validate the default login credentials. Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
-    UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
-        authentication.getPrincipal(), authentication.getCredentials());
-    authentication = super.authenticate(userpassToken);
+    if (!isPreAuthenticated) {
+      UsernamePasswordAuthenticationToken userpassToken = new UsernamePasswordAuthenticationToken(
+          authentication.getPrincipal(), authentication.getCredentials());
+      authentication = super.authenticate(userpassToken);
+    }
+    
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));

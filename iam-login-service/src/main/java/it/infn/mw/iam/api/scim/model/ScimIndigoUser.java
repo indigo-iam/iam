@@ -22,6 +22,7 @@ import java.util.List;
 import javax.validation.Valid;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -67,6 +68,7 @@ public class ScimIndigoUser {
   private final List<ScimSamlId> samlIds;
 
   @Valid
+  @JsonFilter("pemEncodedCertificateFilter")
   private final List<ScimX509Certificate> certificates;
 
   @JsonSerialize(using = JsonDateSerializer.class)
@@ -83,13 +85,16 @@ public class ScimIndigoUser {
   @Valid
   private final List<ScimGroupRef> managedGroups;
 
+  private Boolean serviceAccount;
+
   @JsonCreator
   private ScimIndigoUser(@JsonProperty("oidcIds") List<ScimOidcId> oidcIds,
       @JsonProperty("sshKeys") List<ScimSshKey> sshKeys,
       @JsonProperty("samlIds") List<ScimSamlId> samlIds,
       @JsonProperty("x509Certificates") List<ScimX509Certificate> certs,
       @JsonProperty("aupSignatureTime") Date aupSignatureTime,
-      @JsonProperty("endTime") Date endTime) {
+      @JsonProperty("endTime") Date endTime, 
+      @JsonProperty("serviceAccount") Boolean serviceAccount) {
 
     this.oidcIds = oidcIds != null ? oidcIds : new LinkedList<>();
     this.sshKeys = sshKeys != null ? sshKeys : new LinkedList<>();
@@ -97,6 +102,7 @@ public class ScimIndigoUser {
     this.certificates = certs != null ? certs : new LinkedList<>();
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
+    this.serviceAccount = serviceAccount;
     this.labels = null;
     this.authorities = null;
     this.attributes = null;
@@ -110,6 +116,7 @@ public class ScimIndigoUser {
     this.certificates = b.certificates;
     this.aupSignatureTime = b.aupSignatureTime;
     this.endTime = b.endTime;
+    this.serviceAccount = b.serviceAccount;
     this.labels = b.labels;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
@@ -159,6 +166,10 @@ public class ScimIndigoUser {
     return endTime;
   }
 
+  public Boolean getServiceAccount() {
+    return serviceAccount;
+  }
+
   public static Builder builder() {
 
     return new Builder();
@@ -174,6 +185,7 @@ public class ScimIndigoUser {
 
     private Date aupSignatureTime;
     private Date endTime;
+    private Boolean serviceAccount;
 
     private List<String> authorities = Lists.newLinkedList();
     private List<ScimAttribute> attributes = Lists.newLinkedList();
@@ -209,6 +221,11 @@ public class ScimIndigoUser {
 
     public Builder endTime(Date endTime) {
       this.endTime = endTime;
+      return this;
+    }
+
+    public Builder serviceAccount(Boolean serviceAccount) {
+      this.serviceAccount = serviceAccount;
       return this;
     }
 
