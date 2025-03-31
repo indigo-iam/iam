@@ -36,6 +36,6 @@ public interface ScimProvisioning<T, E> {
   ScimListResponse<T> list(ScimPageRequest params);
 
   // The method below cannot exist until it is also implemented for ScimGroupProvisioning.java
-  //ScimListResponse<T> customList(ScimPageRequest params, String filter);
+  // ScimListResponse<T> customList(ScimPageRequest params, String filter);
 
 }

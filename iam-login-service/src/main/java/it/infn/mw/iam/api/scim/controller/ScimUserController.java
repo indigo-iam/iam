@@ -85,7 +85,7 @@ public class ScimUserController extends ScimControllerSupport {
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
       @RequestParam(required = false) final String attributes,
-      @RequestParam(required = false) final String filters){
+      @RequestParam(required = false) final String filters) {
 
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
@@ -93,13 +93,13 @@ public class ScimUserController extends ScimControllerSupport {
 
     if (filters != null) {
 
-      ScimPageRequest pr = buildUserPageRequest(count,startIndex);
+      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
 
-      ScimListResponse<ScimUser> result = userProvisioningService.customList(pr,filters);
+      ScimListResponse<ScimUser> result = userProvisioningService.customList(pr, filters);
 
       wrapper = new MappingJacksonValue(result);
 
-    }else{
+    } else {
 
       ScimPageRequest pr = buildUserPageRequest(count, startIndex);
       ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
@@ -112,11 +112,12 @@ public class ScimUserController extends ScimControllerSupport {
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
-      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
+      filterProvider.addFilter("attributeFilter",
+          SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
     } else {
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.serializeAll());
     }
-    
+
     filterProvider.addFilter("pemEncodedCertificateFilter",
         SimpleBeanPropertyFilter.serializeAllExcept("pemEncodedCertificate"));
 
