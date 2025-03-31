@@ -108,6 +108,8 @@ public class ScimUserController extends ScimControllerSupport {
 
     }
 
+    SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
