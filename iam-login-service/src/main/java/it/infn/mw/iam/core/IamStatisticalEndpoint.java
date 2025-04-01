@@ -29,7 +29,8 @@ public class IamStatisticalEndpoint {
 
   @GetMapping("/stats")
   public StatsEndpointResponse getStats() {
-    long count = accountRepo.count();
-    return new StatsEndpointResponse(count);
+    long totalUsers = accountRepo.count();
+    long activeUsers = accountRepo.countActiveAccounts();
+    return new StatsEndpointResponse(totalUsers, activeUsers);
   }
 }
