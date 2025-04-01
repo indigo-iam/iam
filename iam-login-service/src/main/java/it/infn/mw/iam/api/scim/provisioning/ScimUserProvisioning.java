@@ -174,7 +174,9 @@ public class ScimUserProvisioning
 
 
   private boolean filterEvaluation(ArrayList<String> parsedFilters) {
-    if (parsedFilters.size() == 3) {
+    if (parsedFilters.size() != 3) {
+      return false;
+    }
       for (Attributes attribute : Attributes.values()) {
         if (attribute.toString().equalsIgnoreCase(parsedFilters.get(0))) {
           for (AttributeOperators operator : AttributeOperators.values()) {
