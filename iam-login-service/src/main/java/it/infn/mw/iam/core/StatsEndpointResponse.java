@@ -17,17 +17,19 @@ package it.infn.mw.iam.core;
 
 public class StatsEndpointResponse {
 
-  private long numberOfUsers;
+  private long totalUsers;
+  private long activeUsers;
 
-  public StatsEndpointResponse(long numberOfUsers) {
-    this.numberOfUsers = numberOfUsers;
+  public StatsEndpointResponse(long totalUsers, long activeUsers) {
+    this.totalUsers = totalUsers;
+    this.activeUsers = activeUsers;
   }
 
-  public long getNumberOfUsers() {
-    return numberOfUsers;
+  public long getTotalUsers() {
+    return totalUsers;
   }
 
-  public void setNumberOfUsers(long numberOfUsers) {
-    this.numberOfUsers = numberOfUsers;
+  public long getActiveUsers() {
+    return activeUsers;
   }
 }
