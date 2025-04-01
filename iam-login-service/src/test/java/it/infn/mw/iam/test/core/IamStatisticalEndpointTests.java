@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.core;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,7 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import it.infn.mw.iam.core.StatsEndpointResponse;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
@@ -38,19 +38,19 @@ public class IamStatisticalEndpointTests {
   @Autowired
   protected MockMvc mvc;
 
+  @Autowired
+  private IamAccountRepository accountRepo;
+
   @Test
-  public void anonymousisAcceptedAtStatEndpoint() throws Exception {
+  public void anonymousIsAcceptedAtStatEndpoint() throws Exception {
+    IamAccount account = accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found"));
+    account.setActive(false);
     mvc.perform(get("/stats"))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.numberOfUsers", equalTo(255)));
+      .andExpect(jsonPath("$.totalUsers", equalTo(255)))
+      .andExpect(jsonPath("$.activeUsers", equalTo(254)));
+    account.setActive(true);
   }
-
-  @Test
-  public void testSetNumberOfUsers() {
-    StatsEndpointResponse userCount = new StatsEndpointResponse(0);
-    userCount.setNumberOfUsers(255);
-    assertEquals(255, userCount.getNumberOfUsers());
-  }
-
 }
