@@ -244,13 +244,11 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
   public static List<String> splitBySpace(String str) {
 
-    if (str != null) {
-      List<String> mutableList =
-          Pattern.compile(" ").splitAsStream(str).collect(Collectors.toList());;
-      return mutableList;
+    if (str == null) {
+      return new ArrayList<>();
     }
 
-    return new ArrayList<>();
+    return Pattern.compile(" ").splitAsStream(str).collect(Collectors.toList());
   }
 
 }
