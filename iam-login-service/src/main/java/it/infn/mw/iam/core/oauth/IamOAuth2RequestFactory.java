@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
@@ -222,6 +224,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
   }
 
+  // Validation has been inspired by https://www.baeldung.com/java-validate-url
   public static void validateUrl(String url) {
     try {
       URI validURI = new URL(url).toURI();
@@ -242,8 +245,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static List<String> splitBySpace(String str) {
 
     if (str != null) {
-      ArrayList<String> mutableList = new ArrayList<>();
-      mutableList.addAll(List.of(str.split(" ")));
+      List<String> mutableList =
+          Pattern.compile(" ").splitAsStream(str).collect(Collectors.toList());;
       return mutableList;
     }
 
