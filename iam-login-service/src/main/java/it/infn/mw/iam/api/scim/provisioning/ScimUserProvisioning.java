@@ -143,7 +143,9 @@ public class ScimUserProvisioning
           // Looking for the first instance of the given operator in the request
           int index = filtersParameter.indexOf(operator.toString(), from);
 
-          index = index == 0 ? index = 1 : index;
+          if (index == 0) {
+            index = 1;
+          };
 
           // If there is an occurence and it's surrounded by spaces
           if (index > 0 && filtersParameter.charAt(index - 1) == ' '
