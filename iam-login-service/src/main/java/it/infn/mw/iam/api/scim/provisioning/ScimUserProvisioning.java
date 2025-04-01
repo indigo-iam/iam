@@ -177,15 +177,14 @@ public class ScimUserProvisioning
     if (parsedFilters.size() != 3) {
       return false;
     }
-      for (Attributes attribute : Attributes.values()) {
-        if (attribute.toString().equalsIgnoreCase(parsedFilters.get(0))) {
-          for (AttributeOperators operator : AttributeOperators.values()) {
-            if (operator.toString().equalsIgnoreCase(parsedFilters.get(1))) {
-              return true;
-            }
+    for (Attributes attribute : Attributes.values()) {
+      if (attribute.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+        for (AttributeOperators operator : AttributeOperators.values()) {
+          if (operator.toString().equalsIgnoreCase(parsedFilters.get(1))) {
+            return true;
           }
-          return false;
         }
+        return false;
       }
     }
     return false;
