@@ -145,7 +145,7 @@ public class ScimUserProvisioning
 
           if (index == 0) {
             index = 1;
-          };
+          } ;
 
           // If there is an occurence and it's surrounded by spaces
           if (index > 0 && filtersParameter.charAt(index - 1) == ' '
@@ -164,7 +164,7 @@ public class ScimUserProvisioning
             return result;
 
           } else {
-            from = index;
+            from = index + 1;
           }
         }
       }
