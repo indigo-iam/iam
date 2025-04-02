@@ -536,4 +536,17 @@ public class ScimUserProvisioningFilteringTests {
 
 
 
+  @Test
+  public void testFilteringParseFiltersNegative() throws Exception {
+
+    scimUtils
+      .getUsers(ParamsBuilder.builder().filters("eqeqcoco co something").build(),
+          HttpStatus.BAD_REQUEST)
+      .andExpect(jsonPath("$.detail", equalTo(
+          "the filter \"eqeqcoco co something\" does not fulfill the filtering convention")));
+
+  }
+
+
+
 }
