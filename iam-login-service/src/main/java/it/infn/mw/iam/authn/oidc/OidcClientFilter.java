@@ -127,7 +127,7 @@ public class OidcClientFilter extends OIDCAuthenticationFilter {
     form.setAll(getAuthRequestOptionsService().getTokenOptions(config.serverConfig,
         config.clientConfig, request));
 
-    String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESION_VARIABLE);
+    String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESSION_VARIABLE);
 
     if (redirectUri != null) {
       form.add("redirect_uri", redirectUri);
