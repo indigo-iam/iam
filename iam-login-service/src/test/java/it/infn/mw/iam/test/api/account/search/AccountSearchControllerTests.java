@@ -82,8 +82,8 @@ public class AccountSearchControllerTests {
   public void setup() {
     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     mockOAuth2Filter.cleanupSecurityContext();
-    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log())
-        .build();
+    mvc =
+        MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).alwaysDo(log()).build();
   }
 
   @After
@@ -99,7 +99,10 @@ public class AccountSearchControllerTests {
 
     ListResponseDTO<ScimUser> response = mapper.readValue(
         mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString(),
         new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
@@ -113,11 +116,13 @@ public class AccountSearchControllerTests {
 
     long expectedSize = accountRepository.count();
 
-    ListResponseDTO<ScimUser> response = mapper.readValue(
-        mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", String.valueOf(DEFAULT_ITEMS_PER_PAGE))).andExpect(status().isOk())
-            .andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", String.valueOf(DEFAULT_ITEMS_PER_PAGE)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(DEFAULT_ITEMS_PER_PAGE));
@@ -132,11 +137,14 @@ public class AccountSearchControllerTests {
     int startIndex = 3;
     int count = 2;
 
-    ListResponseDTO<ScimUser> response = mapper.readValue(
-        mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", String.valueOf(startIndex)).param("count", String.valueOf(count)))
-            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", String.valueOf(startIndex))
+        .param("count", String.valueOf(count)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(count));
     assertThat(response.getStartIndex(), equalTo(startIndex));
@@ -150,10 +158,12 @@ public class AccountSearchControllerTests {
     long expectedSize = accountRepository.count();
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
-        .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("count", "0"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "0"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources(), is(empty()));
     assertThat(response.getStartIndex(), equalTo(null));
@@ -168,10 +178,12 @@ public class AccountSearchControllerTests {
     Page<IamAccount> page = accountRepository.findByFilter("admin", op);
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
-        .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("filter", "admin"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("filter", "admin"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
 
     assertThat(response.getResources().size(), equalTo(2));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -185,16 +197,69 @@ public class AccountSearchControllerTests {
 
   @Test
   @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  public void getFirstFilteredPageOfUsersSubjectDN() throws Exception {
+
+    OffsetPageable op = new OffsetPageable(0, 10);
+    Page<IamAccount> page = accountRepository.findByFilter("test2,", op);
+
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("filter", "test2,"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
+
+    assertThat(response.getResources().size(), equalTo(1));
+    assertThat(response.getStartIndex(), equalTo(1));
+    assertThat(response.getItemsPerPage(), equalTo(1));
+
+    List<ScimUser> expectedUsers = Lists.newArrayList();
+
+    page.getContent().forEach(u -> expectedUsers.add(userConverter.dtoFromEntity(u)));
+    assertThat(response.getResources().containsAll(expectedUsers), equalTo(true));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
+  public void getFirstFilteredPageOfUsersNegative() throws Exception {
+
+    OffsetPageable op = new OffsetPageable(0, 10);
+    Page<IamAccount> page = accountRepository.findByFilter("No one", op);
+
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("filter", "No one"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
+
+    assertThat(response.getResources().size(), equalTo(0));
+    assertThat(response.getStartIndex(), equalTo(1));
+    assertThat(response.getItemsPerPage(), equalTo(0));
+
+    List<ScimUser> expectedUsers = Lists.newArrayList();
+
+    page.getContent().forEach(u -> expectedUsers.add(userConverter.dtoFromEntity(u)));
+    assertThat(response.getResources().containsAll(expectedUsers), equalTo(true));
+  }
+
+
+  @Test
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_ADMIN"}, scopes = "iam:admin.read")
   public void getCountOfFilteredUsers() throws Exception {
 
     long expectedSize = accountRepository.countByFilter("admin");
 
-    ListResponseDTO<ScimUser> response =
-        mapper.readValue(
-            mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-                .param("count", "0").param("filter", "admin")).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(),
-            new TypeReference<ListResponseDTO<ScimUser>>() {});
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "0")
+        .param("filter", "admin"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources(), is(empty()));
     assertThat(response.getStartIndex(), equalTo(null));
@@ -204,28 +269,30 @@ public class AccountSearchControllerTests {
   @Test
   public void getUsersAsAnonymousUser() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-        .andExpect(status().isUnauthorized());
+      .andExpect(status().isUnauthorized());
   }
-  
+
   @Test
-  @WithMockOAuthUser(user="test", authorities= {"ROLE_USER", "ROLE_GM:c617d586-54e6-411d-8e38-649677980001"}, scopes = "iam:admin.read")
+  @WithMockOAuthUser(user = "test",
+      authorities = {"ROLE_USER", "ROLE_GM:c617d586-54e6-411d-8e38-649677980001"},
+      scopes = "iam:admin.read")
   public void getUsersAsGroupManager() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-    .andExpect(status().isOk());
+      .andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(username = "test", roles = "READER")
   public void getUsersAsReader() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-        .andExpect(status().isOk());
+      .andExpect(status().isOk());
   }
 
   @Test
   @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
   public void getUsersAsAuthenticatedUser() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
-        .andExpect(status().isForbidden());
+      .andExpect(status().isForbidden());
   }
 
   @Test
@@ -235,10 +302,12 @@ public class AccountSearchControllerTests {
     long expectedSize = accountRepository.count();
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
-        .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", "-1"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", "-1"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -252,10 +321,12 @@ public class AccountSearchControllerTests {
     long expectedSize = accountRepository.count();
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
-        .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("startIndex", "0"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("startIndex", "0"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -268,12 +339,13 @@ public class AccountSearchControllerTests {
 
     long expectedSize = accountRepository.count();
 
-    ListResponseDTO<ScimUser> response =
-        mapper.readValue(
-            mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-                .param("count", "" + DEFAULT_ITEMS_PER_PAGE * 2)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(),
-            new TypeReference<ListResponseDTO<ScimUser>>() {});
+    ListResponseDTO<ScimUser> response = mapper.readValue(mvc
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "" + DEFAULT_ITEMS_PER_PAGE * 2))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
@@ -287,10 +359,12 @@ public class AccountSearchControllerTests {
     long expectedSize = accountRepository.count();
 
     ListResponseDTO<ScimUser> response = mapper.readValue(mvc
-        .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
-            .param("count", "-1"))
-        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
-        new TypeReference<ListResponseDTO<ScimUser>>() {});
+      .perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE)
+        .param("count", "-1"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), new TypeReference<ListResponseDTO<ScimUser>>() {});
     assertThat(response.getTotalResults(), equalTo(expectedSize));
     assertThat(response.getResources().size(), equalTo(DEFAULT_ITEMS_PER_PAGE));
     assertThat(response.getStartIndex(), equalTo(1));
