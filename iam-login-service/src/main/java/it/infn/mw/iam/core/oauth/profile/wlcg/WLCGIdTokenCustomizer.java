@@ -33,7 +33,6 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
@@ -43,9 +42,8 @@ public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public WLCGIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
-      WLCGGroupHelper groupHelper, IamProperties properties,
-      IamTotpMfaRepository totpMfaRepository) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties, totpMfaRepository);
+      WLCGGroupHelper groupHelper, IamProperties properties) {
+    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
     this.groupHelper = groupHelper;
   }
 

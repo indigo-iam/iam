@@ -21,13 +21,12 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public AarcJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
-      IamProperties properties, IamTotpMfaRepository totpMfaRepository) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties, totpMfaRepository);
+      IamProperties properties) {
+    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
   }
 }

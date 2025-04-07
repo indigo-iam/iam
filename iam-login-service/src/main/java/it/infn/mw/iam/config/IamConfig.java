@@ -156,8 +156,8 @@ public class IamConfig {
     AarcJWTProfileUserinfoHelper uiHelper =
         new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
 
-    AarcJWTProfileIdTokenCustomizer idHelper = new AarcJWTProfileIdTokenCustomizer(accountRepo,
-        converter, claimHelper, props, totpMfaRepository);
+    AarcJWTProfileIdTokenCustomizer idHelper =
+        new AarcJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
     BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(props,
         new DefaultIntrospectionResultAssembler(), registry, claimHelper);
@@ -178,8 +178,8 @@ public class IamConfig {
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
-    KeycloakIdTokenCustomizer idHelper = new KeycloakIdTokenCustomizer(accountRepo, converter,
-        claimHelper, groupHelper, props, totpMfaRepository);
+    KeycloakIdTokenCustomizer idHelper =
+        new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
 
     BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
         new DefaultIntrospectionResultAssembler(), registry, groupHelper);
@@ -200,8 +200,8 @@ public class IamConfig {
     IamJWTProfileUserinfoHelper uiHelper =
         new IamJWTProfileUserinfoHelper(props, userInfoService, proc);
 
-    IamJWTProfileIdTokenCustomizer idHelper = new IamJWTProfileIdTokenCustomizer(accountRepo,
-        converter, claimHelper, props, totpMfaRepository);
+    IamJWTProfileIdTokenCustomizer idHelper =
+        new IamJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
     BaseIntrospectionHelper intrHelper = new IamJWTProfileTokenIntrospectionHelper(props,
         new DefaultIntrospectionResultAssembler(), registry);

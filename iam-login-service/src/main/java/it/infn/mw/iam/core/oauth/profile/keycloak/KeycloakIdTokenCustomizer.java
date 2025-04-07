@@ -30,7 +30,6 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
@@ -39,9 +38,8 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public KeycloakIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
-      KeycloakGroupHelper groupHelper, IamProperties properties,
-      IamTotpMfaRepository totpMfaRepository) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties, totpMfaRepository);
+      KeycloakGroupHelper groupHelper, IamProperties properties) {
+    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
     this.groupHelper = groupHelper;
   }
 
