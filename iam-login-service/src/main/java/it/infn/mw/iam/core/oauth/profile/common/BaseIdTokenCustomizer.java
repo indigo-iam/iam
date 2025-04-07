@@ -79,7 +79,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
   }
 
   protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
-      IamAccount account, OAuth2AccessTokenEntity accessToken) {
+      OAuth2AccessTokenEntity accessToken) {
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim instanceof String amrString) {

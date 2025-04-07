@@ -64,7 +64,7 @@ public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     idClaims.claim(GROUPS_CLAIM, null);
     idClaims.claim(WLCG_VER_CLAIM, PROFILE_VERSION);
 
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims, account, accessToken);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
 
     includeLabelsInIdToken(idClaims, account);
   }
