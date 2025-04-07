@@ -16,10 +16,14 @@
 package it.infn.mw.iam.authn.oidc;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.EXT_OIDC_PROVIDER;
+import static java.util.Objects.isNull;
+
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -94,17 +98,19 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
       Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
 
-      boolean isAcrPresent = false;
-
+      String acrValue = null;
       try {
-        isAcrPresent = token.getIdToken().getJWTClaimsSet().getClaim("acr") != null;
+        Object acrClaim = token.getIdToken().getJWTClaimsSet().getClaim("acr");
+        if (acrClaim != null) {
+          acrValue = acrClaim.toString();
+        }
       } catch (ParseException e) {
         LOG.error("Error parsing JWT claims: {}", e.getMessage());
       }
 
       // Checking to see if we can find an active MFA secret attached to the user's account. If so,
       // MFA is enabled on the account
-      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive() && !isAcrPresent) {
+      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive() && isNull(acrValue)) {
         // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify
         // endpoint
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
@@ -123,6 +129,11 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
             Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
             account.get().getUsername(), null, convert(account.get().getAuthorities()));
         extToken.setAuthenticationMethodReferences(refs);
+        if (!isNull(acrValue)) {
+          Map<String, String> authDetails = new HashMap<>();
+          authDetails.put("acr", acrValue);
+          extToken.setDetails(authDetails);
+        }
       }
 
       return extToken;
