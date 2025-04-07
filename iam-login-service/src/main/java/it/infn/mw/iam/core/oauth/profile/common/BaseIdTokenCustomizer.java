@@ -36,9 +36,7 @@ import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamLabel;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
@@ -47,13 +45,10 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   private final IamAccountRepository accountRepo;
   private final IamProperties properties;
-  private final IamTotpMfaRepository totpMfaRepository;
 
-  protected BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties,
-      IamTotpMfaRepository totpMfaRepository) {
+  protected BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties) {
     this.accountRepo = accountRepo;
     this.properties = properties;
-    this.totpMfaRepository = totpMfaRepository;
   }
 
   public IamAccountRepository getAccountRepo() {
@@ -104,12 +99,6 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
       if (acrClaim != null) {
         builder.claim("acr", acrClaim);
-      } else {
-        Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-
-        if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-          builder.claim("acr", "https://referds.org/profile/MFA");
-        }
       }
     } catch (ParseException e) {
       LOG.error("Error parsing JWT claims: {}", e.getMessage());

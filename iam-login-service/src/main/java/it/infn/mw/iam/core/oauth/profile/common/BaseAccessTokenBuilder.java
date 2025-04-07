@@ -186,7 +186,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authentication);
     if (authentication.getUserAuthentication() != null
-        && authentication.getUserAuthentication().getDetails() instanceof Map details
+        && authentication.getUserAuthentication().getDetails() instanceof Map<?, ?> details
         && details.get("acr") != null) {
       builder.claim("acr", details.get("acr"));
     } else {

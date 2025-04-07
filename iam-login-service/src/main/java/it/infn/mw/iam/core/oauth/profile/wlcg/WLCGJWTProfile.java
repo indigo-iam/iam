@@ -55,7 +55,7 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
         accountUtils, groupHelper, attributeHelper);
 
     idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo, claimTranslationService,
-        claimValueHelper, groupHelper, properties, totpMfaRepository);
+        claimValueHelper, groupHelper, properties);
 
     userInfoHelper = new WLCGUserinfoHelper(properties, userInfoService);
     introspectionHelper =
