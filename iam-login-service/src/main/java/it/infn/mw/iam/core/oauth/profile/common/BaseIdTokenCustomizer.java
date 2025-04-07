@@ -18,9 +18,11 @@ package it.infn.mw.iam.core.oauth.profile.common;
 import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
 import static java.util.Objects.isNull;
 
+import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Request;
@@ -82,7 +84,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
   }
 
   protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
-      IamAccount account) {
+      IamAccount account, OAuth2AccessTokenEntity accessToken) {
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim instanceof String amrString) {
@@ -98,11 +100,19 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       }
     }
 
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    try {
+      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
+      if (acrClaim != null) {
+        builder.claim("acr", acrClaim);
+      } else {
+        Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
 
-    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-      builder.claim("acr", "https://referds.org/profile/MFA");
+        if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
+          builder.claim("acr", "https://referds.org/profile/MFA");
+        }
+      }
+    } catch (ParseException e) {
+      LOG.error("Error parsing JWT claims: {}", e.getMessage());
     }
   }
-
 }

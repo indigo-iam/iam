@@ -61,7 +61,7 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     // Drop group claims as set by IAM JWT profile
     idClaims.claim("groups", null);
 
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims, account);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, account, accessToken);
 
     includeLabelsInIdToken(idClaims, account);
   }
