@@ -185,10 +185,10 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
 
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authentication);
-    if (authentication.getUserAuthentication().getDetails() instanceof Map details) {
-      if (details.get("acr") != null) {
-        builder.claim("acr", details.get("acr"));
-      }
+    if (authentication.getUserAuthentication() != null
+        && authentication.getUserAuthentication().getDetails() instanceof Map details
+        && details.get("acr") != null) {
+      builder.claim("acr", details.get("acr"));
     } else {
       if (account.isPresent()) {
         Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
