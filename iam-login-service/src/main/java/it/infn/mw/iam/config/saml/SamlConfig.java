@@ -160,6 +160,7 @@ import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.time.SystemTimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
 @Order(value = Ordered.LOWEST_PRECEDENCE)
@@ -176,6 +177,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private IamAccountRepository accountRepo;
+
+  @Autowired
+  private IamTotpMfaRepository totpMfaRepository;
 
   @Autowired
   private ResourceLoader resourceLoader;
@@ -405,10 +409,10 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
       IamAccountRepository accountRepo, InactiveAccountAuthenticationHander handler,
       MappingPropertiesResolver mpResolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
-      SessionTimeoutHelper helper) {
+      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository) {
 
-    IamSamlAuthenticationProvider samlAuthenticationProvider =
-        new IamSamlAuthenticationProvider(resolver, validator, helper);
+    IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
+        resolver, validator, helper, accountRepo, totpMfaRepository);
 
     samlAuthenticationProvider
       .setUserDetails(samlUserDetailsService(resolver, accountRepo, handler, mpResolver));
@@ -887,8 +891,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(samlAuthenticationProvider(resolver, accountRepo,
-        inactiveAccountHandler, mappingResolver, validator, sessionTimeoutHelper));
+    auth.authenticationProvider(
+        samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler, mappingResolver,
+            validator, sessionTimeoutHelper, totpMfaRepository));
   }
 
   private void scheduleProvisionedAccountsCleanup(final ScheduledTaskRegistrar taskRegistrar) {

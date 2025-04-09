@@ -17,9 +17,9 @@ package it.infn.mw.iam.test.ext_authn.saml;
 
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH_ERROR_KEY;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.SAML;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -50,12 +51,11 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
   @Test
   public void testSuccessfulExternalUnregisteredUserAuthentication() throws Throwable {
 
-    MockHttpSession session =
-        (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
-          .andExpect(status().isOk())
-          .andReturn()
-          .getRequest()
-          .getSession();
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getRequest()
+      .getSession();
 
     AuthnRequest authnRequest = getAuthnRequestFromSession(session);
 
@@ -64,12 +64,10 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
 
     Response r = buildTest1Response(authnRequest);
 
-    session = (MockHttpSession) mvc
-      .perform(post(authnRequest.getAssertionConsumerServiceURL())
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-        .param("SAMLResponse", SamlUtils.signAndSerializeToBase64(r))
-        .session(session))
-      .andExpect(redirectedUrl("/")).andReturn().getRequest().getSession();
+    session = (MockHttpSession) mvc.perform(post(authnRequest.getAssertionConsumerServiceURL())
+      .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+      .param("SAMLResponse", SamlUtils.signAndSerializeToBase64(r))
+      .session(session)).andExpect(redirectedUrl("/")).andReturn().getRequest().getSession();
 
     mvc.perform(get("/").session(session))
       .andExpect(status().isOk())
@@ -84,7 +82,6 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
       .andExpect(jsonPath("$.issuer").value(equalTo(DEFAULT_IDP_ID)))
       .andExpect(jsonPath("$.subject").value(equalTo(T1_EPUID)))
       .andExpect(jsonPath("$.suggested_username").value(equalTo(T1_EPPN)));
-
   }
 
   @Test
@@ -114,7 +111,33 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
       .andReturn()
       .getRequest()
       .getSession();
-
   }
 
+  @Test
+  public void testRegisteredUserWithMfaGetsRedirectedToMfaVerify() throws Throwable {
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    AuthnRequest authnRequest = getAuthnRequestFromSession(session);
+
+    Response r = buildMfaTest1Response(authnRequest);
+
+    session = (MockHttpSession) mvc
+      .perform(post(authnRequest.getAssertionConsumerServiceURL())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("SAMLResponse", SamlUtils.signAndSerializeToBase64(r))
+        .session(session))
+      .andExpect(redirectedUrl("/iam/verify"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    mvc.perform(get("/iam/verify").session(session))
+      .andExpect(status().isOk())
+      .andExpect(view().name("iam/verify-mfa"));
+  }
 }

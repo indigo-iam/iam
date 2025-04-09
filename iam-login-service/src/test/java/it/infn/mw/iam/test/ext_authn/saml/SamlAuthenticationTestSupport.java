@@ -60,6 +60,13 @@ public class SamlAuthenticationTestSupport {
   public static final String JIT1_FAMILY_NAME = "Saml User";
   public static final String JIT1_MAIL = "jit1@example.org";
 
+  public static final String MFA_NAMEID = "mfa";
+  public static final String MFA_EPPN = "mfa.eppn@idptestbed";
+  public static final String MFA_EPUID = "test-with-mfa";
+  public static final String MFA_GIVEN_NAME = "MfaTestUser";
+  public static final String MFA_SN = "Mfa User";
+  public static final String MFA_MAIL = "mfa@example.org";
+
   public static final String T1_NAMEID = "1234";
   public static final String T1_EPPN = "test-user@idptestbed";
   public static final String T1_EPUID = "123456@idptestbed";
@@ -78,7 +85,7 @@ public class SamlAuthenticationTestSupport {
 
   public static final IamSamlId T1_SAML_ID =
       new IamSamlId(DEFAULT_IDP_ID, Saml2Attribute.EPUID.getAttributeName(), T1_EPUID);
-  
+
 
   @Autowired
   protected MetadataGenerator metadataGenerator;
@@ -266,6 +273,37 @@ public class SamlAuthenticationTestSupport {
       .givenName(JIT1_GIVEN_NAME)
       .sn(JIT1_FAMILY_NAME)
       .mail(JIT1_MAIL)
+      .recipient(authnRequest.getAssertionConsumerServiceURL())
+      .requestId(authnRequest.getID())
+      .audience(metadataGenerator.getEntityId())
+      .issueInstant(issueTime)
+      .build();
+
+    SamlResponseBuilder srb = samlResponseBuilder();
+    Response r = srb.assertion(a)
+      .recipient(authnRequest.getAssertionConsumerServiceURL())
+      .requestId(authnRequest.getID())
+      .issueInstant(DateTime.now())
+      .build();
+
+    return r;
+  }
+
+  public Response buildMfaTest1Response(AuthnRequest authnRequest)
+      throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException,
+      SecurityException, SignatureException, MarshallingException {
+
+    SamlAssertionBuilder sab = samlAssertionBuilder();
+
+    DateTime issueTime = DateTime.now().minusSeconds(30);
+
+    Assertion a = sab.issuer(DEFAULT_IDP_ID)
+      .nameId(MFA_NAMEID)
+      .eppn(MFA_EPPN)
+      .epuid(MFA_EPUID)
+      .givenName(MFA_GIVEN_NAME)
+      .sn(MFA_SN)
+      .mail(MFA_MAIL)
       .recipient(authnRequest.getAssertionConsumerServiceURL())
       .requestId(authnRequest.getID())
       .audience(metadataGenerator.getEntityId())
