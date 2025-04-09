@@ -57,6 +57,7 @@ import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.model.ScimFilter;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -127,9 +128,7 @@ public class ScimUserProvisioning
 
 
 
-  private ArrayList<String> parseFilters(final String filtersParameter) {
-
-    ArrayList<String> result = new ArrayList<>();
+  private ScimFilter parseFilters(final String filtersParameter) {
 
     if (!Strings.isNullOrEmpty(filtersParameter)) {
       // Iterating over all defined enums
@@ -158,9 +157,7 @@ public class ScimUserProvisioning
             String value = filtersParameter.substring(index + operator.name().length() + 1,
                 filtersParameter.length());
 
-            result.add(parameter);
-            result.add(operator.name());
-            result.add(value);
+            ScimFilter result = new ScimFilter(parameter, operator.name(), value);
             return result;
 
           } else {
@@ -169,18 +166,16 @@ public class ScimUserProvisioning
         }
       }
     }
-    return result;
+    throw invalidFilter(filtersParameter);
   }
 
 
-  private boolean filterEvaluation(ArrayList<String> parsedFilters) {
-    if (parsedFilters.size() != 3) {
-      return false;
-    }
+  private boolean filterEvaluation(ScimFilter parsedFilters) {
+
     for (Attributes attribute : Attributes.values()) {
-      if (attribute.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      if (attribute.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
         for (AttributeOperators operator : AttributeOperators.values()) {
-          if (operator.toString().equalsIgnoreCase(parsedFilters.get(1))) {
+          if (operator.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
             return true;
           }
         }
@@ -192,75 +187,75 @@ public class ScimUserProvisioning
 
 
 
-  private Page<IamAccount> filterSearch(OffsetPageable op, ArrayList<String> parsedFilters) {
+  private Page<IamAccount> filterSearch(OffsetPageable op, ScimFilter parsedFilters) {
 
     Page<IamAccount> result = null;
 
     // Figuring out the operator
-    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.get(1))) {
+    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
         // retrieving the results
-        result = accountRepository.findByGivenName(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.findByGivenName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        if ((parsedFilters.get(2).equalsIgnoreCase("false")
-            || parsedFilters.get(2).equalsIgnoreCase("true"))) {
-          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.get(2)), op)
-            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        if ((parsedFilters.getValue().equalsIgnoreCase("false")
+            || parsedFilters.getValue().equalsIgnoreCase("true"))) {
+          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()), op)
+            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
         } else {
-          throw invalidValue(parsedFilters.get(2));
+          throw invalidValue(parsedFilters.getValue());
         }
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.findByEmail(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.findByEmail(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.findByUsername(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.findByUsername(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.findByFamilyName(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.findByFamilyName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
       }
 
-    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.get(1))) {
+    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
         // retrieving the results
-        result = accountRepository.containsGivenName(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.containsGivenName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
-        throw invalidOperator(parsedFilters.get(1));
+        throw invalidOperator(parsedFilters.getOperator());
 
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.containsEmail(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.containsEmail(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.containsUsername(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.containsUsername(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.get(0))) {
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
 
-        result = accountRepository.containsFamilyName(parsedFilters.get(2), op)
-          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.get(2)));
+        result = accountRepository.containsFamilyName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
       }
     }
@@ -303,10 +298,10 @@ public class ScimUserProvisioning
         String.format("There are no users mapped to the givenName \"%s\"", name));
   }
 
-  private ScimResourceNotFoundException noUsersMappedToValue(ArrayList<String> filter) {
+  private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
     return new ScimResourceNotFoundException(String.format(
         "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
-        filter.get(0), filter.get(1), filter.get(2)));
+        filter.getAttribute(), filter.getOperator(), filter.getValue()));
   }
 
   private IllegalArgumentException invalidValue(String value) {
@@ -325,10 +320,10 @@ public class ScimUserProvisioning
       .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
   }
 
-  private ScimFilterUnsupportedException missingSupport(ArrayList<String> filter) {
+  private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
     return new ScimFilterUnsupportedException(String.format(
         "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
-        filter.get(0), filter.get(1), filter.get(2)));
+        filter.getAttribute(), filter.getOperator(), filter.getValue()));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -415,7 +410,7 @@ public class ScimUserProvisioning
   public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter) {
 
 
-    ArrayList<String> parsedFilters = parseFilters(filter);
+    ScimFilter parsedFilters = parseFilters(filter);
 
     if (!filterEvaluation(parsedFilters)) {
       throw invalidFilter(filter);
