@@ -21,8 +21,8 @@ import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,7 +56,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockUser(username = "admin", roles = "ADMIN")
+@WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
 public class GroupLabelTests extends TestSupport {
 
   private static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
@@ -109,7 +109,7 @@ public class GroupLabelTests extends TestSupport {
   @WithMockUser(username = "test", roles = "USER")
   public void managingLabelsRequiresPrivilegedUser() throws Exception {
 
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
+    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
     mvc
       .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
@@ -126,15 +126,15 @@ public class GroupLabelTests extends TestSupport {
   }
 
   @Test
-  @WithMockUser(username = "test", roles = {"READER"})
+  @WithMockUser(username = "test", roles = {"READER", "USER"})
   public void gettingLabelsWorksForReaderUser() throws Exception {
     gettingLabelsWorks();
   }
 
   @Test
   @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void gettingLabelsWorksForAdminOAuthUser() throws Exception {
-    gettingLabelsWorks();
+  public void gettingLabelsDoesNotWorkWithoutRoleUser() throws Exception {
+    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
   }
 
   private void gettingLabelsWorks() throws Exception {
