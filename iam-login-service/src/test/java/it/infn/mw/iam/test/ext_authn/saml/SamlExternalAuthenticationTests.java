@@ -154,7 +154,7 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
 
     Response r = buildMfaTest2Response(authnRequest);
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post(authnRequest.getAssertionConsumerServiceURL())
         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
         .param("SAMLResponse", SamlUtils.signAndSerializeToBase64(r))
