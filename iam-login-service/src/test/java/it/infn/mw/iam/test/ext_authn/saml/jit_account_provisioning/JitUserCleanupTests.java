@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import it.infn.mw.iam.authn.saml.CleanInactiveProvisionedAccounts;
+import it.infn.mw.iam.authn.CleanInactiveProvisionedAccounts;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
