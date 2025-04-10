@@ -31,20 +31,20 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.config.JitProvisioningProperties;
+
 @Validated
 @ConfigurationProperties(prefix = "saml.jit-account-provisioning")
-public class IamSamlJITAccountProvisioningProperties {
+public class IamSamlJITAccountProvisioningProperties implements JitProvisioningProperties {
 
   public enum UsernameMappingPolicy {
-    randomUuidPolicy,
-    samlIdPolicy,
-    attributeValuePolicy;
+    randomUuidPolicy, samlIdPolicy, attributeValuePolicy;
   }
-  
+
   public static class EntityAttributeMappingProperties {
-    
+
     String entityIds;
-    
+
     AttributeMappingProperties mapping;
 
     public String getEntityIds() {
@@ -63,51 +63,58 @@ public class IamSamlJITAccountProvisioningProperties {
       this.mapping = mapping;
     }
   }
-  
-  
+
+
   public static class AttributeMappingProperties {
-    
+
     UsernameMappingPolicy usernameMappingPolicy = UsernameMappingPolicy.samlIdPolicy;
-    
+
     String emailAttribute = "mail";
     String firstNameAttribute = "givenName";
     String familyNameAttribute = "sn";
     String usernameAttribute;
-    
+
     public String getEmailAttribute() {
       return emailAttribute;
     }
+
     public void setEmailAttribute(String emailAttribute) {
       this.emailAttribute = emailAttribute;
     }
+
     public String getFirstNameAttribute() {
       return firstNameAttribute;
     }
+
     public void setFirstNameAttribute(String firstNameAttribute) {
       this.firstNameAttribute = firstNameAttribute;
     }
+
     public String getFamilyNameAttribute() {
       return familyNameAttribute;
     }
+
     public void setFamilyNameAttribute(String familyNameAttribute) {
       this.familyNameAttribute = familyNameAttribute;
     }
-    
+
     public String getUsernameAttribute() {
       return usernameAttribute;
     }
-    
+
     public void setUsernameAttribute(String usernameAttribute) {
       this.usernameAttribute = usernameAttribute;
     }
+
     public UsernameMappingPolicy getUsernameMappingPolicy() {
       return usernameMappingPolicy;
     }
+
     public void setUsernameMappingPolicy(UsernameMappingPolicy usernameMappingPolicy) {
       this.usernameMappingPolicy = usernameMappingPolicy;
     }
   }
-  
+
   private Boolean enabled = FALSE;
   private String trustedIdps = "all";
   private Boolean cleanupTaskEnabled = FALSE;
@@ -117,11 +124,12 @@ public class IamSamlJITAccountProvisioningProperties {
 
   @Min(1)
   private Integer inactiveAccountLifetimeDays = 15;
-  
+
   private AttributeMappingProperties defaultMapping = new AttributeMappingProperties();
-  
+
   private List<EntityAttributeMappingProperties> entityMapping = Lists.newArrayList();
 
+  @Override
   public Boolean getEnabled() {
     return enabled;
   }
@@ -138,6 +146,7 @@ public class IamSamlJITAccountProvisioningProperties {
     this.trustedIdps = trustedIdps;
   }
 
+  @Override
   public Boolean getCleanupTaskEnabled() {
     return cleanupTaskEnabled;
   }
@@ -146,6 +155,7 @@ public class IamSamlJITAccountProvisioningProperties {
     this.cleanupTaskEnabled = cleanupEnabled;
   }
 
+  @Override
   public Integer getInactiveAccountLifetimeDays() {
     return inactiveAccountLifetimeDays;
   }
@@ -154,6 +164,7 @@ public class IamSamlJITAccountProvisioningProperties {
     this.inactiveAccountLifetimeDays = inactiveUserLifetimeDays;
   }
 
+  @Override
   public long getCleanupTaskPeriodSec() {
     return cleanupTaskPeriodSec;
   }
@@ -185,11 +196,11 @@ public class IamSamlJITAccountProvisioningProperties {
   public void setDefaultMapping(AttributeMappingProperties defaultMapping) {
     this.defaultMapping = defaultMapping;
   }
-  
+
   public List<EntityAttributeMappingProperties> getEntityMapping() {
     return entityMapping;
   }
-  
+
   public void setEntityMapping(List<EntityAttributeMappingProperties> entityMapping) {
     this.entityMapping = entityMapping;
   }

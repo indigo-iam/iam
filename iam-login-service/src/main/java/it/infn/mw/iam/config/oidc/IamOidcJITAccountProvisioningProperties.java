@@ -15,8 +15,13 @@
  */
 package it.infn.mw.iam.config.oidc;
 
+import static java.lang.Boolean.FALSE;
+
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import javax.validation.constraints.Min;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -24,18 +29,24 @@ import org.springframework.validation.annotation.Validated;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.config.JitProvisioningProperties;
+
 @Validated
 @ConfigurationProperties(prefix = "oidc.jit-account-provisioning")
-public class IamOidcJITAccountProvisioningProperties {
+public class IamOidcJITAccountProvisioningProperties implements JitProvisioningProperties {
 
-  private boolean enabled;
+  private boolean enabled = FALSE;
   private String trustedIdps = "all";
-  private boolean cleanupTaskEnabled;
-  private long cleanupTaskPeriodSec = 86400;
+  private boolean cleanupTaskEnabled = FALSE;
+
+  @Min(5)
+  private long cleanupTaskPeriodSec = TimeUnit.DAYS.toSeconds(1);
+
+  @Min(1)
   private int inactiveAccountLifetimeDays = 15;
 
-  // Getters e Setters
-  public boolean isEnabled() {
+  @Override
+  public Boolean getEnabled() {
     return enabled;
   }
 
@@ -66,7 +77,8 @@ public class IamOidcJITAccountProvisioningProperties {
     return Optional.of(trustedIdpIds);
   }
 
-  public boolean isCleanupTaskEnabled() {
+  @Override
+  public Boolean getCleanupTaskEnabled() {
     return cleanupTaskEnabled;
   }
 
@@ -74,6 +86,7 @@ public class IamOidcJITAccountProvisioningProperties {
     this.cleanupTaskEnabled = cleanupTaskEnabled;
   }
 
+  @Override
   public long getCleanupTaskPeriodSec() {
     return cleanupTaskPeriodSec;
   }
@@ -82,7 +95,8 @@ public class IamOidcJITAccountProvisioningProperties {
     this.cleanupTaskPeriodSec = cleanupTaskPeriodSec;
   }
 
-  public int getInactiveAccountLifetimeDays() {
+  @Override
+  public Integer getInactiveAccountLifetimeDays() {
     return inactiveAccountLifetimeDays;
   }
 
