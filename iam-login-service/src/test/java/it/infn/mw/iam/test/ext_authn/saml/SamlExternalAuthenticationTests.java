@@ -140,4 +140,28 @@ public class SamlExternalAuthenticationTests extends SamlAuthenticationTestSuppo
       .andExpect(status().isOk())
       .andExpect(view().name("iam/verify-mfa"));
   }
+
+  @Test
+  public void testRedirectionToDashboardIfRemoteIdpPerformsMfa() throws Throwable {
+
+    MockHttpSession session = (MockHttpSession) mvc.perform(get(samlDefaultIdpLoginUrl()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getRequest()
+      .getSession();
+
+    AuthnRequest authnRequest = getAuthnRequestFromSession(session);
+
+    Response r = buildMfaTest2Response(authnRequest);
+
+    session = (MockHttpSession) mvc
+      .perform(post(authnRequest.getAssertionConsumerServiceURL())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .param("SAMLResponse", SamlUtils.signAndSerializeToBase64(r))
+        .session(session))
+      .andExpect(redirectedUrl("/dashboard"))
+      .andReturn()
+      .getRequest()
+      .getSession();
+  }
 }

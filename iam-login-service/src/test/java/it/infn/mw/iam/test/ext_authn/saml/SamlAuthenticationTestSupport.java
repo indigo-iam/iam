@@ -320,6 +320,38 @@ public class SamlAuthenticationTestSupport {
     return r;
   }
 
+  public Response buildMfaTest2Response(AuthnRequest authnRequest)
+      throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException,
+      SecurityException, SignatureException, MarshallingException {
+
+    SamlAssertionBuilder sab = samlAssertionBuilder();
+
+    DateTime issueTime = DateTime.now().minusSeconds(30);
+
+    Assertion a = sab.issuer(DEFAULT_IDP_ID)
+      .nameId(MFA_NAMEID)
+      .eppn(MFA_EPPN)
+      .epuid(MFA_EPUID)
+      .givenName(MFA_GIVEN_NAME)
+      .sn(MFA_SN)
+      .mail(MFA_MAIL)
+      .recipient(authnRequest.getAssertionConsumerServiceURL())
+      .requestId(authnRequest.getID())
+      .audience(metadataGenerator.getEntityId())
+      .issueInstant(issueTime)
+      .authnContextClassRef("https://refeds.org/profile/mfa")
+      .build();
+
+    SamlResponseBuilder srb = samlResponseBuilder();
+    Response r = srb.assertion(a)
+      .recipient(authnRequest.getAssertionConsumerServiceURL())
+      .requestId(authnRequest.getID())
+      .issueInstant(DateTime.now())
+      .build();
+
+    return r;
+  }
+
   @SuppressWarnings("rawtypes")
   public AuthnRequest getAuthnRequestFromSession(MockHttpSession session) {
     @SuppressWarnings("unchecked")
