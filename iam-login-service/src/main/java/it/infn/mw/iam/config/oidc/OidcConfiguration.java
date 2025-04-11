@@ -253,7 +253,7 @@ public class OidcConfiguration implements SchedulingConfigurer {
       InactiveAccountAuthenticationHander handler, IamAccountService accountService,
       IamOidcJITAccountProvisioningProperties jitProperties) {
 
-    if (jitProperties.getEnabled()) {
+    if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
       return new JustInTimeProvisioningOIDCUserDetailsService(repo, handler, accountService,
           jitProperties.getTrustedIdpsAsOptionalSet());
     }
