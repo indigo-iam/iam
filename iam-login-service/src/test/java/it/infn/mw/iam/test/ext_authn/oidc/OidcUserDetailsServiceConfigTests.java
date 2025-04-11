@@ -40,7 +40,7 @@ public class OidcUserDetailsServiceConfigTests {
 
   @Test
   public void testBeanIsJustInTimeProvisioningService() {
-    assertThat(userDetailsService).isNotNull();
-    assertThat(userDetailsService).isInstanceOf(JustInTimeProvisioningOIDCUserDetailsService.class);
+    assertThat(userDetailsService).isNotNull()
+      .isInstanceOf(JustInTimeProvisioningOIDCUserDetailsService.class);
   }
 }
