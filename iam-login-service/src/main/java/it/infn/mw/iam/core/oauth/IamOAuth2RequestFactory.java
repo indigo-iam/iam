@@ -56,9 +56,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
-import it.infn.mw.iam.core.error.InvalidResourceError;
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
@@ -126,8 +125,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     if (authn instanceof ExtendedAuthenticationToken extendedToken) {
       amrSet = extendedToken.getAuthenticationMethodReferences();
       processToken(amrSet, authzRequest);
-    } else if (authn instanceof OidcExternalAuthenticationToken oidcToken) {
-      amrSet = oidcToken.getAuthenticationMethodReferences();
+    } else if (authn instanceof AbstractExternalAuthenticationToken<?> externalToken) {
+      amrSet = externalToken.getAuthenticationMethodReferences();
       processToken(amrSet, authzRequest);
     }
 

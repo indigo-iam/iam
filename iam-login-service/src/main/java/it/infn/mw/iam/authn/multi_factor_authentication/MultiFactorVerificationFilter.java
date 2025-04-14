@@ -34,7 +34,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 /**
@@ -71,7 +71,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (!(auth instanceof ExtendedAuthenticationToken)
-        && !(auth instanceof OidcExternalAuthenticationToken)) {
+        && !(auth instanceof AbstractExternalAuthenticationToken)) {
       throw new AuthenticationServiceException("Bad authentication");
     }
 
@@ -88,8 +88,8 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
     if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       extendedAuthenticationToken.setTotp(totp);
-    } else if (auth instanceof OidcExternalAuthenticationToken oidcExternalAuthenticationToken) {
-      oidcExternalAuthenticationToken.setTotp(totp);
+    } else if (auth instanceof AbstractExternalAuthenticationToken externalAuthenticationToken) {
+      externalAuthenticationToken.setTotp(totp);
     }
 
     Authentication fullAuthentication = getAuthenticationManager().authenticate(auth);
