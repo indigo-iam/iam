@@ -88,7 +88,7 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
 
     if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       extendedAuthenticationToken.setTotp(totp);
-    } else if (auth instanceof AbstractExternalAuthenticationToken externalAuthenticationToken) {
+    } else if (auth instanceof AbstractExternalAuthenticationToken<?> externalAuthenticationToken) {
       externalAuthenticationToken.setTotp(totp);
     }
 

@@ -75,8 +75,8 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   private String getTotp(Authentication authentication) {
     if (authentication instanceof ExtendedAuthenticationToken extendedToken) {
       return extendedToken.getTotp();
-    } else if (authentication instanceof AbstractExternalAuthenticationToken oidcToken) {
-      return oidcToken.getTotp();
+    } else if (authentication instanceof AbstractExternalAuthenticationToken<?> externalToken) {
+      return externalToken.getTotp();
     }
     return null;
   }
