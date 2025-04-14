@@ -32,6 +32,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorTotpCheckProvider;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -52,6 +53,9 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
 
   @Mock
   private OidcExternalAuthenticationToken oidcToken;
+
+  @Mock
+  private SamlExternalAuthenticationToken samlToken;
 
   @Before
   public void setup() {
@@ -122,4 +126,14 @@ public class MultiFactorTotpCheckProviderTests extends IamTotpMfaServiceTestSupp
     assertNotNull(multiFactorTotpCheckProvider.authenticate(oidcToken));
   }
 
+  @Test
+  public void authenticateWithSamlTokenReturnsSuccessfulAuthenticationWhenTotpIsValid() {
+    IamAccount account = cloneAccount(TOTP_MFA_ACCOUNT);
+    when(samlToken.getName()).thenReturn("totp");
+    when(samlToken.getTotp()).thenReturn("123456");
+    when(accountRepo.findByUsername("totp")).thenReturn(Optional.of(account));
+    when(totpMfaService.verifyTotp(account, "123456")).thenReturn(true);
+
+    assertNotNull(multiFactorTotpCheckProvider.authenticate(samlToken));
+  }
 }
