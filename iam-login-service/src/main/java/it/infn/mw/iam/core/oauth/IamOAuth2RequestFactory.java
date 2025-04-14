@@ -168,51 +168,57 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
 
     if (requestParameters.containsKey(RESOURCE)) {
-      handleTokenResourceRequest(requestParameters, authenticatedClient);
+      return new TokenRequest(updateTokenRequestParameters(requestParameters, authenticatedClient),
+          clientId, scopeFilter.filterScopes(scopes, authn), grantType);
     }
 
     return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn),
         grantType);
   }
 
-  private void handleTokenResourceRequest(Map<String, String> requestParameters,
-      ClientDetails client) {
+  private Map<String, String> updateTokenRequestParameters(
+      Map<String, String> tokenRequestParameters, ClientDetails client) {
 
-    List<String> tokenResourceParams = splitBySpace(requestParameters.get(RESOURCE));
+    List<String> tokenResourceParams = splitBySpace(tokenRequestParameters.get(RESOURCE));
     tokenResourceParams.forEach(aud -> validateUrl(aud));
 
-    String grantType = requestParameters.get(OAuth2Utils.GRANT_TYPE);
+    String grantType = tokenRequestParameters.get(OAuth2Utils.GRANT_TYPE);
     Map<String, String> authzRequestParams = null;
 
     switch (grantType) {
       case AUTHZ_CODE_GRANT:
-        authzRequestParams = authzCodeRepository.getByCode(requestParameters.get(AUTHZ_CODE_KEY))
-          .getAuthenticationHolder()
-          .getRequestParameters();
+        authzRequestParams =
+            authzCodeRepository.getByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY))
+              .getAuthenticationHolder()
+              .getRequestParameters();
         break;
 
       case DEVICE_CODE_GRANT:
         authzRequestParams =
-            deviceCodeService.findDeviceCode(requestParameters.get(DEVICE_CODE_KEY), client)
+            deviceCodeService.findDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client)
               .getAuthenticationHolder()
               .getRequestParameters();
         break;
 
       case REFRESH_TOKEN_GRANT:
-        authzRequestParams = tokenServices.getRefreshToken(requestParameters.get(REFRESH_TOKEN_KEY))
-          .getAuthenticationHolder()
-          .getRequestParameters();
+        authzRequestParams =
+            tokenServices.getRefreshToken(tokenRequestParameters.get(REFRESH_TOKEN_KEY))
+              .getAuthenticationHolder()
+              .getRequestParameters();
         break;
 
       default:
-        return;
+        return tokenRequestParameters;
     }
 
-    checkAllowedResource(tokenResourceParams, authzRequestParams);
+    tokenRequestParameters.replace(RESOURCE,
+        getAllowedResource(tokenResourceParams, authzRequestParams));
+
+    return tokenRequestParameters;
 
   }
 
-  private void checkAllowedResource(List<String> tokenResourceParams,
+  private String getAllowedResource(List<String> tokenResourceParams,
       Map<String, String> authzRequestParams) {
 
     List<String> authzResourceParams = splitBySpace(authzRequestParams.get(RESOURCE));
@@ -222,6 +228,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     if (allowedResource.isEmpty()) {
       throw new InvalidResourceError("The requested resource was not originally granted");
     }
+
+    return allowedResource;
   }
 
   // Validation has been inspired by https://www.baeldung.com/java-validate-url
@@ -247,7 +255,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     if (str == null) {
       return new ArrayList<>();
     }
-
     return Pattern.compile(" ").splitAsStream(str).collect(Collectors.toList());
   }
 
