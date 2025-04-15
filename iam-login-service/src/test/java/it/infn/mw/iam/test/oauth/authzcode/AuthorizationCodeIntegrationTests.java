@@ -21,9 +21,9 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -678,7 +678,10 @@ public class AuthorizationCodeIntegrationTests {
         mapper.readTree(resp3.extract().body().asString()).get("access_token").asText();
     JWT atJwt = JWTParser.parse(accessToken);
 
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), empty());
+    assertNotNull(atJwt.getJWTClaimsSet().getAudience());
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(2));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example2.org"));
 
   }
 
@@ -945,7 +948,7 @@ public class AuthorizationCodeIntegrationTests {
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
 
   }
-  
+
   @Test
   public void testFilteredResourceIndicatorRTFlowAfterAuthzCode()
       throws IOException, ParseException {

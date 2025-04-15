@@ -19,8 +19,8 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -176,7 +176,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
+    assertThat(claims.getAudience(), hasSize(2));
     assertThat(claims.getAudience(), hasItem("https://example1.org"));
     assertThat(claims.getAudience(), hasItem("https://example2.org"));
   }
@@ -205,7 +205,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
+    assertThat(claims.getAudience(), hasSize(2));
     assertThat(claims.getAudience(), hasItem("https://example1.org"));
     assertThat(claims.getAudience(), hasItem("https://example2.org"));
     assertThat(claims.getAudience(), not(hasItem("aud1")));
@@ -362,7 +362,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
+    assertThat(claims.getAudience(), hasSize(2));
     assertThat(claims.getAudience(), hasItem("https://example1.org"));
     assertThat(claims.getAudience(), hasItem("https://example2.org"));
   }
@@ -388,7 +388,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(2));
+    assertThat(claims.getAudience(), hasSize(2));
     assertThat(claims.getAudience(), hasItem("https://example1.org"));
     assertThat(claims.getAudience(), hasItem("https://example2.org"));
     assertThat(claims.getAudience(), not(hasItem("aud1")));
@@ -526,6 +526,46 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  public void testMultibleResourceIndicatorRequestRefreshTokenFlow() throws Exception {
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", "openid profile offline_access")
+        .param("resource", "https://example1.org https://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+
+    tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("resource", "https://example1.org https://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+    assertThat(claims.getAudience(), hasItem("https://example2.org"));
+
+  }
+
+  @Test
   public void testNarrowerResourceIndicatorRequestRefreshTokenFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -559,10 +599,10 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(1));
+    assertThat(claims.getAudience(), hasSize(1));
     assertThat(claims.getAudience(), hasItem("https://example2.org"));
   }
-  
+
   @Test
   public void testFilteredResourceIndicatorRequestRefreshTokenFlow() throws Exception {
     String tokenResponseJson = mvc
@@ -597,8 +637,38 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
-    assertThat(claims.getAudience().size(), equalTo(1));
+    assertThat(claims.getAudience(), hasSize(1));
     assertThat(claims.getAudience(), hasItem("https://example1.org"));
+  }
+
+  @Test
+  public void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", "openid profile offline_access")
+        .param("resource", "https://example1.org https://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+
+    mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("resource", "https://example3.org"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description")
+        .value("The requested resource was not originally granted"));
+
   }
 
   @Test
@@ -610,7 +680,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
         .param("username", TEST_USERNAME)
         .param("password", TEST_PASSWORD)
         .param("scope", "openid profile offline_access")
-        .param("resource", "https://example.org"))
+        .param("resource", "https://example1.org https://example2.org"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -633,7 +703,10 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertThat(claims.getAudience(), empty());
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+    assertThat(claims.getAudience(), hasItem("https://example2.org"));
   }
 
   @Test
@@ -679,6 +752,77 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  public void testResourceIndicatorRequestWrongDevideCodeFlow() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile")
+        .param("resource", "http://example.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+
+    approveDeviceCode(userCode);
+
+    mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", "1234")
+            .param("resource", "http://example.org"))
+      .andExpect(status().isBadRequest());
+
+  }
+
+  @Test
+  public void testMultipleResourceIndicatorRequestDevideCodeFlow() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile")
+        .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    approveDeviceCode(userCode);
+
+    String tokenResponse = mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", deviceCode)
+            .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
+
+    String accessToken = tokenResponseJson.get("access_token").asText();
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("http://example1.org"));
+    assertThat(claims.getAudience(), hasItem("http://example2.org"));
+
+  }
+
+  @Test
   public void testEmptyResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -713,7 +857,9 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertThat(claims.getAudience(), empty());
+    assertThat(claims.getAudience().size(), equalTo(1));
+    assertThat(claims.getAudience(), contains("http://example.org"));
+
   }
 
   @Test
@@ -757,7 +903,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     assertThat(claims.getAudience(), contains("http://example2.org"));
 
   }
-  
+
   @Test
   public void testFilteredResourceIndicatorRequestDevideCodeFlow() throws Exception {
     String response = mvc
@@ -882,7 +1028,54 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertThat(claims.getAudience(), empty());
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("http://example1.org"));
+    assertThat(claims.getAudience(), hasItem("http://example2.org"));
+
+  }
+
+  @Test
+  public void testResourceIndicatorNotOriginallyGrantedRTAfterDeviceFlow() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access")
+        .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    approveDeviceCode(userCode);
+
+    String tokenResponse = mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", deviceCode)
+            .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponse).get("refresh_token").asText();
+
+    mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("resource", "https://example3.org"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description")
+        .value("The requested resource was not originally granted"));
 
   }
 
@@ -970,8 +1163,10 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
-    assertThat(claims.getAudience(), empty());
-
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("http://example1.org"));
+    assertThat(claims.getAudience(), hasItem("http://example2.org"));
   }
 
   @Test
@@ -1048,7 +1243,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
         .param("resource", "http://example1.org http://example2.org"))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error").value("invalid_target"))
-      .andExpect(jsonPath("$.error_description").value("The requested resource was not originally granted"));
+      .andExpect(jsonPath("$.error_description")
+        .value("The requested resource was not originally granted"));
 
   }
 

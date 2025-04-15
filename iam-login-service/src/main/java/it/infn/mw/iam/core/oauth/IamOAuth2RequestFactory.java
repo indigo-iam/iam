@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 
 import java.net.MalformedURLException;
@@ -24,10 +25,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.AuthorizationCodeEntity;
+import org.mitre.oauth2.model.DeviceCode;
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.DeviceCodeService;
@@ -167,13 +171,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    if (requestParameters.containsKey(RESOURCE)) {
-      return new TokenRequest(updateTokenRequestParameters(requestParameters, authenticatedClient),
-          clientId, scopeFilter.filterScopes(scopes, authn), grantType);
-    }
-
-    return new TokenRequest(requestParameters, clientId, scopeFilter.filterScopes(scopes, authn),
-        grantType);
+    return new TokenRequest(updateTokenRequestParameters(requestParameters, authenticatedClient),
+        clientId, scopeFilter.filterScopes(scopes, authn), grantType);
   }
 
   private Map<String, String> updateTokenRequestParameters(
@@ -183,36 +182,46 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     tokenResourceParams.forEach(aud -> validateUrl(aud));
 
     String grantType = tokenRequestParameters.get(OAuth2Utils.GRANT_TYPE);
-    Map<String, String> authzRequestParams = null;
+    Optional<Map<String, String>> authzRequestParams;
 
     switch (grantType) {
+
       case AUTHZ_CODE_GRANT:
-        authzRequestParams =
-            authzCodeRepository.getByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY))
-              .getAuthenticationHolder()
-              .getRequestParameters();
+        authzRequestParams = Optional
+          .ofNullable(authzCodeRepository.getByCode(tokenRequestParameters.get(AUTHZ_CODE_KEY)))
+          .map(AuthorizationCodeEntity::getAuthenticationHolder)
+          .map(holder -> holder.getRequestParameters());
         break;
 
       case DEVICE_CODE_GRANT:
-        authzRequestParams =
-            deviceCodeService.findDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client)
-              .getAuthenticationHolder()
-              .getRequestParameters();
+        authzRequestParams = Optional
+          .ofNullable(
+              deviceCodeService.findDeviceCode(tokenRequestParameters.get(DEVICE_CODE_KEY), client))
+          .map(DeviceCode::getAuthenticationHolder)
+          .map(holder -> holder.getRequestParameters());
         break;
 
       case REFRESH_TOKEN_GRANT:
-        authzRequestParams =
-            tokenServices.getRefreshToken(tokenRequestParameters.get(REFRESH_TOKEN_KEY))
-              .getAuthenticationHolder()
-              .getRequestParameters();
+        authzRequestParams = Optional
+          .ofNullable(tokenServices.getRefreshToken(tokenRequestParameters.get(REFRESH_TOKEN_KEY)))
+          .map(token -> token.getAuthenticationHolder())
+          .map(holder -> holder.getRequestParameters());
         break;
 
       default:
         return tokenRequestParameters;
     }
 
-    tokenRequestParameters.replace(RESOURCE,
-        getAllowedResource(tokenResourceParams, authzRequestParams));
+    authzRequestParams.ifPresent(arp -> {
+
+      if (!isNullOrEmpty(tokenRequestParameters.get(RESOURCE))) {
+        tokenRequestParameters.replace(RESOURCE, getAllowedResource(tokenResourceParams, arp));
+
+      } else if (!isNullOrEmpty(arp.get(RESOURCE))) {
+        tokenRequestParameters.put(RESOURCE, arp.get(RESOURCE));
+      }
+
+    });
 
     return tokenRequestParameters;
 
