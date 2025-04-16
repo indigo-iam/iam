@@ -29,4 +29,7 @@ public interface AarcUserInfo extends UserInfo {
 
   Set<String> getAssurance();
   void setAssurance(Set<String> assurance);
+
+  String getVoPersonId();
+  void setVoPersonId(String vopPersonId);
 }

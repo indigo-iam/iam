@@ -63,6 +63,9 @@ public class AarcClaimValueHelper {
       case "eduperson_assurance":
         return resolveLOA();
 
+      case "voperson_id":
+        return String.format("%s",info.getSub());
+
       default:
         return null;
     }

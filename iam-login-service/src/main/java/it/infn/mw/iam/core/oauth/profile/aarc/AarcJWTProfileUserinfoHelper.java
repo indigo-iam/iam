@@ -53,6 +53,7 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
     aui.setScopedAffiliation(claimValueHelper.getClaimValueFromUserInfo("eduperson_scoped_affiliation", iamUserInfo).toString());
     aui.setEntitlements(claimValueHelper.resolveGroups(iamUserInfo));
     aui.setAssurance(claimValueHelper.resolveLOA());
+    aui.setVoPersonId(claimValueHelper.getClaimValueFromUserInfo("voperson_id", iamUserInfo).toString());
 
     return aui;
   }

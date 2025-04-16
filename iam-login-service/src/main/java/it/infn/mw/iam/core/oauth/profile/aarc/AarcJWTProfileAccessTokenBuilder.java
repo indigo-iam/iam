@@ -59,7 +59,14 @@ public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
         .filter(ADDITIONAL_CLAIMS::contains)
         .forEach(c -> builder.claim(c, claimValueHelper.getClaimValueFromUserInfo(c,
             ((UserInfoAdapter) userInfo).getUserinfo())));
+      builder.claim("voperson_id", userInfo.getSub());
     }
+
+    
+    
+    
+    
+    
 
     return builder.build();
   }
