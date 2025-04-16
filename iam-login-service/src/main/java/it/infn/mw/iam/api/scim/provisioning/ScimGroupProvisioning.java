@@ -54,6 +54,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Service
 @Transactional
@@ -74,14 +75,14 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, Clock clock) {
+      ScimResourceLocationProvider locationProvider, Clock clock, IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -95,9 +96,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
           "path value " + op.getPath() + " is not currently supported");
     }
 
-    if (op.getOp().equals(ScimPatchOperationType.replace)) {
-      throw new ScimPatchOperationNotSupported("'replace' operation is not currently supported");
-    }
   }
 
   @Override
