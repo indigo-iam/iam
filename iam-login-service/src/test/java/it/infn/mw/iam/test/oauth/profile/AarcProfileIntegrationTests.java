@@ -37,12 +37,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 import java.util.Set;
 
-import javax.validation.constraints.NotEmpty;
 
 import org.junit.After;
 import org.junit.Before;
