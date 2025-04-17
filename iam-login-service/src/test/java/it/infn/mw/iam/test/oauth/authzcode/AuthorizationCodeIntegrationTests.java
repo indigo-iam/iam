@@ -85,8 +85,7 @@ public class AuthorizationCodeIntegrationTests {
   private String tokenUrl;
 
   private ValidatableResponse getTokenResponseWithAudience(String resourceParamAuthz,
-      String resourceParamToken, String resourceValueAuthz, String resourceValueToken)
-      throws IOException, ParseException {
+      String resourceParamToken, String resourceValueAuthz, String resourceValueToken) {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
