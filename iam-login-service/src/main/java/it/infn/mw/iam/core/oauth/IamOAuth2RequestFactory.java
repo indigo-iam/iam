@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +64,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
   public static final String RESOURCE = "resource";
+  public static final List<String> AUD_KEYS = Arrays.asList(RESOURCE, "aud", "audience");
+  public static final String AUD_KEY = "aud";
 
   public static final String PASSWORD_GRANT = "password";
   public static final String AUTHZ_CODE_GRANT = "authorization_code";
@@ -109,11 +112,9 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
           joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
 
-    AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
+    validateAndUpdateAudienceRequest(inputParams);
 
-    if (inputParams.containsKey(RESOURCE)) {
-      splitBySpace(inputParams.get(RESOURCE)).forEach(aud -> validateUrl(aud));
-    }
+    AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
     return authzRequest;
 
@@ -171,18 +172,15 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       }
     }
 
-    return new TokenRequest(updateTokenRequestParameters(requestParameters, authenticatedClient),
+    return new TokenRequest(updatedTokenRequestParameters(requestParameters, authenticatedClient),
         clientId, scopeFilter.filterScopes(scopes, authn), grantType);
   }
 
-  private Map<String, String> updateTokenRequestParameters(
+  private Map<String, String> updatedTokenRequestParameters(
       Map<String, String> tokenRequestParameters, ClientDetails client) {
 
-    List<String> tokenResourceParams = splitBySpace(tokenRequestParameters.get(RESOURCE));
-    tokenResourceParams.forEach(aud -> validateUrl(aud));
-
     String grantType = tokenRequestParameters.get(OAuth2Utils.GRANT_TYPE);
-    Optional<Map<String, String>> authzRequestParams;
+    Optional<Map<String, String>> authzRequestParams = java.util.Optional.empty();
 
     switch (grantType) {
 
@@ -209,15 +207,25 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
         break;
 
       default:
-        return tokenRequestParameters;
+        break;
     }
+
+    validateAndUpdateAudienceRequest(tokenRequestParameters);
 
     authzRequestParams.ifPresent(arp -> {
 
-      if (!isNullOrEmpty(tokenRequestParameters.get(RESOURCE))) {
-        tokenRequestParameters.replace(RESOURCE, getAllowedResource(tokenResourceParams, arp));
+      boolean hasTokenAudKey = tokenRequestParameters.containsKey(AUD_KEY);
+      boolean hasAuthzResourceParam = arp.containsKey(RESOURCE);
+      boolean hasTokenResourceParam = tokenRequestParameters.containsKey(RESOURCE);
 
-      } else if (!isNullOrEmpty(arp.get(RESOURCE))) {
+      if (hasTokenAudKey) {
+        if (hasAuthzResourceParam || hasTokenResourceParam) {
+          List<String> tokenResourceParams = splitBySpace(tokenRequestParameters.get(AUD_KEY));
+          tokenRequestParameters.put(AUD_KEY, getAllowedResource(tokenResourceParams, arp));
+        }
+      } else if (hasAuthzResourceParam) {
+        tokenRequestParameters.put(AUD_KEY, arp.get(RESOURCE));
+        // Required by RT flow after device
         tokenRequestParameters.put(RESOURCE, arp.get(RESOURCE));
       }
 
@@ -225,6 +233,25 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     return tokenRequestParameters;
 
+  }
+
+  private void validateAndUpdateAudienceRequest(Map<String, String> params) {
+
+    if (params.containsKey(RESOURCE)) {
+      List<String> resourceParams = splitBySpace(params.get(RESOURCE));
+      resourceParams.forEach(aud -> validateUrl(aud));
+    }
+
+    Optional<String> audience = Optional.ofNullable(getFirstNotEmptyAudience(params));
+    audience.ifPresent(aud -> params.put(AUD_KEY, aud));
+  }
+
+  private String getFirstNotEmptyAudience(Map<String, String> params) {
+    return AUD_KEYS.stream()
+      .map(params::get)
+      .filter(aud -> !isNullOrEmpty(aud))
+      .findFirst()
+      .orElse(null);
   }
 
   private String getAllowedResource(List<String> tokenResourceParams,

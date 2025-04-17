@@ -16,14 +16,13 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -50,7 +49,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
-  protected static final List<String> AUD_KEYS = Arrays.asList("resource", "aud", "audience");
   public static final String SCOPE_CLAIM_NAME = "scope";
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
@@ -112,23 +110,21 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
   }
 
-  private String getAudience(OAuth2Authentication authentication) {
-    return isRefreshTokenRequest(authentication)
-        ? getFirstNotEmptyAudience(
-            authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters())
-        : getFirstNotEmptyAudience(authentication.getOAuth2Request().getRequestParameters());
+  protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
+    if (!isNull(authentication.getOAuth2Request().getRefreshTokenRequest())) {
+      final String audience = authentication.getOAuth2Request()
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(AUD_KEY);
+      return !isNullOrEmpty(audience);
+    }
+    return false;
   }
 
-  protected boolean isRefreshTokenRequest(OAuth2Authentication authentication) {
-    return !isNull(authentication.getOAuth2Request().getRefreshTokenRequest());
-  }
-
-  private String getFirstNotEmptyAudience(Map<String, String> params) {
-    return AUD_KEYS.stream()
-      .map(params::get)
-      .filter(value -> !isNullOrEmpty(value))
-      .findFirst()
-      .orElse(null);
+  protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
+    final String audience =
+        (String) authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
+    return !isNullOrEmpty(audience);
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
@@ -151,7 +147,18 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
-    String audience = getAudience(authentication);
+    String audience = null;
+
+    if (hasAudienceRequest(authentication)) {
+      audience = (String) authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
+    }
+
+    if (hasRefreshTokenAudienceRequest(authentication)) {
+      audience = authentication.getOAuth2Request()
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(AUD_KEY);
+    }
 
     if (!isNullOrEmpty(audience)) {
       builder.audience(splitter.splitToList(audience));

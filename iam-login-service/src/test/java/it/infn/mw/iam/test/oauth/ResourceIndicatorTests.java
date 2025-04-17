@@ -642,6 +642,44 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  public void testFilteredResourceIndicatorWithAudRequestRefreshTokenFlow() throws Exception {
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", "openid profile offline_access")
+        .param("resource", "https://example1.org https://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+
+    tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("audience", "https://example1.org https://example3.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience(), hasSize(1));
+    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+  }
+
+  @Test
   public void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
@@ -823,7 +861,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
-  public void testEmptyResourceIndicatorRequestDevideCodeFlow() throws Exception {
+  public void testEmptyResourceIndicatorTokenRequestDevideCodeFlow() throws Exception {
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
@@ -859,6 +897,37 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     assertThat(claims.getAudience().size(), equalTo(1));
     assertThat(claims.getAudience(), contains("http://example.org"));
+
+  }
+
+  @Test
+  public void testEmptyResourceIndicatorDeviceCodeRequest() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    approveDeviceCode(userCode);
+
+    mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", deviceCode)
+            .param("resource", "http://example.org"))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("invalid_target"))
+      .andExpect(jsonPath("$.error_description")
+        .value("The requested resource was not originally granted"));
 
   }
 
@@ -929,6 +998,48 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
             .param("grant_type", DEVICE_CODE_GRANT_TYPE)
             .param("device_code", deviceCode)
             .param("resource", "http://example1.org http://example3.com"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
+
+    String accessToken = tokenResponseJson.get("access_token").asText();
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertNotNull(claims.getAudience());
+    assertThat(claims.getAudience().size(), equalTo(1));
+    assertThat(claims.getAudience(), contains("http://example1.org"));
+
+  }
+
+  @Test
+  public void testFilteredResourceIndicatorWithAudRequestDevideCodeFlow() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile")
+        .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    approveDeviceCode(userCode);
+
+    String tokenResponse = mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", deviceCode)
+            .param("audience", "http://example1.org http://example3.com"))
       .andExpect(status().isOk())
       .andReturn()
       .getResponse()
@@ -1068,8 +1179,8 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     mvc
       .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("client_secret", DEVICE_CODE_CLIENT_SECRET)
         .param("refresh_token", refreshToken)
         .param("resource", "https://example3.org"))
       .andExpect(status().isBadRequest())
@@ -1080,11 +1191,65 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   }
 
   @Test
+  public void testResourceIndicatorRTBoundToDeviceRequestParameters() throws Exception {
+    String response = mvc
+      .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
+        .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .param("client_id", "device-code-client")
+        .param("scope", "openid profile offline_access")
+        .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    JsonNode responseJson = mapper.readTree(response);
+    String userCode = responseJson.get("user_code").asText();
+    String deviceCode = responseJson.get("device_code").asText();
+
+    approveDeviceCode(userCode);
+
+    String tokenResponse = mvc
+      .perform(
+          post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("device_code", deviceCode))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponse).get("refresh_token").asText();
+
+    tokenResponse = mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", DEVICE_CODE_CLIENT_ID)
+        .param("client_secret", DEVICE_CODE_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param("resource", "http://example1.org http://example2.org"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    responseJson = mapper.readTree(tokenResponse);
+    String accessToken = responseJson.get("access_token").asText();
+
+    JWT token = JWTParser.parse(accessToken);
+    JWTClaimsSet claims = token.getJWTClaimsSet();
+
+    assertThat(claims.getAudience(), hasSize(2));
+    assertThat(claims.getAudience(), hasItem("http://example1.org"));
+    assertThat(claims.getAudience(), hasItem("http://example2.org"));
+
+  }
+
+  @Test
   public void testAuthzCodeEmptyTokenRequestResourceIndicator() throws Exception {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .with(httpBasic("client", TEST_CLIENT_SECRET))
         .queryParam("response_type", "code")
         .queryParam("client_id", TEST_CLIENT_ID)
         .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
@@ -1116,7 +1281,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .with(httpBasic("client", TEST_CLIENT_SECRET))
         .queryParam("response_type", "code")
         .queryParam("client_id", TEST_CLIENT_ID)
         .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
@@ -1174,7 +1339,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     MockHttpSession session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .with(httpBasic("client", TEST_CLIENT_SECRET))
         .queryParam("response_type", "code")
         .queryParam("client_id", TEST_CLIENT_ID)
         .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
@@ -1205,7 +1370,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
     session = (MockHttpSession) mvc
       .perform(get("http://localhost:8080/authorize").contentType(APPLICATION_FORM_URLENCODED)
-        .with(httpBasic("client", DEVICE_CODE_CLIENT_SECRET))
+        .with(httpBasic("client", TEST_CLIENT_SECRET))
         .queryParam("response_type", "code")
         .queryParam("client_id", TEST_CLIENT_ID)
         .queryParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)

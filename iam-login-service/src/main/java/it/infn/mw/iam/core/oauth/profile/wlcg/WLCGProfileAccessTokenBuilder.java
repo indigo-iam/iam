@@ -15,15 +15,14 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper.ATTR_SCOPE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
@@ -121,29 +120,9 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   }
 
   private void addAudience(Builder builder, OAuth2Authentication authentication) {
-    if (!hasAnyAudience(authentication)) {
+    if (!builder.getClaims().containsKey(AUDIENCE)) {
       builder.audience(ALL_AUDIENCES_VALUE);
     }
-  }
-
-  private boolean hasAnyAudience(OAuth2Authentication authentication) {
-    return hasAudienceRequest(authentication) || (isRefreshTokenRequest(authentication)
-        && hasRefreshTokenAudienceRequest(authentication));
-  }
-
-  private boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
-    return hasAnyAudienceRequest(
-        authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters());
-  }
-
-  private boolean hasAudienceRequest(OAuth2Authentication authentication) {
-    return hasAnyAudienceRequest(authentication.getOAuth2Request().getRequestParameters());
-  }
-
-  private boolean hasAnyAudienceRequest(Map<String, String> params) {
-    final Set<String> audience =
-        AUD_KEYS.stream().filter(params::containsKey).collect(Collectors.toSet());
-    return !audience.isEmpty();
   }
 
 }
