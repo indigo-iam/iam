@@ -126,6 +126,38 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
       .andExpect(view().name("deviceApproved"));
   }
 
+  private String getAccessTokenWithRTAfterPasswordFlow(String resourceParamPasswordFlow,
+      String resourceParamRTFlow, String resourceValuePasswordFlow, String resourceValueRTFlow)
+      throws Exception {
+    String tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "password")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", "openid profile offline_access")
+        .param(resourceParamPasswordFlow, resourceValuePasswordFlow))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+
+    tokenResponseJson = mvc
+      .perform(post("/token").param("grant_type", "refresh_token")
+        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
+        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
+        .param("refresh_token", refreshToken)
+        .param(resourceParamRTFlow, resourceValueRTFlow))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    return mapper.readTree(tokenResponseJson).get("access_token").asText();
+  }
+
   @Test
   public void testResourceIndicatorRequestPasswordFlow() throws Exception {
 
@@ -488,72 +520,26 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   public void testResourceIndicatorRequestRefreshTokenFlow() throws Exception {
-    String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access")
-        .param("resource", "https://example.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
 
-    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+    String resource = "https://example.org";
 
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken)
-        .param("resource", "https://example.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
     assertThat(claims.getAudience().size(), equalTo(1));
-    assertThat(claims.getAudience(), hasItem("https://example.org"));
+    assertThat(claims.getAudience(), hasItem(resource));
 
   }
 
   @Test
-  public void testMultibleResourceIndicatorRequestRefreshTokenFlow() throws Exception {
-    String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access")
-        .param("resource", "https://example1.org https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
+  public void testMultipleResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
-    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
+    String resource = "https://example1.org https://example2.org";
 
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken)
-        .param("resource", "https://example1.org https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource", resource, resource);
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -567,33 +553,9 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   public void testNarrowerResourceIndicatorRequestRefreshTokenFlow() throws Exception {
-    String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access")
-        .param("resource", "https://example1.org https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
 
-    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
-
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken)
-        .param("resource", "https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource",
+        "https://example1.org https://example2.org", "https://example2.org");
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -605,33 +567,9 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   public void testFilteredResourceIndicatorRequestRefreshTokenFlow() throws Exception {
-    String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access")
-        .param("resource", "https://example1.org https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
 
-    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
-
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken)
-        .param("resource", "https://example1.org https://example3.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource",
+        "https://example1.org https://example2.org", "https://example1.org https://example3.org");
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -643,33 +581,9 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   public void testFilteredResourceIndicatorWithAudRequestRefreshTokenFlow() throws Exception {
-    String tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "password")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", "openid profile offline_access")
-        .param("resource", "https://example1.org https://example2.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
 
-    String refreshToken = mapper.readTree(tokenResponseJson).get("refresh_token").asText();
-
-    tokenResponseJson = mvc
-      .perform(post("/token").param("grant_type", "refresh_token")
-        .param("client_id", PASSWORD_GRANT_CLIENT_ID)
-        .param("client_secret", PASSWORD_GRANT_CLIENT_SECRET)
-        .param("refresh_token", refreshToken)
-        .param("audience", "https://example1.org https://example3.org"))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    String accessToken = mapper.readTree(tokenResponseJson).get("access_token").asText();
+    String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "audience",
+        "https://example1.org https://example2.org", "https://example1.org https://example3.org");
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -681,6 +595,7 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
 
   @Test
   public void testResourceIndicatorNotOriginallyGrantedRTAfterPasswordFlow() throws Exception {
+    
     String tokenResponseJson = mvc
       .perform(post("/token").param("grant_type", "password")
         .param("client_id", PASSWORD_GRANT_CLIENT_ID)

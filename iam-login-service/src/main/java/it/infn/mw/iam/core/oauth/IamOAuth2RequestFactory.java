@@ -64,7 +64,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public static final Logger LOG = LoggerFactory.getLogger(IamOAuth2RequestFactory.class);
 
   public static final String RESOURCE = "resource";
-  public static final List<String> AUD_KEYS = Arrays.asList(RESOURCE, "aud", "audience");
+  protected static final List<String> AUD_KEYS = Arrays.asList(RESOURCE, "aud", "audience");
   public static final String AUD_KEY = "aud";
 
   public static final String PASSWORD_GRANT = "password";
@@ -114,9 +114,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     validateAndUpdateAudienceRequest(inputParams);
 
-    AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
-
-    return authzRequest;
+    return super.createAuthorizationRequest(inputParams);
 
   }
 

@@ -122,8 +122,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
-    final String audience =
-        (String) authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
+    final String audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     return !isNullOrEmpty(audience);
   }
 
@@ -150,7 +149,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     String audience = null;
 
     if (hasAudienceRequest(authentication)) {
-      audience = (String) authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
+      audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
     if (hasRefreshTokenAudienceRequest(authentication)) {

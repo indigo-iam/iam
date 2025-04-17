@@ -83,7 +83,7 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       }
     }
 
-    addAudience(builder, authentication);
+    addAudience(builder);
 
     return builder.build();
   }
@@ -119,7 +119,7 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     }
   }
 
-  private void addAudience(Builder builder, OAuth2Authentication authentication) {
+  private void addAudience(Builder builder) {
     if (!builder.getClaims().containsKey(AUDIENCE)) {
       builder.audience(ALL_AUDIENCES_VALUE);
     }
