@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.ext_authn.oidc;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -116,6 +117,62 @@ public class OidcJitAccountProvisioningTests {
     verify(accountService).createAccount(any(IamAccount.class));
   }
 
+  @Test
+  public void assignPreferredUsernameAsUsernameIfReturned() {
+    OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
+    when(token.getIssuer()).thenReturn("https://trusted-idp.com");
+    when(token.getSub()).thenReturn("sub123");
+
+    UserInfo userInfo = mock(UserInfo.class);
+    when(token.getUserInfo()).thenReturn(userInfo);
+    when(userInfo.getGivenName()).thenReturn("John");
+    when(userInfo.getFamilyName()).thenReturn("Doe");
+    when(userInfo.getEmail()).thenReturn("john.doe@example.com");
+    when(userInfo.getPreferredUsername()).thenReturn("johndoe");
+
+    when(repo.findByOidcId("https://trusted-idp.com", "sub123")).thenReturn(Optional.empty());
+    when(repo.findByUsername("johndoe")).thenReturn(Optional.empty());
+
+    doAnswer(invocation -> {
+      IamAccount account = invocation.getArgument(0);
+      account.setPassword("securePassword123");
+      assertEquals("johndoe", account.getUsername());
+      return account;
+    }).when(accountService).createAccount(any(IamAccount.class));
+
+    Object user = service.loadUserByOIDC(token);
+
+    assertNotNull(user);
+    verify(accountService).createAccount(any(IamAccount.class));
+  }
+
+  @Test
+  public void assignRandomUUIDAsUsernameIfPreferredUsernameConflicts() {
+    OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
+    when(token.getIssuer()).thenReturn("https://trusted-idp.com");
+    when(token.getSub()).thenReturn("sub123");
+
+    UserInfo userInfo = mock(UserInfo.class);
+    when(token.getUserInfo()).thenReturn(userInfo);
+    when(userInfo.getGivenName()).thenReturn("John");
+    when(userInfo.getFamilyName()).thenReturn("Doe");
+    when(userInfo.getEmail()).thenReturn("john.doe@example.com");
+    when(userInfo.getPreferredUsername()).thenReturn("johndoe");
+
+    when(repo.findByOidcId("https://trusted-idp.com", "sub123")).thenReturn(Optional.empty());
+    when(repo.findByUsername("johndoe")).thenReturn(Optional.of(mock(IamAccount.class)));
+
+    doAnswer(invocation -> {
+      IamAccount account = invocation.getArgument(0);
+      account.setPassword("securePassword123");
+      return account;
+    }).when(accountService).createAccount(any(IamAccount.class));
+
+    Object user = service.loadUserByOIDC(token);
+
+    assertNotNull(user);
+    verify(accountService).createAccount(any(IamAccount.class));
+  }
 
   @Test
   public void loadUserByOIDCUntrustedIdpThrowsException() {

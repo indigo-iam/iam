@@ -96,10 +96,9 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
 
   private String generateUniqueUsername(String preferredUsername,
       IamAccountRepository iamAccountRepository) {
-    if (preferredUsername != null && !preferredUsername.isEmpty()) {
-      if (iamAccountRepository.findByUsername(preferredUsername).isEmpty()) {
-        return preferredUsername;
-      }
+    if (preferredUsername != null && !preferredUsername.isEmpty()
+        && iamAccountRepository.findByUsername(preferredUsername).isEmpty()) {
+      return preferredUsername;
     }
     return UUID.randomUUID().toString();
   }
