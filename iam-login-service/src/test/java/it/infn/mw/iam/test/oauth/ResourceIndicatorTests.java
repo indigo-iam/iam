@@ -569,28 +569,28 @@ public class ResourceIndicatorTests implements DeviceCodeTestsConstants {
   public void testFilteredResourceIndicatorRequestRefreshTokenFlow() throws Exception {
 
     String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "resource",
-        "https://example1.org https://example2.org", "https://example1.org https://example3.org");
+        "https://storm.org https://dcache.org", "https://storm.org https://rucio.org");
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
     assertThat(claims.getAudience(), hasSize(1));
-    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+    assertThat(claims.getAudience(), hasItem("https://storm.org"));
   }
 
   @Test
   public void testFilteredResourceIndicatorWithAudRequestRefreshTokenFlow() throws Exception {
 
     String accessToken = getAccessTokenWithRTAfterPasswordFlow("resource", "audience",
-        "https://example1.org https://example2.org", "https://example1.org https://example3.org");
+        "https://1.org https://2.org", "https://1.org https://3.org");
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
 
     assertNotNull(claims.getAudience());
     assertThat(claims.getAudience(), hasSize(1));
-    assertThat(claims.getAudience(), hasItem("https://example1.org"));
+    assertThat(claims.getAudience(), hasItem("https://1.org"));
   }
 
   @Test

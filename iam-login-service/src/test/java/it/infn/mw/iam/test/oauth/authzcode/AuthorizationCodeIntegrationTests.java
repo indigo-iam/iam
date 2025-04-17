@@ -42,8 +42,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -88,7 +86,7 @@ public class AuthorizationCodeIntegrationTests {
 
   private ValidatableResponse getTokenResponseWithAudience(String resourceParamAuthz,
       String resourceParamToken, String resourceValueAuthz, String resourceValueToken)
-      throws JsonMappingException, JsonProcessingException {
+      throws IOException, ParseException {
 
     // @formatter:off
       ValidatableResponse resp1 = RestAssured.given()
@@ -157,23 +155,19 @@ public class AuthorizationCodeIntegrationTests {
       .get("code")
       .get(0);
 
-    // @formatter:off
-      ValidatableResponse resp3= RestAssured.given()
-        .formParam("grant_type", "authorization_code")
-        .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
-        .formParam("code", authzCode)
-        .formParam("state", "1")
-        .formParam(resourceParamToken, resourceValueToken)
-        .auth()
-          .preemptive()
-            .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
+    return RestAssured.given()
+      .formParam("grant_type", "authorization_code")
+      .formParam("redirect_uri", TEST_CLIENT_REDIRECT_URI)
+      .formParam("code", authzCode)
+      .formParam("state", "1")
+      .formParam(resourceParamToken, resourceValueToken)
+      .auth()
+      .preemptive()
+      .basic(TEST_CLIENT_ID, TEST_CLIENT_SECRET)
       .when()
-        .post(tokenUrl)
+      .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
-      // @formatter:on
-
-    return resp3;
 
   }
 
@@ -424,14 +418,14 @@ public class AuthorizationCodeIntegrationTests {
   public void testFilteredResourceIndicator() throws IOException, ParseException {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "resource",
-        "http://example1.org http://example2.org", "http://example1.org http://example3.org");
+        "http://storm.org http://dcache.org", "http://storm.org http://rucio.org");
 
     String accessToken =
         mapper.readTree(tokenEndpointResp.extract().body().asString()).get("access_token").asText();
     JWT atJwt = JWTParser.parse(accessToken);
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://storm.org"));
 
   }
 
@@ -439,14 +433,14 @@ public class AuthorizationCodeIntegrationTests {
   public void testFilteredResourceIndicatorWithAudRequest() throws IOException, ParseException {
 
     ValidatableResponse tokenEndpointResp = getTokenResponseWithAudience("resource", "audience",
-        "http://example1.org http://example2.org", "http://example1.org http://example3.org");
+        "http://1.org http://2.org", "http://1.org http://3.org");
 
     String accessToken =
         mapper.readTree(tokenEndpointResp.extract().body().asString()).get("access_token").asText();
     JWT atJwt = JWTParser.parse(accessToken);
 
     assertThat(atJwt.getJWTClaimsSet().getAudience(), hasSize(1));
-    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://example1.org"));
+    assertThat(atJwt.getJWTClaimsSet().getAudience(), hasItem("http://1.org"));
 
   }
 
