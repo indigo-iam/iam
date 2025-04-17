@@ -62,7 +62,8 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
     checkRequiredClaims(token);
 
     IamAccount newAccount = IamAccount.newAccount();
-    newAccount.setUsername(UUID.randomUUID().toString());
+    String username = generateUniqueUsername(token.getUserInfo().getPreferredUsername(), repo);
+    newAccount.setUsername(username);
     newAccount.setProvisioned(true);
 
     IamOidcId oidcId = new IamOidcId();
@@ -91,5 +92,15 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
     } else {
       return buildUserFromIamAccount(provisionAccount(token));
     }
+  }
+
+  private String generateUniqueUsername(String preferredUsername,
+      IamAccountRepository iamAccountRepository) {
+    if (preferredUsername != null && !preferredUsername.isEmpty()) {
+      if (iamAccountRepository.findByUsername(preferredUsername).isEmpty()) {
+        return preferredUsername;
+      }
+    }
+    return UUID.randomUUID().toString();
   }
 }
