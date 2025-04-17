@@ -19,6 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -28,6 +31,8 @@ import com.google.gson.JsonObject;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserInfoResponse {
+
+  private static final Logger LOG = LoggerFactory.getLogger(UserInfoResponse.class);
 
   private String sub;
 
@@ -86,7 +91,7 @@ public class UserInfoResponse {
             this.additionalFields.put(key,
                 jacksonMapper.readValue(json.get(key).toString(), Object.class));
           } catch (Exception e) {
-            // Skip on exception
+            LOG.warn("Skipping [key: '{}', value: {}]: {}", key, json.get(key), e.getMessage());
           }
         });
       return this;
