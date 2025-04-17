@@ -62,7 +62,7 @@ public class AarcJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
 
     idClaims.claim("voperson_id", account.getUserInfo().getSub());
-    
+
   }
 
 }

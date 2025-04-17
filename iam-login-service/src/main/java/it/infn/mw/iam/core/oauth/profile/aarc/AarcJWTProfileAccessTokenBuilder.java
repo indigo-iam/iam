@@ -62,11 +62,7 @@ public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       builder.claim("voperson_id", userInfo.getSub());
     }
 
-    
-    
-    
-    
-    
+
 
     return builder.build();
   }

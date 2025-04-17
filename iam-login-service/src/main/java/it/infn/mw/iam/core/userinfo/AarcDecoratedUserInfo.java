@@ -97,12 +97,12 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
   }
 
   @Override
-  public void setVoPersonId(String vopersonId){
+  public void setVoPersonId(String vopersonId) {
     this.vopersonId = vopersonId;
   }
 
   @Override
-  public String getVoPersonId(){
+  public String getVoPersonId() {
     return this.vopersonId;
   }
 

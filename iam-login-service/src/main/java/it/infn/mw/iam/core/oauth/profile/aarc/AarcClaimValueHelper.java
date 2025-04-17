@@ -30,8 +30,8 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @Component
 public class AarcClaimValueHelper {
 
-  public static final Set<String> ADDITIONAL_CLAIMS =
-      Set.of("eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance", "entitlements");
+  public static final Set<String> ADDITIONAL_CLAIMS = Set.of("eduperson_scoped_affiliation",
+      "eduperson_entitlement", "eduperson_assurance", "entitlements");
 
   @Value("${iam.aarc-profile.affiliation-scope}")
   String affiliationScope;
@@ -64,7 +64,7 @@ public class AarcClaimValueHelper {
         return resolveLOA();
 
       case "voperson_id":
-        return String.format("%s",info.getSub());
+        return String.format("%s", info.getSub());
 
       default:
         return null;
@@ -82,9 +82,11 @@ public class AarcClaimValueHelper {
     String encodedGroupName = group.getName().replaceAll("/", ":");
     String encodedSubnamespace = "";
     if (!Strings.isNullOrEmpty(urnSubnamespaces)) {
-      encodedSubnamespace = String.format(":%s", String.join(":", urnSubnamespaces.trim().split(" ")));
+      encodedSubnamespace =
+          String.format(":%s", String.join(":", urnSubnamespaces.trim().split(" ")));
     }
-    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace, encodedGroupName);
+    return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace,
+        encodedGroupName);
   }
 
   public Set<String> resolveLOA() {

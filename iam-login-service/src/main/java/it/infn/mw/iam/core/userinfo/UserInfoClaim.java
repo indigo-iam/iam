@@ -16,9 +16,6 @@
 package it.infn.mw.iam.core.userinfo;
 
 
-// the voperson_id needs to be added here
-// not sure, but it is a claim that could be made
-
 public enum UserInfoClaim {
   ATTR("attr"),
   SUB("sub"),
