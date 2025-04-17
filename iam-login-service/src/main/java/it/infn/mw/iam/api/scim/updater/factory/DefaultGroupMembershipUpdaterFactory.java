@@ -38,7 +38,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-
 public class DefaultGroupMembershipUpdaterFactory
     implements AccountUpdaterFactory<IamGroup, List<ScimMemberRef>> {
 
@@ -46,12 +45,12 @@ public class DefaultGroupMembershipUpdaterFactory
   final ScimResourceLocationProvider locationProvider;
   final IamAccountRepository accountRepo;
 
-
-  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService, ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
+  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService,
+      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
     this.accountService = accountService;
     this.locationProvider = locationProvider;
     this.accountRepo = accountRepo;
-    }
+  }
 
   public List<AccountUpdater> getUpdatersForPatchOperation(IamGroup group,
       ScimPatchOperation<List<ScimMemberRef>> op) {
@@ -101,12 +100,10 @@ public class DefaultGroupMembershipUpdaterFactory
       IamGroup group) {
 
     for (IamAccount memberToRemove : membersToRemove) {
-      GroupMembershipManagement mgmt =
-          new GroupMembershipManagement(memberToRemove, accountService);
+      GroupMembershipManagement mgmt = new GroupMembershipManagement(memberToRemove, accountService);
       updaters.add(mgmt.removeFromGroup(group));
     }
   }
-
 
   private List<IamAccount> memberRefToAccountConverter(List<ScimMemberRef> members) {
 
@@ -117,7 +114,7 @@ public class DefaultGroupMembershipUpdaterFactory
     for (ScimMemberRef memberRef : members) {
       String uuid = memberRef.getValue();
       IamAccount account = accountService.findByUuid(uuid)
-        .orElseThrow(() -> new ScimResourceNotFoundException("User UUID " + uuid + " not found"));
+          .orElseThrow(() -> new ScimResourceNotFoundException("User UUID " + uuid + " not found"));
       newAccounts.add(account);
     }
     return newAccounts;

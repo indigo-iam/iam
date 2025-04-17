@@ -42,10 +42,9 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockOAuthUser(clientId = "scim-client-rw", scopes = {"scim:read", "scim:write"})
+@WithMockOAuthUser(clientId = "scim-client-rw", scopes = { "scim:read", "scim:write" })
 public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils {
 
   @Autowired
@@ -141,7 +140,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
     assertIsGroupMember(lennon, engineers);
   }
 
-    @Test
+  @Test
   public void testGroupPatchReplaceMembersWithFakeUser() throws Exception {
 
     List<ScimUser> members = new ArrayList<ScimUser>();
@@ -154,13 +153,13 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(members);
 
     mvc.perform(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNotFound());
+        .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNotFound());
 
     mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
-      .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
-      .andExpect(jsonPath("$.members").doesNotExist());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", equalTo(engineers.getId())))
+        .andExpect(jsonPath("$.displayName", equalTo(engineers.getDisplayName())))
+        .andExpect(jsonPath("$.members").doesNotExist());
   }
 
   @Test
@@ -185,7 +184,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
     //@formatter:on
 
     ScimGroup engineersAfterUpdate = getGroup(engineers.getMeta().getLocation());
-    
+
     assertIsNotGroupMember(lennon, engineersAfterUpdate);
     assertIsNotGroupMember(kennedy, engineersAfterUpdate);
     assertIsNotGroupMember(lincoln, engineersAfterUpdate);
