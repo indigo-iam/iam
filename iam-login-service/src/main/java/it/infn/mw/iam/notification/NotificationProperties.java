@@ -53,6 +53,8 @@ public class NotificationProperties {
   private String adminAddress;
 
   private Map<String, String> subject;
+  
+  private String subjectPrefix;
 
   private AdminNotificationPolicy adminNotificationPolicy = NOTIFY_ADDRESS;
 
@@ -105,6 +107,14 @@ public class NotificationProperties {
 
   public void setSubject(Map<String, String> subject) {
     this.subject = subject;
+  }
+  
+  public String getSubjectPrefix() {
+    return subjectPrefix;
+  }
+  
+  public void setSubjectPrefix(String subjectPrefix) {
+    this.subjectPrefix = subjectPrefix;
   }
 
   public AdminNotificationPolicy getAdminNotificationPolicy() {

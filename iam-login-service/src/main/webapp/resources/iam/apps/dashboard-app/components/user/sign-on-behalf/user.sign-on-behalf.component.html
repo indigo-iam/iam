@@ -15,7 +15,7 @@
     limitations under the License.
 
 -->
-<button ng-if="$ctrl.aupIsEnabled() && !$ctrl.isMe()"
+<button ng-if="$ctrl.aupIsEnabled() && !$ctrl.indigoUser().serviceAccount && !$ctrl.isMe()"
     class="btn btn-success btn-block"
     style="margin-top: 5px" 
     ng-click="$ctrl.openSignAupOnBehalfModal()" 

@@ -375,6 +375,8 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
       .andExpect(status().isOk());
     mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test").roles("USER")))
       .andExpect(status().isOk());
+    mvc.perform(get("/iam/aup/signature/" + TEST_USER_UUID).with(user("test_100").roles("READER")))
+      .andExpect(status().isOk());
     mvc
       .perform(
           get("/iam/aup/signature/" + TEST_USER_UUID).with(user("admin").roles("USER", "ADMIN")))
@@ -436,6 +438,18 @@ public class AupSignatureIntegrationTests extends AupTestSupport {
 
     mvc.perform(get("/iam/aup/signature/{accountId}", TEST_USER_UUID)).andExpect(status().isOk());
 
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void testSignAupThrowExceptionForServiceAccount() throws Exception {
+       
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    testAccount.setServiceAccount(true);
+    accountRepo.save(testAccount);
+
+    mvc.perform(post("/iam/aup/sign"))
+    .andExpect(status().isMethodNotAllowed());
   }
 
 }

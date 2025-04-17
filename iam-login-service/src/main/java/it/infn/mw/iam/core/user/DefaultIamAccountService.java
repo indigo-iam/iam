@@ -461,8 +461,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
     Date previousEndTime = account.getEndTime();
     if (ObjectUtils.notEqual(previousEndTime, endTime)) {
+      deleteLabel(account, IamLabel.builder().name(LIFECYCLE_STATUS_LABEL).build());
       account.setEndTime(endTime);
-      account.removeLabelByName(LIFECYCLE_STATUS_LABEL);
       account.touch();
       accountRepo.save(account);
       eventPublisher.publishEvent(new AccountEndTimeUpdatedEvent(this, account, previousEndTime,

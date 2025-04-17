@@ -57,6 +57,7 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureUpdateError;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -127,7 +128,7 @@ public class AupSignatureController {
   }
 
   @GetMapping(value = "/iam/aup/signature/{accountId}")
-  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM') or #iam.isUser(#accountId)")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER') or #iam.isUser(#accountId)")
   public AupSignatureDTO getSignatureForAccount(@PathVariable String accountId)
       throws AccountNotFoundException {
 
@@ -146,7 +147,7 @@ public class AupSignatureController {
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AupSignatureDTO updateSignatureForAccount(@PathVariable String accountId,
       @RequestBody(required = false) @Validated AupSignaturePatchRequestDTO dto,
-      Authentication authentication) throws AccountNotFoundException {
+      Authentication authentication) throws AccountNotFoundException, IamAupSignatureUpdateError {
 
     Optional<IamAccount> updaterAccount = accountUtils.getAuthenticatedUserAccount();
 
@@ -178,7 +179,7 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteSignatureForAccount(@PathVariable String accountId,
-      Authentication authentication) throws AccountNotFoundException {
+      Authentication authentication) throws AccountNotFoundException, IamAupSignatureUpdateError {
 
     Optional<IamAccount> deleterAccount = accountUtils.getAuthenticatedUserAccount();
     IamAccount signatureAccount = accountUtils.getByAccountId(accountId)
@@ -223,6 +224,12 @@ public class AupSignatureController {
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
   @ExceptionHandler(AupNotFoundError.class)
   public ErrorDTO aupNotFoundError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(value = HttpStatus.METHOD_NOT_ALLOWED)
+  @ExceptionHandler(IamAupSignatureUpdateError.class)
+  public ErrorDTO aupSignatureUpdateError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
 }

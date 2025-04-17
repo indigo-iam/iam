@@ -60,8 +60,14 @@
                             <!-- Assign/Revoke VO admin privileges -->
                             <user-privileges user="$ctrl.user"></user-privileges>
 
+                            <!-- Assign/Revoke monitoring privileges -->
+                            <user-monitoring-privileges user="$ctrl.user"></user-monitoring-privileges>
+
                             <!-- Change membership end time -->
                             <user-end-time user="$ctrl.user"></user-end-time>
+
+                            <!-- Set/Revoke as service account -->
+                            <user-service-account user="$ctrl.user"></user-service-account>
 
                             <!-- Sign On Behalf into user page when you're an admin -->
                             <user-sign-on-behalf user="$ctrl.user" aup="$ctrl.aup"></user-sign-on-behalf>
@@ -83,12 +89,13 @@
                     </div>
                 </div>
             </section>
-            <section ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
+            <section ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin() && !$ctrl.userIsReader" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
                 <user-groups user="$ctrl.user"></user-groups>
-                <user-pending-requests user="$ctrl.user"></user-pending-requests>
+                <user-pending-requests ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-pending-requests>
                 <user-linked-accounts user="$ctrl.user"></user-linked-accounts>
                 <user-x509 user="$ctrl.user"></user-x509>
-                <user-ssh-keys user="$ctrl.user"></user-ssh-keys>
+                <user-cert-link-pending-requests user="$ctrl.user"></user-cert-link-pending-requests>
+                <user-ssh-keys ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-ssh-keys>
                 <user-attributes user="$ctrl.user" attributes="$ctrl.attrs"></user-attributes>
             </section>
         </div>

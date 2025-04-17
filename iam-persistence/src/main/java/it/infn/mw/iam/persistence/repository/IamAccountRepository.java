@@ -106,6 +106,9 @@ public interface IamAccountRepository
 
   @Query("select a from IamAccount a join a.authorities auth where auth.authority = :authority")
   List<IamAccount> findByAuthority(@Param("authority") String authority);
+  
+  @Query("select a from IamAccount a join a.authorities auth where lower(auth.authority) = lower(:authority) order by a.username ASC")
+  Page<IamAccount> findByAuthority(@Param("authority") String authority, Pageable op);
 
   @Query("select a from IamAccount a where a.provisioned = true and a.lastLoginTime < :timestamp")
   List<IamAccount> findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(
@@ -140,6 +143,9 @@ public interface IamAccountRepository
 
   @Query("select a from IamAccount a where a.active = TRUE")
   Page<IamAccount> findActiveAccounts(Pageable op);
+
+  @Query("select count(a) from IamAccount a where a.active = TRUE")
+  long countActiveAccounts();
 
   @Modifying
   @Query("delete from IamAccountGroupMembership")

@@ -121,6 +121,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/authenticator-app.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/monitoring-privileges.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/edit-password.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/user-mfa.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/disable-mfa.controller.js"></script>
@@ -140,12 +141,15 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/user.edit.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/edit/edit-user.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/status/user.status.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/service-account/user.service.account.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/mfa/user.mfa.component.js"></script>
     <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/disable-mfa/user.disable-mfa.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/privileges/user.privileges.component.js"></script>
+  <script type="text/javascript"
+    src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/monitoring-privileges/user.monitoring-privileges.component.js"></script>
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/password/user.password.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/user/groups/user.groups.component.js"></script>
