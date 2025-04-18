@@ -68,6 +68,7 @@ public class EndpointsTestUtils {
     private String username;
     private String password;
     private String audience;
+    private String resource;
 
     public AccessTokenGetter clientId(String clientId) {
       this.clientId = clientId;
@@ -104,11 +105,14 @@ public class EndpointsTestUtils {
       return this;
     }
 
+    public AccessTokenGetter resource(String resource) {
+      this.resource = resource;
+      return this;
+    }
+
     public String performSuccessfulTokenRequest() throws Exception {
 
-      return performTokenRequest(200)
-        .getResponse()
-        .getContentAsString();
+      return performTokenRequest(200).getResponse().getContentAsString();
     }
 
     public MvcResult performTokenRequest(int statusCode) throws Exception {
@@ -128,9 +132,11 @@ public class EndpointsTestUtils {
         req.param("aud", audience);
       }
 
-      return mvc.perform(req)
-        .andExpect(status().is(statusCode))
-        .andReturn();
+      if (resource != null) {
+        req.param("resource", resource);
+      }
+
+      return mvc.perform(req).andExpect(status().is(statusCode)).andReturn();
     }
 
     public DefaultOAuth2AccessToken getTokenResponseObject() throws Exception {

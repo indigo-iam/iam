@@ -1,5 +1,7 @@
 package it.infn.mw.tc;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,12 +29,9 @@ public class IamAuthRequestUrlBuilder implements AuthRequestUrlBuilder {
       uriBuilder.addParameter("response_type", "code");
       uriBuilder.addParameter("client_id", clientConfig.getClientId());
 
-      if (options.get("scope") != null) {
-        uriBuilder.addParameter("scope", options.get("scope"));
-      } else {
+      if (isNullOrEmpty(options.get("scope"))) {
         uriBuilder.addParameter("scope", Joiner.on(" ").join(clientConfig.getScope()));
       }
-
 
       uriBuilder.addParameter("redirect_uri", redirectUri);
 

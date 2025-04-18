@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVAL_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_DEVICE_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.DEVICE_APPROVED_PAGE;
@@ -105,8 +107,8 @@ public class IamDeviceEndpointController {
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public String requestDeviceCode(@RequestParam("client_id") String clientId,
-      @RequestParam(name = "scope", required = false) String scope, @RequestParam Map<String, String> parameters,
-      ModelMap model) {
+      @RequestParam(name = "scope", required = false) String scope,
+      @RequestParam Map<String, String> parameters, ModelMap model) {
 
     if (clientId == null || clientId.isBlank()) {
       model.put(HttpCodeView.CODE, HttpStatus.BAD_REQUEST);
@@ -207,7 +209,7 @@ public class IamDeviceEndpointController {
 
     ClientDetailsEntity client = clientRepository.findByClientId(dc.getClientId())
       .orElseThrow(() -> new IllegalStateException("Stored device code client id not found"));
-    
+
     AuthorizationRequest authorizationRequest =
         oAuth2RequestFactory.createAuthorizationRequest(dc.getRequestParameters());
 
@@ -284,6 +286,7 @@ public class IamDeviceEndpointController {
       ClientDetailsEntity client) {
 
     Set<SystemScope> scopes = scopeService.fromStrings(dc.getScope());
+
     model.put("dc", dc);
     model.put("scopes", scopes);
     model.put("claims", userApprovalUtils.claimsForScopes(authn, scopes));
@@ -293,6 +296,11 @@ public class IamDeviceEndpointController {
     model.put("count", count);
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
+
+    if (dc.getAuthenticationHolder().getRequestParameters().containsKey(RESOURCE)) {
+      model.put("resources",
+          splitBySpace(dc.getAuthenticationHolder().getRequestParameters().get(RESOURCE)));
+    }
 
     // just for tests validation
     model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));

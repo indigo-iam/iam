@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
 
@@ -48,10 +49,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
-  public static final String AUDIENCE = "audience";
-  public static final String AUD_KEY = "aud";
   public static final String SCOPE_CLAIM_NAME = "scope";
-
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
   public static final String SPACE = " ";
@@ -117,14 +115,14 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       final String audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
         .getRequestParameters()
-        .get(AUDIENCE);
+        .get(AUD_KEY);
       return !isNullOrEmpty(audience);
     }
     return false;
   }
 
   protected boolean hasAudienceRequest(OAuth2Authentication authentication) {
-    final String audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
+    final String audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     return !isNullOrEmpty(audience);
   }
 
@@ -151,14 +149,14 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     String audience = null;
 
     if (hasAudienceRequest(authentication)) {
-      audience = (String) authentication.getOAuth2Request().getExtensions().get(AUD_KEY);
+      audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
         .getRequestParameters()
-        .get(AUDIENCE);
+        .get(AUD_KEY);
     }
 
     if (!isNullOrEmpty(audience)) {
@@ -171,6 +169,5 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     return builder;
   }
-
 
 }
