@@ -1,5 +1,7 @@
 package it.infn.mw.tc;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import java.io.IOException;
 import java.net.URI;
 import java.text.ParseException;
@@ -56,6 +58,7 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
   public static final Logger LOG = LoggerFactory.getLogger(IamOIDCClientFilter.class);
 
   ClientHttpRequestFactory httpRequestFactory;
+  IamClientApplicationProperties properties;
 
   // Allow for time sync issues by having a window of X seconds.
   private int timeSkewAllowance = 300;
@@ -82,11 +85,12 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
       protected ClientHttpRequest createRequest(URI url, HttpMethod method) throws IOException {
 
         ClientHttpRequest httpRequest = super.createRequest(url, method);
-        httpRequest.getHeaders().add("Authorization",
-            String.format("Basic %s",
-                Base64.encode(String.format("%s:%s",
-                    UriUtils.encodePathSegment(clientConfig.getClientId(), "UTF-8"),
-                    UriUtils.encodePathSegment(clientConfig.getClientSecret(), "UTF-8")))));
+        httpRequest.getHeaders()
+          .add("Authorization",
+              String.format("Basic %s",
+                  Base64.encode(String.format("%s:%s",
+                      UriUtils.encodePathSegment(clientConfig.getClientId(), "UTF-8"),
+                      UriUtils.encodePathSegment(clientConfig.getClientSecret(), "UTF-8")))));
         return httpRequest;
       }
     };
@@ -123,13 +127,17 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
 
     String codeVerifier = getStoredCodeVerifier(request.getSession());
     if (codeVerifier != null) {
-        form.add("code_verifier", codeVerifier);
+      form.add("code_verifier", codeVerifier);
     }
 
     String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESION_VARIABLE);
 
     if (redirectUri != null) {
       form.add("redirect_uri", redirectUri);
+    }
+
+    if (!isNullOrEmpty(properties.getClient().getResource())) {
+      form.add("resource", properties.getClient().getResource());
     }
 
     return form;
@@ -471,6 +479,14 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
   public void setHttpRequestFactory(ClientHttpRequestFactory httpRequestFactory) {
 
     this.httpRequestFactory = httpRequestFactory;
+  }
+
+  public IamClientApplicationProperties getProperties() {
+    return properties;
+  }
+
+  public void setProperties(IamClientApplicationProperties properties) {
+    this.properties = properties;
   }
 
   @Override
