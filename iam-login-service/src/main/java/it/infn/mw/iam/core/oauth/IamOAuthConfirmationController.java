@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth;
 
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.RESOURCE;
+import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.splitBySpace;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.APPROVE_AUTHZ_PAGE;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.AUTHZ_CODE_URL;
 import static it.infn.mw.iam.core.oauth.IamOauthRequestParameters.ERROR_STRING;
@@ -151,6 +153,11 @@ public class IamOAuthConfirmationController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
 
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
+    
+    if (authRequest.getRequestParameters().containsKey(RESOURCE)) {
+      model.put("resources",
+          splitBySpace(authRequest.getRequestParameters().get(RESOURCE)));
+    }
 
   }
 
