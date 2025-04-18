@@ -16,6 +16,7 @@ public class IamClientApplicationProperties {
     List<String> redirectUris;
     String scope;
     PKCEAlgorithm codeChallengeMethod;
+    String resource;
 
     public String getClientId() {
       return clientId;
@@ -55,6 +56,14 @@ public class IamClientApplicationProperties {
 
     public void setCodeChallengeMethod(PKCEAlgorithm codeChallengeMethod) {
       this.codeChallengeMethod = codeChallengeMethod;
+    }
+    
+    public String getResource() {
+      return resource;
+    }
+
+    public void setResource(String resource) {
+      this.resource = resource;
     }
   }
 

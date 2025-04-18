@@ -47,6 +47,10 @@ public class IamAuthRequestOptionsService implements AuthRequestOptionsService {
       }
 
     }
+    
+    if(!isNullOrEmpty(properties.getClient().getResource())) {
+      options.put("resource", properties.getClient().getResource());
+    }
 
     return options;
   }
