@@ -69,6 +69,7 @@ import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @Service
@@ -96,7 +97,7 @@ public class ScimUserProvisioning
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory, IamGroupRepository groupRepository) {
 
     this.accountService = accountService;
     this.accountRepository = accountRepository;
@@ -104,7 +105,7 @@ public class ScimUserProvisioning
     this.notificationFactory = notificationFactory;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator);
+        x509CertificateConverter, usernameValidator, groupRepository);
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
