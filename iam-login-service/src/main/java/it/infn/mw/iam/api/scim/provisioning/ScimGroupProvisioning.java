@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 
 import javax.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -71,7 +70,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final ScimResourceLocationProvider locationProvider;
 
-  @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
       ScimResourceLocationProvider locationProvider, Clock clock, IamAccountRepository accountRepo) {

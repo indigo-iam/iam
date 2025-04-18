@@ -34,6 +34,7 @@ import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
+import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
@@ -51,11 +52,13 @@ import it.infn.mw.iam.api.scim.updater.util.CollectionHelpers;
 import it.infn.mw.iam.api.scim.updater.util.ScimCollectionConverter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAccount, ScimUser> {
@@ -63,6 +66,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final PasswordEncoder encoder;
 
   final IamAccountRepository repo;
+  final IamGroupRepository groupRepo;
   final IamAccountService accountService;
   final OAuth2TokenEntityService tokenService;
 
@@ -77,7 +81,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
       IamAccountService accountService, OAuth2TokenEntityService tokenService,
       OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
       SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter,
-      UsernameValidator usernameValidator) {
+      UsernameValidator usernameValidator, IamGroupRepository groupRepo) {
 
     this.accountService = accountService;
     this.tokenService = tokenService;
@@ -88,6 +92,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     this.sshKeyConverter = sshKeyConverter;
     this.x509CertificateConverter = x509CertificateConverter;
     this.usernameValidator = usernameValidator;
+    this.groupRepo = groupRepo;
   }
 
   private ScimCollectionConverter<IamSshKey, ScimSshKey> sshKeyConverter(ScimUser user) {
@@ -108,12 +113,16 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private ScimCollectionConverter<IamX509Certificate, ScimX509Certificate> x509CertificateConverter(
       ScimUser user) {
-    return new ScimCollectionConverter<>(
-        user.getIndigoUser()::getCertificates, x509CertificateConverter::entityFromDto);
+    return new ScimCollectionConverter<>(user.getIndigoUser()::getCertificates,
+        x509CertificateConverter::entityFromDto);
   }
 
-  private static <T> AccountUpdater buildUpdater(AccountUpdaterBuilder<T> factory,
-      T value) {
+  private ScimCollectionConverter<IamGroup, ScimGroupRef> groupConverter(ScimUser user) {
+    return new ScimCollectionConverter<IamGroup, ScimGroupRef>(user::getGroups,
+        ref -> groupRepo.findByName(ref.getDisplay()).orElse(null));
+  }
+
+  private static <T> AccountUpdater buildUpdater(AccountUpdaterBuilder<T> factory, T value) {
     return factory.build(value);
   }
 
@@ -128,7 +137,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareAdders(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService, usernameValidator);
+    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService,
+        usernameValidator);
 
     if (user.hasName()) {
 
@@ -192,6 +202,10 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     if (user.hasPhotos()) {
       addUpdater(updaters, Objects::nonNull, user.getPhotos().get(0)::getValue, remove::picture);
     }
+
+    if (user.hasGroups()) {
+      addUpdater(updaters, CollectionHelpers::notNullOrEmpty, groupConverter(user), remove::group);
+    }
   }
 
   private void prepareReplacers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
@@ -209,7 +223,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     addUpdater(updaters, Objects::nonNull, user::getActive, replace::active);
 
     if (user.hasServiceAccountStatus()) {
-      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getServiceAccount, replace::serviceAccount); 
+      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getServiceAccount,
+          replace::serviceAccount);
     }
 
     if (user.hasEmails()) {

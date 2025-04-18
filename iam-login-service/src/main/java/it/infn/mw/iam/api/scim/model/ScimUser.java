@@ -93,8 +93,7 @@ public class ScimUser extends ScimResource {
       @JsonProperty("userType") String userType,
       @JsonProperty("preferredLanguage") String preferredLanguage,
       @JsonProperty("locale") String locale, @JsonProperty("timezone") String timezone,
-      @JsonProperty("active") Boolean active,
-      @JsonProperty("emails") List<ScimEmail> emails,
+      @JsonProperty("active") Boolean active, @JsonProperty("emails") List<ScimEmail> emails,
       @JsonProperty("addresses") List<ScimAddress> addresses,
       @JsonProperty("photos") List<ScimPhoto> photos,
       @JsonProperty("groups") Set<ScimGroupRef> groups,
@@ -216,7 +215,7 @@ public class ScimUser extends ScimResource {
 
     return active;
   }
-  
+
   public List<ScimEmail> getEmails() {
 
     return emails;
@@ -284,6 +283,10 @@ public class ScimUser extends ScimResource {
 
   public boolean hasAffiliation() {
     return indigoUser != null && indigoUser.getAffiliation() != null;
+  }
+
+  public boolean hasGroups() {
+    return groups != null && !groups.isEmpty();
   }
 
   public static Builder builder(String username) {
