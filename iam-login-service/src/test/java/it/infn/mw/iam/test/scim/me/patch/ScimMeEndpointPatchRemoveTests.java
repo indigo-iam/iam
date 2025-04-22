@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Set;
@@ -134,7 +135,7 @@ public class ScimMeEndpointPatchRemoveTests {
 
     ScimGroupRef group = scimUtils.getMe().getGroups().iterator().next();
 
-    assertThat(group.getDisplay().equals("Production"));
+    assertEquals("Analysis", group.getDisplay());
 
     ScimUser updates = ScimUser.builder().addGroupRef(group).build();
 

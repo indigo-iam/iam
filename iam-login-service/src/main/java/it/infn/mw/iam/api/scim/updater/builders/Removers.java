@@ -64,7 +64,7 @@ public class Removers extends AccountBuilderSupport {
     };
     unlinkGroups = groups -> {
       for (IamGroup g : groups) {
-        if (g != null) {
+        if (!isNull(g)) {
           accountService.removeFromGroup(account, g);
         }
       }

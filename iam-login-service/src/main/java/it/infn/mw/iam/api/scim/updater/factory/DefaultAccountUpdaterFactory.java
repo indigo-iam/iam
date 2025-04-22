@@ -118,7 +118,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   }
 
   private ScimCollectionConverter<IamGroup, ScimGroupRef> groupConverter(ScimUser user) {
-    return new ScimCollectionConverter<IamGroup, ScimGroupRef>(user::getGroups,
+    return new ScimCollectionConverter<>(user::getGroups,
         ref -> groupRepo.findByName(ref.getDisplay()).orElse(null));
   }
 
