@@ -468,7 +468,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     System.out.println(token.getJWTClaimsSet());
     assertNotNull(token.getJWTClaimsSet().getClaim("sub"));
     assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(token.getJWTClaimsSet().getClaim("voperson_id"), empty());
+    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
   }
 
   @Test
@@ -479,9 +479,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(token.getJWTClaimsSet().getClaim("voperson_id"), empty());
-
-
+    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
   }
 
 
