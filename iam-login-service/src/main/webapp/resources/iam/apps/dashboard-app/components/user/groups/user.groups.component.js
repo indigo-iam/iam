@@ -92,6 +92,26 @@
             });
 
         };
+
+        self.openRemoveMyGroupDialog = function (group) {
+            var modalOptions = {
+                closeButtonText: 'Cancel',
+                actionButtonText: 'Remove yourself from group',
+                headerText: `Remove  yourself from group '${group.display}'`,
+                bodyText: `Are you sure you want to remove yourself from group '${group.display}'?`
+            };
+
+            ModalService.showModal({}, modalOptions).then(function () {
+                scimFactory
+                    .removeMyselfFromGroup(
+                        group.value, group.display)
+                    .then(function () {
+                        self.handleSuccess(`User removed from group '${group.display}'`);
+                    })
+                    .catch(self.userCtrl.handleError);
+            });
+
+        };
     }
 
     angular.module('dashboardApp').component('userGroups', {
