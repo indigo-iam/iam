@@ -42,11 +42,12 @@
                 
             <div class="iam-user-group-actions col-xs-2 col-sm-2 text-right">
                 <div class="btn-group">
-                    <button class="btn btn-xs btn-danger" ng-click="$ctrl.openRemoveGroupDialog(group)" ng-if="$ctrl.isVoAdmin()">
+                  <button class="btn btn-xs btn-danger"
+                          ng-click="$ctrl.isVoAdmin() ? $ctrl.openRemoveGroupDialog(group) : $ctrl.openRemoveMyGroupDialog(group)">
                     <i class="fa fa-times"></i> Remove
                   </button>
                 </div>
-            </div>
+              </div>
         </div>
 
     </div>
