@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
-import static com.google.common.base.Strings.nullToEmpty;
+
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -468,7 +468,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     System.out.println(token.getJWTClaimsSet());
     assertNotNull(token.getJWTClaimsSet().getClaim("sub"));
     assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertFalse(token.getJWTClaimsSet().getClaim("voperson_id").equals(empty()));
+    assertNotEquals(token.getJWTClaimsSet().getClaim("voperson_id"), empty());
   }
 
   @Test
@@ -479,7 +479,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
     assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertFalse(token.getJWTClaimsSet().getClaim("voperson_id").equals(empty()));
+    assertNotEquals(token.getJWTClaimsSet().getClaim("voperson_id"), empty());
 
 
   }
