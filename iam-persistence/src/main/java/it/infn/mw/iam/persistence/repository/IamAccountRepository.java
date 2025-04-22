@@ -57,11 +57,11 @@ public interface IamAccountRepository
   @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
   Optional<Page<IamAccount>> containsFamilyName(@Param("familyName") String familyName, @Param("op") Pageable op );
 
-  @Query("select a from IamAccount a  where a.username = :UserName")
-  Optional<Page<IamAccount>> findByUsername(@Param("UserName") String UserName, @Param("op") Pageable op );
+  @Query("select a from IamAccount a  where a.username = :username")
+  Optional<Page<IamAccount>> findByUsername(@Param("username") String username, @Param("op") Pageable op );
 
-  @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :UserName, '%'))")
-  Optional<Page<IamAccount>> containsUsername(@Param("UserName") String UserName, @Param("op") Pageable op );
+  @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
+  Optional<Page<IamAccount>> containsUsername(@Param("username") String username, @Param("op") Pageable op );
 
   @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress order by a.username ASC")
   Optional<Page<IamAccount>> findByEmail(@Param("emailAddress") String emailAddress, @Param("op") Pageable op);

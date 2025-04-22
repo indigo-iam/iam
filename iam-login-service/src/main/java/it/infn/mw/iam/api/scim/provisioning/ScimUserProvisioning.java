@@ -147,7 +147,7 @@ public class ScimUserProvisioning
           } ;
 
           // If there is an occurence and it's surrounded by spaces
-          if (index > 0 && filtersParameter.charAt(index - 1) == ' '
+          if (filtersParameter.charAt(index - 1) == ' '
               && filtersParameter.charAt(index + operator.name().length()) == ' ') {
 
             // The parameter before the index is then from the start until the first space
@@ -157,8 +157,7 @@ public class ScimUserProvisioning
             String value = filtersParameter.substring(index + operator.name().length() + 1,
                 filtersParameter.length());
 
-            ScimFilter result = new ScimFilter(parameter, operator.name(), value);
-            return result;
+            return new ScimFilter(parameter, operator.name(), value);
 
           } else {
             from = index + 1;
