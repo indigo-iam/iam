@@ -45,7 +45,6 @@ import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
