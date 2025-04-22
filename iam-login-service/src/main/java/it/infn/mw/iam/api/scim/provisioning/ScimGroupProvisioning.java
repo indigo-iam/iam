@@ -272,7 +272,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     ScimListResponseBuilder<ScimMemberRef> results = new ScimListResponseBuilder<>();
 
     OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
-    Page<IamAccount> accounts = accountService.fingGroupMembers(iamGroup, pr);
+    Page<IamAccount> accounts = accountService.findGroupMembers(iamGroup, pr);
 
     List<ScimMemberRef> resources = newArrayList();
 

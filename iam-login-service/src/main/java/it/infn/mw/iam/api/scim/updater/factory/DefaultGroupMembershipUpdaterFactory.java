@@ -72,7 +72,7 @@ public class DefaultGroupMembershipUpdaterFactory
     if (op.getOp().equals(replace)) {
       long totalUsers = accountRepo.count();
       OffsetPageable pr = new OffsetPageable(0, (int) totalUsers);
-      Page<IamAccount> accounts = accountService.fingGroupMembers(group, pr);
+      Page<IamAccount> accounts = accountService.findGroupMembers(group, pr);
       List<IamAccount> oldMembers = Lists.newArrayList();
 
       for (IamAccount a : accounts.getContent()) {
