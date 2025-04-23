@@ -44,8 +44,8 @@ public class X509CertificateConverter
   }
 
 
-  private IamX509Certificate parseCertificateFromString(String pemString) {
-    X509CertificateChainParsingResult result = parser.parseChainFromString(pemString);
+  private IamX509Certificate parseCertificateFromString(String certString) {
+    X509CertificateChainParsingResult result = parser.parseChainFromString(certString);
 
     IamX509Certificate cert = new IamX509Certificate();
     X509Certificate leafCert = result.getChain()[0];
@@ -53,7 +53,7 @@ public class X509CertificateConverter
     cert.setSubjectDn(principalAsRfc2253String(leafCert.getSubjectX500Principal()));
     cert.setIssuerDn(principalAsRfc2253String(leafCert.getIssuerX500Principal()));
 
-    cert.setCertificate(pemString);
+    cert.setCertificate(result.getPemString());
     return cert;
   }
 

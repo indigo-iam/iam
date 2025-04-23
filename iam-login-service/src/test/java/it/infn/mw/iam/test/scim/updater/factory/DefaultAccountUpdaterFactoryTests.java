@@ -75,7 +75,7 @@ import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
 import it.infn.mw.iam.authn.saml.util.Saml2Attribute;
-import it.infn.mw.iam.authn.x509.PEMX509CertificateChainParser;
+import it.infn.mw.iam.authn.x509.X509CertificateChainParserImpl;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
@@ -121,7 +121,7 @@ public class DefaultAccountUpdaterFactoryTests {
   SamlIdConverter samlConverter = new SamlIdConverter();
   SshKeyConverter sshKeyConverter = new SshKeyConverter();
   X509CertificateConverter x509Converter =
-      new X509CertificateConverter(new PEMX509CertificateChainParser());
+      new X509CertificateConverter(new X509CertificateChainParserImpl());
 
   DefaultAccountUpdaterFactory factory;
 
