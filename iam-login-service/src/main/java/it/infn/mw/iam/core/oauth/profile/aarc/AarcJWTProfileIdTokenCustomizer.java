@@ -60,6 +60,9 @@ public class AarcJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
 
     includeLabelsInIdToken(idClaims, account);
 
+
+    idClaims.claim("voperson_id", account.getUserInfo().getSub());
+
   }
 
 }
