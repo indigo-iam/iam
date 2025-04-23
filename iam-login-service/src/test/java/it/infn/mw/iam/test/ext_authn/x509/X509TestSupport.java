@@ -25,12 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
@@ -56,6 +58,7 @@ public class X509TestSupport {
   public static final String OLD_TEST_0_CERT_PATH = "src/test/resources/x509/oldtest0.cert.pem";
   public static final String OLD_TEST_0_KEY_PATH = "src/test/resources/x509/oldtest0.key.pem";
   public static final String TEST_0_KEY_PATH = "src/test/resources/x509/test0.key.pem";
+  public static final String TEST_0_DER_CERT_PATH = "src/test/resources/x509/test0.cert.der";
 
   public static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
   public static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
@@ -80,13 +83,17 @@ public class X509TestSupport {
   protected X509Certificate TEST_0_CERT;
   protected X509Certificate OLD_TEST_0_CERT;
   protected X509Certificate TEST_1_CERT;
+  protected X509Certificate TEST_0_DER_CERT;
 
   protected String TEST_0_CERT_STRING;
   protected String OLD_TEST_0_CERT_STRING;
   protected String TEST_1_CERT_STRING;
+  protected byte[] TEST_0_DER_CERT_BYTES;
 
   protected String TEST_0_CERT_STRING_NGINX;
   protected String TEST_1_CERT_STRING_NGINX;
+  protected String TEST_0_CERT_STRING_NGINX_NEW;
+  protected String TEST_0_CERT_STRING_HAPROXY;
 
   protected IamX509Certificate TEST_0_IAM_X509_CERT;
   protected IamX509Certificate OLD_TEST_0_IAM_X509_CERT;
@@ -112,6 +119,11 @@ public class X509TestSupport {
       TEST_0_CERT = CertificateUtils.loadCertificate(
           new ByteArrayInputStream(TEST_0_CERT_STRING.getBytes(StandardCharsets.US_ASCII)),
           Encoding.PEM);
+
+      TEST_0_DER_CERT_BYTES = Files.readAllBytes(Paths.get(TEST_0_DER_CERT_PATH));
+
+      TEST_0_DER_CERT = CertificateUtils
+        .loadCertificate(new ByteArrayInputStream(TEST_0_DER_CERT_BYTES), Encoding.DER);
 
       TEST_1_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_1_CERT_PATH)));
 
@@ -153,9 +165,15 @@ public class X509TestSupport {
       TEST_2_IAM_X509_CERT.setLabel(TEST_1_CERT_LABEL);
       TEST_2_IAM_X509_CERT.setPrimary(false);
 
-      // This is how NGINX encodes certificate in the header
+      // This is how NGINX encodes certificate in the header when $ssl_client_cert is used
       TEST_0_CERT_STRING_NGINX = TEST_0_CERT_STRING.replace('\n', '\t');
       TEST_1_CERT_STRING_NGINX = TEST_1_CERT_STRING.replace('\n', '\t');
+
+      // This is how NGINX encodes certificate in the header when $ssl_client_escaped_cert is used
+      TEST_0_CERT_STRING_NGINX_NEW = URLEncoder.encode(TEST_0_CERT_STRING, StandardCharsets.UTF_8);
+
+      // This is how HAProxy encodes certificate in the header when [ssl_c_der,base64] is used
+      TEST_0_CERT_STRING_HAPROXY = Base64.getEncoder().encodeToString(TEST_0_DER_CERT_BYTES);
 
       TEST_0_PEM_CREDENTIAL =
           new PEMCredential(TEST_0_KEY_PATH, TEST_0_CERT_PATH, "pass".toCharArray());
@@ -486,6 +504,92 @@ public class X509TestSupport {
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader()))
       .thenReturn("SUCCESS");
+
+  }
+
+  protected void mockHttpRequestWithTest0SSLHeadersNginxNew(HttpServletRequest request) {
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
+      .thenReturn(TEST_0_CERT_STRING_NGINX_NEW);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader()))
+      .thenReturn(TEST_0_SUBJECT);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.ISSUER.getHeader()))
+      .thenReturn(TEST_0_ISSUER);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SERIAL.getHeader()))
+      .thenReturn(TEST_0_SERIAL);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.V_START.getHeader()))
+      .thenReturn(TEST_0_V_START);
+
+    Mockito
+      .when(
+          request.getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.V_END.getHeader()))
+      .thenReturn(TEST_0_V_END);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader()))
+      .thenReturn("TLS");
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader()))
+      .thenReturn("SUCCESS");
+
+  }
+
+  protected void mockHttpRequestWithTest0SSLHeadersHAProxy(HttpServletRequest request) {
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
+      .thenReturn(TEST_0_CERT_STRING_HAPROXY);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SUBJECT.getHeader()))
+      .thenReturn(TEST_0_SUBJECT);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.ISSUER.getHeader()))
+      .thenReturn(TEST_0_ISSUER);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.SERIAL.getHeader()))
+      .thenReturn(TEST_0_SERIAL);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.V_START.getHeader()))
+      .thenReturn(TEST_0_V_START);
+
+    Mockito
+      .when(
+          request.getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.V_END.getHeader()))
+      .thenReturn(TEST_0_V_END);
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.PROTOCOL.getHeader()))
+      .thenReturn("TLS");
+
+    Mockito
+      .when(request
+        .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.VERIFY.getHeader()))
+      .thenReturn("X509_V_OK");
 
   }
 }
