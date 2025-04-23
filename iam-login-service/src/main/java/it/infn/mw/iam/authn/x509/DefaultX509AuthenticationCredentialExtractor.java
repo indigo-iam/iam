@@ -86,7 +86,7 @@ public class DefaultX509AuthenticationCredentialExtractor
   private X509CertificateVerificationResult parseVerifyHeader(HttpServletRequest request) {
     String verifyHeaderContent = request.getHeader(VERIFY.header);
 
-    if ("SUCCESS".equals(verifyHeaderContent)) {
+    if ("SUCCESS".equals(verifyHeaderContent) || "X509_V_OK".equals(verifyHeaderContent)) {
       return X509CertificateVerificationResult.success();
     }
 
@@ -110,7 +110,7 @@ public class DefaultX509AuthenticationCredentialExtractor
   public Optional<IamX509AuthenticationCredential> extractX509Credential(
       HttpServletRequest request) {
 
-    String clientCertHeaderContent = getHeader(request,  CLIENT_CERT);
+    String clientCertHeaderContent = getHeader(request, CLIENT_CERT);
     
     if (Strings.isNullOrEmpty(clientCertHeaderContent)) {
       LOG.debug("{} null or empty", CLIENT_CERT.header);
@@ -119,10 +119,8 @@ public class DefaultX509AuthenticationCredentialExtractor
 
     headerNamesSanityChecks(request);
 
-    String pemCertificateString = clientCertHeaderContent.replace('\t', '\n');
-    
     X509CertificateChainParsingResult chain =
-        certChainParser.parseChainFromString(pemCertificateString);
+        certChainParser.parseChainFromString(clientCertHeaderContent);
     
     IamX509AuthenticationCredential.Builder credBuilder =
         new IamX509AuthenticationCredential.Builder();
