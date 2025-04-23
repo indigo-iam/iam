@@ -22,11 +22,18 @@ import org.mitre.openid.connect.model.UserInfo;
 public interface AarcUserInfo extends UserInfo {
 
   String getScopedAffiliation();
+
   void setScopedAffiliation(String scopedAffiliation);
 
   Set<String> getEntitlements();
+
   void setEntitlements(Set<String> entitlements);
 
   Set<String> getAssurance();
+
   void setAssurance(Set<String> assurance);
+
+  String getVoPersonId();
+
+  void setVoPersonId(String vopPersonId);
 }

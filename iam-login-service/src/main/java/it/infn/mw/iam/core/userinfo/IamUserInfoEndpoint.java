@@ -15,77 +15,76 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
+import java.util.List;
+import java.util.Set;
 
-import org.mitre.oauth2.service.SystemScopeService;
+import javax.security.auth.login.AccountNotFoundException;
+import javax.servlet.http.HttpServletRequest;
+
 import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.view.HttpCodeView;
-import org.mitre.openid.connect.view.UserInfoView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 
 @SuppressWarnings("deprecation")
-@Controller
-@RequestMapping("/userinfo")
+@RestController
 public class IamUserInfoEndpoint {
 
+  public static final String URL = "userinfo";
+
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
+  private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
 
   private final JWTProfileResolver profileResolver;
-
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
-  @Autowired
   public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
       OAuth2AuthenticationScopeResolver scopeResolver) {
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
   }
 
-  @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('" + SystemScopeService.OPENID_SCOPE
-      + "')")
-  @RequestMapping(method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
-  public String getInfo(
-      @RequestParam(value = "claims", required = false) String claimsRequestJsonString,
-      @RequestHeader(value = HttpHeaders.ACCEPT, required = false) String acceptHeader,
-      OAuth2Authentication auth, Model model) {
+  @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('openid')")
+  @GetMapping(path = "/" + URL, produces = {MediaType.APPLICATION_JSON_VALUE})
+  public UserInfoResponse getInfo(OAuth2Authentication auth) throws AccountNotFoundException {
 
     JWTProfile profile = profileResolver.resolveProfile(auth.getOAuth2Request().getClientId());
 
     UserInfo userInfo = profile.getUserinfoHelper().resolveUserInfo(auth);
 
     if (userInfo == null) {
-      LOG.error("user not found: {}", auth.getName());
-      model.addAttribute(HttpCodeView.CODE, HttpStatus.NOT_FOUND);
-      return HttpCodeView.VIEWNAME;
-    }
-    model.addAttribute(UserInfoView.SCOPE, scopeResolver.resolveScope(auth));
-    model.addAttribute(UserInfoView.AUTHORIZED_CLAIMS,
-        auth.getOAuth2Request().getExtensions().get("claims"));
-
-    if (!isNullOrEmpty(claimsRequestJsonString)) {
-      model.addAttribute(UserInfoView.REQUESTED_CLAIMS, claimsRequestJsonString);
+      String errorMsg = String.format(ACCOUNT_NOT_FOUND_ERROR, auth.getName());
+      LOG.error(errorMsg);
+      throw new AccountNotFoundException(errorMsg);
     }
 
-    model.addAttribute(UserInfoView.USER_INFO, userInfo);
-
-    return UserInfoView.VIEWNAME;
-
+    Set<String> scopes = scopeResolver.resolveScope(auth);
+    UserInfoResponse.Builder builder = new UserInfoResponse.Builder(userInfo.getSub());
+    if (scopes.contains("profile")) {
+      builder.addField("scope", scopes);
+      if (scopes.contains("ssh-keys")) {
+        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope"));
+      } else {
+        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope", "ssh_keys"));
+      }
+    }
+    return builder.build();
   }
 
+  @ResponseStatus(value = HttpStatus.NOT_FOUND)
+  @ExceptionHandler(AccountNotFoundException.class)
+  public ErrorDTO accountNotFound(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
 }
