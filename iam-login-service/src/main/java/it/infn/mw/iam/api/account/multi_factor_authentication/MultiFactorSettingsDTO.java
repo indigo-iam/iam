@@ -17,7 +17,7 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import javax.validation.constraints.NotEmpty;
 
-import com.nimbusds.jose.shaded.json.JSONObject;
+import net.minidev.json.JSONObject;
 
 /**
  * DTO containing info about enabled factors of authentication

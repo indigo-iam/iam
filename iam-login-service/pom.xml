@@ -36,6 +36,7 @@
     <test-clock.version>1.0.2</test-clock.version>
     <eclipselink.version>2.7.9</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
+    <nimbus-jose-jwt.version>9.37.2</nimbus-jose-jwt.version>
 
     <!-- Sonar Jacoco massaging -->
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
@@ -218,7 +219,7 @@
     <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.21</version>
+        <version>${nimbus-jose-jwt.version}</version>
     </dependency>
 
     <!-- OAuth 2 dependencies -->
