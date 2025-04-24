@@ -28,6 +28,7 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public AarcJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
