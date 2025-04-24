@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,12 @@ public class IamProperties {
 
   public enum LocalAuthenticationLoginPageMode {
     VISIBLE, HIDDEN, HIDDEN_WITH_LINK
+  }
+
+  public enum ExternalAuthAttributeSectionBehaviour {
+    MANDATORY,
+    OPTIONAL,
+    HIDDEN
   }
 
   public static class AccountLinkingProperties {
@@ -191,6 +198,7 @@ public class IamProperties {
   public static class RegistrationFieldProperties {
     boolean readOnly = false;
     String externalAuthAttribute;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour = ExternalAuthAttributeSectionBehaviour.MANDATORY;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -206,6 +214,14 @@ public class IamProperties {
 
     public void setExternalAuthAttribute(String externalAuthAttribute) {
       this.externalAuthAttribute = externalAuthAttribute;
+    }
+
+    public ExternalAuthAttributeSectionBehaviour getFieldBehaviour() {
+      return fieldBehaviour;
+    }
+
+    public void setFieldBehaviour(ExternalAuthAttributeSectionBehaviour fieldBehaviour) {
+      this.fieldBehaviour = fieldBehaviour;
     }
   }
 
@@ -224,7 +240,7 @@ public class IamProperties {
 
     String samlEntityId;
 
-    Map<String, RegistrationFieldProperties> fields;
+    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
 
     List<DefaultGroup> defaultGroups;
 
