@@ -28,7 +28,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
@@ -180,12 +180,15 @@ public class MitreSecurityConfig {
     @Autowired
     @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+        .passwordEncoder(passwordEncoder);
     }
 
     @Override
@@ -220,6 +223,9 @@ public class MitreSecurityConfig {
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
 
@@ -227,7 +233,7 @@ public class MitreSecurityConfig {
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+        .passwordEncoder(passwordEncoder);
     }
 
     private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
