@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.client.service;
 
+import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
+
 import java.time.Clock;
 import java.util.Date;
 import java.util.Optional;
@@ -65,6 +67,7 @@ public class DefaultClientService implements ClientService {
   public ClientDetailsEntity saveNewClient(ClientDetailsEntity client) {
     client.setCreatedAt(Date.from(clock.instant()));
     eventPublisher.publishEvent(new ClientCreatedEvent(this, client));
+    client.setClientSecret(bcrypt().encode(client.getClientSecret()));
     return clientRepo.save(client);
   }
 

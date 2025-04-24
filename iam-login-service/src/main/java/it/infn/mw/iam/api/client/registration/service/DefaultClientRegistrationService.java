@@ -56,6 +56,7 @@ import it.infn.mw.iam.api.client.service.ClientDefaultsService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.audit.events.account.client.AccountClientOwnerAssigned;
 import it.infn.mw.iam.audit.events.client.ClientRegistered;
 import it.infn.mw.iam.audit.events.client.ClientRegistrationAccessTokenRotatedEvent;
@@ -345,7 +346,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
 
+    if (isNull(client.getClientSecret())) {
+      client.setClientSecret(defaultsService.generateClientSecret());
+    }
+    String tmpClientSecret = client.getClientSecret();
     client = clientService.saveNewClient(client);
+    client.setClientSecret(tmpClientSecret);
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
