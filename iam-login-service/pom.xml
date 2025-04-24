@@ -297,22 +297,13 @@
       <artifactId>openid-connect-client</artifactId>
     </dependency>
 
+    <!-- VOMS -->
     <dependency>
       <groupId>org.italiangrid</groupId>
-      <artifactId>voms-clients</artifactId>
+      <artifactId>voms-api-java</artifactId>
     </dependency>
 
     <!-- SAML -->
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk15on</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>org.springframework.security.extensions</groupId>
       <artifactId>spring-security-saml2-core</artifactId>
