@@ -21,8 +21,8 @@ import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,14 +49,13 @@ import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@WithMockUser(username = "admin", roles = "ADMIN")
+@WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
 public class GroupLabelTests extends TestSupport {
 
   private static final ResultMatcher GROUP_NOT_FOUND_ERROR_MESSAGE =
@@ -92,7 +91,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void managingLabelsRequiresAuthenticatedUser() throws Exception {
+  public void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
@@ -107,9 +106,9 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingLabelsRequiresPrivilegedUser() throws Exception {
+  public void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
 
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
+    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
     mvc
       .perform(put(RESOURCE, TEST_001_GROUP_UUID).contentType(APPLICATION_JSON)
@@ -122,22 +121,6 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
-    gettingLabelsWorks();
-  }
-
-  @Test
-  @WithMockUser(username = "test", roles = {"READER"})
-  public void gettingLabelsWorksForReaderUser() throws Exception {
-    gettingLabelsWorks();
-  }
-
-  @Test
-  @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void gettingLabelsWorksForAdminOAuthUser() throws Exception {
-    gettingLabelsWorks();
-  }
-
-  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
