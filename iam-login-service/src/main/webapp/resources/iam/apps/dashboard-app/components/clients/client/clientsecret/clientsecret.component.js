@@ -23,7 +23,7 @@
         // self.toggleSecretVisibility = toggleSecretVisibility;
         self.clipboardSuccess = clipboardSuccess;
         self.clipboardError = clipboardError;
-        self.confirmation = false;
+        self.confirmation = true;
         self.clientId = client.client_id;
         self.clientName = client.client_name;
         self.isNewClient = !!self.clientId;
@@ -78,6 +78,7 @@
                 toggleSecretVisibility();
             }
         }
+        self.confirmRequestNewSecret();
     }
 
     function ClientSecretController($uibModal, toaster, ClientsService) {
