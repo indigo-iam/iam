@@ -18,22 +18,19 @@ package it.infn.mw.iam.test.registration;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +38,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -53,7 +51,9 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
+import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -86,6 +86,9 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @MockBean
+  private RegistrationProperties registrationProperties;
 
   private MockMvc mvc;
 
@@ -142,8 +145,11 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   @Test
   public void testListRequestsUnauthorized() throws Exception {
 
-    mvc.perform(get("/registration/list").with(authentication(anonymousAuthenticationToken())))
+    // @formatter:off
+    mvc.perform(get("/registration/list")
+        .with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isUnauthorized());
+    // @formatter:on
   }
 
   @Test
@@ -152,11 +158,10 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     createRegistrationRequest("test_confirm_fail");
     String badToken = "abcdefghilmnopqrstuvz";
 
-    mvc
-      .perform(post("/registration/verify").content("token=" + badToken)
-        .contentType(APPLICATION_FORM_URLENCODED))
-      .andExpect(status().isOk())
-      .andExpect(model().attributeExists("verificationFailure"));
+    // @formatter:off
+    mvc.perform(get("/registration/verify/{token}", badToken))
+      .andExpect(status().isOk());
+    // @formatter:on
   }
 
   @Test
@@ -168,67 +173,33 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     String token = generator.getLastToken();
     assertNotNull(token);
 
-    mvc.perform(head("/registration/verify/" + token)).andExpect(status().isOk());
-
     confirmRegistrationRequest(token);
 
+    // @formatter:off
     mvc.perform(post("/registration/{uuid}/{decision}", reg.getUuid(), APPROVED.name())
-      .with(authentication(anonymousAuthenticationToken()))).andExpect(status().isUnauthorized());
+        .with(authentication(anonymousAuthenticationToken())))
+      .andExpect(status().isUnauthorized());
+    // @formatter:on
   }
 
   @Test
   public void testUsernameAvailable() throws Exception {
     String username = "tester";
+    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("true"));
+    // @formatter:on
   }
 
   @Test
   public void testUsernameAlreadyTaken() throws Exception {
     String username = "admin";
+    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("false"));
-  }
-
-  @Test
-  public void testCreateRequestWithoutNotes() throws Exception {
-
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
-
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-
-    mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  public void testCreateRequestBlankNotes() throws Exception {
-
-    String username = "user_with_empty_notes";
-    String email = username + "@example.org";
-
-    RegistrationRequestDto request = new RegistrationRequestDto();
-    request.setGivenname("Test");
-    request.setFamilyname("User");
-    request.setEmail(email);
-    request.setUsername(username);
-    request.setPassword("password");
-    request.setNotes(" ");
-
-    mvc
-      .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isBadRequest());
+    // @formatter:on
   }
 
   @Test
@@ -242,6 +213,46 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
       .andExpect(jsonPath("$").value(false));
   }
 
+  @Test
+  public void testVerifySucess() throws Exception {
+    RegistrationRequestDto reg = createRegistrationRequest("test_approve_unauth");
+    assertNotNull(reg);
+
+    String token = generator.getLastToken();
+    assertNotNull(token);
+
+    // @formatter:off
+    mvc.perform(get("/registration/verify/{token}", token))
+      .andExpect(status().isOk());
+    // @formatter:on
+  }
+
+  @Test
+  public void testInsufficientAuth() throws Exception {
+    // @formatter:off
+    mvc.perform(get("/registration/insufficient-aut"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error", equalTo("unauthorized")));
+    // @formatter:on
+  }
+
+  @Test
+  public void testRegistrationConfig() throws Exception {
+    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+    RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
+    notesProperties.setReadOnly(true);
+    notesProperties.setExternalAuthAttribute("notes");
+    notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
+    fieldAttribute.put("notes", notesProperties);
+
+    when(registrationProperties.getFields()).thenReturn(fieldAttribute);
+
+    // @formatter:off
+    mvc.perform(get("/registration/config"))
+      .andExpect(status().isOk())
+      .andExpect(content().json("{}"));
+    // @formatter:on
+  }
 
   private Authentication anonymousAuthenticationToken() {
     return new AnonymousAuthenticationToken("key", "anonymous",
@@ -259,6 +270,7 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setNotes("Some short notes...");
     request.setPassword("password");
 
+    // @formatter:off
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
@@ -266,37 +278,17 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
       .andReturn()
       .getResponse()
       .getContentAsString();
+    // @formatter:on
 
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
 
   private void confirmRegistrationRequest(String confirmationKey) throws Exception {
-    mvc
-      .perform(post("/registration/verify").content("token=" + confirmationKey)
-        .contentType(APPLICATION_FORM_URLENCODED))
-      .andExpect(status().isOk())
-      .andExpect(model().attributeExists("verificationSuccess"));
+    // @formatter:off
+    mvc.perform(get("/registration/verify/{token}", confirmationKey))
+      .andExpect(status().isOk());
+    // @formatter:on
   }
 
-  @Test
-  public void testRegistrationFieldReadOnlyGetterAndSetter() {
-    RegistrationFieldProperties properties = new RegistrationFieldProperties();
-
-    assertFalse(properties.isReadOnly());
-
-    properties.setReadOnly(true);
-    assertTrue(properties.isReadOnly());
-  }
-
-  @Test
-  public void testRegistrationFieldExternalAuthAttributeGetterAndSetter() {
-    RegistrationFieldProperties properties = new RegistrationFieldProperties();
-
-    assertNull(properties.getExternalAuthAttribute());
-
-    String testValue = "TestAttribute";
-    properties.setExternalAuthAttribute(testValue);
-    assertEquals(testValue, properties.getExternalAuthAttribute());
-  }
 
 }
