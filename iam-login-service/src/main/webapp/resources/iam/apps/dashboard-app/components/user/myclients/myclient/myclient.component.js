@@ -16,6 +16,50 @@
 (function () {
     'use strict';
 
+    function ClientSecretViewController($uibModal, $uibModalInstance, toaster, ClientsService, data) {
+        var $ctrl = this;
+        $ctrl.data = data;
+        $ctrl.isNewClient = data.isNewClient;
+        $ctrl.newClient = data.client;
+        $ctrl.secret = $ctrl.newClient.client_secret;
+        $ctrl.clientId = $ctrl.newClient.client_id;
+        $ctrl.showSecret = false;
+        $ctrl.confirmation = true;
+
+        self.clipboardSuccess = clipboardSuccess;
+        self.clipboardError = clipboardError;
+      
+        $ctrl.ok = function() {
+            $uibModalInstance.close($ctrl.selected);
+        };
+      
+        $ctrl.closeModal = function() {
+            $uibModalInstance.dismiss('cancel');
+        };
+
+        $ctrl.toggleSecretVisibility = function() {
+            $ctrl.showSecret = !$ctrl.showSecret;
+        };
+
+        function clipboardError(event) {
+            toaster.pop({
+                type: 'error',
+                body: 'Could not copy secret to clipboard!'
+            });
+        }
+
+        function clipboardSuccess(event, source) {
+            toaster.pop({
+                type: 'success',
+                body: 'Secret copied to clipboard!'
+            });
+            event.clearSelection();
+            if (source === 'secret') {
+                toggleSecretVisibility();
+            }
+        }
+    };
+
     function MyClientController($location, ClientRegistrationService, toaster, $uibModal) {
         var self = this;
 
@@ -54,7 +98,29 @@
                 type: 'success',
                 body: 'Client saved!'
             });
-            return res;
+
+            var res = () => {
+                var modalInstance = $uibModal.open({
+                  templateUrl: 'clientsecret-view.content.html',
+                  controller: 'ModalClientSecretViewController',
+                  resolve: {
+                    data: function() {
+                      return {
+                        title: '',
+                        message: '',
+                        clientDetail: res,
+                      };
+                    }
+                  }
+                });
+          
+                modalInstance.result.then(function(selectedItem) {
+                  $ctrl.selected = selectedItem;
+                }, function() {
+                  console.log('Dialog dismissed at: ' + new Date());
+                });
+                return res;
+            }
         }
 
         function handleError(res) {
@@ -73,9 +139,32 @@
 
         function registerClient() {
             return ClientRegistrationService.registerClient(self.clientVal).then(res => {
-                handleSuccess(res);
-                $location.path('/home/clients');
+               handleSuccess(res);
+
+                var modalSecret = $uibModal.open({
+                    templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/newclientsecretshow/newclientsecretshow.component.html',
+                    controller: ClientSecretViewController,
+                    controllerAs: '$ctrl',
+                    resolve: {
+                        data: {
+                            client: res,
+                            title: "New client credential details",
+                            message: "Save this client credential on safe before press Confirm button",
+                            isNewClient: true,
+                        }
+                    }
+                });
+
+                modalSecret.result
+                .then(() => {$location.path('/home/clients');})
+                .catch(() => {
+                    toaster.pop({
+                        type: 'error',
+                        body: errorMsg
+                    });
+                });
                 return res;
+
             }).catch(handleError);
         }
 
