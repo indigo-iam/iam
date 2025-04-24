@@ -16,176 +16,142 @@
 
 -->
 <div ng-controller="RegistrationController as rc">
-    <h2 class="text-center">
-        Register at
-        <strong>{{organisationName}}</strong>
-    </h2>
-    <div class="ext-authn-info" ng-show="extAuthInfo != null">
-        <p>
-            This is the <strong>{{organisationName}}</strong> registration page.
-        </p>
-        <p>
-            You have been succesfully authenticated, but your credentials are
-            <strong>not</strong> yet linked to an
-            <strong>{{organisationName}}</strong> account.
-        </p>
-        <p>
-            To proceed with the registration please fill in your personal information below.
-        </p>
-        <p>
-            To abort this registration click
-            <a href="/reset-session">here</a>.
-        </p>
-    </div>
-    <div class="ext-authn-info" ng-show="extAuthInfo == null">
-        <p>
-            This is the {{organisationName}} registration page.
-        </p>
-        <p ng-show="getExternablAuthenticationEnabled()">
-            If you want to register using an external identity provider, like Google or your institution identity
-            provider, head back to the
-            <a href="/login">login page</a> and click the "Sign in with" button of your preferred identity provider.
-        </p>
-        <p>
-            To proceed with the registration please fill in your personal information below.
-        </p>
-    </div>
-    <div class="box box-default no-border registration-box">
-        <form name="registrationForm" id="registration-form">
-            <div ng-show="operationResult != null">
-                <div class="alert"
-                    ng-class="{'alert-success': operationResult=='ok', 'alert-danger': operationResult=='err'}">
-                    <button class="close" ng-click="operationResult=null" aria-label="close">&times;</button>
-                    {{textAlert}}
-                </div>
-            </div>
-            <div class="form-group"
-                ng-class="{'has-error': rc.fieldInvalid('name'), 'has-success': rc.fieldValid('name')}">
-                <label class="control-label" for="name">Given name</label>
-                <input class="form-control" name="name" id="name" type="text" ng-model="request.givenname"
-                    placeholder="Your first name" required ng-minlength="2" ng-readonly="rc.fieldReadonly('name')" />
-                <span class="help-block"
-                    ng-show="registrationForm.name.$dirty && registrationForm.name.$error.required">
-                    Please provide a name
-                </span>
-                <span class="help-block"
-                    ng-show="registrationForm.name.$dirty && registrationForm.name.$error.minlength">
-                    Name must be at least 2 characters long
-                </span>
-            </div>
-            <div class="form-group"
-                ng-class="{'has-error': rc.fieldInvalid('surname'), 'has-success': rc.fieldValid('surname')}">
-                <label class="control-label" for="surname">Family name</label>
-                <input class="form-control" name="surname" id="surname" type="text" ng-model="request.familyname"
-                    placeholder="Your family name" required ng-minlength="2"
-                    ng-readonly="rc.fieldReadonly('surname')" />
-                <span class="help-block"
-                    ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.required">Please provide
-                    a
-                    family name</span>
-                <span class="help-block"
-                    ng-show="registrationForm.surname.$dirty && registrationForm.surname.$error.minlength">Family name
-                    must
-                    be at least 2 characters long</span>
-            </div>
-            <div class="form-group"
-                ng-class="{'has-error': rc.fieldInvalid('email'), 'has-success': rc.fieldValid('email')}">
-                <label class="control-label" for="email">Email</label>
-                <input class="form-control" name="email" id="email" type="email" ng-model="request.email"
-                    placeholder="Your email address" required ng-minlength="3" iam-email-available-validator
-                    ng-model-options="{ debounce : { 'default' : 500 } }" ng-readonly="rc.fieldReadonly('email')" />
-                <span class="help-block"
-                    ng-show="registrationForm.email.$dirty && registrationForm.email.$error.required">
-                    Please provide an email
-                </span>
-                <span class="help-block" ng-show="registrationForm.email.$dirty && registrationForm.email.$error.email">
-                    This is not a valid email
-                </span>
-                <span class="help-block"
-                    ng-show="registrationForm.email.$dirty && registrationForm.email.$error.emailAvailable">
-                    This email is already linked to another user
-                </span>
-            </div>
-            <div class="form-group"
-                ng-class="{'has-error': rc.fieldInvalid('username'), 'has-success': rc.fieldValid('username')}">
-                <label class="control-label" for="username">Username</label>
-                <input class="form-control" id="username" name="username" type="text" ng-model="request.username"
-                    placeholder="Choose a username" required ng-minlength="2" iam-username-available-validator
-                    ng-model-options="{ debounce : { 'default' : 500 } }" ng-readonly="rc.fieldReadonly('username')" />
-                <span class="help-block"
-                    ng-show="registrationForm.username.$dirty && registrationForm.username.$error.required">
-                    Please choose a username</span>
-                <span class="help-block"
-                    ng-show="registrationForm.username.$dirty && registrationForm.username.$error.minlength">
-                    The username must be at least 2 characters long
-                </span>
-                <span class="help-block"
-                    ng-show="registrationForm.username.$dirty && registrationForm.username.$error.usernameAvailable">
-                    This username is already linked to another user
-                </span>
-            </div>
-            <div class="form-group"
-                ng-class="{'has-error': rc.fieldInvalid('notes'), 'has-success': rc.fieldValid('notes')}">
-                <label class="control-label" for="notes">Notes</label>
-                <textarea class="form-control" id="notes" name="notes" rows="5"
-                    placeholder="Providing a clear explanation on the motivation behind this request will likely speed up the approval process"
-                    ng-model=request.notes required></textarea>
-                <span class="help-block"
-                    ng-show="registrationForm.notes.$dirty && registrationForm.notes.$error.required">
-                    Please provide a reason for your registration request
-                </span>
-            </div>
+	<h2 class="text-center">
+		Register at <strong>{{organisationName}}</strong>
+	</h2>
+	<div class="ext-authn-info" ng-show="extAuthInfo != null">
+		<p>
+			This is the <strong>{{organisationName}}</strong> registration page.
+		</p>
+		<p>
+			You have been succesfully authenticated, but your credentials are <strong>not</strong>
+			yet linked to an <strong>{{organisationName}}</strong> account.
+		</p>
+		<p>To proceed with the registration please fill in your personal
+			information below.</p>
+		<p>
+			To abort this registration click <a href="/reset-session">here</a>.
+		</p>
+	</div>
+	<div class="ext-authn-info" ng-show="extAuthInfo == null">
+		<p>This is the {{organisationName}} registration page.</p>
+		<p ng-show="getExternablAuthenticationEnabled()">
+			If you want to register using an external identity provider, like
+			Google or your institution identity provider, head back to the <a
+				href="/login">login page</a> and click the "Sign in with" button of
+			your preferred identity provider.
+		</p>
+		<p>To proceed with the registration please fill in your personal
+			information below.</p>
+	</div>
+	<div class="box box-default no-border registration-box">
+		<form name="registrationForm" id="registration-form">
+			<div ng-show="operationResult != null">
+				<div class="alert"
+					ng-class="{'alert-success': operationResult=='ok', 'alert-danger': operationResult=='err'}">
+					<button class="close" ng-click="operationResult=null"
+						aria-label="close">&times;</button>
+					{{textAlert}}
+				</div>
+			</div>
 
-            <div ng-if="!aup && privacyPolicy.url">
-                <p>
-                    By submitting this registration request, you declare that you agree
-                    with the terms of this organization <a href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
-                </p>
-            </div>
-            <div ng-if="aup && aup.text">
-                <div class="form-group">
-                    <label class="control-label">Acceptable Usage Policy (AUP)</label>
-                    <div>{{aup.text}}</div>
-                    <p class="help-block" ng-if="privacyPolicy.url == null">By submitting this registration request, you
-                        agree to the terms of this
-                        organization Acceptable Usage Policy shown above.
-                    </p>
-                    <p class="help-block" ng-if="privacyPolicy.url != null">By submitting this registration request, you
-                        agree to the terms of this
-                        organization Acceptable Usage Policy shown above and
-                        <a target="_blank" rel="noopener noreferrer"
-                            href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
-                    </p>
-                </div>
-            </div>
-            <div ng-if="aup && aup.url">
-                <div class="form-group">
-                    <p ng-if="!privacyPolicy.url">
-                        By submitting this registration request, you declare that you agree
-                        with the terms of this organization <a target="_blank" rel="noopener noreferrer"
-                            href="{{aup.url}}">Acceptable Usage Policy</a>.
-                    </p>
-                    <p ng-if="privacyPolicy.url">
-                        By submitting this registration request, you declare that you agree
-                        with the terms of this organization <a href="{{aup.url}}">Acceptable Usage Policy</a>
-                        and <a target="_blank" rel="noopener noreferrer"
-                            href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
-                    </p>
-                </div>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-primary" type="submit" id="register-submit-btn" name="register"
-                    ng-disabled="!registrationForm.$valid || busy" ng-click="rc.submit()">
-                    Register
-                </button>
-                <button class="btn btn-warning" type="button" id="register-reset-btn" name="reset" ng-click="rc.reset()"
-                    ng-disabled="registrationForm.$pristine">
-                    Reset Form
-                </button>
-            </div>
-        </form>
-        <div class="overlay" ng-if="busy">
-            <i class="fa fa-refresh fa-spin"></i>
-        </div>
-    </div>
+			<!-- Dynamic form fields generated from the controller's fields array -->
+			<div ng-repeat="field in fields">
+				<div class="form-group" ng-if="field.showField"
+					ng-class="{'has-error': rc.fieldInvalid(field.name), 'has-success': rc.fieldValid(field.name)}">
+					<label class="control-label" for="{{field.name}}">{{field.label}}</label>
+
+					<!-- Field where applying custom directive is NOT needed -->
+					<input ng-if="field.type == 'text' && field.name != 'username'"
+						class="form-control" name="{{field.name}}" id="{{field.name}}"
+						type="{{field.type}}" ng-model="request[field.ngModelName]"
+						placeholder="{{field.placeholder}}" ng-required="field.required"
+						ng-minlength="field.minlength"
+						ng-readonly="rc.fieldReadonly(field.name)"
+						ng-model-options="{ debounce: field.debounceTime || 0 }" />
+
+					<!-- Field where applying custom directive directly is a MUST -->
+					<input ng-if="field.type == 'email'" class="form-control"
+						name="{{field.name}}" id="{{field.name}}" type="{{field.type}}"
+						ng-model="request[field.ngModelName]"
+						placeholder="{{field.placeholder}}" ng-required="field.required"
+						ng-minlength="field.minlength"
+						ng-readonly="rc.fieldReadonly(field.name)"
+						ng-model-options="{ debounce: field.debounceTime || 0 }"
+						iam-email-available-validator />
+
+					<!-- Field where applying custom directive directly is a MUST -->
+					<input ng-if="field.type == 'text' && field.name == 'username'"
+						class="form-control" name="{{field.name}}" id="{{field.name}}"
+						type="{{field.type}}" ng-model="request[field.ngModelName]"
+						placeholder="{{field.placeholder}}" ng-required="field.required"
+						ng-minlength="field.minlength"
+						ng-readonly="rc.fieldReadonly(field.name)"
+						ng-model-options="{ debounce: field.debounceTime || 0 }"
+						iam-username-available-validator />
+
+					<textarea ng-if="field.type === 'textarea'" class="form-control"
+						id="{{field.name}}" name="{{field.name}}" rows="{{field.rows}}"
+						placeholder="{{field.placeholder}}"
+						ng-model="request[field.ngModelName]" ng-required="field.required"
+						ng-minlength="{{field.minlength}}"
+						ng-readonly="rc.fieldReadonly(field.name)"></textarea>
+
+					<span class="help-block"
+						ng-show="registrationForm[field.name].$dirty && rc.getFieldErrorMessage(field.name)">
+						{{ rc.getFieldErrorMessage(field.name) }} </span>
+				</div>
+			</div>
+
+			<div ng-if="!aup && privacyPolicy.url">
+				<p>
+					By submitting this registration request, you declare that you agree
+					with the terms of this organization <a href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
+				</p>
+			</div>
+			<div ng-if="aup && aup.text">
+				<div class="form-group">
+					<label class="control-label">Acceptable Usage Policy (AUP)</label>
+					<div>{{aup.text}}</div>
+					<p class="help-block" ng-if="privacyPolicy.url == null">By
+						submitting this registration request, you agree to the terms of
+						this organization Acceptable Usage Policy shown above.</p>
+					<p class="help-block" ng-if="privacyPolicy.url != null">
+						By submitting this registration request, you agree to the terms of
+						this organization Acceptable Usage Policy shown above and <a
+							target="_blank" rel="noopener noreferrer"
+							href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
+					</p>
+				</div>
+			</div>
+			<div ng-if="aup && aup.url">
+				<div class="form-group">
+					<p ng-if="!privacyPolicy.url">
+						By submitting this registration request, you declare that you
+						agree with the terms of this organization <a target="_blank"
+							rel="noopener noreferrer" href="{{aup.url}}">Acceptable Usage
+							Policy</a>.
+					</p>
+					<p ng-if="privacyPolicy.url">
+						By submitting this registration request, you declare that you
+						agree with the terms of this organization <a href="{{aup.url}}">Acceptable
+							Usage Policy</a> and <a target="_blank" rel="noopener noreferrer"
+							href="{{privacyPolicy.url}}">{{privacyPolicy.text}}</a>.
+					</p>
+				</div>
+			</div>
+			<div class="form-group">
+				<button class="btn btn-primary" type="submit"
+					id="register-submit-btn" name="register"
+					ng-disabled="!registrationForm.$valid || busy"
+					ng-click="rc.submit()">Register</button>
+				<button class="btn btn-warning" type="button"
+					id="register-reset-btn" name="reset" ng-click="rc.reset()"
+					ng-disabled="registrationForm.$pristine">Reset Form</button>
+			</div>
+		</form>
+		<div class="overlay" ng-if="busy">
+			<i class="fa fa-refresh fa-spin"></i>
+		</div>
+	</div>
 </div>
