@@ -153,6 +153,8 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
       .andExpect(request().attribute(X509_SUSPENDED_ACCOUNT_KEY, is(TRUE)));
 
+    testAccount.setActive(true);
+    iamAccountRepo.save(testAccount);
   }
 
   @Test
