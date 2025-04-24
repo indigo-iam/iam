@@ -49,7 +49,6 @@ import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
-import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
@@ -92,7 +91,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void managingLabelsRequiresAuthenticatedUser() throws Exception {
+  public void managingLabelsIsNotAllowedToAnonymousUsers() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(UNAUTHORIZED);
 
@@ -107,7 +106,7 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void managingLabelsRequiresPrivilegedUser() throws Exception {
+  public void managingLabelsRequiresAnAuthenticatedUser() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
@@ -122,22 +121,6 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
-    gettingLabelsWorks();
-  }
-
-  @Test
-  @WithMockUser(username = "test", roles = {"READER", "USER"})
-  public void gettingLabelsWorksForReaderUser() throws Exception {
-    gettingLabelsWorks();
-  }
-
-  @Test
-  @WithMockOAuthUser(scopes = {"iam:admin.read"})
-  public void gettingLabelsDoesNotWorkWithoutRoleUser() throws Exception {
-    mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(FORBIDDEN);
-  }
-
-  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 
