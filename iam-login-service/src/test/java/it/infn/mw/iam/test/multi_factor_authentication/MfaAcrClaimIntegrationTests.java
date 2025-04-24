@@ -63,7 +63,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
     ClientDetailsEntity client = loadTestClient(TEST_CLIENT_ID);
 
     OAuth2AccessTokenEntity accessToken = buildAccessToken(client, TESTUSER_USERNAME, SCOPES);
-    assertEquals("https://referds.org/profile/MFA",
+    assertEquals("https://refeds.org/profile/MFA",
         accessToken.getJwt().getJWTClaimsSet().getClaim("acr"));
 
     mvc
@@ -71,7 +71,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
         .param("token", accessToken.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.acr").exists())
-      .andExpect(jsonPath("$.acr", containsString("https://referds.org/profile/MFA")));
+      .andExpect(jsonPath("$.acr", containsString("https://refeds.org/profile/MFA")));
   }
 
   @Test

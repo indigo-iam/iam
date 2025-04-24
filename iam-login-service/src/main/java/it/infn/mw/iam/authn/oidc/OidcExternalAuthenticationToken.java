@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -51,33 +50,6 @@ public class OidcExternalAuthenticationToken
   public OidcExternalAuthenticationToken(OIDCAuthenticationToken authn, Date tokenExpiration,
       Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
     super(authn, tokenExpiration, principal, credentials, authorities);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!(obj instanceof OidcExternalAuthenticationToken)) {
-      return false;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-    OidcExternalAuthenticationToken that = (OidcExternalAuthenticationToken) obj;
-
-    return Objects.equals(this.getPrincipal(), that.getPrincipal())
-        && Objects.equals(this.getCredentials(), that.getCredentials())
-        && Objects.equals(this.getAuthenticationMethodReferences(),
-            that.getAuthenticationMethodReferences())
-        && Objects.equals(this.getTotp(), that.getTotp()) && Objects
-          .equals(this.getFullyAuthenticatedAuthorities(), that.getFullyAuthenticatedAuthorities());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), getPrincipal(), getCredentials(),
-        getAuthenticationMethodReferences(), getTotp(), getFullyAuthenticatedAuthorities());
   }
 
   @Override

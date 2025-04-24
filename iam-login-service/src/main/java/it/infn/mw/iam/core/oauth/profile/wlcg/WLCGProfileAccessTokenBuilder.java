@@ -88,8 +88,6 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     addAudience(builder);
 
-    addAcrClaimIfNeeded(builder, authentication);
-
     return builder.build();
   }
 

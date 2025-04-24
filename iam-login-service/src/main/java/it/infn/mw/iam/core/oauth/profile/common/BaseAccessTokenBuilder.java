@@ -179,6 +179,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       handleClientTokenExchange(builder, token, authentication, userInfo);
     }
 
+    addAcrClaimIfNeeded(builder, authentication);
+
     return builder;
   }
 
@@ -193,7 +195,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       if (account.isPresent()) {
         Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
         if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-          builder.claim("acr", "https://referds.org/profile/MFA");
+          builder.claim("acr", "https://refeds.org/profile/MFA");
         }
       }
     }
