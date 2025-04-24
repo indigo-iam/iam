@@ -64,9 +64,6 @@ public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
             ((UserInfoAdapter) userInfo).getUserinfo())));
       builder.claim("voperson_id", userInfo.getSub());
     }
-
-    addAcrClaimIfNeeded(builder, authentication);
-
     return builder.build();
   }
 }
