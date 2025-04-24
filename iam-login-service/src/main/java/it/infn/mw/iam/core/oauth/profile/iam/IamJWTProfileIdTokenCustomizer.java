@@ -62,7 +62,5 @@ public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
 
     includeLabelsInIdToken(idClaims, account);
-
-    idClaims.claim("voperson_id", account.getUserInfo().getSub());
   }
 }
