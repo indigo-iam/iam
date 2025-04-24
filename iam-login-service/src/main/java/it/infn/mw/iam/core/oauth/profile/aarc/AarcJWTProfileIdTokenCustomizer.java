@@ -15,18 +15,32 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+
+import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public AarcJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
       IamProperties properties) {
     super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
+  }
+
+  @Override
+  public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
+      OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
+
+    idClaims.claim("voperson_id", account.getUserInfo().getSub());
   }
 }
