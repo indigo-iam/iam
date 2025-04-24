@@ -16,7 +16,7 @@
 (function () {
     'use strict';
 
-    function UserGroupsController(toaster, $uibModal, ModalService, scimFactory) {
+    function UserGroupsController(toaster, $uibModal, ModalService, scimFactory, GroupsService) {
         var self = this;
 
         self.$onInit = function () {
@@ -25,12 +25,12 @@
             self.userGroupLabels = {};
             self.labelName = labelName;
 
-            angular.forEach(self.user.groups, function(g){
+            angular.forEach(self.user.groups, function(g) {
                 self.groupLabels(g.value).then(function(res){
                     self.userGroupLabels[g.value] = res;
                 });
-            });  
-    };
+            });
+        };
 
         self.isVoAdmin = function () { return self.userCtrl.isVoAdmin(); };
 
@@ -43,16 +43,12 @@
                 });
             });
         };
-        
-        self.groupLabels = function(groupId){
-            
-                return scimFactory.getGroup(groupId).then(function(res){     
-                   var r = res.data;
-                   var labels = r['urn:indigo-dc:scim:schemas:IndigoGroup'].labels;
-                   return labels;
+
+        self.groupLabels = function(groupId) {
+            return GroupsService.getGroupLabels(groupId).then(function(res) {
+                return res.data;
             });
         };
-
 
         function labelName(label) {
             if (label.prefix) {
@@ -103,7 +99,7 @@
         bindings: { user: '=' },
         templateUrl: '/resources/iam/apps/dashboard-app/components/user/groups/user.groups.component.html',
         controller: [
-            'toaster', '$uibModal', 'ModalService', 'scimFactory',
+            'toaster', '$uibModal', 'ModalService', 'scimFactory', 'GroupsService',
             UserGroupsController
         ]
     });
