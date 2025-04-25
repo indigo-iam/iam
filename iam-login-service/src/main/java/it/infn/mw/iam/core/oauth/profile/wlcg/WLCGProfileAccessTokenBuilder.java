@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper.ATTR_SCOPE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
@@ -82,7 +83,7 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       }
     }
 
-    addAudience(builder, authentication);
+    addAudience(builder);
 
     return builder.build();
   }
@@ -118,8 +119,8 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     }
   }
 
-  private void addAudience(Builder builder, OAuth2Authentication authentication) {
-    if (!hasAudienceRequest(authentication) && !hasRefreshTokenAudienceRequest(authentication)) {
+  private void addAudience(Builder builder) {
+    if (!builder.getClaims().containsKey(AUDIENCE)) {
       builder.audience(ALL_AUDIENCES_VALUE);
     }
   }

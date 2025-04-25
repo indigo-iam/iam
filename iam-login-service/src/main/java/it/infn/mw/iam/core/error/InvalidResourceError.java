@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.x509;
-@FunctionalInterface
-public interface X509CertificateChainParser {
-  
-  X509CertificateChainParsingResult parseChainFromString(String certificateChain);
-  
+package it.infn.mw.iam.core.error;
+
+import org.springframework.security.oauth2.common.exceptions.ClientAuthenticationException;
+
+@SuppressWarnings("deprecation")
+public class InvalidResourceError extends ClientAuthenticationException {
+
+  private static final long serialVersionUID = 1L;
+
+  public InvalidResourceError(String message) {
+    super(message);
+  }
+
+  @Override
+  public String getOAuth2ErrorCode() {
+    return "invalid_target";
+  }
 }

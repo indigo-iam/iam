@@ -168,6 +168,16 @@
 
 					</c:forEach>
 
+					<c:forEach var="resource" items="${ resources }">
+						<p style="margin-top: 10px">
+							<c:choose>
+								<c:when test="${ not empty resource  }">
+									<b><i><c:out value="Resource:"/></i></b> <c:out value="${ resource }" />
+								</c:when>
+							</c:choose>
+						</p>
+					</c:forEach>
+
 					&nbsp;
 
 					<legend style="margin-bottom: 0;">
