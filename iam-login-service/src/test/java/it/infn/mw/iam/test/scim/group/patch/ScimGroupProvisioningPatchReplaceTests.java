@@ -84,7 +84,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
 
   @Test
   public void testGroupPatchReplaceWithEmptyGroup() throws Exception {
-    List<ScimUser> emptyGroup = new ArrayList<ScimUser>();
+    List<ScimUser> emptyGroup = new ArrayList<>();
     ScimGroupPatchRequest patchReplaceRequest = getPatchReplaceUsersRequest(emptyGroup);
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
@@ -114,7 +114,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   @Test
   public void testGroupPatchReplaceWithSubset() throws Exception {
 
-    List<ScimUser> subsetMembers = new ArrayList<ScimUser>();
+    List<ScimUser> subsetMembers = new ArrayList<>();
     subsetMembers.add(lennon);
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 
@@ -143,7 +143,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   @Test
   public void testGroupPatchReplaceMembersWithFakeUser() throws Exception {
 
-    List<ScimUser> groupWithFakeUser = new ArrayList<ScimUser>();
+    List<ScimUser> groupWithFakeUser = new ArrayList<>();
     ScimUser ringo = addTestUser("ringo", "mail@domain.com", "Ringo", "Star");
     groupWithFakeUser.add(lennon);
     groupWithFakeUser.add(ringo);
@@ -153,7 +153,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(groupWithFakeUser);
 
     mvc.perform(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-        .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNotFound());
+        .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isBadRequest());
 
     mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
         .andExpect(status().isOk())
@@ -165,7 +165,7 @@ public class ScimGroupProvisioningPatchReplaceTests extends ScimGroupPatchUtils 
   @Test
   public void testGroupPatchReplaceWithNewMember() throws Exception {
 
-    List<ScimUser> singleUserGroup = new ArrayList<ScimUser>();
+    List<ScimUser> singleUserGroup = new ArrayList<>();
     singleUserGroup.add(reagan);
     ScimGroup engineersBeforeUpdate = getGroup(engineers.getMeta().getLocation());
 

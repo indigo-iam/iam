@@ -27,7 +27,7 @@ import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
-import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
@@ -114,7 +114,7 @@ public class DefaultGroupMembershipUpdaterFactory
     for (ScimMemberRef memberRef : members) {
       String uuid = memberRef.getValue();
       IamAccount account = accountService.findByUuid(uuid)
-          .orElseThrow(() -> new ScimResourceNotFoundException("User UUID " + uuid + " not found"));
+          .orElseThrow(() -> new ScimValidationException("User UUID " + uuid + " not found"));
       newAccounts.add(account);
     }
     return newAccounts;
