@@ -32,6 +32,9 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 
+
+// this is for logging the notifications instead of sending emails
+// It is not what I'm looking for but worth keeping in mind
 @Service
 @ConditionalOnProperty(name = "notification.disable", havingValue = "true")
 public class LoggingNotificationDelivery implements NotificationDelivery {

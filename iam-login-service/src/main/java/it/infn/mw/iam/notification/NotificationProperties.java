@@ -43,6 +43,8 @@ public class NotificationProperties {
 
   private Boolean disable;
 
+  private Boolean certificateUpdate;
+
   @NotBlank
   private String mailFrom;
 
@@ -67,6 +69,14 @@ public class NotificationProperties {
 
   public void setDisable(Boolean disable) {
     this.disable = disable;
+  }
+
+  public Boolean getCertificateUpdate(){
+    return this.certificateUpdate;
+  }
+
+  public void setCertificateUpdate(Boolean certificateUpdate){
+    this.certificateUpdate = certificateUpdate;
   }
 
   public String getMailFrom() {

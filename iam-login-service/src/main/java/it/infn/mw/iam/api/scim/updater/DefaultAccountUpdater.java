@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -23,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class DefaultAccountUpdater<T, E extends AccountEvent> extends DefaultUpdater<T>
     implements AccountUpdater {
@@ -48,6 +50,27 @@ public class DefaultAccountUpdater<T, E extends AccountEvent> extends DefaultUpd
   public IamAccount getAccount() {
     return this.account;
   }
+
+
+  // Supressing warning for unchecked as it is handled by the try catch
+  @SuppressWarnings("unchecked")
+  public <A> A getNewValue(Class<A> clazz) {
+
+    if (((ArrayList<?>) this.newValue).get(0).getClass().equals(clazz)) {
+      return ((ArrayList<A>) this.newValue).get(0);
+    } else {
+      throw new ClassCastException(
+          String.format("The newValue parameter is of type %s and the type declared was %s",
+              ((ArrayList<?>) this.newValue).get(0).getClass(), clazz));
+    }
+
+  }
+
+  // Method below is in case you casttype after having made the call
+  public <A> A getNewValue() {
+    return ((ArrayList<A>) newValue).get(0);
+  }
+
 
   @Override
   public void publishUpdateEvent(Object source, ApplicationEventPublisher publisher) {

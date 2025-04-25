@@ -20,11 +20,15 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 
+import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+
+
+// Think I need to add an update certificate here that can be called with all the relevant info
 
 public interface NotificationFactory {
 
@@ -65,4 +69,8 @@ public interface NotificationFactory {
   IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
 
   IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
+
+  IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u);
+
+  IamEmailNotification createUnlinkedCertificateMessage(IamAccount account, AccountUpdater u);
 }

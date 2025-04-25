@@ -201,14 +201,17 @@ x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
   tlsVersion: ${IAM_X509_TLS_VERSION:TLSv1}
-    
+
+# This is the place to change so the notifications are set    
 notification:
-  disable: ${IAM_NOTIFICATION_DISABLE:false}
+  disable: ${IAM_NOTIFICATION_DISABLE:true}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
-  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:5000}
+  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:500}
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
-  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
+  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address-and-admins}
+  # Default value of the certificate update should be false, but currently true for testing
+  certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:true}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
   subject-prefix: "[${iam.organisation.name} IAM]"
   subject:
@@ -238,7 +241,7 @@ management:
       redis:
         enabled: ${IAM_HEALTH_REDIS_PROBE_ENABLED:false} 
       mail:
-        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:false} 
+        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:true} 
   endpoints:
     enabled-by-default: false
     web:
