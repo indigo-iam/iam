@@ -1,32 +1,25 @@
-INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
+INSERT INTO client_details (client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
-  token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, created_at, active) VALUES
-  (1, 'client', 'secret', 'Test Client', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (2, 'tasks-app', 'secret', 'Tasks App', false, null, 0, 0, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (3, 'post-client', 'secret', 'Post client', false, null, 3600,600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (4, 'client-cred', 'secret', 'Client credentials', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (5, 'password-grant', 'secret', 'Password grant client', false, null, 3600, 600, true, 'SECRET_BASIC',true, null, CURRENT_TIMESTAMP(), true),
-  (6, 'scim-client-ro', 'secret', 'SCIM client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), true),
-  (7, 'scim-client-rw', 'secret', 'SCIM client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), true),
-  (8, 'token-exchange-actor', 'secret', 'Token Exchange grant client actor', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (9, 'token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (11, 'token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), true),
-  (12, 'device-code-client', 'secret', 'Device code client', false, null, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), true),
-  (13, 'implicit-flow-client', null, 'Implicit Flow client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), true),
-  (14, 'public-dc-client', null, 'Public Device Code client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), true),
-  (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true);
-
-INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
-  refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
-  token_endpoint_auth_method, require_auth_time, token_endpoint_auth_signing_alg, jwks) VALUES
-  (15, 'jwt-auth-client_secret_jwt', 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7', 'JWT Bearer Auth Client (client_secret_jwt)', 
-  false, null, 3600, 600, true, 'SECRET_JWT', false, 'HS256', null),
-  (16, 'jwt-auth-private_key_jwt', 'secret', 'JWT Bearer Auth Client (private_key_jwt)', 
-  false, null, 3600, 600, true,'PRIVATE_KEY', false, 'RS256',
-  '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}');
+  token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, token_endpoint_auth_signing_alg, jwks, created_at, active) VALUES
+  ('client', 'secret', 'Test Client', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('tasks-app', 'secret', 'Tasks App', false, null, 0, 0, true, 'SECRET_BASIC',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('post-client', 'secret', 'Post client', false, null, 3600,600, true, 'SECRET_POST',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('client-cred', 'secret', 'Client credentials', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('password-grant', 'secret', 'Password grant client', false, null, 3600, 600, true, 'SECRET_BASIC',true, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('scim-client-ro', 'secret', 'SCIM client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, null, null, CURRENT_TIMESTAMP(), true),
+  ('scim-client-rw', 'secret', 'SCIM client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, null, null, CURRENT_TIMESTAMP(), true),
+  ('token-exchange-actor', 'secret', 'Token Exchange grant client actor', false, null, 3600, 600, true, 'SECRET_POST',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST',false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC', false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('device-code-client', 'secret', 'Device code client', false, null, 3600, 600, true, 'SECRET_BASIC', false, 600, null, null, CURRENT_TIMESTAMP(), true),
+  ('implicit-flow-client', null, 'Implicit Flow client', false, null, 3600, 600, false, null, false, 600, null, null, CURRENT_TIMESTAMP(), true),
+  ('public-dc-client', null, 'Public Device Code client', false, null, 3600, 600, false, null, false, 600, null, null, CURRENT_TIMESTAMP(), true),
+  ('jwt-auth-client_secret_jwt', 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7', 'JWT Bearer Auth Client (client_secret_jwt)', false, null, 3600, 600, true, 'SECRET_JWT', false, 600, 'HS256', null, CURRENT_TIMESTAMP(), true),
+  ('jwt-auth-private_key_jwt', 'secret', 'JWT Bearer Auth Client (private_key_jwt)', false, null, 3600, 600, true, 'PRIVATE_KEY', false, null, 'RS256', '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}', CURRENT_TIMESTAMP(), true),
+  ('admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST', false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST', false, null, null, null, CURRENT_TIMESTAMP(), true),
+  ('public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, null, null, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
@@ -198,13 +191,10 @@ INSERT INTO client_contact (owner_id, contact) VALUES
   (12, 'test@example.com');
     
 INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME) VALUES
-  (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test'),
-  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa');
+  (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test');
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
-  (2, '80e5fb8d-b7c8-451a-89ba-346ae278a66f', 'test', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
-  (1000, '467c882e-90da-11ec-b909-0242ac120002', 'test-with-mfa', '$2a$12$S3lUZw/ESq9lULn5he6bBu9KNGCvs7C2rWo0XdVC6t65ITwAc22w2', 1000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
-
+  (2, '80e5fb8d-b7c8-451a-89ba-346ae278a66f', 'test', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
 
 INSERT INTO iam_oidc_id(issuer, subject, account_id) VALUES
 ('https://accounts.google.com', '105440632287425289613', 2),
@@ -240,40 +230,39 @@ gZ9zFVlxWHcKUqQ41ZQXNg7U
 -----END CERTIFICATE-----', 
 CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),1);
 
-INSERT INTO iam_group(id, name, uuid, description, creationtime, lastupdatetime) VALUES
-(1, 'Production', 'c617d586-54e6-411d-8e38-64967798fa8a', 'The production group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(2, 'Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+INSERT INTO iam_group(name, uuid, description, creationtime, lastupdatetime) VALUES
+('Production', 'c617d586-54e6-411d-8e38-64967798fa8a', 'The production group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
 
 INSERT INTO iam_account_group(account_id, group_id) VALUES
-(2,1),
-(2,2);
+(2, 1),
+(2, 2);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
-(2,2),
-(1000, 2);
+(2, 2);
 
 -- Other test groups
-INSERT INTO iam_group(id, name, uuid, description, creationtime, lastupdatetime) VALUES
-(101, 'Test-001', 'c617d586-54e6-411d-8e38-649677980001', 'Test group-001', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(102, 'Test-002', 'c617d586-54e6-411d-8e38-649677980002', 'Test group-002', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(103, 'Test-003', 'c617d586-54e6-411d-8e38-649677980003', 'Test group-003', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(104, 'Test-004', 'c617d586-54e6-411d-8e38-649677980004', 'Test group-004', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(105, 'Test-005', 'c617d586-54e6-411d-8e38-649677980005', 'Test group-005', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(106, 'Test-006', 'c617d586-54e6-411d-8e38-649677980006', 'Test group-006', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(107, 'Test-007', 'c617d586-54e6-411d-8e38-649677980007', 'Test group-007', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(108, 'Test-008', 'c617d586-54e6-411d-8e38-649677980008', 'Test group-008', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(109, 'Test-009', 'c617d586-54e6-411d-8e38-649677980009', 'Test group-009', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(110, 'Test-010', 'c617d586-54e6-411d-8e38-649677980010', 'Test group-010', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(111, 'Test-011', 'c617d586-54e6-411d-8e38-649677980011', 'Test group-011', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(112, 'Test-012', 'c617d586-54e6-411d-8e38-649677980012', 'Test group-012', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(113, 'Test-013', 'c617d586-54e6-411d-8e38-649677980013', 'Test group-013', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(114, 'Test-014', 'c617d586-54e6-411d-8e38-649677980014', 'Test group-014', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(115, 'Test-015', 'c617d586-54e6-411d-8e38-649677980015', 'Test group-015', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(116, 'Test-016', 'c617d586-54e6-411d-8e38-649677980016', 'Test group-016', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(117, 'Test-017', 'c617d586-54e6-411d-8e38-649677980017', 'Test group-017', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(118, 'Test-018', 'c617d586-54e6-411d-8e38-649677980018', 'Test group-018', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(119, 'Test-019', 'c617d586-54e6-411d-8e38-649677980019', 'Test group-019', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(120, 'Test-020', 'c617d586-54e6-411d-8e38-649677980020', 'Test group-020', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+INSERT INTO iam_group(name, uuid, description, creationtime, lastupdatetime) VALUES
+('Test-001', 'c617d586-54e6-411d-8e38-649677980001', 'Test group-001', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-002', 'c617d586-54e6-411d-8e38-649677980002', 'Test group-002', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-003', 'c617d586-54e6-411d-8e38-649677980003', 'Test group-003', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-004', 'c617d586-54e6-411d-8e38-649677980004', 'Test group-004', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-005', 'c617d586-54e6-411d-8e38-649677980005', 'Test group-005', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-006', 'c617d586-54e6-411d-8e38-649677980006', 'Test group-006', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-007', 'c617d586-54e6-411d-8e38-649677980007', 'Test group-007', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-008', 'c617d586-54e6-411d-8e38-649677980008', 'Test group-008', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-009', 'c617d586-54e6-411d-8e38-649677980009', 'Test group-009', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-010', 'c617d586-54e6-411d-8e38-649677980010', 'Test group-010', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-011', 'c617d586-54e6-411d-8e38-649677980011', 'Test group-011', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-012', 'c617d586-54e6-411d-8e38-649677980012', 'Test group-012', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-013', 'c617d586-54e6-411d-8e38-649677980013', 'Test group-013', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-014', 'c617d586-54e6-411d-8e38-649677980014', 'Test group-014', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-015', 'c617d586-54e6-411d-8e38-649677980015', 'Test group-015', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-016', 'c617d586-54e6-411d-8e38-649677980016', 'Test group-016', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-017', 'c617d586-54e6-411d-8e38-649677980017', 'Test group-017', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-018', 'c617d586-54e6-411d-8e38-649677980018', 'Test group-018', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-019', 'c617d586-54e6-411d-8e38-649677980019', 'Test group-019', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+('Test-020', 'c617d586-54e6-411d-8e38-649677980020', 'Test group-020', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
 
 -- Other test users
 INSERT INTO iam_user_info(ID,GIVENNAME,FAMILYNAME, EMAIL, EMAILVERIFIED) VALUES
@@ -1532,10 +1521,6 @@ insert into iam_account_client(id, account_id, client_id, creation_time) VALUES
 (2, 200, 2, CURRENT_TIMESTAMP()),
 (3, 199, 1, CURRENT_TIMESTAMP()),
 (4, 199, 2, CURRENT_TIMESTAMP());
-
--- TOTP multi-factor secrets
-insert into iam_totp_mfa(active, secret, creation_time, last_update_time, account_id) VALUES
-(true, 'secret', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), 1000);
 
 -- Client last used dates
 insert into client_last_used(client_details_id, last_used) VALUES
