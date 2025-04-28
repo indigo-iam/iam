@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.provider.expression.OAuth2MethodSecur
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 
@@ -30,12 +31,15 @@ import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 public class IamMethodSecurityExpressionHandler extends OAuth2MethodSecurityExpressionHandler {
 
   private final AccountUtils accountUtils;
+  private final DefaultClientService clientService;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
   public IamMethodSecurityExpressionHandler(AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
+      DefaultClientService clientService, GroupRequestUtils groupRequestUtils,
+      OAuth2AuthenticationScopeResolver scopeResolver) {
     this.accountUtils = accountUtils;
+    this.clientService = clientService;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
   }
@@ -46,7 +50,7 @@ public class IamMethodSecurityExpressionHandler extends OAuth2MethodSecurityExpr
 
     StandardEvaluationContext ec = super.createEvaluationContextInternal(authentication, mi);
     ec.setVariable("iam", new IamSecurityExpressionMethods(authentication, accountUtils,
-        groupRequestUtils, scopeResolver));
+        clientService, groupRequestUtils, scopeResolver));
     return ec;
   }
 
