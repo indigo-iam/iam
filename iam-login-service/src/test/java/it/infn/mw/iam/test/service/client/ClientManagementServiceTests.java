@@ -52,6 +52,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
@@ -131,7 +132,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertThat(client.getClientId(), is("client"));
-    assertThat(client.getClientSecret(), is("secret"));
+    assertThat(new BCryptPasswordEncoder(12).matches("secret", client.getClientSecret()), is(true));
     assertThat(client.getGrantTypes(), hasItems(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN));
     assertThat(client.getScope(), hasItems("openid", "offline_access", "profile", "email",
         "address", "phone", "read-tasks", "write-tasks", "read:/", "write:/"));
