@@ -15,6 +15,8 @@
  */
 package db.migration.mysql;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -24,7 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 
-public class V106__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
+public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
+
+  public static final Logger LOG = LoggerFactory.getLogger(V109__HashClientSecret.class);
 
   @Override
   public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
@@ -32,6 +36,8 @@ public class V106__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
     final short DEFAULT_ROUND = 12;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(DEFAULT_ROUND);
+
+    LOG.debug("### START MIGRATION V109__HashClientSecret ###");
 
     SqlRowSet clientList = jdbcTemplate.queryForRowSet("SELECT id, client_secret FROM client_details");
 
@@ -42,12 +48,13 @@ public class V106__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       }
       Long id = clientList.getLong("id");
 
-      String PassEncrypted = passwordEncoder.encode(clientSecret);
-
-      if (passwordEncoder.matches(clientSecret, PassEncrypted)) {
-        jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", PassEncrypted, id);
-      }
+      String secretHashed = passwordEncoder.encode(clientSecret);
+      assert !passwordEncoder.matches(clientSecret, secretHashed);
+      
+      jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", secretHashed, id);
     }
+
+    LOG.debug("### END MIGRATION V109__HashClientSecret ###");
   }
 
 }
