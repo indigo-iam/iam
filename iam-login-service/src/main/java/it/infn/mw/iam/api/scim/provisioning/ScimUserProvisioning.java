@@ -67,6 +67,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -88,6 +89,7 @@ public class ScimUserProvisioning
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -96,8 +98,9 @@ public class ScimUserProvisioning
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
 
+    this.notificationProperties = notificationProperties;
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
@@ -293,17 +296,19 @@ public class ScimUserProvisioning
       }
     }
 
-    // It was in case they changed their certificate on their account
-    // Therefore only checking if they changed it
-    if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
-      notificationFactory.createLinkedCertificateMessage(account, u);
+    // Checking if the certificate update is true and only then is it generating the notification/log update
+    if (notificationProperties.getCertificateUpdate()) {
+      if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
+        notificationFactory.createLinkedCertificateMessage(account, u);
 
+      }
+
+      else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
+        notificationFactory.createUnlinkedCertificateMessage(account, u);
+
+      }
     }
 
-    if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
-      notificationFactory.createUnlinkedCertificateMessage(account, u);
-
-    }
   }
 
   @Override
