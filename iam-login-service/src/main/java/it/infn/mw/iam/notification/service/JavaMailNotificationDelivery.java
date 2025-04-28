@@ -38,9 +38,6 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 
-
-// This conditional property for the class is similar to what I need
-
 @Service
 @ConditionalOnProperty(name = "notification.disable", havingValue = "false")
 public class JavaMailNotificationDelivery implements NotificationDelivery {
@@ -69,13 +66,13 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
     message.setFrom(properties.getMailFrom());
     message.setSubject(notification.getSubject());
     message.setText(notification.getBody());
-    
+
     List<String> emailAddresses = Lists.newArrayList();
-    
-    for (IamNotificationReceiver r: notification.getReceivers()) {
+
+    for (IamNotificationReceiver r : notification.getReceivers()) {
       emailAddresses.add(r.getEmailAddress());
     }
-    
+
     message.setTo(emailAddresses.stream().toArray(String[]::new));
     return message;
   }
@@ -87,8 +84,6 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
     List<IamEmailNotification> pendingMessages =
         repo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    System.out.println("FOR FANDENS DA OGSAA");
-
     if (pendingMessages.isEmpty()) {
       LOG.debug("No pending messages found in repository");
       return;
@@ -97,15 +92,14 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
     for (IamEmailNotification e : pendingMessages) {
       SimpleMailMessage message = messageFromNotification(e);
 
-     
+
 
       try {
         mailSender.send(message);
         e.setDeliveryStatus(IamDeliveryStatus.DELIVERED);
 
         LOG.info(
-            "Email message delivered. "
-                + "message_id:{} message_type:{} rcpt_to:{} subject:{}",
+            "Email message delivered. " + "message_id:{} message_type:{} rcpt_to:{} subject:{}",
             e.getUuid(), e.getType(), message.getTo(), message.getSubject());
 
 
@@ -120,42 +114,4 @@ public class JavaMailNotificationDelivery implements NotificationDelivery {
     }
 
   }
-
-  
-  @Transactional
-  @ConditionalOnProperty(name = "notification.certificateUpdate", havingValue = "true")
-  public void x509CertificateNotification() {
-    List<IamEmailNotification> pendingMessages =
-        repo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
-
-    if (pendingMessages.isEmpty()) {
-      LOG.debug("No pending messages found in repository");
-      return;
-    }
-
-    for (IamEmailNotification e : pendingMessages) {
-      SimpleMailMessage message = messageFromNotification(e);
-
-      try {
-        mailSender.send(message);
-        e.setDeliveryStatus(IamDeliveryStatus.DELIVERED);
-
-        LOG.info(
-            "Email message delivered. "
-                + "message_id:{} message_type:{} rcpt_to:{} subject:{}",
-            e.getUuid(), e.getType(), message.getTo(), message.getSubject());
-
-
-      } catch (MailException ex) {
-        e.setDeliveryStatus(IamDeliveryStatus.DELIVERY_ERROR);
-        LOG.error("Email message delivery error: message_id:{} reason:{}", e.getUuid(),
-            ex.getMessage(), ex);
-      }
-
-      e.setLastUpdate(new Date(timeProvider.currentTimeMillis()));
-      repo.save(e);
-    }
-
-  }
-
 }

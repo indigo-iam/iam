@@ -204,14 +204,14 @@ x509:
 
 # This is the place to change so the notifications are set    
 notification:
-  disable: ${IAM_NOTIFICATION_DISABLE:true}
+  disable: ${IAM_NOTIFICATION_DISABLE:false}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
-  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:500}
+  taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:5000}
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
-  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address-and-admins}
+  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
   # Default value of the certificate update should be false, but currently true for testing
-  certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:true}
+  certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:false}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
   subject-prefix: "[${iam.organisation.name} IAM]"
   subject:
@@ -241,7 +241,7 @@ management:
       redis:
         enabled: ${IAM_HEALTH_REDIS_PROBE_ENABLED:false} 
       mail:
-        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:true} 
+        enabled: ${IAM_HEALTH_MAIL_PROBE_ENABLED:false} 
   endpoints:
     enabled-by-default: false
     web:
