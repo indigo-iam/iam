@@ -102,7 +102,10 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
       try {
         Object acrClaim = token.getIdToken().getJWTClaimsSet().getClaim("acr");
         if (acrClaim != null) {
-          acrValue = acrClaim.toString();
+          String acrString = acrClaim.toString();
+          if (acrString.contains("mfa")) {
+            acrValue = acrString;
+          }
         }
       } catch (ParseException e) {
         LOG.error("Error parsing JWT claims: {}", e.getMessage());
