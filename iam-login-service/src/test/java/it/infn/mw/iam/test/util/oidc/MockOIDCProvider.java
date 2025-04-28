@@ -61,7 +61,7 @@ public class MockOIDCProvider implements OidcTokenRequestor {
       .nonce(nonce);
 
     if (acr != null && !acr.isEmpty()) {
-      builder.customClaim("acr", "https://refeds.org/profile/MFA");
+      builder.customClaim("acr", "https://refeds.org/profile/mfa");
     }
 
     return builder.build();
