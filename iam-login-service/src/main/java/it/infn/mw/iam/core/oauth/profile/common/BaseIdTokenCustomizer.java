@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
@@ -80,15 +79,15 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
       OAuth2AccessTokenEntity accessToken) {
+
     Object amrClaim = request.getExtensions().get("amr");
 
     if (amrClaim instanceof String amrString) {
       try {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<String> amrList =
-            objectMapper.readValue(amrString, new TypeReference<List<String>>() {});
+        String[] amrArray = objectMapper.readValue(amrString, String[].class);
 
-        builder.claim("amr", amrList);
+        builder.claim("amr", List.of(amrArray));
 
       } catch (Exception e) {
         LOG.error("Failed to deserialize amr claim", e);
