@@ -195,7 +195,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       if (account.isPresent()) {
         Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
         if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-          builder.claim("acr", "https://refeds.org/profile/MFA");
+          builder.claim("acr", "https://refeds.org/profile/mfa");
         }
       }
     }
