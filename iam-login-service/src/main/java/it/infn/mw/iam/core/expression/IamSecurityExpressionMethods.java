@@ -20,11 +20,13 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 import java.util.Collection;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
@@ -40,13 +42,16 @@ public class IamSecurityExpressionMethods {
 
   private final Authentication authentication;
   private final AccountUtils accountUtils;
+  private final DefaultClientService clientService;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
   public IamSecurityExpressionMethods(Authentication authentication, AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
+      DefaultClientService clientService, GroupRequestUtils groupRequestUtils,
+      OAuth2AuthenticationScopeResolver scopeResolver) {
     this.authentication = authentication;
     this.accountUtils = accountUtils;
+    this.clientService = clientService;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
   }
@@ -152,5 +157,12 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
+  }
+
+  public boolean isClientOwner(String clientId) {
+    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
+    Optional<ClientDetailsEntity> client =
+        clientService.findClientByClientIdAndAccount(clientId, account.orElse(null));
+    return client.isPresent();
   }
 }

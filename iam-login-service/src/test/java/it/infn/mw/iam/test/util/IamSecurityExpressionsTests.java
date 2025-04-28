@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
@@ -46,6 +47,9 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   private AccountUtils accountUtils;
 
   @Autowired
+  private DefaultClientService clientService;
+
+  @Autowired
   private GroupRequestUtils groupRequestUtils;
 
   @Autowired
@@ -58,14 +62,15 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   public void destroy() {
     repo.deleteAll();
   }
-  
+
   private IamSecurityExpressionMethods getMethods() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    return new IamSecurityExpressionMethods(authentication, accountUtils, groupRequestUtils, scopeResolver);
+    return new IamSecurityExpressionMethods(authentication, accountUtils, clientService,
+        groupRequestUtils, scopeResolver);
   }
 
   @Test
-  @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_ADMIN)
+  @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   public void testIsAdmin() {
     assertTrue(getMethods().isAdmin());
     assertTrue(getMethods().isUser(TEST_ADMIN_UUID));
@@ -77,7 +82,7 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   }
 
   @Test
-  @WithMockUser(roles = { "USER" }, username = TEST_USERNAME)
+  @WithMockUser(roles = {"USER"}, username = TEST_USERNAME)
   public void testIsNotAdmin() {
     assertFalse(getMethods().isAdmin());
     assertTrue(getMethods().isUser(TEST_USERUUID));
