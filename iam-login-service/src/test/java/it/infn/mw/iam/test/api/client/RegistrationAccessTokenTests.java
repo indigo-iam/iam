@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
@@ -110,7 +111,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
       .body()
       .as(RegisteredClientDTO.class);
 
-    assertThat(getResponse.getClientSecret(), is(registerResponse.getClientSecret()));
+    assertThat(new BCryptPasswordEncoder(12).matches(registerResponse.getClientSecret(), getResponse.getClientSecret()), is(true));
     assertThat(getResponse.getRegistrationAccessToken(), nullValue());
 
     RegisteredClientDTO rotatedRatClient =
