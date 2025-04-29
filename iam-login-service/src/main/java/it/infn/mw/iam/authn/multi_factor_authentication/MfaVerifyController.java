@@ -16,11 +16,10 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference.AuthenticationMethodReferenceValues.X509;
-import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -30,17 +29,15 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
@@ -50,33 +47,35 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
  * with username + password but not fully authenticated yet
  */
 @Controller
-@RequestMapping(MFA_VERIFY_URL)
 public class MfaVerifyController {
 
   public static final String MFA_VERIFY_URL = "/iam/verify";
   final IamAccountRepository accountRepository;
   final IamTotpMfaRepository totpMfaRepository;
-  final ObjectMapper mapper;
 
   public MfaVerifyController(IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
-    this.mapper = new ObjectMapper();
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
-  @GetMapping("")
-  public String getVerifyMfaView(Authentication authentication, ModelMap model) throws JsonProcessingException {
+  @GetMapping(value = MFA_VERIFY_URL)
+  public String getVerifyMfaView(Authentication authentication, ModelMap model) {
     IamAccount account = accountRepository.findByUsername(authentication.getName())
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
-    MultiFactorSettingsDTO dto = populateMfaSettings(account);
-    model.addAttribute("factors", mapper.writeValueAsString(dto));
+    model.addAttribute("isAuthenticatorAppActive", isAuthenticatorAppActive(account));
 
     if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
       setAuthentication(preAuthenticatedAuthenticationToken);
     }
     return "iam/verify-mfa";
+  }
+
+  private boolean isAuthenticatorAppActive(IamAccount account) {
+    return totpMfaRepository.findByAccount(account).map(t -> {
+      return t.isActive();
+    }).orElse(false);
   }
 
   private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
@@ -93,37 +92,10 @@ public class MfaVerifyController {
     }
   }
 
-  /**
-   * Populates a DTO containing info on which additional factors of authentication are active
-   * 
-   * @param account the MFA-enabled account
-   * @return DTO with populated settings
-   */
-  private MultiFactorSettingsDTO populateMfaSettings(IamAccount account) {
-    MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
-
-    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    if (totpMfaOptional.isPresent()) {
-      IamTotpMfa totpMfa = totpMfaOptional.get();
-      dto.setAuthenticatorAppActive(totpMfa.isActive());
-    } else {
-      dto.setAuthenticatorAppActive(false);
-    }
-
-    return dto;
-  }
-
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(NoSuchAccountError.class)
   @ResponseBody
   public ErrorDTO handleNoSuchAccountError(NoSuchAccountError e) {
-    return ErrorDTO.fromString(e.getMessage());
-  }
-
-  @ResponseStatus(code = HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler(JsonProcessingException.class)
-  @ResponseBody
-  public ErrorDTO handleJsonProcessingException(JsonProcessingException e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 }
