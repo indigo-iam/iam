@@ -144,6 +144,13 @@ public class DefaultAccountLinkingService
     }
   }
 
+
+  // I need to make sure this one is tested from my point
+  // I.e. I just need to make sure that this calls the 'createLinkedCertificateMessage' if the notificationproperties 
+  // is right
+
+  // No need to have it test it all
+
   @Override
   public void linkX509Certificate(Principal authenticatedUser,
       IamX509AuthenticationCredential x509Credential) {
@@ -200,6 +207,9 @@ public class DefaultAccountLinkingService
       notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
     }
   }
+
+
+  // It is the exact same for this one
 
   @Override
   public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject) {
