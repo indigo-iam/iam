@@ -31,6 +31,10 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.api.account.multi_factor_authentication.MultiFactorSettingsDTO;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
@@ -52,21 +56,23 @@ public class MfaVerifyController {
   public static final String MFA_VERIFY_URL = "/iam/verify";
   final IamAccountRepository accountRepository;
   final IamTotpMfaRepository totpMfaRepository;
+  final ObjectMapper mapper;
 
   public MfaVerifyController(IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
+    this.mapper = new ObjectMapper();
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
   @GetMapping("")
-  public String getVerifyMfaView(Authentication authentication, ModelMap model) {
+  public String getVerifyMfaView(Authentication authentication, ModelMap model) throws JsonProcessingException {
     IamAccount account = accountRepository.findByUsername(authentication.getName())
       .orElseThrow(() -> NoSuchAccountError.forUsername(authentication.getName()));
     MultiFactorSettingsDTO dto = populateMfaSettings(account);
-    model.addAttribute("factors", dto.toJson());
-    
+    model.addAttribute("factors", mapper.writeValueAsString(dto));
+
     if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
       setAuthentication(preAuthenticatedAuthenticationToken);
     }
@@ -111,6 +117,13 @@ public class MfaVerifyController {
   @ExceptionHandler(NoSuchAccountError.class)
   @ResponseBody
   public ErrorDTO handleNoSuchAccountError(NoSuchAccountError e) {
+    return ErrorDTO.fromString(e.getMessage());
+  }
+
+  @ResponseStatus(code = HttpStatus.INTERNAL_SERVER_ERROR)
+  @ExceptionHandler(JsonProcessingException.class)
+  @ResponseBody
+  public ErrorDTO handleJsonProcessingException(JsonProcessingException e) {
     return ErrorDTO.fromString(e.getMessage());
   }
 }

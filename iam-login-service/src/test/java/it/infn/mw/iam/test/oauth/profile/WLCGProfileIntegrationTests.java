@@ -604,8 +604,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
         is(ACTOR_CLIENT_ID));
 
 
-    JSONObject nestedActClaimValue =
-        (JSONObject) exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("act");
+    JSONObject nestedActClaimValue = (JSONObject) JSONObject
+      .wrap(exchangedToken2.getJWTClaimsSet().getJSONObjectClaim("act").get("act"));
     assertThat(nestedActClaimValue.getString("sub"), is(ACTOR_CLIENT_ID));
 
     // Check that token can be introspected properly

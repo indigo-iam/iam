@@ -636,18 +636,17 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    
+
     DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-lookup-client"));
-    
-    JSONObject innerActClaim = (JSONObject) actClaim.get("act");
+
+    JSONObject innerActClaim = (JSONObject) JSONObject.wrap(actClaim.get("act"));
     assertThat(innerActClaim.getString("sub"), is("token-exchange-actor"));
-    
 
   }
 

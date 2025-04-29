@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Date;
 
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.DeviceCode;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -73,6 +75,10 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   @Autowired
   private ApprovedSiteService approvedSiteService;
 
+  @AfterEach
+  public void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
 
   @Test
   public void testDeviceCodeReturnsBadRequestForEmptyClientId() throws Exception {
