@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -515,7 +515,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
 
 
-  // This will be the method that calls the admin in case a user has linked a certificate
+  
   @Override
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u) {
 
@@ -553,10 +553,40 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
+  @Override
+  public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+    String issuerDn = x509Credential.getIssuer();
+    String subjectDn = x509Credential.getSubject();
+
+    String subject = "New x509Certificate linked to user";
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("name", name);
+    model.put(USERNAME_FIELD, username);
+    model.put("email", email);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("subjectDn", subjectDn);
+    model.put("issuerDn", issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
+            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
 
 
-  // This will be the method that calls the admin in case a user has removed the link to their
-  // certificate
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+
+
+  
   @Override
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
       AccountUpdater u) {
@@ -573,6 +603,39 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String issuerDn = removedCertificate.getIssuerDn();
     String subjectDn = removedCertificate.getSubjectDn();
+
+    String subject = "Removed x509Certificate from user";
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("name", name);
+    model.put(USERNAME_FIELD, username);
+    model.put("email", email);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("subjectDn", subjectDn);
+    model.put("issuerDn", issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+
+  @Override
+  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Certificate) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+
+    String issuerDn = x509Certificate.getIssuerDn();
+    String subjectDn = x509Certificate.getSubjectDn();
 
     String subject = "Removed x509Certificate from user";
 
