@@ -16,16 +16,12 @@
 package it.infn.mw.iam.test.api.tokens;
 
 import static it.infn.mw.iam.api.tokens.TokensControllerSupport.APPLICATION_JSON_CONTENT_TYPE;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -33,13 +29,11 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.web.servlet.MockMvc;
@@ -48,13 +42,11 @@ import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -105,33 +97,6 @@ public class TestTokensUtils {
 
     if (username != null) {
       userAuth = new UsernamePasswordAuthenticationToken(username, "");
-    }
-
-    MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
-    req.setRequestParameters(requestParameters);
-    return new OAuth2Authentication(req, userAuth);
-  }
-
-  public OAuth2Authentication oidcAuthentication(ClientDetailsEntity client, String username,
-      String[] scopes, Map<String, Object> details) {
-
-    Authentication userAuth = null;
-    Map<String, String> requestParameters = new HashMap<>();
-    requestParameters.put("grant_type", "authorization_code");
-
-    if (username != null) {
-      OIDCAuthenticationToken oidcToken = mock(OIDCAuthenticationToken.class);
-      when(oidcToken.getIdToken()).thenReturn(mock(JWT.class));
-
-      OidcExternalAuthenticationToken extToken =
-          new OidcExternalAuthenticationToken(oidcToken, Date.from(Instant.now().plusSeconds(3600)),
-              username, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-
-      if (details != null) {
-        extToken.setDetails(details);
-      }
-
-      userAuth = extToken;
     }
 
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
