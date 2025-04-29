@@ -37,7 +37,7 @@ public class PersistentNotificationFactory extends TransientNotificationFactory 
   public PersistentNotificationFactory(Configuration fm, NotificationProperties np,
                                        IamEmailNotificationRepository repo, AdminNotificationDeliveryStrategy ands,
                                        GroupManagerNotificationDeliveryStrategy gmds, IamEmailNotificationRepository emailNotificationRepository, NotificationDelivery delivery) {
-    super(fm, np, ands, gmds, emailNotificationRepository, delivery);
+    super(fm, np, ands, gmds);
     this.repo = repo;
   }
 
