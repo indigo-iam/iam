@@ -24,10 +24,10 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +45,6 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
@@ -185,19 +183,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
-
-    Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount(authentication);
-    if (authentication.getUserAuthentication() != null
-        && authentication.getUserAuthentication().getDetails() instanceof Map<?, ?> details
-        && details.get("acr") != null) {
-      builder.claim("acr", details.get("acr"));
-    } else {
-      if (account.isPresent()) {
-        Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
-        if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
-          builder.claim("acr", "https://refeds.org/profile/mfa");
-        }
-      }
+    if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
+        && savedAuth.getAdditionalInfo().get("acr") != null) {
+      builder.claim("acr", savedAuth.getAdditionalInfo().get("acr"));
     }
   }
 }

@@ -20,7 +20,6 @@ import static java.util.Objects.isNull;
 
 import java.text.ParseException;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +53,8 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
   public static final Logger LOG = LoggerFactory.getLogger(OidcAuthenticationProvider.class);
 
+  private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
+
   private final OidcUserDetailsService userDetailsService;
   private final AuthenticationValidator<OIDCAuthenticationToken> tokenValidatorService;
   private final IamAccountRepository accountRepo;
@@ -71,7 +72,6 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
     this.accountRepo = accountRepo;
     this.totpMfaRepository = totpMfaRepository;
   }
-
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -102,10 +102,7 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
       try {
         Object acrClaim = token.getIdToken().getJWTClaimsSet().getClaim("acr");
         if (acrClaim != null) {
-          String acrString = acrClaim.toString();
-          if (acrString.contains("mfa")) {
-            acrValue = acrString;
-          }
+          acrValue = acrClaim.toString();
         }
       } catch (ParseException e) {
         LOG.error("Error parsing JWT claims: {}", e.getMessage());
@@ -113,7 +110,8 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
       // Checking to see if we can find an active MFA secret attached to the user's account. If so,
       // MFA is enabled on the account
-      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive() && isNull(acrValue)) {
+      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()
+          && (isNull(acrValue) || !ACR_VALUE_MFA.equals(acrValue))) {
         // Add PRE_AUTHENTICATED role to the user. This grants them access to the /iam/verify
         // endpoint
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
@@ -125,6 +123,7 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
             account.get().getUsername(), null, currentAuthorities);
         extToken.setAuthenticationMethodReferences(refs);
         extToken.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
+        extToken.setDetails(Map.of("acr", ACR_VALUE_MFA));
       } else {
         // MFA is not enabled on this account, construct a new authentication object for the FULLY
         // AUTHENTICATED user, granting their normal authorities
@@ -133,12 +132,9 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
             account.get().getUsername(), null, convert(account.get().getAuthorities()));
         extToken.setAuthenticationMethodReferences(refs);
         if (!isNull(acrValue)) {
-          Map<String, String> authDetails = new HashMap<>();
-          authDetails.put("acr", acrValue);
-          extToken.setDetails(authDetails);
+          extToken.setDetails(Map.of("acr", acrValue));
         }
       }
-
       return extToken;
     } else {
       return new OidcExternalAuthenticationToken(token,
