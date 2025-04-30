@@ -41,8 +41,8 @@ public class ScimBulkOperationResponse {
   public ScimBulkOperationResponse(@JsonProperty("method") String method, @JsonProperty("status") String status) {
     this.method = method;
     this.status = status;
-    this.location = "";
-    this.bulkId = "";
+    this.location = null;
+    this.bulkId = null;
     this.errorResponse = null;
   }
 

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUsersBulkResponse {
 
-  public static final String BULKREQUEST_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:BulkRequest";
+  public static final String BULKRESPONSE_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:BulkResponse";
   @NotEmpty
   private final Set<String> schemas;
   private final List<ScimBulkOperationResponse> operations;
@@ -70,7 +70,7 @@ public class ScimUsersBulkResponse {
     private List<ScimBulkOperationResponse> operations = new ArrayList<>();;
 
     public Builder() {
-      schemas.add(BULKREQUEST_SCHEMA);
+      schemas.add(BULKRESPONSE_SCHEMA);
     }
 
     public Builder addSuccessResponse(String method, String location, String status) {
