@@ -45,7 +45,6 @@ import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultGroupMembershipUpdaterFactory;
@@ -54,6 +53,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Service
 @Transactional
@@ -74,14 +74,14 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, Clock clock) {
+      ScimResourceLocationProvider locationProvider, Clock clock, IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -95,9 +95,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
           "path value " + op.getPath() + " is not currently supported");
     }
 
-    if (op.getOp().equals(ScimPatchOperationType.replace)) {
-      throw new ScimPatchOperationNotSupported("'replace' operation is not currently supported");
-    }
   }
 
   @Override
@@ -118,8 +115,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       String parentGroupName = group.getIndigoGroup().getParentGroup().getDisplay();
 
       iamParentGroup = groupService.findByUuid(parentGroupUuid)
-        .orElseThrow(() -> new ScimResourceNotFoundException(
-            String.format("Parent group '%s' not found", parentGroupUuid)));
+          .orElseThrow(() -> new ScimResourceNotFoundException(
+              String.format("Parent group '%s' not found", parentGroupUuid)));
 
       String fullName = String.format("%s/%s", parentGroupName, group.getDisplayName());
       fullNameSanityChecks(fullName);
@@ -240,7 +237,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     return () -> new ScimResourceNotFoundException(String.format("No group mapped to id '%s'", id));
   }
 
-
   @Override
   public ScimGroup replace(String id, ScimGroup scimItemToBeReplaced) {
 
@@ -259,7 +255,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     return converter.dtoFromEntity(newGroup);
   }
 
-
   @Override
   public void update(String id, List<ScimPatchOperation<List<ScimMemberRef>>> operations) {
 
@@ -269,7 +264,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   }
 
-
   public ScimListResponse<ScimMemberRef> listAccountMembers(String id,
       ScimPageRequest pageRequest) {
 
@@ -278,16 +272,16 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     ScimListResponseBuilder<ScimMemberRef> results = new ScimListResponseBuilder<>();
 
     OffsetPageable pr = new OffsetPageable(pageRequest.getStartIndex(), pageRequest.getCount());
-    Page<IamAccount> accounts = accountService.fingGroupMembers(iamGroup, pr);
+    Page<IamAccount> accounts = accountService.findGroupMembers(iamGroup, pr);
 
     List<ScimMemberRef> resources = newArrayList();
 
     for (IamAccount a : accounts.getContent()) {
       resources.add(ScimMemberRef.builder()
-        .value(a.getUuid())
-        .display(a.getUserInfo().getName())
-        .ref(locationProvider.userLocation(a.getUuid()))
-        .build());
+          .value(a.getUuid())
+          .display(a.getUserInfo().getName())
+          .ref(locationProvider.userLocation(a.getUuid()))
+          .build());
     }
 
     results.fromPage(accounts, pr);
@@ -306,10 +300,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     List<ScimMemberRef> resources = newArrayList();
     for (IamGroup g : subgroups.getContent()) {
       resources.add(ScimMemberRef.builder()
-        .value(g.getUuid())
-        .display(g.getName())
-        .ref(locationProvider.groupLocation(g.getUuid()))
-        .build());
+          .value(g.getUuid())
+          .display(g.getName())
+          .ref(locationProvider.groupLocation(g.getUuid()))
+          .build());
     }
 
     results.fromPage(subgroups, pr);
