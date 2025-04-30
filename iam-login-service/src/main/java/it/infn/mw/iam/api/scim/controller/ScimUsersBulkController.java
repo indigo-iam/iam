@@ -17,13 +17,10 @@ package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,28 +31,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
-import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
-import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimErrorResponse;
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimResource;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
 import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
 import it.infn.mw.iam.api.scim.model.ScimUsersBulkResponse;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
-import it.infn.mw.iam.authn.x509.CertificateParsingError;
-import it.infn.mw.iam.util.ssh.InvalidSshKeyException;
 
 @RestController
 @RequestMapping("/scim/Users/Bulk")
-@Transactional
 public class ScimUsersBulkController extends ScimControllerSupport {
 
   public static final String INVALID_BULK_MSG = "Invalid Bulk Request";
@@ -81,26 +71,14 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     for(ScimBulkOperationSingle singleOperation: bulkRequest.getOperations()){
       try {
         if (singleOperation.getMethod().equals("POST")){
-        ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
-        try {
-          ScimResource resp = userProvisioningService.create(user);
-          bulkResponse.addSuccessResponse("POST", resp.getMeta().getLocation(), singleOperation.getbulkId(), "201");
-        } catch (ScimResourceExistsException e){
-          ScimErrorResponse error = errorHandler.handleResourceExists(e);
-          bulkResponse.addErrorResponse("POST",singleOperation.getbulkId(), error.getStatus(), error);
-        } catch (ScimValidationException e){
-          ScimErrorResponse error = errorHandler.handleScimValidationException(e);
-          bulkResponse.addErrorResponse("POST", error.getStatus(), error);
-        } catch (ScimException e){
-          ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
-          bulkResponse.addErrorResponse("POST", error.getStatus(), error);
-        } catch (CertificateParsingError e){
-          ScimErrorResponse error = errorHandler.handleCertificateParsingError(e);
-          bulkResponse.addErrorResponse("POST", error.getStatus(), error);
-        } catch (InvalidSshKeyException e){
-          ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
-          bulkResponse.addErrorResponse("POST", error.getStatus(), error);
-        }
+          ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
+          try {
+            ScimResource resp = userProvisioningService.create(user);
+            bulkResponse.addSuccessResponse("POST", resp.getMeta().getLocation(), singleOperation.getbulkId(), "201");
+          } catch (ScimResourceExistsException e){
+            ScimErrorResponse error = errorHandler.handleResourceExists(e);
+            bulkResponse.addErrorResponse("POST",singleOperation.getbulkId(), error.getStatus(), error);
+          }
       } else if (singleOperation.getMethod().equals("PATCH")){
         ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
         String path = singleOperation.getPath();
@@ -113,18 +91,6 @@ public class ScimUsersBulkController extends ScimControllerSupport {
           ScimErrorResponse error = errorHandler.handleResourceNotFoundException(e);
           bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
         } catch (ScimPatchOperationNotSupported e){
-          ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        } catch (ScimValidationException e){
-          ScimErrorResponse error = errorHandler.handleScimValidationException(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        } catch (ScimException e){
-          ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        } catch (CertificateParsingError e){
-          ScimErrorResponse error = errorHandler.handleCertificateParsingError(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        } catch (InvalidSshKeyException e){
           ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
           bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
         }
