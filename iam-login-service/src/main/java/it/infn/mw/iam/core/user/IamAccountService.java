@@ -189,7 +189,7 @@ public interface IamAccountService {
    * @param page pagination params
    * @return the page of accounts that are members of the group
    */
-  Page<IamAccount> fingGroupMembers(IamGroup group, Pageable page);
+  Page<IamAccount> findGroupMembers(IamGroup group, Pageable page);
 
 
   /**
