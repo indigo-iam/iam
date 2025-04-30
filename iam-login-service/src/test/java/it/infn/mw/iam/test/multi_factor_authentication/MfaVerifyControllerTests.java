@@ -79,7 +79,7 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
   public void testGetVerifyMfaView() throws Exception {
     mvc.perform(get(MFA_VERIFY_URL))
       .andExpect(status().isOk())
-      .andExpect(model().attributeExists("factors"));
+      .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
     verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
   }
@@ -90,7 +90,7 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
     when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     mvc.perform(get(MFA_VERIFY_URL))
       .andExpect(status().isOk())
-      .andExpect(model().attributeExists("factors"));
+      .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
     verify(totpMfaRepository, times(1)).findByAccount(TOTP_MFA_ACCOUNT);
   }
@@ -130,7 +130,7 @@ public class MfaVerifyControllerTests extends MultiFactorTestSupport {
     when(totpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
     mvc.perform(get(MFA_VERIFY_URL))
         .andExpect(status().isOk())
-        .andExpect(model().attributeExists("factors"));
+        .andExpect(model().attributeExists("isAuthenticatorAppActive"));
 
     mvc.perform(get("/dashboard"))
         .andExpect(status().isForbidden());   

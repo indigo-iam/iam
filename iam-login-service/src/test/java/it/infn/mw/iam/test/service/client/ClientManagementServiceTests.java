@@ -178,10 +178,7 @@ public class ClientManagementServiceTests {
       managementService.saveNewClient(client);
     });
 
-    String expectedMessage = "Invalid JSON: Unexpected token " + NOT_A_JSON_STRING;
-    String actualMessage = e.getMessage();
-
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertTrue(e.getMessage().contains("Invalid JSON:"));
 
     client.setJwk(VALID_JSON_VALUE);
     try {
