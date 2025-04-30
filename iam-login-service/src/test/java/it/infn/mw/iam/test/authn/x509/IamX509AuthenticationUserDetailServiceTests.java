@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,52 +46,51 @@ import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 @RunWith(MockitoJUnitRunner.class)
 public class IamX509AuthenticationUserDetailServiceTests extends X509TestSupport {
 
-    @Mock
-    IamAccountRepository accountRepository;
-    @Mock
-    IamTotpMfaRepository totpMfaRepository;
-    @Mock
-    InactiveAccountAuthenticationHander inactiveAccountHandler;
+  @Mock
+  IamAccountRepository accountRepository;
+  @Mock
+  IamTotpMfaRepository totpMfaRepository;
+  @Mock
+  InactiveAccountAuthenticationHander inactiveAccountHandler;
 
-    IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
-    PreAuthenticatedAuthenticationToken token;
+  IamX509AuthenticationUserDetailService iamX509AuthenticationUserDetailService;
+  PreAuthenticatedAuthenticationToken token;
 
-    @Before
-    public void setup() {
-        iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(accountRepository,
-                totpMfaRepository, inactiveAccountHandler);
-        token = new PreAuthenticatedAuthenticationToken("test-principal",
-                "test-credentials");
-    }
+  @Before
+  public void setup() {
+    iamX509AuthenticationUserDetailService = new IamX509AuthenticationUserDetailService(
+        accountRepository, totpMfaRepository, inactiveAccountHandler);
+    token = new PreAuthenticatedAuthenticationToken("test-principal", "test-credentials");
+  }
 
-    private IamAccount newAccount(String username) {
-        IamAccount result = new IamAccount();
-        result.setUserInfo(new IamUserInfo());
-        result.setPassword("secret");
-        result.setUsername(username);
-        result.setUuid(UUID.randomUUID().toString());
-        return result;
-    }
+  private IamAccount newAccount(String username) {
+    IamAccount result = new IamAccount();
+    result.setUserInfo(new IamUserInfo());
+    result.setPassword("secret");
+    result.setUsername(username);
+    result.setUuid(UUID.randomUUID().toString());
+    return result;
+  }
 
-    @Test
-    public void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
+  @Test
+  public void testIfMfaActiveThenRolePreAuthenticatedIsAdded() {
 
-        IamAccount account = newAccount("test-user");
-        when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
+    IamAccount account = newAccount("test-user");
+    when(accountRepository.findByCertificateSubject(anyString())).thenReturn(Optional.of(account));
 
-        IamTotpMfa iamTotpMfa = new IamTotpMfa();
-        iamTotpMfa.setActive(true);
-        when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
+    IamTotpMfa iamTotpMfa = new IamTotpMfa();
+    iamTotpMfa.setActive(true);
+    when(totpMfaRepository.findByAccount(account)).thenReturn(Optional.of(iamTotpMfa));
 
-        UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
+    UserDetails userDetails = iamX509AuthenticationUserDetailService.loadUserDetails(token);
 
-        assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
-    }
+    assertTrue(hasRole(userDetails, "ROLE_PRE_AUTHENTICATED"));
+    Map<?, ?> details = (Map<?, ?>) token.getDetails();
+    assertTrue(details.containsValue("https://refeds.org/profile/mfa"));
+  }
 
-    private boolean hasRole(UserDetails userDetails, String role) {
-        Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
-        return authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role::equals);
-    }
+  private boolean hasRole(UserDetails userDetails, String role) {
+    Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
+    return authorities.stream().map(GrantedAuthority::getAuthority).anyMatch(role::equals);
+  }
 }
