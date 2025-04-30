@@ -580,7 +580,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public Page<IamAccount> fingGroupMembers(IamGroup group, Pageable page) {
+  public Page<IamAccount> findGroupMembers(IamGroup group, Pageable page) {
     return accountRepo.findByGroupUuid(group.getUuid(), page);
   }
 
