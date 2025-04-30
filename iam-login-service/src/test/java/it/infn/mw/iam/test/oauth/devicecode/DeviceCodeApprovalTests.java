@@ -63,7 +63,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeApprovalTests extends EndpointsTestUtils
+class DeviceCodeApprovalTests extends EndpointsTestUtils
     implements DeviceCodeTestsConstants {
 
   @Autowired
@@ -76,7 +76,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   private ApprovedSiteService approvedSiteService;
 
   @AfterEach
-  public void clearSecurityContext() {
+  void clearSecurityContext() {
     SecurityContextHolder.clearContext();
   }
 

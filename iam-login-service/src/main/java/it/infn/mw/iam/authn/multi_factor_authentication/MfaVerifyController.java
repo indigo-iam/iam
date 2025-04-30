@@ -38,6 +38,7 @@ import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
@@ -73,9 +74,7 @@ public class MfaVerifyController {
   }
 
   private boolean isAuthenticatorAppActive(IamAccount account) {
-    return totpMfaRepository.findByAccount(account).map(t -> {
-      return t.isActive();
-    }).orElse(false);
+    return totpMfaRepository.findByAccount(account).map(IamTotpMfa::isActive).orElse(false);
   }
 
   private void setAuthentication(PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
