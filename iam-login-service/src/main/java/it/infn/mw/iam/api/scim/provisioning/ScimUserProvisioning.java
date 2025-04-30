@@ -68,6 +68,7 @@ import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
+import it.infn.mw.iam.notification.NotificationProperties.AdminNotificationPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -296,18 +297,28 @@ public class ScimUserProvisioning
       }
     }
 
-    // Checking if the certificate update is true and only then is it generating the notification/log update
-    if (notificationProperties.getCertificateUpdate()) {
-      if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
-        notificationFactory.createLinkedCertificateMessage(account, u);
 
-      }
+    // Checking if Admins are in the notification policy
+    if (notificationProperties.getAdminNotificationPolicy()
+      .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+        || notificationProperties.getAdminNotificationPolicy()
+          .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS)) {
 
-      else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
-        notificationFactory.createUnlinkedCertificateMessage(account, u);
+      // Checking if the certificate update is true and only then is it generating the
+      // notification/log update
+      if (notificationProperties.getCertificateUpdate()) {
+        if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
+          notificationFactory.createLinkedCertificateMessage(account, u);
 
+        }
+
+        else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
+          notificationFactory.createUnlinkedCertificateMessage(account, u);
+
+        }
       }
     }
+
 
   }
 

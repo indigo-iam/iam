@@ -40,6 +40,7 @@ import it.infn.mw.iam.authn.error.AccountAlreadyLinkedError;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
+import it.infn.mw.iam.notification.NotificationProperties.AdminNotificationPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -146,7 +147,8 @@ public class DefaultAccountLinkingService
 
 
   // I need to make sure this one is tested from my point
-  // I.e. I just need to make sure that this calls the 'createLinkedCertificateMessage' if the notificationproperties 
+  // I.e. I just need to make sure that this calls the 'createLinkedCertificateMessage' if the
+  // notificationproperties
   // is right
 
   // No need to have it test it all
@@ -203,7 +205,12 @@ public class DefaultAccountLinkingService
           x509Credential));
     }
 
-    if (notificationProperties.getCertificateUpdate()) {
+    notificationProperties.getAdminNotificationPolicy();
+    if (notificationProperties.getCertificateUpdate()
+        && (notificationProperties.getAdminNotificationPolicy()
+          .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+            || notificationProperties.getAdminNotificationPolicy()
+              .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
       notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
     }
   }
@@ -237,7 +244,11 @@ public class DefaultAccountLinkingService
               userAccount.getUsername(), certificateSubject),
           certificateSubject));
 
-      if (notificationProperties.getCertificateUpdate()) {
+      if (notificationProperties.getCertificateUpdate()
+          && (notificationProperties.getAdminNotificationPolicy()
+            .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+              || notificationProperties.getAdminNotificationPolicy()
+                .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
         notificationFactory.createUnlinkedCertificateMessage(userAccount, certificate);
       }
     }
