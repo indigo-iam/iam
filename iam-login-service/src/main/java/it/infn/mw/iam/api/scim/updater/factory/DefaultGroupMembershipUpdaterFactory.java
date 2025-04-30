@@ -17,12 +17,17 @@ package it.infn.mw.iam.api.scim.updater.factory;
 
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.add;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
+import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.google.common.collect.Lists;
 
-import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
+import it.infn.mw.iam.api.scim.exception.ScimValidationException;
 import it.infn.mw.iam.api.scim.model.ScimMemberRef;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
@@ -31,19 +36,22 @@ import it.infn.mw.iam.api.scim.updater.builders.GroupMembershipManagement;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class DefaultGroupMembershipUpdaterFactory
     implements AccountUpdaterFactory<IamGroup, List<ScimMemberRef>> {
 
   final IamAccountService accountService;
+  final ScimResourceLocationProvider locationProvider;
+  final IamAccountRepository accountRepo;
 
-
-  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService) {
-
+  public DefaultGroupMembershipUpdaterFactory(IamAccountService accountService,
+      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
     this.accountService = accountService;
+    this.locationProvider = locationProvider;
+    this.accountRepo = accountRepo;
   }
 
-  @Override
   public List<AccountUpdater> getUpdatersForPatchOperation(IamGroup group,
       ScimPatchOperation<List<ScimMemberRef>> op) {
 
@@ -60,6 +68,19 @@ public class DefaultGroupMembershipUpdaterFactory
 
       prepareRemovers(updaters, members, group);
 
+    }
+    if (op.getOp().equals(replace)) {
+      long totalUsers = accountRepo.count();
+      OffsetPageable pr = new OffsetPageable(0, (int) totalUsers);
+      Page<IamAccount> accounts = accountService.findGroupMembers(group, pr);
+      List<IamAccount> oldMembers = Lists.newArrayList();
+
+      for (IamAccount a : accounts.getContent()) {
+        oldMembers.add(a);
+      }
+
+      prepareRemovers(updaters, oldMembers, group);
+      prepareAdders(updaters, members, group);
     }
 
     return updaters;
@@ -79,12 +100,10 @@ public class DefaultGroupMembershipUpdaterFactory
       IamGroup group) {
 
     for (IamAccount memberToRemove : membersToRemove) {
-      GroupMembershipManagement mgmt =
-          new GroupMembershipManagement(memberToRemove, accountService);
+      GroupMembershipManagement mgmt = new GroupMembershipManagement(memberToRemove, accountService);
       updaters.add(mgmt.removeFromGroup(group));
     }
   }
-
 
   private List<IamAccount> memberRefToAccountConverter(List<ScimMemberRef> members) {
 
@@ -95,7 +114,7 @@ public class DefaultGroupMembershipUpdaterFactory
     for (ScimMemberRef memberRef : members) {
       String uuid = memberRef.getValue();
       IamAccount account = accountService.findByUuid(uuid)
-        .orElseThrow(() -> new ScimResourceNotFoundException("User UUID " + uuid + " not found"));
+          .orElseThrow(() -> new ScimValidationException("User UUID " + uuid + " not found"));
       newAccounts.add(account);
     }
     return newAccounts;

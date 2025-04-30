@@ -204,7 +204,7 @@ public class ScimGroupProvisioningPatchAddTests extends ScimGroupPatchUtils {
     ScimGroupPatchRequest patchAddReq = getPatchAddUsersRequest(members);
 
     mvc.perform(patch(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
-      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isNotFound());
+      .content(objectMapper.writeValueAsString(patchAddReq))).andExpect(status().isBadRequest());
 
     mvc.perform(get(engineers.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
       .andExpect(status().isOk())
