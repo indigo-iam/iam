@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.client.registration;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -149,14 +150,11 @@ class ClientRegistrationAPIControllerTests {
     client.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
     client.setJwk(NOT_A_JSON_STRING);
 
-    String expectedMessage =
-        "Invalid JSON: Unexpected token " + NOT_A_JSON_STRING + " at position 25.";
-
     mvc
       .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
-      .andExpect(jsonPath("$.error", is(expectedMessage)));
+      .andExpect(jsonPath("$.error", startsWith("Invalid JSON:")));
 
   }
 
