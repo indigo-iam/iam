@@ -18,7 +18,11 @@ package it.infn.mw.iam.test.scim;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class ScimUtils {
 
@@ -44,6 +48,11 @@ public class ScimUtils {
   public static String getMeLocation() {
 
     return SCIM_ENDPOINT_BASEURL + "/Me";
+  }
+
+  public static String getUsersBulkLocation() {
+
+    return getUsersLocation() + "/Bulk";
   }
 
   public static String getUserLocation(String uuid) {
@@ -79,6 +88,16 @@ public class ScimUtils {
       .buildEmail(email)
       .buildName(givenName, familyName);
   }
+
+  public static ScimUsersBulkRequest.Builder addPostOperationToBulk(ScimUsersBulkRequest.Builder builder, JsonNode postBody, String bulkId) {
+
+    return builder.addPostSingleOperation(postBody, bulkId, "/Users");
+    }
+
+    public static ScimUsersBulkRequest.Builder addPatchOperationToBulk(ScimUsersBulkRequest.Builder builder, JsonNode patchBody, String uid) {
+
+      return builder.addPatchSingleOperation(patchBody, "/Users/" + uid);
+      }
 
   public static class ParamsBuilder {
 
