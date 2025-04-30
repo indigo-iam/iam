@@ -19,7 +19,6 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +57,8 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
+
+  private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
 
   private final SamlUserIdentifierResolver userIdResolver;
   private final AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator;
@@ -118,7 +119,7 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
 
       Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account.get());
 
-      // Check if SAML assertion coming from remote IdP contains mfa signal
+      // Check if SAML assertion coming from remote IdP contains mfa signal in authnContextClassRef
       String authnContextClassRef = samlCredentials.getAuthenticationAssertion()
         .getAuthnStatements()
         .stream()
@@ -128,13 +129,12 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
         .filter(Objects::nonNull)
         .map(AuthnContextClassRef::getAuthnContextClassRef)
         .filter(Objects::nonNull)
-        .filter(acr -> acr.toLowerCase().contains("mfa"))
+        .filter(ACR_VALUE_MFA::equals)
         .findFirst()
         .orElse(null);
 
-      boolean isMfa = "https://refeds.org/profile/mfa".equals(authnContextClassRef);
-
-      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive() && !isMfa) {
+      if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()
+          && authnContextClassRef == null) {
         List<GrantedAuthority> currentAuthorities = List.of(Authorities.ROLE_PRE_AUTHENTICATED);
         Set<GrantedAuthority> fullyAuthenticatedAuthorities = new HashSet<>(user.getAuthorities());
 
@@ -143,15 +143,14 @@ public class IamSamlAuthenticationProvider extends SAMLAuthenticationProvider {
             account.get().getUsername(), token.getCredentials(), currentAuthorities);
         extToken.setAuthenticationMethodReferences(refs);
         extToken.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
+        extToken.setDetails(Map.of("acr", ACR_VALUE_MFA));
       } else {
         extToken = new SamlExternalAuthenticationToken(samlId, token,
             Date.from(sessionTimeoutHelper.getDefaultSessionExpirationTime()),
             account.get().getUsername(), token.getCredentials(),
             convert(account.get().getAuthorities()));
-        if (isMfa) {
-          Map<String, String> authDetails = new HashMap<>();
-          authDetails.put("acr", authnContextClassRef);
-          extToken.setDetails(authDetails);
+        if (authnContextClassRef != null) {
+          extToken.setDetails(Map.of("acr", authnContextClassRef));
         }
       }
       return extToken;
