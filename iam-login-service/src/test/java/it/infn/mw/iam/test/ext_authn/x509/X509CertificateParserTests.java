@@ -46,7 +46,8 @@ public class X509CertificateParserTests extends X509TestSupport {
     try {
       parser.parseChainFromString("48327498dsahtdsadasgyr9");
     } catch (RuntimeException e) {
-      assertThat(e.getMessage(), containsString("Error parsing certificate chain: Can not parse the input data as a certificate"));
+      assertThat(e.getMessage(), containsString(
+          "Error parsing certificate chain: Can not parse the input data as a certificate"));
       throw e;
     }
   }
