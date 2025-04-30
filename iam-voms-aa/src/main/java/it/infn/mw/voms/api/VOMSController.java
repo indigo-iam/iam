@@ -15,9 +15,13 @@
  */
 package it.infn.mw.voms.api;
 
-import java.io.IOException;
+import static java.lang.String.format;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,12 +33,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import it.infn.mw.voms.aa.AttributeAuthority;
 import it.infn.mw.voms.aa.RequestContextFactory;
 import it.infn.mw.voms.aa.VOMSErrorMessage;
+import it.infn.mw.voms.aa.VOMSRequest;
 import it.infn.mw.voms.aa.VOMSRequestContext;
+import it.infn.mw.voms.aa.VOMSResponse;
+import it.infn.mw.voms.aa.VOMSResponse.Outcome;
 import it.infn.mw.voms.aa.ac.ACGenerator;
 import it.infn.mw.voms.aa.ac.VOMSResponseBuilder;
 import it.infn.mw.voms.properties.VomsProperties;
@@ -44,7 +50,11 @@ import it.infn.mw.voms.properties.VomsProperties;
 @Transactional
 public class VOMSController extends VOMSControllerSupport {
 
+  private final Logger log = LoggerFactory.getLogger(VOMSController.class);
+
   public static final String LEGACY_VOMS_APIS_UA = "voms APIs 2.0";
+
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
   private final VomsProperties vomsProperties;
   private final AttributeAuthority aa;
@@ -52,10 +62,8 @@ public class VOMSController extends VOMSControllerSupport {
   private final VOMSResponseBuilder responseBuilder;
   private final AUPSignatureCheckService signatureCheckService;
 
-  @Autowired
   public VOMSController(AttributeAuthority aa, VomsProperties props, ACGenerator acGenerator,
-      VOMSResponseBuilder responseBuilder, IamAccountRepository accountRepo,
-      AUPSignatureCheckService signatureCheckService) {
+      VOMSResponseBuilder responseBuilder, AUPSignatureCheckService signatureCheckService) {
     this.aa = aa;
     this.vomsProperties = props;
     this.acGenerator = acGenerator;
@@ -102,16 +110,20 @@ public class VOMSController extends VOMSControllerSupport {
         (IamX509AuthenticationCredential) authentication.getCredentials();
 
     VOMSRequestContext context = initVomsRequestContext(cred, request, userAgent);
+    logRequest(context);
 
     if (!aa.getAttributes(context)) {
 
       VOMSErrorMessage em = context.getResponse().getErrorMessages().get(0);
 
+      String responseString;
       if (LEGACY_VOMS_APIS_UA.equals(userAgent)) {
-        return responseBuilder.createLegacyErrorResponse(em);
+        responseString = responseBuilder.createLegacyErrorResponse(em);
       } else {
-        return responseBuilder.createErrorResponse(em);
+        responseString = responseBuilder.createErrorResponse(em);
       }
+      logOutcome(context);
+      return responseString;
     } else {
       IamAccount user = context.getIamAccount();
       if (signatureCheckService.needsAupSignature(user)) {
@@ -119,7 +131,58 @@ public class VOMSController extends VOMSControllerSupport {
         return responseBuilder.createErrorResponse(em);
       }
       byte[] acBytes = acGenerator.generateVOMSAC(context);
-      return responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
+      String responseString =
+          responseBuilder.createResponse(acBytes, context.getResponse().getWarnings());
+      logOutcome(context);
+      return responseString;
+    }
+  }
+
+  private void logRequest(VOMSRequestContext c) {
+    if (log.isDebugEnabled()) {
+      VOMSRequest r = c.getRequest();
+      log.debug(
+          "VOMSRequest: [holderIssuer: {}, holderSubject: {}, requesterIssuer: {}, requesterSubject: {}, attributes: {}, FQANs: {}, validity: {}, targets: {}]",
+          sanitize(r.getHolderIssuer()), sanitize(r.getHolderSubject()),
+          sanitize(r.getRequesterIssuer()), sanitize(r.getRequesterSubject()),
+          r.getRequestAttributes(), r.getRequestedFQANs(), r.getRequestedValidity(), r.getTargets());
+    }
+  }
+
+  private String sanitize(String str) {
+    return str.replaceAll("[\n\r]", "_");
+  }
+
+  private String userStr(VOMSRequestContext c) {
+    String username = c.getIamAccount().getUsername();
+    String uuid = c.getIamAccount().getUuid();
+    String reqSubject = c.getRequest().getRequesterSubject();
+    String reqIssuer = c.getRequest().getRequesterIssuer();
+    return sanitize(format("[username: %s, uuid: %s, subjectDN: %s, issuerDN: %s]", username, uuid,
+        reqSubject, reqIssuer));
+  }
+
+  private String errorResponse(VOMSRequestContext c) {
+    return sanitize(format("[outcome: %s, errorMessages: %s]", c.getResponse().getOutcome().name(),
+        c.getResponse().getErrorMessages()));
+  }
+
+  private String successResponse(VOMSRequestContext c) {
+    VOMSResponse r = c.getResponse();
+    return sanitize(format(
+        "[outcome: %s, VO: %s, uri: %s, targets: %s, issuedFQANs: %s, notAfter: %s, notBefore: %s]",
+        r.getOutcome().name(), c.getVOName(), c.getHost() + ":" + c.getPort(),
+        r.getTargets().toString(), r.getIssuedFQANs().toString(),
+        dateFormat.format(r.getNotAfter()), dateFormat.format(r.getNotBefore())));
+  }
+
+  private void logOutcome(VOMSRequestContext c) {
+    if (log.isInfoEnabled()) {
+      if (Outcome.SUCCESS.equals(c.getResponse().getOutcome())) {
+        log.info("User {} got successful VOMS response {} ", userStr(c), successResponse(c));
+      } else {
+        log.info("User {} got failure VOMS response {}", userStr(c), errorResponse(c));
+      }
     }
   }
 }
