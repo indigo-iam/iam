@@ -32,7 +32,6 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
 
-
 @Service
 @ConditionalOnProperty(name = "notification.disable", havingValue = "true")
 public class LoggingNotificationDelivery implements NotificationDelivery {

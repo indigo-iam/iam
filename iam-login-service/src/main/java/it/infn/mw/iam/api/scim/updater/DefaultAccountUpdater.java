@@ -57,8 +57,10 @@ public class DefaultAccountUpdater<T, E extends AccountEvent> extends DefaultUpd
   public <A> A getNewValue(Class<A> clazz) {
 
 
-    //I'm assuming the newValue only has 1 item in the list as only one thing gets changed at a time in the account
-    //Should this differ then this method can be changed to get the first instance of the newValue of the requested type pr default and 
+    // I'm assuming the newValue only has 1 item in the list as only one thing gets changed at a
+    // time in the account
+    // Should this differ then this method can be changed to get the first instance of the newValue
+    // of the requested type pr default and
     // alternatively return the x'st value of the given type given a index parameter x
 
     if (((ArrayList<?>) this.newValue).get(0).getClass().equals(clazz)) {

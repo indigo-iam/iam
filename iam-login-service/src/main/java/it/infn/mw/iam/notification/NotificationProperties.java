@@ -31,14 +31,11 @@ import org.springframework.validation.annotation.Validated;
 public class NotificationProperties {
 
   public enum AdminNotificationPolicy {
-    NOTIFY_ADDRESS,
-    NOTIFY_ADMINS,
-    NOTIFY_ADDRESS_AND_ADMINS
+    NOTIFY_ADDRESS, NOTIFY_ADMINS, NOTIFY_ADDRESS_AND_ADMINS
   }
 
   public enum GroupManagerNotificationPolicy {
-    NOTIFY_GMS,
-    NOTIFY_GMS_AND_ADMINS
+    NOTIFY_GMS, NOTIFY_GMS_AND_ADMINS
   }
 
   private Boolean disable;
@@ -55,13 +52,12 @@ public class NotificationProperties {
   private String adminAddress;
 
   private Map<String, String> subject;
-  
+
   private String subjectPrefix;
 
   private AdminNotificationPolicy adminNotificationPolicy = NOTIFY_ADDRESS;
 
-  private GroupManagerNotificationPolicy groupManagerNotificationPolicy =
-      NOTIFY_GMS_AND_ADMINS;
+  private GroupManagerNotificationPolicy groupManagerNotificationPolicy = NOTIFY_GMS_AND_ADMINS;
 
   public Boolean getDisable() {
     return disable;
@@ -71,11 +67,11 @@ public class NotificationProperties {
     this.disable = disable;
   }
 
-  public Boolean getCertificateUpdate(){
+  public Boolean getCertificateUpdate() {
     return this.certificateUpdate;
   }
 
-  public void setCertificateUpdate(Boolean certificateUpdate){
+  public void setCertificateUpdate(Boolean certificateUpdate) {
     this.certificateUpdate = certificateUpdate;
   }
 
@@ -118,11 +114,11 @@ public class NotificationProperties {
   public void setSubject(Map<String, String> subject) {
     this.subject = subject;
   }
-  
+
   public String getSubjectPrefix() {
     return subjectPrefix;
   }
-  
+
   public void setSubjectPrefix(String subjectPrefix) {
     this.subjectPrefix = subjectPrefix;
   }

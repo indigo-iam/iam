@@ -515,7 +515,6 @@ public class TransientNotificationFactory implements NotificationFactory {
 
 
 
-  
   @Override
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u) {
 
@@ -586,7 +585,6 @@ public class TransientNotificationFactory implements NotificationFactory {
 
 
 
-  
   @Override
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
       AccountUpdater u) {

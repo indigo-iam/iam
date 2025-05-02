@@ -73,9 +73,11 @@ public interface NotificationFactory {
 
   IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u);
 
-  IamEmailNotification createLinkedCertificateMessage(IamAccount account, IamX509AuthenticationCredential x509Credential);
+  IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential);
 
   IamEmailNotification createUnlinkedCertificateMessage(IamAccount account, AccountUpdater u);
 
-  IamEmailNotification createUnlinkedCertificateMessage(IamAccount account, IamX509Certificate x509Certificate);
+  IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Certificate);
 }
