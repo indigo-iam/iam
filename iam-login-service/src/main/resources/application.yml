@@ -208,7 +208,7 @@ notification:
   taskDelay: ${IAM_NOTIFICATION_TASK_DELAY:5000}
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
-  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-admins}
+  admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
   certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:false}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
   subject-prefix: "[${iam.organisation.name} IAM]"
