@@ -105,7 +105,7 @@ public class X509TestSupport {
 
   protected X509Credential RCAUTH_CA_CRED;
 
-  public X509TestSupport() {
+  protected X509TestSupport() {
     try {
       TEST_0_CERT_STRING = new String(Files.readAllBytes(Paths.get(TEST_0_CERT_PATH)));
 
@@ -446,7 +446,7 @@ public class X509TestSupport {
     return headers;
   }
 
-  public void mockHttpRequestWithTest0SSLHeaders(HttpServletRequest request) {
+  protected void mockHttpRequestWithTest0SSLHeaders(HttpServletRequest request) {
     Mockito
       .when(request
         .getHeader(DefaultX509AuthenticationCredentialExtractor.Headers.CLIENT_CERT.getHeader()))
