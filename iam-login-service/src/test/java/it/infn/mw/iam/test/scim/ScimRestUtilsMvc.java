@@ -20,7 +20,6 @@ import static it.infn.mw.iam.test.scim.ScimUtils.getMeLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersBulkLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersLocation;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.OK;
@@ -28,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;

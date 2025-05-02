@@ -19,8 +19,10 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-
+@JsonInclude(Include.NON_EMPTY)
 public class ScimBulkOperationResponse {
   @NotNull
   private final String method;
@@ -38,12 +40,14 @@ public class ScimBulkOperationResponse {
   private final ScimErrorResponse errorResponse;
 
   @JsonCreator
-  public ScimBulkOperationResponse(@JsonProperty("method") String method, @JsonProperty("status") String status) {
+  public ScimBulkOperationResponse(@JsonProperty("method") String method, 
+    @JsonProperty("status") String status, @JsonProperty("location") String location,
+    @JsonProperty("bulkId") String bulkId, @JsonProperty("errorResponse") ScimErrorResponse errorResponse) {
     this.method = method;
     this.status = status;
-    this.location = null;
-    this.bulkId = null;
-    this.errorResponse = null;
+    this.location = location;
+    this.bulkId = bulkId;
+    this.errorResponse = errorResponse;
   }
 
   public ScimBulkOperationResponse(Builder builder) {

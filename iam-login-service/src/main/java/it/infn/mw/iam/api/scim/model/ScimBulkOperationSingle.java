@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.api.scim.model;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,11 +37,12 @@ public class ScimBulkOperationSingle {
 
   @JsonCreator
   public ScimBulkOperationSingle(@JsonProperty("method") String method,
-      @JsonProperty("path") String path, @JsonProperty("data") JsonNode data) {
+      @JsonProperty("path") String path, @JsonProperty("data") JsonNode data,
+      @JsonProperty("bulkId") String bulkId) {
     this.method = method;
     this.path = path;
     this.data = data; 
-    this.bulkId = null;
+    this.bulkId = bulkId;
   }
 
   public ScimBulkOperationSingle(Builder builder) {

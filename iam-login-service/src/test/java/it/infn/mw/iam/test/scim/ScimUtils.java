@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.scim;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
 

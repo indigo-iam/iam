@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
+import static org.mockito.ArgumentMatchers.isNotNull;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,11 +30,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static java.util.Objects.isNull;
 
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimErrorResponse;
@@ -50,13 +54,17 @@ public class ScimUsersBulkController extends ScimControllerSupport {
 
   public static final String INVALID_BULK_MSG = "Invalid Bulk Request";
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  public static final String POST = "POST";
+
+  public static final String PATCH = "PATCH";
 
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
-  @Autowired 
+  @Autowired
+  ObjectMapper objectMapper;
+
+  @Autowired
   ScimExceptionHandler errorHandler;
 
   @PreAuthorize("#iam.hasScope('scim:write')")
@@ -69,37 +77,54 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     ScimUsersBulkResponse.Builder bulkResponse = ScimUsersBulkResponse.reponseBuilder();
 
     for(ScimBulkOperationSingle singleOperation: bulkRequest.getOperations()){
-      try {
-        if (singleOperation.getMethod().equals("POST")){
-          ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
-          try {
-            ScimResource resp = userProvisioningService.create(user);
-            bulkResponse.addSuccessResponse("POST", resp.getMeta().getLocation(), singleOperation.getbulkId(), "201");
-          } catch (ScimResourceExistsException e){
-            ScimErrorResponse error = errorHandler.handleResourceExists(e);
-            bulkResponse.addErrorResponse("POST",singleOperation.getbulkId(), error.getStatus(), error);
-          }
-      } else if (singleOperation.getMethod().equals("PATCH")){
-        ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
-        String path = singleOperation.getPath();
-        String[] segments = path.split("/");
-        String id = segments[segments.length - 1];
-        try {
-          userProvisioningService.update(id, patch.getOperations());
-          bulkResponse.addSuccessResponse("PATCH", path, "200");
-        } catch (ScimResourceNotFoundException e){
-          ScimErrorResponse error = errorHandler.handleResourceNotFoundException(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        } catch (ScimPatchOperationNotSupported e){
-          ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
-          bulkResponse.addErrorResponse("PATCH", error.getStatus(), error);
-        }
+      if (bulkRequest.getfailOnErrors() == 0){
+        break;
       }
-    } catch (Exception e) {
-      System.err.println("Failed to process operation: " + e.getMessage());
-    }}
+      try {
+        if (singleOperation.getMethod().equals(POST)){
+          ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
+          handlePost(bulkResponse, user, singleOperation);
+        } else if (singleOperation.getMethod().equals(PATCH)){
+          ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
+          handlePatch(bulkResponse, patch, singleOperation);
+        } else {
+          ScimException error = new ScimException(singleOperation.getMethod() + " method not supported for bulk operations.");
+          ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
+          bulkResponse.addErrorResponse(PATCH, errorResp.getStatus(), errorResp);
+        }
+      } catch (NullPointerException | JsonProcessingException e) {
+        ScimException error = new ScimException("Failed to process operation data: "+ e.getMessage());
+        ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
+        bulkResponse.addErrorResponse(PATCH, errorResp.getStatus(), errorResp);
+      }
+      bulkRequest.decrementfailOnError();
+    }
     
     return new MappingJacksonValue(bulkResponse.build()); 
   }
 
+  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation){
+    try {
+      ScimResource resp = userProvisioningService.create(user);
+      bulkResponse.addSuccessResponse(POST, resp.getMeta().getLocation(), operation.getbulkId(), "201");
+    } catch (ScimResourceExistsException e){
+      ScimErrorResponse error = errorHandler.handleResourceExists(e);
+      bulkResponse.addErrorResponse(POST, operation.getbulkId(), error.getStatus(), error);
+    }
+  } 
+
+  private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch, ScimBulkOperationSingle operation){
+    String[] segments = operation.getPath().split("/");
+    String id = segments[segments.length - 1];
+    try {
+      userProvisioningService.update(id, patch.getOperations());
+      bulkResponse.addSuccessResponse(PATCH, operation.getPath(), "200");
+    } catch (ScimResourceNotFoundException e){
+      ScimErrorResponse error = errorHandler.handleResourceNotFoundException(e);
+      bulkResponse.addErrorResponse(PATCH, error.getStatus(), error);
+    } catch (ScimPatchOperationNotSupported e){
+      ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
+      bulkResponse.addErrorResponse(PATCH, error.getStatus(), error);
+    }
+  }
 }
