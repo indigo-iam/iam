@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.model.DeviceCode;
@@ -53,6 +54,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
@@ -90,6 +92,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   private final DeviceCodeService deviceCodeService;
   private final AuthorizationCodeRepository authzCodeRepository;
   private final OAuth2TokenEntityService tokenServices;
+  private final ObjectMapper mapper;
 
   public IamOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService,
       ScopeFilter scopeFilter, JWTProfileResolver profileResolver,
@@ -102,6 +105,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     this.deviceCodeService = deviceCodeService;
     this.authzCodeRepository = authzCodeRepository;
     this.tokenServices = tokenServices;
+    this.mapper = new ObjectMapper();
   }
 
   @Override
@@ -264,8 +268,30 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
     });
 
+    validateAndUpdateAcrRequest(tokenRequestParameters);
+
     return tokenRequestParameters;
 
+  }
+
+  private void validateAndUpdateAcrRequest(Map<String, String> params) {
+
+    String claims = params.get("claims");
+    if (claims == null || claims.isBlank()) {
+        return;
+    }
+    try {
+      JsonNode claimsNode = mapper.readTree(claims);
+      JsonNode acrValuesNode = claimsNode.at("/id_token/acr/values");
+      if (acrValuesNode.isArray() && acrValuesNode.size() > 0) {
+        String acrValues = StreamSupport.stream(acrValuesNode.spliterator(), false)
+            .map(JsonNode::asText)
+            .collect(Collectors.joining(" "));
+        params.put("acr_values", acrValues);
+      }
+    } catch (JsonProcessingException e) {
+      throw new InvalidRequestException("The claims parameter is not a valid JSON object!");
+    }
   }
 
   private void validateAndUpdateAudienceRequest(Map<String, String> params) {
