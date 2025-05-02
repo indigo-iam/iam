@@ -76,7 +76,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       GroupRequestsService groupRequestsService, GroupConverter converter,
       ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
 
-
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
