@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.scim.provisioning;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -72,8 +71,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, Clock clock,
-      IamAccountRepository accountRepo) {
+      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
