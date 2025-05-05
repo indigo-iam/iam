@@ -208,7 +208,8 @@ INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime
 
 INSERT INTO iam_oidc_id(issuer, subject, account_id) VALUES
 ('https://accounts.google.com', '105440632287425289613', 2),
-('urn:test-oidc-issuer', 'test-user', 2);
+('urn:test-oidc-issuer', 'test-user', 2),
+('urn:test-oidc-issuer', 'test-with-mfa', 1000);
 
 INSERT INTO iam_saml_id(idpid, attribute_id, userid, account_id) VALUES
 ('https://idptestbed/idp/shibboleth', 'urn:oid:0.9.2342.19200300.100.1.3', 'andrea.ceccanti@example.org',2),

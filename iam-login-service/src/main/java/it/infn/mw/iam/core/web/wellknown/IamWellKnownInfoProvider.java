@@ -211,7 +211,7 @@ public class IamWellKnownInfoProvider implements WellKnownInfoProvider {
     result.put("claim_types_supported", CLAIM_TYPES);
     result.put("claims_supported", CLAIMS);
 
-    result.put("claims_parameter_supported", false);
+    result.put("claims_parameter_supported", true);
     result.put("request_parameter_supported", true);
     result.put("request_uri_parameter_supported", false);
     result.put("require_request_uri_registration", false);

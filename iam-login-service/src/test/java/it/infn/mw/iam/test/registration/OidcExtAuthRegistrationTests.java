@@ -130,7 +130,7 @@ public class OidcExtAuthRegistrationTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
-    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce, null);
+    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
     session = (MockHttpSession) mvc
       .perform(
@@ -168,7 +168,7 @@ public class OidcExtAuthRegistrationTests {
     state = (String) session.getAttribute("state");
     nonce = (String) session.getAttribute("nonce");
 
-    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce, null);
+    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
     session = (MockHttpSession) mvc
       .perform(

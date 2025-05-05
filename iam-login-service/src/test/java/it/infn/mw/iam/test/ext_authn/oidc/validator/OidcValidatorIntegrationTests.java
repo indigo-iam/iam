@@ -15,13 +15,13 @@
  */
 package it.infn.mw.iam.test.ext_authn.oidc.validator;
 
+import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT_ID;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -59,12 +59,12 @@ import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 @SpringBootTest(classes = {IamLoginService.class, OidcTestConfig.class,
     OidcValidatorIntegrationTests.Config.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTestsSupport {
-  
+
   @Configuration
   public static class Config {
     @Bean
     @Primary
-    ValidatorResolver<JWT> validatorResolver(){
+    ValidatorResolver<JWT> validatorResolver() {
       return r -> Optional.of(new Fail<>());
     }
   }
@@ -74,10 +74,10 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
     MockRestTemplateFactory tf = (MockRestTemplateFactory) restTemplateFactory;
     tf.resetTemplate();
   }
-  
+
   @Test
-  public void testValidatorError() throws JOSEException,
-      JsonProcessingException, RestClientException, UnsupportedEncodingException {
+  public void testValidatorError() throws JOSEException, JsonProcessingException,
+      RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -90,8 +90,7 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "unregistered", ru.nonce, null);
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -108,7 +107,5 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
     assertThat(locationUri.getQueryParams().keySet(), hasItem("error"));
     assertThat(locationUri.getQueryParams().getFirst("error"), is("true"));
   }
-  
-  
 
 }

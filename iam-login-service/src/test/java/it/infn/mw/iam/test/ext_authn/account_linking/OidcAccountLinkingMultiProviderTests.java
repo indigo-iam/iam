@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.After;
@@ -134,7 +135,7 @@ public class OidcAccountLinkingMultiProviderTests {
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce, null);
+        nonce, Map.of());
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_01_ISSUER)
@@ -191,7 +192,7 @@ public class OidcAccountLinkingMultiProviderTests {
     String nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_01_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce, null);
+        nonce, Map.of());
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_01_ISSUER)
@@ -230,7 +231,7 @@ public class OidcAccountLinkingMultiProviderTests {
     nonce = (String) session.getAttribute("nonce");
 
     oidcProvider.prepareTokenResponse(TEST_OIDC_02_ISSUER, TEST_OIDC_CLIENT_ID, TEST_100_USER,
-        nonce, null);
+        nonce, Map.of());
 
     session = (MockHttpSession) mvc
       .perform(get("/openid_connect_login").param("iss", TEST_OIDC_02_ISSUER)
