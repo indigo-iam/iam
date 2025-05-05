@@ -77,8 +77,12 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
 
     OAuth2AccessTokenEntity token = tokenService.createAccessToken(auth);
 
-    JWTClaimsSet claims = JWTParser.parse(token.getValue()).getJWTClaimsSet();
-    assertThat(claims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");
+    JWTClaimsSet atClaims = JWTParser.parse(token.getValue()).getJWTClaimsSet();
+    assertThat(atClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");
+
+    String idToken = String.valueOf(token.getAdditionalInformation().get("id_token"));
+    JWTClaimsSet idTokenClaims = JWTParser.parse(idToken).getJWTClaimsSet();
+    assertThat(idTokenClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");
 
     mvc
       .perform(post("/introspect").with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))

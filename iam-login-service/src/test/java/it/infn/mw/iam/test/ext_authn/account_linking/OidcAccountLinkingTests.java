@@ -119,7 +119,7 @@ public class OidcAccountLinkingTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
-    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce, null);
+    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, TEST_100_USER, nonce);
 
     session =
         (MockHttpSession) mvc
@@ -185,7 +185,7 @@ public class OidcAccountLinkingTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
-    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce, null);
+    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
 
     session =
         (MockHttpSession) mvc
@@ -246,7 +246,7 @@ public class OidcAccountLinkingTests {
     String state = (String) session.getAttribute("state");
     String nonce = (String) session.getAttribute("nonce");
 
-    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce, null);
+    oidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", nonce);
     session =
         (MockHttpSession) mvc
           .perform(get("/openid_connect_login").param("state", state)

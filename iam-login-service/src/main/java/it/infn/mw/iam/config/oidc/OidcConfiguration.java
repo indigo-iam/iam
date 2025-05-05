@@ -64,9 +64,7 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.DefaultOidcUserDetailsService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
-import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -149,13 +147,13 @@ public class OidcConfiguration {
 
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator,
+      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
       SessionTimeoutHelper timeoutHelper, IamAccountRepository accountRepo,
+      InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository) {
 
-    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(userDetailService,
-        validator, timeoutHelper, accountRepo, totpMfaRepository);
+    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(validator, timeoutHelper,
+        accountRepo, inactiveAccountHandler, totpMfaRepository);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 
@@ -223,13 +221,6 @@ public class OidcConfiguration {
   AuthRequestUrlBuilder authRequestBuilder() {
 
     return new PlainAuthRequestUrlBuilder();
-  }
-
-  @Bean
-  OidcUserDetailsService userDetailService(IamAccountRepository repo,
-      InactiveAccountAuthenticationHander handler) {
-
-    return new DefaultOidcUserDetailsService(repo, handler);
   }
 
   @Bean
