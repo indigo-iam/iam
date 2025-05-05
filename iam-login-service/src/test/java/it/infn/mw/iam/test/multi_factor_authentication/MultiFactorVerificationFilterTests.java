@@ -41,12 +41,15 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import it.infn.mw.iam.authn.multi_factor_authentication.MultiFactorVerificationFilter;
 import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.saml.SamlExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
+import it.infn.mw.iam.persistence.model.IamSamlId;
 
 public class MultiFactorVerificationFilterTests {
 
@@ -112,6 +115,30 @@ public class MultiFactorVerificationFilterTests {
 
     Authentication mockAuthenticatedToken =
         new OidcExternalAuthenticationToken(mockOidcToken, "username", null);
+    when(authenticationManager.authenticate(any(Authentication.class)))
+      .thenReturn(mockAuthenticatedToken);
+
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getParameter("totp")).thenReturn("123456");
+
+    Authentication result = multiFactorVerificationFilter.attemptAuthentication(request, response);
+
+    assertNotNull(result);
+    assertEquals(mockAuthenticatedToken, result);
+  }
+
+  @Test
+  public void testSamlAuthenticationSuccess() throws Exception {
+    ExpiringUsernameAuthenticationToken mockSamlToken =
+        mock(ExpiringUsernameAuthenticationToken.class);
+    Authentication mockAuth = mock(SamlExternalAuthenticationToken.class);
+    when(mockAuth.getName()).thenReturn("username");
+
+    SecurityContextHolder.getContext().setAuthentication(mockAuth);
+    IamSamlId samlId = mock(IamSamlId.class);
+
+    Authentication mockAuthenticatedToken =
+        new SamlExternalAuthenticationToken(samlId, mockSamlToken, null, "username", null, null);
     when(authenticationManager.authenticate(any(Authentication.class)))
       .thenReturn(mockAuthenticatedToken);
 

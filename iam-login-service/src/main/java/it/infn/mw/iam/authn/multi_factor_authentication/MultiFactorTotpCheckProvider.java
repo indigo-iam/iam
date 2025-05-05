@@ -26,7 +26,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
-import it.infn.mw.iam.authn.oidc.OidcExternalAuthenticationToken;
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.user.exception.MfaSecretNotFoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -50,7 +50,7 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
     if (authentication instanceof ExtendedAuthenticationToken
-        || authentication instanceof OidcExternalAuthenticationToken) {
+        || authentication instanceof AbstractExternalAuthenticationToken) {
       return processAuthentication(authentication);
     }
     return null;
@@ -75,8 +75,8 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   private String getTotp(Authentication authentication) {
     if (authentication instanceof ExtendedAuthenticationToken extendedToken) {
       return extendedToken.getTotp();
-    } else if (authentication instanceof OidcExternalAuthenticationToken oidcToken) {
-      return oidcToken.getTotp();
+    } else if (authentication instanceof AbstractExternalAuthenticationToken<?> externalToken) {
+      return externalToken.getTotp();
     }
     return null;
   }
@@ -103,12 +103,14 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
       principal = token.getPrincipal();
       credentials = token.getCredentials();
       authorities = token.getFullyAuthenticatedAuthorities();
-    } else {
-      OidcExternalAuthenticationToken token = (OidcExternalAuthenticationToken) authentication;
+    } else if (authentication instanceof AbstractExternalAuthenticationToken<?> token) {
       refs = token.getAuthenticationMethodReferences();
       principal = token.getPrincipal();
       credentials = token.getCredentials();
       authorities = token.getFullyAuthenticatedAuthorities();
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported authentication type: " + authentication.getClass());
     }
 
     refs.add(otp);
@@ -124,6 +126,6 @@ public class MultiFactorTotpCheckProvider implements AuthenticationProvider {
   @Override
   public boolean supports(Class<?> authentication) {
     return ExtendedAuthenticationToken.class.isAssignableFrom(authentication)
-        || OidcExternalAuthenticationToken.class.isAssignableFrom(authentication);
+        || AbstractExternalAuthenticationToken.class.isAssignableFrom(authentication);
   }
 }
