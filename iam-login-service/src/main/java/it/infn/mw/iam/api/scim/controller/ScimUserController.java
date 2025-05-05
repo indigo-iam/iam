@@ -80,6 +80,7 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
+
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
@@ -88,7 +89,26 @@ public class ScimUserController extends ScimControllerSupport {
       @RequestParam(required = false) final String filters) {
 
 
-    MappingJacksonValue wrapper = new MappingJacksonValue(result);
+    MappingJacksonValue wrapper;
+
+
+    if (filters != null) {
+
+      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
+
+      ScimListResponse<ScimUser> result = userProvisioningService.customList(pr, filters);
+
+      wrapper = new MappingJacksonValue(result);
+
+    } else {
+
+      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
+      ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
+
+      wrapper = new MappingJacksonValue(result);
+
+    }
+
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
     if (filters != null) {

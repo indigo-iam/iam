@@ -27,10 +27,10 @@ public class ScimFilterTests {
     public void scimFilterGetTest() {
 
         ScimFilter filter = new ScimFilter("anAttribute", "anOperator", "aValue");
-        Assert.assertTrue(filter.getAttribute().equals("anAttribute"));
-        Assert.assertTrue(filter.getOperator().equals("anOperator"));
-        Assert.assertTrue(filter.getValue().equals("aValue"));
-        Assert.assertTrue(filter.getClass().equals(ScimFilter.class));
+        Assert.assertEquals(true, filter.getAttribute().equals("anAttribute"));
+        Assert.assertEquals(true, filter.getOperator().equals("anOperator"));
+        Assert.assertEquals(true, filter.getValue().equals("aValue"));
+        Assert.assertEquals(true, filter.getClass().equals(ScimFilter.class));
     }
 
 }
