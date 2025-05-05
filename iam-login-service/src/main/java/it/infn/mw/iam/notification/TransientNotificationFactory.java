@@ -533,13 +533,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = new HashMap<>();
-    model.put("name", name);
-    model.put(USERNAME_FIELD, username);
-    model.put("email", email);
-    model.put(ORGANISATION_NAME, organisationName);
-    model.put("subjectDn", subjectDn);
-    model.put("issuerDn", issuerDn);
+    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -564,13 +558,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = new HashMap<>();
-    model.put("name", name);
-    model.put(USERNAME_FIELD, username);
-    model.put("email", email);
-    model.put(ORGANISATION_NAME, organisationName);
-    model.put("subjectDn", subjectDn);
-    model.put("issuerDn", issuerDn);
+    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -604,13 +592,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = new HashMap<>();
-    model.put("name", name);
-    model.put(USERNAME_FIELD, username);
-    model.put("email", email);
-    model.put(ORGANISATION_NAME, organisationName);
-    model.put("subjectDn", subjectDn);
-    model.put("issuerDn", issuerDn);
+    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
@@ -637,13 +619,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = new HashMap<>();
-    model.put("name", name);
-    model.put(USERNAME_FIELD, username);
-    model.put("email", email);
-    model.put(ORGANISATION_NAME, organisationName);
-    model.put("subjectDn", subjectDn);
-    model.put("issuerDn", issuerDn);
+    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
@@ -654,6 +630,18 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     return notification;
 
+  }
+
+  private Map<String, Object> generateCertificateModel(String subjecString, String name, String username, String email, String organisationName, String subjectDn, String issuerDn){
+    Map<String, Object> model = new HashMap<>();
+    model.put("name", name);
+    model.put(USERNAME_FIELD, username);
+    model.put("email", email);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("subjectDn", subjectDn);
+    model.put("issuerDn", issuerDn);
+
+    return model;
   }
 
 
