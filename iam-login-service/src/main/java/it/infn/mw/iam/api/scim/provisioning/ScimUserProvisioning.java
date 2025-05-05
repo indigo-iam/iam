@@ -306,7 +306,7 @@ public class ScimUserProvisioning
 
       // Checking if the certificate update is true and only then is it generating the
       // notification/log update
-      if (notificationProperties.getCertificateUpdate()) {
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
         if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
           notificationFactory.createLinkedCertificateMessage(account, u);
 

@@ -199,7 +199,7 @@ public class DefaultAccountLinkingService
     }
 
     notificationProperties.getAdminNotificationPolicy();
-    if (notificationProperties.getCertificateUpdate()
+    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
         && (notificationProperties.getAdminNotificationPolicy()
           .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
             || notificationProperties.getAdminNotificationPolicy()
@@ -236,7 +236,7 @@ public class DefaultAccountLinkingService
               userAccount.getUsername(), certificateSubject),
           certificateSubject));
 
-      if (notificationProperties.getCertificateUpdate()
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
           && (notificationProperties.getAdminNotificationPolicy()
             .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
               || notificationProperties.getAdminNotificationPolicy()

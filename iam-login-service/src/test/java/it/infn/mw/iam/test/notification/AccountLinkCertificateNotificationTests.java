@@ -261,7 +261,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(pending.size(), 0);
+                Assert.assertEquals(0,pending.size());
 
         }
 
@@ -288,7 +288,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(pending.size(), 0);
+                Assert.assertEquals(0, pending.size());
 
         }
 

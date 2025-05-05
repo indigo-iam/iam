@@ -533,7 +533,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -558,7 +558,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -592,14 +592,14 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
             subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
 
 
-    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
 
     return notification;
 
@@ -619,20 +619,20 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = generateCertificateModel(subject, name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model = generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
             subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
 
 
-    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
 
     return notification;
 
   }
 
-  private Map<String, Object> generateCertificateModel(String subjecString, String name, String username, String email, String organisationName, String subjectDn, String issuerDn){
+  private Map<String, Object> generateCertificateModel(String name, String username, String email, String organisationName, String subjectDn, String issuerDn){
     Map<String, Object> model = new HashMap<>();
     model.put("name", name);
     model.put(USERNAME_FIELD, username);

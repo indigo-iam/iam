@@ -24,7 +24,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import it.infn.mw.iam.audit.events.account.AccountEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class DefaultAccountUpdater<T, E extends AccountEvent> extends DefaultUpdater<T>
     implements AccountUpdater {
