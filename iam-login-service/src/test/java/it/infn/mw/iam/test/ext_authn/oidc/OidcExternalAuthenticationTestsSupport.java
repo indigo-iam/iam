@@ -25,6 +25,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
+import java.util.Map;
+
 import org.junit.Assert;
 import org.mitre.openid.connect.client.UserInfoFetcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,10 @@ import it.infn.mw.iam.test.util.oidc.MockOIDCProvider;
 import it.infn.mw.iam.test.util.oidc.MockRestTemplateFactory;
 
 public class OidcExternalAuthenticationTestsSupport {
+
+  protected static final String MFA_CLAIMS_JSON_VALUE =
+      "{\"id_token\": {\"acr\": \"https://refeds.org/profile/mfa\"}}";
+  protected static final String MFA_REFEDS_VALUE = "https://refeds.org/profile/mfa";
 
   @Value("${local.server.port}")
   protected Integer iamPort;
@@ -128,7 +134,13 @@ public class OidcExternalAuthenticationTestsSupport {
 
   }
 
-  protected CodeRequestHolder buildCodeRequest(String sessionCookie, ResponseEntity<String> response) {
+  protected CodeRequestHolder buildCodeRequest(String sessionCookie,
+      ResponseEntity<String> response) {
+    return buildCodeRequest(sessionCookie, response, Map.of());
+  }
+
+  protected CodeRequestHolder buildCodeRequest(String sessionCookie,
+      ResponseEntity<String> response, Map<String, String> customStringParams) {
 
     CodeRequestHolder result = new CodeRequestHolder();
 
@@ -146,6 +158,7 @@ public class OidcExternalAuthenticationTestsSupport {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("state", state);
     params.add("code", "1234");
+    customStringParams.forEach((name, value) -> params.add(name, value));
 
     HttpEntity<MultiValueMap<String, String>> requestEntity =
         new HttpEntity<MultiValueMap<String, String>>(params, requestHeaders);

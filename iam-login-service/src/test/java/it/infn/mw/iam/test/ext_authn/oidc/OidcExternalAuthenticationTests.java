@@ -15,12 +15,15 @@
  */
 package it.infn.mw.iam.test.ext_authn.oidc;
 
+import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_CLIENT_ID;
+import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -76,8 +79,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "unregistered", ru.nonce, null);
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -126,8 +128,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "test-user", ru.nonce, null);
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -139,6 +140,36 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
 
+  }
+
+  @Test
+  public void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa() throws JOSEException, JsonProcessingException,
+      RestClientException, UnsupportedEncodingException {
+
+    RestTemplate rt = noRedirectRestTemplate();
+    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+
+    checkAuthorizationEndpointRedirect(response);
+    HttpHeaders requestHeaders = new HttpHeaders();
+
+    String sessionCookie = extractSessionCookie(response);
+    requestHeaders.add("Cookie", sessionCookie);
+
+    CodeRequestHolder ru =
+        buildCodeRequest(sessionCookie, response, Map.of("claims", MFA_CLAIMS_JSON_VALUE));
+
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER,
+        TEST_OIDC_CLIENT_ID, "test-user", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
+
+    prepareSuccessResponse(tokenResponse);
+
+    response = rt.postForEntity(openidConnectLoginURL(), ru.requestEntity, String.class);
+    verifyMockServerCalls();
+
+    assertThat(response.getStatusCode(), equalTo(HttpStatus.FOUND));
+    assertNotNull(response.getHeaders().getLocation());
+
+    assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
   }
 
   @Test
@@ -182,8 +213,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "test-with-mfa", ru.nonce, null);
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -212,8 +242,9 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(OidcTestConfig.TEST_OIDC_CLIENT_ID,
-        "test-with-mfa", ru.nonce, "acr");
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER, TEST_OIDC_CLIENT_ID,
+            "test-with-mfa", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
 
     prepareSuccessResponse(tokenResponse);
 
