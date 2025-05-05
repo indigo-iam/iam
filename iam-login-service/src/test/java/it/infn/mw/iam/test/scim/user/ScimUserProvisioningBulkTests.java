@@ -58,7 +58,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
 
-  private String ADMINID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
+  private final String ADMIN_ID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;
@@ -87,12 +87,12 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
     ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), ADMINID).build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), ADMIN_ID).build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
-    assertEquals(response.getOperations().get(0).getStatus(), "201");
-    assertEquals(response.getOperations().get(1).getStatus(), "200");
+    assertEquals("201", response.getOperations().get(0).getStatus());
+    assertEquals("200", response.getOperations().get(1).getStatus());
   }
 
   @Test
@@ -120,7 +120,7 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
     ScimUsersBulkRequest.Builder duplicatePost = addPostOperationToBulk(postUser, objectMapper.valueToTree(user), "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(duplicatePost, objectMapper.valueToTree(patchRequest), ADMINID).build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(duplicatePost, objectMapper.valueToTree(patchRequest), ADMIN_ID).build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(3)));

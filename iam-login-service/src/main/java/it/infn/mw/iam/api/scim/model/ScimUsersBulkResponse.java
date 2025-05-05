@@ -67,7 +67,7 @@ public class ScimUsersBulkResponse {
   public static class Builder {
 
     private Set<String> schemas = new HashSet<>();
-    private List<ScimBulkOperationResponse> operations = new ArrayList<>();;
+    private List<ScimBulkOperationResponse> operations = new ArrayList<>();
 
     public Builder() {
       schemas.add(BULKRESPONSE_SCHEMA);

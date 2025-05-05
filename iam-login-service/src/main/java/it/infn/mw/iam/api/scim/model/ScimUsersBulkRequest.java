@@ -16,14 +16,12 @@
 package it.infn.mw.iam.api.scim.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.Valid;
-import static java.util.Objects.isNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
