@@ -109,8 +109,6 @@ public class ScimUserController extends ScimControllerSupport {
 
     }
 
-    SimpleFilterProvider filterProvider = new SimpleFilterProvider();
-
     if (filters != null) {
 
       ScimPageRequest pr = buildUserPageRequest(count, startIndex);
