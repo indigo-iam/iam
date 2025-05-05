@@ -66,7 +66,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
   @Test
   public void testOidcUnregisteredUserRedirectedToRegisterPage() throws JOSEException,
-      JsonProcessingException, RestClientException, UnsupportedEncodingException {
+      JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);

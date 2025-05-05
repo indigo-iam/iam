@@ -63,7 +63,7 @@ public class MockOIDCProvider implements OidcTokenRequestor {
       .audience(clientId)
       .nonce(nonce);
 
-    customStringClaims.forEach((key, value) -> builder.customClaim(key, value));
+    customStringClaims.forEach(builder::customClaim);
     return builder.build();
   }
 

@@ -158,7 +158,7 @@ public class OidcExternalAuthenticationTestsSupport {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("state", state);
     params.add("code", "1234");
-    customStringParams.forEach((name, value) -> params.add(name, value));
+    customStringParams.forEach(params::add);
 
     HttpEntity<MultiValueMap<String, String>> requestEntity =
         new HttpEntity<MultiValueMap<String, String>>(params, requestHeaders);

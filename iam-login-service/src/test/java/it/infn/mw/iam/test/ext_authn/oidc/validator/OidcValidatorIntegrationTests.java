@@ -22,7 +22,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -78,7 +77,7 @@ public class OidcValidatorIntegrationTests extends OidcExternalAuthenticationTes
 
   @Test
   public void testValidatorError() throws JOSEException, JsonProcessingException,
-      RestClientException, UnsupportedEncodingException {
+      RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
