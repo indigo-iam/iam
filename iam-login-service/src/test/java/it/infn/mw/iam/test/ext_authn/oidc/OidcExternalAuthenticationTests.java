@@ -65,8 +65,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcUnregisteredUserRedirectedToRegisterPage() throws JOSEException,
-      JsonProcessingException, RestClientException {
+  public void testOidcUnregisteredUserRedirectedToRegisterPage()
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -79,7 +79,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "unregistered", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -128,7 +129,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", ru.nonce);
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-user", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -143,8 +145,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa() throws JOSEException, JsonProcessingException,
-      RestClientException, UnsupportedEncodingException {
+  public void testOidcRegisteredUserAsksMfaAndReceiveAcrWithMfa()
+      throws JOSEException, JsonProcessingException, RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
@@ -213,7 +215,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
+    String tokenResponse =
+        mockOidcProvider.prepareTokenResponse(TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce);
 
     prepareSuccessResponse(tokenResponse);
 
@@ -242,9 +245,8 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
 
     CodeRequestHolder ru = buildCodeRequest(sessionCookie, response);
 
-    String tokenResponse =
-        mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER, TEST_OIDC_CLIENT_ID,
-            "test-with-mfa", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
+    String tokenResponse = mockOidcProvider.prepareTokenResponse(TEST_OIDC_ISSUER,
+        TEST_OIDC_CLIENT_ID, "test-with-mfa", ru.nonce, Map.of("acr", MFA_REFEDS_VALUE));
 
     prepareSuccessResponse(tokenResponse);
 
