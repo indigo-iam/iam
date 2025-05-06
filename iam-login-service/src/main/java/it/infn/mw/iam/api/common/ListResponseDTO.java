@@ -95,6 +95,22 @@ public class ListResponseDTO<T> {
       return this;
     }
 
+    public <S> Builder<T> customSet(Long totalResults, int count, int startIndex) {
+      this.totalResults = totalResults;
+      this.itemsPerPage = count;
+      this.startIndex = startIndex + 1;
+      return this;
+    }
+
+    /* 
+    public <S> Builder<T> customFromPage(Page<S> page, Pageable op) {
+      this.itemsPerPage = page.getNumberOfElements();
+      this.startIndex = (int) op.getOffset() + 1;
+      return this;
+    }
+      */
+
+
     public <S> Builder<T> fromPage(Page<S> page, Pageable op) {
       this.totalResults = page.getTotalElements();
       this.itemsPerPage = page.getNumberOfElements();
