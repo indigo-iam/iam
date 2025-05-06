@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.provisioning;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
