@@ -25,7 +25,7 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Target({ ElementType.FIELD, ElementType.PARAMETER })
 @Constraint(validatedBy = ValidBulkSizeValidator.class)
 public @interface ValidBulkSize {
   long max();

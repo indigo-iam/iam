@@ -30,19 +30,19 @@ public class ScimBulkOperationResponse {
   @NotNull
   private final String status;
 
-  //Only for Success response (any)
+  // Only for Success response (any)
   private final String location;
 
-  //Only for Success response (POST only)
+  // Only for Success response (POST only)
   private final String bulkId;
 
-  //Only for Error response
+  // Only for Error response
   private final ScimErrorResponse errorResponse;
 
   @JsonCreator
-  public ScimBulkOperationResponse(@JsonProperty("method") String method, 
-    @JsonProperty("status") String status, @JsonProperty("location") String location,
-    @JsonProperty("bulkId") String bulkId, @JsonProperty("errorResponse") ScimErrorResponse errorResponse) {
+  public ScimBulkOperationResponse(@JsonProperty("method") String method,
+      @JsonProperty("status") String status, @JsonProperty("location") String location,
+      @JsonProperty("bulkId") String bulkId, @JsonProperty("errorResponse") ScimErrorResponse errorResponse) {
     this.method = method;
     this.status = status;
     this.location = location;
@@ -53,7 +53,7 @@ public class ScimBulkOperationResponse {
   public ScimBulkOperationResponse(Builder builder) {
     this.method = builder.method;
     this.location = builder.location;
-    this.status = builder.status; 
+    this.status = builder.status;
     this.bulkId = builder.bulkId;
     this.errorResponse = builder.errorResponse;
   }
@@ -62,7 +62,7 @@ public class ScimBulkOperationResponse {
 
     return method;
   }
-  
+
   public String getLocation() {
 
     return location;
@@ -105,21 +105,21 @@ public class ScimBulkOperationResponse {
 
     public Builder status(String status) {
 
-        this.status = status;
-        return this;
-      }
+      this.status = status;
+      return this;
+    }
 
     public Builder bulkId(String bulkId) {
 
-        this.bulkId = bulkId;
-        return this;
-      }
+      this.bulkId = bulkId;
+      return this;
+    }
 
     public Builder errorResponse(ScimErrorResponse errorResponse) {
 
-        this.errorResponse = errorResponse;
-        return this;
-      }
+      this.errorResponse = errorResponse;
+      return this;
+    }
 
     public ScimBulkOperationResponse build() {
 

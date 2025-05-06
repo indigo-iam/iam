@@ -45,14 +45,14 @@ public class ScimBulkOperationSingle {
       @JsonProperty("bulkId") String bulkId) {
     this.method = method;
     this.path = path;
-    this.data = data; 
+    this.data = data;
     this.bulkId = bulkId;
   }
 
   public ScimBulkOperationSingle(Builder builder) {
     this.method = builder.method;
     this.path = builder.path;
-    this.data = builder.data; 
+    this.data = builder.data;
     this.bulkId = builder.bulkId;
   }
 
@@ -60,7 +60,7 @@ public class ScimBulkOperationSingle {
 
     return method;
   }
-  
+
   public String getPath() {
 
     return path;
@@ -75,12 +75,13 @@ public class ScimBulkOperationSingle {
 
     return bulkId;
   }
+
   public static Builder operationBuilder() {
 
     return new Builder();
   }
 
-  public <T> T getDataAs(Class<T> type, ObjectMapper mapper) throws JsonProcessingException{
+  public <T> T getDataAs(Class<T> type, ObjectMapper mapper) throws JsonProcessingException {
     return mapper.treeToValue(data, type);
   }
 
@@ -105,15 +106,15 @@ public class ScimBulkOperationSingle {
 
     public Builder data(JsonNode data) {
 
-        this.data = data;
-        return this;
-      }
+      this.data = data;
+      return this;
+    }
 
     public Builder bulkId(String bulkId) {
 
-        this.bulkId = bulkId;
-        return this;
-      }
+      this.bulkId = bulkId;
+      return this;
+    }
 
     public ScimBulkOperationSingle build() {
 

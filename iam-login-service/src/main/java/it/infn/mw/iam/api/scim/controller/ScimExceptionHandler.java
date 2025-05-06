@@ -111,7 +111,7 @@ public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
   public ScimErrorResponse handleInvalidGroupOperationException(InvalidGroupOperationError e) {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
   }
-  
+
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ScimException.class)
   @ResponseBody
@@ -127,7 +127,6 @@ public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
 
     return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage());
   }
-
 
   private ScimErrorResponse buildErrorResponse(HttpStatus status, String message) {
 

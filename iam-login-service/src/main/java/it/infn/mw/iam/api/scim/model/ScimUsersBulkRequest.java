@@ -47,12 +47,12 @@ public class ScimUsersBulkRequest {
 
   @JsonCreator
   private ScimUsersBulkRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") @Valid @ValidBulkSize(max = 500) List<ScimBulkOperationSingle> operations, 
+      @JsonProperty("operations") @Valid @ValidBulkSize(max = 500) List<ScimBulkOperationSingle> operations,
       @JsonProperty("failOnErrors") long failOnErrors) {
 
     this.schemas = schemas;
     this.operations = operations;
-    this.failOnErrors = (failOnErrors != 0 ? failOnErrors : -1); 
+    this.failOnErrors = (failOnErrors != 0 ? failOnErrors : -1);
   }
 
   private ScimUsersBulkRequest(Builder b) {
@@ -76,8 +76,8 @@ public class ScimUsersBulkRequest {
     return failOnErrors;
   }
 
-  public void decrementfailOnError(){
-    if (failOnErrors > 0){
+  public void decrementfailOnError() {
+    if (failOnErrors > 0) {
       failOnErrors--;
     }
   }
@@ -96,7 +96,7 @@ public class ScimUsersBulkRequest {
 
     private Set<String> schemas = new HashSet<>();
     private List<ScimBulkOperationSingle> operations = new ArrayList<>();
-    private long failOnErrors = -1; 
+    private long failOnErrors = -1;
 
     public Builder() {
       schemas.add(BULKREQUEST_SCHEMA);
@@ -109,20 +109,20 @@ public class ScimUsersBulkRequest {
 
     public Builder addPostSingleOperation(JsonNode postBody, String bulkId, String path) {
 
-      operations.add(( new ScimBulkOperationSingle.Builder()).method("POST")
-        .path(path)
-        .bulkId(bulkId)
-        .data(postBody)
-        .build());
+      operations.add((new ScimBulkOperationSingle.Builder()).method("POST")
+          .path(path)
+          .bulkId(bulkId)
+          .data(postBody)
+          .build());
       return this;
     }
 
     public Builder addPatchSingleOperation(JsonNode patchBody, String path) {
 
-      operations.add(( new ScimBulkOperationSingle.Builder()).method("PATCH")
-        .path(path)
-        .data(patchBody)
-        .build());
+      operations.add((new ScimBulkOperationSingle.Builder()).method("PATCH")
+          .path(path)
+          .data(patchBody)
+          .build());
       return this;
     }
 

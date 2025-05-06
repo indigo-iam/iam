@@ -57,13 +57,11 @@ import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(
-    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-    webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(properties = {"scim.include_authorities=true"})
+@SpringBootTest(classes = { IamLoginService.class, CoreControllerTestSupport.class,
+    ScimRestUtilsMvc.class }, webEnvironment = WebEnvironment.MOCK)
+@TestPropertySource(properties = { "scim.include_authorities=true" })
 public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
 
   private static final String ADMIN_ID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
@@ -91,14 +89,17 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostSuccessPatchSuccess() throws Exception {
 
-    JsonNode user = objectMapper.valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "paul_mccartney");
+    JsonNode user = objectMapper
+        .valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user,
+        "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), ADMIN_ID).build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest),
+        ADMIN_ID).build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
@@ -107,31 +108,37 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostSuccessPatchFail() throws Exception {
 
-    JsonNode user = objectMapper.valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "paul_mccartney");
+    JsonNode user = objectMapper
+        .valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user,
+        "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), "fake").build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest),
+        "fake").build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
-    assertEquals("201",response.getOperations().get(0).getStatus());
+    assertEquals("201", response.getOperations().get(0).getStatus());
     assertEquals("404", response.getOperations().get(1).getStatus());
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostFailPatchSuccess() throws Exception {
 
     ScimUser user = buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build();
-    ScimUsersBulkRequest.Builder postUser = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), objectMapper.valueToTree(user), "paul_mccartney");
-    ScimUsersBulkRequest.Builder duplicatePost = addPostOperationToBulk(postUser, objectMapper.valueToTree(user), "paul_mccartney_the_second");
+    ScimUsersBulkRequest.Builder postUser = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(),
+        objectMapper.valueToTree(user), "paul_mccartney");
+    ScimUsersBulkRequest.Builder duplicatePost = addPostOperationToBulk(postUser, objectMapper.valueToTree(user),
+        "paul_mccartney_the_second");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(duplicatePost, objectMapper.valueToTree(patchRequest), ADMIN_ID).build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(duplicatePost, objectMapper.valueToTree(patchRequest),
+        ADMIN_ID).build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(3)));
@@ -141,13 +148,15 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostFailPatchFail() throws Exception {
     JsonNode user = objectMapper.valueToTree(buildUser("admin", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "paul_mccartney");
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user,
+        "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), "fake").build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest),
+        "fake").build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
@@ -156,13 +165,15 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testFailOnErrors() throws Exception {
     JsonNode user = objectMapper.valueToTree(buildUser("admin", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(1), user, "paul_mccartney");
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(1), user,
+        "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), "fake").build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest),
+        "fake").build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(finalRequest.getOperations(), hasSize(equalTo(2)));
@@ -171,13 +182,16 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testBulkIdReference() throws Exception {
-    JsonNode user = objectMapper.valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "paul_mccartney");
+    JsonNode user = objectMapper
+        .valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user,
+        "paul_mccartney");
     ScimUser updates = ScimUser.builder().buildEmail("ringo@star.com").build();
     ScimUserPatchRequest patchRequest = ScimUserPatchRequest.builder().replace(updates).build();
-    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest), "bulkId:paul_mccartney").build();
+    ScimUsersBulkRequest finalRequest = addPatchOperationToBulk(bulkRequest, objectMapper.valueToTree(patchRequest),
+        "bulkId:paul_mccartney").build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
@@ -186,32 +200,35 @@ public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostRepeatedBulkId() throws Exception {
     String bulkId = "qwerty";
-    JsonNode user = objectMapper.valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
-    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, bulkId);
-    JsonNode userRepeatedBulk = objectMapper.valueToTree(buildUser("ringo_star", "ringo@star.net", "Ringo", "Star").build());
+    JsonNode user = objectMapper
+        .valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
+    ScimUsersBulkRequest.Builder bulkRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user,
+        bulkId);
+    JsonNode userRepeatedBulk = objectMapper
+        .valueToTree(buildUser("ringo_star", "ringo@star.net", "Ringo", "Star").build());
     ScimUsersBulkRequest finalRequest = addPostOperationToBulk(bulkRequest, userRepeatedBulk, bulkId).build();
     ScimUsersBulkResponse response = scimUtils.postUserBulk(finalRequest);
 
     assertThat(response.getOperations(), hasSize(equalTo(2)));
     assertEquals("201", response.getOperations().get(0).getStatus());
     assertEquals("400", response.getOperations().get(1).getStatus());
-    assertEquals("Duplicate bulkId "+bulkId, response.getOperations().get(1).getErrorResponse().getDetail());
+    assertEquals("Duplicate bulkId " + bulkId, response.getOperations().get(1).getErrorResponse().getDetail());
   }
 
   @Test
-  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
+  @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = { SCIM_READ_SCOPE, SCIM_WRITE_SCOPE })
   public void testPostNoBulkId() throws Exception {
-    JsonNode user = objectMapper.valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
+    JsonNode user = objectMapper
+        .valueToTree(buildUser("paul_mccartney", "test@email.test", "Paul", "McCartney").build());
     ScimUsersBulkRequest finalRequest = addPostOperationToBulk(ScimUsersBulkRequest.requestBuilder(), user, "").build();
     mvc
-      .perform(post(ScimUtils.getUsersBulkLocation()).content(objectMapper.writeValueAsBytes(finalRequest))
-        .contentType(SCIM_CONTENT_TYPE))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.detail", containsString("POST operations require a bulkId")));
+        .perform(post(ScimUtils.getUsersBulkLocation()).content(objectMapper.writeValueAsBytes(finalRequest))
+            .contentType(SCIM_CONTENT_TYPE))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.detail", containsString("POST operations require a bulkId")));
   }
 
 }
-

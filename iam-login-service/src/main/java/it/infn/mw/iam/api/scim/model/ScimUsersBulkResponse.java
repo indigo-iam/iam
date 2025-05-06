@@ -76,38 +76,38 @@ public class ScimUsersBulkResponse {
     public Builder addSuccessResponse(String method, String location, String status) {
 
       operations.add((new ScimBulkOperationResponse.Builder()).method(method)
-        .location(location)
-        .status(status)
-        .build());
+          .location(location)
+          .status(status)
+          .build());
       return this;
     }
 
     public Builder addSuccessResponse(String method, String location, String bulkId, String status) {
 
       operations.add((new ScimBulkOperationResponse.Builder()).method(method)
-        .location(location)
-        .bulkId(bulkId)
-        .status(status)
-        .build());
+          .location(location)
+          .bulkId(bulkId)
+          .status(status)
+          .build());
       return this;
     }
 
     public Builder addErrorResponse(String method, String status, ScimErrorResponse response) {
 
       operations.add((new ScimBulkOperationResponse.Builder()).method(method)
-        .errorResponse(response)
-        .status(status)
-        .build());
+          .errorResponse(response)
+          .status(status)
+          .build());
       return this;
     }
 
     public Builder addErrorResponse(String method, String bulkId, String status, ScimErrorResponse response) {
 
       operations.add((new ScimBulkOperationResponse.Builder()).method(method)
-        .errorResponse(response)
-        .bulkId(bulkId)
-        .status(status)
-        .build());
+          .errorResponse(response)
+          .bulkId(bulkId)
+          .status(status)
+          .build());
       return this;
     }
 

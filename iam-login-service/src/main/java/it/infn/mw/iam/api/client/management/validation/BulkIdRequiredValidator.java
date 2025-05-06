@@ -27,8 +27,8 @@ public class BulkIdRequiredValidator implements ConstraintValidator<BulkIdRequir
 
   @Override
   public boolean isValid(ScimBulkOperationSingle operation, ConstraintValidatorContext context) {
-    if (operation.getMethod().equals("POST")){
-        return !operation.getbulkId().isEmpty() && !operation.getbulkId().isBlank();
+    if (operation.getMethod().equals("POST")) {
+      return !operation.getbulkId().isEmpty() && !operation.getbulkId().isBlank();
     }
     return true;
   }

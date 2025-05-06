@@ -25,7 +25,7 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({ElementType.TYPE})
+@Target({ ElementType.TYPE })
 @Constraint(validatedBy = BulkIdRequiredValidator.class)
 public @interface BulkIdRequired {
 
