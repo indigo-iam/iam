@@ -66,7 +66,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @TestPropertySource(properties = {"scim.include_authorities=true"})
 public class ScimUserProvisioningBulkTests extends ScimUserTestSupport {
 
-  private final String ADMIN_ID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
+  private static final String ADMIN_ID = "73f16d93-2441-4a50-88ff-85360d78c6b5";
 
   @Autowired
   private ScimRestUtilsMvc scimUtils;

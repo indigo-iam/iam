@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.scim.controller;
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -61,8 +62,6 @@ public class ScimUsersBulkController extends ScimControllerSupport {
 
   public static final String PATCH = "PATCH";
 
-  public static HashMap<String,String> bulkIdMap;
-
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
@@ -79,7 +78,7 @@ public class ScimUsersBulkController extends ScimControllerSupport {
       final BindingResult validationResult) {
         
     handleValidationError(INVALID_BULK_MSG, validationResult);
-    bulkIdMap = new HashMap<>();
+    Map<String,String> bulkIdMap = new HashMap<>();
     ScimUsersBulkResponse.Builder bulkResponse = ScimUsersBulkResponse.reponseBuilder();
 
     for(ScimBulkOperationSingle singleOperation: bulkRequest.getOperations()){
@@ -89,10 +88,10 @@ public class ScimUsersBulkController extends ScimControllerSupport {
       try {
         if (singleOperation.getMethod().equals(POST)){
           ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
-          handlePost(bulkResponse, user, singleOperation, bulkRequest);
+          handlePost(bulkResponse, user, singleOperation, bulkRequest, bulkIdMap);
         } else if (singleOperation.getMethod().equals(PATCH)){
           ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
-          handlePatch(bulkResponse, patch, singleOperation, bulkRequest);
+          handlePatch(bulkResponse, patch, singleOperation, bulkRequest, bulkIdMap);
         } else {
           ScimException error = new ScimException(singleOperation.getMethod() + " method not supported for bulk operations.");
           ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
@@ -110,7 +109,7 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     return new MappingJacksonValue(bulkResponse.build()); 
   }
 
-  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest){
+  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest, Map<String, String> bulkIdMap){
     try {
       if (bulkIdMap.containsKey("bulkId:"+operation.getbulkId())){
         throw new IllegalArgumentException("Duplicate bulkId "+ operation.getbulkId());
@@ -130,9 +129,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     }
   } 
 
-  private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest){
+  private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest, Map<String, String> bulkIdMap){
     String id = StringUtils.substringAfterLast(operation.getPath(), "/");
-    System.out.println(bulkIdMap.keySet());
     if (bulkIdMap.keySet().contains(id)){
       id = bulkIdMap.get(id);
     }

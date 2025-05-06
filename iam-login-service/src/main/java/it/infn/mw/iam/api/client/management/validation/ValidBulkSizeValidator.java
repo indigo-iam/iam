@@ -28,7 +28,7 @@ import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 @Scope("prototype")
 public class ValidBulkSizeValidator implements ConstraintValidator<ValidBulkSize, List<ScimBulkOperationSingle>> {
 
-  public long max;
+  private long max;
 
   @Override
   public void initialize(ValidBulkSize constraintAnnotation) {
