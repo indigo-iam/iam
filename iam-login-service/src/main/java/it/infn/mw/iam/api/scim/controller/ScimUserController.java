@@ -91,22 +91,7 @@ public class ScimUserController extends ScimControllerSupport {
 
     MappingJacksonValue wrapper;
 
-    if (filters != null) {
 
-      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
-
-      ScimListResponse<ScimUser> result = userProvisioningService.customList(pr, filters);
-
-      wrapper = new MappingJacksonValue(result);
-
-    } else {
-
-      ScimPageRequest pr = buildUserPageRequest(count, startIndex);
-      ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
-
-      wrapper = new MappingJacksonValue(result);
-
-    }
 
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
