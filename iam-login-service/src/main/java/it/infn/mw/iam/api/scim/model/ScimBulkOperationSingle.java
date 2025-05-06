@@ -19,10 +19,14 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.infn.mw.iam.api.client.management.validation.BulkIdRequired;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
+@BulkIdRequired
 public class ScimBulkOperationSingle {
   @NotNull
   private final String method;

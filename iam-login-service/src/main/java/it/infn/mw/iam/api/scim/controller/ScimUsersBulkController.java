@@ -17,6 +17,10 @@ package it.infn.mw.iam.api.scim.controller;
 
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 
+import java.util.HashMap;
+
+import org.apache.commons.lang3.StringUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
@@ -35,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
@@ -56,6 +61,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
 
   public static final String PATCH = "PATCH";
 
+  public static HashMap<String,String> bulkIdMap;
+
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
@@ -70,8 +77,9 @@ public class ScimUsersBulkController extends ScimControllerSupport {
   @ResponseStatus(HttpStatus.OK)
   public MappingJacksonValue bulkPost(@RequestBody @Validated final ScimUsersBulkRequest bulkRequest,
       final BindingResult validationResult) {
-
+        
     handleValidationError(INVALID_BULK_MSG, validationResult);
+    bulkIdMap = new HashMap<>();
     ScimUsersBulkResponse.Builder bulkResponse = ScimUsersBulkResponse.reponseBuilder();
 
     for(ScimBulkOperationSingle singleOperation: bulkRequest.getOperations()){
@@ -81,48 +89,64 @@ public class ScimUsersBulkController extends ScimControllerSupport {
       try {
         if (singleOperation.getMethod().equals(POST)){
           ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
-          handlePost(bulkResponse, user, singleOperation);
+          handlePost(bulkResponse, user, singleOperation, bulkRequest);
         } else if (singleOperation.getMethod().equals(PATCH)){
           ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
-          handlePatch(bulkResponse, patch, singleOperation);
+          handlePatch(bulkResponse, patch, singleOperation, bulkRequest);
         } else {
           ScimException error = new ScimException(singleOperation.getMethod() + " method not supported for bulk operations.");
           ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
           bulkResponse.addErrorResponse(PATCH, errorResp.getStatus(), errorResp);
+          bulkRequest.decrementfailOnError();
         }
       } catch (NullPointerException | JsonProcessingException e) {
         ScimException error = new ScimException("Failed to process operation data: "+ e.getMessage());
         ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
         bulkResponse.addErrorResponse(PATCH, errorResp.getStatus(), errorResp);
+        bulkRequest.decrementfailOnError();
       }
-      bulkRequest.decrementfailOnError();
     }
     
     return new MappingJacksonValue(bulkResponse.build()); 
   }
 
-  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation){
+  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest){
     try {
+      if (bulkIdMap.containsKey("bulkId:"+operation.getbulkId())){
+        throw new IllegalArgumentException("Duplicate bulkId "+ operation.getbulkId());
+      }
       ScimResource resp = userProvisioningService.create(user);
       bulkResponse.addSuccessResponse(POST, resp.getMeta().getLocation(), operation.getbulkId(), "201");
+      String id = StringUtils.substringAfterLast(resp.getMeta().getLocation(), "/");
+      bulkIdMap.put("bulkId:"+operation.getbulkId(), id);
     } catch (ScimResourceExistsException e){
       ScimErrorResponse error = errorHandler.handleResourceExists(e);
       bulkResponse.addErrorResponse(POST, operation.getbulkId(), error.getStatus(), error);
+      bulkRequest.decrementfailOnError();
+    } catch (IllegalArgumentException e){
+      ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
+      bulkResponse.addErrorResponse(POST, operation.getbulkId(), error.getStatus(), error);
+      bulkRequest.decrementfailOnError();
     }
   } 
 
-  private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch, ScimBulkOperationSingle operation){
-    String[] segments = operation.getPath().split("/");
-    String id = segments[segments.length - 1];
+  private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch, ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest){
+    String id = StringUtils.substringAfterLast(operation.getPath(), "/");
+    System.out.println(bulkIdMap.keySet());
+    if (bulkIdMap.keySet().contains(id)){
+      id = bulkIdMap.get(id);
+    }
     try {
       userProvisioningService.update(id, patch.getOperations());
       bulkResponse.addSuccessResponse(PATCH, operation.getPath(), "200");
     } catch (ScimResourceNotFoundException e){
       ScimErrorResponse error = errorHandler.handleResourceNotFoundException(e);
       bulkResponse.addErrorResponse(PATCH, error.getStatus(), error);
+      bulkRequest.decrementfailOnError();
     } catch (ScimPatchOperationNotSupported e){
       ScimErrorResponse error = errorHandler.handleInvalidArgumentException(e);
       bulkResponse.addErrorResponse(PATCH, error.getStatus(), error);
+      bulkRequest.decrementfailOnError();
     }
   }
 }

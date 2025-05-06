@@ -29,21 +29,25 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import it.infn.mw.iam.api.client.management.validation.ValidBulkSize;
+
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUsersBulkRequest {
 
   public static final String BULKREQUEST_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:BulkRequest";
   @NotEmpty
   private final Set<String> schemas;
+
   @NotEmpty
   @Valid
+  @ValidBulkSize(max = 500)
   private final List<ScimBulkOperationSingle> operations;
 
   private long failOnErrors;
 
   @JsonCreator
   private ScimUsersBulkRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") List<ScimBulkOperationSingle> operations, 
+      @JsonProperty("operations") @Valid @ValidBulkSize(max = 500) List<ScimBulkOperationSingle> operations, 
       @JsonProperty("failOnErrors") long failOnErrors) {
 
     this.schemas = schemas;

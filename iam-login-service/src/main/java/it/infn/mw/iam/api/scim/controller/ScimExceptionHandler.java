@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimBulkPayloadSizeExceeded;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
@@ -119,8 +120,18 @@ public class ScimExceptionHandler extends ResponseEntityExceptionHandler {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
   }
 
+  @ResponseStatus(code = HttpStatus.PAYLOAD_TOO_LARGE)
+  @ExceptionHandler(ScimBulkPayloadSizeExceeded.class)
+  @ResponseBody
+  public ScimErrorResponse handleBulkRequestSizeExceeded(ScimBulkPayloadSizeExceeded e) {
+
+    return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage());
+  }
+
+
   private ScimErrorResponse buildErrorResponse(HttpStatus status, String message) {
 
     return new ScimErrorResponse(status.value(), message);
   }
+
 }
