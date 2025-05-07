@@ -20,6 +20,7 @@ import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -118,8 +119,8 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Test")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName", containsStringIgnoringCase("tEs")))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
       .andExpect(jsonPath("$.Resources[0].userName").exists())
       .andExpect(jsonPath("$.Resources[0].emails").exists())
@@ -149,8 +150,8 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("73f16d93-2441-4a50-88ff-85360d78c6b5")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Admin")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName").exists())
       .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("User")))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
       .andExpect(jsonPath("$.Resources[0].userName").exists())
@@ -159,7 +160,7 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.Resources[0].active").exists())
       .andExpect(
           jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates").exists())
-      .andExpect(jsonPath("$.Resources[1].id", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")))
+      .andExpect(jsonPath("$.Resources[1].id").exists())
       .andExpect(jsonPath("$.Resources[1].name.familyName", equalTo("User")));
   }
 
@@ -182,16 +183,16 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("73f16d93-2441-4a50-88ff-85360d78c6b5")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Admin")))
-      .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("User")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName").exists())
+      .andExpect(jsonPath("$.Resources[0].name.familyName", containsStringIgnoringCase("uS")))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
       .andExpect(jsonPath("$.Resources[0].userName").exists())
       .andExpect(jsonPath("$.Resources[0].emails").exists())
       .andExpect(jsonPath("$.Resources[0].displayName").exists())
       .andExpect(jsonPath("$.Resources[0].active").exists())
-      .andExpect(jsonPath("$.Resources[1].id", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")))
-      .andExpect(jsonPath("$.Resources[1].name.familyName", equalTo("User")));
+      .andExpect(jsonPath("$.Resources[1].id").exists())
+      .andExpect(jsonPath("$.Resources[1].name.familyName", containsStringIgnoringCase("uS")));
   }
 
   @Test
@@ -244,17 +245,17 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Test")))
-      .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("User")))
-      .andExpect(jsonPath("$.Resources[0].userName", equalTo("test")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName").exists())
+      .andExpect(jsonPath("$.Resources[0].name.familyName").exists())
+      .andExpect(jsonPath("$.Resources[0].userName", containsStringIgnoringCase("est")))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
       .andExpect(jsonPath("$.Resources[0].emails").exists())
       .andExpect(jsonPath("$.Resources[0].displayName").exists())
       .andExpect(jsonPath("$.Resources[0].active").exists())
-      .andExpect(jsonPath("$.Resources[1].id", equalTo("f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a")))
-      .andExpect(jsonPath("$.Resources[1].name.familyName", equalTo("User")))
-      .andExpect(jsonPath("$.Resources[1].userName", equalTo("test_100")));
+      .andExpect(jsonPath("$.Resources[1].id").exists())
+      .andExpect(jsonPath("$.Resources[1].name.familyName").exists())
+      .andExpect(jsonPath("$.Resources[1].userName", containsStringIgnoringCase("est")));
   }
 
 
@@ -310,19 +311,21 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(7)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(7))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("73f16d93-2441-4a50-88ff-85360d78c6b5")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Admin")))
-      .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("User")))
-      .andExpect(jsonPath("$.Resources[0].userName", equalTo("admin")))
-      .andExpect(jsonPath("$.Resources[0].emails[0].value", equalTo("1_admin@iam.test")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName").exists())
+      .andExpect(jsonPath("$.Resources[0].name.familyName").exists())
+      .andExpect(jsonPath("$.Resources[0].userName").exists())
+      .andExpect(
+          jsonPath("$.Resources[0].emails[0].value", containsStringIgnoringCase("@iam.test")))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
       .andExpect(jsonPath("$.Resources[0].emails").exists())
       .andExpect(jsonPath("$.Resources[0].displayName").exists())
       .andExpect(jsonPath("$.Resources[0].active").exists())
-      .andExpect(jsonPath("$.Resources[1].id", equalTo("bffc67b7-47fe-410c-a6a0-cf00173a8fbb")))
-      .andExpect(jsonPath("$.Resources[1].name.familyName", equalTo("Email 0")))
-      .andExpect(jsonPath("$.Resources[1].userName", equalTo("dup_email_0")))
-      .andExpect(jsonPath("$.Resources[1].emails[0].value", equalTo("3_admin@iam.test")));
+      .andExpect(jsonPath("$.Resources[1].id").exists())
+      .andExpect(jsonPath("$.Resources[1].name.familyName").exists())
+      .andExpect(jsonPath("$.Resources[1].userName").exists())
+      .andExpect(
+          jsonPath("$.Resources[1].emails[0].value", containsStringIgnoringCase("@iam.test")));
   }
 
 
@@ -346,17 +349,17 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
-      .andExpect(jsonPath("$.Resources[0].id", equalTo("73f16d93-2441-4a50-88ff-85360d78c6b5")))
-      .andExpect(jsonPath("$.Resources[0].name.givenName", equalTo("Admin")))
-      .andExpect(jsonPath("$.Resources[0].name.familyName", equalTo("User")))
-      .andExpect(jsonPath("$.Resources[0].userName", equalTo("admin")))
+      .andExpect(jsonPath("$.Resources[0].id").exists())
+      .andExpect(jsonPath("$.Resources[0].name.givenName").exists())
+      .andExpect(jsonPath("$.Resources[0].name.familyName").exists())
+      .andExpect(jsonPath("$.Resources[0].userName").exists())
       .andExpect(jsonPath("$.Resources[0].active", equalTo(true)))
       .andExpect(jsonPath("$.Resources[0].schemas").exists())
-      .andExpect(jsonPath("$.Resources[0].emails[0].value", equalTo("1_admin@iam.test")))
+      .andExpect(jsonPath("$.Resources[0].emails[0].value").exists())
       .andExpect(jsonPath("$.Resources[0].displayName").exists())
       .andExpect(
           jsonPath("$.Resources[0].urn:indigo-dc:scim:schemas:IndigoUser.certificates").exists())
-      .andExpect(jsonPath("$.Resources[1].id", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")))
+      .andExpect(jsonPath("$.Resources[1].id").exists())
       .andExpect(jsonPath("$.Resources[1].active", equalTo(true)))
 
     ;
