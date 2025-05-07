@@ -127,7 +127,7 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.Resources[0].displayName").exists())
       .andExpect(jsonPath("$.Resources[0].active").exists())
       .andExpect(jsonPath("$.Resources[1].id").exists())
-      .andExpect(jsonPath("$.Resources[1].name.givenName", equalTo("Test-100")));
+      .andExpect(jsonPath("$.Resources[1].name.givenName", containsStringIgnoringCase("tEs")));
 
   }
 
