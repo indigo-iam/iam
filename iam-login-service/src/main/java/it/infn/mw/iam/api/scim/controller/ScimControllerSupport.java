@@ -29,11 +29,6 @@ public class ScimControllerSupport {
   }
 
 
-  // To browse through all users, and not just the ones within the page limit
-  protected ScimPageRequest buildcustomUserPageRequest(Integer count, Integer startIndex,
-      Integer totalUsers) {
-    return buildPageRequest(count, startIndex, totalUsers);
-  }
 
   protected ScimPageRequest buildGroupPageRequest(Integer count, Integer startIndex) {
     return buildPageRequest(count, startIndex, SCIM_GROUP_MAX_PAGE_SIZE);
