@@ -35,6 +35,6 @@ public interface ScimProvisioning<T, E> {
 
   ScimListResponse<T> list(ScimPageRequest params);
 
-  ScimListResponse<T> customList(ScimPageRequest params, String filter);
+  ScimListResponse<T> list(final ScimPageRequest params, String filter);
 
 }

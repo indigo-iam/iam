@@ -402,24 +402,42 @@ public class ScimUserProvisioning
   }
 
 
-  // Cannot add the method in the interface as same interface is used for groups that does not have
-  // a search option
 
   // Method to fetch users according to a filter
-  public ScimListResponse<ScimUser> customList(final ScimPageRequest params, String filter) {
-
-
-    ScimFilter parsedFilters = parseFilters(filter);
-
-    if (!filterEvaluation(parsedFilters)) {
-      throw invalidFilter(filter);
-    }
+  @Override
+  public ScimListResponse<ScimUser> list(final ScimPageRequest params, String filter) {
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
     OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
 
-    Page<IamAccount> results = filterSearch(op, parsedFilters);
+    Page<IamAccount> results;
+
+    // Do the filtersearch
+    if (filter != null) {
+      ScimFilter parsedFilters = parseFilters(filter);
+
+      if (!filterEvaluation(parsedFilters)) {
+        throw invalidFilter(filter);
+      }
+
+      results = filterSearch(op, parsedFilters);
+
+    } else {
+      // Don't do a filtersearch
+
+      if (params.getCount() == 0) {
+
+        long totalResults = accountRepository.count();
+        builder.totalResults(totalResults);
+        return builder.build();
+
+      } else {
+        results = accountRepository.findAll(op);
+      }
+
+
+    }
 
     List<ScimUser> resources = new ArrayList<>();
 

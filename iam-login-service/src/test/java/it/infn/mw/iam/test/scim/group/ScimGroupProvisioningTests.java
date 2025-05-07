@@ -285,12 +285,12 @@ public class ScimGroupProvisioningTests {
 
 
   @Test
-  public void groupCustomListReference() throws Exception {
+  public void groupListFilterReference() throws Exception {
     exceptionRule.expect(ScimInvalidMethod.class);
     exceptionRule
       .expectMessage("The method \"customList\" is not yet supported in ScimGroupProvisioning");
 
-    scimGroupProvisioning.customList(null, null);
+    scimGroupProvisioning.list(null, null);
 
 
 
