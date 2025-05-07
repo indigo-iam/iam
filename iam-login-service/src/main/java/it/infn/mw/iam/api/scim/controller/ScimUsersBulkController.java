@@ -143,8 +143,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     }
     try {
       userProvisioningService.update(id, patch.getOperations());
-      String new_location = StringUtils.substringBeforeLast(operation.getPath(), "/") +"/" + id;
-      bulkResponse.addSuccessResponse(PATCH, new_location, "200");
+      String newLocation = StringUtils.substringBeforeLast(operation.getPath(), "/") + "/" + id;
+      bulkResponse.addSuccessResponse(PATCH, newLocation, "200");
     } catch (ScimResourceNotFoundException e) {
       ScimErrorResponse error = errorHandler.handleResourceNotFoundException(e);
       bulkResponse.addErrorResponse(PATCH, error.getStatus(), error);
