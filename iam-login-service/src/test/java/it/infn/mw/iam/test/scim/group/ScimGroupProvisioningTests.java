@@ -34,16 +34,21 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
+import it.infn.mw.iam.api.scim.provisioning.ScimGroupProvisioning;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.scim.ScimUtils;
@@ -66,9 +71,16 @@ public class ScimGroupProvisioningTests {
 
   @Autowired
   private MockMvc mvc;
-  
+
   @Autowired
   private IamGroupRepository repo;
+
+
+  @InjectMocks
+  private ScimGroupProvisioning scimGroupProvisioning;
+
+  @Rule
+  public ExpectedException exceptionRule = ExpectedException.none();
 
   @Before
   public void setup() {
@@ -246,9 +258,9 @@ public class ScimGroupProvisioningTests {
     mvc.perform(delete(engineers.getMeta().getLocation())).andExpect(status().isNoContent());
     mvc.perform(delete(artists.getMeta().getLocation())).andExpect(status().isNoContent());
   }
-  
+
   @Test
-  public void groupDescriptionIsRendered() throws Exception { 
+  public void groupDescriptionIsRendered() throws Exception {
     final String groupId = UUID.randomUUID().toString();
     final String groupName = "group-with-description";
     final String groupDesc = "A group description";
@@ -258,16 +270,32 @@ public class ScimGroupProvisioningTests {
     group.setDescription(groupDesc);
     group.setCreationTime(new Date());
     group.setLastUpdateTime(new Date());
-    
+
     repo.save(group);
-    
+
     mvc.perform(get("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE))
-    .andExpect(status().isOk())
-    .andExpect(jsonPath("$.displayName", is(groupName)))
-    .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
-    .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
-    
-    
-    
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.displayName", is(groupName)))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
+
+
+
   }
+
+
+  @Test
+  public void groupCustomListReference() throws Exception {
+    exceptionRule.expect(ScimInvalidMethod.class);
+    exceptionRule
+      .expectMessage("The method \"customList\" is not yet supported in ScimGroupProvisioning");
+
+    scimGroupProvisioning.customList(null, null);
+
+
+
+  }
+
+
+
 }
