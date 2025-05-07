@@ -143,4 +143,41 @@ public class AccountClientEndpointTests {
     getMyClientsWorksForAdmins();
   }
 
+  private void getClientsForAccountWorksForAdmins() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    ClientDetailsEntity testClient = buildNewClient("client-test");
+    IamAccountClient accountClient = addNewClientFor(testAccount, testClient);
+
+    try {
+      mvc.perform(get("/iam/account/{id}/clients", testAccount.getUuid()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalResults", is(1)))
+          .andExpect(jsonPath("$.Resources", not(empty())))
+          .andExpect(jsonPath("$.Resources[0].client_id", is("client-test")));
+    } finally {
+      accountClientRepo.delete(accountClient);
+      clientRepo.delete(testClient);
+    }
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void getClientsForAccountWorksForAdminsTest() throws Exception {
+    getClientsForAccountWorksForAdmins();
+  }
+
+  @Test
+  public void anonymousAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/clients", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
+  public void nonAdminAccessToClientsOwnedByAccountEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/clients", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isForbidden());
+  }
 }
