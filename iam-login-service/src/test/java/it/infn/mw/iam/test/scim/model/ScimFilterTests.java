@@ -19,6 +19,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import it.infn.mw.iam.api.scim.model.ScimFilter;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
 
 public class ScimFilterTests {
 
@@ -26,10 +28,14 @@ public class ScimFilterTests {
     @Test
     public void scimFilterGetTest() {
 
-        ScimFilter filter = new ScimFilter("anAttribute", "anOperator", "aValue");
-        Assert.assertEquals(true, filter.getAttribute().equals("anAttribute"));
-        Assert.assertEquals(true, filter.getOperator().equals("anOperator"));
-        Assert.assertEquals(true, filter.getValue().equals("aValue"));
+        ScimFilterAttributes attribute = ScimFilterAttributes.ACTIVE;
+        ScimFilterOperators operator = ScimFilterOperators.EQUALS;
+        String value  = "true";
+
+        ScimFilter filter = new ScimFilter(attribute, operator, value);
+        Assert.assertEquals(true, filter.getAttribute().equals(attribute));
+        Assert.assertEquals(true, filter.getOperator().equals(operator));
+        Assert.assertEquals(true, filter.getValue().equals(value));
         Assert.assertEquals(true, filter.getClass().equals(ScimFilter.class));
     }
 

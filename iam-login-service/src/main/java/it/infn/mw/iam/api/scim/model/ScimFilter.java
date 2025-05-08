@@ -16,25 +16,30 @@
 
 package it.infn.mw.iam.api.scim.model;
 
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
+
 public class ScimFilter {
 
-    private final String attribute;
-    private final String operator;
+    private final ScimFilterAttributes attribute;
+
+    private final ScimFilterOperators operator;
+
     private final String value;
 
 
-    public ScimFilter(String attribute, String operator, String value) {
+    public ScimFilter(ScimFilterAttributes attribute, ScimFilterOperators operator, String value) {
         this.attribute = attribute;
         this.operator = operator;
         this.value = value;
     }
 
 
-    public String getAttribute() {
+    public ScimFilterAttributes getAttribute() {
         return this.attribute;
     }
 
-    public String getOperator() {
+    public ScimFilterOperators getOperator() {
         return this.operator;
     }
 

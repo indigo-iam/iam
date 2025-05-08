@@ -62,6 +62,8 @@ import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
@@ -112,35 +114,20 @@ public class ScimUserProvisioning
   }
 
 
-  // All the supported attribute Operators
-  private enum AttributeOperators {
-    eq, co
-  }
-
-  // All the supported filter attributes
-  private enum Attributes {
-    // All related to the name of the user
-    familyName, givenName, username,
-
-    // Other info
-    active, emails
-  }
-
-
 
   private ScimFilter parseFilters(final String filtersParameter) {
 
     if (!Strings.isNullOrEmpty(filtersParameter)) {
       // Iterating over all defined enums
-      for (AttributeOperators operator : AttributeOperators.values()) {
+      for (ScimFilterOperators operator : ScimFilterOperators.values()) {
 
         int from = 0;
 
         // Need to look at all instances that corresponds to the operator
-        while (-1 != filtersParameter.indexOf(operator.toString(), from)) {
+        while (-1 != filtersParameter.indexOf(operator.name, from)) {
 
           // Looking for the first instance of the given operator in the request
-          int index = filtersParameter.indexOf(operator.toString(), from);
+          int index = filtersParameter.indexOf(operator.name, from);
 
           if (index == 0) {
             index = 1;
@@ -148,16 +135,26 @@ public class ScimUserProvisioning
 
           // If there is an occurence and it's surrounded by spaces
           if (filtersParameter.charAt(index - 1) == ' '
-              && filtersParameter.charAt(index + operator.name().length()) == ' ') {
+              && filtersParameter.charAt(index + operator.name.length()) == ' ') {
 
-            // The parameter before the index is then from the start until the first space
-            String parameter = filtersParameter.substring(0, index - 1);
+            ScimFilterAttributes parameter = null;
+
+            for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
+              if (attribute.name.equals(filtersParameter.substring(0, index - 1))) {
+                parameter = attribute;
+              }
+            }
+
+            if (parameter == null) {
+              throw invalidAttribute(filtersParameter.substring(0, index - 1));
+            }
+
 
             // The value is from the operator until the end
-            String value = filtersParameter.substring(index + operator.name().length() + 1,
+            String value = filtersParameter.substring(index + operator.name.length() + 1,
                 filtersParameter.length());
 
-            return new ScimFilter(parameter, operator.name(), value);
+            return new ScimFilter(parameter, operator, value);
 
           } else {
             from = index + 1;
@@ -171,10 +168,10 @@ public class ScimUserProvisioning
 
   private boolean filterEvaluation(ScimFilter parsedFilters) {
 
-    for (Attributes attribute : Attributes.values()) {
-      if (attribute.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
-        for (AttributeOperators operator : AttributeOperators.values()) {
-          if (operator.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+    for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
+      if (attribute.equals(parsedFilters.getAttribute())) {
+        for (ScimFilterOperators operator : ScimFilterOperators.values()) {
+          if (operator.equals(parsedFilters.getOperator())) {
             return true;
           }
         }
@@ -191,16 +188,16 @@ public class ScimUserProvisioning
     Page<IamAccount> result = null;
 
     // Figuring out the operator
-    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+    if (ScimFilterOperators.EQUALS.equals(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
 
         // retrieving the results
         result = accountRepository.findByGivenName(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         if ((parsedFilters.getValue().equalsIgnoreCase("false")
             || parsedFilters.getValue().equalsIgnoreCase("true"))) {
@@ -210,48 +207,48 @@ public class ScimUserProvisioning
           throw invalidValue(parsedFilters.getValue());
         }
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.findByEmail(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.findByUsername(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.findByFamilyName(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
       }
 
-    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+    } else if (ScimFilterOperators.CONTAINS.equals(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
 
         // retrieving the results
         result = accountRepository.containsGivenName(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
-        throw invalidOperator(parsedFilters.getOperator());
+        throw invalidOperator(parsedFilters.getOperator().name);
 
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsEmail(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsUsername(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsFamilyName(parsedFilters.getValue(), op)
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
@@ -272,16 +269,16 @@ public class ScimUserProvisioning
     List<IamAccount> result = null;
 
     // Figuring out the operator
-    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+    if (ScimFilterOperators.EQUALS.equals(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
 
         // retrieving the results
         result = accountRepository.findByGivenName(parsedFilters.getValue())
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         if ((parsedFilters.getValue().equalsIgnoreCase("false")
             || parsedFilters.getValue().equalsIgnoreCase("true"))) {
@@ -291,50 +288,50 @@ public class ScimUserProvisioning
           throw invalidValue(parsedFilters.getValue());
         }
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.findMultipleByEmail(parsedFilters.getValue())
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
 
         result = new ArrayList<>();
 
         result.add(accountRepository.findByUsername(parsedFilters.getValue())
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue())));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.findByFamilyName(parsedFilters.getValue())
           .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
       }
 
-    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+    } else if (ScimFilterOperators.CONTAINS.equals(parsedFilters.getOperator())) {
 
       // Figuring out the attribute
-      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
 
         // retrieving the results
         result = accountRepository.containsGivenName(parsedFilters.getValue())
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
-        throw invalidOperator(parsedFilters.getOperator());
+        throw invalidOperator(parsedFilters.getOperator().name);
 
 
-      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsEmail(parsedFilters.getValue())
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsUsername(parsedFilters.getValue())
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
 
-      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
 
         result = accountRepository.containsFamilyName(parsedFilters.getValue())
           .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
@@ -400,6 +397,11 @@ public class ScimUserProvisioning
   private IllegalArgumentException invalidOperator(String operator) {
     return new IllegalArgumentException(String
       .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
+  }
+
+  private IllegalArgumentException invalidAttribute(String attribute) {
+    return new IllegalArgumentException(
+        String.format("the attribute \"%s\" is not valid within filtering", attribute));
   }
 
   private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
