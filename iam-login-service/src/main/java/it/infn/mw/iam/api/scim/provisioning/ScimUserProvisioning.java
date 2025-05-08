@@ -267,6 +267,89 @@ public class ScimUserProvisioning
     return result;
   }
 
+  private Long filterSearch(ScimFilter parsedFilters) {
+
+    List<IamAccount> result = null;
+
+    // Figuring out the operator
+    if (AttributeOperators.eq.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.findByGivenName(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        if ((parsedFilters.getValue().equalsIgnoreCase("false")
+            || parsedFilters.getValue().equalsIgnoreCase("true"))) {
+          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()))
+            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+        } else {
+          throw invalidValue(parsedFilters.getValue());
+        }
+
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findMultipleByEmail(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = new ArrayList<>();
+
+        result.add(accountRepository.findByUsername(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue())));
+
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findByFamilyName(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+      }
+
+    } else if (AttributeOperators.co.toString().equalsIgnoreCase(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (Attributes.givenName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.containsGivenName(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (Attributes.active.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        // Contains on a boolean value makes no sense, gonna throw an error
+        throw invalidOperator(parsedFilters.getOperator());
+
+
+      } else if (Attributes.emails.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsEmail(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (Attributes.username.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsUsername(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (Attributes.familyName.toString().equalsIgnoreCase(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsFamilyName(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      }
+    }
+
+    if (result != null && result.size() <= 0) {
+      throw noUsersMappedToValue(parsedFilters);
+    } else if (result == null) {
+      throw missingSupport(parsedFilters);
+    }
+    return (long) result.size();
+  }
+
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
@@ -409,8 +492,7 @@ public class ScimUserProvisioning
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
-    OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
-
+    OffsetPageable op;
     Page<IamAccount> results;
 
     // Do the filtersearch
@@ -421,7 +503,17 @@ public class ScimUserProvisioning
         throw invalidFilter(filter);
       }
 
-      results = filterSearch(op, parsedFilters);
+      if (params.getCount() == 0) {
+        long totalResults = filterSearch(parsedFilters);
+        builder.totalResults(totalResults);
+        return builder.build();
+
+      } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+
+        results = filterSearch(op, parsedFilters);
+      }
+
 
     } else {
       // Don't do a filtersearch
@@ -433,6 +525,7 @@ public class ScimUserProvisioning
         return builder.build();
 
       } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
         results = accountRepository.findAll(op);
       }
 
