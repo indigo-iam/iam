@@ -118,7 +118,7 @@ public class DefaultClientSearchService implements ClientSearchService {
         .stream()
         .map(IamAccountClient::getClient)
         .map(converter::registeredClientDtoFromEntity)
-        .collect(Collectors.toList()))
+        .toList())
       .fromPage(pagedResults, pageable)
       .build();
   }
@@ -143,7 +143,7 @@ public class DefaultClientSearchService implements ClientSearchService {
         .stream()
         .map(IamAccountClient::getClient)
         .map(converter::registeredClientDtoFromEntity)
-        .collect(Collectors.toList()))
+        .toList())
       .fromPage(pagedResults, pageable)
       .build();
   }
