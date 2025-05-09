@@ -56,7 +56,6 @@ import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.api.scim.provisioning.ScimGroupProvisioning;
 import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
