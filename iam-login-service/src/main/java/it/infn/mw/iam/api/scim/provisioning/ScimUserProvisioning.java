@@ -117,26 +117,31 @@ public class ScimUserProvisioning
 
   private ScimFilter parseFilters(final String filtersParameter) {
 
-    String regex = "(";
+
+    StringBuilder regex = new StringBuilder();
+
+    regex.append("(");
 
     // Ensuring that the attribute given is defined within the ScimFilterAttributes
     for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
-      regex += attribute.name + '|';
+      regex.append(attribute.type + '|');
     }
-    regex = regex.substring(0, regex.length() - 1);
 
-    regex += ")\\s(";
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s(");
 
     // Ensuring that the operator given is defined within the ScimFilterOperators
     for (ScimFilterOperators operator : ScimFilterOperators.values()) {
-      regex += operator.name + '|';
+      regex.append(operator.type + '|');
     }
-    regex = regex.substring(0, regex.length() - 1);
 
-    regex += ")\\s([\\w@\\.]+)";
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s([\\w@\\.]+)");
 
     // Case insensitive according to the RFC rules
-    Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    Pattern pattern = Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE);
     Matcher matcher = pattern.matcher(filtersParameter);
 
 
@@ -215,7 +220,7 @@ public class ScimUserProvisioning
       } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
-        throw invalidOperator(parsedFilters.getOperator().name);
+        throw invalidOperator(parsedFilters.getOperator().type);
 
 
       } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
@@ -298,7 +303,7 @@ public class ScimUserProvisioning
       } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
 
         // Contains on a boolean value makes no sense, gonna throw an error
-        throw invalidOperator(parsedFilters.getOperator().name);
+        throw invalidOperator(parsedFilters.getOperator().type);
 
 
       } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
@@ -319,7 +324,7 @@ public class ScimUserProvisioning
       }
     }
 
-    if (result != null && result.size() <= 0) {
+    if (result != null && result.isEmpty()) {
       throw noUsersMappedToValue(parsedFilters);
     } else if (result == null) {
       throw missingSupport(parsedFilters);
@@ -360,7 +365,7 @@ public class ScimUserProvisioning
   private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
     return new ScimResourceNotFoundException(String.format(
         "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
-        filter.getAttribute().name, filter.getOperator().name, filter.getValue()));
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
   }
 
   private IllegalArgumentException invalidValue(String value) {
@@ -384,7 +389,7 @@ public class ScimUserProvisioning
   private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
     return new ScimFilterUnsupportedException(String.format(
         "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
-        filter.getAttribute().name, filter.getOperator().name, filter.getValue()));
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {

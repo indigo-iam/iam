@@ -20,6 +20,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,9 +36,7 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,9 +78,6 @@ public class ScimGroupProvisioningTests {
 
   @InjectMocks
   private ScimGroupProvisioning scimGroupProvisioning;
-
-  @Rule
-  public ExpectedException exceptionRule = ExpectedException.none();
 
   @Before
   public void setup() {
@@ -285,14 +282,13 @@ public class ScimGroupProvisioningTests {
 
 
   @Test
-  public void groupListFilterReference() throws Exception {
-    exceptionRule.expect(ScimInvalidMethod.class);
-    exceptionRule
-      .expectMessage("The method \"customList\" is not yet supported in ScimGroupProvisioning");
+  public void groupListFilterReference() {
 
-    scimGroupProvisioning.list(null, null);
+    Exception notimplemented =
+        assertThrows(ScimInvalidMethod.class, () -> scimGroupProvisioning.list(null, null));
 
-
+    assertTrue(notimplemented.getMessage()
+      .contains("The method \"customList\" is not yet supported in ScimGroupProvisioning"));
 
   }
 

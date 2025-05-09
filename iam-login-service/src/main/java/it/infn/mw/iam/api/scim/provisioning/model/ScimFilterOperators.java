@@ -19,16 +19,16 @@ public enum ScimFilterOperators {
 
     EQUALS("eq"), CONTAINS("co");
 
-    public final String name;
+    public final String type;
 
-    private ScimFilterOperators(String name) {
-        this.name = name;
+    private ScimFilterOperators(String type) {
+        this.type = type;
     }
 
     public static ScimFilterOperators parseOperator(String operator) {
 
         for (ScimFilterOperators operators : ScimFilterOperators.values()) {
-            if (operators.name.equals(operator)) {
+            if (operators.type.equals(operator)) {
                 return operators;
             }
         }

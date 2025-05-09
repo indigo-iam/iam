@@ -771,7 +771,6 @@ public class ScimUserProvisioningFilteringTests {
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))
       .andExpect(jsonPath("$.Resources[0]").doesNotExist());
 
-    ;
   }
 
 

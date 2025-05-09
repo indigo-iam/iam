@@ -20,16 +20,16 @@ public enum ScimFilterAttributes {
     FAMILYNAME("familyname"), GIVENNAME("givenname"), USERNAME("username"), ACTIVE(
             "active"), EMAILS("emails");
 
-    public final String name;
+    public final String type;
 
-    private ScimFilterAttributes(String name) {
-        this.name = name;
+    private ScimFilterAttributes(String type) {
+        this.type = type;
     }
 
     public static ScimFilterAttributes parseAttribute(String attribute) {
 
         for (ScimFilterAttributes attributes : ScimFilterAttributes.values()) {
-            if (attributes.name.equals(attribute)) {
+            if (attributes.type.equals(attribute)) {
                 return attributes;
             }
         }
