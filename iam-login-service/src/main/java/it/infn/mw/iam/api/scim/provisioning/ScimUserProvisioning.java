@@ -144,13 +144,6 @@ public class ScimUserProvisioning
       throw invalidFilter(filtersParameter);
     }
 
-
-
-    /*
-     * Boolean match = matcher.matches(); // Boolean temp = matcher.find(); int count =
-     * matcher.groupCount(); String m = matcher.group();
-     */
-
     String attributeStr = matcher.group(1);
     String operatorStr = matcher.group(2);
     String value = matcher.group(3);
@@ -167,16 +160,6 @@ public class ScimUserProvisioning
 
 
   }
-
-
-  /*
-   * private boolean filterEvaluation(ScimFilter parsedFilters) {
-   * 
-   * for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) { if
-   * (attribute.equals(parsedFilters.getAttribute())) { for (ScimFilterOperators operator :
-   * ScimFilterOperators.values()) { if (operator.equals(parsedFilters.getOperator())) { return
-   * true; } } return false; } } return false; }
-   */
 
 
 
