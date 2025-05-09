@@ -69,6 +69,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
@@ -85,12 +86,13 @@ public class IamDeviceEndpointController {
   private final UserApprovalHandler iamUserApprovalHandler;
   private final IamUserApprovalUtils userApprovalUtils;
   private final DeviceCodeRepository deviceCodeRepository;
+  private final ScopeFilter scopeFilter;
 
   public IamDeviceEndpointController(IamClientRepository clientRepository,
       SystemScopeService scopeService, ConfigurationPropertiesBean config,
       DeviceCodeService deviceCodeService, OAuth2RequestFactory oAuth2RequestFactory,
       UserApprovalHandler iamUserApprovalHandler, IamUserApprovalUtils userApprovalUtils,
-      DeviceCodeRepository deviceCodeRepository) {
+      DeviceCodeRepository deviceCodeRepository, ScopeFilter scopeFilter) {
     this.clientRepository = clientRepository;
     this.scopeService = scopeService;
     this.config = config;
@@ -99,13 +101,14 @@ public class IamDeviceEndpointController {
     this.iamUserApprovalHandler = iamUserApprovalHandler;
     this.userApprovalUtils = userApprovalUtils;
     this.deviceCodeRepository = deviceCodeRepository;
+    this.scopeFilter = scopeFilter;
   }
 
   @PostMapping(value = "/" + DEVICE_CODE_URL,
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public String requestDeviceCode(@RequestParam("client_id") String clientId,
-      @RequestParam(name = "scope", required = false) String scope, @RequestParam Map<String, String> parameters,
+      @RequestParam(required = false) String scope, @RequestParam Map<String, String> parameters,
       ModelMap model) {
 
     if (clientId == null || clientId.isBlank()) {
@@ -213,14 +216,20 @@ public class IamDeviceEndpointController {
 
     iamUserApprovalHandler.checkForPreApproval(authorizationRequest, authn);
 
-    OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
-    OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
-
-    approveDevice(dc, o2Auth, authorizationRequest);
     model.put("client", client);
+
+    Set<String> sortedAndFilteredScopes = userApprovalUtils.sortScopes(
+        scopeService.fromStrings(scopeFilter.filterScopes(authorizationRequest.getScope(), authn)));
+    dc.setScope(sortedAndFilteredScopes);
+    deviceCodeRepository.save(dc);
 
     if (authorizationRequest.getExtensions().get(APPROVED_SITE) != null
         || authorizationRequest.isApproved()) {
+
+      OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
+      OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, authn);
+
+      approveDevice(dc, o2Auth, authorizationRequest);
 
       model.addAttribute(APPROVAL_ATTRIBUTE_KEY, true);
       return DEVICE_APPROVED_PAGE;
@@ -264,6 +273,11 @@ public class IamDeviceEndpointController {
       return DEVICE_APPROVED_PAGE;
     }
 
+    OAuth2Request o2req = oAuth2RequestFactory.createOAuth2Request(authorizationRequest);
+    OAuth2Authentication o2Auth = new OAuth2Authentication(o2req, auth);
+
+    approveDevice(dc, o2Auth, authorizationRequest);
+
     setAuthzRequestAfterApproval(authorizationRequest, remember, approve);
     iamUserApprovalHandler.updateAfterApproval(authorizationRequest, auth);
 
@@ -301,9 +315,6 @@ public class IamDeviceEndpointController {
   private void approveDevice(DeviceCode dc, OAuth2Authentication o2Auth,
       AuthorizationRequest authorizationRequest) {
 
-    Set<String> sortedScopes =
-        userApprovalUtils.sortScopes(scopeService.fromStrings(authorizationRequest.getScope()));
-    dc.setScope(sortedScopes);
     dc.setApproved(true);
     AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
     authHolder.setAuthentication(o2Auth);
