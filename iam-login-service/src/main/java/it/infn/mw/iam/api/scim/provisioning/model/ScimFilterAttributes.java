@@ -17,17 +17,31 @@ package it.infn.mw.iam.api.scim.provisioning.model;
 
 public enum ScimFilterAttributes {
 
-    FAMILYNAME("familyName"),
-    GIVENNAME("givenName"),
-    USERNAME("username"),
-    ACTIVE("active"),
-    EMAILS("emails");
+    FAMILYNAME("familyname"), GIVENNAME("givenname"), USERNAME("username"), ACTIVE(
+            "active"), EMAILS("emails");
 
     public final String name;
 
-    private ScimFilterAttributes(String name){
+    private ScimFilterAttributes(String name) {
         this.name = name;
     }
 
-    
+    public static ScimFilterAttributes parseAttribute(String attribute) {
+
+        for (ScimFilterAttributes attributes : ScimFilterAttributes.values()) {
+            if (attributes.name.equals(attribute)) {
+                return attributes;
+            }
+        }
+
+        throw invalidAttribute(attribute);
+
+    }
+
+    private static IllegalArgumentException invalidAttribute(String attribute) {
+        return new IllegalArgumentException(
+                String.format("the attribute \"%s\" is not valid within filtering", attribute));
+    }
+
+
 }

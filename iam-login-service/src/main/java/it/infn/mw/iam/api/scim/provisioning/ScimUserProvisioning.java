@@ -36,6 +36,8 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNA
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -43,8 +45,6 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.google.common.base.Strings;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
@@ -117,69 +117,66 @@ public class ScimUserProvisioning
 
   private ScimFilter parseFilters(final String filtersParameter) {
 
-    if (!Strings.isNullOrEmpty(filtersParameter)) {
-      // Iterating over all defined enums
-      for (ScimFilterOperators operator : ScimFilterOperators.values()) {
+    String regex = "(";
 
-        int from = 0;
-
-        // Need to look at all instances that corresponds to the operator
-        while (-1 != filtersParameter.indexOf(operator.name, from)) {
-
-          // Looking for the first instance of the given operator in the request
-          int index = filtersParameter.indexOf(operator.name, from);
-
-          if (index == 0) {
-            index = 1;
-          } ;
-
-          // If there is an occurence and it's surrounded by spaces
-          if (filtersParameter.charAt(index - 1) == ' '
-              && filtersParameter.charAt(index + operator.name.length()) == ' ') {
-
-            ScimFilterAttributes parameter = null;
-
-            for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
-              if (attribute.name.equals(filtersParameter.substring(0, index - 1))) {
-                parameter = attribute;
-              }
-            }
-
-            if (parameter == null) {
-              throw invalidAttribute(filtersParameter.substring(0, index - 1));
-            }
-
-
-            // The value is from the operator until the end
-            String value = filtersParameter.substring(index + operator.name.length() + 1,
-                filtersParameter.length());
-
-            return new ScimFilter(parameter, operator, value);
-
-          } else {
-            from = index + 1;
-          }
-        }
-      }
-    }
-    throw invalidFilter(filtersParameter);
-  }
-
-
-  private boolean filterEvaluation(ScimFilter parsedFilters) {
-
+    // Ensuring that the attribute given is defined within the ScimFilterAttributes
     for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
-      if (attribute.equals(parsedFilters.getAttribute())) {
-        for (ScimFilterOperators operator : ScimFilterOperators.values()) {
-          if (operator.equals(parsedFilters.getOperator())) {
-            return true;
-          }
-        }
-        return false;
-      }
+      regex += attribute.name + '|';
     }
-    return false;
+    regex = regex.substring(0, regex.length() - 1);
+
+    regex += ")\\s(";
+
+    // Ensuring that the operator given is defined within the ScimFilterOperators
+    for (ScimFilterOperators operator : ScimFilterOperators.values()) {
+      regex += operator.name + '|';
+    }
+    regex = regex.substring(0, regex.length() - 1);
+
+    regex += ")\\s([\\w@\\.]+)";
+
+    // Case insensitive according to the RFC rules
+    Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(filtersParameter);
+
+
+    if (!matcher.matches() || matcher.groupCount() != 3) {
+      throw invalidFilter(filtersParameter);
+    }
+
+
+
+    /*
+     * Boolean match = matcher.matches(); // Boolean temp = matcher.find(); int count =
+     * matcher.groupCount(); String m = matcher.group();
+     */
+
+    String attributeStr = matcher.group(1);
+    String operatorStr = matcher.group(2);
+    String value = matcher.group(3);
+
+
+    ScimFilterAttributes attribute =
+        ScimFilterAttributes.parseAttribute(attributeStr.toLowerCase());
+    ScimFilterOperators operator = ScimFilterOperators.parseOperator(operatorStr.toLowerCase());
+
+
+
+    return new ScimFilter(attribute, operator, value);
+
+
+
   }
+
+
+  /*
+   * private boolean filterEvaluation(ScimFilter parsedFilters) {
+   * 
+   * for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) { if
+   * (attribute.equals(parsedFilters.getAttribute())) { for (ScimFilterOperators operator :
+   * ScimFilterOperators.values()) { if (operator.equals(parsedFilters.getOperator())) { return
+   * true; } } return false; } } return false; }
+   */
 
 
 
@@ -380,7 +377,7 @@ public class ScimUserProvisioning
   private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
     return new ScimResourceNotFoundException(String.format(
         "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
-        filter.getAttribute(), filter.getOperator(), filter.getValue()));
+        filter.getAttribute().name, filter.getOperator().name, filter.getValue()));
   }
 
   private IllegalArgumentException invalidValue(String value) {
@@ -399,15 +396,12 @@ public class ScimUserProvisioning
       .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
   }
 
-  private IllegalArgumentException invalidAttribute(String attribute) {
-    return new IllegalArgumentException(
-        String.format("the attribute \"%s\" is not valid within filtering", attribute));
-  }
+
 
   private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
     return new ScimFilterUnsupportedException(String.format(
         "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
-        filter.getAttribute(), filter.getOperator(), filter.getValue()));
+        filter.getAttribute().name, filter.getOperator().name, filter.getValue()));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -500,10 +494,6 @@ public class ScimUserProvisioning
     // Do the filtersearch
     if (filter != null) {
       ScimFilter parsedFilters = parseFilters(filter);
-
-      if (!filterEvaluation(parsedFilters)) {
-        throw invalidFilter(filter);
-      }
 
       if (params.getCount() == 0) {
         long totalResults = filterSearch(parsedFilters);

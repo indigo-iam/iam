@@ -17,13 +17,32 @@ package it.infn.mw.iam.api.scim.provisioning.model;
 
 public enum ScimFilterOperators {
 
-    EQUALS("eq"),
-    CONTAINS("co");
+    EQUALS("eq"), CONTAINS("co");
 
     public final String name;
 
-    private ScimFilterOperators(String name){
+    private ScimFilterOperators(String name) {
         this.name = name;
     }
-    
+
+    public static ScimFilterOperators parseOperator(String operator) {
+
+        for (ScimFilterOperators operators : ScimFilterOperators.values()) {
+            if (operators.name.equals(operator)) {
+                return operators;
+            }
+        }
+
+        throw invalidOperator(operator);
+
+    }
+
+
+    private static IllegalArgumentException invalidOperator(String operator) {
+        return new IllegalArgumentException(String.format(
+                "the operator \"%s\" can not be used with the given filtering attribute",
+                operator));
+    }
+
+
 }

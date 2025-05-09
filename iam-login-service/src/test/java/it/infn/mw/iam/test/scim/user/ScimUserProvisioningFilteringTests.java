@@ -107,7 +107,7 @@ public class ScimUserProvisioningFilteringTests {
       .getUsers(ParamsBuilder.builder().filters("givenName eq Madonna").build(),
           HttpStatus.NOT_FOUND)
       .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenName,eq,Madonna\" produced no results as no data fulfilled the criteria.")));
+          "the filter \"givenname,eq,Madonna\" produced no results as no data fulfilled the criteria.")));
 
   }
 
@@ -137,7 +137,7 @@ public class ScimUserProvisioningFilteringTests {
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("givenName co xyz").build(), HttpStatus.NOT_FOUND)
       .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"givenName,co,xyz\" produced no results as no data fulfilled the criteria.")));
+          "the filter \"givenname,co,xyz\" produced no results as no data fulfilled the criteria.")));
 
   }
 
@@ -171,7 +171,7 @@ public class ScimUserProvisioningFilteringTests {
       .getUsers(ParamsBuilder.builder().filters("familyName eq Medici").build(),
           HttpStatus.NOT_FOUND)
       .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyName,eq,Medici\" produced no results as no data fulfilled the criteria.")));
+          "the filter \"familyname,eq,Medici\" produced no results as no data fulfilled the criteria.")));
 
   }
 
@@ -201,7 +201,7 @@ public class ScimUserProvisioningFilteringTests {
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("familyName co Ham").build(), HttpStatus.NOT_FOUND)
       .andExpect(jsonPath("$.detail", equalTo(
-          "the filter \"familyName,co,Ham\" produced no results as no data fulfilled the criteria.")));
+          "the filter \"familyname,co,Ham\" produced no results as no data fulfilled the criteria.")));
 
   }
 
