@@ -1005,7 +1005,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
         .getRequest()
         .getSession();
 
-      session = (MockHttpSession) mvc
+      mvc
         .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
         .andExpect(status().isOk())
         .andExpect(view().name("iam/approveDevice"))
@@ -1114,7 +1114,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
     userCode = responseJson.get("user_code").asText();
     deviceCode = responseJson.get("device_code").asText();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post(DEVICE_USER_VERIFY_URL).param("user_code", userCode).session(session))
       .andExpect(status().isOk())
       .andExpect(view().name("iam/approveDevice"))
