@@ -54,6 +54,7 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
+import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -384,6 +385,10 @@ public class ScimUserProvisioning
       .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
   }
 
+  private ScimInvalidMethod methodNotSupported(String method) {
+    return new ScimInvalidMethod(
+        String.format("The method \"%s\" is not yet supported in ScimUserProvisioning", method));
+  }
 
 
   private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
@@ -443,29 +448,7 @@ public class ScimUserProvisioning
 
   @Override
   public ScimListResponse<ScimUser> list(final ScimPageRequest params) {
-
-    ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
-
-    if (params.getCount() == 0) {
-
-      long totalResults = accountRepository.count();
-      builder.totalResults(totalResults);
-
-    } else {
-
-      OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
-
-      Page<IamAccount> results = accountRepository.findAll(op);
-
-      List<ScimUser> resources = new ArrayList<>();
-
-      results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
-
-      builder.resources(resources);
-      builder.fromPage(results, op);
-    }
-
-    return builder.build();
+    throw methodNotSupported("list(final ScimPageRequest params)");
   }
 
 

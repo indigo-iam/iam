@@ -288,7 +288,7 @@ public class ScimGroupProvisioningTests {
         assertThrows(ScimInvalidMethod.class, () -> scimGroupProvisioning.list(null, null));
 
     assertTrue(notimplemented.getMessage()
-      .contains("The method \"customList\" is not yet supported in ScimGroupProvisioning"));
+      .contains("The method \"list(final ScimPageRequest params, String filter)\" is not yet supported in ScimGroupProvisioning"));
 
   }
 

@@ -244,7 +244,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   @Override
   public ScimListResponse<ScimGroup> list(final ScimPageRequest params, String filter) {
-    throw methodNotSupported("customList");
+    throw methodNotSupported("list(final ScimPageRequest params, String filter)");
   }
 
   private Supplier<ScimResourceNotFoundException> noGroupMappedToId(String id) {
