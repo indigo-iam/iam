@@ -91,7 +91,7 @@ public class ClientManagementAPIController {
     return managementService.saveNewClient(client);
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ ClientViews.ClientManagement.class })
   @GetMapping
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
@@ -107,12 +107,12 @@ public class ClientManagementAPIController {
     }
   }
 
-  @JsonView({ClientViews.ClientManagement.class})
+  @JsonView({ ClientViews.ClientManagement.class })
   @GetMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId) {
     return managementService.retrieveClientByClientId(clientId)
-      .orElseThrow(clientNotFound(clientId));
+        .orElseThrow(clientNotFound(clientId));
   }
 
   @GetMapping("/{clientId}/owners")
@@ -173,7 +173,7 @@ public class ClientManagementAPIController {
   public void revokeTokens(@PathVariable String clientId) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
-    .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getRefreshTokensForClient(client)
         .forEach(rt -> tokenService.revokeRefreshToken(rt));
     rotateClientSecret(clientId);
