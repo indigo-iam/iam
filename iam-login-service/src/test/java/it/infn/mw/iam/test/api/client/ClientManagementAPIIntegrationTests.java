@@ -353,5 +353,9 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
         .andExpect(OK)
         .andExpect(jsonPath("$.totalResults").value(0));
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/" + TEST_CLIENT_ID))
+        .andExpect(OK)
+        .andExpect(jsonPath("$.active").value(true));
   }
 }

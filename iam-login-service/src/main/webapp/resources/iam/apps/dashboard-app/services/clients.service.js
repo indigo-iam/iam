@@ -46,7 +46,8 @@
             newClient: newClient,
             getClientList: getClientList,
             enableClient: enableClient,
-            disableClient: disableClient
+            disableClient: disableClient,
+            removeTokens: removeTokens
         };
 
         return service;
@@ -131,7 +132,7 @@
             }).catch(function (res) {
                 return $q.reject(res);
             });
-        }
+        }    
 
         function searchClients(searchType, search, startIndex, count, drOnly) {
             var params = $httpParamSerializer({
@@ -188,6 +189,14 @@
 
         function disableClient(clientId){
             return $http.patch(endpoint(clientId) + "/disable").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+        }
+        
+        function removeTokens(clientId) {
+            return $http.patch(endpoint(clientId)+ "/revoke-tokens").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);
