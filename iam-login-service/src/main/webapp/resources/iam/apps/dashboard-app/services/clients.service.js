@@ -47,7 +47,8 @@
             getClientList: getClientList,
             enableClient: enableClient,
             disableClient: disableClient,
-            removeTokens: removeTokens
+            revokeRefreshTokens: revokeRefreshTokens,
+            revokeAccessTokens: revokeAccessTokens,
         };
 
         return service;
@@ -195,8 +196,16 @@
             });
         }
         
-        function removeTokens(clientId) {
-            return $http.patch(endpoint(clientId)+ "/revoke-tokens").then(function (res) {
+        function revokeRefreshTokens(clientId) {
+            return $http.patch(endpoint(clientId)+ "/revoke-refresh-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+        }
+
+        function revokeAccessTokens(clientId) {
+            return $http.patch(endpoint(clientId)+ "/revoke-access-tokens").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);

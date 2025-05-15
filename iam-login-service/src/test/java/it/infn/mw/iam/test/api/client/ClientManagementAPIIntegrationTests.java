@@ -63,6 +63,8 @@ import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 public class ClientManagementAPIIntegrationTests extends TestSupport {
   protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
 
+  protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
+
   @Autowired
   private MockMvc mvc;
 
@@ -81,7 +83,9 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   @Autowired
   protected DefaultOAuth2ProviderTokenService tokenService;
 
-  public static final String[] SCOPES = { "openid", "profile", "offline_access" };
+  public static final String[] REFRESH_SCOPES = { "openid", "profile", "offline_access"};
+
+  public static final String[] ACCESS_SCOPES = { "openid", "profile"};
 
   public static final String TEST_CLIENT_ID = "token-lookup-client";
 
@@ -339,18 +343,40 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-  public void setClientRevokeTokensWorks() throws Exception {
+  public void testClientRevokeRefreshTokensWorks() throws Exception {
 
     ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-    buildAccessToken(client, TESTUSER_USERNAME, SCOPES).getRefreshToken();
+    buildAccessToken(client, TESTUSER_USERNAME, REFRESH_SCOPES).getRefreshToken();
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
         .andExpect(OK)
         .andExpect(jsonPath("$.totalResults").value(1));
 
-    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-tokens", TEST_CLIENT_ID))
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-refresh-tokens", TEST_CLIENT_ID))
         .andExpect(OK);
 
     mvc.perform(get(REFRESH_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+        .andExpect(OK)
+        .andExpect(jsonPath("$.totalResults").value(0));
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/" + TEST_CLIENT_ID))
+        .andExpect(OK)
+        .andExpect(jsonPath("$.active").value(true));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
+  public void testClientRevokeAccessTokensWorks() throws Exception {
+
+    ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    buildAccessToken(client, TESTUSER_USERNAME, ACCESS_SCOPES);
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
+        .andExpect(OK)
+        .andExpect(jsonPath("$.totalResults").value(1));
+
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/revoke-access-tokens", TEST_CLIENT_ID))
+        .andExpect(OK);
+
+    mvc.perform(get(ACCESS_TOKENS_BASE_PATH + "?clientId=" + TEST_CLIENT_ID))
         .andExpect(OK)
         .andExpect(jsonPath("$.totalResults").value(0));
 

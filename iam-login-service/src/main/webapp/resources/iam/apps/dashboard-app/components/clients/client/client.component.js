@@ -24,6 +24,7 @@
         self.saveClient = saveClient;
         self.loadClient = loadClient;
         self.deleteClient = deleteClient;
+        self.revokeTokens = revokeTokens;
         self.cancel = cancel;
         self.getClientStatusMessage = getClientStatusMessage;
 
@@ -128,6 +129,38 @@
                     toaster.pop({
                         type: 'error',
                         body: 'Error deleting client'
+                    });
+                }
+            });
+        }
+
+        function revokeTokens() {
+            var modalInstance = $uibModal.open({
+                component: 'selecttokenstorevoke',
+                resolve: {
+                    client: function () {
+                        return self.clientVal;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function (res) {
+                toaster.pop({
+                    type: 'success',
+                    body: 'Client tokens removed!'
+                });
+                $location.path('/clients');
+            }, function (res) {
+                if (res == 'no-option') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Please select at least one option'
+                    });
+                }
+                else if (res !== 'cancel') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Error removing client tokens'
                     });
                 }
             });

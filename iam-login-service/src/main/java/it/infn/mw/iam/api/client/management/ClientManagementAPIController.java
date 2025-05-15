@@ -168,14 +168,26 @@ public class ClientManagementAPIController {
     account.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
   }
 
-  @PatchMapping("/{clientId}/revoke-tokens")
+  @PatchMapping("/{clientId}/revoke-refresh-tokens")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void revokeTokens(@PathVariable String clientId) {
+  public void revokeRefreshTokens(@PathVariable String clientId) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getRefreshTokensForClient(client)
         .forEach(rt -> tokenService.revokeRefreshToken(rt));
+    rotateClientSecret(clientId);
+    enableClient(clientId);
+  }
+
+  @PatchMapping("/{clientId}/revoke-access-tokens")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void revokeAccessTokens(@PathVariable String clientId) {
+    disableClient(clientId);
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getAccessTokensForClient(client)
+        .forEach(rt -> tokenService.revokeAccessToken(rt));
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
