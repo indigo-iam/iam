@@ -14,65 +14,85 @@
  * limitations under the License.
  */
 (function () {
-  'use strict';
+    'use strict';
 
 
-  function ClientTokenController(ClientsService) {
-      var self = this;
+    function ClientTokenController(ClientsService) {
+        var self = this;
 
-      self.ok = ok;
-      self.cancel = cancel;
-      // self.enabled = true;
+        self.ok = ok;
+        self.cancel = cancel;
+        self.change = change;
+        self.timeFormatter = timeFormatter;
+        self.enabled = true;
 
-      self.$onInit = function () {
-          console.debug('ClientTokenController', self);
-          self.client = self.resolve.client;
+        self.$onInit = function () {
+            console.debug('ClientTokenController', self);
+            self.client = self.resolve.client;
 
-          self.revokeRefreshTokens = false;
-          self.revokeAccessTokens = false;
-      };
+            self.revokeRefreshTokens = false;
+            self.revokeAccessTokens = false;
+            self.selectedDate = "";
+        };
 
-      function ok() {
-        if (!self.revokeAccessTokens && !self.revokeRefreshTokens){
-            self.dismiss({ $value: 'no-option' });
+        function timeFormatter(timeObj) {
+            let date = String(timeObj.getFullYear()) + "-" + String(timeObj.getMonth() + 1).padStart(2, "0") + "-" + String(timeObj.getDate()).padStart(2, "0");
+            let time = "T" + String(timeObj.getHours()).padStart(2, "0") + ":" + String(timeObj.getMinutes()).padStart(2, "0") + ":" + String(timeObj.getSeconds()).padStart(2, "0");
+            return date + time
         }
-        if (self.revokeRefreshTokens){
-          ClientsService.revokeRefreshTokens(self.client.client_id).then(function (res) {
-              self.close({ $value: res });
-          }).catch(function (res) {
-              self.dismiss({ $value: res });
-          });
-        } 
-        if (self.revokeAccessTokens) {
-            ClientsService.revokeAccessTokens(self.client.client_id).then(function (res) {
-                self.close({ $value: res });
-            }).catch(function (res) {
-                self.dismiss({ $value: res });
-            });
+
+        function change() {
+            let currentTime = document.getElementById("optionalTime");
+            currentTime.setAttribute("max", timeFormatter(new Date()));
+            currentTime.setAttribute("value", timeFormatter(new Date()))
+            document.getElementById("selectDate").classList.toggle("hidden");
         }
-      }
 
-      function cancel() {
-          self.dismiss({ $value: 'cancel' });
-      }
+        function ok() {
+            if (self.selectedDate != "" && self.revokeAccessTokens) {
+                self.selectedDate = timeFormatter(new Date(self.selectedDate));
+            }
+            console.log(self.selectedDate);
+            if (!self.revokeAccessTokens && !self.revokeRefreshTokens) {
+                self.dismiss({ $value: 'no-option' });
+            }
+            if (self.revokeRefreshTokens) {
+                ClientsService.revokeRefreshTokens(self.client.client_id, self.selectedDate).then(function (res) {
+                    self.close({ $value: res });
+                }).catch(function (res) {
+                    self.dismiss({ $value: res });
+                });
+            }
+            if (self.revokeAccessTokens) {
+                ClientsService.revokeAccessTokens(self.client.client_id, self.selectedDate).then(function (res) {
+                    self.close({ $value: res });
+                }).catch(function (res) {
+                    self.dismiss({ $value: res });
+                });
+            }
+        }
 
-  }
+        function cancel() {
+            self.dismiss({ $value: 'cancel' });
+        }
 
-  angular
-      .module('dashboardApp')
-      .component('selecttokenstorevoke', confirmtokenremoval());
+    }
+
+    angular
+        .module('dashboardApp')
+        .component('selecttokenstorevoke', confirmtokenremoval());
 
 
-  function confirmtokenremoval() {
-      return {
-          templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/revoketokens/selecttokenstorevoke.component.html',
-          bindings: {
-              resolve: '<',
-              close: '&',
-              dismiss: '&'
-          },
-          controller: ['ClientsService', ClientTokenController],
-          controllerAs: '$ctrl'
-      };
-  }
+    function confirmtokenremoval() {
+        return {
+            templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/revoketokens/selecttokenstorevoke.component.html',
+            bindings: {
+                resolve: '<',
+                close: '&',
+                dismiss: '&'
+            },
+            controller: ['ClientsService', ClientTokenController],
+            controllerAs: '$ctrl'
+        };
+    }
 }());

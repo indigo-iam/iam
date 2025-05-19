@@ -26,10 +26,24 @@
         Select at least one of the following options
     </p>
     <ul>
-        <li><input type="checkbox" name="refresh" ng-model="$ctrl.revokeRefreshTokens"><label for="refresh"> Revoke refresh tokens</label></li>
-        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens"><label for="access"> Revoke access tokens</label></li>
+        <li><input type="checkbox" name="refresh" ng-model="$ctrl.revokeRefreshTokens"><label for="refresh"> Revoke
+                refresh tokens</label></li>
+        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens" ng-change="$ctrl.change()"><label
+                for="access"> Revoke access tokens</label>
+            <ul class="hidden" id="selectDate">
+                <li>
+                    <label for="time-issued">Remove tokens created after the following time:</label>
+
+                    <input type="datetime-local" id="optionalTime" name="time-issued" value="2018-06-12T19:30"
+                        min="2018-06-07T00:00" max="" ng-model="$ctrl.selectedDate" />
+                </li>
+            </ul>
+        </li>
     </ul>
+    <small>After tokens are revoked, client ID will be changed for security reasons.</small>
 </div>
+
+
 
 <div class="modal-footer">
     <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-click="$ctrl.ok()">Revoke tokens</button>

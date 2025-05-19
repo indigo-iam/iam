@@ -52,9 +52,9 @@
         };
 
         return service;
-        
-        function getClientList(){
-        	return $http.get(clientsEndpoint);
+
+        function getClientList() {
+            return $http.get(clientsEndpoint);
         }
 
         function endpoint(clientId) {
@@ -133,7 +133,7 @@
             }).catch(function (res) {
                 return $q.reject(res);
             });
-        }    
+        }
 
         function searchClients(searchType, search, startIndex, count, drOnly) {
             var params = $httpParamSerializer({
@@ -180,7 +180,7 @@
             return newClient;
         }
 
-        function enableClient(clientId){
+        function enableClient(clientId) {
             return $http.patch(endpoint(clientId) + "/enable").then(function (res) {
                 return res.data;
             }).catch(function (res) {
@@ -188,28 +188,47 @@
             });
         }
 
-        function disableClient(clientId){
+        function disableClient(clientId) {
             return $http.patch(endpoint(clientId) + "/disable").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);
             });
         }
-        
-        function revokeRefreshTokens(clientId) {
-            return $http.patch(endpoint(clientId)+ "/revoke-refresh-tokens").then(function (res) {
-                return res.data;
-            }).catch(function (res) {
-                return $q.reject(res);
-            });
+
+        function revokeRefreshTokens(clientId, timeIssued) {
+            if (timeIssued != "") {
+                return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens?timeIssued=" + timeIssued).then(function (res) {
+                    return res.data;
+                }).catch(function (res) {
+                    return $q.reject(res);
+                });
+
+            } else {
+                return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens").then(function (res) {
+                    return res.data;
+                }).catch(function (res) {
+                    return $q.reject(res);
+                });
+            }
+
         }
 
-        function revokeAccessTokens(clientId) {
-            return $http.patch(endpoint(clientId)+ "/revoke-access-tokens").then(function (res) {
-                return res.data;
-            }).catch(function (res) {
-                return $q.reject(res);
-            });
+        function revokeAccessTokens(clientId, timeIssued) {
+            if (timeIssued != "") {
+                return $http.patch(endpoint(clientId) + "/revoke-access-tokens?timeIssued=" + timeIssued).then(function (res) {
+                    return res.data;
+                }).catch(function (res) {
+                    return $q.reject(res);
+                });
+            } else {
+                return $http.patch(endpoint(clientId) + "/revoke-access-tokens").then(function (res) {
+                    return res.data;
+                }).catch(function (res) {
+                    return $q.reject(res);
+                });
+            }
+
         }
     }
 })();

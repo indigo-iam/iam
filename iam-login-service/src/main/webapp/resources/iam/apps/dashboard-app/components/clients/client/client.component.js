@@ -123,7 +123,6 @@
                     type: 'success',
                     body: 'Client deleted!'
                 });
-                $location.path('/clients');
             }, function (res) {
                 if (res !== 'cancel') {
                     toaster.pop({

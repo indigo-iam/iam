@@ -17,16 +17,25 @@ package it.infn.mw.iam.api.client.management;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
+import static java.util.Objects.isNull;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.text.ParseException;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +56,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
@@ -76,6 +87,8 @@ public class ClientManagementAPIController {
 
   @Autowired
   private ClientService clientService;
+
+  DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public ClientManagementAPIController(ClientManagementService managementService,
       AccountUtils accountUtils) {
@@ -182,12 +195,29 @@ public class ClientManagementAPIController {
 
   @PatchMapping("/{clientId}/revoke-access-tokens")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void revokeAccessTokens(@PathVariable String clientId) {
+  public void revokeAccessTokens(@PathVariable String clientId, @RequestParam(required = false) String timeIssued) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getAccessTokensForClient(client)
-        .forEach(rt -> tokenService.revokeAccessToken(rt));
+    if (!isNull(timeIssued)) {
+      LocalDateTime localDateTime = LocalDateTime.parse(timeIssued, formatter);
+      Instant threshold = localDateTime.atZone(ZoneId.systemDefault()).toInstant();
+      List<OAuth2AccessTokenEntity> accessTokens = tokenService.getAccessTokensForClient(client);
+      for (OAuth2AccessTokenEntity rt : accessTokens) {
+        try {
+          Instant rtIssueTime = rt.getJwt().getJWTClaimsSet().getIssueTime().toInstant();
+          if (rtIssueTime.isAfter(threshold)) {
+            tokenService.revokeAccessToken(rt);
+          }
+          ;
+        } catch (Exception e) {
+        }
+      }
+      ;
+    } else {
+      tokenService.getAccessTokensForClient(client)
+          .forEach(rt -> tokenService.revokeAccessToken(rt));
+    }
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
