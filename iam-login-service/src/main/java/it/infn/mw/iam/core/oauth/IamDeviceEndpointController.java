@@ -311,9 +311,8 @@ public class IamDeviceEndpointController {
     model.put("gras", userApprovalUtils.isSafeClient(count, client.getCreatedAt()));
     model.put("contacts", userApprovalUtils.getClientContactsAsString(client.getContacts()));
 
-    if (dc.getAuthenticationHolder().getRequestParameters().containsKey(RESOURCE)) {
-      model.put("resources",
-          splitBySpace(dc.getAuthenticationHolder().getRequestParameters().get(RESOURCE)));
+    if (dc.getRequestParameters().containsKey(RESOURCE)) {
+      model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE)));
     }
 
     // just for tests validation
