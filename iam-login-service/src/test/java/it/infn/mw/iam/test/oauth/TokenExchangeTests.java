@@ -35,7 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
+import java.util.Random;
 
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +47,6 @@ import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.shaded.json.JSONObject;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -635,18 +636,75 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    
+
     DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-lookup-client"));
-    
-    JSONObject innerActClaim = (JSONObject) actClaim.get("act");
-    assertThat(innerActClaim.getAsString("sub"), is("token-exchange-actor"));
-    
 
+    JSONObject innerActClaim = (JSONObject) JSONObject.wrap(actClaim.get("act"));
+    assertThat(innerActClaim.getString("sub"), is("token-exchange-actor"));
+
+  }
+
+  @Test
+  public void testImpersonationFlowWithLongRequestParamWorks() throws Exception {
+
+    String clientId = "token-exchange-subject";
+    String clientSecret = "secret";
+
+    String actorClientId = "token-exchange-actor";
+    String actorClientSecret = "secret";
+
+    String audClientId = "tasks-app";
+    String longString = generateString(2049);
+
+    String accessToken = new AccessTokenGetter().grantType("password")
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .username(TEST_USER_USERNAME)
+      .password(TEST_USER_PASSWORD)
+      .scope("openid profile")
+      .getAccessTokenValue();
+
+    // @formatter:off
+    String response = mvc.perform(post(TOKEN_ENDPOINT)
+        .with(httpBasic(actorClientId, actorClientSecret))
+        .param("grant_type", GRANT_TYPE)
+        .param("random_long_string", longString)
+        .param("audience", audClientId)
+        .param("subject_token", accessToken)
+        .param("subject_token_type", TOKEN_TYPE)
+        .param("scope", "openid"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope", equalTo("openid")))
+      .andExpect(jsonPath("$.issued_token_type", equalTo(TOKEN_TYPE)))
+      .andExpect(jsonPath("$.token_type", equalTo("Bearer")))
+      .andExpect(jsonPath("$.access_token").exists())
+      .andExpect(jsonPath("$.access_token", notNullValue()))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+    
+    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+    JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
+    assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
+  }
+
+  private String generateString(int length) {
+    String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    Random random = new Random();
+    StringBuilder stringBuilder = new StringBuilder(length);
+
+    for (int i = 0; i < length; i++) {
+      int index = random.nextInt(characters.length());
+      stringBuilder.append(characters.charAt(index));
+    }
+
+    return stringBuilder.toString();
   }
 }

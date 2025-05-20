@@ -1038,10 +1038,7 @@ public class ClientRegistrationServiceTests {
       service.registerClient(client, userAuth);
     });
 
-    String expectedMessage = "Invalid JSON: Unexpected token " + NOT_A_JSON_STRING;
-    String actualMessage = e.getMessage();
-
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertTrue(e.getMessage().contains("Invalid JSON:"));
 
     RegisteredClientDTO savedClient = null;
     client.setJwk(VALID_JSON_VALUE);

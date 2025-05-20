@@ -68,6 +68,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
 @SuppressWarnings("deprecation")
@@ -114,6 +115,9 @@ public class IamWebSecurityConfig {
     private IamTotpMfaRepository totpMfaRepository;
 
     @Autowired
+    private IamX509CertificateRepository certRepo;
+
+    @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
 
     @Autowired
@@ -146,7 +150,7 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler());
+          iamX509AuthenticationProvider(), successHandler(), certRepo);
     }
 
     protected AuthenticationEntryPoint entryPoint() {

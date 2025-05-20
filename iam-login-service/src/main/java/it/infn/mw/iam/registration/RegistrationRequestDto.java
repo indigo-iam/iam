@@ -94,7 +94,6 @@ public class RegistrationRequestDto {
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
-  @NotEmpty(message = "notes cannot be empty")
   private String notes;
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,

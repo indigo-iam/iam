@@ -44,7 +44,7 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 
 @Service
 @Profile("cern")
-public class CernHrDbRequestValidatorService implements RegistrationRequestValidationService {
+public class CernHrDbRequestValidatorService extends RegistrationFieldsValidationService {
 
   public static final Logger LOG = LoggerFactory.getLogger(CernHrDbRequestValidatorService.class);
 
@@ -84,6 +84,13 @@ public class CernHrDbRequestValidatorService implements RegistrationRequestValid
 
     if (!authentication.isPresent()) {
       return invalid("User is not authenticated");
+    }
+
+    RegistrationRequestValidationResult noteSanityCheck =
+        super.validateRegistrationRequest(registrationRequest, authentication);
+
+    if (!noteSanityCheck.isOk()) {
+      return error(format("%s", noteSanityCheck.getErrorMessage()));
     }
 
     ExternalAuthenticationRegistrationInfo auth = authentication.get();

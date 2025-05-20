@@ -52,10 +52,10 @@
 
 		<testcontainers.version>1.16.2</testcontainers.version>
 
-		<mitreid.version>1.3.7.cnaf-20241119</mitreid.version>
+		<mitreid.version>1.3.7.cnaf-20250404</mitreid.version>
 		<spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
-		<voms.version>3.3.2</voms.version>
+		<voms.version>3.3.5</voms.version>
 		<spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
 		<!-- Update this in sync with the parent project version -->
@@ -88,8 +88,6 @@
 		<jsr250-api.version>1.0</jsr250-api.version>
 		<jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
 		<jaxb-runtime.version>2.3.2</jaxb-runtime.version>
-
-		<bouncycastle.version>1.58</bouncycastle.version>
 
 		<resource.delimiter>@</resource.delimiter>
 
@@ -245,18 +243,6 @@
 			</dependency>
 
 			<!-- SAML -->
-
-			<dependency>
-				<groupId>org.bouncycastle</groupId>
-				<artifactId>bcpkix-jdk15on</artifactId>
-				<version>${bouncycastle.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.bouncycastle</groupId>
-				<artifactId>bcprov-jdk15on</artifactId>
-				<version>${bouncycastle.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>com.jayway.jsonpath</groupId>

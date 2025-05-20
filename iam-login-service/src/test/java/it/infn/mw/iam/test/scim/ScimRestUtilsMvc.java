@@ -71,7 +71,6 @@ public class ScimRestUtilsMvc extends RestUtils {
       getUsersBulkLocation(), bulkRequest, SCIM_CONTENT_TYPE, SCIM_CONTENT_TYPE, expectedStatus);
   }
 
-
   public ScimUser getUser(String uuid) throws Exception {
 
     return mapper.readValue(getUser(uuid, OK).andReturn().getResponse().getContentAsString(),

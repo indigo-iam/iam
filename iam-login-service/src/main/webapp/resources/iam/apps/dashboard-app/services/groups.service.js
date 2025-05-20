@@ -23,6 +23,7 @@
 
     function GroupsService($q, $http, $httpParamSerializer) {
         var service = {
+            getGroupLabels: getGroupLabels,
             getGroupsFilteredAndSortBy: getGroupsFilteredAndSortBy,
             getGroupsFilteredBy: getGroupsFilteredBy,
             getGroupsSortBy: getGroupsSortBy,
@@ -39,6 +40,10 @@
         function doGet(queryStr) {
             var url = urlGroups + '?' + queryStr;
             return $http.get(url);
+        }
+
+        function getGroupLabels(groupId) {
+            return $http.get("/iam/group/" + groupId + "/labels");
         }
 
         function getGroupsFilteredAndSortBy(startIndex, count, filter, sortBy, sortDir) {

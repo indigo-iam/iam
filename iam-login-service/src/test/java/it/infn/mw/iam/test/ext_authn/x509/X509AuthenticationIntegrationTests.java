@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.ACCOUNT_
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_AUTHN_REQUESTED_PARAM;
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CAN_LOGIN_KEY;
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_SUSPENDED_ACCOUNT_KEY;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -124,9 +125,36 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .orElseThrow(
           () -> new AssertionError("Expected test user linked with subject " + TEST_0_SUBJECT));
 
-    // Check that last login time is updated when loggin in with X.509 credentials
+    // Check that last login time is updated when login in with X.509 credentials
     assertThat(resolvedAccount.getLastLoginTime().toInstant(), greaterThan(now));
 
+  }
+
+  @Test
+  public void testX509AuthenticationWhenAccountIsSuspended() throws Exception {
+
+    IamAccount testAccount = iamAccountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    linkTest0CertificateToAccount(testAccount);
+
+    testAccount.setActive(false);
+    iamAccountRepo.save(testAccount);
+
+    IamAccount resolvedAccount = iamAccountRepo.findByCertificate(TEST_0_CERT_STRING)
+      .orElseThrow(
+          () -> new AssertionError("Expected test user linked to cert " + TEST_0_CERT_STRING));
+
+    assertThat(resolvedAccount.getUsername(), equalTo("test"));
+
+    mvc.perform(get("/").headers(test0SSLHeadersVerificationSuccess()))
+      .andExpect(status().isFound())
+      .andExpect(redirectedUrl("http://localhost/login"))
+      .andExpect(request().sessionAttribute(X509_CREDENTIAL_SESSION_KEY, not(nullValue())))
+      .andExpect(request().attribute(X509_SUSPENDED_ACCOUNT_KEY, is(TRUE)));
+
+    testAccount.setActive(true);
+    iamAccountRepo.save(testAccount);
   }
 
   @Test
@@ -234,11 +262,13 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(
           flash().attribute(ACCOUNT_LINKING_DASHBOARD_MESSAGE_KEY, equalTo(confirmationMsg)));
 
-    Optional<IamX509Certificate> testCert1 = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
+    Optional<IamX509Certificate> testCert1 =
+        iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
     assertThat(testCert1.isPresent(), is(true));
     assertThat(testCert1.get().getAccount().getUsername(), is("test"));
-    
-    Optional<IamX509Certificate> testCert2 = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_NEW_ISSUER);
+
+    Optional<IamX509Certificate> testCert2 =
+        iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_NEW_ISSUER);
     assertThat(testCert2.isPresent(), is(true));
     assertThat(testCert2.get().getAccount().getUsername(), is("test"));
 
@@ -424,7 +454,15 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
       .andExpect(status().is3xxRedirection())
       .andExpect(redirectedUrl("http://localhost/login"));
 
+    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/login?error=failure"));
+
     resolvedAccount.setActive(true);
+
+    mvc.perform(post("/login").param("username", "test").param("password", "password"))
+      .andExpect(status().is3xxRedirection())
+      .andExpect(redirectedUrl("/dashboard"));
 
   }
 
