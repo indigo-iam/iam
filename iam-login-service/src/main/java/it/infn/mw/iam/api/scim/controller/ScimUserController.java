@@ -80,7 +80,6 @@ public class ScimUserController extends ScimControllerSupport {
     return result;
   }
 
-
   @PreAuthorize("#iam.hasScope('scim:read') or #iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_READER')")
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
@@ -98,16 +97,13 @@ public class ScimUserController extends ScimControllerSupport {
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
 
 
-
-
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);
-      filterProvider.addFilter("attributeFilter",
-          SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
+      filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.filterOutAllExcept(includeAttributes));
     } else {
       filterProvider.addFilter("attributeFilter", SimpleBeanPropertyFilter.serializeAll());
     }
-
+    
     filterProvider.addFilter("pemEncodedCertificateFilter",
         SimpleBeanPropertyFilter.serializeAllExcept("pemEncodedCertificate"));
 

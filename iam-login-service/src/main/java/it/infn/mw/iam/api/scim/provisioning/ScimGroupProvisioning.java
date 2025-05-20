@@ -83,8 +83,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory =
-        new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
+    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -124,8 +123,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       String parentGroupName = group.getIndigoGroup().getParentGroup().getDisplay();
 
       iamParentGroup = groupService.findByUuid(parentGroupUuid)
-        .orElseThrow(() -> new ScimResourceNotFoundException(
-            String.format("Parent group '%s' not found", parentGroupUuid)));
+          .orElseThrow(() -> new ScimResourceNotFoundException(
+              String.format("Parent group '%s' not found", parentGroupUuid)));
 
       String fullName = String.format("%s/%s", parentGroupName, group.getDisplayName());
       fullNameSanityChecks(fullName);
@@ -292,10 +291,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     for (IamAccount a : accounts.getContent()) {
       resources.add(ScimMemberRef.builder()
-        .value(a.getUuid())
-        .display(a.getUserInfo().getName())
-        .ref(locationProvider.userLocation(a.getUuid()))
-        .build());
+          .value(a.getUuid())
+          .display(a.getUserInfo().getName())
+          .ref(locationProvider.userLocation(a.getUuid()))
+          .build());
     }
 
     results.fromPage(accounts, pr);
@@ -314,10 +313,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     List<ScimMemberRef> resources = newArrayList();
     for (IamGroup g : subgroups.getContent()) {
       resources.add(ScimMemberRef.builder()
-        .value(g.getUuid())
-        .display(g.getName())
-        .ref(locationProvider.groupLocation(g.getUuid()))
-        .build());
+          .value(g.getUuid())
+          .display(g.getName())
+          .ref(locationProvider.groupLocation(g.getUuid()))
+          .build());
     }
 
     results.fromPage(subgroups, pr);

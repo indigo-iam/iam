@@ -31,188 +31,185 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 
 public interface IamAccountRepository
-                extends PagingAndSortingRepository<IamAccount, Long>, IamAccountRepositoryCustom {
+    extends PagingAndSortingRepository<IamAccount, Long>, IamAccountRepositoryCustom {
 
-        Optional<IamAccount> findByUuid(@Param("uuid") String uuid);
+  Optional<IamAccount> findByUuid(@Param("uuid") String uuid);
 
-        Optional<IamAccount> findByUsername(@Param("username") String username);
+  Optional<IamAccount> findByUsername(@Param("username") String username);
+
+  @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
+      + "and si.attributeId = :attributeId and si.userId = :userId")
+  Optional<IamAccount> findBySamlId(@Param("idpId") String idpId,
+      @Param("attributeId") String attributeId, @Param("userId") String userId);
+
+  @Query("select a from IamAccount a join a.oidcIds oi where oi.issuer = :issuer and oi.subject = :subject")
+  Optional<IamAccount> findByOidcId(@Param("issuer") String issuer,
+      @Param("subject") String subject);
+
+  @Query("select a from IamAccount a join a.sshKeys sk where sk.fingerprint = :fingerprint")
+  Optional<IamAccount> findBySshKeyFingerprint(@Param("fingerprint") String fingerprint);
+
+  @Query("select a from IamAccount a join a.sshKeys sk where sk.label = :label")
+  Optional<IamAccount> findBySshKeyLabel(@Param("label") String label);
+
+  @Query("select a from IamAccount a join a.sshKeys sk where sk.value = :value")
+  Optional<IamAccount> findBySshKeyValue(@Param("value") String value);
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
+  Optional<IamAccount> findByEmail(@Param("emailAddress") String emailAddress);
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
+  Optional<List<IamAccount>> findMultipleByEmail(@Param("emailAddress") String emailAddress);
+
+  @Query("select a from IamAccount a where a.username = :username and a.uuid != :uuid")
+  Optional<IamAccount> findByUsernameWithDifferentUUID(@Param("username") String username,
+      @Param("uuid") String uuid);
+
+  @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress and a.uuid != :uuid")
+  Optional<IamAccount> findByEmailWithDifferentUUID(@Param("emailAddress") String emailAddress,
+      @Param("uuid") String uuid);
+
+  @Query("select distinct a from IamAccount a join a.x509Certificates c where c.subjectDn = :subject")
+  Optional<IamAccount> findByCertificateSubject(@Param("subject") String subject);
+
+  @Query("select a from IamAccount a join a.x509Certificates c where c.certificate = :certificate")
+  Optional<IamAccount> findByCertificate(@Param("certificate") String certificate);
+
+  @Query("select a from IamAccount a join a.groups ag where ag.group.id = :groupId order by a.username ASC")
+  List<IamAccount> findByGroupId(@Param("groupId") Long groupId);
+
+  @Query("select a from IamAccount a join a.groups ag where ag.group.uuid = :groupUuid order by a.username ASC")
+  Page<IamAccount> findByGroupUuid(@Param("groupUuid") String uuid, Pageable op);
+
+  @Query("select a from IamAccount a join a.groups ag join a.userInfo ui where ag.group.uuid = :groupUuid"
+      + " and lower(ui.email) LIKE lower(concat('%', :filter, '%'))"
+      + " or lower(a.username) LIKE lower(concat('%', :filter, '%'))"
+      + " or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))"
+      + " order by a.username ASC")
+  Page<IamAccount> findByGroupUuidWithFilter(@Param("groupUuid") String uuid,
+      @Param("filter") String filter, Pageable op);
+
+  @Query("select a from IamAccount a where not exists (select m from IamAccountGroupMembership m where m.account = a and m.group.uuid = :groupUuid ) order by a.username ASC")
+  Page<IamAccount> findNotInGroup(@Param("groupUuid") String uuid, Pageable op);
+
+  @Query("select a from IamAccount a join a.userInfo ui where not exists (select m from IamAccountGroupMembership m where m.account = a and m.group.uuid = :groupUuid )"
+      + " and lower(ui.email) LIKE lower(concat('%', :filter, '%'))"
+      + " or lower(a.username) LIKE lower(concat('%', :filter, '%'))"
+      + " or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))"
+      + " order by a.username ASC")
+  Page<IamAccount> findNotInGroupWithFilter(@Param("groupUuid") String uuid,
+      @Param("filter") String filter, Pageable op);
+
+  @Query("select a from IamAccount a join a.groups ag where ag.group.name = :groupName order by a.username ASC")
+  Page<IamAccount> findByGroupName(@Param("groupName") String name, Pageable op);
+
+  Optional<IamAccount> findByConfirmationKey(@Param("confirmationKey") String confirmationKey);
+
+  Optional<IamAccount> findByResetKey(@Param("resetKey") String resetKey);
+
+  @Query("select a from IamAccount a join a.authorities auth where auth.authority = :authority")
+  List<IamAccount> findByAuthority(@Param("authority") String authority);
+
+  @Query("select a from IamAccount a join a.authorities auth where lower(auth.authority) = lower(:authority) order by a.username ASC")
+  Page<IamAccount> findByAuthority(@Param("authority") String authority, Pageable op);
+
+  @Query("select a from IamAccount a where a.provisioned = true and a.lastLoginTime < :timestamp")
+  List<IamAccount> findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(
+      @Param("timestamp") Date timestamp);
+
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+  Page<IamAccount> findByFilter(@Param("filter") String filter, Pageable op);
+
+  @Query("select count(a) from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+  long countByFilter(@Param("filter") String filter);
+
+  @Query("select a from IamAccount a where a.endTime < :timestamp")
+  Page<IamAccount> findExpiredAccountsAtTimestamp(@Param("timestamp") Date timestamp, Pageable op);
+
+  @Query("select a from IamAccount a join a.labels label where label.prefix = :prefix and label.name = :name")
+  Page<IamAccount> findByLabelPrefixAndName(@Param("prefix") String prefix,
+      @Param("name") String name, Pageable op);
+
+  @Query("select a from IamAccount a join a.labels label where label.prefix = :prefix and label.name = :name and label.value = :value")
+  Page<IamAccount> findByLabelPrefixAndNameAndValue(@Param("prefix") String prefix,
+      @Param("name") String name, @Param("value") String value, Pageable op);
+
+  @Query("select a from IamAccount a join a.labels label where label.prefix is null and label.name = :name")
+  Page<IamAccount> findByLabelName(@Param("name") String name, Pageable op);
+
+  @Query("select a from IamAccount a join a.labels label where label.prefix is null and label.name = :name and label.value = :value")
+  Page<IamAccount> findByLabelNameAndValue(@Param("name") String name, @Param("value") String value,
+      Pageable op);
+
+  @Query("select a from IamAccount a where a.active = FALSE")
+  Page<IamAccount> findInactiveAccounts(Pageable op);
+
+  @Query("select a from IamAccount a where a.active = TRUE")
+  Page<IamAccount> findActiveAccounts(Pageable op);
+
+  @Query("select count(a) from IamAccount a where a.active = TRUE")
+  long countActiveAccounts();
+
+  @Modifying
+  @Query("delete from IamAccountGroupMembership")
+  void deleteAllAccountGroupMemberships();
 
 
+  @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
+  Optional<Page<IamAccount>> findByGivenName(@Param("givenName") String givenName,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
-        Optional<Page<IamAccount>> findByGivenName(@Param("givenName") String givenName,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
+  Optional<List<IamAccount>> findByGivenName(@Param("givenName") String givenName);
 
-        @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
-        Optional<List<IamAccount>> findByGivenName(@Param("givenName") String givenName);
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
+  Optional<Page<IamAccount>> containsGivenName(@Param("givenName") String givenName,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
-        Optional<Page<IamAccount>> containsGivenName(@Param("givenName") String givenName,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
+  Optional<List<IamAccount>> containsGivenName(@Param("givenName") String givenName);
 
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
-        Optional<List<IamAccount>> containsGivenName(@Param("givenName") String givenName);
+  @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
+  Optional<Page<IamAccount>> findByFamilyName(@Param("familyName") String familyName,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
-        Optional<Page<IamAccount>> findByFamilyName(@Param("familyName") String familyName,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
+  Optional<List<IamAccount>> findByFamilyName(@Param("familyName") String familyName);
 
-        @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
-        Optional<List<IamAccount>> findByFamilyName(@Param("familyName") String familyName);
+  @Query("select a from IamAccount a  where a.active = :active")
+  Optional<Page<IamAccount>> findByActive(@Param("active") Boolean active,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a  where a.active = :active")
-        Optional<Page<IamAccount>> findByActive(@Param("active") Boolean active,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a  where a.active = :active")
+  Optional<List<IamAccount>> findByActive(@Param("active") Boolean active);
 
-        @Query("select a from IamAccount a  where a.active = :active")
-        Optional<List<IamAccount>> findByActive(@Param("active") Boolean active);
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
+  Optional<Page<IamAccount>> containsFamilyName(@Param("familyName") String familyName,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
-        Optional<Page<IamAccount>> containsFamilyName(@Param("familyName") String familyName,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
+  Optional<List<IamAccount>> containsFamilyName(@Param("familyName") String familyName);
 
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
-        Optional<List<IamAccount>> containsFamilyName(@Param("familyName") String familyName);
+  @Query("select a from IamAccount a  where a.username = :username")
+  Optional<Page<IamAccount>> findByUsername(@Param("username") String username,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a  where a.username = :username")
-        Optional<Page<IamAccount>> findByUsername(@Param("username") String username,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
+  Optional<Page<IamAccount>> containsUsername(@Param("username") String username,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
-        Optional<Page<IamAccount>> containsUsername(@Param("username") String username,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
+  Optional<List<IamAccount>> containsUsername(@Param("username") String username);
 
-        @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
-        Optional<List<IamAccount>> containsUsername(@Param("username") String username);
+  @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress order by a.username ASC")
+  Optional<Page<IamAccount>> findByEmail(@Param("emailAddress") String emailAddress,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress order by a.username ASC")
-        Optional<Page<IamAccount>> findByEmail(@Param("emailAddress") String emailAddress,
-                        @Param("op") Pageable op);
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
+  Optional<Page<IamAccount>> containsEmail(@Param("emailAddress") String emailAddress,
+      @Param("op") Pageable op);
 
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
-        Optional<Page<IamAccount>> containsEmail(@Param("emailAddress") String emailAddress,
-                        @Param("op") Pageable op);
-
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
-        Optional<List<IamAccount>> containsEmail(@Param("emailAddress") String emailAddress);
-
-        @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
-                        + "and si.attributeId = :attributeId and si.userId = :userId")
-        Optional<IamAccount> findBySamlId(@Param("idpId") String idpId,
-                        @Param("attributeId") String attributeId, @Param("userId") String userId);
-
-        @Query("select a from IamAccount a join a.oidcIds oi where oi.issuer = :issuer and oi.subject = :subject")
-        Optional<IamAccount> findByOidcId(@Param("issuer") String issuer,
-                        @Param("subject") String subject);
-
-        @Query("select a from IamAccount a join a.sshKeys sk where sk.fingerprint = :fingerprint")
-        Optional<IamAccount> findBySshKeyFingerprint(@Param("fingerprint") String fingerprint);
-
-        @Query("select a from IamAccount a join a.sshKeys sk where sk.label = :label")
-        Optional<IamAccount> findBySshKeyLabel(@Param("label") String label);
-
-        @Query("select a from IamAccount a join a.sshKeys sk where sk.value = :value")
-        Optional<IamAccount> findBySshKeyValue(@Param("value") String value);
-
-        @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
-        Optional<IamAccount> findByEmail(@Param("emailAddress") String emailAddress);
-
-        @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
-        Optional<List<IamAccount>> findMultipleByEmail(@Param("emailAddress") String emailAddress);
-
-        @Query("select a from IamAccount a where a.username = :username and a.uuid != :uuid")
-        Optional<IamAccount> findByUsernameWithDifferentUUID(@Param("username") String username,
-                        @Param("uuid") String uuid);
-
-        @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress and a.uuid != :uuid")
-        Optional<IamAccount> findByEmailWithDifferentUUID(
-                        @Param("emailAddress") String emailAddress, @Param("uuid") String uuid);
-
-        @Query("select distinct a from IamAccount a join a.x509Certificates c where c.subjectDn = :subject")
-        Optional<IamAccount> findByCertificateSubject(@Param("subject") String subject);
-
-        @Query("select a from IamAccount a join a.x509Certificates c where c.certificate = :certificate")
-        Optional<IamAccount> findByCertificate(@Param("certificate") String certificate);
-
-        @Query("select a from IamAccount a join a.groups ag where ag.group.id = :groupId order by a.username ASC")
-        List<IamAccount> findByGroupId(@Param("groupId") Long groupId);
-
-        @Query("select a from IamAccount a join a.groups ag where ag.group.uuid = :groupUuid order by a.username ASC")
-        Page<IamAccount> findByGroupUuid(@Param("groupUuid") String uuid, Pageable op);
-
-        @Query("select a from IamAccount a join a.groups ag join a.userInfo ui where ag.group.uuid = :groupUuid"
-                        + " and lower(ui.email) LIKE lower(concat('%', :filter, '%'))"
-                        + " or lower(a.username) LIKE lower(concat('%', :filter, '%'))"
-                        + " or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))"
-                        + " order by a.username ASC")
-        Page<IamAccount> findByGroupUuidWithFilter(@Param("groupUuid") String uuid,
-                        @Param("filter") String filter, Pageable op);
-
-        @Query("select a from IamAccount a where not exists (select m from IamAccountGroupMembership m where m.account = a and m.group.uuid = :groupUuid ) order by a.username ASC")
-        Page<IamAccount> findNotInGroup(@Param("groupUuid") String uuid, Pageable op);
-
-        @Query("select a from IamAccount a join a.userInfo ui where not exists (select m from IamAccountGroupMembership m where m.account = a and m.group.uuid = :groupUuid )"
-                        + " and lower(ui.email) LIKE lower(concat('%', :filter, '%'))"
-                        + " or lower(a.username) LIKE lower(concat('%', :filter, '%'))"
-                        + " or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))"
-                        + " order by a.username ASC")
-        Page<IamAccount> findNotInGroupWithFilter(@Param("groupUuid") String uuid,
-                        @Param("filter") String filter, Pageable op);
-
-        @Query("select a from IamAccount a join a.groups ag where ag.group.name = :groupName order by a.username ASC")
-        Page<IamAccount> findByGroupName(@Param("groupName") String name, Pageable op);
-
-        Optional<IamAccount> findByConfirmationKey(
-                        @Param("confirmationKey") String confirmationKey);
-
-        Optional<IamAccount> findByResetKey(@Param("resetKey") String resetKey);
-
-        @Query("select a from IamAccount a join a.authorities auth where auth.authority = :authority")
-        List<IamAccount> findByAuthority(@Param("authority") String authority);
-
-        @Query("select a from IamAccount a join a.authorities auth where lower(auth.authority) = lower(:authority) order by a.username ASC")
-        Page<IamAccount> findByAuthority(@Param("authority") String authority, Pageable op);
-
-        @Query("select a from IamAccount a where a.provisioned = true and a.lastLoginTime < :timestamp")
-        List<IamAccount> findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(
-                        @Param("timestamp") Date timestamp);
-
-        @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
-        Page<IamAccount> findByFilter(@Param("filter") String filter, Pageable op);
-
-        @Query("select count(a) from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
-        long countByFilter(@Param("filter") String filter);
-
-        @Query("select a from IamAccount a where a.endTime < :timestamp")
-        Page<IamAccount> findExpiredAccountsAtTimestamp(@Param("timestamp") Date timestamp,
-                        Pageable op);
-
-        @Query("select a from IamAccount a join a.labels label where label.prefix = :prefix and label.name = :name")
-        Page<IamAccount> findByLabelPrefixAndName(@Param("prefix") String prefix,
-                        @Param("name") String name, Pageable op);
-
-        @Query("select a from IamAccount a join a.labels label where label.prefix = :prefix and label.name = :name and label.value = :value")
-        Page<IamAccount> findByLabelPrefixAndNameAndValue(@Param("prefix") String prefix,
-                        @Param("name") String name, @Param("value") String value, Pageable op);
-
-        @Query("select a from IamAccount a join a.labels label where label.prefix is null and label.name = :name")
-        Page<IamAccount> findByLabelName(@Param("name") String name, Pageable op);
-
-        @Query("select a from IamAccount a join a.labels label where label.prefix is null and label.name = :name and label.value = :value")
-        Page<IamAccount> findByLabelNameAndValue(@Param("name") String name,
-                        @Param("value") String value, Pageable op);
-
-        @Query("select a from IamAccount a where a.active = FALSE")
-        Page<IamAccount> findInactiveAccounts(Pageable op);
-
-        @Query("select a from IamAccount a where a.active = TRUE")
-        Page<IamAccount> findActiveAccounts(Pageable op);
-
-        @Query("select count(a) from IamAccount a where a.active = TRUE")
-        long countActiveAccounts();
-
-        @Modifying
-        @Query("delete from IamAccountGroupMembership")
-        void deleteAllAccountGroupMemberships();
+  @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
+  Optional<List<IamAccount>> containsEmail(@Param("emailAddress") String emailAddress);
 
 }
