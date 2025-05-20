@@ -1,5 +1,12 @@
 # Changelog
 
+
+## 1.11.1 (2025-05-12)
+
+### What's Fixed
+
+* Fix early approved device code by @enricovianello in https://github.com/indigo-iam/iam/pull/977
+
 ## 1.11.0 (2024-12-19)
 
 ### What's Changed

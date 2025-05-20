@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -79,7 +78,6 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final GroupManagerNotificationDeliveryStrategy groupManagerDeliveryStrategy;
   private final Configuration freeMarkerConfiguration;
 
-  @Autowired
   public TransientNotificationFactory(Configuration fm, NotificationProperties np,
       AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
     this.freeMarkerConfiguration = fm;
@@ -533,7 +531,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -558,7 +557,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -592,7 +592,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = generateCertificateModel( name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
@@ -619,7 +620,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Removed x509Certificate from user";
 
-    Map<String, Object> model = generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
 
     IamEmailNotification notification =
         createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
@@ -632,7 +634,8 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
-  private Map<String, Object> generateCertificateModel(String name, String username, String email, String organisationName, String subjectDn, String issuerDn){
+  private Map<String, Object> generateCertificateModel(String name, String username, String email,
+      String organisationName, String subjectDn, String issuerDn) {
     Map<String, Object> model = new HashMap<>();
     model.put("name", name);
     model.put(USERNAME_FIELD, username);

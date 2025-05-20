@@ -297,7 +297,6 @@ public class ScimUserProvisioning
       }
     }
 
-
     // Checking if Admins are in the notification policy
     if (notificationProperties.getAdminNotificationPolicy()
       .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
@@ -318,8 +317,6 @@ public class ScimUserProvisioning
         }
       }
     }
-
-
   }
 
   @Override
