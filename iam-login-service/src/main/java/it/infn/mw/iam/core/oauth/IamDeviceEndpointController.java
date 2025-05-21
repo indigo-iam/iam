@@ -315,9 +315,8 @@ public class IamDeviceEndpointController {
       model.put("resources", splitBySpace(dc.getRequestParameters().get(RESOURCE)));
     }
 
-  // just for tests validation
-  model.put("scope",OAuth2Utils.formatParameterList(dc.getScope()));
-
+    // just for tests validation
+    model.put("scope", OAuth2Utils.formatParameterList(dc.getScope()));
   }
 
   private void approveDevice(DeviceCode dc, OAuth2Authentication o2Auth) {
