@@ -58,7 +58,11 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2", "wlcg-scopes"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
+<<<<<<< HEAD
 class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
+=======
+public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
+>>>>>>> 305ba6458 (Fix scope policy filter when refresh token has been already issued)
     implements StructuredScopeTestSupportConstants {
 
   @Autowired
