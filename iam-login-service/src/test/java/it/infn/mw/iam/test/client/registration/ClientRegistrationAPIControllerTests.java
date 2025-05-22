@@ -25,8 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -39,6 +39,7 @@ import org.testcontainers.shaded.com.google.common.collect.Sets;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
@@ -64,20 +65,25 @@ class ClientRegistrationAPIControllerTests {
   @Autowired
   private IamClientRepository clientRepository;
 
+  @Autowired
+  private ClientService clientService;
+
   public static final String IAM_CLIENT_REGISTRATION_API_URL = "/iam/api/client-registration/";
 
   public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
   public static final ResultMatcher BAD_REQUEST = status().isBadRequest();
   public static final ResultMatcher CREATED = status().isCreated();
 
-  @Before
+  @BeforeEach
   public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  public void cleanup() {
     mockOAuth2Filter.cleanupSecurityContext();
+    clientService.findClientByClientId("test-client-creation")
+      .ifPresent(c -> clientService.deleteClient(c));;
   }
 
   @Test

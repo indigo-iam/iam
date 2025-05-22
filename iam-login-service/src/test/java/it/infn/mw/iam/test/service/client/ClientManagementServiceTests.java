@@ -52,9 +52,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
@@ -70,7 +67,6 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
-
 
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
@@ -94,12 +90,6 @@ public class ClientManagementServiceTests {
 
   private Authentication userAuth;
 
-  private OAuth2Authentication ratAuth;
-
-  private OAuth2Request oauthRequest;
-
-  private OAuth2AuthenticationDetails oauthDetails;
-
   @Test
   public void testPagedClientLookup() {
 
@@ -108,7 +98,7 @@ public class ClientManagementServiceTests {
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(19L));
+    assertThat(clients.getTotalResults(), is(20L));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
     assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));

@@ -42,8 +42,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -53,6 +51,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -77,22 +76,12 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@ActiveProfiles({"h2", "wlcg-scopes"})
 @TestPropertySource(properties = {
-// @formatter:off
-    "iam.jwt-profile.default-profile=wlcg",
-    "iam.access_token.include_authn_info=true",
-    "scope.matchers[0].name=storage.read",
-    "scope.matchers[0].type=path",
-    "scope.matchers[0].prefix=storage.read",
-    "scope.matchers[0].path=/",
-    "scope.matchers[1].name=storage.write",
-    "scope.matchers[1].type=path",
-    "scope.matchers[1].prefix=storage.write",
-    "scope.matchers[1].path=/",
-    "scope.matchers[2].name=wlcg.groups",
-    "scope.matchers[2].type=regexp",
-    "scope.matchers[2].regexp=^wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$",
-    // @formatter:on
+  // @formatter:off
+  "iam.jwt-profile.default-profile=wlcg",
+  "iam.access_token.include_authn_info=true",
+  // @formatter:on
 })
 public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
@@ -133,18 +122,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
-  @Autowired
-  private SystemScopeService scopeService;
-
   @Before
   public void setup() {
     oauth2Filter.cleanupSecurityContext();
-    SystemScope wlcgGroupsScope = new SystemScope("wlcg.groups");
-    SystemScope storageReadScope = new SystemScope("storage.read:/");
-    SystemScope storageWriteScope = new SystemScope("storage.write:/");
-    scopeService.save(wlcgGroupsScope);
-    scopeService.save(storageReadScope);
-    scopeService.save(storageWriteScope);
   }
 
   @After

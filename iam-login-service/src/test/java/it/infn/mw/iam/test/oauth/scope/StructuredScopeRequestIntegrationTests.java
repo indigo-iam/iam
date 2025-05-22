@@ -32,18 +32,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -58,12 +56,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@ActiveProfiles({"h2", "wlcg-scopes"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@TestPropertySource(
-    properties = {"scope.matchers[0].name=storage.read", "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=storage.read", "scope.matchers[0].path=/",
-        "scope.matchers[1].name=storage.write", "scope.matchers[1].type=path",
-        "scope.matchers[1].prefix=storage.write", "scope.matchers[1].path=/"})
 public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 
@@ -75,18 +69,6 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
   @Autowired
   private IamClientRepository clientRepo;
-
-  @Before
-  public void setup() throws Exception {
-    SystemScope storageReadScope = new SystemScope("storage.read:/");
-    storageReadScope.setRestricted(true);
-
-    SystemScope storageWriteScope = new SystemScope("storage.write:/");
-    storageWriteScope.setRestricted(true);
-
-    scopeService.save(storageReadScope);
-    scopeService.save(storageWriteScope);
-  }
 
   @Test
   public void test() throws Exception {

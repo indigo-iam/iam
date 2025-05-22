@@ -33,6 +33,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -46,8 +47,8 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   final AttributeMapHelper attributeHelper;
 
   public WLCGProfileAccessTokenBuilder(IamProperties properties, WLCGGroupHelper groupHelper,
-      AttributeMapHelper attributeHelper) {
-    super(properties);
+      AttributeMapHelper attributeHelper, ScopeFilter scopeFilter) {
+    super(properties, scopeFilter);
     this.groupHelper = groupHelper;
     this.attributeHelper = attributeHelper;
   }

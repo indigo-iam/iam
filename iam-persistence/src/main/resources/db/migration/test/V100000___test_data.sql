@@ -1,3 +1,12 @@
+-- WLCG System Scopes
+INSERT INTO system_scope(scope, description, icon, restricted, default_scope, structured, structured_param_description) VALUES
+  ('storage.read:/', 'Grants read privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
+  ('storage.write:/', 'Grants write privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
+  ('storage.modify:/', 'Grants modify privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
+  ('storage.stage:/', 'Grants recall privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
+  ('storage.create:/', 'Grants creation privilege to WLCG storage', null, true, false, true, 'Path parametric scope'),
+  ('wlcg.groups', 'WLCG groups', null, false, false, true, 'Group parametric scope');
+
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
   token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, created_at, active) VALUES
@@ -17,7 +26,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (14, 'public-dc-client', null, 'Public Device Code client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), true),
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true);
+  (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
+  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -141,9 +151,17 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (18, 'iam:admin.read'),
   (18, 'iam:admin.write'),
   (19, 'profile'),
-  (19, 'email');
-  
-  
+  (19, 'email'),
+  (20, 'openid'),
+  (20, 'profile'),
+  (20, 'email'),
+  (20, 'address'),
+  (20, 'phone'),
+  (20, 'offline_access'),
+  (20, 'storage.read:/'),
+  (20, 'storage.write:/');
+
+
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (1, 'http://localhost:9090/iam-test-client/openid_connect_login'),
   (1, 'https://iam.local.io/iam-test-client/openid_connect_login'),
@@ -151,7 +169,8 @@ INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
   (4, 'http://localhost:5000/callback'),
   (11, 'http://localhost:1234/callback'),
   (13, 'http://localhost:9876/implicit'),
-  (18, 'https://iam.local.io/iam-test-client/openid_connect_login');
+  (18, 'https://iam.local.io/iam-test-client/openid_connect_login'),
+  (20, 'http://localhost:4000/callback');
 
 INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (1, 'authorization_code'),
@@ -163,6 +182,7 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (4, 'password'),
   (4, 'client_credentials'),
   (5, 'password'),
+  (5, 'authorization_code'),
   (5, 'refresh_token'),
   (6, 'client_credentials'),
   (7, 'client_credentials'),
@@ -191,7 +211,12 @@ INSERT INTO client_grant_type (owner_id, grant_type) VALUES
   (18, 'client_credentials'),
   (18, 'urn:ietf:params:oauth:grant-type:device_code'),
   (18, 'authorization_code'),
-  (19, 'client_credentials');
+  (19, 'client_credentials'),
+  (20, 'authorization_code'),
+  (20, 'password'),
+  (20, 'refresh_token'),
+  (20, 'urn:ietf:params:oauth:grant-type:device_code');
+
 
 INSERT INTO client_contact (owner_id, contact) VALUES
   (1, 'admin@example.com'),

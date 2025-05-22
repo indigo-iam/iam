@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
@@ -63,6 +62,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.mercateo.test.clock.TestClock;
@@ -88,14 +88,8 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 @SuppressWarnings("deprecation")
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE, properties = {
-    // @formatter:off
-        "scope.matchers[0].name=storage.read", 
-        "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=storage.read", 
-        "scope.matchers[0].path=/",
-     // @formatter:on
-    })
+    webEnvironment = WebEnvironment.NONE)
+@ActiveProfiles({"h2", "wlcg-scopes"})
 public class ClientRegistrationServiceTests {
 
   @Autowired
@@ -179,11 +173,6 @@ public class ClientRegistrationServiceTests {
 
     when(clientRegProps.getClientDefaults()).thenReturn(new ClientDefaultsProperties());
 
-    SystemScope ss = new SystemScope("storage.read:/");
-    ss.setDefaultScope(false);
-    ss.setRestricted(true);
-
-    scopeService.save(ss);
   }
 
   @Test
