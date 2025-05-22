@@ -30,6 +30,7 @@ import it.infn.mw.iam.core.oauth.profile.RequestValidator;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
@@ -46,11 +47,11 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
 
   public WLCGJWTProfile(IamProperties properties, UserInfoService userInfoService,
       IamAccountRepository accountRepo, WLCGGroupHelper groupHelper,
-      AttributeMapHelper attributeHelper,
-      IntrospectionResultAssembler defaultAssembler, ScopeMatcherRegistry registry,
-      ScopeClaimTranslationService claimTranslationService, ClaimValueHelper claimValueHelper) {
+      AttributeMapHelper attributeHelper, IntrospectionResultAssembler defaultAssembler,
+      ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
+      ClaimValueHelper claimValueHelper, ScopeFilter scopeFilter) {
     accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(properties, groupHelper, attributeHelper);
+        new WLCGProfileAccessTokenBuilder(properties, groupHelper, attributeHelper, scopeFilter);
 
     idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo, claimTranslationService,
         claimValueHelper, groupHelper, properties);

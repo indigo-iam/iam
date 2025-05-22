@@ -108,6 +108,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
+      // scope are filtered also here to avoid authorizing them on the consent page
       inputParams.put(OAuth2Utils.SCOPE,
           joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
@@ -145,8 +146,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public TokenRequest createTokenRequest(Map<String, String> requestParameters,
       ClientDetails authenticatedClient) {
 
-    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
-
     String clientId = requestParameters.get(OAuth2Utils.CLIENT_ID);
     if (clientId == null) {
       clientId = authenticatedClient.getClientId();
@@ -171,7 +170,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
 
     return new TokenRequest(updatedTokenRequestParameters(requestParameters, authenticatedClient),
-        clientId, scopeFilter.filterScopes(scopes, authn), grantType);
+        clientId, scopes, grantType);
   }
 
   private Map<String, String> updatedTokenRequestParameters(

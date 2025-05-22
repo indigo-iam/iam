@@ -17,7 +17,6 @@ package it.infn.mw.iam.test.oauth.scope.pdp;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy.PATH;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
@@ -32,8 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
@@ -64,9 +61,6 @@ public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
   private IamScopePolicyRepository scopePolicyRepo;
 
   @Autowired
-  private SystemScopeService scopeService;
-
-  @Autowired
   private MockMvc mvc;
 
   @Autowired
@@ -84,9 +78,6 @@ public class ScopePolicyFilteringDeviceCodeTests extends ScopePolicyTestUtils {
     up.setMatchingPolicy(PATH);
 
     scopePolicyRepo.save(up);
-
-    scopeService.save(new SystemScope("storage.read:/"));
-    scopeService.save(new SystemScope("storage.write:/"));
   }
 
   @Test
