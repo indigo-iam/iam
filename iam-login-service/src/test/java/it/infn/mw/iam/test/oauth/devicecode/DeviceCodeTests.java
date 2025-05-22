@@ -787,7 +787,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc.perform(get("/scim/Groups").header("Authorization", scimAuthorizationHeader))
       .andExpect(status().isForbidden());
     mvc
-      .perform(get("/scim/Users/80e5fb8d-b7c8-451a-89ba-346ae278a66f").header("Authorization",
+      .perform(get("/scim/Users/f2ce8cb2-a1db-4884-9ef0-d8842cc02b4a").header("Authorization",
           scimAuthorizationHeader))
       .andExpect(status().isForbidden());
     mvc
