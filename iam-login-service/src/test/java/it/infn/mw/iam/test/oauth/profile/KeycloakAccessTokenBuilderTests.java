@@ -43,6 +43,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
@@ -66,6 +67,9 @@ public class KeycloakAccessTokenBuilderTests {
   @Mock
   OAuth2Authentication authentication;
 
+  @Mock
+  ScopeFilter scopeFilter;
+
   @Spy
   MockOAuth2Request oauth2Request =
       new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
@@ -83,7 +87,7 @@ public class KeycloakAccessTokenBuilderTests {
   public void setup() {
 
     tokenBuilder =
-        new KeycloakProfileAccessTokenBuilder(properties, groupHelper);
+        new KeycloakProfileAccessTokenBuilder(properties, groupHelper, scopeFilter);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");

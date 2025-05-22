@@ -42,6 +42,7 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
@@ -61,9 +62,12 @@ public class IamAccessTokenBuilderTests {
 
   @Mock
   ClientDetailsEntity client;
-  
+
   @Mock
   OAuth2Authentication authentication;
+
+  @Mock
+  ScopeFilter scopeFilter;
 
   @Spy
   MockOAuth2Request oauth2Request =
@@ -80,7 +84,7 @@ public class IamAccessTokenBuilderTests {
   public void setup() {
 
     tokenBuilder =
-        new IamJWTProfileAccessTokenBuilder(properties, scService, claimValueHelper);
+        new IamJWTProfileAccessTokenBuilder(properties, scService, claimValueHelper, scopeFilter);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");

@@ -32,10 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Iterator;
 import java.util.Set;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -79,14 +77,6 @@ public class ScopePolicyPdpTests extends ScopePolicyTestUtils {
   IamAccount findTestAccount() {
     return accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found!"));
-  }
-
-  @Before
-  public void setup() throws Exception {
-    SystemScope storageReadScope = new SystemScope("storage.read:/");
-    storageReadScope.setRestricted(true);
-
-    scopeService.save(storageReadScope);
   }
 
   @Test
