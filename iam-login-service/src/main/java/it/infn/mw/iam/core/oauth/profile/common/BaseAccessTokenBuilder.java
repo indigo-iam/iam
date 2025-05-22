@@ -67,7 +67,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     this.properties = properties;
   }
 
-
   protected boolean isTokenExchangeRequest(OAuth2Authentication authentication) {
     return TOKEN_EXCHANGE_GRANT_TYPE.equals(authentication.getOAuth2Request().getGrantType());
   }
@@ -85,7 +84,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       throw new InvalidRequestException("Error parsing subject token: " + e.getMessage(), e);
     }
   }
-
 
   protected void handleClientTokenExchange(JWTClaimsSet.Builder builder,
       OAuth2AccessTokenEntity token, OAuth2Authentication authentication, UserInfo userInfo) {
@@ -116,9 +114,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
     if (!isNull(authentication.getOAuth2Request().getRefreshTokenRequest())) {
       final String audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUD_KEY);
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(AUD_KEY);
       return !isNullOrEmpty(audience);
     }
     return false;
@@ -129,7 +127,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
-    protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
+  protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
     final String audience = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     return !isNullOrEmpty(audience);
   }
@@ -148,10 +146,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     Builder builder = new JWTClaimsSet.Builder().issuer(properties.getIssuer())
-      .issueTime(Date.from(issueTime))
-      .subject(subject)
-      .jwtID(UUID.randomUUID().toString());
-
+        .issueTime(Date.from(issueTime))
+        .subject(subject)
+        .jwtID(UUID.randomUUID().toString());
 
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
@@ -167,9 +164,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUD_KEY);
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(AUD_KEY);
     }
 
     if (!isNullOrEmpty(audience)) {
@@ -180,13 +177,12 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       Integer maxValidity = token.getClient().getAccessTokenValiditySeconds();
       try {
         Integer desiredValidity = Integer.valueOf(expiry);
-        if (desiredValidity <= maxValidity){
+        if (desiredValidity <= maxValidity) {
           Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
           expTime = newValidity;
           token.setExpiration(newValidity);
-        } 
+        }
       } catch (NumberFormatException e) {
-        LOG.error("Invalid argument for expiry_in parameter: {}", e.getMessage(), e);
       }
     }
     builder.expirationTime(expTime);
