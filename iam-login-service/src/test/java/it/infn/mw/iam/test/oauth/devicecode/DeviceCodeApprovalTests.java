@@ -484,7 +484,8 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils
       .getSession();
 
     DeviceCode dc = (DeviceCode) session.getAttribute("deviceCode");
-    dc.setExpiration(new Date());
+    long oneHourAgoMillis = System.currentTimeMillis() - (60 * 60 * 1000);
+    dc.setExpiration(new Date(oneHourAgoMillis));
     session.setAttribute("deviceCode", dc);
 
     mvc
