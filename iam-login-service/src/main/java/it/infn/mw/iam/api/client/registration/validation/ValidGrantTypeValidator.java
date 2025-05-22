@@ -17,7 +17,7 @@ package it.infn.mw.iam.api.client.registration.validation;
 
 import static java.util.Objects.isNull;
 
-import java.util.HashSet;
+import java.util.Set;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -32,8 +32,8 @@ public class ValidGrantTypeValidator
   public boolean isValid(RegisteredClientDTO value, ConstraintValidatorContext context) {
 
     if (isNull(value.getGrantTypes())) {
-      value.setGrantTypes(new HashSet<>());
-      value.getGrantTypes().add(AuthorizationGrantType.CODE);
+      value.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      return true;
     }
 
     if ((value.getGrantTypes().contains(AuthorizationGrantType.CODE)

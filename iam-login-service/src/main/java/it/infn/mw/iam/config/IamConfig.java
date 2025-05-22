@@ -86,6 +86,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -146,10 +147,10 @@ public class IamConfig {
   @Bean(name = "aarcJwtProfile")
   JWTProfile aarcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, AarcClaimValueHelper claimHelper,
-      UserInfoService userInfoService, ScopeMatcherRegistry registry) {
+      UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
 
     AarcJWTProfileAccessTokenBuilder atBuilder =
-        new AarcJWTProfileAccessTokenBuilder(props, converter, claimHelper);
+        new AarcJWTProfileAccessTokenBuilder(props, converter, claimHelper, scopeFilter);
 
     AarcJWTProfileUserinfoHelper uiHelper =
         new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
@@ -166,12 +167,12 @@ public class IamConfig {
   @Bean(name = "kcJwtProfile")
   JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, UserInfoService userInfoService,
-      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper) {
+      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
     KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, groupHelper);
+        new KeycloakProfileAccessTokenBuilder(props, groupHelper, scopeFilter);
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
@@ -188,10 +189,10 @@ public class IamConfig {
   JWTProfile iamJwtProfile(IamProperties props, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, ClaimValueHelper claimHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
-      ScopeMatcherRegistry registry) {
+      ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
 
     IamJWTProfileAccessTokenBuilder atBuilder =
-        new IamJWTProfileAccessTokenBuilder(props, converter, claimHelper);
+        new IamJWTProfileAccessTokenBuilder(props, converter, claimHelper, scopeFilter);
 
     IamJWTProfileUserinfoHelper uiHelper =
         new IamJWTProfileUserinfoHelper(props, userInfoService, proc);
@@ -210,11 +211,11 @@ public class IamConfig {
       ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
-      ClaimValueHelper claimValueHelper) {
+      ClaimValueHelper claimValueHelper, ScopeFilter scopeFilter) {
 
     return new WLCGJWTProfile(props, userInfoService, accountRepo, new WLCGGroupHelper(),
         attributeMapHelper, new DefaultIntrospectionResultAssembler(), registry,
-        claimTranslationService, claimValueHelper);
+        claimTranslationService, claimValueHelper, scopeFilter);
   }
 
   @Bean

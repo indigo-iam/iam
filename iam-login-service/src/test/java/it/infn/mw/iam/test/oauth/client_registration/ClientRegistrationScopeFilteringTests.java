@@ -24,10 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.SystemScope;
-import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,23 +34,14 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(
-    properties = {"scope.matchers[0].name=storage.read", "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=storage.read", "scope.matchers[0].path=/"})
+@ActiveProfiles({"h2", "wlcg-scopes"})
 public class ClientRegistrationScopeFilteringTests extends ClientRegistrationTestSupport {
-
-  @Autowired
-  private SystemScopeRepository scopeRepo;
 
   @Autowired
   private MockMvc mvc;
 
   @Test
   public void testClientRegistrationScopesAreFiltered() throws Exception {
-
-    SystemScope scope = new SystemScope("storage.read:/");
-    scope.setRestricted(true);
-    scopeRepo.save(scope);
 
     String jsonInString = ClientJsonStringBuilder.builder()
       .scopes("example", "storage.read:/", "storage.read:/sub/path")

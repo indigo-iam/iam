@@ -43,6 +43,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
@@ -57,11 +58,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final String SUBJECT_TOKEN = "subject_token";
 
   protected final IamProperties properties;
+  protected final ScopeFilter scopeFilter;
 
   protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
 
-  public BaseAccessTokenBuilder(IamProperties properties) {
+  public BaseAccessTokenBuilder(IamProperties properties, ScopeFilter scopeFilter) {
     this.properties = properties;
+    this.scopeFilter = scopeFilter;
   }
 
 
@@ -166,6 +169,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     if (isTokenExchangeRequest(authentication)) {
       handleClientTokenExchange(builder, token, authentication, userInfo);
     }
+
+    token.setScope(scopeFilter.filterScopes(token.getScope(), authentication));
 
     return builder;
   }
