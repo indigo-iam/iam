@@ -17,23 +17,17 @@ package it.infn.mw.iam.api.client.management;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import static it.infn.mw.iam.api.common.PagingUtils.buildPageRequest;
-import static java.util.Objects.isNull;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -78,18 +72,18 @@ public class ClientManagementAPIController {
   private final ClientManagementService managementService;
   private final AccountUtils accountUtils;
 
-  @Autowired
-  private OAuth2TokenEntityService tokenService;
+  private final OAuth2TokenEntityService tokenService;
 
-  @Autowired
-  private ClientService clientService;
+  private final ClientService clientService;
 
   DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public ClientManagementAPIController(ClientManagementService managementService,
-      AccountUtils accountUtils) {
+      AccountUtils accountUtils, OAuth2TokenEntityService tokenService, ClientService clientService) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
+    this.tokenService = tokenService;
+    this.clientService = clientService;
   }
 
   @PostMapping

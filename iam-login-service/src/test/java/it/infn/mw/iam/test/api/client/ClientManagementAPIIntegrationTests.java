@@ -57,7 +57,6 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = { IamLoginService.class, CoreControllerTestSupport.class })
@@ -350,7 +349,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void testClientRevokeAllRefreshTokensWorks() throws Exception {
+        void testClientRevokeAllRefreshTokensWorks() throws Exception {
 
                 ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
                 buildAccessToken(client, TESTUSER_USERNAME, REFRESH_SCOPES).getRefreshToken();
@@ -373,7 +372,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void testClientRevokeAllAccessTokensWorks() throws Exception {
+        void testClientRevokeAllAccessTokensWorks() throws Exception {
 
                 ClientDetailsEntity client = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
                 buildAccessToken(client, TESTUSER_USERNAME, ACCESS_SCOPES);
