@@ -22,8 +22,6 @@
 
         self.ok = ok;
         self.cancel = cancel;
-        self.change = change;
-        self.timeFormatter = timeFormatter;
         self.enabled = true;
 
         self.$onInit = function () {
@@ -32,39 +30,23 @@
 
             self.revokeRefreshTokens = false;
             self.revokeAccessTokens = false;
-            self.selectedDate = "";
         };
 
-        function timeFormatter(timeObj) {
-            let date = String(timeObj.getFullYear()) + "-" + String(timeObj.getMonth() + 1).padStart(2, "0") + "-" + String(timeObj.getDate()).padStart(2, "0");
-            let time = "T" + String(timeObj.getHours()).padStart(2, "0") + ":" + String(timeObj.getMinutes()).padStart(2, "0") + ":" + String(timeObj.getSeconds()).padStart(2, "0");
-            return date + time
-        }
-
-        function change() {
-            let currentTime = document.getElementById("optionalTime");
-            currentTime.setAttribute("max", timeFormatter(new Date()));
-            currentTime.setAttribute("value", timeFormatter(new Date()))
-            document.getElementById("selectDate").classList.toggle("hidden");
-        }
-
         function ok() {
-            if (self.selectedDate != "" && self.revokeAccessTokens) {
-                self.selectedDate = timeFormatter(new Date(self.selectedDate));
-            }
-            console.log(self.selectedDate);
+            console.log(self.revokeAccessTokens);
+            console.log(self.revokeRefreshTokens)
             if (!self.revokeAccessTokens && !self.revokeRefreshTokens) {
                 self.dismiss({ $value: 'no-option' });
             }
             if (self.revokeRefreshTokens) {
-                ClientsService.revokeRefreshTokens(self.client.client_id, self.selectedDate).then(function (res) {
+                ClientsService.revokeRefreshTokens(self.client.client_id).then(function (res) {
                     self.close({ $value: res });
                 }).catch(function (res) {
                     self.dismiss({ $value: res });
                 });
             }
             if (self.revokeAccessTokens) {
-                ClientsService.revokeAccessTokens(self.client.client_id, self.selectedDate).then(function (res) {
+                ClientsService.revokeAccessTokens(self.client.client_id).then(function (res) {
                     self.close({ $value: res });
                 }).catch(function (res) {
                     self.dismiss({ $value: res });

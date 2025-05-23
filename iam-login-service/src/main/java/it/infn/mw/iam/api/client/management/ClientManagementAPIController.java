@@ -191,29 +191,12 @@ public class ClientManagementAPIController {
 
   @PatchMapping("/{clientId}/revoke-access-tokens")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
-  public void revokeAccessTokens(@PathVariable String clientId, @RequestParam(required = false) String timeIssued) {
+  public void revokeAccessTokens(@PathVariable String clientId) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    if (!isNull(timeIssued)) {
-      LocalDateTime localDateTime = LocalDateTime.parse(timeIssued, formatter);
-      Instant threshold = localDateTime.atZone(ZoneId.systemDefault()).toInstant();
-      List<OAuth2AccessTokenEntity> accessTokens = tokenService.getAccessTokensForClient(client);
-      for (OAuth2AccessTokenEntity rt : accessTokens) {
-        try {
-          Instant rtIssueTime = rt.getJwt().getJWTClaimsSet().getIssueTime().toInstant();
-          if (rtIssueTime.isAfter(threshold)) {
-            tokenService.revokeAccessToken(rt);
-          }
-          ;
-        } catch (Exception e) {
-        }
-      }
-      ;
-    } else {
-      tokenService.getAccessTokensForClient(client)
-          .forEach(rt -> tokenService.revokeAccessToken(rt));
-    }
+    tokenService.getAccessTokensForClient(client)
+        .forEach(rt -> tokenService.revokeAccessToken(rt));
     rotateClientSecret(clientId);
     enableClient(clientId);
   }

@@ -196,38 +196,21 @@
             });
         }
 
-        function revokeRefreshTokens(clientId, timeIssued) {
-            if (timeIssued != "") {
-                return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens?timeIssued=" + timeIssued).then(function (res) {
-                    return res.data;
-                }).catch(function (res) {
-                    return $q.reject(res);
-                });
-
-            } else {
-                return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens").then(function (res) {
-                    return res.data;
-                }).catch(function (res) {
-                    return $q.reject(res);
-                });
-            }
+        function revokeRefreshTokens(clientId) {
+            return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
 
         }
 
         function revokeAccessTokens(clientId, timeIssued) {
-            if (timeIssued != "") {
-                return $http.patch(endpoint(clientId) + "/revoke-access-tokens?timeIssued=" + timeIssued).then(function (res) {
-                    return res.data;
-                }).catch(function (res) {
-                    return $q.reject(res);
-                });
-            } else {
-                return $http.patch(endpoint(clientId) + "/revoke-access-tokens").then(function (res) {
-                    return res.data;
-                }).catch(function (res) {
-                    return $q.reject(res);
-                });
-            }
+            return $http.patch(endpoint(clientId) + "/revoke-access-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
 
         }
     }
