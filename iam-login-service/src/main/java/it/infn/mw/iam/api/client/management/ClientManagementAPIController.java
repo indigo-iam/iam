@@ -29,7 +29,6 @@ import javax.validation.ConstraintViolationException;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -178,7 +177,7 @@ public class ClientManagementAPIController {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getRefreshTokensForClient(client)
-        .forEach(rt -> tokenService.revokeRefreshToken(rt));
+        .forEach(tokenService::revokeRefreshToken);
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
@@ -190,7 +189,7 @@ public class ClientManagementAPIController {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
         .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getAccessTokensForClient(client)
-        .forEach(rt -> tokenService.revokeAccessToken(rt));
+        .forEach(tokenService::revokeAccessToken);
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
