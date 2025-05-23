@@ -214,6 +214,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/othersettings/othersettings.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/clientowners/clientowners.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/confirmclientremoval/confirmclientremoval.component.js"></script>
+  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/revoketokens/selecttokenstorevoke.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/clients/client/status/client.status.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/common/inputlist/inputlist.component.js"></script>

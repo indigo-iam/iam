@@ -46,13 +46,15 @@
             newClient: newClient,
             getClientList: getClientList,
             enableClient: enableClient,
-            disableClient: disableClient
+            disableClient: disableClient,
+            revokeRefreshTokens: revokeRefreshTokens,
+            revokeAccessTokens: revokeAccessTokens,
         };
 
         return service;
-        
-        function getClientList(){
-        	return $http.get(clientsEndpoint);
+
+        function getClientList() {
+            return $http.get(clientsEndpoint);
         }
 
         function endpoint(clientId) {
@@ -178,7 +180,7 @@
             return newClient;
         }
 
-        function enableClient(clientId){
+        function enableClient(clientId) {
             return $http.patch(endpoint(clientId) + "/enable").then(function (res) {
                 return res.data;
             }).catch(function (res) {
@@ -186,12 +188,30 @@
             });
         }
 
-        function disableClient(clientId){
+        function disableClient(clientId) {
             return $http.patch(endpoint(clientId) + "/disable").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);
             });
+        }
+
+        function revokeRefreshTokens(clientId) {
+            return $http.patch(endpoint(clientId) + "/revoke-refresh-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+
+        }
+
+        function revokeAccessTokens(clientId, timeIssued) {
+            return $http.patch(endpoint(clientId) + "/revoke-access-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+
         }
     }
 })();
