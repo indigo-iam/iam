@@ -60,7 +60,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeApprovalTests extends EndpointsTestUtils
+class DeviceCodeApprovalTests extends EndpointsTestUtils
     implements DeviceCodeTestsConstants {
 
   @Autowired
@@ -74,7 +74,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
 
 
   @Test
-  public void testDeviceCodeReturnsBadRequestForEmptyClientId() throws Exception {
+  void testDeviceCodeReturnsBadRequestForEmptyClientId() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -86,7 +86,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testParenthesisInRequestedScopesDoesNotMatchAllowedScopes() throws Exception {
+  void testParenthesisInRequestedScopesDoesNotMatchAllowedScopes() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -99,7 +99,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeNotReturnCompleteUri() throws Exception {
+  void testDeviceCodeNotReturnCompleteUri() throws Exception {
 
     config.setAllowCompleteDeviceCodeUri(false);
 
@@ -118,7 +118,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeFailsWhenVerificationUriHasSyntaxErrors() throws Exception {
+  void testDeviceCodeFailsWhenVerificationUriHasSyntaxErrors() throws Exception {
 
     config.setIssuer("local host");
 
@@ -134,7 +134,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
+  void testDeviceCodeVerificationUriCompleteWithoutUserCodeFails() throws Exception {
 
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -180,7 +180,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeVerificationUriCompleteWorks() throws Exception {
+  void testDeviceCodeVerificationUriCompleteWorks() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -232,7 +232,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeWithExpiredCodeFails() throws Exception {
+  void testDeviceCodeWithExpiredCodeFails() throws Exception {
 
     ClientDetailsEntity entity = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID).orElseThrow();
     entity.setDeviceCodeValiditySeconds(-1);
@@ -291,7 +291,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testAlreadyApprovedDeviceCodeFailsCodeVerification() throws Exception {
+  void testAlreadyApprovedDeviceCodeFailsCodeVerification() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -361,7 +361,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testUserCodeMismatch() throws Exception {
+  void testUserCodeMismatch() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -423,7 +423,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testExpiredDeviceCodeFailsUserApproval() throws Exception {
+  void testExpiredDeviceCodeFailsUserApproval() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -490,7 +490,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testNormalClientNotLinkedToUser() throws Exception {
+  void testNormalClientNotLinkedToUser() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -560,7 +560,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testRememberParameterAllowsToAddAnApprovedSite() throws Exception {
+  void testRememberParameterAllowsToAddAnApprovedSite() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -632,7 +632,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testNoneRememberParameterDoesNotAddAnApprovedSite() throws Exception {
+  void testNoneRememberParameterDoesNotAddAnApprovedSite() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -699,7 +699,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testAddAnApprovedSiteFor1Hour() throws Exception {
+  void testAddAnApprovedSiteFor1Hour() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -771,7 +771,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testAlreadyApprovedSiteSkipsConsentPage() throws Exception {
+  void testAlreadyApprovedSiteSkipsConsentPage() throws Exception {
 
     String response = mvc
         .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -855,7 +855,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testAlreadyApprovedSiteAllowsIssuingAT() throws Exception {
+  void testAlreadyApprovedSiteAllowsIssuingAT() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -962,7 +962,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testNotApprovedDeviceFlowCannotIssueTokens() throws Exception {
+  void testNotApprovedDeviceFlowCannotIssueTokens() throws Exception {
 
     String response = mvc
         .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -1025,7 +1025,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testApprovedSiteWithRememberNoneNotAllowsIssuingAtBeforeSecondApproval() throws Exception {
+  void testApprovedSiteWithRememberNoneNotAllowsIssuingAtBeforeSecondApproval() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -1135,7 +1135,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testNewRequestedScopePromptToConsentPage() throws Exception {
+  void testNewRequestedScopePromptToConsentPage() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
@@ -1220,7 +1220,7 @@ public class DeviceCodeApprovalTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testASubsetOfApprovedScopesUpdatesApprovedSiteAccessDate() throws Exception {
+  void testASubsetOfApprovedScopesUpdatesApprovedSiteAccessDate() throws Exception {
 
     String response = mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)

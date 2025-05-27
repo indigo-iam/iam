@@ -75,12 +75,12 @@ class ClientRegistrationAPIControllerTests {
   public static final ResultMatcher CREATED = status().isCreated();
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @AfterEach
-  public void cleanup() {
+  void cleanup() {
     mockOAuth2Filter.cleanupSecurityContext();
     clientService.findClientByClientId("test-client-creation")
       .ifPresent(c -> clientService.deleteClient(c));;
@@ -88,7 +88,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  public void registerClientWithNullValuesAndCheckDefaultValues()
+  void registerClientWithNullValuesAndCheckDefaultValues()
       throws JsonProcessingException, Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
@@ -144,7 +144,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  public void registerClientRaiseParseException() throws JsonProcessingException, Exception {
+  void registerClientRaiseParseException() throws JsonProcessingException, Exception {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
 
@@ -168,7 +168,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  public void registerClientRaiseJwkUriValidationException()
+  void registerClientRaiseJwkUriValidationException()
       throws JsonProcessingException, Exception {
 
     final String NOT_A_URI_STRING = "This is not a URI";
@@ -192,7 +192,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  public void registerClientPrivateJwtValidationException()
+  void registerClientPrivateJwtValidationException()
       throws JsonProcessingException, Exception {
 
     final String URI_STRING = "http://localhost:8080/jwk";
@@ -254,7 +254,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  public void updateClientPrivateJwtValidationException()
+  void updateClientPrivateJwtValidationException()
       throws JsonProcessingException, Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();

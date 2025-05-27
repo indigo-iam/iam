@@ -41,7 +41,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.api.client.service.ClientService;
@@ -81,20 +80,20 @@ class ClientManagementAPIControllerTests {
   public static final ResultMatcher OK = status().isOk();
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @AfterEach
-  public void cleanup() {
+  void cleanup() {
     mockOAuth2Filter.cleanupSecurityContext();
     clientService.findClientByClientId("test-client-creation")
-      .ifPresent(c -> clientService.deleteClient(c));;
+      .ifPresent(c -> clientService.deleteClient(c));
   }
 
   @Test
   @WithAnonymousUser
-  public void createClientWithAnonymousUser() throws JsonProcessingException, Exception {
+  void createClientWithAnonymousUser() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -110,7 +109,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void updateAuthMethodToNone() throws JsonProcessingException, Exception {
+  void updateAuthMethodToNone() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -140,7 +139,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientRaiseParseException() throws JsonProcessingException, Exception {
+  void createClientRaiseParseException() throws Exception {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
 
@@ -165,7 +164,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientRaiseURIValidationException() throws JsonProcessingException, Exception {
+  void createClientRaiseURIValidationException() throws Exception {
 
     final String NOT_A_URI_STRING = "This is not a URI string";
 
@@ -189,7 +188,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
+  void createClientPrivateJwtValidationException() throws Exception {
 
     final String URI_STRING = "http://localhost:8080/jwk";
     final String NOT_A_JSON_STRING = "This is not a JSON string";
@@ -224,7 +223,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void updateClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
+  void updateClientPrivateJwtValidationException() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
