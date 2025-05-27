@@ -31,9 +31,11 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
@@ -47,9 +49,10 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   final WLCGGroupHelper groupHelper;
   final AttributeMapHelper attributeHelper;
 
-  public WLCGProfileAccessTokenBuilder(IamProperties properties, WLCGGroupHelper groupHelper,
-      AttributeMapHelper attributeHelper, ScopeFilter scopeFilter) {
-    super(properties, scopeFilter);
+  public WLCGProfileAccessTokenBuilder(IamProperties properties,
+      AttributeMapHelper attributeHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
+    super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.groupHelper = groupHelper;
     this.attributeHelper = attributeHelper;
   }

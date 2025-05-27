@@ -29,8 +29,10 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
@@ -41,9 +43,9 @@ public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   protected final AarcClaimValueHelper claimValueHelper;
 
   public AarcJWTProfileAccessTokenBuilder(IamProperties properties,
-      ScopeClaimTranslationService scopeClaimConverter, AarcClaimValueHelper claimValueHelper,
-      ScopeFilter scopeFilter) {
-    super(properties, scopeFilter);
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
+      ScopeClaimTranslationService scopeClaimConverter, AarcClaimValueHelper claimValueHelper) {
+    super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }
@@ -64,9 +66,6 @@ public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
       builder.claim("voperson_id", userInfo.getSub());
     }
 
-
-
     return builder.build();
   }
-
 }

@@ -97,6 +97,7 @@ public class SamlAssertionBuilder {
 
   AttributeBuilder attributeBuilder;
 
+  String authnContextClassRef = AuthnContext.PASSWORD_AUTHN_CTX;
 
   public SamlAssertionBuilder issuer(String issuer) {
     this.issuer = issuer;
@@ -148,6 +149,10 @@ public class SamlAssertionBuilder {
     return this;
   }
 
+  public SamlAssertionBuilder authnContextClassRef(String ref) {
+    this.authnContextClassRef = ref;
+    return this;
+  }
 
   private AudienceRestriction buildAudienceRestriction() {
     AudienceRestrictionBuilder arb = (AudienceRestrictionBuilder) builderFactory
@@ -186,9 +191,11 @@ public class SamlAssertionBuilder {
       .getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
 
     AuthnContextClassRef accr = accrb.buildObject();
-    accr.setAuthnContextClassRef(AuthnContext.PASSWORD_AUTHN_CTX);
+    accr.setAuthnContextClassRef(authnContextClassRef);
 
     ac.setAuthnContextClassRef(accr);
+
+    as.setAuthnContext(ac);
 
     return as;
   }
