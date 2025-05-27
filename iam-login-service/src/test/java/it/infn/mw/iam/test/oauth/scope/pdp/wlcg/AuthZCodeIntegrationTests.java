@@ -42,7 +42,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
@@ -70,7 +69,7 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
   // @formatter:on
 )
 @ActiveProfiles({"h2", "wlcg-scopes"})
-public class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
+class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired
   private IamAccountRepository accountRepo;
@@ -99,13 +98,13 @@ public class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @BeforeClass
-  public static void init() {
+  static void init() {
     TestUtils.initRestAssured();
 
   }
 
   @Before
-  public void setup() {
+  void setup() {
     RestAssured.port = iamPort;
     loginUrl = String.format(LOCALHOST_URL_TEMPLATE + "/login", iamPort);
     authorizeUrl = String.format(LOCALHOST_URL_TEMPLATE + "/authorize", iamPort);
@@ -113,7 +112,7 @@ public class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshTokenAfterAuthzCodeFiltersWLCGScopes() throws IOException, ParseException {
+  void testRefreshTokenAfterAuthzCodeFiltersWLCGScopes() throws IOException, ParseException {
 
     final String TEST_USER_NAME = "test";
     final String TEST_USER_PASSWORD = "password";
@@ -259,7 +258,7 @@ public class AuthZCodeIntegrationTests extends ScopePolicyTestUtils {
   }
 
   private String refreshTokenWithScopes(String refreshToken, Set<String> requestedScopes)
-      throws JsonMappingException, JsonProcessingException, ParseException {
+      throws JsonProcessingException, ParseException {
 
     final String TEST_CLIENT_ID = "refresh-client";
     final String TEST_CLIENT_SECRET = "secret";
