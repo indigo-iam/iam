@@ -39,6 +39,11 @@ import javax.servlet.http.HttpSession;
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
+import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,6 +139,9 @@ public class DefaultRegistrationRequestService
 
   @Autowired
   private IamProperties iamProperties;
+  
+  @Autowired
+  private  X509CertificateConverter X509Converter;
 
   private final X509CertificateConverter x509Converter;
 
