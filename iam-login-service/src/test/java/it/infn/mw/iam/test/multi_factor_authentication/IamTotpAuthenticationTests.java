@@ -158,5 +158,8 @@ public class IamTotpAuthenticationTests {
         .log().all()
         .statusCode(HttpStatus.OK.value());
       // @formatter:on
+
+    totp.setActive(true);
+    totpMfaRepo.save(totp);
   }
 }

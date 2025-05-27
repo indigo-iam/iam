@@ -69,6 +69,7 @@ public class EndpointsTestUtils {
     private String password;
     private String audience;
     private String resource;
+    private String claims;
 
     public AccessTokenGetter clientId(String clientId) {
       this.clientId = clientId;
@@ -110,6 +111,11 @@ public class EndpointsTestUtils {
       return this;
     }
 
+    public AccessTokenGetter claims(String claims) {
+      this.claims = claims;
+      return this;
+    }
+
     public String performSuccessfulTokenRequest() throws Exception {
 
       return performTokenRequest(200).getResponse().getContentAsString();
@@ -134,6 +140,10 @@ public class EndpointsTestUtils {
 
       if (resource != null) {
         req.param("resource", resource);
+      }
+
+      if (claims != null) {
+        req.param("claims", claims);
       }
 
       return mvc.perform(req).andExpect(status().is(statusCode)).andReturn();
