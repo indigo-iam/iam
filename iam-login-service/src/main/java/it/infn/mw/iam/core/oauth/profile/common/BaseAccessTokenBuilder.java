@@ -62,7 +62,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
 
-  public BaseAccessTokenBuilder(IamProperties properties, ScopeFilter scopeFilter) {
+  protected BaseAccessTokenBuilder(IamProperties properties, ScopeFilter scopeFilter) {
     this.properties = properties;
     this.scopeFilter = scopeFilter;
   }

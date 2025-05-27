@@ -18,22 +18,23 @@ package it.infn.mw.iam.test.oauth.profile;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -47,8 +48,8 @@ import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
-public class KeycloakAccessTokenBuilderTests {
+@ExtendWith(MockitoExtension.class)
+class KeycloakAccessTokenBuilderTests {
 
   IamProperties properties = new IamProperties();
 
@@ -63,7 +64,7 @@ public class KeycloakAccessTokenBuilderTests {
 
   @Mock
   ClientDetailsEntity client;
-  
+
   @Mock
   OAuth2Authentication authentication;
 
@@ -83,44 +84,33 @@ public class KeycloakAccessTokenBuilderTests {
 
   KeycloakProfileAccessTokenBuilder tokenBuilder;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
 
-    tokenBuilder =
-        new KeycloakProfileAccessTokenBuilder(properties, groupHelper, scopeFilter);
+    tokenBuilder = new KeycloakProfileAccessTokenBuilder(properties, groupHelper, scopeFilter);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");
-    // when(authentication.getName()).thenReturn("auth-name");
     when(authentication.getOAuth2Request()).thenReturn(oauth2Request);
-    // when(authentication.isClientOnly()).thenReturn(false);
     when(userInfo.getSub()).thenReturn("userinfo-sub");
     when(oauth2Request.getGrantType()).thenReturn(TOKEN_EXCHANGE_GRANT_TYPE);
   }
 
-
-  @Test(expected = InvalidRequestException.class)
-  public void testMissingSubjectTokenTokenExchangeErrors() {
-    try {
-      tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now);
-    } catch (InvalidRequestException e) {
-      assertThat(e.getMessage(), containsString("subject_token not found"));
-      throw e;
-    }
+  @Test
+  void testMissingSubjectTokenTokenExchangeErrors() {
+    InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
+        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+    assertThat(thrown.getMessage(), containsString("subject_token not found"));
   }
 
-  @Test(expected = InvalidRequestException.class)
-  public void testSubjectTokenNotParsable() {
+  @Test
+  void testSubjectTokenNotParsable() {
     Map<String, String> paramsMap = Maps.newHashMap();
     paramsMap.put("subject_token", "3427thjdfhgejt73ja");
-
     oauth2Request.setRequestParameters(paramsMap);
-    try {
-      tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now);
-    } catch (InvalidRequestException e) {
-      assertThat(e.getMessage(), containsString("Error parsing subject token"));
-      throw e;
-    }
+    InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
+        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+    assertThat(thrown.getMessage(), containsString("Error parsing subject token"));
   }
 
 }

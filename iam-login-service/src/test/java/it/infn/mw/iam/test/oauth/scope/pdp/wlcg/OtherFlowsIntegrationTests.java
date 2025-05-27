@@ -21,7 +21,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
@@ -66,7 +66,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
-public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
+class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
 
   @Autowired
   private IamAccountRepository accountRepo;
@@ -129,12 +129,12 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
     List<String> tokenScopes = Arrays.asList(claims.getStringClaim("scope").split(" "));
-    assertTrue(tokenScopes.size() == scopes.size());
+    assertEquals(tokenScopes.size(), scopes.size());
     assertTrue(tokenScopes.containsAll(scopes));
   }
 
   @Test
-  public void testRefreshTokenAfterPasswordFlowParametricScopeFilteringWorks() throws Exception {
+  void testRefreshTokenAfterPasswordFlowParametricScopeFilteringWorks() throws Exception {
 
     final String CLIENT_ID = "password-grant";
     final String CLIENT_SECRET = "secret";
@@ -155,6 +155,8 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
 
     String refreshToken = mapper.readTree(response).get("refresh_token").asText();
     String accessToken = mapper.readTree(response).get("access_token").asText();
+
+    checkAccessTokenScopes(accessToken, Set.of("openid", "profile", "offline_access"));
 
     accessToken = mapper
       .readTree(
@@ -177,7 +179,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
 
 
   @Test
-  public void testRefreshTokenAfterDeviceFlowWithParametricScopeRequestWorks() throws Exception {
+  void testRefreshTokenAfterDeviceFlowWithParametricScopeRequestWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -241,7 +243,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post("/device/approve").param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
@@ -312,7 +314,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshTokenFlowAfterDevicePolicyWithPathWorks() throws Exception {
+  void testRefreshTokenFlowAfterDevicePolicyWithPathWorks() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -376,7 +378,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post("/device/approve").param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
@@ -447,7 +449,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshedTokenWithDeniedPathNotReturned() throws Exception {
+  void testRefreshedTokenWithDeniedPathNotReturned() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -507,7 +509,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post("/device/approve").param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
@@ -581,7 +583,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
   }
 
   @Test
-  public void testRefreshFlowAfterDeviceCodeWithDenyPolicyOnRootPath() throws Exception {
+  void testRefreshFlowAfterDeviceCodeWithDenyPolicyOnRootPath() throws Exception {
 
     IamAccount testAccount = findTestAccount();
 
@@ -641,7 +643,7 @@ public class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post("/device/approve").param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))

@@ -58,7 +58,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @ActiveProfiles({"h2", "wlcg-scopes"})
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
+class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
     implements StructuredScopeTestSupportConstants {
 
   @Autowired
@@ -71,7 +71,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   private IamClientRepository clientRepo;
 
   @Test
-  public void test() throws Exception {
+  void test() throws Exception {
 
     // @formatter:off
     mvc.perform(post("/token")
@@ -86,8 +86,8 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
 
 
   @Test
-  public void testIntrospectionResponse() throws Exception {
- // @formatter:off
+  void testIntrospectionResponse() throws Exception {
+    // @formatter:off
     String tokenResponse = 
         mvc.perform(post("/token")
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
@@ -114,7 +114,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testDeviceCodeStructuredScopeRequest() throws Exception {
+  void testDeviceCodeStructuredScopeRequest() throws Exception {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(DEVICE_CODE_CLIENT_ID);
     Set<String> scopes = Sets.newHashSet();
@@ -194,7 +194,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
       .getRequest()
       .getSession();
 
-    session = (MockHttpSession) mvc
+    mvc
       .perform(post(DEVICE_USER_APPROVE_URL).param("user_code", userCode)
         .param("user_oauth_approval", "true")
         .session(session))
@@ -242,7 +242,7 @@ public class StructuredScopeRequestIntegrationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testRefreshTokenStructuredScopeRequest() throws Exception {
+  void testRefreshTokenStructuredScopeRequest() throws Exception {
 
     DefaultOAuth2AccessToken tokenResponse = new AccessTokenGetter().grantType(PASSWORD_GRANT_TYPE)
       .clientId(PASSWORD_CLIENT_ID)
