@@ -34,6 +34,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -44,8 +45,9 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public IamJWTProfileAccessTokenBuilder(IamProperties properties,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
-      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper) {
-    super(properties, totpMfaRepository, accountUtils);
+      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
+      ScopeFilter scopeFilter) {
+    super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }

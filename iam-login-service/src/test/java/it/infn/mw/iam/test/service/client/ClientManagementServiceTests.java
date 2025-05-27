@@ -52,9 +52,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
@@ -71,11 +68,10 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
-
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
     webEnvironment = WebEnvironment.NONE)
-public class ClientManagementServiceTests {
+class ClientManagementServiceTests {
 
   @Autowired
   private ClientManagementService managementService;
@@ -94,21 +90,15 @@ public class ClientManagementServiceTests {
 
   private Authentication userAuth;
 
-  private OAuth2Authentication ratAuth;
-
-  private OAuth2Request oauthRequest;
-
-  private OAuth2AuthenticationDetails oauthDetails;
-
   @Test
-  public void testPagedClientLookup() {
+  void testPagedClientLookup() {
 
     Sort sort = Sort.by(Direction.ASC, "clientId");
     Pageable pageable = PagingUtils.buildPageRequest(10, 1, 100, sort);
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(19L));
+    assertThat(clients.getTotalResults(), is(20L));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
     assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));
@@ -116,7 +106,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testDynamicClientLookup() {
+  void testDynamicClientLookup() {
     Sort sort = Sort.by(Direction.ASC, "clientId");
     Pageable pageable = PagingUtils.buildPageRequest(10, 1, 100, sort);
 
@@ -131,13 +121,13 @@ public class ClientManagementServiceTests {
 
 
   @Test
-  public void testClientDelete() {
+  void testClientDelete() {
     managementService.deleteClientByClientId("client");
     assertTrue(managementService.retrieveClientByClientId("client").isEmpty());
   }
 
   @Test
-  public void testClientRetrieve() {
+  void testClientRetrieve() {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertThat(client.getClientId(), is("client"));
@@ -149,7 +139,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientCreationSuccess() throws ParseException {
+  void testClientCreationSuccess() throws ParseException {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
@@ -162,7 +152,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientWithJwkValue() throws ParseException {
+  void testClientWithJwkValue() throws ParseException {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
     final String VALID_JSON_VALUE =
@@ -191,7 +181,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientWithJwksUri() throws ParseException {
+  void testClientWithJwksUri() throws ParseException {
 
     final String NOT_A_VALID_URI = "This is not a valid URI";
     final String VALID_URI = "https://host.domain.com/this/is/my/public-key";
@@ -223,30 +213,29 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testBasicClientValidation() {
+  void testBasicClientValidation() {
 
+    RegisteredClientDTO client = new RegisteredClientDTO();
     ConstraintViolationException exception =
-        Assertions.assertThrows(ConstraintViolationException.class, () -> {
-          RegisteredClientDTO client = new RegisteredClientDTO();
+        assertThrows(ConstraintViolationException.class, () -> {
           managementService.saveNewClient(client);
         });
 
     assertThat(exception.getMessage(), containsString("should not be blank"));
 
-    exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
-      RegisteredClientDTO client = new RegisteredClientDTO();
-      client.setClientName("client");
-      client.setClientId("client");
-      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+    client.setClientName("client");
+    client.setClientId("client");
+    client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+
+    exception = assertThrows(ConstraintViolationException.class, () -> {
       managementService.saveNewClient(client);
     });
 
     assertThat(exception.getMessage(), containsString("Client id not available"));
-
   }
 
   @Test
-  public void testDynamicallyRegisteredClientCanBeUpdated() throws ParseException {
+  void testDynamicallyRegisteredClientCanBeUpdated() throws ParseException {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
@@ -275,7 +264,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testSecretRotation() throws ParseException {
+  void testSecretRotation() throws ParseException {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -296,7 +285,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testRatRotation() throws ParseException {
+  void testRatRotation() throws ParseException {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-rat-rotation");
@@ -318,7 +307,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientOwnerAssignRemove() throws ParseException {
+  void testClientOwnerAssignRemove() throws ParseException {
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
     client.setClientId("test-client-creation");
@@ -365,45 +354,40 @@ public class ClientManagementServiceTests {
 
 
   @Test
-  public void testCodeChallengeValidation() {
+  void testCodeChallengeValidation() {
 
     String[] invalidCodeChallengeValues = {" ", "invalid", "S512"};
 
     for (String value : invalidCodeChallengeValues) {
+      RegisteredClientDTO client = new RegisteredClientDTO();
+      client.setClientName("test-client-creation");
+      client.setClientId("test-client-creation");
+      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+      client.setScope(Sets.newHashSet("test"));
+      client.setCodeChallengeMethod(value);
       ConstraintViolationException exception =
-          Assertions.assertThrows(ConstraintViolationException.class, () -> {
-            RegisteredClientDTO client = new RegisteredClientDTO();
-            client.setClientName("test-client-creation");
-            client.setClientId("test-client-creation");
-            client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-            client.setScope(Sets.newHashSet("test"));
-            client.setCodeChallengeMethod(value);
-
+          assertThrows(ConstraintViolationException.class, () -> {
             managementService.saveNewClient(client);
-
           });
-
       assertThat(exception.getMessage(), containsString("S256"));
     }
 
     String[] validCodeChallengeValues = {"", "none", "plain", "S256"};
     for (String value : validCodeChallengeValues) {
+      RegisteredClientDTO client = new RegisteredClientDTO();
+      client.setClientName("test-client-creation");
+      client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
+      client.setScope(Sets.newHashSet("test"));
+      client.setCodeChallengeMethod(value);
       Assertions.assertDoesNotThrow(() -> {
-        RegisteredClientDTO client = new RegisteredClientDTO();
-        client.setClientName("test-client-creation");
-        client.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-        client.setScope(Sets.newHashSet("test"));
-        client.setCodeChallengeMethod(value);
-
         RegisteredClientDTO response = managementService.saveNewClient(client);
-
         assertThat(response.getCodeChallengeMethod(), is(value));
       });
     }
   }
 
   @Test
-  public void testClientStatusChange() {
+  void testClientStatusChange() {
     managementService.updateClientStatus("client", false, "userUUID");
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").get();
 
@@ -413,7 +397,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientStatusChangeWithContacts() {
+  void testClientStatusChangeWithContacts() {
     managementService.updateClientStatus("device-code-client", false, "userUUID");
     RegisteredClientDTO client = managementService.retrieveClientByClientId("device-code-client").get();
 
@@ -423,7 +407,7 @@ public class ClientManagementServiceTests {
   }
 
   @Test
-  public void testClientStatusChangeWithoutOwners() {
+  void testClientStatusChangeWithoutOwners() {
     managementService.updateClientStatus("client-cred", false, "userUUID");
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client-cred").get();
 

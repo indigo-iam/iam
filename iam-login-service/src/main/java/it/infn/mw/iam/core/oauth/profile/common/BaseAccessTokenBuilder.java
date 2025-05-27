@@ -46,6 +46,7 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
@@ -60,6 +61,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final String SUBJECT_TOKEN = "subject_token";
 
   protected final IamProperties properties;
+  protected final ScopeFilter scopeFilter;
 
   protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
 
@@ -68,10 +70,11 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected final AccountUtils accountUtils;
 
   protected BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils) {
+      AccountUtils accountUtils, ScopeFilter scopeFilter) {
     this.properties = properties;
     this.totpMfaRepository = totpMfaRepository;
     this.accountUtils = accountUtils;
+    this.scopeFilter = scopeFilter;
   }
 
 
@@ -178,6 +181,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     addAcrClaimIfNeeded(builder, authentication);
+
+    token.setScope(scopeFilter.filterScopes(token.getScope(), authentication));
 
     return builder;
   }

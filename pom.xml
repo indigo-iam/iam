@@ -43,6 +43,8 @@
 	</distributionManagement>
 
 	<properties>
+		<!-- needed fix to remove Eclipse issue on running jUnit tests -->
+		<jacocoArgLine>${argLine}</jacocoArgLine>
 		<iam.image.tag>${project.version}-${git.commit.id.abbrev}</iam.image.tag>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -394,7 +396,7 @@
 						<java.security.egd>file:/dev/./urandom</java.security.egd>
 						<java.awt.headless>true</java.awt.headless>
 					</systemPropertyVariables>
-					<argLine>${jvm.test.args}</argLine>
+					<argLine>${jacocoArgLine} ${jvm.test.args}</argLine>
 				</configuration>
 			</plugin>
 

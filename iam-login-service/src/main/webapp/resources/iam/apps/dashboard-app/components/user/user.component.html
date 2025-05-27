@@ -49,7 +49,7 @@
                         <user-detail user="$ctrl.user" aup="$ctrl.aup"></user-detail>
                         <user-labels user="$ctrl.user" labels="$ctrl.labels"></user-labels>
                     </div>
-                    <div ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" class="box-footer">
+                    <div ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" class="box-footer">
                         <!-- Edit details button -->
                         <user-edit user="$ctrl.user"></user-edit>
 
@@ -89,13 +89,13 @@
                     </div>
                 </div>
             </section>
-            <section ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin() && !$ctrl.userIsReader" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
+            <section ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin() && !$ctrl.userIsReader()" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
                 <user-groups user="$ctrl.user"></user-groups>
-                <user-pending-requests ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-pending-requests>
+                <user-pending-requests ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-pending-requests>
                 <user-linked-accounts user="$ctrl.user"></user-linked-accounts>
                 <user-x509 user="$ctrl.user"></user-x509>
                 <user-cert-link-pending-requests user="$ctrl.user"></user-cert-link-pending-requests>
-                <user-ssh-keys ng-hide="$ctrl.isGroupManager && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-ssh-keys>
+                <user-ssh-keys ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-ssh-keys>
                 <user-attributes user="$ctrl.user" attributes="$ctrl.attrs"></user-attributes>
             </section>
         </div>

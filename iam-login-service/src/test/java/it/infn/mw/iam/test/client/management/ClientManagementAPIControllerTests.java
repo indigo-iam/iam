@@ -30,8 +30,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -42,9 +42,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
@@ -70,6 +70,9 @@ class ClientManagementAPIControllerTests {
   @Autowired
   private IamClientRepository clientRepository;
 
+  @Autowired
+  private ClientService clientService;
+
   public static final String IAM_CLIENTS_API_URL = "/iam/api/clients/";
 
   public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
@@ -77,19 +80,21 @@ class ClientManagementAPIControllerTests {
   public static final ResultMatcher CREATED = status().isCreated();
   public static final ResultMatcher OK = status().isOk();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-  @After
-  public void cleanupOAuthUser() {
+  @AfterEach
+  void cleanup() {
     mockOAuth2Filter.cleanupSecurityContext();
+    clientService.findClientByClientId("test-client-creation")
+      .ifPresent(c -> clientService.deleteClient(c));
   }
 
   @Test
   @WithAnonymousUser
-  public void createClientWithAnonymousUser() throws JsonProcessingException, Exception {
+  void createClientWithAnonymousUser() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -105,7 +110,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void updateAuthMethodToNone() throws JsonProcessingException, Exception {
+  void updateAuthMethodToNone() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -135,7 +140,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientRaiseParseException() throws JsonProcessingException, Exception {
+  void createClientRaiseParseException() throws Exception {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
 
@@ -157,7 +162,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientRaiseURIValidationException() throws JsonProcessingException, Exception {
+  void createClientRaiseURIValidationException() throws Exception {
 
     final String NOT_A_URI_STRING = "This is not a URI string";
 
@@ -181,7 +186,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void createClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
+  void createClientPrivateJwtValidationException() throws Exception {
 
     final String URI_STRING = "http://localhost:8080/jwk";
     final String NOT_A_JSON_STRING = "This is not a JSON string";
@@ -216,7 +221,7 @@ class ClientManagementAPIControllerTests {
 
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
-  public void updateClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
+  void updateClientPrivateJwtValidationException() throws Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");

@@ -15,24 +15,14 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
-import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.RequestValidator;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class WLCGJWTProfile implements JWTProfile, RequestValidator {
@@ -46,20 +36,12 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
   private final IntrospectionResultHelper introspectionHelper;
   private final WLCGGroupHelper groupHelper;
 
-  public WLCGJWTProfile(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, UserInfoService userInfoService, IamAccountRepository accountRepo,
-      WLCGGroupHelper groupHelper, AttributeMapHelper attributeHelper,
-      IntrospectionResultAssembler defaultAssembler, ScopeMatcherRegistry registry,
-      ScopeClaimTranslationService claimTranslationService, IamClaimValueHelper claimValueHelper) {
-    accessTokenBuilder = new WLCGProfileAccessTokenBuilder(properties, totpMfaRepository,
-        accountUtils, groupHelper, attributeHelper);
-
-    idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo, claimTranslationService,
-        claimValueHelper, groupHelper, properties);
-
-    userInfoHelper = new WLCGUserinfoHelper(properties, userInfoService);
-    introspectionHelper =
-        new WLCGIntrospectionHelper(properties, defaultAssembler, registry, groupHelper);
+  public WLCGJWTProfile(JWTAccessTokenBuilder accessTokenBuilder, IDTokenCustomizer idTokenBuilder,
+      UserInfoHelper userInfoHelper, IntrospectionResultHelper introspectionHelper, WLCGGroupHelper groupHelper) {
+    this.accessTokenBuilder = accessTokenBuilder;
+    this.idTokenCustomizer = idTokenBuilder;
+    this.userInfoHelper = userInfoHelper;
+    this.introspectionHelper = introspectionHelper;
     this.groupHelper = groupHelper;
   }
 

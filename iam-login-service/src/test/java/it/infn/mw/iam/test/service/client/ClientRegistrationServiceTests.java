@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
@@ -63,6 +62,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.mercateo.test.clock.TestClock;
@@ -88,15 +88,9 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 @SuppressWarnings("deprecation")
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE, properties = {
-    // @formatter:off
-        "scope.matchers[0].name=storage.read", 
-        "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=storage.read", 
-        "scope.matchers[0].path=/",
-     // @formatter:on
-    })
-public class ClientRegistrationServiceTests {
+    webEnvironment = WebEnvironment.NONE)
+@ActiveProfiles({"h2", "wlcg-scopes"})
+class ClientRegistrationServiceTests {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -142,7 +136,7 @@ public class ClientRegistrationServiceTests {
   private IamAccount adminAccount;
 
   @BeforeEach
-  public void beforeEach() {
+  void beforeEach() {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
@@ -179,15 +173,10 @@ public class ClientRegistrationServiceTests {
 
     when(clientRegProps.getClientDefaults()).thenReturn(new ClientDefaultsProperties());
 
-    SystemScope ss = new SystemScope("storage.read:/");
-    ss.setDefaultScope(false);
-    ss.setRestricted(true);
-
-    scopeService.save(ss);
   }
 
   @Test
-  public void testRegistrationRequestRequiresClientName() {
+  void testRegistrationRequestRequiresClientName() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -202,7 +191,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testNoRedirectUriWithAuthzCodeValidation() {
+  void testNoRedirectUriWithAuthzCodeValidation() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -219,7 +208,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testScopeValidation() {
+  void testScopeValidation() {
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
@@ -234,7 +223,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRedirectUrisValidation() {
+  void testRedirectUrisValidation() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -276,14 +265,10 @@ public class ClientRegistrationServiceTests {
       request.setRedirectUris(Sets.newHashSet("edu.kit.data.oidc-agent:/redirect"));
       service.registerClient(request, userAuth);
     });
-
-
-
   }
 
-
   @Test
-  public void testBlacklistedUriValidation() {
+  void testBlacklistedUriValidation() {
 
     when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
 
@@ -302,7 +287,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAllowedGrantTypeChecks() throws ParseException {
+  void testAllowedGrantTypeChecks() throws ParseException {
 
     // ask exchange grant type as user
     InvalidClientRegistrationRequest exception =
@@ -415,7 +400,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesAreFilteredOut() {
+  void testRestrictedScopesAreFilteredOut() {
 
     scopeService.getRestricted().forEach(ss -> {
       final String restrictedScope = ss.getValue();
@@ -452,7 +437,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesAreFilteredOutWithMatchers() throws ParseException {
+  void testRestrictedScopesAreFilteredOutWithMatchers() throws ParseException {
 
     String restrictedScope1 = "storage.read:/whatever";
     String restrictedScope2 = "storage.read:/";
@@ -477,7 +462,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testReservedScopesAreFilteredOut() {
+  void testReservedScopesAreFilteredOut() {
 
     scopeService.getReserved().forEach(ss -> {
       final String reservedScope = ss.getValue();
@@ -509,7 +494,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAdminCanRegisterClientWithRestrictedScope() {
+  void testAdminCanRegisterClientWithRestrictedScope() {
     scopeService.getRestricted().forEach(ss -> {
       final String restrictedScope = ss.getValue();
       RegisteredClientDTO request = new RegisteredClientDTO();
@@ -539,7 +524,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAnonymousRequestYeldsRegistrationAccessToken() throws ParseException {
+  void testAnonymousRequestYeldsRegistrationAccessToken() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -557,7 +542,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testSuccesfullRegistration() throws ParseException {
+  void testSuccesfullRegistration() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -577,7 +562,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void noScopeYeldsDefaultScopes() throws ParseException {
+  void noScopeYeldsDefaultScopes() throws ParseException {
 
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
 
@@ -591,7 +576,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRegisteredUserAuthzPolicy() {
+  void testRegisteredUserAuthzPolicy() {
 
     when(clientRegProps.getAllowFor()).thenReturn(REGISTERED_USERS);
     RegisteredClientDTO request = new RegisteredClientDTO();
@@ -614,7 +599,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAdministratorsAuthzPolicy() {
+  void testAdministratorsAuthzPolicy() {
 
     when(clientRegProps.getAllowFor()).thenReturn(ADMINISTRATORS);
     RegisteredClientDTO request = new RegisteredClientDTO();
@@ -641,7 +626,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAuthzComesBeforeLookupForRetrieveClient() {
+  void testAuthzComesBeforeLookupForRetrieveClient() {
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -658,7 +643,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRegisterAndRetrieveWorksForUser() throws ParseException {
+  void testRegisterAndRetrieveWorksForUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -682,7 +667,7 @@ public class ClientRegistrationServiceTests {
 
 
   @Test
-  public void testRegisterAndRetrieveWorksForAnonymousUser() throws ParseException {
+  void testRegisterAndRetrieveWorksForAnonymousUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -709,7 +694,7 @@ public class ClientRegistrationServiceTests {
 
 
   @Test
-  public void testRatClientIdAndScopesAreChecked() throws ParseException {
+  void testRatClientIdAndScopesAreChecked() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -736,12 +721,10 @@ public class ClientRegistrationServiceTests {
     });
 
     assertThat(exception.getMessage(), containsString("Invalid registration access token"));
-
   }
 
-
   @Test
-  public void testSuccesfullDelete() throws ParseException {
+  void testSuccesfullDelete() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -766,7 +749,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAccountAuthzForClientManagement() throws ParseException {
+  void testAccountAuthzForClientManagement() throws ParseException {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
@@ -786,7 +769,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testGranTypesAreCheckedOnUpdate() throws ParseException {
+  void testGranTypesAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -822,7 +805,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRedirectUrisAreCheckedOnUpdate() throws ParseException {
+  void testRedirectUrisAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -842,9 +825,8 @@ public class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString("code requires a valid redirect uri"));
   }
 
-
   @Test
-  public void testRatIsUpdated() throws ParseException {
+  void testRatIsUpdated() throws ParseException {
 
     TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
@@ -880,7 +862,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
+  void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -912,7 +894,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testPrivilegedGrantTypesAreCheckedOnUpdateForAnonymousUser() throws ParseException {
+  void testPrivilegedGrantTypesAreCheckedOnUpdateForAnonymousUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -938,7 +920,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesArePreserved() throws ParseException {
+  void testRestrictedScopesArePreserved() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("restricted-scopes-preserved");
@@ -967,7 +949,7 @@ public class ClientRegistrationServiceTests {
 
 
   @Test
-  public void testRedeemClient() throws ParseException {
+  void testRedeemClient() throws ParseException {
 
     TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
@@ -1022,7 +1004,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testClientWithJwkValue() throws ParseException {
+  void testClientWithJwkValue() throws ParseException {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
     final String VALID_JSON_VALUE =
@@ -1052,7 +1034,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testClientWithJwksUri() throws ParseException {
+  void testClientWithJwksUri() throws ParseException {
 
     final String NOT_A_VALID_URI = "This is not a valid URI";
     final String VALID_URI = "https://host.domain.com/this/is/my/public-key";

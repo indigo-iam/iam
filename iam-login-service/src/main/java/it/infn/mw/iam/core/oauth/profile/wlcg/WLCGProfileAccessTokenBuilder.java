@@ -36,6 +36,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -49,9 +50,9 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
   final AttributeMapHelper attributeHelper;
 
   public WLCGProfileAccessTokenBuilder(IamProperties properties,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
-      WLCGGroupHelper groupHelper, AttributeMapHelper attributeHelper) {
-    super(properties, totpMfaRepository, accountUtils);
+      AttributeMapHelper attributeHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
+    super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.groupHelper = groupHelper;
     this.attributeHelper = attributeHelper;
   }
