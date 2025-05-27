@@ -113,9 +113,9 @@ public class RegistrationApiController {
   public RegistrationRequestDto createRegistrationRequest(
       @Valid @RequestBody @JsonView(
           value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
-      final BindingResult validationResult) {
+      final BindingResult validationResult, final HttpServletRequest httpRequest) {
     handleValidationError(validationResult);
-    return service.createRequest(request, getExternalAuthenticationInfo());
+    return service.createRequest(request, getExternalAuthenticationInfo(), httpRequest);
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")

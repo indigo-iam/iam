@@ -18,13 +18,15 @@ package it.infn.mw.iam.registration;
 import java.util.List;
 import java.util.Optional;
 
+import javax.servlet.http.HttpServletRequest;
+
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 
 public interface RegistrationRequestService {
 
   RegistrationRequestDto createRequest(RegistrationRequestDto request,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo);
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, HttpServletRequest httpRequest);
 
   List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
 

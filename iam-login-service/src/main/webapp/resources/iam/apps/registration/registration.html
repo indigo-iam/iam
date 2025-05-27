@@ -148,6 +148,17 @@
 				<button class="btn btn-warning" type="button"
 					id="register-reset-btn" name="reset" ng-click="rc.reset()"
 					ng-disabled="registrationForm.$pristine">Reset Form</button>
+				
+				<!-- I Can insert my button here, then it should be next to the others in the row-->
+
+				<!-- I should be using the ng-if to determine if the button should be showed based on the enviromentvariables-->
+
+				<!-- I need to import the ctrl and environmentvariable for this to work-->
+
+				<button class="btn btn-success btn-sm" type="link" name="link" ng-click= "rc.linkcertificate()"
+					>
+            	<i class="fa fa-link"></i> {{IAM_X509_CRED}}</button>
+					
 			</div>
 		</form>
 		<div class="overlay" ng-if="busy">

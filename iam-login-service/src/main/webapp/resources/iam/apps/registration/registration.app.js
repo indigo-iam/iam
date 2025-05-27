@@ -15,4 +15,4 @@
  */
 'use strict';
 
-var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies']);
+var app = angular.module('registrationApp', ['ui.bootstrap', 'ngCookies','toaster', 'ui.router']);

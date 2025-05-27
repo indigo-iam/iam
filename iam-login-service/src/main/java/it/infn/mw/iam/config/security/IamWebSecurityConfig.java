@@ -233,6 +233,13 @@ public class IamWebSecurityConfig {
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
     @Autowired
+    private UserLoginConfig userLoginConfig;
+
+    @Autowired
+    @Qualifier("mitreAuthzRequestFilter")
+    private GenericFilterBean authorizationRequestFilter;
+
+    @Autowired
     IamProperties iamProperties;
 
     AccessDeniedHandler accessDeniedHandler() {
@@ -263,7 +270,15 @@ public class IamWebSecurityConfig {
         .antMatchers(START_REGISTRATION_ENDPOINT)
         .and()
         .sessionManagement()
-        .enableSessionUrlRewriting(false);
+        .enableSessionUrlRewriting(false)
+        .and()
+          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+          .anonymous()
+        .and()
+          .csrf()
+            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
+        .addFilter(userLoginConfig.iamX509Filter()) 
+        ;
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()
