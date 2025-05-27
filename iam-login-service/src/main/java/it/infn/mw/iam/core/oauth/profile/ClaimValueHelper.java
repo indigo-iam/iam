@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc.service;
+package it.infn.mw.iam.core.oauth.profile;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-@FunctionalInterface
-public interface OidcUserDetailsService {
+import it.infn.mw.iam.persistence.model.IamUserInfo;
 
-  Object loadUserByOIDC(OIDCAuthenticationToken token);
+public interface ClaimValueHelper {
 
+  Object getClaimValueFromUserInfo(String claim, IamUserInfo info);
 
 }
