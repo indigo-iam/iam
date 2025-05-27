@@ -130,7 +130,7 @@ public class IamOIDCClientFilter extends OIDCAuthenticationFilter {
       form.add("code_verifier", codeVerifier);
     }
 
-    String redirectUri = getStoredSessionString(request.getSession(), REDIRECT_URI_SESION_VARIABLE);
+    String redirectUri = getStoredSessionString(request.getSession(), "redirect_uri");
 
     if (redirectUri != null) {
       form.add("redirect_uri", redirectUri);

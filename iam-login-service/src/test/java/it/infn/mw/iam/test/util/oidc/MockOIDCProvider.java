@@ -15,6 +15,9 @@
  */
 package it.infn.mw.iam.test.util.oidc;
 
+import static it.infn.mw.iam.test.ext_authn.oidc.OidcTestConfig.TEST_OIDC_ISSUER;
+
+import java.util.Map;
 import java.util.UUID;
 
 import org.mitre.jose.keystore.JWKSetKeyStore;
@@ -48,14 +51,20 @@ public class MockOIDCProvider implements OidcTokenRequestor {
     this.mapper = mapper;
   }
 
-  public String buildIdToken(String clientId, String sub, String nonce) throws JOSEException {
-    return buildIdToken(OidcTestConfig.TEST_OIDC_ISSUER, clientId, sub, nonce);
+  public String buildIdToken(String clientId, String sub, String nonce)
+      throws JOSEException {
+    return buildIdToken(OidcTestConfig.TEST_OIDC_ISSUER, clientId, sub, nonce, Map.of());
   }
 
-  public String buildIdToken(String issuer, String clientId, String sub, String nonce)
+  public String buildIdToken(String issuer, String clientId, String sub, String nonce, Map<String, String> customStringClaims)
       throws JOSEException {
-    IdTokenBuilder builder = new IdTokenBuilder(keyStore, signingAlgo);
-    return builder.issuer(issuer).sub(sub).audience(clientId).nonce(nonce).build();
+    IdTokenBuilder builder = new IdTokenBuilder(keyStore, signingAlgo).issuer(issuer)
+      .sub(sub)
+      .audience(clientId)
+      .nonce(nonce);
+
+    customStringClaims.forEach(builder::customClaim);
+    return builder.build();
   }
 
   public String prepareErrorResponse(String error, String errorDescription)
@@ -76,15 +85,15 @@ public class MockOIDCProvider implements OidcTokenRequestor {
 
   public String prepareTokenResponse(String clientId, String sub, String nonce)
       throws JOSEException, JsonProcessingException {
-    return prepareTokenResponse(OidcTestConfig.TEST_OIDC_ISSUER, clientId, sub, nonce);
+    return prepareTokenResponse(TEST_OIDC_ISSUER, clientId, sub, nonce, Map.of());
   }
 
-  public String prepareTokenResponse(String issuer, String clientId, String sub, String nonce)
-      throws JOSEException, JsonProcessingException {
+  public String prepareTokenResponse(String issuer, String clientId, String sub, String nonce,
+      Map<String, String> customStringClaims) throws JOSEException, JsonProcessingException {
 
     TokenResponse tokenResponse = new TokenResponse();
     tokenResponse.setAccessToken(UUID.randomUUID().toString());
-    tokenResponse.setIdToken(buildIdToken(issuer, clientId, sub, nonce));
+    tokenResponse.setIdToken(buildIdToken(issuer, clientId, sub, nonce, customStringClaims));
 
     lastTokenResponse = mapper.writeValueAsString(tokenResponse);
 

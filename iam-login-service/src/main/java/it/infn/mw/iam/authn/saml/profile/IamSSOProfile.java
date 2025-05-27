@@ -15,7 +15,15 @@
  */
 package it.infn.mw.iam.authn.saml.profile;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.xml.namespace.QName;
+
 import org.opensaml.common.SAMLException;
+import org.opensaml.common.SAMLObject;
 import org.opensaml.common.SAMLObjectBuilder;
 import org.opensaml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml2.core.AuthnRequest;
@@ -31,10 +39,10 @@ import org.springframework.security.saml.websso.WebSSOProfileOptions;
 
 public class IamSSOProfile extends WebSSOProfileImpl {
 
-  
   private void spidNameIDPolicy(AuthnRequest request) {
     @SuppressWarnings("unchecked")
-    SAMLObjectBuilder<NameIDPolicy> builder = (SAMLObjectBuilder<NameIDPolicy>) builderFactory.getBuilder(NameIDPolicy.DEFAULT_ELEMENT_NAME);
+    SAMLObjectBuilder<NameIDPolicy> builder = (SAMLObjectBuilder<NameIDPolicy>) builderFactory
+      .getBuilder(NameIDPolicy.DEFAULT_ELEMENT_NAME);
     NameIDPolicy nameIDPolicy = builder.buildObject();
     nameIDPolicy.setFormat(NameID.TRANSIENT);
     request.setNameIDPolicy(nameIDPolicy);
@@ -47,44 +55,77 @@ public class IamSSOProfile extends WebSSOProfileImpl {
 
   private void spidAuthenticationContexts(IamSSOProfileOptions options, AuthnRequest request) {
 
-    @SuppressWarnings("unchecked")
     SAMLObjectBuilder<RequestedAuthnContext> builder =
-        (SAMLObjectBuilder<RequestedAuthnContext>) builderFactory
-          .getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
-    
+        getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
+
     RequestedAuthnContext authnContext = builder.buildObject();
     authnContext.setComparison(options.getAuthnContextComparisonEnum().getComparison());
 
-    @SuppressWarnings("unchecked")
     SAMLObjectBuilder<AuthnContextClassRef> contextRefBuilder =
-        (SAMLObjectBuilder<AuthnContextClassRef>) builderFactory
-          .getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
-    
+        getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
+
     AuthnContextClassRef authnContextClassRef = contextRefBuilder.buildObject();
     authnContextClassRef.setAuthnContextClassRef(options.getSpidAuthenticationLevel().getUrl());
     authnContext.getAuthnContextClassRefs().add(authnContextClassRef);
     request.setRequestedAuthnContext(authnContext);
-
   }
-  
+
+  @SuppressWarnings("unchecked")
+  private <T extends SAMLObject> SAMLObjectBuilder<T> getBuilder(QName elementName) {
+    return (SAMLObjectBuilder<T>) builderFactory.getBuilder(elementName);
+  }
+
+  private void addRefedsAuthnContexts(AuthnRequest request) {
+    RequestedAuthnContext requestedAuthnContext = request.getRequestedAuthnContext();
+    SAMLObjectBuilder<RequestedAuthnContext> builder =
+        getBuilder(RequestedAuthnContext.DEFAULT_ELEMENT_NAME);
+    if (requestedAuthnContext == null) {
+      requestedAuthnContext = builder.buildObject();
+      request.setRequestedAuthnContext(requestedAuthnContext);
+    }
+
+    List<String> requiredClassRefs =
+        Arrays.asList("https://refeds.org/profile/mfa", "https://refeds.org/profile/sfa",
+            "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+            "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified");
+
+    Set<String> existingRefs = requestedAuthnContext.getAuthnContextClassRefs()
+      .stream()
+      .map(AuthnContextClassRef::getAuthnContextClassRef)
+      .collect(Collectors.toSet());
+
+    SAMLObjectBuilder<AuthnContextClassRef> contextRefBuilder =
+        getBuilder(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
+
+    for (String ref : requiredClassRefs) {
+      if (!existingRefs.contains(ref)) {
+        AuthnContextClassRef classRef = contextRefBuilder.buildObject();
+        classRef.setAuthnContextClassRef(ref);
+        requestedAuthnContext.getAuthnContextClassRefs().add(classRef);
+      }
+    }
+  }
+
   @Override
   protected AuthnRequest getAuthnRequest(SAMLMessageContext context, WebSSOProfileOptions options,
       AssertionConsumerService assertionConsumer, SingleSignOnService bindingService)
       throws SAMLException, MetadataProviderException {
-    
-    AuthnRequest request = super.getAuthnRequest(context, options, assertionConsumer, bindingService);
-    
+
+    AuthnRequest request =
+        super.getAuthnRequest(context, options, assertionConsumer, bindingService);
+
+    addRefedsAuthnContexts(request);
+
     if (options instanceof IamSSOProfileOptions) {
-      IamSSOProfileOptions ssoOptions = (IamSSOProfileOptions)options;
+      IamSSOProfileOptions ssoOptions = (IamSSOProfileOptions) options;
       if (ssoOptions.getSpidIdp()) {
         spidNameIDPolicy(request);
         spidIssuer(context, request);
         spidAuthenticationContexts(ssoOptions, request);
-        request.setIsPassive((Boolean)null);
+        request.setIsPassive((Boolean) null);
         request.setAttributeConsumingServiceIndex(ssoOptions.getAttributeConsumerIndex());
       }
     }
-    
     return request;
   }
 }

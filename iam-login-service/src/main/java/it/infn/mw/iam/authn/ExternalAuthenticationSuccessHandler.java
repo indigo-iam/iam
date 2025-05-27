@@ -28,13 +28,13 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 public class ExternalAuthenticationSuccessHandler extends ExternalAuthenticationHandlerSupport
     implements AuthenticationSuccessHandler {
 
-  private final AuthenticationSuccessHandler delegate;
   private final String unregisteredUserTargetURL;
+  private final AuthenticationSuccessHandlerHelper helper;
 
-  public ExternalAuthenticationSuccessHandler(AuthenticationSuccessHandler delegate,
-      String unregisteredUserTargetURL) {
-    this.delegate = delegate;
+  public ExternalAuthenticationSuccessHandler(String unregisteredUserTargetURL,
+      AuthenticationSuccessHandlerHelper helper) {
     this.unregisteredUserTargetURL = unregisteredUserTargetURL;
+    this.helper = helper;
   }
 
   @Override
@@ -49,8 +49,8 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
       restoreSavedAuthentication(session);
       setAccountLinkingDone(session);
 
-      request.getRequestDispatcher(getAccountLinkingForwardTarget(request)).forward(request,
-          response);
+      request.getRequestDispatcher(getAccountLinkingForwardTarget(request))
+        .forward(request, response);
 
     } else {
 
@@ -58,10 +58,9 @@ public class ExternalAuthenticationSuccessHandler extends ExternalAuthentication
         response.sendRedirect(unregisteredUserTargetURL);
 
       } else {
-        delegate.onAuthenticationSuccess(request, response, authentication);
+        helper.handle(request, response, authentication);
+        helper.clearAuthenticationAttributes(request);
       }
-
     }
   }
-
 }
