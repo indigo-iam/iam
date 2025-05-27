@@ -57,10 +57,14 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
+import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
+import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
+import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileAccessTokenBuilder;
@@ -81,7 +85,11 @@ import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGGroupHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTProfile;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserinfoHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
@@ -211,11 +219,20 @@ public class IamConfig {
       ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
-      ClaimValueHelper claimValueHelper, ScopeFilter scopeFilter) {
+      ClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
-    return new WLCGJWTProfile(props, userInfoService, accountRepo, new WLCGGroupHelper(),
-        attributeMapHelper, new DefaultIntrospectionResultAssembler(), registry,
-        claimTranslationService, claimValueHelper, scopeFilter);
+    JWTAccessTokenBuilder accessTokenBuilder =
+        new WLCGProfileAccessTokenBuilder(props, groupHelper, attributeMapHelper, scopeFilter);
+
+    IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
+        claimTranslationService, claimValueHelper, groupHelper, props);
+
+    UserInfoHelper userInfoHelper = new WLCGUserinfoHelper(props, userInfoService);
+    IntrospectionResultHelper introspectionHelper = new WLCGIntrospectionHelper(props,
+        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+
+    return new WLCGJWTProfile(accessTokenBuilder, idTokenCustomizer, userInfoHelper,
+        introspectionHelper, groupHelper);
   }
 
   @Bean

@@ -57,7 +57,7 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
-public class ClientManagementAPIIntegrationTests extends TestSupport {
+class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Autowired
   private MockMvc mvc;
@@ -72,12 +72,12 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
   private IamClientRepository clientRepo;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @AfterEach
-  public void teardown() {
+  void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
@@ -118,37 +118,37 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithAnonymousUser
-  public void clientManagementRequiresAuthenticatedUser() throws Exception {
+  void clientManagementRequiresAuthenticatedUser() throws Exception {
     clientManagementFailsWithResponseForClient(UNAUTHORIZED, "client");
   }
 
   @Test
   @WithMockUser(username = "test", roles = "USER")
-  public void clientManagementIsForbiddenForUsers() throws Exception {
+  void clientManagementIsForbiddenForUsers() throws Exception {
     clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
   }
 
   @Test
   @WithMockOAuthUser(user = "test", scopes = {"openid"})
-  public void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
+  void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
     clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
   }
 
   @Test
   @WithMockOAuthUser(user = "test", scopes = {"iam:admin.read"})
-  public void paginatedGetClientsWorksWithScopes() throws Exception {
+  void paginatedGetClientsWorksWithScopes() throws Exception {
     paginatedGetClientsTest();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void paginatedGetClientsWorksAsAdmin() throws Exception {
+  void paginatedGetClientsWorksAsAdmin() throws Exception {
     paginatedGetClientsTest();
   }
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void clientRemovalWorks() throws Exception {
+  void clientRemovalWorks() throws Exception {
 
     mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
@@ -163,7 +163,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void ratRotationWorks() throws Exception {
+  void ratRotationWorks() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -188,7 +188,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void setTokenLifetimesWorks() throws Exception {
+  void setTokenLifetimesWorks() throws Exception {
 
     String clientJson = ClientJsonStringBuilder.builder()
       .scopes("openid")
@@ -268,7 +268,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void negativeAccessTokenLifetimesSetToDefault() throws Exception {
+  void negativeAccessTokenLifetimesSetToDefault() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1).build();
@@ -282,7 +282,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
+  void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
 
     String clientJson =
         ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1).build();
@@ -296,7 +296,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void setClientEnableWorks() throws Exception {
+  void setClientEnableWorks() throws Exception {
 
    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
@@ -312,7 +312,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
   @Test
   @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
-  public void setClientDisableWorks() throws Exception {
+  void setClientDisableWorks() throws Exception {
 
    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
       .andExpect(OK)
