@@ -108,6 +108,20 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
 
   }
 
+  protected void addAcrClaimIfNeeded(OAuth2AccessTokenEntity accessToken,
+      Map<String, Object> introspectionResult) {
+
+    try {
+      Object acr = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
+      if (acr instanceof String acrString) {
+        introspectionResult.put("acr", acrString);
+      }
+    } catch (ParseException e) {
+      LOG.error("Error getting acr claim out of access token: {}", e.getMessage(), e);
+    }
+
+  }
+
   protected Set<String> filterScopes(OAuth2AccessTokenEntity accessToken, Set<String> authScopes) {
 
     Set<ScopeMatcher> matchers = authScopes.stream()

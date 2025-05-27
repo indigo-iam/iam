@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.multi_factor_authentication.IamAuthentication
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -54,6 +55,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
 
   private static final Predicate<GrantedAuthority> ADMIN_MATCHER =
       a -> a.getAuthority().equals("ROLE_ADMIN");
+  private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
 
   public IamLocalAuthenticationProvider(IamProperties properties, UserDetailsService uds,
       PasswordEncoder passwordEncoder, IamAccountRepository accountRepo,
@@ -77,11 +79,12 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
     boolean isPreAuthenticated = false;
-    if(authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken){
+    if (authentication instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
       isPreAuthenticated = extendedAuthenticationToken.isPreAuthenticated();
     }
-    
-    // If not preauthenticated then the first step is to validate the default login credentials. Therefore, we convert the
+
+    // If not preauthenticated then the first step is to validate the default login credentials.
+    // Therefore, we convert the
     // authentication to a UsernamePasswordAuthenticationToken and super(authenticate) in the
     // default manner
     if (!isPreAuthenticated) {
@@ -89,7 +92,6 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
           authentication.getPrincipal(), authentication.getCredentials());
       authentication = super.authenticate(userpassToken);
     }
-    
 
     IamAccount account = accountRepo.findByUsername(authentication.getName())
       .orElseThrow(() -> new BadCredentialsException("Invalid login details"));
@@ -124,6 +126,7 @@ public class IamLocalAuthenticationProvider extends DaoAuthenticationProvider {
       token.setAuthenticated(false);
       token.setAuthenticationMethodReferences(refs);
       token.setFullyAuthenticatedAuthorities(fullyAuthenticatedAuthorities);
+      token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     } else {
       // MFA is not enabled on this account, construct a new authentication object for the FULLY
       // AUTHENTICATED user, granting their normal authorities

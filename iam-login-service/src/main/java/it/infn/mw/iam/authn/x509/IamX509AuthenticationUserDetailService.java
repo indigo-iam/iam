@@ -16,12 +16,12 @@
 package it.infn.mw.iam.authn.x509;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -43,28 +43,31 @@ public class IamX509AuthenticationUserDetailService
   public static final Logger LOG =
       LoggerFactory.getLogger(IamX509AuthenticationUserDetailService.class);
 
+  private static final String ACR_VALUE_MFA = "https://refeds.org/profile/mfa";
+
   IamAccountRepository accountRepository;
   IamTotpMfaRepository totpMfaRepository;
   InactiveAccountAuthenticationHander inactiveAccountHandler;
 
-  @Autowired
-  public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
-      InactiveAccountAuthenticationHander handler) {
+  public IamX509AuthenticationUserDetailService(IamAccountRepository accountRepository,
+      IamTotpMfaRepository totpMfaRepository, InactiveAccountAuthenticationHander handler) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.inactiveAccountHandler = handler;
   }
 
-  protected UserDetails buildUserFromIamAccount(IamAccount account) {
+  protected UserDetails buildUserFromIamAccount(IamAccount account,
+      PreAuthenticatedAuthenticationToken token) {
 
     inactiveAccountHandler.handleInactiveAccount(account);
 
     Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
-    
-    if(totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()){
+
+    if (totpMfaOptional.isPresent() && totpMfaOptional.get().isActive()) {
       addPreAuthenticatedRole(account);
+      token.setDetails(Map.of("acr", ACR_VALUE_MFA));
     }
-    
+
     return AuthenticationUtils.userFromIamAccount(account);
   }
 
@@ -90,7 +93,7 @@ public class IamX509AuthenticationUserDetailService
 
     LOG.debug("Found IAM account {} linked to principal '{}'", account, principal);
 
-    return buildUserFromIamAccount(account);
+    return buildUserFromIamAccount(account, token);
 
   }
 

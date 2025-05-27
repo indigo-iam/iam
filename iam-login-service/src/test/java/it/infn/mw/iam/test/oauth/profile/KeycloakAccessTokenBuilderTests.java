@@ -40,10 +40,12 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.google.common.collect.Maps;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
@@ -54,10 +56,16 @@ class KeycloakAccessTokenBuilderTests {
   IamProperties properties = new IamProperties();
 
   @Mock
+  AccountUtils accountUtils;
+
+  @Mock
+  IamTotpMfaRepository totpMfaRepository;
+
+  @Mock
   ScopeClaimTranslationService scService;
 
   @Mock
-  ClaimValueHelper claimValueHelper;
+  IamClaimValueHelper claimValueHelper;
 
   @Mock
   OAuth2AccessTokenEntity tokenEntity;
@@ -87,7 +95,8 @@ class KeycloakAccessTokenBuilderTests {
   @BeforeEach
   void setup() {
 
-    tokenBuilder = new KeycloakProfileAccessTokenBuilder(properties, groupHelper, scopeFilter);
+    tokenBuilder = new KeycloakProfileAccessTokenBuilder(properties, totpMfaRepository,
+        accountUtils, groupHelper, scopeFilter);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");

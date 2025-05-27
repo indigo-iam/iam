@@ -72,7 +72,7 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileTokenIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfileUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
@@ -107,6 +107,7 @@ import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 
@@ -153,12 +154,13 @@ public class IamConfig {
   }
 
   @Bean(name = "aarcJwtProfile")
-  JWTProfile aarcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
+  JWTProfile aarcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, AarcClaimValueHelper claimHelper,
       UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
 
-    AarcJWTProfileAccessTokenBuilder atBuilder =
-        new AarcJWTProfileAccessTokenBuilder(props, converter, claimHelper, scopeFilter);
+    AarcJWTProfileAccessTokenBuilder atBuilder = new AarcJWTProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, scopeFilter, converter, claimHelper);
 
     AarcJWTProfileUserinfoHelper uiHelper =
         new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
@@ -173,14 +175,16 @@ public class IamConfig {
   }
 
   @Bean(name = "kcJwtProfile")
-  JWTProfile kcJwtProfile(IamProperties props, IamAccountRepository accountRepo,
+  JWTProfile kcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, UserInfoService userInfoService,
-      ScopeMatcherRegistry registry, ClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
+      ScopeMatcherRegistry registry, IamClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
     KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, groupHelper, scopeFilter);
+        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
+            scopeFilter);
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
@@ -194,13 +198,14 @@ public class IamConfig {
   }
 
   @Bean(name = "iamJwtProfile")
-  JWTProfile iamJwtProfile(IamProperties props, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, ClaimValueHelper claimHelper,
+  JWTProfile iamJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, IamAccountRepository accountRepo,
+      ScopeClaimTranslationService converter, IamClaimValueHelper claimHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
 
-    IamJWTProfileAccessTokenBuilder atBuilder =
-        new IamJWTProfileAccessTokenBuilder(props, converter, claimHelper, scopeFilter);
+    IamJWTProfileAccessTokenBuilder atBuilder = new IamJWTProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, converter, claimHelper, scopeFilter);
 
     IamJWTProfileUserinfoHelper uiHelper =
         new IamJWTProfileUserinfoHelper(props, userInfoService, proc);
@@ -215,14 +220,15 @@ public class IamConfig {
   }
 
   @Bean(name = "wlcgJwtProfile")
-  JWTProfile wlcgJwtProfile(IamProperties props, IamAccountRepository accountRepo,
+  JWTProfile wlcgJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
-      ClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
+      IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
     JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, groupHelper, attributeMapHelper, scopeFilter);
+        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
         claimTranslationService, claimValueHelper, groupHelper, props);

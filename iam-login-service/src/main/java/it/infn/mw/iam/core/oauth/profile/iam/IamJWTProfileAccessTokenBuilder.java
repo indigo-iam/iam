@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
 import static java.util.stream.Collectors.joining;
 
 import java.time.Instant;
@@ -30,8 +30,10 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
@@ -39,12 +41,13 @@ import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final ClaimValueHelper claimValueHelper;
+  protected final IamClaimValueHelper claimValueHelper;
 
   public IamJWTProfileAccessTokenBuilder(IamProperties properties,
-      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
+      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
       ScopeFilter scopeFilter) {
-    super(properties, scopeFilter);
+    super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.scopeClaimConverter = scopeClaimConverter;
     this.claimValueHelper = claimValueHelper;
   }
@@ -74,5 +77,4 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     return builder.build();
   }
-
 }

@@ -34,12 +34,13 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
 /**
- * Used in the MFA verification flow. Receives either a TOTP and constructs the
- * authentication request with this parameter. The request is passed to dedicated authentication
- * providers which will create the full authentication or raise the appropriate exception
+ * Used in the MFA verification flow. Receives either a TOTP and constructs the authentication
+ * request with this parameter. The request is passed to dedicated authentication providers which
+ * will create the full authentication or raise the appropriate exception
  */
 public class MultiFactorVerificationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -69,30 +70,34 @@ public class MultiFactorVerificationFilter extends AbstractAuthenticationProcess
     }
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (!(auth instanceof ExtendedAuthenticationToken)) {
+    if (!(auth instanceof ExtendedAuthenticationToken)
+        && !(auth instanceof AbstractExternalAuthenticationToken)) {
       throw new AuthenticationServiceException("Bad authentication");
     }
 
-    ExtendedAuthenticationToken authRequest = (ExtendedAuthenticationToken) auth;
+    return processTotpAuthentication(auth, request);
+  }
 
+  private Authentication processTotpAuthentication(Authentication auth,
+      HttpServletRequest request) {
     // Parse TOTP from request (only one should be set)
     String totp = parseTotp(request);
-
-    if (totp != null) {
-      authRequest.setTotp(totp);
-    } else {
-      throw new ProviderNotFoundException("No valid totp code was received");
+    if (totp == null) {
+      throw new ProviderNotFoundException("No valid TOTP code was received");
     }
 
-    Authentication fullAuthentication = this.getAuthenticationManager().authenticate(authRequest);
+    if (auth instanceof ExtendedAuthenticationToken extendedAuthenticationToken) {
+      extendedAuthenticationToken.setTotp(totp);
+    } else if (auth instanceof AbstractExternalAuthenticationToken<?> externalAuthenticationToken) {
+      externalAuthenticationToken.setTotp(totp);
+    }
+
+    Authentication fullAuthentication = getAuthenticationManager().authenticate(auth);
     if (fullAuthentication == null) {
-      throw new ProviderNotFoundException("No valid totp code was received");
+      throw new ProviderNotFoundException("No valid TOTP code was received");
     }
 
-    if (authRequest.getTotp() != null) {
-      request.setAttribute(TOTP_VERIFIED, Boolean.TRUE);
-    }
-
+    request.setAttribute(TOTP_VERIFIED, Boolean.TRUE);
     return fullAuthentication;
   }
 

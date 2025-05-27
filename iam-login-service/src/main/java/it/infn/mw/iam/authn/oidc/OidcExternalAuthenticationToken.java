@@ -53,13 +53,27 @@ public class OidcExternalAuthenticationToken
   }
 
   @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getClass().getSimpleName()).append(" [");
+    sb.append("Principal=").append(getPrincipal()).append(", ");
+    sb.append("Credentials=[PROTECTED], ");
+    sb.append("Authenticated=").append(isAuthenticated()).append(", ");
+    sb.append("Details=").append(getDetails()).append(", ");
+    sb.append("Granted Authorities=").append(this.getAuthorities()).append(", ");
+    sb.append("Authentication Method References=").append(this.getAuthenticationMethodReferences());
+    sb.append("TOTP=").append(this.getTotp());
+    sb.append("]");
+    return sb.toString();
+  }
+
+  @Override
   public Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor) {
     return visitor.buildInfoMap(this);
   }
 
   @Override
   public ExternalAuthenticationRegistrationInfo toExernalAuthenticationRegistrationInfo() {
-
     ExternalAuthenticationRegistrationInfo ri =
         new ExternalAuthenticationRegistrationInfo(ExternalAuthenticationType.OIDC);
 
@@ -75,7 +89,6 @@ public class OidcExternalAuthenticationToken
     }
 
     ri.getAdditionalAttributes().putAll(buildAuthnInfoMap());
-
     return ri;
   }
 
@@ -98,5 +111,4 @@ public class OidcExternalAuthenticationToken
 
     return infoMap;
   }
-
 }

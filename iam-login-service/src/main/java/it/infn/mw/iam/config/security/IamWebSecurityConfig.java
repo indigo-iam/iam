@@ -52,6 +52,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
 import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
@@ -77,7 +78,7 @@ import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 public class IamWebSecurityConfig {
 
   @Bean
-  public SecurityEvaluationContextExtension contextExtension() {
+  SecurityEvaluationContextExtension contextExtension() {
     return new SecurityEvaluationContextExtension();
   }
 
@@ -150,7 +151,7 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(), certRepo);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo);
     }
 
     protected AuthenticationEntryPoint entryPoint() {
@@ -180,7 +181,7 @@ public class IamWebSecurityConfig {
           .formLogin()
             .loginPage("/login")
             .failureUrl("/login?error=failure")
-            .successHandler(successHandler())
+            .successHandler(successHandler(authenticationSuccessHandlerHelper()))
         .and()
           .exceptionHandling()
             .authenticationEntryPoint(entryPoint())
@@ -207,18 +208,23 @@ public class IamWebSecurityConfig {
       return new OAuth2WebSecurityExpressionHandler();
     }
 
+    @Bean
+    public AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
+      return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
+          aupSignatureCheckService, accountRepo);
+    }
+
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {
-      return new ExtendedAuthenticationFilter(this.authenticationManager(), successHandler(),
-          failureHandler());
+      return new ExtendedAuthenticationFilter(this.authenticationManager(),
+          successHandler(authenticationSuccessHandlerHelper()), failureHandler());
     }
 
     public ExtendedHttpServletRequestFilter extendedHttpServletRequestFilter() {
       return new ExtendedHttpServletRequestFilter();
     }
 
-    public AuthenticationSuccessHandler successHandler() {
-      return new CheckMultiFactorIsEnabledSuccessHandler(accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo);
+    public AuthenticationSuccessHandler successHandler(AuthenticationSuccessHandlerHelper helper) {
+      return new CheckMultiFactorIsEnabledSuccessHandler(helper);
     }
 
     public AuthenticationFailureHandler failureHandler() {
@@ -283,6 +289,9 @@ public class IamWebSecurityConfig {
   @Order(105)
   public static class ExternalOidcLogin extends WebSecurityConfigurerAdapter {
 
+    @Value("${iam.baseUrl}")
+    private String iamBaseUrl;
+
     @Autowired
     @Qualifier("OIDCAuthenticationManager")
     private AuthenticationManager oidcAuthManager;
@@ -311,19 +320,21 @@ public class IamWebSecurityConfig {
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
+
       // @formatter:off
       http
         .antMatcher("/openid_connect_login**")
           .exceptionHandling()
             .authenticationEntryPoint(authenticationEntryPoint())
         .and()
-          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class).authorizeRequests()
+          .addFilterAfter(oidcFilter, SecurityContextPersistenceFilter.class)
+          .authorizeRequests()
         .antMatchers("/openid_connect_login**")
           .permitAll()
         .and()
           .sessionManagement()
-            .enableSessionUrlRewriting(false)
-            .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
+          .enableSessionUrlRewriting(false)
+          .sessionCreationPolicy(SessionCreationPolicy.ALWAYS);
       // @formatter:on
     }
   }

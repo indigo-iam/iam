@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.openid.connect.model.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +42,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 
 @SuppressWarnings("deprecation")
@@ -62,8 +65,15 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
 
-  protected BaseAccessTokenBuilder(IamProperties properties, ScopeFilter scopeFilter) {
+  protected final IamTotpMfaRepository totpMfaRepository;
+
+  protected final AccountUtils accountUtils;
+
+  protected BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter) {
     this.properties = properties;
+    this.totpMfaRepository = totpMfaRepository;
+    this.accountUtils = accountUtils;
     this.scopeFilter = scopeFilter;
   }
 
@@ -170,9 +180,17 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       handleClientTokenExchange(builder, token, authentication, userInfo);
     }
 
+    addAcrClaimIfNeeded(builder, authentication);
+
     token.setScope(scopeFilter.filterScopes(token.getScope(), authentication));
 
     return builder;
   }
 
+  protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
+    if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
+        && savedAuth.getAdditionalInfo().get("acr") != null) {
+      builder.claim("acr", savedAuth.getAdditionalInfo().get("acr"));
+    }
+  }
 }
