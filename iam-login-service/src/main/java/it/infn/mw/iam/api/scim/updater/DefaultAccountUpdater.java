@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -48,6 +49,34 @@ public class DefaultAccountUpdater<T, E extends AccountEvent> extends DefaultUpd
   public IamAccount getAccount() {
     return this.account;
   }
+
+
+  // Supressing warning for unchecked as it is handled by the if/else
+  @SuppressWarnings("unchecked")
+  public <A> A getNewValue(Class<A> clazz) {
+
+
+    // I'm assuming the newValue only has 1 item in the list as only one thing gets changed at a
+    // time in the account
+    // Should this differ then this method can be changed to get the first instance of the newValue
+    // of the requested type pr default and
+    // alternatively return the x'st value of the given type given a index parameter x
+
+    if (((ArrayList<?>) this.newValue).get(0).getClass().equals(clazz)) {
+      return ((ArrayList<A>) this.newValue).get(0);
+    } else {
+      throw new ClassCastException(
+          String.format("The newValue parameter is of type %s and the type declared was %s",
+              ((ArrayList<?>) this.newValue).get(0).getClass(), clazz));
+    }
+
+  }
+
+  // Method below is in case you casttype after having made the call
+  public <A> A getNewValue() {
+    return ((ArrayList<A>) newValue).get(0);
+  }
+
 
   @Override
   public void publishUpdateEvent(Object source, ApplicationEventPublisher publisher) {

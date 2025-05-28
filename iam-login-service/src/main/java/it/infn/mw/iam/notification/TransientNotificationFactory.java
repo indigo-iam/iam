@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -43,6 +42,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
+import it.infn.mw.iam.api.scim.updater.AccountUpdater;
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -53,6 +54,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -76,7 +78,6 @@ public class TransientNotificationFactory implements NotificationFactory {
   private final GroupManagerNotificationDeliveryStrategy groupManagerDeliveryStrategy;
   private final Configuration freeMarkerConfiguration;
 
-  @Autowired
   public TransientNotificationFactory(Configuration fm, NotificationProperties np,
       AdminNotificationDeliveryStrategy ands, GroupManagerNotificationDeliveryStrategy gmds) {
     this.freeMarkerConfiguration = fm;
@@ -436,7 +437,8 @@ public class TransientNotificationFactory implements NotificationFactory {
     String subject = "Account's service account status revoked";
 
     IamEmailNotification notification = createMessage("accountRevokeServiceAccount.ftl", model,
-        IamNotificationType.REVOKE_SERVICE_ACCOUNT, subject, asList(account.getUserInfo().getEmail()));
+        IamNotificationType.REVOKE_SERVICE_ACCOUNT, subject,
+        asList(account.getUserInfo().getEmail()));
 
     LOG.debug("Created service account revoke message for the account {}", account.getUuid());
 
@@ -454,11 +456,11 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Multi-factor authentication (MFA) enabled";
 
-    IamEmailNotification notification =
-        createMessage("mfaEnable.ftl", model, IamNotificationType.MFA_ENABLE,
-            subject, asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("mfaEnable.ftl", model,
+        IamNotificationType.MFA_ENABLE, subject, asList(account.getUserInfo().getEmail()));
 
-    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}", account.getUuid());
+    LOG.debug("Created Multi-factor authentication (MFA) enabled message for the account {}",
+        account.getUuid());
 
     return notification;
   }
@@ -473,11 +475,11 @@ public class TransientNotificationFactory implements NotificationFactory {
 
     String subject = "Multi-factor authentication (MFA) disabled";
 
-    IamEmailNotification notification =
-        createMessage("mfaDisable.ftl", model, IamNotificationType.MFA_DISABLE,
-            subject, asList(account.getUserInfo().getEmail()));
+    IamEmailNotification notification = createMessage("mfaDisable.ftl", model,
+        IamNotificationType.MFA_DISABLE, subject, asList(account.getUserInfo().getEmail()));
 
-    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}", account.getUuid());
+    LOG.debug("Created Multi-factor authentication (MFA) disabled message for the account {}",
+        account.getUuid());
 
     return notification;
   }
@@ -508,4 +510,142 @@ public class TransientNotificationFactory implements NotificationFactory {
       return null;
     }
   }
+
+
+
+  @Override
+  public IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+
+
+    // Don't think typecasting is the best, but this would be how
+    // IamX509Certificate newValue= ((ArrayList<IamX509Certificate>) u.getNewValue()).get(0);
+
+    IamX509Certificate addedCertificate = u.getNewValue(IamX509Certificate.class);
+
+    String issuerDn = addedCertificate.getIssuerDn();
+    String subjectDn = addedCertificate.getSubjectDn();
+
+    String subject = "New x509Certificate linked to user";
+
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
+            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+  @Override
+  public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+    String issuerDn = x509Credential.getIssuer();
+    String subjectDn = x509Credential.getSubject();
+
+    String subject = "New x509Certificate linked to user";
+
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
+            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+
+
+  @Override
+  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      AccountUpdater u) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+
+
+    // Don't think typecasting is the best, but this would be how
+    // IamX509Certificate newValue = ((ArrayList<IamX509Certificate>) u.getNewValue()).get(0);
+
+    IamX509Certificate removedCertificate = u.getNewValue(IamX509Certificate.class);
+
+    String issuerDn = removedCertificate.getIssuerDn();
+    String subjectDn = removedCertificate.getSubjectDn();
+
+    String subject = "Removed x509Certificate from user";
+
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+
+  @Override
+  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Certificate) {
+
+    String name = account.getUserInfo().getName();
+    String username = account.getUsername();
+    String email = account.getUserInfo().getEmail();
+
+    String issuerDn = x509Certificate.getIssuerDn();
+    String subjectDn = x509Certificate.getSubjectDn();
+
+    String subject = "Removed x509Certificate from user";
+
+    Map<String, Object> model =
+        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
+
+    return notification;
+
+  }
+
+  private Map<String, Object> generateCertificateModel(String name, String username, String email,
+      String organisationName, String subjectDn, String issuerDn) {
+    Map<String, Object> model = new HashMap<>();
+    model.put("name", name);
+    model.put(USERNAME_FIELD, username);
+    model.put("email", email);
+    model.put(ORGANISATION_NAME, organisationName);
+    model.put("subjectDn", subjectDn);
+    model.put("issuerDn", issuerDn);
+
+    return model;
+  }
+
+
 }

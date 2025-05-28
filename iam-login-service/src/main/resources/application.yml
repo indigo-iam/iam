@@ -201,7 +201,7 @@ x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
   tlsVersion: ${IAM_X509_TLS_VERSION:TLSv1}
-    
+   
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:false}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
@@ -209,6 +209,7 @@ notification:
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
   admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
+  certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:false}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
   subject-prefix: "[${iam.organisation.name} IAM]"
   subject:

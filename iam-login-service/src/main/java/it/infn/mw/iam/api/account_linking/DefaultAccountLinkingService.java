@@ -21,6 +21,7 @@ import static java.lang.String.format;
 import java.security.Principal;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -37,6 +38,9 @@ import it.infn.mw.iam.authn.ExternalAccountLinker;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.error.AccountAlreadyLinkedError;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
+import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
+import it.infn.mw.iam.notification.NotificationProperties.AdminNotificationPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -53,12 +57,17 @@ public class DefaultAccountLinkingService
   final IamX509CertificateRepository certificateRepository;
   final ExternalAccountLinker externalAccountLinker;
   private ApplicationEventPublisher eventPublisher;
+  private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
 
   public DefaultAccountLinkingService(IamAccountRepository repo,
-      IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker) {
+      IamX509CertificateRepository certificateRepository, ExternalAccountLinker linker,
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
     this.iamAccountRepository = repo;
     this.certificateRepository = certificateRepository;
     this.externalAccountLinker = linker;
+    this.notificationFactory = notificationFactory;
+    this.notificationProperties = notificationProperties;
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -136,6 +145,7 @@ public class DefaultAccountLinkingService
     }
   }
 
+
   @Override
   public void linkX509Certificate(Principal authenticatedUser,
       IamX509AuthenticationCredential x509Credential) {
@@ -187,14 +197,35 @@ public class DefaultAccountLinkingService
               userAccount.getUsername(), x509Credential.getSubject()),
           x509Credential));
     }
+
+    notificationProperties.getAdminNotificationPolicy();
+    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
+        && (notificationProperties.getAdminNotificationPolicy()
+          .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+            || notificationProperties.getAdminNotificationPolicy()
+              .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
+      notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
+    }
   }
+
+
 
   @Override
   public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject) {
     IamAccount userAccount = findAccount(authenticatedUser);
 
-    boolean removed = userAccount.getX509Certificates()
-      .removeIf(c -> c.getSubjectDn().equals(certificateSubject));
+    boolean removed = false;
+
+    IamX509Certificate certificate = null;
+
+    Set<IamX509Certificate> certificates = userAccount.getX509Certificates();
+    for (IamX509Certificate cert : certificates) {
+      if (cert.getSubjectDn().equals(certificateSubject)) {
+        certificate = cert;
+        break;
+      }
+    }
+    removed = certificates.remove(certificate);
 
     if (removed) {
       userAccount.touch();
@@ -204,7 +235,17 @@ public class DefaultAccountLinkingService
           String.format("User '%s' unlinked certificate with subject '%s' from his/her membership",
               userAccount.getUsername(), certificateSubject),
           certificateSubject));
+
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
+          && (notificationProperties.getAdminNotificationPolicy()
+            .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+              || notificationProperties.getAdminNotificationPolicy()
+                .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
+        notificationFactory.createUnlinkedCertificateMessage(userAccount, certificate);
+      }
     }
+
+
   }
 
   @Override

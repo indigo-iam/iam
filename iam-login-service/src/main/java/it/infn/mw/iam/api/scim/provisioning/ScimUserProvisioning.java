@@ -67,6 +67,8 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
+import it.infn.mw.iam.notification.NotificationProperties.AdminNotificationPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -75,19 +77,20 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
-      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
-      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
-      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
-      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
-      ACCOUNT_REPLACE_SERVICE_ACCOUNT);
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
+          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
+          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
+          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
+          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
+          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT);
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -96,8 +99,9 @@ public class ScimUserProvisioning
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties) {
 
+    this.notificationProperties = notificationProperties;
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
@@ -290,6 +294,27 @@ public class ScimUserProvisioning
         notificationFactory.createSetAsServiceAccountMessage(account);
       } else {
         notificationFactory.createRevokeServiceAccountMessage(account);
+      }
+    }
+
+    // Checking if Admins are in the notification policy
+    if (notificationProperties.getAdminNotificationPolicy()
+      .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
+        || notificationProperties.getAdminNotificationPolicy()
+          .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS)) {
+
+      // Checking if the certificate update is true and only then is it generating the
+      // notification/log update
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+        if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
+          notificationFactory.createLinkedCertificateMessage(account, u);
+
+        }
+
+        else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
+          notificationFactory.createUnlinkedCertificateMessage(account, u);
+
+        }
       }
     }
   }
