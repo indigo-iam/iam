@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.12.0 (2025-05-29)
+
+### What's Changed
+
+* Integrate MFA with external OIDC and SAML providers by @rmiccoli in #918
+* Log the outcome of a VOMS proxy request by @enricovianello in #921
+* Upgrade dependencies and minor cleanups by @enricovianello in #966
+* Add PATCH replace operation to SCIM Group endpoint by @mmutadich in #955
+* Support no mandatory notes on registration by @Sae126V in #948
+* Allow users to see group's labels from dashboard by @rmiccoli in #944
+* Support DER & URL-Encoded PEM client certificates by @balciiberk in #938
+* Add support for `voperson_id` claim in the AARC JWT profile by @S203932 in #958 
+* Add support for resource parameter by @federicaagostini in #916 
+* Show the number of active users by @rmiccoli in #943
+* Add endpoint to search users by their authority by @federicaagostini in #940 
+* Allow to customize the email subject prefix by @federicaagostini in #941 
+* Integrate MFA with x.509 authentication by @garaimanoj in #926 
+* Assign oidc-agent clients ownership to the whom approved it by @federicaagostini in #917
+* AUP exemption for service accounts by @garaimanoj in #811 
+* Add a READER role that gives read access to users and groups info by @garaimanoj in #842 
+* Support JDBC session on same db by @DonaldChung-HK in #898 
+
+### What's Fixed
+
+* Fix scope policy filter when refresh token has been already issued by @enricovianello
+* Fix blank user's detail view for group managers by @rmiccoli in #967
+* Fix Device Code Flow null pointer error by @enricovianello
+* Avoid persisting too long request parameters by @garaimanoj in #957
+* Change the message when identifying with X509 and the account is suspended by @rmiccoli in #965
+* Fix missing delete label event by @enricovianello in #950 
+
+### MFA experimental feature summary (updated)
+
+* Each authenticated user can enable/disable MFA through a button in their homepage
+  * user will use an authenticator, as it is required to generate the time-based one-time passwords (TOTPs) necessary for authentication
+* If issues arise with the authenticator, the IAM administrator can disable MFA for a user
+* Authenticator working with all the supported authentication mechanisms: local credentials, X.509 certificates and external providers
+* Encryption and decryption of MFA secrets
+
 ## 1.11.2 (2025-05-28)
 
 ### What's Fixed
