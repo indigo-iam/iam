@@ -266,7 +266,8 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      http.requestMatchers()
+      if(iamProperties.getRegistration().isRequireCertificate()){
+        http.requestMatchers()
         .antMatchers(START_REGISTRATION_ENDPOINT)
         .and()
         .sessionManagement()
@@ -277,8 +278,16 @@ public class IamWebSecurityConfig {
         .and()
           .csrf()
             .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
-        .addFilter(userLoginConfig.iamX509Filter()) 
-        ;
+        .addFilter(userLoginConfig.iamX509Filter()) ;
+      }else{
+        http.requestMatchers()
+        .antMatchers(START_REGISTRATION_ENDPOINT)
+        .and()
+        .sessionManagement()
+        .enableSessionUrlRewriting(false);
+      }
+
+      
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()

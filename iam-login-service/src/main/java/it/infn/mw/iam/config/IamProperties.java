@@ -231,6 +231,8 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
+
+    boolean requireCertificate = false;
     
     boolean addNicknameAsAttribute = false;
 
@@ -282,6 +284,14 @@ public class IamProperties {
 
     public void setOidcIssuer(String oidcIssuer) {
       this.oidcIssuer = oidcIssuer;
+    }
+
+    public boolean isRequireCertificate (){
+      return requireCertificate;
+    }
+
+    public void setRequireCertificate(boolean requireCertificate){
+      this.requireCertificate = requireCertificate;
     }
 
     public String getSamlEntityId() {

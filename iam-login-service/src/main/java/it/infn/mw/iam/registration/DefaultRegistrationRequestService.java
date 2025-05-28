@@ -204,19 +204,7 @@ public class DefaultRegistrationRequestService
       }
     }
 
-    // Here I wanna query the HttpServlet for a session attribute that is the certificate
-
-    HttpSession session = request.getSession(false);
-
-    // Better approach, I need to have it extract the certificate information before this point. 
-    // Even better if I could have done it when the front-end is initialized
-
-
-    
-
-
-
-
+ 
 
     ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(dto.getGivenname(), dto.getFamilyname())
@@ -225,8 +213,10 @@ public class DefaultRegistrationRequestService
       .password(dto.getPassword());
 
 
+    if(iamProperties.getRegistration().isRequireCertificate()){
 
-    try {
+      HttpSession session = request.getSession(false);
+      
       IamX509AuthenticationCredential cred = Optional.ofNullable(
         (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
         .orElseThrow(() -> new IllegalArgumentException(
@@ -238,16 +228,8 @@ public class DefaultRegistrationRequestService
 
       ScimX509Certificate fin = X509Converter.dtoFromEntity(cert);
 
-      //linkingService.linkX509Certificate(principal, cred);
-      //saveX509LinkingSuccess(cred, attributes);
-
-     
-
       userBuilder.addX509Certificate(fin);
 
-    } catch (Exception ex) {
-      
-      //saveAccountLinkingError(ex, attributes);
     }
     
     

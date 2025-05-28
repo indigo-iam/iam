@@ -244,8 +244,6 @@ function RegistrationController(
 	}
 	
 	function linkcertificate(){
-		//$scope.request.subjectdn = 'Another';
-		//$scope.request.issuerdn =  'One';
 		vm.getUserCertSubject(); 
 		vm.getUserCertIssuer();
 		$scope.request.certificate = IAM_X509_CRED;

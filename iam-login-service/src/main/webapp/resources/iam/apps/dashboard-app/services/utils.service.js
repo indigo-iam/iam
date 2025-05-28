@@ -17,13 +17,7 @@
 
     'use strict';
     
-
-    var appModule = angular.module('dashboardApp') ? 'dashboardApp' : 'registrationApp';
-
-    angular.module(appModule).factory("Utils", Utils);
-
-    //angular.module('dashboardApp').factory("Utils", Utils);
-    //angular.module('registrationApp').factory("Utils", Utils);
+    angular.module('dashboardApp').factory("Utils", Utils);
 
     Utils.$inject = [];
 
