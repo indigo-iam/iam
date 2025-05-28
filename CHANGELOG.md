@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.2 (2025-05-28)
+
+### What's Fixed
+
+* Fix scope policy filter when refresh token has been already issued by @enricovianello in https://github.com/indigo-iam/iam/pull/982
+
 ## 1.11.1 (2025-05-12)
 
 ### What's Fixed
