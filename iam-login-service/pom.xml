@@ -33,8 +33,6 @@
   <description>The INDIGO IAM login service</description>
 
   <properties>
-    <!-- needed fix to remove Eclipse issue on running jUnit tests -->
-    <jacocoArgLine>${argLine}</jacocoArgLine>
     <test-clock.version>1.0.2</test-clock.version>
     <eclipselink.version>2.7.9</eclipselink.version>
     <javax.persistence.version>2.2.1</javax.persistence.version>
@@ -490,7 +488,7 @@
           <!-- Jacoco prepare-agent builds some command-line params without -->
           <!-- which jacoco will not instrument. Hence it is important to add -->
           <!-- those command-line params here (${argLine} holds those params) -->
-          <argLine>${jacocoArgLine} ${jvm.test.args}</argLine>
+          <argLine>@{argLine} ${jvm.test.args}</argLine>
           <runOrder>alphabetical</runOrder>
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>
