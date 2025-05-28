@@ -20,10 +20,6 @@
         .module('dashboardApp')
         .service('HttpUtilsService', HttpUtilsService)
 
-    angular
-        .module('registrationApp')
-        .service('HttpUtilsService', HttpUtilsService)
-
 
     HttpUtilsService.$inject = ['$http', '$q'];
 

@@ -165,7 +165,6 @@ iam:
         read-only: false
         external-auth-attribute: affiliation
         field-behaviour: optional
-
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}

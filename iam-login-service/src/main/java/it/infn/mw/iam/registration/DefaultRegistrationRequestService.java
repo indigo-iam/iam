@@ -218,7 +218,6 @@ public class DefaultRegistrationRequestService
     }
 
 
-
     ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(dto.getGivenname(), dto.getFamilyname())
       .buildEmail(dto.getEmail())
