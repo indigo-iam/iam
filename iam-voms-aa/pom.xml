@@ -134,6 +134,26 @@
     <dependency>
       <groupId>org.italiangrid</groupId>
       <artifactId>voms-api-java</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpkix-jdk15on</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
     </dependency>
 
     <dependency>
@@ -253,9 +273,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Jacoco prepare-agent builds some command-line params without -->
-          <!-- which jacoco will not instrument. Hence it is important to add -->
-          <!-- those command-line params here (${argLine} holds those params) -->
+					<!-- Jacoco prepare-agent builds some command-line params without -->
+					<!-- which jacoco will not instrument. Hence it is important to add -->
+					<!-- those command-line params here (${argLine} holds those params) -->
           <argLine>${argLine} ${jvm.test.args}</argLine>
           <runOrder>alphabetical</runOrder>
           <useSystemClassLoader>false</useSystemClassLoader>
