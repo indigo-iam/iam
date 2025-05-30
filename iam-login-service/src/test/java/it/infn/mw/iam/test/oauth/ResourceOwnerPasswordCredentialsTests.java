@@ -248,7 +248,9 @@ public class ResourceOwnerPasswordCredentialsTests {
       .andExpect(status().isOk());
     // @formatter:on
 
-    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(1));
+    // empty: ATs are not stored on database
+    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(0));
+
     assertThat(tokenService.getAllRefreshTokensForUser(USERNAME), hasSize(1));
 
     IamAccount testAccount = accountRepo.findByUsername(USERNAME)

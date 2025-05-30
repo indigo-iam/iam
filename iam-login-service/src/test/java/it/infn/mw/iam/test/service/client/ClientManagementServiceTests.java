@@ -98,7 +98,7 @@ class ClientManagementServiceTests {
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(20L));
+    assertThat(clients.getTotalResults(), is(21L));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
     assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));

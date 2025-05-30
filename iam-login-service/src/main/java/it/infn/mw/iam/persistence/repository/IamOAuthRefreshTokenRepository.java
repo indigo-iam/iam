@@ -17,6 +17,7 @@ package it.infn.mw.iam.persistence.repository;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.data.domain.Page;
@@ -25,8 +26,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 
+import com.nimbusds.jwt.JWT;
+
 public interface IamOAuthRefreshTokenRepository
     extends PagingAndSortingRepository<OAuth2RefreshTokenEntity, Long> {
+
+  @Query("select r from OAuth2RefreshTokenEntity r where r.jwt = :value")
+  Optional<OAuth2RefreshTokenEntity> findByTokenValue(@Param("value") JWT value);
 
   @Query("select t from OAuth2RefreshTokenEntity t where t.authenticationHolder.userAuth.name = :userId "
       + "and (t.expiration is NULL or t.expiration > :timestamp)")

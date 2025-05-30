@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
+import static com.nimbusds.jwt.JWTClaimNames.SUBJECT;
+
 import java.util.List;
 import java.util.Set;
 
@@ -46,6 +48,12 @@ public class IamUserInfoEndpoint {
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
   private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
 
+  private static final String SCOPE_CLAIM = "scope";
+  private static final String SSH_KEYS_CLAIM = "ssh_keys";
+
+  private static final String PROFILE_SCOPE = "profile";
+  private static final String SSH_KEYS_SCOPE = "ssh-keys";
+
   private final JWTProfileResolver profileResolver;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
@@ -71,13 +79,13 @@ public class IamUserInfoEndpoint {
 
     Set<String> scopes = scopeResolver.resolveScope(auth);
     UserInfoResponse.Builder builder = new UserInfoResponse.Builder(userInfo.getSub());
-    if (scopes.contains("profile")) {
-      builder.addField("scope", scopes);
-      if (scopes.contains("ssh-keys")) {
-        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope"));
+    if (scopes.contains(PROFILE_SCOPE)) {
+      if (scopes.contains(SSH_KEYS_SCOPE)) {
+        builder.addFieldsFromJson(userInfo.toJson(), List.of(SUBJECT, SCOPE_CLAIM));
       } else {
-        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope", "ssh_keys"));
+        builder.addFieldsFromJson(userInfo.toJson(), List.of(SUBJECT, SCOPE_CLAIM, SSH_KEYS_CLAIM));
       }
+      builder.addField(SCOPE_CLAIM, scopes);
     }
     return builder.build();
   }

@@ -271,6 +271,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
         new JWTClaimsSet.Builder().audience(Lists.newArrayList(client.getClientId()))
           .issuer(configBean.getIssuer())
           .issueTime(Date.from(clock.instant()))
+          .claim("scope", SystemScopeService.REGISTRATION_TOKEN_SCOPE)
           .jwtID(UUID.randomUUID().toString())
           .build();
 

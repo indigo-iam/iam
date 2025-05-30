@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -85,7 +86,8 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
     assertThat(idTokenClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");
 
     mvc
-      .perform(post("/introspect").with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))
+      .perform(post("/introspect").contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .with(httpBasic(TEST_CLIENT_ID, TEST_CLIENT_SECRET))
         .param("token", token.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.acr").exists())

@@ -44,8 +44,7 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
   protected UserInfo lookupUserinfo(OAuth2Authentication authentication) {
     final String username = authentication.getName();
 
-    return getUserInfoService().getByUsernameAndClientId(username,
-        authentication.getOAuth2Request().getClientId());
+    return getUserInfoService().getByUsername(username);
   }
 
 }

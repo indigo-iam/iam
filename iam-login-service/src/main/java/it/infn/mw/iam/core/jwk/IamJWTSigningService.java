@@ -34,6 +34,7 @@ import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -47,6 +48,8 @@ import it.infn.mw.iam.core.error.StartupError;
 
 
 public class IamJWTSigningService implements JWTSigningAndValidationService {
+
+  public static final String CACHE_KEY = "is-valid-token-cache";
 
   private static final Logger LOG = LoggerFactory.getLogger(IamJWTSigningService.class);
 
@@ -134,6 +137,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
   }
 
   @Override
+  @Cacheable(value = CACHE_KEY, key = "#signedJwt")
   public boolean validateSignature(SignedJWT signedJwt) {
 
     Optional<JWSVerifier> verifier =
@@ -198,4 +202,7 @@ public class IamJWTSigningService implements JWTSigningAndValidationService {
     return defaultSignerKeyId;
   }
 
+  public static String extractSignature(SignedJWT jwt) {
+    return jwt.getSignature().toString();
+  }
 }

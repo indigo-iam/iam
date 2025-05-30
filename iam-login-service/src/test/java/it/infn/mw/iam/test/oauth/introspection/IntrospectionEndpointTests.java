@@ -17,9 +17,9 @@ package it.infn.mw.iam.test.oauth.introspection;
 
 
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,12 +27,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -48,28 +59,67 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
   @Value("${iam.issuer}")
   String issuer;
 
-  private static final String ENDPOINT = "/introspect";
-  private static final String CLIENT_ID = "password-grant";
-  private static final String CLIENT_SECRET = "secret";
+  @Autowired
+  IamClientRepository clientRepository;
+
+  @Autowired
+  IamAccountRepository accountRepository;
+
+  @Autowired
+  ObjectMapper mapper;
+
+  @Autowired
+  ScopeFilter scopeFilter;
 
   @Test
   public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
+
+    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
+    IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
     String accessToken = getPasswordAccessToken();
 
-    // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", accessToken))
+    IntrospectionResponse response = mapper.readValue(mvc
+      .perform(
+          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .param("token", accessToken)
+            .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.iss", equalTo(issuer)))
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.name").exists())
+      .andExpect(jsonPath("$.preferred_username").doesNotExist())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.email").exists())
+      .andExpect(jsonPath("$.email_verified", equalTo(true)))
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), IntrospectionResponse.class);
+
+    String[] scopes =
+        String.valueOf(response.getAdditionalFields().get("scope")).trim().split("\\s+");
+    assertEquals(scopeFilter.filterScopes(client.getScope(), account).size(), scopes.length);
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testIntrospectionEndpointWithRefreshToken() throws Exception {
+
+    String refreshToken =
+        getPasswordTokenResponse("openid profile offline_access").getRefreshToken().getValue();
+
+    mvc
+      .perform(
+          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .param("token", refreshToken)
+            .param("token_type_hint", TokenTypeHint.REFRESH_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.iss", equalTo(issuer+"/")))
-      .andExpect(jsonPath("$.groups", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.groups", containsInAnyOrder("Production", "Analysis")))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.preferred_username", equalTo("test")))
-      .andExpect(jsonPath("$.organisation_name", equalTo(organisationName)))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
+      .andExpect(jsonPath("$.exp", nullValue()))
+      .andExpect(jsonPath("$.jti").exists());
   }
 
   @Test
@@ -77,8 +127,9 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid");
 
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -86,7 +137,8 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.name").doesNotExist())
       .andExpect(jsonPath("$.preferred_username").doesNotExist())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email").doesNotExist());
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andExpect(jsonPath("$.email_verified").doesNotExist());
     // @formatter:on
   }
 
@@ -95,16 +147,50 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid email");
 
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.name").doesNotExist())
+      .andExpect(jsonPath("$.given_name").doesNotExist())
+      .andExpect(jsonPath("$.family_name").doesNotExist())
+      .andExpect(jsonPath("$.middle_name").doesNotExist())
+      .andExpect(jsonPath("$.nickname").doesNotExist())
+      .andExpect(jsonPath("$.picture").doesNotExist())
+      .andExpect(jsonPath("$.updated_at").doesNotExist())
       .andExpect(jsonPath("$.preferred_username").doesNotExist())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
+      .andExpect(jsonPath("$.email_verified", equalTo(true)));
+    // @formatter:on
+  }
+
+  @Test
+  public void testProfileClaimsReturnedWithProfileScope() throws Exception {
+    String accessToken = getPasswordAccessToken("openid profile");
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.name").exists())
+      .andExpect(jsonPath("$.given_name").exists())
+      .andExpect(jsonPath("$.family_name").exists())
+      .andExpect(jsonPath("$.middle_name").exists())
+      .andExpect(jsonPath("$.nickname").exists())
+      .andExpect(jsonPath("$.picture").exists())
+      .andExpect(jsonPath("$.updated_at").exists())
+      .andExpect(jsonPath("$.preferred_username").doesNotExist())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andExpect(jsonPath("$.email_verified").doesNotExist());
     // @formatter:on
   }
 }

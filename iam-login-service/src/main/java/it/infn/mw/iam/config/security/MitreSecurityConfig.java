@@ -30,10 +30,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
@@ -230,31 +228,26 @@ public class MitreSecurityConfig {
         .passwordEncoder(NoOpPasswordEncoder.getInstance());
     }
 
-    private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()
-        throws Exception {
-
-      ClientCredentialsTokenEndpointFilter filter =
-          new ClientCredentialsTokenEndpointFilter("/revoke");
-      filter.setAuthenticationManager(authenticationManager());
-      return filter;
-    }
-
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
       // @formatter:off
-      http.antMatcher("/revoke**")
+      http.antMatcher("/revoke/**")
         .httpBasic()
           .authenticationEntryPoint(authenticationEntryPoint)
         .and()
-          .addFilterBefore(clientCredentialsEndpointFilter(), BasicAuthenticationFilter.class)
-        .cors()
+          .cors()
         .and()
-        .exceptionHandling()
-          .authenticationEntryPoint(authenticationEntryPoint)
+            .exceptionHandling()
+              .authenticationEntryPoint(authenticationEntryPoint)
         .and()
-          .csrf().disable()
-          .sessionManagement().sessionCreationPolicy(STATELESS);
+          .sessionManagement()
+            .sessionCreationPolicy(STATELESS).and()
+        .csrf()
+          .disable()
+        .authorizeRequests()
+          .anyRequest()
+            .fullyAuthenticated();
       // @formatter:on
     }
   }

@@ -116,8 +116,7 @@
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/openid-configuration.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/stringset.service.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/scopes.service.js"></script>
-  <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/trusts.service.js"></script>
-  
+
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/authenticator-app.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/registration.controller.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/controllers/account-privileges.controller.js"></script>
@@ -178,8 +177,6 @@
   
   <script type="text/javascript"
     src="${resourcesPrefix}/iam/apps/dashboard-app/components/tokens/refreshlist/tokens.refreshlist.component.js"></script>
-  <script type="text/javascript"
-    src="${resourcesPrefix}/iam/apps/dashboard-app/components/tokens/accesslist/tokens.accesslist.component.js"></script>
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/tokens/tokens.component.js"></script>
   
   <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/components/aup/aup.component.js"></script>

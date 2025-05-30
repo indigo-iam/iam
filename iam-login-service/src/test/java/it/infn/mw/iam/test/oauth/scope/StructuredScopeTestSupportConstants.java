@@ -15,12 +15,12 @@
  */
 package it.infn.mw.iam.test.oauth.scope;
 
-interface StructuredScopeTestSupportConstants {
-  
+public interface StructuredScopeTestSupportConstants {
+
   static final String PASSWORD_GRANT_TYPE = "password";
   static final String PASSWORD_CLIENT_ID = "password-grant";
   static final String PASSWORD_CLIENT_SECRET = "secret";
-  
+
   static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
   static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
@@ -30,7 +30,10 @@ interface StructuredScopeTestSupportConstants {
   static final String TOKEN_ENDPOINT = "/token";
   static final String USERINFO_ENDPOINT = "/userinfo";
   static final String INTROSPECTION_ENDPOINT = "/introspect";
-  static final String REGISTER_ENDPOINT = "/register";
+  static final String REVOCATION_ENDPOINT = "/revoke";
+  static final String REGISTER_ENDPOINT = "/iam/api/client-registration";
+
+  static final String PUBLIC_DEVICE_CODE_CLIENT_ID = "public-dc-client";
 
   static final String DEVICE_CODE_CLIENT_ID = "device-code-client";
   static final String DEVICE_CODE_CLIENT_SECRET = "secret";
@@ -40,7 +43,16 @@ interface StructuredScopeTestSupportConstants {
   static final String DEVICE_USER_VERIFY_URL = "http://localhost:8080/device/verify";
   static final String DEVICE_USER_APPROVE_URL = "http://localhost:8080/device/approve";
 
+  static final String WRONG_VERIFICATION_URI_COMPLETE = "/device?user_code=";
+
   static final String LOGIN_URL = "/login";
+
   static final String TEST_USERNAME = "test";
   static final String TEST_PASSWORD = "password";
+
+  static final String ADMIN_USERNAME = "admin";
+  static final String ADMIN_PASSWORD = "password";
+
+  static final String EMPTY_SCOPES = "";
+
 }
