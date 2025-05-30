@@ -143,7 +143,7 @@
 			<div class="form-group">
 				<button class="btn btn-primary" type="submit"
 					id="register-submit-btn" name="register"
-					ng-disabled="!registrationForm.$valid || busy"
+					ng-disabled="!registrationForm.$valid || busy || iamX509CanLogin || iamX509SuspendedAccount"
 					ng-click="rc.submit()">Register</button>
 				<button class="btn btn-warning" type="button"
 					id="register-reset-btn" name="reset" ng-click="rc.reset()"
