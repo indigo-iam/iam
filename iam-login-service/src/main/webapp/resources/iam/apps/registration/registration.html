@@ -160,6 +160,23 @@
             	<i class="fa fa-link"></i> {{IAM_X509_CRED}}</button>
 					
 			</div>
+			<div id="x509-authn-info" ng-if="iamX509Cred">
+				You have been succesfully authenticated as<br>
+				<strong>{{iamX509Subject}}</strong>
+
+				<p ng-if="!iamX509CanLogin && !iamX509SuspendedAccount">
+					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}
+				</p>
+				<p ng-if="iamX509CanLogin">
+					This certificate is linked to an account in the organization. 
+				</p>
+				<p ng-if="iamX509SuspendedAccount">
+					This certificate is linked to a suspended account in this organization
+				</p>
+
+
+			</div>
+
 		</form>
 		<div class="overlay" ng-if="busy">
 			<i class="fa fa-refresh fa-spin"></i>

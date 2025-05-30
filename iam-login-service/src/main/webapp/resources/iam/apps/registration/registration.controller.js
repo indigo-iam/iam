@@ -32,6 +32,16 @@ function RegistrationController(
 
 	$scope.organisationName = getOrganisationName();
 	$scope.request = {};
+	
+	const cred = window.IAM_X509_CRED;
+	
+	if(cred){
+		$scope.iamX509Cred = window.IAM_X509_CRED;
+		$scope.iamX509Subject = window.IAM_X509_CRED_SUBJECT;
+		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
+		$scope.iamX509SuspendedAccount = (window.IAM_X509_SUSPENDED_ACCOUNT=== "true");
+	}
+	
 
 	$scope.textAlert = undefined;
 	$scope.operationResult = undefined;
@@ -342,7 +352,7 @@ function RegistrationController(
 	}
 
 
-	function LinkCertificateController(
+	/* function LinkCertificateController(
 		AccountLinkingService, $uibModalInstance, action, cert) {
 		var self = this;
 	
@@ -374,9 +384,9 @@ function RegistrationController(
 			$uibModalInstance.dismiss('Dismissed');
 		};
 		
-	}
+	} */
 	
-	function CertX509Controller(toaster, $uibModal, Utils, $state) {
+	/* function CertX509Controller(toaster, $uibModal, Utils, $state) {
 		var self = this;
 	
 		self.accountLinkingEnabled = getAccountLinkingEnabled();
@@ -454,6 +464,6 @@ function RegistrationController(
 	
 			modalInstance.result.then(self.handleSuccess);
 		};
-	}
+	} */
 
 }

@@ -44,25 +44,11 @@
             <div ng-include src="'${resourcesPrefix}/iam/apps/registration/registration.html'">
             </div>
         <script>
-           var IAM_X509_CRED = "${IAM_X509_CRED.certificateChainPemString}";
+            window.IAM_X509_CRED = "${IAM_X509_CRED}";  
+            window.IAM_X509_CRED_SUBJECT = "${IAM_X509_CRED.subject}";
+            window.IAM_X509_CAN_LOGIN = "${IAM_X509_CAN_LOGIN}";
+            window.IAM_X509_SUSPENDED_ACCOUNT = "${IAM_X509_SUSPENDED_ACCOUNT}";
         </script>
-
-    <c:if test="${not empty IAM_X509_CRED}">
-        <div id="x509-authn-info">
-            You have been successfully authenticated as<br>
-            <strong>${IAM_X509_CRED.subject}</strong>
-            <c:if test="${!IAM_X509_CAN_LOGIN && !IAM_X509_SUSPENDED_ACCOUNT}">
-                <p>
-                This certificate is not linked to any account in this organization
-                </p>
-            </c:if>
-            <c:if test="${IAM_X509_SUSPENDED_ACCOUNT}">
-                <p>
-                This certificate is linked to a suspended account in this organization
-                </p>
-            </c:if>
-    </div>
-    </c:if>
     </jsp:body>
 </t:page>
 
