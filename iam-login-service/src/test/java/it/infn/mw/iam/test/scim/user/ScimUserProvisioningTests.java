@@ -28,6 +28,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -39,6 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -49,9 +52,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.scim.ScimUtils;
@@ -77,6 +82,9 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
 
   @Autowired
   private ObjectMapper mapper;
+
+  @InjectMocks
+  private ScimUserProvisioning scimUserProvisioning;
 
   @Before
   public void setup() throws Exception {
@@ -338,6 +346,17 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
       .andExpect(status().isConflict())
       .andExpect(jsonPath("$.detail",
           containsString("email user1@test.org already assigned to another user")));
+
+  }
+
+  @Test
+  public void userListFilterReference() {
+
+    Exception notimplemented =
+        assertThrows(ScimInvalidMethod.class, () -> scimUserProvisioning.list(null));
+
+    assertTrue(notimplemented.getMessage()
+      .contains("The method \"list(final ScimPageRequest params)\" is not yet supported in ScimUserProvisioning"));
 
   }
 }

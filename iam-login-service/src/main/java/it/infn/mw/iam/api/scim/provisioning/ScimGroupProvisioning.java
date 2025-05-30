@@ -37,6 +37,7 @@ import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.api.scim.converter.GroupConverter;
 import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -74,7 +75,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, Clock clock, IamAccountRepository accountRepo) {
+      ScimResourceLocationProvider locationProvider, Clock clock,
+      IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
@@ -96,6 +98,12 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
   }
+
+  private ScimInvalidMethod methodNotSupported(String method) {
+    return new ScimInvalidMethod(
+        String.format("The method \"%s\" is not yet supported in ScimGroupProvisioning", method));
+  }
+
 
   @Override
   public ScimGroup create(ScimGroup group) {
@@ -231,6 +239,11 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
     return builder.build();
+  }
+
+  @Override
+  public ScimListResponse<ScimGroup> list(final ScimPageRequest params, String filter) {
+    throw methodNotSupported("list(final ScimPageRequest params, String filter)");
   }
 
   private Supplier<ScimResourceNotFoundException> noGroupMappedToId(String id) {

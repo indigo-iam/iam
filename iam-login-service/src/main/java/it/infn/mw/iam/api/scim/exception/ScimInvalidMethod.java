@@ -13,28 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.api.scim.provisioning;
+package it.infn.mw.iam.api.scim.exception;
 
-import java.util.List;
+public class ScimInvalidMethod extends ScimException {
 
-import it.infn.mw.iam.api.scim.model.ScimListResponse;
-import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
-import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
+    /**
+    * 
+    */
+    private static final long serialVersionUID = 1L;
 
-public interface ScimProvisioning<T, E> {
+    public ScimInvalidMethod(String message) {
+        super(message);
+    }
 
-  T getById(String id);
-
-  T create(T newScimItem);
-
-  T replace(String id, T scimItemToBeReplaced);
-
-  void update(String id, List<ScimPatchOperation<E>> operations);
-
-  void delete(String id);
-
-  ScimListResponse<T> list(ScimPageRequest params);
-
-  ScimListResponse<T> list(final ScimPageRequest params, String filter);
+    public ScimInvalidMethod(String message, Throwable cause) {
+        super(message, cause);
+    }
 
 }

@@ -36,6 +36,8 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNA
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -51,13 +53,18 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
+import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.model.ScimFilter;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
@@ -75,13 +82,13 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
-      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
-      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
-      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
-      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
-      ACCOUNT_REPLACE_SERVICE_ACCOUNT);
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
+          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
+          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
+          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
+          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
+          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT);
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
@@ -107,6 +114,226 @@ public class ScimUserProvisioning
         x509CertificateConverter, usernameValidator);
   }
 
+
+
+  private ScimFilter parseFilters(final String filtersParameter) {
+
+
+    StringBuilder regex = new StringBuilder();
+
+    regex.append("(");
+
+    // Ensuring that the attribute given is defined within the ScimFilterAttributes
+    for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
+      regex.append(attribute.type + '|');
+    }
+
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s(");
+
+    // Ensuring that the operator given is defined within the ScimFilterOperators
+    for (ScimFilterOperators operator : ScimFilterOperators.values()) {
+      regex.append(operator.type + '|');
+    }
+
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s([\\w@\\.]+)");
+
+    // Case insensitive according to the RFC rules
+    Pattern pattern = Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(filtersParameter);
+
+
+    if (!matcher.matches() || matcher.groupCount() != 3) {
+      throw invalidFilter(filtersParameter);
+    }
+
+    String attributeStr = matcher.group(1);
+    String operatorStr = matcher.group(2);
+    String value = matcher.group(3);
+
+
+    ScimFilterAttributes attribute =
+        ScimFilterAttributes.parseAttribute(attributeStr.toLowerCase());
+    ScimFilterOperators operator = ScimFilterOperators.parseOperator(operatorStr.toLowerCase());
+
+
+
+    return new ScimFilter(attribute, operator, value);
+
+
+
+  }
+
+
+
+  private Page<IamAccount> filterSearch(OffsetPageable op, ScimFilter parsedFilters) {
+
+    Page<IamAccount> result = null;
+
+    // Figuring out the operator
+    if (ScimFilterOperators.EQUALS.equals(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.findByGivenName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
+
+        if ((parsedFilters.getValue().equalsIgnoreCase("false")
+            || parsedFilters.getValue().equalsIgnoreCase("true"))) {
+          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()), op)
+            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+        } else {
+          throw invalidValue(parsedFilters.getValue());
+        }
+
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findByEmail(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findByUsername(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findByFamilyName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+      }
+
+    } else if (ScimFilterOperators.CONTAINS.equals(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.containsGivenName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
+
+        // Contains on a boolean value makes no sense, gonna throw an error
+        throw invalidOperator(parsedFilters.getOperator().type);
+
+
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsEmail(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsUsername(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsFamilyName(parsedFilters.getValue(), op)
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      }
+    }
+
+    if (result != null && result.getContent().isEmpty()) {
+      throw noUsersMappedToValue(parsedFilters);
+    } else if (result == null) {
+      throw missingSupport(parsedFilters);
+    }
+    return result;
+  }
+
+  private Long filterSearch(ScimFilter parsedFilters) {
+
+    List<IamAccount> result = null;
+
+    // Figuring out the operator
+    if (ScimFilterOperators.EQUALS.equals(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.findByGivenName(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
+
+        if ((parsedFilters.getValue().equalsIgnoreCase("false")
+            || parsedFilters.getValue().equalsIgnoreCase("true"))) {
+          result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()))
+            .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+        } else {
+          throw invalidValue(parsedFilters.getValue());
+        }
+
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findMultipleByEmail(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
+
+        result = new ArrayList<>();
+
+        result.add(accountRepository.findByUsername(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue())));
+
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.findByFamilyName(parsedFilters.getValue())
+          .orElseThrow(() -> noUserMappedToGivenName(parsedFilters.getValue()));
+      }
+
+    } else if (ScimFilterOperators.CONTAINS.equals(parsedFilters.getOperator())) {
+
+      // Figuring out the attribute
+      if (ScimFilterAttributes.GIVENNAME.equals(parsedFilters.getAttribute())) {
+
+        // retrieving the results
+        result = accountRepository.containsGivenName(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.ACTIVE.equals(parsedFilters.getAttribute())) {
+
+        // Contains on a boolean value makes no sense, gonna throw an error
+        throw invalidOperator(parsedFilters.getOperator().type);
+
+
+      } else if (ScimFilterAttributes.EMAILS.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsEmail(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.USERNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsUsername(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      } else if (ScimFilterAttributes.FAMILYNAME.equals(parsedFilters.getAttribute())) {
+
+        result = accountRepository.containsFamilyName(parsedFilters.getValue())
+          .orElseThrow(() -> noUsersMappedToGivenName(parsedFilters.getValue()));
+
+      }
+    }
+
+    if (result != null && result.isEmpty()) {
+      throw noUsersMappedToValue(parsedFilters);
+    } else if (result == null) {
+      throw missingSupport(parsedFilters);
+    }
+    return (long) result.size();
+  }
+
+
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
     this.eventPublisher = publisher;
   }
@@ -124,6 +351,50 @@ public class ScimUserProvisioning
 
   private ScimResourceNotFoundException noUserMappedToId(String id) {
     return new ScimResourceNotFoundException(String.format("No user mapped to id '%s'", id));
+  }
+
+  private ScimResourceNotFoundException noUserMappedToGivenName(String name) {
+    return new ScimResourceNotFoundException(
+        String.format("No user mapped to givenName \"%s\"", name));
+  }
+
+  private ScimResourceNotFoundException noUsersMappedToGivenName(String name) {
+    return new ScimResourceNotFoundException(
+        String.format("There are no users mapped to the givenName \"%s\"", name));
+  }
+
+  private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
+    return new ScimResourceNotFoundException(String.format(
+        "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
+  }
+
+  private IllegalArgumentException invalidValue(String value) {
+    return new IllegalArgumentException(
+        String.format("the value \"%s\" does not fulfill the filtering convention", value));
+  }
+
+
+  private IllegalArgumentException invalidFilter(String filter) {
+    return new IllegalArgumentException(
+        String.format("the filter \"%s\" does not fulfill the filtering convention", filter));
+  }
+
+  private IllegalArgumentException invalidOperator(String operator) {
+    return new IllegalArgumentException(String
+      .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
+  }
+
+  private ScimInvalidMethod methodNotSupported(String method) {
+    return new ScimInvalidMethod(
+        String.format("The method \"%s\" is not yet supported in ScimUserProvisioning", method));
+  }
+
+
+  private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
+    return new ScimFilterUnsupportedException(String.format(
+        "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -177,27 +448,59 @@ public class ScimUserProvisioning
 
   @Override
   public ScimListResponse<ScimUser> list(final ScimPageRequest params) {
+    throw methodNotSupported("list(final ScimPageRequest params)");
+  }
+
+
+
+  // Method to fetch users according to a filter
+  @Override
+  public ScimListResponse<ScimUser> list(final ScimPageRequest params, String filter) {
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
-    if (params.getCount() == 0) {
+    OffsetPageable op;
+    Page<IamAccount> results;
 
-      long totalResults = accountRepository.count();
-      builder.totalResults(totalResults);
+    // Do the filtersearch
+    if (filter != null) {
+      ScimFilter parsedFilters = parseFilters(filter);
+
+      if (params.getCount() == 0) {
+        long totalResults = filterSearch(parsedFilters);
+        builder.totalResults(totalResults);
+        return builder.build();
+
+      } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+
+        results = filterSearch(op, parsedFilters);
+      }
+
 
     } else {
+      // Don't do a filtersearch
 
-      OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
+      if (params.getCount() == 0) {
 
-      Page<IamAccount> results = accountRepository.findAll(op);
+        long totalResults = accountRepository.count();
+        builder.totalResults(totalResults);
+        return builder.build();
 
-      List<ScimUser> resources = new ArrayList<>();
+      } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+        results = accountRepository.findAll(op);
+      }
 
-      results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
 
-      builder.resources(resources);
-      builder.fromPage(results, op);
     }
+
+    List<ScimUser> resources = new ArrayList<>();
+
+    results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
+
+    builder.resources(resources);
+    builder.fromPage(results, op);
 
     return builder.build();
   }
