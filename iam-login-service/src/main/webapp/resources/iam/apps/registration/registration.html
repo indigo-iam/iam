@@ -155,7 +155,7 @@
 				<strong>{{iamX509Subject}}</strong>
 
 				<p ng-if="!iamX509CanLogin && !iamX509SuspendedAccount">
-					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}.{{iamX509AlmostExpired}}
+					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}.{{iamX509AlmostExpired}}{{iamX509ExpirationDate}}
 				</p>
 				<p ng-if="iamX509CanLogin">
 					This certificate is linked to an account in the organization. 

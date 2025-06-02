@@ -42,6 +42,7 @@ function RegistrationController(
 		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
 		$scope.iamX509SuspendedAccount = !!window.IAM_X509_SUSPENDED_ACCOUNT;
 		$scope.iamX509AlmostExpired = !!window.IAM_X509_ALMOST_EXPIRED;
+		$scope.iamX509ExpirationDate = window.IAM_X509_EXPIRATION_DATE;
 	}
 	
 
@@ -143,13 +144,11 @@ function RegistrationController(
 	vm.openExpiringCertificateDialog();
 
 	function ExpiringCertificateController (
-        $uibModalInstance, action, cert) {
+        $uibModalInstance, cert, expirationDate) {
         var self = this;
-
         self.enabled = true;
-        self.action = action;
-        self.actionUrl = '/iam/account-linking/X509';
         self.cert = cert;
+		self.expirationDate = expirationDate;
 
         self.cancel = function () {
             $uibModalInstance.dismiss('Dismissed');
@@ -162,18 +161,18 @@ function RegistrationController(
 			if($scope.iamX509AlmostExpired){
 
 				var modalInstance = $uibModal.open({
-                templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/cert.link.dialog.html',
+                templateUrl: '/resources/iam/apps/registration/certificate-expiration.html',
                 controller: ExpiringCertificateController,
                 controllerAs: '$ctrl',
 				backdrop: 'static',
                 resolve: {
-                    action: function () {
-                        return 'link';
-                    },
                     cert: {
                         subjectDn: $scope.iamX509Subject,
                         issuerDn: $scope.iamX509Issuer
-                    }
+                    },
+					expirationDate: {
+						date: $scope.iamX509ExpirationDate
+					}
                 }
             });
 

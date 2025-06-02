@@ -36,9 +36,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-
 public class IamX509PreauthenticationProcessingFilter
     extends AbstractPreAuthenticatedProcessingFilter {
 
@@ -50,6 +47,7 @@ public class IamX509PreauthenticationProcessingFilter
   public static final String X509_CAN_LOGIN_KEY = "IAM_X509_CAN_LOGIN";
   public static final String X509_SUSPENDED_ACCOUNT_KEY = "IAM_X509_SUSPENDED_ACCOUNT";
   public static final String X509_ALMOST_EXPIRED = "IAM_X509_ALMOST_EXPIRED";
+  public static final String X509_EXPIRATION_DATE = "IAM_X509_EXPIRATION_DATE";
 
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
 
@@ -126,6 +124,7 @@ public class IamX509PreauthenticationProcessingFilter
     Date minTimeBeforeExpiration = calendar.getTime();
     if(expirationDate.before(minTimeBeforeExpiration)){
       request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
+      request.setAttribute(X509_EXPIRATION_DATE, expirationDate);
     }
 
     Optional<IamX509Certificate> cert = certificateRepo
