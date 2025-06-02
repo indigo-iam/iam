@@ -46,6 +46,7 @@
         <script>
             window.IAM_X509_CRED = "${IAM_X509_CRED}";  
             window.IAM_X509_CRED_SUBJECT = "${IAM_X509_CRED.subject}";
+            window.IAM_X509_CRED_ISSUER = "${IAM_X509_CRED.issuer}";
             window.IAM_X509_CAN_LOGIN = "${IAM_X509_CAN_LOGIN}";
             window.IAM_X509_SUSPENDED_ACCOUNT = "${IAM_X509_SUSPENDED_ACCOUNT}";
         </script>

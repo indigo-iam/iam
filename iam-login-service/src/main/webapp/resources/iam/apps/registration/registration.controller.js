@@ -38,8 +38,9 @@ function RegistrationController(
 	if(cred){
 		$scope.iamX509Cred = window.IAM_X509_CRED;
 		$scope.iamX509Subject = window.IAM_X509_CRED_SUBJECT;
+		$scope.iamX509Issuer = window.IAM_X509_CRED_ISSUER;
 		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
-		$scope.iamX509SuspendedAccount = (window.IAM_X509_SUSPENDED_ACCOUNT=== "true");
+		$scope.iamX509SuspendedAccount = !!window.IAM_X509_SUSPENDED_ACCOUNT;
 	}
 	
 
@@ -135,8 +136,45 @@ function RegistrationController(
 	vm.clearSessionCookies = clearSessionCookies;
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
+	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
 
 	vm.activate();
+	vm.openExpiringCertificateDialog();
+
+	function ExpiringCertificateController (
+        $uibModalInstance, action, cert) {
+        var self = this;
+
+        self.enabled = true;
+        self.action = action;
+        self.actionUrl = '/iam/account-linking/X509';
+        self.cert = cert;
+
+        self.cancel = function () {
+            $uibModalInstance.dismiss('Dismissed');
+        };
+    }
+
+
+	function openExpiringCertificateDialog () {
+            var modalInstance = $uibModal.open({
+                templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/cert.link.dialog.html',
+                controller: ExpiringCertificateController,
+                controllerAs: '$ctrl',
+				backdrop: 'static',
+                resolve: {
+                    action: function () {
+                        return 'link';
+                    },
+                    cert: {
+                        subjectDn: $scope.iamX509Subject,
+                        issuerDn: $scope.iamX509Issuer
+                    }
+                }
+            });
+
+            modalInstance.result.then(self.handleSuccess);
+        };
 
 	function activate() {
 		RegistrationRequestService.getConfig()
@@ -351,119 +389,5 @@ function RegistrationController(
 		return null;
 	}
 
-
-	/* function LinkCertificateController(
-		AccountLinkingService, $uibModalInstance, action, cert) {
-		var self = this;
-	
-		self.enabled = true;
-		self.action = action;
-		self.actionUrl = '/iam/account-linking/X509';
-		self.cert = cert;
-	
-		self.doLink = function () {
-			self.enabled = false;
-			document.getElementById('link-certificate-form').submit();
-		};
-	
-		self.doUnlink = function () {
-			self.enabled = false;
-			AccountLinkingService.unlinkX509Certificate(self.cert)
-				.then(function (response) {
-					$uibModalInstance.close(
-						`Certificate '${self.cert.subjectDn}' unlinked succesfully`);
-				})
-				.catch(function (error) {
-					console.error(error);
-					self.error = error;
-					self.enabled = true;
-				});
-		};
-	
-		self.cancel = function () {
-			$uibModalInstance.dismiss('Dismissed');
-		};
-		
-	} */
-	
-	/* function CertX509Controller(toaster, $uibModal, Utils, $state) {
-		var self = this;
-	
-		self.accountLinkingEnabled = getAccountLinkingEnabled();
-		self.rcauthEnabled = getRcauthEnabled();
-	
-		self.isLoggedUser = isLoggedUser;
-	
-		self.addProxyCertificate = addProxyCertificate;
-	
-		function isLoggedUser() {
-			return Utils.isMe(self.user.id);
-		}
-	
-		self.indigoUser = function () {
-			return self.user['urn:indigo-dc:scim:schemas:IndigoUser'];
-		};
-	
-		self.$onInit = function () {
-			console.log('CertX509Controller onInit');
-			self.enabled = true;
-		};
-	
-		self.getCertificates = function () {
-			if (self.indigoUser()) {
-				return self.indigoUser().certificates;
-			}
-	
-			return undefined;
-		};
-	
-		self.getUserCertSubject = function () {
-			return getUserX509CertficateSubject();
-		};
-	
-		self.getUserCertIssuer = function () {
-			return getUserX509CertficateIssuer();
-		};
-	
-		self.hasCertificates = function () {
-			var certs = self.getCertificates();
-			if (certs) {
-				return certs.length > 0;
-			}
-	
-			return false;
-		};
-	
-		self.handleSuccess = function (msg) {
-			self.enabled = true;
-			self.userCtrl.loadUser().then(function (user) {
-				toaster.pop({
-					type: 'success',
-					body: msg
-				});
-			});
-		};
-	
-		// This is the method from Angular that is connected to the button. It seems to be the one
-		// that is connected to the on-click event
-		self.openLinkCertificateDialog = function () {
-			var modalInstance = $uibModal.open({
-				templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/cert.link.dialog.html',
-				controller: LinkCertificateController,
-				controllerAs: '$ctrl',
-				resolve: {
-					action: function () {
-						return 'link';
-					},
-					cert: {
-						subjectDn: unescape(self.getUserCertSubject()),
-						issuerDn: unescape(self.getUserCertIssuer())
-					}
-				}
-			});
-	
-			modalInstance.result.then(self.handleSuccess);
-		};
-	} */
 
 }
