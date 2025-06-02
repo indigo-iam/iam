@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.scim.user;
 
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.add;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
+import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.replace;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_READ_SCOPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_WRITE_SCOPE;
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Base64;
 import java.util.List;
@@ -42,9 +44,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.api.scim.model.ScimEmail;
+import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
 import it.infn.mw.iam.api.scim.model.ScimName;
 import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -430,5 +435,28 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getPhotos(), hasSize(equalTo(1)));
     assertThat(updatedUser.getPhotos().get(0).getValue(), equalTo(PICTURE_URL));
+  }
+
+  @Test
+  @WithMockUser(username = "john_lennon", roles = { "USER" })
+  public void testUserCanNotChangeAccountType() throws Exception {
+    ScimUser updates = ScimUser.builder().serviceAccount(true).build();
+
+    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(username = "john_lennon", roles = { "USER" })
+  public void testUserCanChangeEmail() throws Exception {
+    ScimUser updates = ScimUser.builder()
+        .addEmail(ScimEmail.builder()
+            .type(ScimEmailType.home)
+            .email("TestUser@example.com")
+            .primary(false).build())
+        .build();
+
+    scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.NO_CONTENT)
+        .andExpect(status().isNoContent());
   }
 }
