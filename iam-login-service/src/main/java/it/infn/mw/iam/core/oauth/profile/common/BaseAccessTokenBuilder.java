@@ -22,6 +22,7 @@ import static java.util.Objects.isNull;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +55,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
   public static final String SCOPE_CLAIM_NAME = "scope";
+  public static final String EXPIRES_IN_KEY = "expires_in";
+
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
   public static final String SPACE = " ";
@@ -77,7 +80,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     this.scopeFilter = scopeFilter;
   }
 
-
   protected boolean isTokenExchangeRequest(OAuth2Authentication authentication) {
     return TOKEN_EXCHANGE_GRANT_TYPE.equals(authentication.getOAuth2Request().getGrantType());
   }
@@ -95,7 +97,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       throw new InvalidRequestException("Error parsing subject token: " + e.getMessage(), e);
     }
   }
-
 
   protected void handleClientTokenExchange(JWTClaimsSet.Builder builder,
       OAuth2AccessTokenEntity token, OAuth2Authentication authentication, UserInfo userInfo) {
@@ -126,9 +127,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
     if (!isNull(authentication.getOAuth2Request().getRefreshTokenRequest())) {
       final String audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUD_KEY);
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(AUD_KEY);
       return !isNullOrEmpty(audience);
     }
     return false;
@@ -139,10 +140,17 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
+  protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
+    final String audience = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
+    return !isNullOrEmpty(audience);
+  }
+
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
     String subject = null;
+    String expiry = null;
+    Date expTime = token.getExpiration();
 
     if (userInfo == null) {
       subject = authentication.getName();
@@ -151,11 +159,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     Builder builder = new JWTClaimsSet.Builder().issuer(properties.getIssuer())
-      .issueTime(Date.from(issueTime))
-      .expirationTime(token.getExpiration())
-      .subject(subject)
-      .jwtID(UUID.randomUUID().toString());
-
+        .issueTime(Date.from(issueTime))
+        .subject(subject)
+        .jwtID(UUID.randomUUID().toString());
 
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
@@ -165,16 +171,34 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
+    if (hasCustomValidityRequest(authentication)) {
+      expiry = (String) authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
+    }
+
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
-        .getRefreshTokenRequest()
-        .getRequestParameters()
-        .get(AUD_KEY);
+          .getRefreshTokenRequest()
+          .getRequestParameters()
+          .get(AUD_KEY);
     }
 
     if (!isNullOrEmpty(audience)) {
       builder.audience(splitter.splitToList(audience));
     }
+
+    if (!isNullOrEmpty(expiry)) {
+      Integer maxValidity = token.getClient().getAccessTokenValiditySeconds();
+      try {
+        Integer desiredValidity = Integer.valueOf(expiry);
+        if (desiredValidity <= maxValidity) {
+          Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
+          expTime = newValidity;
+          token.setExpiration(newValidity);
+        }
+      } catch (NumberFormatException e) {
+      }
+    }
+    builder.expirationTime(expTime);
 
     if (isTokenExchangeRequest(authentication)) {
       handleClientTokenExchange(builder, token, authentication, userInfo);
