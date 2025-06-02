@@ -345,7 +345,7 @@ public class ScimUserProvisioning
     }
   }
 
-  private EnumSet<UpdaterType> getEnabledUpdaters() {
+  public EnumSet<UpdaterType> getEnabledUpdaters() {
     EnumSet<UpdaterType> enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
 
     enabledUpdaters.addAll(ACCOUNT_LINKING_UPDATERS);
