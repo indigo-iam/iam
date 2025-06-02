@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -325,16 +326,17 @@ public class ScimUserProvisioning
   }
 
   private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
-    EnumSet<UpdaterType> enabledUpdaters = getEnabledUpdaters();
+    Set<UpdaterType> enabledUpdaters = getEnabledUpdaters();
 
     List<AccountUpdater> updaters = updatersFactory.getUpdatersForPatchOperation(account, op);
 
+    for (AccountUpdater updater : updaters) {
+      if (!enabledUpdaters.contains(updater.getType())) {
+        throw new ScimPatchOperationNotSupported(updater.getType().getDescription() + " not supported");
+      }
+    }
+
     List<AccountUpdater> updatesToPublish = updaters.stream()
-        .peek(u -> {
-          if (!enabledUpdaters.contains(u.getType())) {
-            throw new ScimPatchOperationNotSupported(u.getType().getDescription() + " not supported");
-          }
-        })
         .filter(AccountUpdater::update)
         .toList();
 
@@ -345,7 +347,7 @@ public class ScimUserProvisioning
     }
   }
 
-  public EnumSet<UpdaterType> getEnabledUpdaters() {
+  public Set<UpdaterType> getEnabledUpdaters() {
     EnumSet<UpdaterType> enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
 
     enabledUpdaters.addAll(ACCOUNT_LINKING_UPDATERS);
@@ -366,6 +368,7 @@ public class ScimUserProvisioning
     return enabledUpdaters;
   }
 
+  @SuppressWarnings("deprecation")
   private Optional<IamAccount> getCurrentUserAccount() throws ScimException, ScimResourceNotFoundException {
 
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();

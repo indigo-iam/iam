@@ -20,8 +20,8 @@ import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -75,7 +75,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   private ApplicationEventPublisher eventPublisher;
 
-  private final EnumSet<UpdaterType> enabledUpdaters;
+  private final Set<UpdaterType> enabledUpdaters;
 
   public ScimMeController(IamAccountRepository accountRepository, IamAccountService accountService,
       OAuth2TokenEntityService tokenService, ScimUserProvisioning scimUserProvisioning, UserConverter userConverter,
