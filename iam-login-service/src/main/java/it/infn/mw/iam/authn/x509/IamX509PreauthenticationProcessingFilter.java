@@ -16,6 +16,8 @@
 package it.infn.mw.iam.authn.x509;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
 
 import javax.servlet.ServletException;
@@ -34,6 +36,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
 public class IamX509PreauthenticationProcessingFilter
     extends AbstractPreAuthenticatedProcessingFilter {
 
@@ -44,6 +49,7 @@ public class IamX509PreauthenticationProcessingFilter
   public static final String X509_ERROR_KEY = "IAM_X509_AUTHN_ERROR";
   public static final String X509_CAN_LOGIN_KEY = "IAM_X509_CAN_LOGIN";
   public static final String X509_SUSPENDED_ACCOUNT_KEY = "IAM_X509_SUSPENDED_ACCOUNT";
+  public static final String X509_ALMOST_EXPIRED = "IAM_X509_ALMOST_EXPIRED";
 
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
 
@@ -111,6 +117,15 @@ public class IamX509PreauthenticationProcessingFilter
 
     if (!credential.isPresent()) {
       return null;
+    }
+
+    Date expirationDate = credential.get().getCertificateChain()[0].getNotAfter();
+    Calendar calendar = Calendar.getInstance();
+    // Temporary value is 5 years in the future for testing
+    calendar.add(Calendar.YEAR, 5);
+    Date minTimeBeforeExpiration = calendar.getTime();
+    if(expirationDate.before(minTimeBeforeExpiration)){
+      request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
     }
 
     Optional<IamX509Certificate> cert = certificateRepo

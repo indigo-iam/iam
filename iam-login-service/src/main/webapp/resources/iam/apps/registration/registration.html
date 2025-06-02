@@ -148,24 +148,14 @@
 				<button class="btn btn-warning" type="button"
 					id="register-reset-btn" name="reset" ng-click="rc.reset()"
 					ng-disabled="registrationForm.$pristine">Reset Form</button>
-				
-				<!-- I Can insert my button here, then it should be next to the others in the row-->
-
-				<!-- I should be using the ng-if to determine if the button should be showed based on the enviromentvariables-->
-
-				<!-- I need to import the ctrl and environmentvariable for this to work-->
-
-				<button class="btn btn-success btn-sm" type="link" name="link" ng-click= "rc.linkcertificate()"
-					>
-            	<i class="fa fa-link"></i> {{IAM_X509_CRED}}</button>
-					
+	
 			</div>
 			<div id="x509-authn-info" ng-if="iamX509Cred">
 				You have been succesfully authenticated as<br>
 				<strong>{{iamX509Subject}}</strong>
 
 				<p ng-if="!iamX509CanLogin && !iamX509SuspendedAccount">
-					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}
+					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}.{{iamX509AlmostExpired}}
 				</p>
 				<p ng-if="iamX509CanLogin">
 					This certificate is linked to an account in the organization. 
@@ -173,7 +163,9 @@
 				<p ng-if="iamX509SuspendedAccount">
 					This certificate is linked to a suspended account in this organization
 				</p>
-
+				<p ng-if="iamX509AlmostExpired">
+					This certificate will expire within a month
+				</p>
 
 			</div>
 

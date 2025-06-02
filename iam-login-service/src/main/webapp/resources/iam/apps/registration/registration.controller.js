@@ -41,6 +41,7 @@ function RegistrationController(
 		$scope.iamX509Issuer = window.IAM_X509_CRED_ISSUER;
 		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
 		$scope.iamX509SuspendedAccount = !!window.IAM_X509_SUSPENDED_ACCOUNT;
+		$scope.iamX509AlmostExpired = !!window.IAM_X509_ALMOST_EXPIRED;
 	}
 	
 
@@ -157,7 +158,10 @@ function RegistrationController(
 
 
 	function openExpiringCertificateDialog () {
-            var modalInstance = $uibModal.open({
+
+			if($scope.iamX509AlmostExpired){
+
+				var modalInstance = $uibModal.open({
                 templateUrl: '/resources/iam/apps/dashboard-app/components/user/x509/cert.link.dialog.html',
                 controller: ExpiringCertificateController,
                 controllerAs: '$ctrl',
@@ -174,6 +178,8 @@ function RegistrationController(
             });
 
             modalInstance.result.then(self.handleSuccess);
+
+			}
         };
 
 	function activate() {
