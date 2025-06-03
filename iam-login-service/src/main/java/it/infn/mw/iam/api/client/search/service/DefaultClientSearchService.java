@@ -118,10 +118,33 @@ public class DefaultClientSearchService implements ClientSearchService {
         .stream()
         .map(IamAccountClient::getClient)
         .map(converter::registeredClientDtoFromEntity)
-        .collect(Collectors.toList()))
+        .toList())
       .fromPage(pagedResults, pageable)
       .build();
   }
 
+  @Override
+  public ListResponseDTO<RegisteredClientDTO> findClientsOwnedByAccount(String accountId, 
+      PaginatedRequestForm form) {
 
+    IamAccount account =
+        accountUtils.getByAccountId(accountId).orElseThrow(NoAuthenticatedUserError::new);
+
+    Pageable pageable = PagingUtils.buildPageRequest(form.getCount(), form.getStartIndex(),
+        MAX_PAGE_SIZE);
+
+    Page<IamAccountClient> pagedResults = 
+        accountClientRepo.findByAccount(account, pageable);
+
+    ListResponseDTO.Builder<RegisteredClientDTO> resultBuilder = ListResponseDTO.builder();
+
+    return resultBuilder
+      .resources(pagedResults.getContent()
+        .stream()
+        .map(IamAccountClient::getClient)
+        .map(converter::registeredClientDtoFromEntity)
+        .toList())
+      .fromPage(pagedResults, pageable)
+      .build();
+  }
 }

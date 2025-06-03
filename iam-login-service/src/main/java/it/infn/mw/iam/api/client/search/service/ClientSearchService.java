@@ -30,4 +30,5 @@ public interface ClientSearchService {
       @Valid ClientSearchForm clientSearchForm);
 
   ListResponseDTO<RegisteredClientDTO> findOwnedClients(PaginatedRequestForm paginatedRequest);
+  ListResponseDTO<RegisteredClientDTO> findClientsOwnedByAccount(String accountId, PaginatedRequestForm paginatedRequest);
 }
