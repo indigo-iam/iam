@@ -31,21 +31,29 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.test.core.CoreControllerTestSupport;
+import it.infn.mw.iam.test.scim.ScimRestUtilsMvc;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK)
 public class AccountClientEndpointTests {
 
   @Autowired
@@ -179,5 +187,14 @@ public class AccountClientEndpointTests {
     mvc.perform(get("/iam/account/{id}/clients", "VALID_ID"))
       .andDo(print())
       .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test", authorities = {"ROLE_USER"})
+  public void userAccessToClientsOwnedByUserEndpointSuccessTest() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    mvc.perform(get("/iam/account/{id}/clients", testAccount.getUuid()))
+      .andDo(print())
+      .andExpect(status().isOk());
   }
 }

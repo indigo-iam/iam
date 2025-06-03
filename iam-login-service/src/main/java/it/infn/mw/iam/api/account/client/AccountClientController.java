@@ -54,13 +54,13 @@ public class AccountClientController {
   }
 
   @JsonView(ClientViews.Limited.class)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
   @GetMapping("/iam/account/{id}/clients")
-  public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable("id") String accountId,
+  public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable("id") String id,
       @Validated PaginatedRequestForm form, final BindingResult validationResult) {
 
     handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
-    return clientSearchService.findClientsOwnedByAccount(accountId, form);
+    return clientSearchService.findClientsOwnedByAccount(id, form);
   }
 
 }
