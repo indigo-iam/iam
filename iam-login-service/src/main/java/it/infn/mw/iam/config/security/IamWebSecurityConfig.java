@@ -151,7 +151,7 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo, iamProperties);
     }
 
     protected AuthenticationEntryPoint entryPoint() {

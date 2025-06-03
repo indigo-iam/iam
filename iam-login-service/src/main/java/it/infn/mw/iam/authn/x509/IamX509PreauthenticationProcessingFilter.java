@@ -32,6 +32,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -48,6 +49,7 @@ public class IamX509PreauthenticationProcessingFilter
   public static final String X509_SUSPENDED_ACCOUNT_KEY = "IAM_X509_SUSPENDED_ACCOUNT";
   public static final String X509_ALMOST_EXPIRED = "IAM_X509_ALMOST_EXPIRED";
   public static final String X509_EXPIRATION_DATE = "IAM_X509_EXPIRATION_DATE";
+  public static final String X509_REQUIRED = "IAM_X509_REQUIRED";
 
   public static final String X509_AUTHN_REQUESTED_PARAM = "x509ClientAuth";
 
@@ -57,14 +59,17 @@ public class IamX509PreauthenticationProcessingFilter
 
   private final IamX509CertificateRepository certificateRepo;
 
+  private final IamProperties iamProperties;
+
   public IamX509PreauthenticationProcessingFilter(X509AuthenticationCredentialExtractor extractor,
       AuthenticationManager authenticationManager, AuthenticationSuccessHandler successHandler,
-      IamX509CertificateRepository certificateRepo) {
+      IamX509CertificateRepository certificateRepo, IamProperties iamProperties) {
     setCheckForPrincipalChanges(false);
     setAuthenticationManager(authenticationManager);
     this.credentialExtractor = extractor;
     this.successHandler = successHandler;
     this.certificateRepo = certificateRepo;
+    this.iamProperties = iamProperties;
   }
 
   protected boolean x509AuthenticationRequested(HttpServletRequest request) {
@@ -117,10 +122,13 @@ public class IamX509PreauthenticationProcessingFilter
       return null;
     }
 
+    if(iamProperties.getRegistration().isRequireCertificate()){
+      request.setAttribute(X509_REQUIRED, Boolean.TRUE);
+    }
+
     Date expirationDate = credential.get().getCertificateChain()[0].getNotAfter();
     Calendar calendar = Calendar.getInstance();
-    // Temporary value is 5 years in the future for testing
-    calendar.add(Calendar.YEAR, 5);
+    calendar.add(Calendar.MONTH, 1);
     Date minTimeBeforeExpiration = calendar.getTime();
     if(expirationDate.before(minTimeBeforeExpiration)){
       request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);

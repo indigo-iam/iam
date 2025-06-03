@@ -51,6 +51,7 @@
             window.IAM_X509_SUSPENDED_ACCOUNT = "${IAM_X509_SUSPENDED_ACCOUNT}";
             window.IAM_X509_ALMOST_EXPIRED = "${IAM_X509_ALMOST_EXPIRED}";
             window.IAM_X509_EXPIRATION_DATE = "${IAM_X509_EXPIRATION_DATE}";
+            window.IAM_X509_REQUIRED = "${IAM_X509_REQUIRED}";
         </script>
     </jsp:body>
 </t:page>

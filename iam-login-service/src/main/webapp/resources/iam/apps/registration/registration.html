@@ -141,30 +141,36 @@
 				</div>
 			</div>
 			<div class="form-group">
+
+
+				<!-- Need to take this into account, if the certificate isn't required, then it shouldn't be hindered -->
+				 <!-- But then again, then the values should be false?? -->
+				  <!-- Depends on how I set it up -->
 				<button class="btn btn-primary" type="submit"
 					id="register-submit-btn" name="register"
-					ng-disabled="!registrationForm.$valid || busy || iamX509CanLogin || iamX509SuspendedAccount"
+					ng-disabled="!registrationForm.$valid || busy || (iamX509Required &&(iamX509CanLogin || iamX509SuspendedAccount))"
 					ng-click="rc.submit()">Register</button>
 				<button class="btn btn-warning" type="button"
 					id="register-reset-btn" name="reset" ng-click="rc.reset()"
 					ng-disabled="registrationForm.$pristine">Reset Form</button>
 	
 			</div>
-			<div id="x509-authn-info" ng-if="iamX509Cred">
+			<div id="x509-authn-info" ng-if="iamX509Cred && iamX509Required">
 				You have been succesfully authenticated as<br>
 				<strong>{{iamX509Subject}}</strong>
 
 				<p ng-if="!iamX509CanLogin && !iamX509SuspendedAccount">
-					This certificate is not linked to any account in the organization {{iamX509CanLogin}}.{{iamX509SuspendedAccount}}.{{iamX509AlmostExpired}}{{iamX509ExpirationDate}}
+					This certificate is not linked to any account in the organization
 				</p>
-				<p ng-if="iamX509CanLogin">
-					This certificate is linked to an account in the organization. 
+				<p ng-if="iamX509CanLogin" style="color: red;">
+					This certificate is already linked to an account in the organization. 
 				</p>
-				<p ng-if="iamX509SuspendedAccount">
+				<p ng-if="iamX509SuspendedAccount" style="color: red;">
 					This certificate is linked to a suspended account in this organization
 				</p>
-				<p ng-if="iamX509AlmostExpired">
-					This certificate will expire within a month
+				<p ng-if="iamX509AlmostExpired" style="color: red;">
+					This certificate will expire within a month <br>
+					Specifically at {{iamX509ExpirationDate}}
 				</p>
 
 			</div>

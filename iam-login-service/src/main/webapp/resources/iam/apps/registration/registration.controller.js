@@ -34,6 +34,8 @@ function RegistrationController(
 	$scope.request = {};
 	
 	const cred = window.IAM_X509_CRED;
+
+	$scope.iamX509Required = window.IAM_X509_REQUIRED;
 	
 	if(cred){
 		$scope.iamX509Cred = window.IAM_X509_CRED;
