@@ -118,13 +118,14 @@ public class IamX509PreauthenticationProcessingFilter
 
     Optional<IamX509AuthenticationCredential> credential = extractCredential(request);
 
+    if(iamProperties.getRegistration().isRequireCertificate()){
+      request.setAttribute(X509_REQUIRED, Boolean.TRUE);
+    }
+
     if (!credential.isPresent()) {
       return null;
     }
 
-    if(iamProperties.getRegistration().isRequireCertificate()){
-      request.setAttribute(X509_REQUIRED, Boolean.TRUE);
-    }
 
     Date expirationDate = credential.get().getCertificateChain()[0].getNotAfter();
     Calendar calendar = Calendar.getInstance();
