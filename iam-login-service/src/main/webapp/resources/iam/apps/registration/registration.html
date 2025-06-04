@@ -45,17 +45,29 @@
 
 		<p ng-if="!iamX509Cred && iamX509Required" style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;" >
 					A certificate is required upon <br> registration, but none were presented.
-					Please link a certificate to your browser.
+					Please link a certificate to your<br> browser.
 		</p>
 
-		<p ng-if="iamX509CanLogin" style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
+
+		<div id="x509-authn-info" ng-if="iamX509Cred && iamX509Required && (iamX509CanLogin || iamX509SuspendedAccount)">
+				You have been succesfully authenticated as<br>
+				<strong>{{iamX509Subject}}</strong> <br> <br>
+			
+				<p ng-if="iamX509AlmostExpired" style="color: red;">
+					This certificate will expire within a month <br>
+					Specifically at {{iamX509ExpirationDate}} <br> <br>
+				</p>
+
+		</div>
+
+		<p ng-if="iamX509CanLogin && iamX509Cred" style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
 			This certificate is already linked to an account in the organization and can not be linked to multiple accounts.
 			Please add a different certificate to the browser. 
 		</p>
 
 		<p ng-if="iamX509SuspendedAccount" style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
-			This certificate is linked to a suspended account in this organization.
-			Please add a different certificate to the browser or confer with the admin why the linked account is suspended.
+			This certificate is linked to a<br> suspended account in this<br> organization.
+			<br><br>Please add a different<br> certificate to the browser or confer with the admin why the linked account is suspended.
 		</p>
 
 
