@@ -223,8 +223,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
     assertThat(linkedUser.isPresent(), is(true));
     assertThat(linkedUser.get().getUsername(), is("test"));
 
-    Optional<IamX509Certificate> test0Cert =
-        iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
+    Optional<IamX509Certificate> test0Cert = iamX509CertificateRepo.findBySubjectDnAndIssuerDn(TEST_0_SUBJECT, TEST_0_ISSUER);
     assertThat(test0Cert.isPresent(), is(true));
 
     IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)

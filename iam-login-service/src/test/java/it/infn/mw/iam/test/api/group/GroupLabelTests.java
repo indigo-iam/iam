@@ -121,6 +121,16 @@ public class GroupLabelTests extends TestSupport {
 
   @Test
   public void gettingLabelsWorksForAdminUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  public void gettingLabelsWorksForReaderUser() throws Exception {
+    gettingLabelsWorks();
+  }
+
+  private void gettingLabelsWorks() throws Exception {
 
     mvc.perform(get(RESOURCE, TEST_001_GROUP_UUID)).andExpect(OK);
 

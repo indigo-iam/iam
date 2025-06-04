@@ -38,7 +38,6 @@ public class IamProperties {
   public enum EditableFields {
     NAME, SURNAME, EMAIL, PICTURE
   }
-
   public enum LocalAuthenticationAllowedUsers {
     ALL, VO_ADMINS, NONE
   }

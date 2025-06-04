@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.scim;
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.test.scim.ScimUtils.getMeLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUserLocation;
+import static it.infn.mw.iam.test.scim.ScimUtils.getUsersBulkLocation;
 import static it.infn.mw.iam.test.scim.ScimUtils.getUsersLocation;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
@@ -36,6 +37,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.api.scim.model.ScimUserPatchRequest;
+import it.infn.mw.iam.api.scim.model.ScimUsersBulkResponse;
+import it.infn.mw.iam.api.scim.model.ScimUsersBulkRequest;
 
 @Component
 public class ScimRestUtilsMvc extends RestUtils {
@@ -56,7 +59,17 @@ public class ScimRestUtilsMvc extends RestUtils {
     return doPost(getUsersLocation(), user, SCIM_CONTENT_TYPE, expectedStatus);
   }
 
+  public ScimUsersBulkResponse postUserBulk(ScimUsersBulkRequest bulkRequest) throws Exception {
 
+    return mapper.readValue(postUserBulk(bulkRequest, OK).andReturn().getResponse().getContentAsString(),
+    ScimUsersBulkResponse.class);
+  }
+
+  public ResultActions postUserBulk(ScimUsersBulkRequest bulkRequest, HttpStatus expectedStatus) throws Exception {
+
+    return doPost(
+      getUsersBulkLocation(), bulkRequest, SCIM_CONTENT_TYPE, SCIM_CONTENT_TYPE, expectedStatus);
+  }
 
   public ScimUser getUser(String uuid) throws Exception {
 
