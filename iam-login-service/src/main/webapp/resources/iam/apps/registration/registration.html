@@ -75,7 +75,7 @@
 			information below.</p>
 	</div>
 
-	<div class="box box-default no-border registration-box" ng-if="!iamX509Required || (iamX509Required && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)">
+	<div class="box box-default no-border registration-box">
 		<form name="registrationForm" id="registration-form">
 			<div ng-show="operationResult != null">
 				<div class="alert"
@@ -88,7 +88,7 @@
 
 			<!-- Dynamic form fields generated from the controller's fields array -->
 			<div ng-repeat="field in fields">
-				<div class="form-group" ng-if="field.showField"
+				<div class="form-group" ng-if="field.showField && !iamX509Required || (iamX509Required && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)"
 					ng-class="{'has-error': rc.fieldInvalid(field.name), 'has-success': rc.fieldValid(field.name)}">
 					<label class="control-label" for="{{field.name}}">{{field.label}}</label>
 
@@ -171,17 +171,17 @@
 					</p>
 				</div>
 			</div>
-			<div class="form-group">
+			<div class="form-group" ng-if = "!iamX509Required || (iamX509Required && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)">
 				<button class="btn btn-primary" type="submit"
 					id="register-submit-btn" name="register"
-					ng-disabled="!registrationForm.$valid || busy || (iamX509Required &&(iamX509CanLogin || iamX509SuspendedAccount||!iamX509Cred))"
+					ng-disabled="!registrationForm.$valid || busy"
 					ng-click="rc.submit()">Register</button>
 				<button class="btn btn-warning" type="button"
 					id="register-reset-btn" name="reset" ng-click="rc.reset()"
 					ng-disabled="registrationForm.$pristine">Reset Form</button>
 	
 			</div>
-			<div id="x509-authn-info" ng-if="iamX509Cred && iamX509Required">
+			<div id="x509-authn-info" ng-if="iamX509Required && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount">
 				You have been succesfully authenticated as<br>
 				<strong>{{iamX509Subject}}</strong>
 

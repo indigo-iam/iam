@@ -115,12 +115,6 @@ function RegistrationController(
 			rows: 5,
 			required: true,
 			showField: true,
-		},
-		subjectdn: {
-		},
-		issuerdn: {
-		},
-		certificate: {
 		}			
 		
 	};
@@ -128,9 +122,6 @@ function RegistrationController(
 	vm.createRequest = createRequest;
 	vm.populateRequest = populateRequest;
 	vm.resetRequest = resetRequest;
-	vm.linkcertificate = linkcertificate;
-	vm.getUserCertIssuer = getUserCertIssuer;
-	vm.getUserCertSubject = getUserCertSubject;
 	vm.activate = activate;
 	vm.submit = submit;
 	vm.reset = reset;
@@ -248,9 +239,6 @@ function RegistrationController(
 				username: populateValue(info, 'username'),
 				email: populateValue(info, 'email'),
 				notes: '',
-				subjectdn: '',
-				issuerdn: '',
-				certificate: '',
 			};
 
 			if (info.type === 'OIDC') {
@@ -297,23 +285,6 @@ function RegistrationController(
 		$scope.busy = true;
 		vm.createRequest();
 	}
-	
-	function linkcertificate(){
-		vm.getUserCertSubject(); 
-		vm.getUserCertIssuer();
-		$scope.request.certificate = IAM_X509_CRED;
-	
-	};
-
-	function getUserCertSubject () {
-		$scope.request.subjectdn = unescape(getUserX509CertficateSubject());
-		//return $scope.request.subjectdn;
-	};
-
-	function getUserCertIssuer () {
-		$scope.request.issuerdn = unescape(getUserX509CertficateIssuer());
-		//return $scope.request.issuerdn;
-	};
 
 	function resetRequest() {
 		$scope.request = {
