@@ -21,8 +21,12 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -525,5 +529,50 @@ public class GroupMembersIntegrationTests {
         is(true));
   }
 
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void getGroupsForAccountWorksForAdminsTest() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalResults", is(2)))
+          .andExpect(jsonPath("$.Resources", not(empty())))
+          .andExpect(jsonPath("$.Resources[0].name", is("Production")));
+  }
+
+  @Test
+  public void anonymousAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
+  public void nonAdminAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test", authorities = {"ROLE_USER"})
+  public void userAccessToGetListOfUserGroupEndpointSuccessTest() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
+      .andDo(print())
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", authorities = { "ROLE_USER" })
+  public void userAccessToGetListOfUserGroupUsingMeEndpointSuccessTest() throws Exception {
+    mvc.perform(get("/iam/account/me/groups"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", is(2)))
+        .andExpect(jsonPath("$.Resources", not(empty())))
+        .andExpect(jsonPath("$.Resources[0].name", is("Production")));
+  }
 
 }
