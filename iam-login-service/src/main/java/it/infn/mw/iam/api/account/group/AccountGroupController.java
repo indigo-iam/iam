@@ -17,20 +17,29 @@ package it.infn.mw.iam.api.account.group;
 
 import static it.infn.mw.iam.api.account.group.ErrorSuppliers.noSuchAccount;
 import static it.infn.mw.iam.api.account.group.ErrorSuppliers.noSuchGroup;
+import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.ErrorDTO;
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.api.common.error.NoSuchAccountError;
+import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.group.error.NoSuchGroupError;
@@ -42,14 +51,43 @@ import it.infn.mw.iam.persistence.model.IamGroupRequest;
 @RestController
 public class AccountGroupController {
 
+  public static final String INVALID_PAGINATION_REQUEST = "Invalid pagination request";
   private final IamAccountService accountService;
   private final IamGroupService groupService;
   private final GroupRequestsService groupRequestsService;
+  private final AccountUtils accountUtils;
 
-  public AccountGroupController(IamAccountService accountService, IamGroupService groupService, GroupRequestsService groupRequestsService) {
+  public AccountGroupController(IamAccountService accountService, IamGroupService groupService, GroupRequestsService groupRequestsService, AccountUtils accountUtils) {
     this.accountService = accountService;
     this.groupService = groupService;
     this.groupRequestsService = groupRequestsService;
+    this.accountUtils = accountUtils;
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @GetMapping("/iam/account/me/groups")
+  public ListResponseDTO<RegisteredGroupDTO> getMyGroups(@Validated PaginatedRequestForm form,
+      final BindingResult validationResult) {
+    IamAccount account = accountUtils.getAuthenticatedUserAccount()
+        .orElseThrow(
+            () -> new IllegalStateException("No iam account found for authenticated user"));
+
+    handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
+    OffsetPageable offsetPageable = new OffsetPageable(form.getStartIndex(), form.getCount());
+    return accountService.getGroups(account, offsetPageable);
+  }
+
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
+  @GetMapping("/iam/account/{id}/groups")
+  public ListResponseDTO<RegisteredGroupDTO> getUsersGroups(@PathVariable String id, @Validated PaginatedRequestForm form,
+      final BindingResult validationResult) {
+    IamAccount account = accountUtils.getByAccountId(id)
+        .orElseThrow(
+            () -> new IllegalStateException("No iam account found"));
+
+    handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
+    OffsetPageable offsetPageable = new OffsetPageable(form.getStartIndex(), form.getCount());
+    return accountService.getGroups(account, offsetPageable);
   }
 
   @PostMapping(value = "/iam/account/{accountUuid}/groups/{groupUuid}")

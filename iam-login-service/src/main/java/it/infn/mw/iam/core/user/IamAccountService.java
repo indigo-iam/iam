@@ -22,6 +22,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -181,6 +183,15 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount removeFromGroup(IamAccount account, IamGroup group);
+
+  /**
+   * Get the list of groups for the account
+   * 
+   * @param account
+   * @param page pagination params
+   * @return the groups of the account
+   */
+   ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable page);
 
   /**
    * Returns group members

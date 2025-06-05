@@ -43,6 +43,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
@@ -571,6 +573,34 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     return account;
+  }
+
+  @Override
+  public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
+    List<RegisteredGroupDTO> groupDTOs = account.getGroups().stream()
+        .map(IamAccountGroupMembership::getGroup)
+        .map(group -> new RegisteredGroupDTO.Builder()
+            .id(group.getId())
+            .uuid(group.getUuid())
+            .name(group.getName())
+            .description(group.getDescription())
+            .parentGroup(group.getParentGroup())
+            .childrenGroups(group.getChildrenGroups())
+            .labels(group.getLabels())
+            .build())
+        .toList();
+
+    
+    long total = groupDTOs.size();
+    int start = Math.max(0, (int) pageable.getOffset() - 1);
+    int end = Math.min((start + pageable.getPageSize()), groupDTOs.size());
+    List<RegisteredGroupDTO> pagedGroups = start <= end ? groupDTOs.subList(start, end) : List.of();
+
+    return new ListResponseDTO<RegisteredGroupDTO>(
+        total,
+        pageable.getPageSize(),
+        start,
+        pagedGroups);
   }
 
   @Override
