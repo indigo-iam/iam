@@ -187,8 +187,6 @@ public class DefaultClientManagementService implements ClientManagementService {
       newClient.setClientSecret(null);
     } else if (isNull(client.getClientSecret())) {
       client.setClientSecret(defaultsService.generateClientSecret());
-    } else {
-      newClient.setClientSecret(defaultsService.generateClientSecret());
     }
 
     newClient = clientService.updateClient(newClient);
@@ -219,7 +217,6 @@ public class DefaultClientManagementService implements ClientManagementService {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     String pwd = defaultsService.generateClientSecret();
-    client.setClientSecret(pwd);
     client.setClientSecret(bcrypt().encode(pwd));
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
