@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonView;
 import it.infn.mw.iam.api.client.management.validation.OnRegistrationCreation;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.common.RegistrationViews;
-import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.registration.validation.UsernameRegExp;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
