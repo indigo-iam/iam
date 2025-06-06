@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonView;
 import it.infn.mw.iam.api.client.management.validation.OnRegistrationCreation;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.common.RegistrationViews;
-import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.registration.validation.UsernameRegExp;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -120,9 +119,6 @@ private String issuerdn;
 
   @JsonCreator
   public RegistrationRequestDto(@JsonProperty(value = "username", required = true) String username,
-      @JsonProperty(value = "certificate", required = false) String certificate,
-      @JsonProperty(value = "subjectdn", required = false) String subjectdn,
-      @JsonProperty(value = "issuerdn", required = false) String issuerdn,
       @JsonProperty(value = "givenname", required = true) String givenname,
       @JsonProperty(value = "familyname", required = true) String familyname,
       @JsonProperty(value = "email", required = true) String email,
@@ -145,9 +141,6 @@ private String issuerdn;
     this.accountId = accountId;
     this.notes = notes;
     this.labels = labels;
-    this.certificate = certificate;
-    this.subjectdn = subjectdn;
-    this.issuerdn = issuerdn;
   }
 
   public String getUuid() {
@@ -274,29 +267,5 @@ private String issuerdn;
 
   public void setLabels(List<LabelDTO> labels) {
     this.labels = labels;
-  }
-
-  public String getCertificate(){
-    return certificate;
-  }
-
-  public void setCertificate(String certificate){
-    this.certificate = certificate;
-  }
-
-  public String getSubjectDn(){
-    return subjectdn;
-  }
-
-  public void setSubjectDn(String subjectdn){
-    this.subjectdn = subjectdn;
-  }
-
-  public String getIssuerDn(){
-    return issuerdn;
-  }
-
-  public void setIssuerDn(String issuerdn){
-    this.issuerdn = issuerdn;
   }
 }

@@ -56,6 +56,7 @@ import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidatorError;
 
 @RestController
@@ -115,7 +116,11 @@ public class RegistrationApiController {
           value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult, final HttpServletRequest httpRequest) {
     handleValidationError(validationResult);
-    return service.createRequest(request, getExternalAuthenticationInfo(), httpRequest);
+    try{
+      return service.createRequest(request, getExternalAuthenticationInfo(), httpRequest);
+    }catch(CredentialAlreadyBoundException error){
+      throw new RegistrationRequestValidatorError(error.getMessage());
+    }
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
