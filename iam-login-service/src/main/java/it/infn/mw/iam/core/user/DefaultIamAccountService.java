@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -579,6 +580,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
     List<RegisteredGroupDTO> groupDTOs = account.getGroups().stream()
         .map(IamAccountGroupMembership::getGroup)
+        .sorted(Comparator.comparing(IamGroup::getName))
         .map(group -> new RegisteredGroupDTO.Builder()
             .id(group.getId())
             .uuid(group.getUuid())

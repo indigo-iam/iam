@@ -337,27 +337,10 @@ public class GroupMembersIntegrationTests {
   public void intermediateGroupMembershipIsEnforcedOnAdd() throws Exception {
 
     // Create group hierarchy
-    IamGroup rootGroup = new IamGroup();
-    rootGroup.setName("root");
-
-    rootGroup = groupService.createGroup(rootGroup);
-
-    IamGroup subgroup = new IamGroup();
-    subgroup.setName("root/subgroup");
-    subgroup.setParentGroup(rootGroup);
-
-    subgroup = groupService.createGroup(subgroup);
-
-    IamGroup subsubgroup = new IamGroup();
-    subsubgroup.setName("root/subgroup/subsubgroup");
-    subsubgroup.setParentGroup(subgroup);
-
-    subsubgroup = groupService.createGroup(subsubgroup);
-
-    IamGroup sibling = new IamGroup();
-    sibling.setName("root/sibling");
-    sibling.setParentGroup(rootGroup);
-    sibling = groupService.createGroup(sibling);
+    IamGroup rootGroup = createGroup("root", null);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+    IamGroup sibling = createGroup("root/sibling", rootGroup);
 
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -403,27 +386,10 @@ public class GroupMembersIntegrationTests {
   public void intermediateGroupMembershipIsEnforcedOnRemove() throws Exception {
 
     // Create group hierarchy
-    IamGroup rootGroup = new IamGroup();
-    rootGroup.setName("root");
-
-    rootGroup = groupService.createGroup(rootGroup);
-
-    IamGroup subgroup = new IamGroup();
-    subgroup.setName("root/subgroup");
-    subgroup.setParentGroup(rootGroup);
-
-    subgroup = groupService.createGroup(subgroup);
-
-    IamGroup subsubgroup = new IamGroup();
-    subsubgroup.setName("root/subgroup/subsubgroup");
-    subsubgroup.setParentGroup(subgroup);
-
-    subsubgroup = groupService.createGroup(subsubgroup);
-
-    IamGroup sibling = new IamGroup();
-    sibling.setName("root/sibling");
-    sibling.setParentGroup(rootGroup);
-    sibling = groupService.createGroup(sibling);
+    IamGroup rootGroup = createGroup("root", null);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+    IamGroup sibling = createGroup("root/sibling", rootGroup);
 
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -537,7 +503,7 @@ public class GroupMembersIntegrationTests {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.totalResults", is(2)))
           .andExpect(jsonPath("$.Resources", not(empty())))
-          .andExpect(jsonPath("$.Resources[0].name", is("Production")));
+          .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
 
   @Test
@@ -572,7 +538,35 @@ public class GroupMembersIntegrationTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalResults", is(2)))
         .andExpect(jsonPath("$.Resources", not(empty())))
-        .andExpect(jsonPath("$.Resources[0].name", is("Production")));
+        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+  }
+
+  @Test
+  @WithMockUser(username = ADMIN_USER, roles = { "USER", "ADMIN" })
+  public void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
+
+    IamGroup rootGroup = createGroup("root", null);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+
+    IamAccount account = accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+        .andExpect(status().isCreated());
+
+    mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", is(5)))
+        .andExpect(jsonPath("$.Resources", not(empty())))
+        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+  }
+
+  private IamGroup createGroup(String name, IamGroup parent) {
+    IamGroup group = new IamGroup();
+    group.setName(name);
+    group.setParentGroup(parent);
+    return groupService.createGroup(group);
   }
 
 }
