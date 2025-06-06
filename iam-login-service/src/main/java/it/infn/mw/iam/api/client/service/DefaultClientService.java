@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.client.service;
 
 import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
+import static java.util.Objects.isNull;
 
 import java.time.Clock;
 import java.util.Date;
@@ -55,7 +56,8 @@ public class DefaultClientService implements ClientService {
   private OAuth2TokenEntityService tokenService;
 
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher, OAuth2TokenEntityService tokenService) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher,
+      OAuth2TokenEntityService tokenService) {
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
@@ -67,7 +69,9 @@ public class DefaultClientService implements ClientService {
   public ClientDetailsEntity saveNewClient(ClientDetailsEntity client) {
     client.setCreatedAt(Date.from(clock.instant()));
     eventPublisher.publishEvent(new ClientCreatedEvent(this, client));
-    client.setClientSecret(bcrypt().encode(client.getClientSecret()));
+    if (!isNull(client.getClientSecret())) {
+      client.setClientSecret(bcrypt().encode(client.getClientSecret()));
+    }
     return clientRepo.save(client);
   }
 
@@ -86,7 +90,7 @@ public class DefaultClientService implements ClientService {
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-        .orElseGet(newAccountClient(owner, client));
+      .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -106,7 +110,8 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
+      String userId) {
     client.setActive(status);
     client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
@@ -127,7 +132,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-          .map(IamAccountClient::getClient);
+        .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -149,12 +154,12 @@ public class DefaultClientService implements ClientService {
   private void deleteTokensByClient(ClientDetailsEntity client) {
     // delete all valid access tokens (exclude registration and resource tokens)
     tokenService.getAccessTokensForClient(client)
-        .stream()
-        .filter(this::isValidAccessToken)
-        .forEach(at -> tokenService.revokeAccessToken(at));
+      .stream()
+      .filter(this::isValidAccessToken)
+      .forEach(at -> tokenService.revokeAccessToken(at));
     // delete all valid refresh tokens
     tokenService.getRefreshTokensForClient(client)
-        .forEach(rt -> tokenService.revokeRefreshToken(rt));
+      .forEach(rt -> tokenService.revokeRefreshToken(rt));
   }
 
   @Override
