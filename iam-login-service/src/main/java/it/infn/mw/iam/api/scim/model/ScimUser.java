@@ -224,7 +224,7 @@ public class ScimUser extends ScimResource {
   public String getAffiliation() {
     return affiliation;
   }
-
+  
   public List<ScimEmail> getEmails() {
 
     return emails;
