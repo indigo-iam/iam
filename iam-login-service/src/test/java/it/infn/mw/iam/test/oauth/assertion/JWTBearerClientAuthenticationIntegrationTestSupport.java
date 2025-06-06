@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
@@ -36,13 +37,13 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.core.jwk.IamJWTSigningService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.util.JWKKeystoreLoader;
 
 public class JWTBearerClientAuthenticationIntegrationTestSupport extends EndpointsTestUtils {
 
   public static final String CLIENT_ID_SECRET_JWT = "jwt-auth-client_secret_jwt";
-  public static final String CLIENT_ID_SECRET_JWT_SECRET = "c8e9eed0-e6e4-4a66-b16e-6f37096356a7";
   public static final String TOKEN_ENDPOINT_AUDIENCE = "http://localhost:8080/token";
   public static final String TOKEN_ENDPOINT = "/token";
   public static final String JWT_BEARER_ASSERTION_TYPE =
@@ -55,10 +56,14 @@ public class JWTBearerClientAuthenticationIntegrationTestSupport extends Endpoin
   @Autowired
   ResourceLoader loader;
 
+  @Autowired
+  private IamClientRepository clientRepo;
+
   public SignedJWT createSymmetricClientAuthToken(String clientId, Instant expirationTime)
       throws JOSEException {
 
-    JWSSigner signer = new MACSigner(CLIENT_ID_SECRET_JWT_SECRET);
+    ClientDetailsEntity client = clientRepo.findByClientId(CLIENT_ID_SECRET_JWT).orElseThrow();
+    JWSSigner signer = new MACSigner(client.getClientSecret());
     JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().subject(clientId)
       .issuer(clientId)
       .expirationTime(Date.from(expirationTime))

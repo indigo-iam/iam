@@ -49,8 +49,11 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       Long id = clientList.getLong("id");
 
       String secretHashed = passwordEncoder.encode(clientSecret);
-      assert !passwordEncoder.matches(clientSecret, secretHashed);
-      
+      if(passwordEncoder.matches(clientSecret, secretHashed)) {
+        LOG.info("Client secret already hashed");
+        return;
+      }
+
       jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", secretHashed, id);
     }
 

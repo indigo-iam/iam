@@ -596,7 +596,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
 
     assertNotNull(newClient);
 
-    String tokenResponse = getTokenResponse(newClient.getClientId(), newClient.getClientSecret(),
+    String tokenResponse = getTokenResponse(newClient.getClientId(), registrationResponse.getClientSecret(),
         TEST_USERNAME, TEST_PASSWORD, "openid profile offline_access");
 
     JsonNode tokenResponseJson = mapper.readTree(tokenResponse);
