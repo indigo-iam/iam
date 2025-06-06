@@ -31,15 +31,12 @@ import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpressionHandler {
 
   private final AccountUtils accountUtils;
-  private final DefaultClientService clientService;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
 
   public IamWebSecurityExpressionHandler(AccountUtils accountUtils,
-      DefaultClientService clientService, GroupRequestUtils groupRequestUtils,
-      OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
     this.accountUtils = accountUtils;
-    this.clientService = clientService;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
   }
@@ -51,7 +48,7 @@ public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpression
     StandardEvaluationContext ec =
         super.createEvaluationContextInternal(authentication, invocation);
     ec.setVariable("iam", new IamSecurityExpressionMethods(authentication, accountUtils,
-        clientService, groupRequestUtils, scopeResolver));
+        groupRequestUtils, scopeResolver));
     return ec;
   }
 
