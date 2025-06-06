@@ -159,7 +159,7 @@ public class ClientManagementAPIController {
 
   @PostMapping("/{clientId}/secret")
   @ResponseStatus(CREATED)
-  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isClientOwner('clientId')")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO rotateClientSecret(@PathVariable String clientId) {
     return managementService.generateNewClientSecret(clientId);
   }
