@@ -349,11 +349,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (isNull(client.getClientSecret())) {
       client.setClientSecret(defaultsService.generateClientSecret());
     }
-    String tmpClientSecret = client.getClientSecret();
-    client = clientService.saveNewClient(client);
-    client.setClientSecret(tmpClientSecret);
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+    client = clientService.saveNewClient(client);
 
     if (isAnonymous(authentication)) {
 
