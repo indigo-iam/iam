@@ -39,7 +39,8 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
 
     LOG.debug("### START MIGRATION V109__HashClientSecret ###");
 
-    SqlRowSet clientList = jdbcTemplate.queryForRowSet("SELECT id, client_secret FROM client_details");
+    SqlRowSet clientList =
+        jdbcTemplate.queryForRowSet("SELECT id, client_secret FROM client_details");
 
     while (clientList.next()) {
       String clientSecret = clientList.getString("client_secret");
@@ -49,7 +50,7 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       Long id = clientList.getLong("id");
 
       String secretHashed = passwordEncoder.encode(clientSecret);
-      if(passwordEncoder.matches(clientSecret, secretHashed)) {
+      if (passwordEncoder.matches(clientSecret, secretHashed)) {
         LOG.info("Client secret already hashed");
         return;
       }
