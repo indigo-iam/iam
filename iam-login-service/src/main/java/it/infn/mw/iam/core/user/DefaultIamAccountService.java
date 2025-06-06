@@ -598,7 +598,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     int end = Math.min((start + pageable.getPageSize()), groupDTOs.size());
     List<RegisteredGroupDTO> pagedGroups = start <= end ? groupDTOs.subList(start, end) : List.of();
 
-    return new ListResponseDTO<RegisteredGroupDTO>(
+    return new ListResponseDTO<>(
         total,
         pageable.getPageSize(),
         start,
