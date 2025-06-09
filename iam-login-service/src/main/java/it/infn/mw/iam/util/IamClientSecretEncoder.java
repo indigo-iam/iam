@@ -16,28 +16,38 @@
 package it.infn.mw.iam.util;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * A simple util to quickly get a password bcrypt-encoded
  *
  */
-public class IamBcryptUtil {
+public class IamClientSecretEncoder implements PasswordEncoder {
 
-  public static void main(String[] args) {
+  final short DEFAULT_ROUND = 12;
 
-    if (args.length == 0) {
-      System.err.println("Please provide the password to encode as an argument");
-      System.exit(1);
+  BCryptPasswordEncoder bcryptEncoder = new BCryptPasswordEncoder(DEFAULT_ROUND);
+
+  @Override
+  public String encode(CharSequence rawPassword) {
+    if (rawPassword.isEmpty()) {
+      return rawPassword.toString();
     }
-
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-    System.out.println(encoder.encode(args[0]));
+    return bcryptEncoder.encode(rawPassword);
   }
 
-  public static final BCryptPasswordEncoder bcrypt() {
-    final short DEFAULT_ROUND = 12;
-    return new BCryptPasswordEncoder(DEFAULT_ROUND);
+  @Override
+  public boolean matches(CharSequence rawPassword, String encodedPassword) {
+    if (rawPassword == null) {
+      throw new IllegalArgumentException("rawPassword cannot be null");
+    }
+    if (encodedPassword == null) {
+      throw new IllegalArgumentException("encodedPassword cannot be null");
+    }
+    if (rawPassword.isEmpty() && encodedPassword.isEmpty()) {
+      return true;
+    }
+    return bcryptEncoder.matches(rawPassword, encodedPassword);
   }
 
 }

@@ -52,7 +52,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
@@ -68,6 +67,7 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
@@ -132,7 +132,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertThat(client.getClientId(), is("client"));
-    assertThat(new BCryptPasswordEncoder(12).matches("secret", client.getClientSecret()), is(true));
+    assertThat(new IamClientSecretEncoder().matches("secret", client.getClientSecret()), is(true));
     assertThat(client.getGrantTypes(), hasItems(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN));
     assertThat(client.getScope(), hasItems("openid", "offline_access", "profile", "email",
         "address", "phone", "read-tasks", "write-tasks", "read:/", "write:/"));

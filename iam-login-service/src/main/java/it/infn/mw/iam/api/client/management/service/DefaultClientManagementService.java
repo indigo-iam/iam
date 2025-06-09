@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.client.management.service;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.accountNotFound;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
-import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
 import static java.util.Objects.isNull;
 import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 
@@ -62,6 +61,7 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @Service
 @Validated
@@ -126,7 +126,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity entity = converter.entityFromClientManagementRequest(client);
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
-    entity.setClientSecret(bcrypt().encode(secret));
+    entity.setClientSecret(new IamClientSecretEncoder().encode(secret));
     entity.setActive(true);
 
     defaultsService.setupClientDefaults(entity);
@@ -217,7 +217,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     String pwd = defaultsService.generateClientSecret();
-    client.setClientSecret(bcrypt().encode(pwd));
+    client.setClientSecret(new IamClientSecretEncoder().encode(pwd));
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
     RegisteredClientDTO clientWithSecret = converter.registeredClientDtoFromEntity(client);

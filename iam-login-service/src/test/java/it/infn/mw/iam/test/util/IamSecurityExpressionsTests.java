@@ -31,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
@@ -54,6 +55,9 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   @Autowired
   private IamGroupRequestRepository repo;
 
+  @Autowired
+  private DefaultClientService clientService;
+
   @After
   public void destroy() {
     repo.deleteAll();
@@ -61,8 +65,8 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
 
   private IamSecurityExpressionMethods getMethods() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    return new IamSecurityExpressionMethods(authentication, accountUtils,
-        groupRequestUtils, scopeResolver);
+    return new IamSecurityExpressionMethods(authentication, accountUtils, groupRequestUtils,
+        scopeResolver, clientService);
   }
 
   @Test

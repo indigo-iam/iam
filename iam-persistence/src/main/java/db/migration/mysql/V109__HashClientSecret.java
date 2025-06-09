@@ -23,7 +23,6 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-
 import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 
 public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
@@ -49,13 +48,13 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       }
       Long id = clientList.getLong("id");
 
-      String secretHashed = passwordEncoder.encode(clientSecret);
-      if (passwordEncoder.matches(clientSecret, secretHashed)) {
+      String secretHash = passwordEncoder.encode(clientSecret);
+      if (passwordEncoder.matches(clientSecret, secretHash)) {
         LOG.info("Client secret already hashed");
-        return;
+        continue;
       }
 
-      jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", secretHashed, id);
+      jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", secretHash, id);
     }
 
     LOG.debug("### END MIGRATION V109__HashClientSecret ###");

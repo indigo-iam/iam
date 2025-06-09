@@ -28,7 +28,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
@@ -37,6 +36,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 import it.infn.mw.iam.api.client.registration.ClientRegistrationApiController;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -180,15 +180,12 @@ public class MitreSecurityConfig {
     @Autowired
     @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(passwordEncoder);
+        .passwordEncoder(new IamClientSecretEncoder());
     }
 
     @Override
@@ -223,9 +220,6 @@ public class MitreSecurityConfig {
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
 
@@ -233,7 +227,7 @@ public class MitreSecurityConfig {
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
 
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(passwordEncoder);
+        .passwordEncoder(new IamClientSecretEncoder());
     }
 
     private ClientCredentialsTokenEndpointFilter clientCredentialsEndpointFilter()

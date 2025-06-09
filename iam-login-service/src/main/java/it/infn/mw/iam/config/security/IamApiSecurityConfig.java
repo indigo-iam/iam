@@ -31,7 +31,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationProcessingFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
@@ -42,6 +41,7 @@ import it.infn.mw.iam.api.proxy.ProxyCertificatesApiController;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.security.IamWebSecurityConfig.UserLoginConfig;
 import it.infn.mw.iam.core.oauth.FormClientCredentialsAuthenticationFilter;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -66,7 +66,7 @@ public class IamApiSecurityConfig {
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
       auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+        .passwordEncoder(new IamClientSecretEncoder());
     }
 
     @Override
