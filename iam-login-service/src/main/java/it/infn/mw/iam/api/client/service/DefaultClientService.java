@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.api.client.service;
 
-import static it.infn.mw.iam.util.IamBcryptUtil.bcrypt;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
@@ -40,6 +39,7 @@ import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.client.ClientSpecs;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @Service
 @Transactional
@@ -70,7 +70,7 @@ public class DefaultClientService implements ClientService {
     client.setCreatedAt(Date.from(clock.instant()));
     eventPublisher.publishEvent(new ClientCreatedEvent(this, client));
     if (!isNull(client.getClientSecret())) {
-      client.setClientSecret(bcrypt().encode(client.getClientSecret()));
+      client.setClientSecret(new IamClientSecretEncoder().encode(client.getClientSecret()));
     }
     return clientRepo.save(client);
   }
