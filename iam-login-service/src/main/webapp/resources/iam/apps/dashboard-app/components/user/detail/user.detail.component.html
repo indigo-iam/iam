@@ -41,12 +41,12 @@
                     <a href="mailto:{{$ctrl.user.emails[0].value}}">{{$ctrl.user.emails[0].value}}</a>
                 </td>
             </tr>
-            <tr ng-if="$ctrl.user.affiliation">
+            <tr ng-if="$ctrl.getAffiliation()">
                 <td class="text-bold text-left">
                     Affiliation
                 </td>
                 <td class="text-right">
-                    {{$ctrl.user.affiliation}}</a>
+                    {{$ctrl.getAffiliation()}}</a>
                 </td>
             </tr>
             <tr>

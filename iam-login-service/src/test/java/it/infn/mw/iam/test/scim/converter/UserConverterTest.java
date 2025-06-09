@@ -80,7 +80,7 @@ public class UserConverterTest {
 
         ScimUser scimUser = userConverter.dtoFromEntity(iamAccount);
 
-        assertEquals("Test user affiliation", scimUser.getAffiliation());
+        assertEquals("Test user affiliation", scimUser.getIndigoUser().getAffiliation());
     }
 
     @Test

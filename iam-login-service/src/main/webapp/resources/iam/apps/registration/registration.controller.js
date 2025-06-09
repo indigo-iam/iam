@@ -100,6 +100,18 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
+		affiliation: {
+			name: "affiliation",
+			label: "Affiliation",
+			ngModelName: "affiliation",
+			articleToUse: "an",
+			placeholder:
+				"Enter your affiliation",
+			type: "text",
+			required: true,
+			showField: true,
+			debounceTime: 500
+		},
 	};
 
 	vm.createRequest = createRequest;

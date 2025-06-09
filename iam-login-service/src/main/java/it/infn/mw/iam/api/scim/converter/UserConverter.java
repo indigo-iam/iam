@@ -176,8 +176,8 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       userInfo.setAddress(addressConverter.entityFromDto(scimUser.getAddresses().get(0)));
     }
 
-    if (scimUser.getAffiliation() != null) {
-      userInfo.setAffiliation(scimUser.getAffiliation());
+    if (scimUser.hasAffiliation()) {
+      userInfo.setAffiliation(scimUser.getIndigoUser().getAffiliation());
     }
 
     account.setUserInfo(userInfo);
@@ -204,8 +204,7 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
       .nickName(entity.getUserInfo().getNickname())
       .profileUrl(entity.getUserInfo().getProfile())
       .timezone(entity.getUserInfo().getZoneinfo())
-      .buildEmail(entity.getUserInfo().getEmail())
-      .affiliation(entity.getUserInfo().getAffiliation());
+      .buildEmail(entity.getUserInfo().getEmail());
 
     if (address != null) {
 
@@ -234,6 +233,10 @@ public class UserConverter implements Converter<ScimUser, IamAccount> {
 
     if (entity.getEndTime() != null) {
       builder.endTime(entity.getEndTime());
+    }
+
+    if (entity.hasAffiliation()) {
+      builder.affiliation(entity.getAffiliation());
     }
 
     for (LabelDescriptor ld : properties.getIncludeLabels()) {
