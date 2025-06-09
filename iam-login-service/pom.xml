@@ -529,12 +529,15 @@
               <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
             </env>
           </image>
+          <fork>true</fork>
+          <skip>false</skip>
         </configuration>
 
         <executions>
           <execution>
             <goals>
               <goal>build-info</goal>
+              <goal>repackage</goal>
             </goals>
           </execution>
         </executions>
