@@ -21,10 +21,17 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 
+import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 import org.junit.After;
@@ -41,8 +48,11 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamScopePolicy;
+import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -80,6 +90,9 @@ public class GroupMembersIntegrationTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
+
+  @Autowired
+  private IamScopePolicyRepository scopePolicyRepo;
 
   @Before
   public void setup() {
@@ -333,27 +346,10 @@ public class GroupMembersIntegrationTests {
   public void intermediateGroupMembershipIsEnforcedOnAdd() throws Exception {
 
     // Create group hierarchy
-    IamGroup rootGroup = new IamGroup();
-    rootGroup.setName("root");
-
-    rootGroup = groupService.createGroup(rootGroup);
-
-    IamGroup subgroup = new IamGroup();
-    subgroup.setName("root/subgroup");
-    subgroup.setParentGroup(rootGroup);
-
-    subgroup = groupService.createGroup(subgroup);
-
-    IamGroup subsubgroup = new IamGroup();
-    subsubgroup.setName("root/subgroup/subsubgroup");
-    subsubgroup.setParentGroup(subgroup);
-
-    subsubgroup = groupService.createGroup(subsubgroup);
-
-    IamGroup sibling = new IamGroup();
-    sibling.setName("root/sibling");
-    sibling.setParentGroup(rootGroup);
-    sibling = groupService.createGroup(sibling);
+    IamGroup rootGroup = createGroup("root", null);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+    IamGroup sibling = createGroup("root/sibling", rootGroup);
 
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -399,27 +395,10 @@ public class GroupMembersIntegrationTests {
   public void intermediateGroupMembershipIsEnforcedOnRemove() throws Exception {
 
     // Create group hierarchy
-    IamGroup rootGroup = new IamGroup();
-    rootGroup.setName("root");
-
-    rootGroup = groupService.createGroup(rootGroup);
-
-    IamGroup subgroup = new IamGroup();
-    subgroup.setName("root/subgroup");
-    subgroup.setParentGroup(rootGroup);
-
-    subgroup = groupService.createGroup(subgroup);
-
-    IamGroup subsubgroup = new IamGroup();
-    subsubgroup.setName("root/subgroup/subsubgroup");
-    subsubgroup.setParentGroup(subgroup);
-
-    subsubgroup = groupService.createGroup(subsubgroup);
-
-    IamGroup sibling = new IamGroup();
-    sibling.setName("root/sibling");
-    sibling.setParentGroup(rootGroup);
-    sibling = groupService.createGroup(sibling);
+    IamGroup rootGroup = createGroup("root", null);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+    IamGroup sibling = createGroup("root/sibling", rootGroup);
 
     IamAccount account =
         accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
@@ -525,5 +504,100 @@ public class GroupMembersIntegrationTests {
         is(true));
   }
 
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  public void getGroupsForAccountWorksForAdminsTest() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalResults", is(2)))
+          .andExpect(jsonPath("$.Resources", not(empty())))
+          .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+  }
+
+  @Test
+  public void anonymousAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", authorities = {"ROLE_USER"})
+  public void nonAdminAccessToGetListOfUserGroupEndpointFailsTest() throws Exception {
+    mvc.perform(get("/iam/account/{id}/groups", "VALID_ID"))
+      .andDo(print())
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "test", authorities = {"ROLE_USER"})
+  public void userAccessToGetListOfUserGroupEndpointSuccessTest() throws Exception {
+    IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
+    mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
+      .andDo(print())
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test", authorities = { "ROLE_USER" })
+  public void userAccessToGetListOfUserGroupUsingMeEndpointSuccessTest() throws Exception {
+    mvc.perform(get("/iam/account/me/groups"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", is(2)))
+        .andExpect(jsonPath("$.Resources", not(empty())))
+        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+  }
+
+  @Test
+  @WithMockUser(username = ADMIN_USER, roles = { "USER", "ADMIN" })
+  public void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
+    Set<IamScopePolicy> scopePolicies = Set.of(
+        initScopePolicy("Scope policy description 1"),
+        initScopePolicy("Scope policy description 2"),
+        initScopePolicy("Scope policy description 3"));
+
+    IamGroup rootGroup = createGroup("root", null);
+    rootGroup.setScopePolicies(scopePolicies);
+    IamGroup subgroup = createGroup("root/subgroup", rootGroup);
+    IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
+
+    IamAccount account = accountRepo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
+
+    mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
+        .andExpect(status().isCreated());
+
+    mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", is(5)))
+        .andExpect(jsonPath("$.Resources", not(empty())))
+        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")))
+        .andExpect(jsonPath("$.Resources[2].scopePoliciesDescription",
+            is("Scope policy description 1, Scope policy description 2, Scope policy description 3")));
+  }
+
+  private IamGroup createGroup(String name, IamGroup parent) {
+    IamGroup group = new IamGroup();
+    group.setName(name);
+    group.setParentGroup(parent);
+    return groupService.createGroup(group);
+  }
+
+  private IamScopePolicy initScopePolicy(String description) {
+    Date now = new Date();
+    long randomLong = ThreadLocalRandom.current().nextLong();
+
+    IamScopePolicy p = new IamScopePolicy();
+    p.setId(randomLong);
+    p.setCreationTime(now);
+    p.setLastUpdateTime(now);
+    p.setDescription(description);
+    p.setRule(PolicyRule.PERMIT);
+
+    scopePolicyRepo.save(p);
+    return p;
+  }
 
 }

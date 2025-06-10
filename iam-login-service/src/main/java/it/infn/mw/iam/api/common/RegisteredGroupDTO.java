@@ -1,0 +1,171 @@
+/**
+ * Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2016-2021
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package it.infn.mw.iam.api.common;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamLabel;
+import it.infn.mw.iam.persistence.model.IamScopePolicy;
+
+public class RegisteredGroupDTO implements Serializable {
+    private Long id;
+    private String uuid;
+    private String name;
+    private String description;
+    private RegisteredGroupDTO parentGroup;
+    private Set<RegisteredGroupDTO> childrenGroups = new HashSet<>();
+    private Set<IamLabel> labels = new HashSet<>();
+    private Date joiningDate;
+    private String scopePoliciesDescription;
+
+    private RegisteredGroupDTO(Builder builder) {
+        this.id = builder.id;
+        this.uuid = builder.uuid;
+        this.name = builder.name;
+        this.description = builder.description;
+        this.parentGroup = builder.parentGroup;
+        this.childrenGroups = builder.childrenGroups != null ? builder.childrenGroups : new HashSet<>();
+        this.labels = builder.labels != null ? builder.labels : new HashSet<>();
+        this.joiningDate = builder.joiningDate;
+        this.scopePoliciesDescription = builder.scopePoliciesDescription;
+    }
+
+    public static class Builder {
+        private Long id;
+        private String uuid;
+        private String name;
+        private String description;
+        private RegisteredGroupDTO parentGroup;
+        private Set<RegisteredGroupDTO> childrenGroups;
+        private Set<IamLabel> labels;
+        private Date joiningDate;
+        private String scopePoliciesDescription;
+
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder uuid(String uuid) {
+            this.uuid = uuid;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder parentGroup(IamGroup parentGroup) {
+            if (parentGroup != null) {
+                this.parentGroup = new RegisteredGroupDTO.Builder()
+                        .id(parentGroup.getId())
+                        .uuid(parentGroup.getUuid())
+                        .name(parentGroup.getName())
+                        .description(parentGroup.getDescription())
+                        .parentGroup(parentGroup.getParentGroup())
+                        // .childrenGroups(parentGroup.getChildrenGroups())
+                        .labels(parentGroup.getLabels())
+                        .build();
+            }
+            return this;
+        }
+
+        public Builder childrenGroups(Set<IamGroup> childrenGroups) {
+            this.childrenGroups = childrenGroups.stream()
+                    .map(gr -> new RegisteredGroupDTO.Builder()
+                            .id(gr.getId())
+                            .uuid(gr.getUuid())
+                            .name(gr.getName())
+                            .description(gr.getDescription())
+                            //.parentGroup(gr.getParentGroup())
+                            .childrenGroups(gr.getChildrenGroups())
+                            .labels(gr.getLabels())
+                            .build())
+                    .collect(Collectors.toSet());
+            return this;
+        }
+
+        public Builder labels(Set<IamLabel> labels) {
+            this.labels = labels;
+            return this;
+        }
+
+        public Builder joiningDate(Date joiningDate) {
+            this.joiningDate = joiningDate;
+            return this;
+        }
+
+        public Builder scopePoliciesDescription(Set<IamScopePolicy> scopePolicies) {
+            this.scopePoliciesDescription = scopePolicies.stream()
+                    .map(IamScopePolicy::getDescription)
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+            return this;
+        }
+
+        public RegisteredGroupDTO build() {
+            return new RegisteredGroupDTO(this);
+        }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public RegisteredGroupDTO getParentGroup() {
+        return parentGroup;
+    }
+
+    public Set<RegisteredGroupDTO> getChildrenGroups() {
+        return childrenGroups;
+    }
+
+    public Set<IamLabel> getLabels() {
+        return labels;
+    }
+
+    public Date getJoiningDate() {
+        return joiningDate;
+    }
+
+    public String getScopePoliciesDescription() {
+        return scopePoliciesDescription;
+    }
+
+}
