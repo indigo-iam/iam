@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.registration;
 import static java.util.Date.from;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,6 +112,7 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
     request.setUsername(username);
     request.setNotes("Some short notes...");
     request.setPassword("password");
+    request.setAffiliation("Test-Affiliation");
 
     // @formatter:off
     String response = mvc
@@ -126,24 +128,30 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
-
-    RegistrationRequestDto reg = createRegistrationRequest("test_create");
-
-    mvc
-      .perform(post("/registration/approve/{uuid}", reg.getUuid())
-        .with(user("admin").roles("ADMIN", "USER")))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    IamAccount account = repo.findByUsername("test_create")
-      .orElseThrow(assertionError("Expected account not found"));
+public void createRequestCreatesAupSignatureIfAupIsDefined() throws Exception {
+    IamAccount account = approveRegistrationAndGetAccount("test_create");
 
     assertThat(account.getEndTime(), is(from(SEVEN_DAYS_FROM_NOW)));
+}
 
-  }
+@Test
+public void createRequestStoresAffiliation() throws Exception {
+    IamAccount account = approveRegistrationAndGetAccount("test_create");
+
+    assertEquals("Test-Affiliation", account.getAffiliation());
+}
+
+private IamAccount approveRegistrationAndGetAccount(String username) throws Exception {
+    RegistrationRequestDto reg = createRegistrationRequest(username);
+
+    mvc.perform(post("/registration/approve/{uuid}", reg.getUuid())
+            .with(user("admin").roles("ADMIN", "USER")))
+        .andExpect(status().isOk());
+
+    return repo.findByUsername(username)
+        .orElseThrow(assertionError("Expected account not found"));
+}
+
 
 
 }
