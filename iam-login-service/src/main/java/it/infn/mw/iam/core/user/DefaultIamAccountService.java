@@ -579,19 +579,22 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
     List<RegisteredGroupDTO> groupDTOs = account.getGroups().stream()
-        .map(IamAccountGroupMembership::getGroup)
-        .sorted(Comparator.comparing(IamGroup::getName))
-        .map(group -> new RegisteredGroupDTO.Builder()
-            .id(group.getId())
-            .uuid(group.getUuid())
-            .name(group.getName())
-            .description(group.getDescription())
-            .parentGroup(group.getParentGroup())
-            .childrenGroups(group.getChildrenGroups())
-            .labels(group.getLabels())
-            .build())
+        .sorted(Comparator.comparing(m -> m.getGroup().getName()))
+        .map(membership -> {
+          IamGroup group = membership.getGroup();
+          return new RegisteredGroupDTO.Builder()
+              .id(group.getId())
+              .uuid(group.getUuid())
+              .name(group.getName())
+              .description(group.getDescription())
+              .parentGroup(group.getParentGroup())
+              .childrenGroups(group.getChildrenGroups())
+              .labels(group.getLabels())
+              .joiningDate(membership.getCreationTime())
+              .scopePoliciesDescription(group.getScopePolicies())
+              .build();
+        })
         .toList();
-
     
     long total = groupDTOs.size();
     int start = Math.max(0, (int) pageable.getOffset() - 1);

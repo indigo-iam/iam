@@ -28,7 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 
+import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 import org.junit.After;
@@ -45,8 +48,11 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
+import it.infn.mw.iam.persistence.model.IamScopePolicy;
+import it.infn.mw.iam.persistence.model.PolicyRule;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamScopePolicyRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -84,6 +90,9 @@ public class GroupMembersIntegrationTests {
 
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
+
+  @Autowired
+  private IamScopePolicyRepository scopePolicyRepo;
 
   @Before
   public void setup() {
@@ -544,8 +553,13 @@ public class GroupMembersIntegrationTests {
   @Test
   @WithMockUser(username = ADMIN_USER, roles = { "USER", "ADMIN" })
   public void userAccessToGetListOfUserGroupUsingMeWorksForSubGroup() throws Exception {
+    Set<IamScopePolicy> scopePolicies = Set.of(
+        initScopePolicy("Scope policy description 1"),
+        initScopePolicy("Scope policy description 2"),
+        initScopePolicy("Scope policy description 3"));
 
     IamGroup rootGroup = createGroup("root", null);
+    rootGroup.setScopePolicies(scopePolicies);
     IamGroup subgroup = createGroup("root/subgroup", rootGroup);
     IamGroup subsubgroup = createGroup("root/subgroup/subsubgroup", subgroup);
 
@@ -559,7 +573,9 @@ public class GroupMembersIntegrationTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalResults", is(5)))
         .andExpect(jsonPath("$.Resources", not(empty())))
-        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
+        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")))
+        .andExpect(jsonPath("$.Resources[2].scopePoliciesDescription",
+            is("Scope policy description 1, Scope policy description 2, Scope policy description 3")));
   }
 
   private IamGroup createGroup(String name, IamGroup parent) {
@@ -567,6 +583,21 @@ public class GroupMembersIntegrationTests {
     group.setName(name);
     group.setParentGroup(parent);
     return groupService.createGroup(group);
+  }
+
+  private IamScopePolicy initScopePolicy(String description) {
+    Date now = new Date();
+    long randomLong = ThreadLocalRandom.current().nextLong();
+
+    IamScopePolicy p = new IamScopePolicy();
+    p.setId(randomLong);
+    p.setCreationTime(now);
+    p.setLastUpdateTime(now);
+    p.setDescription(description);
+    p.setRule(PolicyRule.PERMIT);
+
+    scopePolicyRepo.save(p);
+    return p;
   }
 
 }
