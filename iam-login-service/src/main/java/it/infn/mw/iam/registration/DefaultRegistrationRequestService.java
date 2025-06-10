@@ -67,6 +67,7 @@ import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -213,7 +214,7 @@ public class DefaultRegistrationRequestService
       .password(dto.getPassword());
 
 
-    if(iamProperties.getRegistration().isRequireCertificate()){
+    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED)){
 
       HttpSession session = request.getSession(false);
       

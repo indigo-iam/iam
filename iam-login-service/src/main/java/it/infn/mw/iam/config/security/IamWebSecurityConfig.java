@@ -71,6 +71,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -272,7 +273,7 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      if(iamProperties.getRegistration().isRequireCertificate()){
+      if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED)){
         http.requestMatchers()
         .antMatchers(START_REGISTRATION_ENDPOINT)
         .and()

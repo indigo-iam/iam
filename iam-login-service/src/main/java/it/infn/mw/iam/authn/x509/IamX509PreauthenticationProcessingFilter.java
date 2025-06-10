@@ -36,6 +36,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
+import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 
 public class IamX509PreauthenticationProcessingFilter
     extends AbstractPreAuthenticatedProcessingFilter {
@@ -118,7 +119,7 @@ public class IamX509PreauthenticationProcessingFilter
 
     Optional<IamX509AuthenticationCredential> credential = extractCredential(request);
 
-    if(iamProperties.getRegistration().isRequireCertificate()){
+    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED)){
       request.setAttribute(X509_REQUIRED, Boolean.TRUE);
     }
 

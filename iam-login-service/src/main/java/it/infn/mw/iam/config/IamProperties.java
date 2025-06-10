@@ -52,12 +52,42 @@ public class IamProperties {
     VISIBLE, HIDDEN, HIDDEN_WITH_LINK
   }
 
+  public enum RequireCertificateOption{
+    OFF,OPTIONAL,REQUIRED
+  }
+
   public enum ExternalAuthAttributeSectionBehaviour {
     MANDATORY,
     OPTIONAL,
     HIDDEN
   }
 
+/*   public enum RequireCertificateOption{
+    OFF("off"),
+    OPTIONAL("optional"),
+    REQUIRED("requiered");
+
+    public final String option;
+
+    public String getOption(){
+      return this.option;
+    }
+
+    private RequireCertificateOption(String option){
+      this.option = setOption(option).getOption();
+    }
+
+    public static RequireCertificateOption setOption(String option){
+      for(RequireCertificateOption requireCertificateOption:RequireCertificateOption.values()){
+        if(requireCertificateOption.getOption().equals(option)){
+          return requireCertificateOption;
+        }
+      }
+      return RequireCertificateOption.OFF;
+    }
+
+  } 
+ */
   public static class AccountLinkingProperties {
     boolean enable = true;
 
@@ -232,7 +262,7 @@ public class IamProperties {
 
     boolean requireExternalAuthentication = false;
 
-    boolean requireCertificate = false;
+    RequireCertificateOption requireCertificate = RequireCertificateOption.OFF;
     
     boolean addNicknameAsAttribute = false;
 
@@ -286,11 +316,11 @@ public class IamProperties {
       this.oidcIssuer = oidcIssuer;
     }
 
-    public boolean isRequireCertificate (){
+    public RequireCertificateOption getRequireCertificate (){
       return requireCertificate;
     }
 
-    public void setRequireCertificate(boolean requireCertificate){
+    public void setRequireCertificate(RequireCertificateOption requireCertificate){
       this.requireCertificate = requireCertificate;
     }
 
