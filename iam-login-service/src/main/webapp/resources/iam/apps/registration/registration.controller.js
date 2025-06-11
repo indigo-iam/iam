@@ -249,6 +249,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
+			affiliation: '',
 		};
 	}
 
