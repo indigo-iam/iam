@@ -128,15 +128,8 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate: {
+		registerCertificate:{
 
-		},
-
-		subjectdn: {
-		},
-		issuerdn: {
-		},
-		certificate: {
 		}			
 		
 	};
@@ -266,9 +259,6 @@ function RegistrationController(
 				email: populateValue(info, 'email'),
 				notes: '',
 				registerCertificate: true,
-				subjectdn: '',
-				issuerdn: '',
-				certificate: '',
 			};
 
 			if (info.type === 'OIDC') {
