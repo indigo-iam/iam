@@ -25,7 +25,7 @@ RegistrationController.$inject = [
 
 function RegistrationController(
 	$scope, $q, $window, $cookies, RegistrationRequestService, AuthnInfo, Aup,
-	PrivacyPolicy, $uibModal,  toaster,  $state, Utils) {
+	PrivacyPolicy, $uibModal,  toaster,  $state) {
 
 	var vm = this;
 	var EXT_AUTHN_ROLE = 'ROLE_EXT_AUTH_UNREGISTERED';
@@ -313,12 +313,12 @@ function RegistrationController(
 	}
 
 	function fieldValid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$valid;
 	}
 
 	function fieldInvalid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$invalid;
 	}
 
@@ -351,7 +351,7 @@ function RegistrationController(
 		let field = $scope.registrationForm[fieldName];
 		let fieldInfo = $scope.fields[fieldName];
 
-		if (!fieldInfo) {
+		if (!fieldInfo || !field) {
 			return null;
 		}
 

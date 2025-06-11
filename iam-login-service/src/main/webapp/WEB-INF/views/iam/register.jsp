@@ -36,8 +36,6 @@
         <script type="text/javascript" src="${resourcesPrefix}/iam/apps/registration/privacy-policy.service.js"></script>
         <script type="text/javascript" src="${resourcesPrefix}/iam/js/toaster/toaster.min.js"></script>
         <script type="text/javascript" src="<c:url value='/webjars/angular-ui-router/release/angular-ui-router.min.js'/>"></script>
-        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/utils.service.js"></script>
-        <script type="text/javascript" src="${resourcesPrefix}/iam/apps/dashboard-app/services/http-utils.service.js"></script>
     </jsp:attribute>
     <jsp:body>
         <div ng-app="registrationApp">
