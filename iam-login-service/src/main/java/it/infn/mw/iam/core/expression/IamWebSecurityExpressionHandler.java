@@ -22,9 +22,10 @@ import org.springframework.security.web.FilterInvocation;
 import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.service.DefaultClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Component
@@ -33,12 +34,17 @@ public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpression
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final IamAccountClientRepository accountClientRepo;
+  private final IamClientRepository clientRepo;
 
   public IamWebSecurityExpressionHandler(AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver,
+      IamAccountClientRepository accountClientRepo, IamClientRepository clientRepo) {
     this.accountUtils = accountUtils;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
+    this.accountClientRepo = accountClientRepo;
+    this.clientRepo = clientRepo;
   }
 
   @Override
@@ -48,7 +54,7 @@ public class IamWebSecurityExpressionHandler extends OAuth2WebSecurityExpression
     StandardEvaluationContext ec =
         super.createEvaluationContextInternal(authentication, invocation);
     ec.setVariable("iam", new IamSecurityExpressionMethods(authentication, accountUtils,
-        groupRequestUtils, scopeResolver));
+        groupRequestUtils, scopeResolver, accountClientRepo, clientRepo));
     return ec;
   }
 
