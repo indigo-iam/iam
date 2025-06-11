@@ -36,6 +36,8 @@ import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
 
 @RunWith(SpringRunner.class)
@@ -54,6 +56,11 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   @Autowired
   private IamGroupRequestRepository repo;
 
+  @Autowired
+  private IamAccountClientRepository accountClientRepo;
+
+  @Autowired
+  private IamClientRepository clientRepo;
 
   @After
   public void destroy() {
@@ -63,7 +70,7 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   private IamSecurityExpressionMethods getMethods() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return new IamSecurityExpressionMethods(authentication, accountUtils, groupRequestUtils,
-        scopeResolver);
+        scopeResolver, accountClientRepo, clientRepo);
   }
 
   @Test

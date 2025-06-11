@@ -32,7 +32,7 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
   @Override
   public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
 
-    final short DEFAULT_ROUND = 12;
+    final int DEFAULT_ROUND = 12;
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(DEFAULT_ROUND);
 

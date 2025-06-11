@@ -24,7 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 public class IamClientSecretEncoder implements PasswordEncoder {
 
-  final short DEFAULT_ROUND = 12;
+  final int DEFAULT_ROUND = 12;
 
   BCryptPasswordEncoder bcryptEncoder = new BCryptPasswordEncoder(DEFAULT_ROUND);
 

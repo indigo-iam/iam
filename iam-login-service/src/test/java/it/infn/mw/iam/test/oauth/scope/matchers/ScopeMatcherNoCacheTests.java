@@ -46,7 +46,7 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "cache-client";
   private static final String CLIENT_SECRET = "secret";
-  private static final String HASH_CLIENT_SECRET = "$2a$12$WWEtffWdIellMxblYDNEx..nVahwP9ZMuRYyVdYFb.7DECPRaOp1K";
+  private static final String CLIENT_SECRET_HASH = "$2a$12$WWEtffWdIellMxblYDNEx..nVahwP9ZMuRYyVdYFb.7DECPRaOp1K";
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -75,7 +75,7 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);
-    client.setClientSecret(HASH_CLIENT_SECRET);
+    client.setClientSecret(CLIENT_SECRET_HASH);
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
     clientRepo.save(client);
 
