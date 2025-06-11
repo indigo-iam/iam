@@ -115,6 +115,9 @@ function RegistrationController(
 			rows: 5,
 			required: true,
 			showField: true,
+		},
+		registerCertificate:{
+
 		}			
 		
 	};
@@ -132,6 +135,7 @@ function RegistrationController(
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
 	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
+	vm.registerCertificate = true;
 
 	vm.activate();
 	vm.openExpiringCertificateDialog();
@@ -239,6 +243,7 @@ function RegistrationController(
 				username: populateValue(info, 'username'),
 				email: populateValue(info, 'email'),
 				notes: '',
+				registerCertificate: true,
 			};
 
 			if (info.type === 'OIDC') {
@@ -293,6 +298,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
+			registerCertificate: true
 		};
 	}
 

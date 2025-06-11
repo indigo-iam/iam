@@ -155,8 +155,7 @@ iam:
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
     add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
-    # Default should be false, it's the environment variable for enabling certificate linking upon account creation
-    require-certificate: ${IAM_REGISTRATION_REQUIRE_CERTIFICATE:false}
+    require-certificate: ${IAM_REGISTRATION_REQUIRE_CERTIFICATE:off}
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}

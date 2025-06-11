@@ -214,7 +214,8 @@ public class DefaultRegistrationRequestService
       .password(dto.getPassword());
 
 
-    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED)){
+    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED) ||
+      (iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OPTIONAL) && dto.getRegisterCertificate().equals("true"))){
 
       HttpSession session = request.getSession(false);
       
@@ -225,7 +226,7 @@ public class DefaultRegistrationRequestService
 
       IamX509Certificate cert = cred.asIamX509Certificate();
 
-      cert.setLabel("cert-1");
+      cert.setLabel("cert-0");
 
       ScimX509Certificate fin = X509Converter.dtoFromEntity(cert);
 

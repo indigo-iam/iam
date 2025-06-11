@@ -273,7 +273,7 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED)){
+      if(!iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OFF)){
         http.requestMatchers()
         .antMatchers(START_REGISTRATION_ENDPOINT)
         .and()

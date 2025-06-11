@@ -62,32 +62,6 @@ public class IamProperties {
     HIDDEN
   }
 
-/*   public enum RequireCertificateOption{
-    OFF("off"),
-    OPTIONAL("optional"),
-    REQUIRED("requiered");
-
-    public final String option;
-
-    public String getOption(){
-      return this.option;
-    }
-
-    private RequireCertificateOption(String option){
-      this.option = setOption(option).getOption();
-    }
-
-    public static RequireCertificateOption setOption(String option){
-      for(RequireCertificateOption requireCertificateOption:RequireCertificateOption.values()){
-        if(requireCertificateOption.getOption().equals(option)){
-          return requireCertificateOption;
-        }
-      }
-      return RequireCertificateOption.OFF;
-    }
-
-  } 
- */
   public static class AccountLinkingProperties {
     boolean enable = true;
 
