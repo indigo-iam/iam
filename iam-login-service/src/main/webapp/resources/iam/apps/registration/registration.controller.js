@@ -88,18 +88,6 @@ function RegistrationController(
 			showField: true,
 			debounceTime: 500
 		},
-		notes: {
-			name: "notes",
-			label: "Notes",
-			ngModelName: "notes",
-			articleToUse: "a",
-			placeholder:
-				"Providing a clear explanation on the motivation behind this request will likely speed up the approval process",
-			type: "textarea",
-			rows: 5,
-			required: true,
-			showField: true,
-		},
 		affiliation: {
 			name: "affiliation",
 			label: "Affiliation",
@@ -111,6 +99,18 @@ function RegistrationController(
 			required: true,
 			showField: true,
 			debounceTime: 500
+		},
+		notes: {
+			name: "notes",
+			label: "Notes",
+			ngModelName: "notes",
+			articleToUse: "a",
+			placeholder:
+				"Providing a clear explanation on the motivation behind this request will likely speed up the approval process",
+			type: "textarea",
+			rows: 5,
+			required: true,
+			showField: true,
 		},
 	};
 
