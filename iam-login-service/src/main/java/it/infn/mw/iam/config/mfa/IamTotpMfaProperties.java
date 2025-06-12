@@ -24,6 +24,8 @@ public class IamTotpMfaProperties {
 
   private boolean multiFactorSettingsBtnEnabled;
   private String passwordToEncryptAndDecrypt;
+  private String oldPasswordToDecrypt;
+  private boolean updateGlobalKeyRequest;
 
   public String getPasswordToEncryptOrDecrypt() {
     return passwordToEncryptAndDecrypt;
@@ -40,4 +42,21 @@ public class IamTotpMfaProperties {
   public boolean hasMultiFactorSettingsBtnEnabled() {
     return multiFactorSettingsBtnEnabled;
   }
+
+  public void setOldPasswordToDecrypt(String oldPasswordToDecrypt) {
+    this.oldPasswordToDecrypt = oldPasswordToDecrypt;
+  }
+
+  public String getOldPasswordToDecrypt() {
+    return oldPasswordToDecrypt;
+  }
+
+  public void setUpdateGlobalKeyRequest(boolean updateGlobalKeyRequest) {
+    this.updateGlobalKeyRequest = updateGlobalKeyRequest;
+  }
+
+  public boolean isUpdateGlobalKeyRequest() {
+    return updateGlobalKeyRequest;
+  }
+
 }

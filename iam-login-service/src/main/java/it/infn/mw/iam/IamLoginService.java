@@ -29,6 +29,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -37,11 +38,12 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.util.IamBanner;
 
 @SpringBootApplication
 @EnableTransactionManagement
-
+@EnableConfigurationProperties(IamTotpMfaProperties.class)
 // @formatter:off
 @ComponentScan(basePackages = {
     "it.infn.mw.iam.config", 
@@ -103,8 +105,7 @@ public class IamLoginService {
     PropertySourcesPlaceholderConfigurer propsConfig = new PropertySourcesPlaceholderConfigurer();
 
     propsConfig.setLocations(new ClassPathResource("iam.version.properties"),
-        new ClassPathResource("git.properties"));
-
+        new ClassPathResource("git.properties") );
     propsConfig.setIgnoreResourceNotFound(true);
     propsConfig.setIgnoreUnresolvablePlaceholders(true);
 
