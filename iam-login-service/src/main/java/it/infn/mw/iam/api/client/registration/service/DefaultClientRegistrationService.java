@@ -47,8 +47,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
+import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -345,9 +345,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
 
-    client = clientService.saveNewClient(client);
-
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
+    client = clientService.saveNewClient(client);
 
     if (isAnonymous(authentication)) {
 

@@ -61,6 +61,7 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @Service
 @Validated
@@ -120,15 +121,20 @@ public class DefaultClientManagementService implements ClientManagementService {
   @Override
   public RegisteredClientDTO saveNewClient(RegisteredClientDTO client) throws ParseException {
 
+    String secret = defaultsService.generateClientSecret();
+
     ClientDetailsEntity entity = converter.entityFromClientManagementRequest(client);
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
+    entity.setClientSecret(new IamClientSecretEncoder().encode(secret));
     entity.setActive(true);
 
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
-    return converter.registeredClientDtoFromEntity(entity);
+    RegisteredClientDTO newClientResponse = converter.registeredClientDtoFromEntity(entity);
+    newClientResponse.setClientSecret(secret);
+    return newClientResponse;
   }
 
   @Override
@@ -210,10 +216,13 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    client.setClientSecret(defaultsService.generateClientSecret());
+    String pwd = defaultsService.generateClientSecret();
+    client.setClientSecret(new IamClientSecretEncoder().encode(pwd));
     client = clientService.updateClient(client);
     eventPublisher.publishEvent(new ClientSecretUpdatedEvent(this, client));
-    return converter.registeredClientDtoFromEntity(client);
+    RegisteredClientDTO clientWithSecret = converter.registeredClientDtoFromEntity(client);
+    clientWithSecret.setClientSecret(pwd);
+    return clientWithSecret;
   }
 
   @Override

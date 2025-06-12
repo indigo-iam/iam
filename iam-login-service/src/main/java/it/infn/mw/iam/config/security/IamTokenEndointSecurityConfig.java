@@ -32,7 +32,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
@@ -43,6 +42,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.client.ClientUserDetailsService;
 import it.infn.mw.iam.core.oauth.assertion.IAMJWTBearerAuthenticationProvider;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -71,7 +71,7 @@ public class IamTokenEndointSecurityConfig extends WebSecurityConfigurerAdapter 
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
     auth.userDetailsService(userDetailsService)
-      .passwordEncoder(NoOpPasswordEncoder.getInstance());
+      .passwordEncoder(new IamClientSecretEncoder());
   }
 
   @Bean

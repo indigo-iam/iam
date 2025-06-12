@@ -20,6 +20,7 @@ import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTH
 import java.util.Collection;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -31,6 +32,8 @@ import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 public class IamSecurityExpressionMethods {
@@ -42,13 +45,18 @@ public class IamSecurityExpressionMethods {
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final IamAccountClientRepository accountClientRepo;
+  private final IamClientRepository clientRepo;
 
   public IamSecurityExpressionMethods(Authentication authentication, AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver,
+      IamAccountClientRepository accountClientRepo, IamClientRepository clientRepo) {
     this.authentication = authentication;
     this.accountUtils = accountUtils;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
+    this.accountClientRepo = accountClientRepo;
+    this.clientRepo = clientRepo;
   }
 
   public boolean isExternallyAuthenticatedWithIssuer(String issuer) {
@@ -152,5 +160,14 @@ public class IamSecurityExpressionMethods {
 
   public boolean hasAdminOrGMDashboardRoleOfGroup(String gid) {
     return (hasDashboardRole(Role.ROLE_ADMIN) || isGroupManager(gid));
+  }
+
+  public boolean isClientOwner(String clientId) {
+    Optional<IamAccount> owner = accountUtils.getAuthenticatedUserAccount();
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
+    if (!owner.isPresent() || !client.isPresent()) {
+      return false;
+    }
+    return accountClientRepo.findByAccountAndClient(owner.get(), client.get()).isPresent();
   }
 }

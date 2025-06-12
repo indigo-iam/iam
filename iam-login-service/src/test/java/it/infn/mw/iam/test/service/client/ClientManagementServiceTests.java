@@ -67,6 +67,7 @@ import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
@@ -131,7 +132,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO client = managementService.retrieveClientByClientId("client").orElseThrow();
 
     assertThat(client.getClientId(), is("client"));
-    assertThat(client.getClientSecret(), is("secret"));
+    assertThat(new IamClientSecretEncoder().matches("secret", client.getClientSecret()), is(true));
     assertThat(client.getGrantTypes(), hasItems(CODE, REDELEGATE, IMPLICIT, REFRESH_TOKEN));
     assertThat(client.getScope(), hasItems("openid", "offline_access", "profile", "email",
         "address", "phone", "read-tasks", "write-tasks", "read:/", "write:/"));

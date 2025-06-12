@@ -46,6 +46,7 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
   private static final String CLIENT_ID = "cache-client";
   private static final String CLIENT_SECRET = "secret";
+  private static final String CLIENT_SECRET_HASH = "$2a$12$WWEtffWdIellMxblYDNEx..nVahwP9ZMuRYyVdYFb.7DECPRaOp1K";
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -53,11 +54,11 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
   @Autowired
   private CacheManager cacheManager;
 
-  private String getAccessTokenForClient(String scopes) throws Exception {
+  private String getAccessTokenForClient(String scopes, String secret) throws Exception {
 
     return new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_ID)
-      .clientSecret(CLIENT_SECRET)
+      .clientSecret(secret)
       .scope(scopes)
       .getAccessTokenValue();
   }
@@ -74,17 +75,17 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
 
     ClientDetailsEntity client = new ClientDetailsEntity();
     client.setClientId(CLIENT_ID);
-    client.setClientSecret(CLIENT_SECRET);
+    client.setClientSecret(CLIENT_SECRET_HASH);
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
     clientRepo.save(client);
 
     try {
-      JWT token = JWTParser.parse(getAccessTokenForClient("openid profile email"));
+      JWT token = JWTParser.parse(getAccessTokenForClient("openid profile email", CLIENT_SECRET));
       assertThat("scim:read",
           not(in(token.getJWTClaimsSet().getClaim("scope").toString().split(" "))));
       client.setScope(Sets.newHashSet("openid", "profile", "email", "scim:read"));
       clientRepo.save(client);
-      token = JWTParser.parse(getAccessTokenForClient("openid profile email scim:read"));
+      token = JWTParser.parse(getAccessTokenForClient("openid profile email scim:read", CLIENT_SECRET));
       assertThat("scim:read", in(token.getJWTClaimsSet().getClaim("scope").toString().split(" ")));
     } finally {
       clientRepo.delete(client);

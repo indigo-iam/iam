@@ -24,6 +24,8 @@ import org.springframework.stereotype.Component;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @Component
@@ -32,12 +34,17 @@ public class IamMethodSecurityExpressionHandler extends OAuth2MethodSecurityExpr
   private final AccountUtils accountUtils;
   private final GroupRequestUtils groupRequestUtils;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final IamAccountClientRepository accountClientRepo;
+  private final IamClientRepository clientRepo;
 
   public IamMethodSecurityExpressionHandler(AccountUtils accountUtils,
-      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver) {
+      GroupRequestUtils groupRequestUtils, OAuth2AuthenticationScopeResolver scopeResolver,
+      IamAccountClientRepository accountClientRepo, IamClientRepository clientRepo) {
     this.accountUtils = accountUtils;
     this.groupRequestUtils = groupRequestUtils;
     this.scopeResolver = scopeResolver;
+    this.accountClientRepo = accountClientRepo;
+    this.clientRepo = clientRepo;
   }
 
   @Override
@@ -46,7 +53,7 @@ public class IamMethodSecurityExpressionHandler extends OAuth2MethodSecurityExpr
 
     StandardEvaluationContext ec = super.createEvaluationContextInternal(authentication, mi);
     ec.setVariable("iam", new IamSecurityExpressionMethods(authentication, accountUtils,
-        groupRequestUtils, scopeResolver));
+        groupRequestUtils, scopeResolver, accountClientRepo, clientRepo));
     return ec;
   }
 
