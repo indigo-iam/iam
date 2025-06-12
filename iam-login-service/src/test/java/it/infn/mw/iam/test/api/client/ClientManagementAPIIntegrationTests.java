@@ -390,12 +390,9 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     assertNotEquals(clientSecret, clientSecretRenewed);
   }
 
-  @Test
-  @WithMockUser(username = "test", roles = {"USER"})
-  void secretRotationFailsForOtherUsers() throws Exception {
-
+  private void assertSecretRotationForbidden(String clientId) throws Exception {
     ClientDetailsEntity client =
-        clientRepo.findByClientId("client").orElseThrow(ClientSuppliers.clientNotFound("client"));
+        clientRepo.findByClientId(clientId).orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     final String url =
         String.format("%s/%s/secret", ClientManagementAPIController.ENDPOINT, client.getClientId());
@@ -406,17 +403,16 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
   }
 
   @Test
+  @WithMockUser(username = "test", roles = {"USER"})
+  void secretRotationFailsForOtherUsers() throws Exception {
+
+    assertSecretRotationForbidden("client");
+  }
+
+  @Test
   @WithMockUser(username = "non-existent-user", roles = {"USER"})
   void secretRotationFailsWhenUserNotFound() throws Exception {
 
-    ClientDetailsEntity client =
-        clientRepo.findByClientId("client").orElseThrow(ClientSuppliers.clientNotFound("client"));
-
-    final String url =
-        String.format("%s/%s/secret", ClientManagementAPIController.ENDPOINT, client.getClientId());
-
-    mvc.perform(post(url))
-      .andExpect(FORBIDDEN)
-      .andExpect(jsonPath("$.error", containsString("access_denied")));
+    assertSecretRotationForbidden("client-cred");
   }
 }
