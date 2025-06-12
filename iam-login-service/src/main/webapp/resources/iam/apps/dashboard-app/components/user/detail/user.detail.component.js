@@ -48,6 +48,10 @@
             return Utils.isMfaSettingsBtnEnabled();
         };
 
+        self.getAffiliation = function () {
+            return self.indigoUser().affiliation;
+        };
+
     }
 
     angular.module('dashboardApp').component('userDetail', {

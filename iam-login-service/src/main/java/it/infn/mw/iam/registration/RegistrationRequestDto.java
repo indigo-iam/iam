@@ -95,6 +95,7 @@ public class RegistrationRequestDto {
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
   private String notes;
+  private String affiliation;
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
@@ -111,7 +112,7 @@ public class RegistrationRequestDto {
       @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
       @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
-      @JsonProperty("labels") List<LabelDTO> labels) {
+      @JsonProperty("affiliation") String affiliation, @JsonProperty("labels") List<LabelDTO> labels) {
     super();
     this.username = username;
     this.password = password;
@@ -125,6 +126,7 @@ public class RegistrationRequestDto {
     this.lastUpdateTime = lastUpdateTime;
     this.accountId = accountId;
     this.notes = notes;
+    this.affiliation = affiliation;
     this.labels = labels;
   }
 
@@ -244,6 +246,14 @@ public class RegistrationRequestDto {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public String getAffiliation() {
+    return affiliation;
+  }
+
+  public void setAffiliation(String affiliation) {
+    this.affiliation = affiliation;
   }
 
   public List<LabelDTO> getLabels() {
