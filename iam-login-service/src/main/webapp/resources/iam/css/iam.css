@@ -400,6 +400,7 @@ body.skin-blue {
 
 .btn-social {
     padding-left: 0px;
+    text-align: center !important;
 }
 
 .page-counter {
