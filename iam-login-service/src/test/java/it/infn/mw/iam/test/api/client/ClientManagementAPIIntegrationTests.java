@@ -21,7 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -361,7 +361,7 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     responseJson = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     String clientSecretRenewed = client.getClientSecret();
-    assertFalse(clientSecret.equals(clientSecretRenewed));
+    assertNotEquals(clientSecret, clientSecretRenewed);
   }
 
   @Test
@@ -387,12 +387,27 @@ class ClientManagementAPIIntegrationTests extends TestSupport {
     responseJson = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
     client = mapper.readValue(responseJson, RegisteredClientDTO.class);
     String clientSecretRenewed = client.getClientSecret();
-    assertFalse(clientSecret.equals(clientSecretRenewed));
+    assertNotEquals(clientSecret, clientSecretRenewed);
   }
 
   @Test
   @WithMockUser(username = "test", roles = {"USER"})
   void secretRotationFailsForOtherUsers() throws Exception {
+
+    ClientDetailsEntity client =
+        clientRepo.findByClientId("client").orElseThrow(ClientSuppliers.clientNotFound("client"));
+
+    final String url =
+        String.format("%s/%s/secret", ClientManagementAPIController.ENDPOINT, client.getClientId());
+
+    mvc.perform(post(url))
+      .andExpect(FORBIDDEN)
+      .andExpect(jsonPath("$.error", containsString("access_denied")));
+  }
+
+  @Test
+  @WithMockUser(username = "non-existent-user", roles = {"USER"})
+  void secretRotationFailsWhenUserNotFound() throws Exception {
 
     ClientDetailsEntity client =
         clientRepo.findByClientId("client").orElseThrow(ClientSuppliers.clientNotFound("client"));
