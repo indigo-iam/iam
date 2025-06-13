@@ -20,17 +20,33 @@ angular.module('registrationApp')
 
 RegistrationController.$inject = [
 	'$scope', '$q', '$window', '$cookies', 'RegistrationRequestService',
-	'AuthnInfo', 'Aup', 'PrivacyPolicy'
+	'AuthnInfo', 'Aup', 'PrivacyPolicy', '$uibModal', 'toaster', '$state'
 ];
 
 function RegistrationController(
 	$scope, $q, $window, $cookies, RegistrationRequestService, AuthnInfo, Aup,
-	PrivacyPolicy) {
+	PrivacyPolicy, $uibModal,  toaster,  $state) {
+
 	var vm = this;
 	var EXT_AUTHN_ROLE = 'ROLE_EXT_AUTH_UNREGISTERED';
 
 	$scope.organisationName = getOrganisationName();
 	$scope.request = {};
+	
+	const cred = window.IAM_X509_CRED;
+
+	$scope.iamX509Required = window.IAM_X509_REQUIRED;
+	
+	if(cred){
+		$scope.iamX509Cred = window.IAM_X509_CRED;
+		$scope.iamX509Subject = window.IAM_X509_CRED_SUBJECT;
+		$scope.iamX509Issuer = window.IAM_X509_CRED_ISSUER;
+		$scope.iamX509CanLogin = !!window.IAM_X509_CAN_LOGIN;
+		$scope.iamX509SuspendedAccount = !!window.IAM_X509_SUSPENDED_ACCOUNT;
+		$scope.iamX509AlmostExpired = !!window.IAM_X509_ALMOST_EXPIRED;
+		$scope.iamX509ExpirationDate = window.IAM_X509_EXPIRATION_DATE;
+	}
+	
 
 	$scope.textAlert = undefined;
 	$scope.operationResult = undefined;
@@ -100,12 +116,15 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
+		registerCertificate:{
+
+		}			
+		
 	};
 
 	vm.createRequest = createRequest;
 	vm.populateRequest = populateRequest;
 	vm.resetRequest = resetRequest;
-
 	vm.activate = activate;
 	vm.submit = submit;
 	vm.reset = reset;
@@ -115,8 +134,49 @@ function RegistrationController(
 	vm.clearSessionCookies = clearSessionCookies;
 	vm.populateFieldsWithAdminPreference = populateFieldsWithAdminPreference;
 	vm.getFieldErrorMessage = getFieldErrorMessage;
+	vm.openExpiringCertificateDialog = openExpiringCertificateDialog;
+	vm.registerCertificate = true;
 
 	vm.activate();
+	vm.openExpiringCertificateDialog();
+
+	function ExpiringCertificateController (
+        $uibModalInstance, cert, expirationDate) {
+        var self = this;
+        self.enabled = true;
+        self.cert = cert;
+		self.expirationDate = expirationDate;
+
+        self.cancel = function () {
+            $uibModalInstance.dismiss('Dismissed');
+        };
+    }
+
+
+	function openExpiringCertificateDialog () {
+
+			if($scope.iamX509AlmostExpired){
+
+				var modalInstance = $uibModal.open({
+                templateUrl: '/resources/iam/apps/registration/certificate-expiration.html',
+                controller: ExpiringCertificateController,
+                controllerAs: '$ctrl',
+				backdrop: 'static',
+                resolve: {
+                    cert: {
+                        subjectDn: $scope.iamX509Subject,
+                        issuerDn: $scope.iamX509Issuer
+                    },
+					expirationDate: {
+						date: $scope.iamX509ExpirationDate
+					}
+                }
+            });
+
+            modalInstance.result.then(self.handleSuccess);
+
+			}
+        };
 
 	function activate() {
 		RegistrationRequestService.getConfig()
@@ -183,6 +243,7 @@ function RegistrationController(
 				username: populateValue(info, 'username'),
 				email: populateValue(info, 'email'),
 				notes: '',
+				registerCertificate: true,
 			};
 
 			if (info.type === 'OIDC') {
@@ -237,6 +298,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
+			registerCertificate: true
 		};
 	}
 
@@ -251,12 +313,12 @@ function RegistrationController(
 	}
 
 	function fieldValid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$valid;
 	}
 
 	function fieldInvalid(name) {
-		return $scope.registrationForm[name].$dirty &&
+		return $scope.registrationForm[name] && $scope.registrationForm[name].$dirty &&
 			$scope.registrationForm[name].$invalid;
 	}
 
@@ -289,7 +351,7 @@ function RegistrationController(
 		let field = $scope.registrationForm[fieldName];
 		let fieldInfo = $scope.fields[fieldName];
 
-		if (!fieldInfo) {
+		if (!fieldInfo || !field) {
 			return null;
 		}
 
@@ -310,4 +372,6 @@ function RegistrationController(
 
 		return null;
 	}
+
+
 }

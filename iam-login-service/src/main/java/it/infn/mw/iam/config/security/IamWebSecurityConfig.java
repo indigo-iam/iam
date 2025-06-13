@@ -71,6 +71,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -151,7 +152,7 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo, iamProperties);
     }
 
     protected AuthenticationEntryPoint entryPoint() {
@@ -239,6 +240,13 @@ public class IamWebSecurityConfig {
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
     @Autowired
+    private UserLoginConfig userLoginConfig;
+
+    @Autowired
+    @Qualifier("mitreAuthzRequestFilter")
+    private GenericFilterBean authorizationRequestFilter;
+
+    @Autowired
     IamProperties iamProperties;
 
     AccessDeniedHandler accessDeniedHandler() {
@@ -265,11 +273,28 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      http.requestMatchers()
+      if(!iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OFF)){
+        http.requestMatchers()
+        .antMatchers(START_REGISTRATION_ENDPOINT)
+        .and()
+        .sessionManagement()
+        .enableSessionUrlRewriting(false)
+        .and()
+          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+          .anonymous()
+        .and()
+          .csrf()
+            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
+        .addFilter(userLoginConfig.iamX509Filter()) ;
+      }else{
+        http.requestMatchers()
         .antMatchers(START_REGISTRATION_ENDPOINT)
         .and()
         .sessionManagement()
         .enableSessionUrlRewriting(false);
+      }
+
+      
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()

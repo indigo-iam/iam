@@ -52,6 +52,10 @@ public class IamProperties {
     VISIBLE, HIDDEN, HIDDEN_WITH_LINK
   }
 
+  public enum RequireCertificateOption{
+    OFF,OPTIONAL,REQUIRED
+  }
+
   public enum ExternalAuthAttributeSectionBehaviour {
     MANDATORY,
     OPTIONAL,
@@ -231,6 +235,8 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
+
+    RequireCertificateOption requireCertificate = RequireCertificateOption.OFF;
     
     boolean addNicknameAsAttribute = false;
 
@@ -282,6 +288,14 @@ public class IamProperties {
 
     public void setOidcIssuer(String oidcIssuer) {
       this.oidcIssuer = oidcIssuer;
+    }
+
+    public RequireCertificateOption getRequireCertificate (){
+      return requireCertificate;
+    }
+
+    public void setRequireCertificate(RequireCertificateOption requireCertificate){
+      this.requireCertificate = requireCertificate;
     }
 
     public String getSamlEntityId() {

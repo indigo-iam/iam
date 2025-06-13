@@ -34,6 +34,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
+import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +57,7 @@ import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
 import it.infn.mw.iam.api.scim.model.ScimSamlId;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationApproveEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationConfirmEvent;
@@ -59,7 +65,9 @@ import it.infn.mw.iam.audit.events.registration.RegistrationRejectEvent;
 import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -70,6 +78,7 @@ import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
@@ -125,6 +134,9 @@ public class DefaultRegistrationRequestService
 
   @Autowired
   private IamProperties iamProperties;
+  
+  @Autowired
+  private  X509CertificateConverter X509Converter;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -181,7 +193,7 @@ public class DefaultRegistrationRequestService
 
   @Override
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo) {
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, HttpServletRequest request) {
 
     if (!isNull(validationService)) {
       RegistrationRequestValidationResult result =
@@ -193,11 +205,36 @@ public class DefaultRegistrationRequestService
       }
     }
 
+ 
+
     ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(dto.getGivenname(), dto.getFamilyname())
       .buildEmail(dto.getEmail())
       .userName(dto.getUsername())
       .password(dto.getPassword());
+
+
+    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED) ||
+      (iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OPTIONAL) && dto.getRegisterCertificate().equals("true"))){
+
+      HttpSession session = request.getSession(false);
+      
+      IamX509AuthenticationCredential cred = Optional.ofNullable(
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
+        .orElseThrow(() -> new IllegalArgumentException(
+            "No X.509 credential found in session "));
+
+      IamX509Certificate cert = cred.asIamX509Certificate();
+
+      cert.setLabel("cert-0");
+
+      ScimX509Certificate fin = X509Converter.dtoFromEntity(cert);
+
+      userBuilder.addX509Certificate(fin);
+
+    }
+    
+    
 
     extAuthnInfo.ifPresent(i -> addExternalAuthnInfo(userBuilder, i));
 

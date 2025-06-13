@@ -98,6 +98,10 @@ public class RegistrationRequestDto {
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
+  private String registerCertificate;
+
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+      RegistrationViews.RegistrationDetail.class})
   private List<LabelDTO> labels;
 
   public RegistrationRequestDto() {}
@@ -107,12 +111,14 @@ public class RegistrationRequestDto {
       @JsonProperty(value = "givenname", required = true) String givenname,
       @JsonProperty(value = "familyname", required = true) String familyname,
       @JsonProperty(value = "email", required = true) String email,
+      @JsonProperty(value = "registerCertificate", required = false) String registerCertificate,
       @JsonProperty("notes") String notes, @JsonProperty("password") String password,
       @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
       @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
       @JsonProperty("labels") List<LabelDTO> labels) {
     super();
+    this.registerCertificate = registerCertificate;
     this.username = username;
     this.password = password;
     this.givenname = givenname;
@@ -244,6 +250,14 @@ public class RegistrationRequestDto {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public String getRegisterCertificate(){
+    return this.registerCertificate;
+  }
+
+  public void setRegisterCertificate(String registerCertificate){
+    this.registerCertificate = registerCertificate;
   }
 
   public List<LabelDTO> getLabels() {
