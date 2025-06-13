@@ -133,7 +133,6 @@ import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
-import it.infn.mw.iam.authn.saml.CleanInactiveProvisionedAccounts;
 import it.infn.mw.iam.authn.saml.DefaultMappingPropertiesResolver;
 import it.infn.mw.iam.authn.saml.DefaultSAMLUserDetailsService;
 import it.infn.mw.iam.authn.saml.IamCachingMetadataManager;
@@ -156,8 +155,8 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.JitCleanupScheduler;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
-import it.infn.mw.iam.core.time.SystemTimeProvider;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -222,6 +221,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private HttpFirewall firewall;
+
+  @Autowired
+  private JitCleanupScheduler cleanupScheduler;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -896,33 +898,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
             validator, sessionTimeoutHelper, totpMfaRepository));
   }
 
-  private void scheduleProvisionedAccountsCleanup(final ScheduledTaskRegistrar taskRegistrar) {
-
-    if (!jitProperties.getEnabled()) {
-      LOG.info("Just-in-time account provisioning for SAML is DISABLED.");
-      return;
-    }
-
-    if (!jitProperties.getCleanupTaskEnabled()) {
-      LOG.info("Cleanup for SAML JIT account provisioning is DISABLED.");
-      return;
-    }
-
-    LOG.info(
-        "Scheduling Just-in-time provisioned account cleanup task to run every {} seconds. Accounts inactive for {} "
-            + "days will be deleted",
-        jitProperties.getCleanupTaskPeriodSec(), jitProperties.getInactiveAccountLifetimeDays());
-
-    taskRegistrar.addFixedRateTask(
-        new CleanInactiveProvisionedAccounts(new SystemTimeProvider(), accountService,
-            jitProperties.getInactiveAccountLifetimeDays()),
-        TimeUnit.SECONDS.toMillis(jitProperties.getCleanupTaskPeriodSec()));
-
-  }
-
   @Override
   public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-    scheduleProvisionedAccountsCleanup(taskRegistrar);
+    cleanupScheduler.scheduleCleanupTask(taskRegistrar, jitProperties, accountService, "SAML");
   }
 
   @Override
@@ -936,5 +914,4 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   public void afterPropertiesSet() throws Exception {
     connectionManager = multiThreadedHttpConnectionManager();
   }
-
 }
