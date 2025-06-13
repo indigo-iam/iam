@@ -282,6 +282,10 @@ public class ScimUser extends ScimResource {
     return indigoUser != null && indigoUser.getServiceAccount() != null;
   }
 
+  public boolean hasGroups() {
+    return groups != null && !groups.isEmpty();
+  }
+
   public static Builder builder(String username) {
 
     return new Builder(username);
