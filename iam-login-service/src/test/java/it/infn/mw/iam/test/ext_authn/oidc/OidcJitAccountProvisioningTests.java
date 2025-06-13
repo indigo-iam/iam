@@ -38,8 +38,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
-import it.infn.mw.iam.authn.oidc.service.JustInTimeProvisioningOIDCUserDetailsService;
+import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -51,47 +50,47 @@ public class OidcJitAccountProvisioningTests {
   private IamAccountRepository repo;
 
   @Mock
-  private InactiveAccountAuthenticationHander handler;
-
-  @Mock
   private IamAccountService accountService;
 
   private Optional<Set<String>> trustedIdpEntityIds;
 
   @InjectMocks
-  private JustInTimeProvisioningOIDCUserDetailsService service;
+  private OidcAccountProvisioningService service;
 
   @Before
   public void setup() {
     MockitoAnnotations.openMocks(this);
     trustedIdpEntityIds = Optional.of(Set.of("https://trusted-idp.com"));
-    service = new JustInTimeProvisioningOIDCUserDetailsService(repo, handler, accountService,
-        trustedIdpEntityIds);
+    service = new OidcAccountProvisioningService(repo, accountService, trustedIdpEntityIds);
   }
 
   @Test
-  public void loadUserByOIDCTokenReturnsUserIfAlreadyExists() {
-
+  public void provisionAccountWithValidTokenAndAvailableUsernameCreatesNewAccount() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
+    UserInfo userInfo = mock(UserInfo.class);
+
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
+    when(token.getUserInfo()).thenReturn(userInfo);
+    when(userInfo.getGivenName()).thenReturn("John");
+    when(userInfo.getFamilyName()).thenReturn("Doe");
+    when(userInfo.getEmail()).thenReturn("john.doe@example.com");
+    when(userInfo.getPreferredUsername()).thenReturn("jdoe");
 
-    IamAccount existingAccount = new IamAccount();
-    existingAccount.setUsername("jsdoe");
-    existingAccount.setActive(true);
-    existingAccount.setPassword("secret");
-    when(repo.findByOidcId("https://trusted-idp.com", "sub123"))
-      .thenReturn(Optional.of(existingAccount));
+    when(repo.findByUsername("jdoe")).thenReturn(Optional.empty());
 
-    Object user = service.loadUserByOIDC(token);
+    IamAccount savedAccount = new IamAccount();
+    when(accountService.createAccount(any())).thenReturn(savedAccount);
 
-    assertNotNull(user);
-    verify(repo).findByOidcId("https://trusted-idp.com", "sub123");
+    IamAccount result = service.provisionAccount(token);
+
+    assertNotNull(result);
+    verify(accountService).createAccount(any(IamAccount.class));
+    verify(repo).findByUsername("jdoe");
   }
 
   @Test
-  public void loadUserByOIDCTokenProvisioningOccurs() {
-
+  public void provisionAccountWhenAccountNotFoundPerformsJustInTimeProvisioning() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -103,22 +102,20 @@ public class OidcJitAccountProvisioningTests {
     when(userInfo.getFamilyName()).thenReturn("Doe");
     when(userInfo.getEmail()).thenReturn("john.doe@example.com");
 
-    when(repo.findByOidcId("https://trusted-idp.com", "sub123")).thenReturn(Optional.empty());
-
     doAnswer(invocation -> {
       IamAccount account = invocation.getArgument(0);
       account.setPassword("securePassword123");
       return account;
     }).when(accountService).createAccount(any(IamAccount.class));
 
-    Object user = service.loadUserByOIDC(token);
+    IamAccount result = service.provisionAccount(token);
 
-    assertNotNull(user);
+    assertNotNull(result);
     verify(accountService).createAccount(any(IamAccount.class));
   }
 
   @Test
-  public void assignPreferredUsernameAsUsernameIfReturned() {
+  public void provisionAccountUsesPreferredUsernameWhenAvailable() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -130,7 +127,6 @@ public class OidcJitAccountProvisioningTests {
     when(userInfo.getEmail()).thenReturn("john.doe@example.com");
     when(userInfo.getPreferredUsername()).thenReturn("johndoe");
 
-    when(repo.findByOidcId("https://trusted-idp.com", "sub123")).thenReturn(Optional.empty());
     when(repo.findByUsername("johndoe")).thenReturn(Optional.empty());
 
     doAnswer(invocation -> {
@@ -140,14 +136,14 @@ public class OidcJitAccountProvisioningTests {
       return account;
     }).when(accountService).createAccount(any(IamAccount.class));
 
-    Object user = service.loadUserByOIDC(token);
+    IamAccount result = service.provisionAccount(token);
 
-    assertNotNull(user);
+    assertNotNull(result);
     verify(accountService).createAccount(any(IamAccount.class));
   }
 
   @Test
-  public void assignRandomUUIDAsUsernameIfPreferredUsernameConflicts() {
+  public void provisionAccountUsesRandomUUIDWhenPreferredUsernameUnavailable() {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
     when(token.getSub()).thenReturn("sub123");
@@ -159,7 +155,6 @@ public class OidcJitAccountProvisioningTests {
     when(userInfo.getEmail()).thenReturn("john.doe@example.com");
     when(userInfo.getPreferredUsername()).thenReturn("johndoe");
 
-    when(repo.findByOidcId("https://trusted-idp.com", "sub123")).thenReturn(Optional.empty());
     when(repo.findByUsername("johndoe")).thenReturn(Optional.of(mock(IamAccount.class)));
 
     doAnswer(invocation -> {
@@ -168,23 +163,23 @@ public class OidcJitAccountProvisioningTests {
       return account;
     }).when(accountService).createAccount(any(IamAccount.class));
 
-    Object user = service.loadUserByOIDC(token);
+    IamAccount result = service.provisionAccount(token);
 
-    assertNotNull(user);
+    assertNotNull(result);
     verify(accountService).createAccount(any(IamAccount.class));
   }
 
   @Test
-  public void loadUserByOIDCUntrustedIdpThrowsException() {
+  public void provisionAccountThrowsExceptionWhenIdpIsUntrusted() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
 
-    assertThrows(UsernameNotFoundException.class, () -> service.loadUserByOIDC(token));
+    assertThrows(UsernameNotFoundException.class, () -> service.provisionAccount(token));
   }
 
   @Test
-  public void loadUserByOIDCMissingClaimsThrowsException() {
+  public void provisionAccountThrowsExceptionWhenRequiredClaimsAreMissing() {
 
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://trusted-idp.com");
@@ -193,6 +188,6 @@ public class OidcJitAccountProvisioningTests {
     UserInfo userInfo = token.getUserInfo();
     when(userInfo.getGivenName()).thenReturn(null);
 
-    assertThrows(UsernameNotFoundException.class, () -> service.loadUserByOIDC(token));
+    assertThrows(UsernameNotFoundException.class, () -> service.provisionAccount(token));
   }
 }

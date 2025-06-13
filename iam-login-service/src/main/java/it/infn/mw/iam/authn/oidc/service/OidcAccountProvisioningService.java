@@ -21,22 +21,23 @@ import java.util.UUID;
 
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 
-import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
-public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUserDetailsService {
+@Service
+public class OidcAccountProvisioningService {
 
   private final IamAccountService accountService;
   private final Optional<Set<String>> trustedIdpEntityIds;
+  private final IamAccountRepository repo;
 
-  public JustInTimeProvisioningOIDCUserDetailsService(IamAccountRepository repo,
-      InactiveAccountAuthenticationHander handler, IamAccountService accountService,
+  public OidcAccountProvisioningService(IamAccountRepository repo, IamAccountService accountService,
       Optional<Set<String>> trustedIdpEntityIds) {
-    super(repo, handler);
+    this.repo = repo;
     this.accountService = accountService;
     this.trustedIdpEntityIds = trustedIdpEntityIds;
   }
@@ -57,7 +58,7 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
     }
   }
 
-  private IamAccount provisionAccount(OIDCAuthenticationToken token) {
+  public IamAccount provisionAccount(OIDCAuthenticationToken token) {
     checkTrustedIdp(token.getIssuer());
     checkRequiredClaims(token);
 
@@ -81,17 +82,6 @@ public class JustInTimeProvisioningOIDCUserDetailsService extends DefaultOidcUse
 
     accountService.createAccount(newAccount);
     return newAccount;
-  }
-
-  @Override
-  public Object loadUserByOIDC(OIDCAuthenticationToken token) {
-    Optional<IamAccount> account = repo.findByOidcId(token.getIssuer(), token.getSub());
-
-    if (account.isPresent()) {
-      return buildUserFromIamAccount(account.get());
-    } else {
-      return buildUserFromIamAccount(provisionAccount(token));
-    }
   }
 
   private String generateUniqueUsername(String preferredUsername,
