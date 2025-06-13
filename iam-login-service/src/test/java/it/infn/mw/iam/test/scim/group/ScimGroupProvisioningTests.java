@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertNotNull;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,8 +43,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.scim.converter.ScimResourceLocationProvider;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
+import it.infn.mw.iam.api.scim.model.ScimGroupRef;
+import it.infn.mw.iam.api.scim.model.ScimIndigoGroup;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.scim.ScimUtils;
@@ -66,9 +70,12 @@ public class ScimGroupProvisioningTests {
 
   @Autowired
   private MockMvc mvc;
-  
+
   @Autowired
   private IamGroupRepository repo;
+
+  @Autowired
+  private ScimResourceLocationProvider scimResourceLocationProvider;
 
   @Before
   public void setup() {
@@ -180,6 +187,78 @@ public class ScimGroupProvisioningTests {
   }
 
   @Test
+  public void testUpdateSubgroupDisplaynameSuccessResponse() throws Exception {
+
+    ScimGroup parentGroup = ScimGroup.builder("A").build();
+
+    String result = mvc
+      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(parentGroup)))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
+
+    ScimGroup subgroup = createGroup("B", createdGroup);
+    String location = subgroup.getMeta().getLocation();
+    assertNotNull(subgroup);
+
+    subgroup = ScimGroup.builder("BB").build();
+
+    mvc
+      .perform(put(location).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(subgroup)))
+      .andExpect(jsonPath("$.displayName", equalTo("A/BB")));
+
+    mvc.perform(delete(location)).andExpect(status().isNoContent());
+    mvc.perform(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
+  }
+
+  @Test
+  public void testUpdateDisplayNameOfAGroupWithChildrenSuccessResponse() throws Exception {
+
+    ScimGroup parentGroup = ScimGroup.builder("A").build();
+
+    String result = mvc
+      .perform(post(GROUP_URI).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(parentGroup)))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    ScimGroup createdGroup = objectMapper.readValue(result, ScimGroup.class);
+
+    ScimGroup subgroup = createGroup("B", createdGroup);
+    assertNotNull(subgroup);
+
+    ScimGroup subsubgroup = createGroup("C", subgroup);
+    assertNotNull(subsubgroup);
+
+    parentGroup = ScimGroup.builder("AA").build();
+
+    mvc
+      .perform(put(createdGroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(parentGroup)))
+      .andExpect(jsonPath("$.displayName", equalTo("AA")))
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    mvc.perform(get(subgroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.displayName", equalTo("AA/B")));
+
+    mvc.perform(get(subsubgroup.getMeta().getLocation()).contentType(SCIM_CONTENT_TYPE))
+      .andExpect(jsonPath("$.displayName", equalTo("AA/B/C")));
+
+    mvc.perform(delete(subsubgroup.getMeta().getLocation())).andExpect(status().isNoContent());
+    mvc.perform(delete(subgroup.getMeta().getLocation())).andExpect(status().isNoContent());
+    mvc.perform(delete(createdGroup.getMeta().getLocation())).andExpect(status().isNoContent());
+  }
+
+  @Test
   public void testCreateGroupEmptyDisplayNameValidationError() throws Exception {
 
     String displayName = "";
@@ -246,9 +325,9 @@ public class ScimGroupProvisioningTests {
     mvc.perform(delete(engineers.getMeta().getLocation())).andExpect(status().isNoContent());
     mvc.perform(delete(artists.getMeta().getLocation())).andExpect(status().isNoContent());
   }
-  
+
   @Test
-  public void groupDescriptionIsRendered() throws Exception { 
+  public void groupDescriptionIsRendered() throws Exception {
     final String groupId = UUID.randomUUID().toString();
     final String groupName = "group-with-description";
     final String groupDesc = "A group description";
@@ -258,16 +337,44 @@ public class ScimGroupProvisioningTests {
     group.setDescription(groupDesc);
     group.setCreationTime(new Date());
     group.setLastUpdateTime(new Date());
-    
+
     repo.save(group);
-    
+
     mvc.perform(get("/scim/Groups/{id}", groupId).contentType(SCIM_CONTENT_TYPE))
-    .andExpect(status().isOk())
-    .andExpect(jsonPath("$.displayName", is(groupName)))
-    .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
-    .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
-    
-    
-    
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.displayName", is(groupName)))
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup").exists())
+      .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoGroup.description", is(groupDesc)));
+  }
+
+  private ScimGroup createGroup(String name, ScimGroup parent) throws Exception {
+    ScimGroup group = buildGroupObject(name, parent);
+
+    String response = mvc
+      .perform(post("/scim/Groups").contentType(SCIM_CONTENT_TYPE)
+        .content(objectMapper.writeValueAsString(group)))
+      .andExpect(status().isCreated())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    return objectMapper.readValue(response, ScimGroup.class);
+  }
+
+  private ScimGroup buildGroupObject(String name, ScimGroup parent) {
+    ScimGroup group = ScimGroup.builder(name).build();
+    if (parent != null) {
+      ScimGroupRef parentGroupRef = ScimGroupRef.builder()
+        .display(parent.getDisplayName())
+        .value(parent.getId())
+        .ref(scimResourceLocationProvider.groupLocation(parent.getId()))
+        .build();
+
+      ScimIndigoGroup parentIndigoGroup =
+          ScimIndigoGroup.getBuilder().parentGroup(parentGroupRef).build();
+
+      group = ScimGroup.builder(name).indigoGroup(parentIndigoGroup).build();
+    }
+    return group;
   }
 }
