@@ -98,7 +98,7 @@ public class OidcAuthenticationProvider extends OIDCAuthenticationProvider {
 
     Optional<IamAccount> account = accountRepo.findByOidcId(token.getIssuer(), token.getSub());
     if (account.isEmpty()) {
-      if (jitProperties.getEnabled()) {
+      if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
         IamAccount newAccount = oidcProvisioningService.provisionAccount(token);
         return registeredOidcAuthentication(newAccount, token);
       } else {

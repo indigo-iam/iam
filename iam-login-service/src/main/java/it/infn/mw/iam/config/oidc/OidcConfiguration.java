@@ -85,9 +85,6 @@ public class OidcConfiguration implements SchedulingConfigurer {
   private String iamBaseUrl;
 
   @Autowired
-  private IamAccountRepository accountRepo;
-
-  @Autowired
   private IamOidcJITAccountProvisioningProperties jitProperties;
 
   @Autowired
@@ -95,9 +92,6 @@ public class OidcConfiguration implements SchedulingConfigurer {
 
   @Autowired
   private JitCleanupScheduler cleanupScheduler;
-
-  @Autowired
-  private OidcAccountProvisioningService oidcProvisioningService;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -173,7 +167,8 @@ public class OidcConfiguration implements SchedulingConfigurer {
       UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
       SessionTimeoutHelper timeoutHelper,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
+      OidcAccountProvisioningService oidcProvisioningService) {
 
     OidcAuthenticationProvider provider =
         new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
