@@ -35,6 +35,7 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -67,9 +68,8 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.DefaultOidcUserDetailsService;
-import it.infn.mw.iam.authn.oidc.service.JustInTimeProvisioningOIDCUserDetailsService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
+import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.JitCleanupScheduler;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
@@ -88,12 +88,6 @@ public class OidcConfiguration implements SchedulingConfigurer {
   private IamAccountRepository accountRepo;
 
   @Autowired
-  private AUPSignatureCheckService aupSignatureCheckService;
-
-  @Autowired
-  private AccountUtils accountUtils;
-
-  @Autowired
   private IamOidcJITAccountProvisioningProperties jitProperties;
 
   @Autowired
@@ -101,6 +95,9 @@ public class OidcConfiguration implements SchedulingConfigurer {
 
   @Autowired
   private JitCleanupScheduler cleanupScheduler;
+
+  @Autowired
+  private OidcAccountProvisioningService oidcProvisioningService;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -173,12 +170,14 @@ public class OidcConfiguration implements SchedulingConfigurer {
 
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator,
-      SessionTimeoutHelper timeoutHelper) {
+      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper,
+      InactiveAccountAuthenticationHander inactiveAccountHandler,
+      IamTotpMfaRepository totpMfaRepository) {
 
     OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
+        new OidcAuthenticationProvider(validator, timeoutHelper, accountRepo,
+            inactiveAccountHandler, totpMfaRepository, jitProperties, oidcProvisioningService);
 
     provider.setUserInfoFetcher(userInfoFetcher);
 
@@ -246,19 +245,6 @@ public class OidcConfiguration implements SchedulingConfigurer {
   AuthRequestUrlBuilder authRequestBuilder() {
 
     return new PlainAuthRequestUrlBuilder();
-  }
-
-  @Bean
-  OidcUserDetailsService oidcUserDetailsService(IamAccountRepository repo,
-      InactiveAccountAuthenticationHander handler, IamAccountService accountService,
-      IamOidcJITAccountProvisioningProperties jitProperties) {
-
-    if (Boolean.TRUE.equals(jitProperties.getEnabled())) {
-      return new JustInTimeProvisioningOIDCUserDetailsService(repo, handler, accountService,
-          jitProperties.getTrustedIdpsAsOptionalSet());
-    }
-
-    return new DefaultOidcUserDetailsService(repo, handler);
   }
 
   @Bean
