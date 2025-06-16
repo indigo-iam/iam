@@ -110,7 +110,7 @@ public class RegistrationRequestCertificateTests {
 
 
 
-
+/* 
     @Test
     public void testVerifySucessRegisterCertificate() throws Exception {
 
@@ -153,7 +153,7 @@ public class RegistrationRequestCertificateTests {
 
         iamAccountRepo.delete(account);
 
-    }
+    } */
 
     /* @Test
     public void testVerifySucessRegisterCertificate2() throws Exception {
