@@ -116,7 +116,6 @@ public class RegistrationRequestCertificateTests {
             vDxcPMc/wmnMa+smNal0sJ6m
             -----END CERTIFICATE-----""";
 
-
     @Test
     public void testVerifySucessRegisterCertificate() throws Exception {
 

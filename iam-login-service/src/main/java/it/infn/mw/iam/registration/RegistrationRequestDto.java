@@ -255,7 +255,6 @@ public class RegistrationRequestDto {
     this.notes = notes;
   }
 
-
   public String getRegisterCertificate() {
     return this.registerCertificate;
   }

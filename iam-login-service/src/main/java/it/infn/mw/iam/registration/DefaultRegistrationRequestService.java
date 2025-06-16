@@ -139,9 +139,9 @@ public class DefaultRegistrationRequestService
 
   @Autowired
   private IamProperties iamProperties;
-  
+
   @Autowired
-  private  X509CertificateConverter X509Converter;
+  private X509CertificateConverter X509Converter;
 
   private final X509CertificateConverter x509Converter;
 

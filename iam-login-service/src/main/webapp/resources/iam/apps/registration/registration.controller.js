@@ -128,10 +128,10 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate:{
+		registerCertificate: {
 
-		}			
-		
+		}
+
 	};
 
 	vm.createRequest = createRequest;
