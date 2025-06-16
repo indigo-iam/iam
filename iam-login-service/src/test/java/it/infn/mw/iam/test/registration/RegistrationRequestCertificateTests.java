@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Optional;
 
+import javax.security.auth.login.AccountNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -46,6 +47,7 @@ import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.DefaultRegistrationRequestService;
@@ -72,6 +74,9 @@ public class RegistrationRequestCertificateTests {
 
     @Autowired
     private X509CertificateChainParser parser;
+
+    @Autowired
+    private IamAccountRepository iamAccountRepo;
 
     @Autowired
     private MockMvc mvc;
@@ -143,6 +148,10 @@ public class RegistrationRequestCertificateTests {
         RegistrationRequestDto reg = defaultRegistrationRequestService.createRequest(request,
                 Optional.empty(), httpRequest);
         assertNotNull(reg);
+
+        IamAccount account = iamAccountRepo.findByUsername(username).orElseThrow(()-> new AccountNotFoundException());
+
+        iamAccountRepo.delete(account);
 
     }
 
