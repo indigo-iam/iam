@@ -18,9 +18,13 @@ package it.infn.mw.iam.api.common;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
@@ -33,8 +37,10 @@ public class RegisteredGroupDTO implements Serializable {
     private RegisteredGroupDTO parentGroup;
     private Set<RegisteredGroupDTO> childrenGroups = new HashSet<>();
     private Set<IamLabel> labels = new HashSet<>();
+
+    @JsonSerialize(using = JsonDateSerializer.class)
     private Date joiningDate;
-    private String scopePoliciesDescription;
+    private List<String> scopePoliciesDescription;
 
     private RegisteredGroupDTO(Builder builder) {
         this.id = builder.id;
@@ -57,7 +63,7 @@ public class RegisteredGroupDTO implements Serializable {
         private Set<RegisteredGroupDTO> childrenGroups;
         private Set<IamLabel> labels;
         private Date joiningDate;
-        private String scopePoliciesDescription;
+        private List<String> scopePoliciesDescription;
 
         public Builder id(Long id) {
             this.id = id;
@@ -123,7 +129,7 @@ public class RegisteredGroupDTO implements Serializable {
             this.scopePoliciesDescription = scopePolicies.stream()
                     .map(IamScopePolicy::getDescription)
                     .sorted()
-                    .collect(Collectors.joining(", "));
+                    .toList();
             return this;
         }
 
@@ -164,7 +170,7 @@ public class RegisteredGroupDTO implements Serializable {
         return joiningDate;
     }
 
-    public String getScopePoliciesDescription() {
+    public List<String> getScopePoliciesDescription() {
         return scopePoliciesDescription;
     }
 

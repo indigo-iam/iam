@@ -27,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.contains;
 
 import java.util.Date;
 import java.util.Set;
@@ -575,7 +576,7 @@ public class GroupMembersIntegrationTests {
         .andExpect(jsonPath("$.Resources", not(empty())))
         .andExpect(jsonPath("$.Resources[0].name", is("Analysis")))
         .andExpect(jsonPath("$.Resources[2].scopePoliciesDescription",
-            is("Scope policy description 1, Scope policy description 2, Scope policy description 3")));
+            contains("Scope policy description 1", "Scope policy description 2", "Scope policy description 3")));
   }
 
   private IamGroup createGroup(String name, IamGroup parent) {
