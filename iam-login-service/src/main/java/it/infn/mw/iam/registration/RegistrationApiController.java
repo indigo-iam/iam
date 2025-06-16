@@ -116,9 +116,9 @@ public class RegistrationApiController {
           value = RegistrationViews.RegistrationDetail.class) RegistrationRequestDto request,
       final BindingResult validationResult, final HttpServletRequest httpRequest) {
     handleValidationError(validationResult);
-    try{
+    try {
       return service.createRequest(request, getExternalAuthenticationInfo(), httpRequest);
-    }catch(CredentialAlreadyBoundException error){
+    } catch (CredentialAlreadyBoundException error) {
       throw new RegistrationRequestValidatorError(error.getMessage());
     }
   }
@@ -132,13 +132,15 @@ public class RegistrationApiController {
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @PostMapping(value = "/registration/reject/{uuid}")
   public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
-      @RequestParam(required = false) String motivation, @RequestParam(required = false) boolean doNotSendEmail) {
+      @RequestParam(required = false) String motivation,
+      @RequestParam(required = false) boolean doNotSendEmail) {
 
     return service.rejectRequest(uuid, Optional.ofNullable(motivation), doNotSendEmail);
   }
 
   @GetMapping(value = "/registration/verify/{token}")
-  public ModelAndView openConfirmRequestPage(final Model model, @PathVariable("token") String token) {
+  public ModelAndView openConfirmRequestPage(final Model model,
+      @PathVariable("token") String token) {
 
     model.addAttribute("token", token);
     return new ModelAndView("iam/confirmRequest");

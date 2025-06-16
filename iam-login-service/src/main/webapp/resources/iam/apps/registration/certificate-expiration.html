@@ -27,7 +27,7 @@
         <br><br>
 
         <p class="text-justify text-wrapped">
-            You are advised to update the certificate before creating your account. 
+            You are advised to update the certificate before creating your account.
         </p>
 
         <p class="text-justify text-wrapped">
@@ -35,15 +35,15 @@
         </p>
 
         <p>
-            <div class="subjectDn">{{$ctrl.cert.subjectDn}}</div>
-            <div class="issuerDn">{{$ctrl.cert.issuerDn}}</div>
+        <div class="subjectDn">{{$ctrl.cert.subjectDn}}</div>
+        <div class="issuerDn">{{$ctrl.cert.issuerDn}}</div>
         </p>
 
     </div>
 </div>
 <div class="modal-footer">
 
-    <form id="link-certificate-form" method="post" >
+    <form id="link-certificate-form" method="post">
         <button class="btn btn-danger" id="btn-cancel" data-dismiss="modal" type="button"
             data-ng-click="$ctrl.cancel()">Dismiss</button>
     </form>

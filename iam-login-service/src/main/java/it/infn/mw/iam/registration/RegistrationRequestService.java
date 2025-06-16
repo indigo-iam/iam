@@ -26,16 +26,18 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 public interface RegistrationRequestService {
 
   RegistrationRequestDto createRequest(RegistrationRequestDto request,
-      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, HttpServletRequest httpRequest);
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo,
+      HttpServletRequest httpRequest);
 
   List<RegistrationRequestDto> listRequests(IamRegistrationRequestStatus status);
 
   List<RegistrationRequestDto> listPendingRequests();
 
   RegistrationRequestDto confirmRequest(String confirmationKey);
-  
-  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail);
-  
+
+  RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation,
+      boolean doNotSendEmail);
+
   RegistrationRequestDto approveRequest(String requestUuid);
 
   Boolean usernameAvailable(String username);

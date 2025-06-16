@@ -118,9 +118,10 @@ public class IamX509PreauthenticationProcessingFilter
 
     Optional<IamX509AuthenticationCredential> credential = extractCredential(request);
 
-    
-    request.setAttribute(X509_REQUIRED, iamProperties.getRegistration().getRequireCertificate().name());
-    
+
+    request.setAttribute(X509_REQUIRED,
+        iamProperties.getRegistration().getRequireCertificate().name());
+
 
     if (!credential.isPresent()) {
       return null;
@@ -131,7 +132,7 @@ public class IamX509PreauthenticationProcessingFilter
     Calendar calendar = Calendar.getInstance();
     calendar.add(Calendar.MONTH, 1);
     Date minTimeBeforeExpiration = calendar.getTime();
-    if(expirationDate.before(minTimeBeforeExpiration)){
+    if (expirationDate.before(minTimeBeforeExpiration)) {
       request.setAttribute(X509_ALMOST_EXPIRED, Boolean.TRUE);
       request.setAttribute(X509_EXPIRATION_DATE, expirationDate);
     }

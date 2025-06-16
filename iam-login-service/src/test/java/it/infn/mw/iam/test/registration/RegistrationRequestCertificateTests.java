@@ -61,7 +61,8 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK, properties = "iam.registration.require-certificate=REQUIRED")
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
+        properties = "iam.registration.require-certificate=REQUIRED")
 public class RegistrationRequestCertificateTests {
 
 
@@ -76,7 +77,7 @@ public class RegistrationRequestCertificateTests {
 
     @Autowired
     private IamAccountRepository iamAccountRepo;
-    
+
     @Autowired
     private IamRegistrationRequestRepository iamRequestRepo;
 
@@ -114,7 +115,6 @@ public class RegistrationRequestCertificateTests {
 
 
 
-
     @Test
     public void testVerifySucessRegisterCertificate() throws Exception {
 
@@ -148,24 +148,32 @@ public class RegistrationRequestCertificateTests {
                 Optional.empty(), httpRequest);
         assertNotNull(reg);
 
-        List<IamRegistrationRequest> requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+        List<IamRegistrationRequest> requests =
+                iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+                    .orElseThrow(() -> new AccountNotFoundException(
+                            "Can not remove suspended account as none is found"));
 
-        for(IamRegistrationRequest iamRegistrationRequest: requests){
+        for (IamRegistrationRequest iamRegistrationRequest : requests) {
             iamRequestRepo.delete(iamRegistrationRequest);
         }
-    
-        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
 
-        IamAccount account = iamAccountRepo.findByUsername(USERNAME).orElseThrow(()-> new AccountNotFoundException());
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+            .orElseThrow(() -> new AccountNotFoundException(
+                    "Can not remove suspended account as none is found"));
+
+        IamAccount account = iamAccountRepo.findByUsername(USERNAME)
+            .orElseThrow(() -> new AccountNotFoundException());
 
         iamAccountRepo.delete(account);
-        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
-        
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+            .orElseThrow(() -> new AccountNotFoundException(
+                    "Can not remove suspended account as none is found"));
+
 
     }
 
 
-        @Test
+    @Test
     public void testVerifyErrorRegisterCertificate() throws Exception {
 
         String email = USERNAME + "@example.org";
@@ -194,7 +202,7 @@ public class RegistrationRequestCertificateTests {
 
         session.setAttribute(X509_CREDENTIAL_SESSION_KEY, test0Cred);
 
-       RegistrationRequestDto reg = defaultRegistrationRequestService.createRequest(request,
+        RegistrationRequestDto reg = defaultRegistrationRequestService.createRequest(request,
                 Optional.empty(), httpRequest);
         assertNotNull(reg);
 
@@ -206,22 +214,28 @@ public class RegistrationRequestCertificateTests {
 
         session = httpRequest.getSession();
 
-        org.junit.jupiter.api.Assertions.assertThrows( CredentialAlreadyBoundException.class , ()-> {defaultRegistrationRequestService.createRequest(request,
-                Optional.empty(), httpRequest);
-            }) ;
+        org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class, () -> {
+            defaultRegistrationRequestService.createRequest(request, Optional.empty(), httpRequest);
+        });
 
-        List<IamRegistrationRequest> requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+        List<IamRegistrationRequest> requests =
+                iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+                    .orElseThrow(() -> new AccountNotFoundException(
+                            "Can not remove suspended account as none is found"));
 
-        for(IamRegistrationRequest iamRegistrationRequest: requests){
+        for (IamRegistrationRequest iamRegistrationRequest : requests) {
             iamRequestRepo.delete(iamRegistrationRequest);
         }
-    
-        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
 
-        IamAccount account = iamAccountRepo.findByUsername(USERNAME).orElseThrow(()-> new AccountNotFoundException());
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+            .orElseThrow(() -> new AccountNotFoundException(
+                    "Can not remove suspended account as none is found"));
+
+        IamAccount account = iamAccountRepo.findByUsername(USERNAME)
+            .orElseThrow(() -> new AccountNotFoundException());
 
         iamAccountRepo.delete(account);
-  
+
 
     }
 

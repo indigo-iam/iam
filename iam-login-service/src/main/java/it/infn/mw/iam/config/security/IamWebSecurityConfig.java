@@ -152,7 +152,8 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo, iamProperties);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()),
+          certRepo, iamProperties);
     }
 
     protected AuthenticationEntryPoint entryPoint() {
@@ -273,28 +274,31 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      if(!iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OFF)){
+      if (!iamProperties.getRegistration()
+        .getRequireCertificate()
+        .equals(RequireCertificateOption.OFF)) {
         http.requestMatchers()
-        .antMatchers(START_REGISTRATION_ENDPOINT)
-        .and()
-        .sessionManagement()
-        .enableSessionUrlRewriting(false)
-        .and()
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false)
+          .and()
           .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
           .anonymous()
-        .and()
+          .and()
           .csrf()
-            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
-        .addFilter(userLoginConfig.iamX509Filter()) ;
-      }else{
+          .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize"))
+          .disable()
+          .addFilter(userLoginConfig.iamX509Filter());
+      } else {
         http.requestMatchers()
-        .antMatchers(START_REGISTRATION_ENDPOINT)
-        .and()
-        .sessionManagement()
-        .enableSessionUrlRewriting(false);
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false);
       }
 
-      
+
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()

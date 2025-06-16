@@ -134,9 +134,9 @@ public class DefaultRegistrationRequestService
 
   @Autowired
   private IamProperties iamProperties;
-  
+
   @Autowired
-  private  X509CertificateConverter X509Converter;
+  private X509CertificateConverter X509Converter;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -205,7 +205,7 @@ public class DefaultRegistrationRequestService
       }
     }
 
- 
+
 
     ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(dto.getGivenname(), dto.getFamilyname())
@@ -214,15 +214,20 @@ public class DefaultRegistrationRequestService
       .password(dto.getPassword());
 
 
-    if(iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.REQUIRED) ||
-      (iamProperties.getRegistration().getRequireCertificate().equals(RequireCertificateOption.OPTIONAL) && dto.getRegisterCertificate().equals("true"))){
+    if (iamProperties.getRegistration()
+      .getRequireCertificate()
+      .equals(RequireCertificateOption.REQUIRED)
+        || (iamProperties.getRegistration()
+          .getRequireCertificate()
+          .equals(RequireCertificateOption.OPTIONAL)
+            && dto.getRegisterCertificate().equals("true"))) {
 
       HttpSession session = request.getSession(false);
-      
-      IamX509AuthenticationCredential cred = Optional.ofNullable(
-        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
-        .orElseThrow(() -> new IllegalArgumentException(
-            "No X.509 credential found in session "));
+
+      IamX509AuthenticationCredential cred = Optional
+        .ofNullable(
+            (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY))
+        .orElseThrow(() -> new IllegalArgumentException("No X.509 credential found in session "));
 
       IamX509Certificate cert = cred.asIamX509Certificate();
 
@@ -233,8 +238,8 @@ public class DefaultRegistrationRequestService
       userBuilder.addX509Certificate(fin);
 
     }
-    
-    
+
+
 
     extAuthnInfo.ifPresent(i -> addExternalAuthnInfo(userBuilder, i));
 
@@ -395,17 +400,17 @@ public class DefaultRegistrationRequestService
   private RegistrationRequestDto handleReject(IamRegistrationRequest request,
       Optional<String> motivation, boolean doNotSendEmail) {
     request.setStatus(REJECTED);
-    if(!doNotSendEmail){
+    if (!doNotSendEmail) {
       notificationFactory.createRequestRejectedMessage(request, motivation);
     }
-    
+
     RegistrationRequestDto retval = converter.fromEntity(request);
 
     accountService.deleteAccount(request.getAccount());
 
     eventPublisher.publishEvent(new RegistrationRejectEvent(this, request,
-        "Reject registration request for user " + request.getAccount().getUsername() +
-            (motivation.isPresent() ? " with motivation: " + motivation.get() : "")));
+        "Reject registration request for user " + request.getAccount().getUsername()
+            + (motivation.isPresent() ? " with motivation: " + motivation.get() : "")));
 
     return retval;
   }
@@ -417,7 +422,8 @@ public class DefaultRegistrationRequestService
   }
 
   @Override
-  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation, boolean doNotSendEmail) {
+  public RegistrationRequestDto rejectRequest(String requestUuid, Optional<String> motivation,
+      boolean doNotSendEmail) {
 
     IamRegistrationRequest request = findRequestById(requestUuid);
 

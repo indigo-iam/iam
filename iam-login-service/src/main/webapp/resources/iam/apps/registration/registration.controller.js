@@ -25,19 +25,19 @@ RegistrationController.$inject = [
 
 function RegistrationController(
 	$scope, $q, $window, $cookies, RegistrationRequestService, AuthnInfo, Aup,
-	PrivacyPolicy, $uibModal,  toaster,  $state) {
+	PrivacyPolicy, $uibModal, toaster, $state) {
 
 	var vm = this;
 	var EXT_AUTHN_ROLE = 'ROLE_EXT_AUTH_UNREGISTERED';
 
 	$scope.organisationName = getOrganisationName();
 	$scope.request = {};
-	
+
 	const cred = window.IAM_X509_CRED;
 
 	$scope.iamX509Required = window.IAM_X509_REQUIRED;
-	
-	if(cred){
+
+	if (cred) {
 		$scope.iamX509Cred = window.IAM_X509_CRED;
 		$scope.iamX509Subject = window.IAM_X509_CRED_SUBJECT;
 		$scope.iamX509Issuer = window.IAM_X509_CRED_ISSUER;
@@ -46,7 +46,7 @@ function RegistrationController(
 		$scope.iamX509AlmostExpired = !!window.IAM_X509_ALMOST_EXPIRED;
 		$scope.iamX509ExpirationDate = window.IAM_X509_EXPIRATION_DATE;
 	}
-	
+
 
 	$scope.textAlert = undefined;
 	$scope.operationResult = undefined;
@@ -116,10 +116,10 @@ function RegistrationController(
 			required: true,
 			showField: true,
 		},
-		registerCertificate:{
+		registerCertificate: {
 
-		}			
-		
+		}
+
 	};
 
 	vm.createRequest = createRequest;
@@ -140,73 +140,73 @@ function RegistrationController(
 	vm.activate();
 	vm.openExpiringCertificateDialog();
 
-	function ExpiringCertificateController (
-        $uibModalInstance, cert, expirationDate) {
-        var self = this;
-        self.enabled = true;
-        self.cert = cert;
+	function ExpiringCertificateController(
+		$uibModalInstance, cert, expirationDate) {
+		var self = this;
+		self.enabled = true;
+		self.cert = cert;
 		self.expirationDate = expirationDate;
 
-        self.cancel = function () {
-            $uibModalInstance.dismiss('Dismissed');
-        };
-    }
+		self.cancel = function () {
+			$uibModalInstance.dismiss('Dismissed');
+		};
+	}
 
 
-	function openExpiringCertificateDialog () {
+	function openExpiringCertificateDialog() {
 
-			if($scope.iamX509AlmostExpired){
+		if ($scope.iamX509AlmostExpired) {
 
-				var modalInstance = $uibModal.open({
-                templateUrl: '/resources/iam/apps/registration/certificate-expiration.html',
-                controller: ExpiringCertificateController,
-                controllerAs: '$ctrl',
+			var modalInstance = $uibModal.open({
+				templateUrl: '/resources/iam/apps/registration/certificate-expiration.html',
+				controller: ExpiringCertificateController,
+				controllerAs: '$ctrl',
 				backdrop: 'static',
-                resolve: {
-                    cert: {
-                        subjectDn: $scope.iamX509Subject,
-                        issuerDn: $scope.iamX509Issuer
-                    },
+				resolve: {
+					cert: {
+						subjectDn: $scope.iamX509Subject,
+						issuerDn: $scope.iamX509Issuer
+					},
 					expirationDate: {
 						date: $scope.iamX509ExpirationDate
 					}
-                }
-            });
+				}
+			});
 
-            modalInstance.result.then(self.handleSuccess);
+			modalInstance.result.then(self.handleSuccess);
 
-			}
-        };
+		}
+	};
 
 	function activate() {
 		RegistrationRequestService.getConfig()
-			.then(function(res) {
+			.then(function (res) {
 				$scope.config = res.data;
 				vm.resetRequest();
 				vm.populateFieldsWithAdminPreference();
 				vm.populateRequest();
 			})
-			.catch(function(err) {
+			.catch(function (err) {
 				console.error(
 					'Error fetching registration config: ' + res.status + ' ' +
 					res.statusText);
 			});
 
 		Aup.getAup()
-			.then(function(res) {
+			.then(function (res) {
 				if (res != null) {
 					$scope.aup = res.data;
 				}
 			})
-			.catch(function(res) {
+			.catch(function (res) {
 				console.error(
 					'Error getting AUP : ' + res.status + ' ' + res.statusText);
 			});
 		PrivacyPolicy.getPrivacyPolicy()
-			.then(function(res) {
+			.then(function (res) {
 				$scope.privacyPolicy = res;
 			})
-			.catch(function(res) {
+			.catch(function (res) {
 				console.error(
 					'Error fetching privacy policy: ' + res.status + ' ' +
 					res.statusText);
@@ -234,7 +234,7 @@ function RegistrationController(
 	}
 
 	function populateRequest() {
-		var success = function(res) {
+		var success = function (res) {
 			var info = res.data;
 			$scope.extAuthInfo = info;
 			$scope.request = {
@@ -252,12 +252,12 @@ function RegistrationController(
 				$scope.extAuthProviderName = 'a SAML identity provider';
 			}
 
-			angular.forEach($scope.registrationForm.$error.required, function(field) {
+			angular.forEach($scope.registrationForm.$error.required, function (field) {
 				field.$setDirty();
 			});
 		};
 
-		var error = function(err) {
+		var error = function (err) {
 			$scope.operationResult = 'err';
 			$scope.textAlert = err.data.error_description || err.data.detail;
 			$scope.busy = false;
@@ -272,11 +272,11 @@ function RegistrationController(
 	}
 
 	function createRequest() {
-		var success = function(res) {
+		var success = function (res) {
 			$window.location.href = '/registration/submitted';
 		};
 
-		var error = function(err) {
+		var error = function (err) {
 			$scope.operationResult = 'err';
 			$scope.textAlert = err.data.error;
 			$scope.busy = false;

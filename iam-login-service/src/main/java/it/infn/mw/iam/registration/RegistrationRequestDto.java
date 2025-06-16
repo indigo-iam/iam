@@ -252,11 +252,11 @@ public class RegistrationRequestDto {
     this.notes = notes;
   }
 
-  public String getRegisterCertificate(){
+  public String getRegisterCertificate() {
     return this.registerCertificate;
   }
 
-  public void setRegisterCertificate(String registerCertificate){
+  public void setRegisterCertificate(String registerCertificate) {
     this.registerCertificate = registerCertificate;
   }
 
