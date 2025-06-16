@@ -95,6 +95,8 @@ public class ClientRegistrationProperties {
 
   private boolean enable = true;
 
+  private boolean adminOnlyCustomScopes = true;
+
   public ClientRegistrationAuthorizationPolicy getAllowFor() {
     return allowFor;
   }
@@ -117,6 +119,14 @@ public class ClientRegistrationProperties {
 
   public void setEnable(boolean enable) {
     this.enable = enable;
+  }
+
+  public boolean isAdminOnlyCustomScopes(){
+    return adminOnlyCustomScopes;
+  }
+
+  public void setAdminOnlyCustomScopes(boolean enableAdminOnly){
+    this.adminOnlyCustomScopes = enableAdminOnly ;
   }
 
 }

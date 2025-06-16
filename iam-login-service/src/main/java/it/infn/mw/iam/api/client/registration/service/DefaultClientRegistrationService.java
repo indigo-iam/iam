@@ -217,12 +217,30 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     entity.setScope(filteredClientScopes);
   }
 
+    private void removeCustomScopes(ClientDetailsEntity entity) {
+    Set<ScopeMatcher> matchers = systemScopeService.getAll()
+      .stream()
+      .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
+      .collect(toSet());
+
+    Set<String> filteredClientScopes = entity.getScope()
+      .stream()
+      .filter(s -> matchers.stream().anyMatch(m -> m.matches(s)))
+      .collect(toSet());
+
+    entity.setScope(filteredClientScopes);
+  }
+
+
   private void cleanupRequestedScopes(ClientDetailsEntity entity, Authentication authentication) {
 
     if (entity.getScope().isEmpty()) {
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
       systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
+      if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)){
+        removeCustomScopes(entity);
+      }
       if (!accountUtils.isAdmin(authentication)) {
         removeRestrictedScopes(entity);
       }
@@ -423,6 +441,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
+
+    if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)){
+        removeCustomScopes(newClient);
+    }
 
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
