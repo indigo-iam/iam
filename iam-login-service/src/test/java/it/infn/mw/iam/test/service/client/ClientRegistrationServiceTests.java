@@ -90,7 +90,6 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 
 @SuppressWarnings("deprecation")
 @IamNoMvcTest
-@TestPropertySource(properties = {"client-registration.enabled=true"})
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
     webEnvironment = WebEnvironment.NONE)
 @ActiveProfiles({"h2", "wlcg-scopes"})
@@ -116,9 +115,6 @@ class ClientRegistrationServiceTests {
 
   @MockBean
   private BlacklistedSiteService blsService;
-
-  // @MockBean
-  // private ClientRegistrationProperties clientRegProps;
 
   @SpyBean
   private AccountUtils accountUtils;
