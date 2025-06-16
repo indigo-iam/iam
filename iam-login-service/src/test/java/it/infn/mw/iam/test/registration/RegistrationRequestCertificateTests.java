@@ -15,9 +15,7 @@
  */
 package it.infn.mw.iam.test.registration;
 
-
-
-/* import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
+import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,7 +58,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
-@IamMockMvcIntegrationTest
+//@IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class RegistrationRequestCertificateTests {
 
@@ -80,12 +78,12 @@ public class RegistrationRequestCertificateTests {
     @Autowired
     private IamAccountRepository iamAccountRepo;
 
-    @Autowired
+/*     @Autowired
     private MockMvc mvc;
 
     @Autowired
     private ObjectMapper objectMapper;
-
+ */
     public static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
     public static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
     private static final String TEST_0_CERT = "-----BEGIN CERTIFICATE-----\n"
@@ -109,10 +107,10 @@ public class RegistrationRequestCertificateTests {
             + "49YhMn61sQIrepvhrKEUR4XVorH2Bj8ek1/iLlgcmFMBOds+PrehSRR8Gn0IjlEg\n"
             + "C68EY6KPE+FKySuS7Ur7lTAjNdddfdAgKV6hJyST6/dx8ymIkb8nxCPnxCcT2I2N\n"
             + "vDxcPMc/wmnMa+smNal0sJ6m\n" + "-----END CERTIFICATE-----";
- */
 
 
-/* 
+
+
     @Test
     public void testVerifySucessRegisterCertificate() throws Exception {
 
@@ -155,7 +153,7 @@ public class RegistrationRequestCertificateTests {
 
         iamAccountRepo.delete(account);
 
-    } */
+    }
 
     /* @Test
     public void testVerifySucessRegisterCertificate2() throws Exception {
@@ -219,4 +217,4 @@ public class RegistrationRequestCertificateTests {
 
 
 
-//}
+}
