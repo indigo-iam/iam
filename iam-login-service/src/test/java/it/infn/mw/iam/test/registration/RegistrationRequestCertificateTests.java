@@ -19,11 +19,11 @@ import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 import java.util.HashMap;
@@ -37,33 +37,26 @@ import javax.servlet.http.HttpSession;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParser;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
-import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.DefaultRegistrationRequestService;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
-import it.infn.mw.iam.test.notification.NotificationTestConfig;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @RunWith(SpringRunner.class)
@@ -74,9 +67,6 @@ public class RegistrationRequestCertificateTests {
 
     @Autowired
     private DefaultRegistrationRequestService defaultRegistrationRequestService;
-
-    @Autowired
-    private IamProperties iamProperties;
 
     @Autowired
     private HttpServletRequest httpRequest;
@@ -91,15 +81,13 @@ public class RegistrationRequestCertificateTests {
     private IamRegistrationRequestRepository iamRequestRepo;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
     private MockMvc mvc;
 
     @MockBean
     private RegistrationProperties registrationProperties;
 
     private static final String USERNAME = "esteban";
+    private static final String USERNAME_2 = "carlos";
     public static final String TEST_0_SUBJECT = "CN=test0,O=IGI,C=IT";
     public static final String TEST_0_ISSUER = "CN=Test CA,O=IGI,C=IT";
     private static final String TEST_0_CERT = "-----BEGIN CERTIFICATE-----\n"
@@ -156,10 +144,6 @@ public class RegistrationRequestCertificateTests {
 
         session.setAttribute(X509_CREDENTIAL_SESSION_KEY, test0Cred);
 
-
-        //iamProperties.getRegistration().setRequireCertificate(RequireCertificateOption.REQUIRED);
-
-
         RegistrationRequestDto reg = defaultRegistrationRequestService.createRequest(request,
                 Optional.empty(), httpRequest);
         assertNotNull(reg);
@@ -180,19 +164,19 @@ public class RegistrationRequestCertificateTests {
 
     }
 
-    /* @Test
-    public void testVerifySucessRegisterCertificate2() throws Exception {
-        iamProperties.getRegistration().setRequireCertificate(RequireCertificateOption.REQUIRED);
 
-        
+        @Test
+    public void testVerifyErrorRegisterCertificate() throws Exception {
+
         String email = USERNAME + "@example.org";
-        RegistrationRequestDto request = new RegistrationRequestDto();
+        final RegistrationRequestDto request = new RegistrationRequestDto();
         request.setGivenname("Test");
         request.setFamilyname("User");
         request.setEmail(email);
         request.setUsername(USERNAME);
         request.setNotes("Some short notes...");
         request.setPassword("password");
+        request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
 
@@ -210,18 +194,37 @@ public class RegistrationRequestCertificateTests {
 
         session.setAttribute(X509_CREDENTIAL_SESSION_KEY, test0Cred);
 
-        // @formatter:off
-        String response = mvc
-        .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-        // @formatter:on
+       RegistrationRequestDto reg = defaultRegistrationRequestService.createRequest(request,
+                Optional.empty(), httpRequest);
+        assertNotNull(reg);
+
+
+        email = USERNAME_2 + "@example.org";
+        request.setEmail(email);
+        request.setUsername(USERNAME_2);
+        request.setRegisterCertificate("true");
+
+        session = httpRequest.getSession();
+
+        org.junit.jupiter.api.Assertions.assertThrows( CredentialAlreadyBoundException.class , ()-> {defaultRegistrationRequestService.createRequest(request,
+                Optional.empty(), httpRequest);
+            }) ;
+
+        List<IamRegistrationRequest> requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+
+        for(IamRegistrationRequest iamRegistrationRequest: requests){
+            iamRequestRepo.delete(iamRegistrationRequest);
+        }
+    
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+
+        IamAccount account = iamAccountRepo.findByUsername(USERNAME).orElseThrow(()-> new AccountNotFoundException());
+
+        iamAccountRepo.delete(account);
+  
 
     }
- */
+
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
         Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
