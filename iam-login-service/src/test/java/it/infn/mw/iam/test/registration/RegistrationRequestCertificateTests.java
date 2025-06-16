@@ -21,6 +21,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import it.infn.mw.iam.core.IamRegistrationRequestStatus;
+import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+
+import java.util.List;
 import java.util.Optional;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -77,6 +81,9 @@ public class RegistrationRequestCertificateTests {
 
     @Autowired
     private IamAccountRepository iamAccountRepo;
+    
+    @Autowired
+    private IamRegistrationRequestRepository iamRequestRepo;
 
 /*     @Autowired
     private MockMvc mvc;
@@ -149,9 +156,19 @@ public class RegistrationRequestCertificateTests {
                 Optional.empty(), httpRequest);
         assertNotNull(reg);
 
+        List<IamRegistrationRequest> requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+
+        for(IamRegistrationRequest iamRegistrationRequest: requests){
+            iamRequestRepo.delete(iamRegistrationRequest);
+        }
+    
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+
         IamAccount account = iamAccountRepo.findByUsername(username).orElseThrow(()-> new AccountNotFoundException());
 
         iamAccountRepo.delete(account);
+        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW).orElseThrow(()-> new AccountNotFoundException("Can not remove suspended account as none is found"));
+        
 
     }
 
