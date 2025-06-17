@@ -208,9 +208,9 @@ public class RegistrationRequestCertificateTests {
 
         httpRequest.getSession();
 
-        org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class, () -> {
-            defaultRegistrationRequestService.createRequest(request, Optional.empty(), httpRequest);
-        });
+        org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class, () -> 
+            defaultRegistrationRequestService.createRequest(request, Optional.empty(), httpRequest)
+        );
 
         List<IamRegistrationRequest> requests =
                 iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
