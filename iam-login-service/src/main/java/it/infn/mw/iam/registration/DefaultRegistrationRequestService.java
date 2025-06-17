@@ -136,7 +136,7 @@ public class DefaultRegistrationRequestService
   private IamProperties iamProperties;
 
   @Autowired
-  private X509CertificateConverter X509Converter;
+  private X509CertificateConverter x509Converter;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -233,7 +233,7 @@ public class DefaultRegistrationRequestService
 
       cert.setLabel("cert-0");
 
-      ScimX509Certificate fin = X509Converter.dtoFromEntity(cert);
+      ScimX509Certificate fin = x509Converter.dtoFromEntity(cert);
 
       userBuilder.addX509Certificate(fin);
 
