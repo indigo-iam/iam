@@ -255,7 +255,7 @@ public class IamWebSecurityConfig {
       this.userLoginConfig = userLoginConfig;
       this.authorizationRequestFilter = authorizationRequestFilter;
       this.iamProperties = iamProperties;
-    };
+    }
 
 
     AccessDeniedHandler accessDeniedHandler() {
