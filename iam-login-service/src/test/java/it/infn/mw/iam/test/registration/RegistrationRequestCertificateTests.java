@@ -113,7 +113,7 @@ public class RegistrationRequestCertificateTests {
             49YhMn61sQIrepvhrKEUR4XVorH2Bj8ek1/iLlgcmFMBOds+PrehSRR8Gn0IjlEg
             C68EY6KPE+FKySuS7Ur7lTAjNdddfdAgKV6hJyST6/dx8ymIkb8nxCPnxCcT2I2N
             vDxcPMc/wmnMa+smNal0sJ6m
-            -----END CERTIFICATE-----""";;
+            -----END CERTIFICATE-----""";
 
 
     @Test
@@ -220,10 +220,6 @@ public class RegistrationRequestCertificateTests {
         for (IamRegistrationRequest iamRegistrationRequest : requests) {
             iamRequestRepo.delete(iamRegistrationRequest);
         }
-
-        requests = iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
-            .orElseThrow(() -> new AccountNotFoundException(
-                    "Can not remove suspended account as none is found"));
 
         IamAccount account = iamAccountRepo.findByUsername(USERNAME)
             .orElseThrow(AccountNotFoundException:: new);

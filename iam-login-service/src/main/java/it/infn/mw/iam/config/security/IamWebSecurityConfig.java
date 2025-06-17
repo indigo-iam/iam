@@ -83,7 +83,7 @@ public class IamWebSecurityConfig {
     return new SecurityEvaluationContextExtension();
   }
 
-  public final static String AUTHORIZE = "/authorize";
+  public static final String AUTHORIZE = "/authorize";
 
   @Configuration
   @Order(100)
