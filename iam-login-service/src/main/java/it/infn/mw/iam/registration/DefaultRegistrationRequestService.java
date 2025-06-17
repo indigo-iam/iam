@@ -135,8 +135,12 @@ public class DefaultRegistrationRequestService
   @Autowired
   private IamProperties iamProperties;
 
+  private final X509CertificateConverter x509Converter;
+
   @Autowired
-  private X509CertificateConverter x509Converter;
+  public DefaultRegistrationRequestService(X509CertificateConverter x509Converter) {
+    this.x509Converter = x509Converter;
+  }
 
   private ApplicationEventPublisher eventPublisher;
 

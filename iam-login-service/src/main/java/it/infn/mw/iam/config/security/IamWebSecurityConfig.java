@@ -242,15 +242,21 @@ public class IamWebSecurityConfig {
 
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
-    @Autowired
+
     private UserLoginConfig userLoginConfig;
-
-    @Autowired
-    @Qualifier("mitreAuthzRequestFilter")
     private GenericFilterBean authorizationRequestFilter;
+    private IamProperties iamProperties;
+
 
     @Autowired
-    IamProperties iamProperties;
+    public RegistrationConfig(UserLoginConfig userLoginConfig,
+        @Qualifier("mitreAuthzRequestFilter") GenericFilterBean authorizationRequestFilter,
+        IamProperties iamProperties) {
+      this.userLoginConfig = userLoginConfig;
+      this.authorizationRequestFilter = authorizationRequestFilter;
+      this.iamProperties = iamProperties;
+    };
+
 
     AccessDeniedHandler accessDeniedHandler() {
       return (request, response, authError) -> {
