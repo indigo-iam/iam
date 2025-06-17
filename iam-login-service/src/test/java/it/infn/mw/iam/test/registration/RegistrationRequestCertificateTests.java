@@ -159,8 +159,8 @@ public class RegistrationRequestCertificateTests {
             iamRequestRepo.delete(iamRegistrationRequest);
         }
 
-        IamAccount account = iamAccountRepo.findByUsername(USERNAME)
-            .orElseThrow(AccountNotFoundException::new);
+        IamAccount account =
+                iamAccountRepo.findByUsername(USERNAME).orElseThrow(AccountNotFoundException::new);
 
         iamAccountRepo.delete(account);
 
@@ -211,9 +211,9 @@ public class RegistrationRequestCertificateTests {
 
         Optional<ExternalAuthenticationRegistrationInfo> optional = Optional.empty();
 
-        org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class, () -> 
-            defaultRegistrationRequestService.createRequest(request,optional, httpRequest)
-        );
+        org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class,
+                () -> defaultRegistrationRequestService.createRequest(request, optional,
+                        httpRequest));
 
         List<IamRegistrationRequest> requests =
                 iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
@@ -224,8 +224,8 @@ public class RegistrationRequestCertificateTests {
             iamRequestRepo.delete(iamRegistrationRequest);
         }
 
-        IamAccount account = iamAccountRepo.findByUsername(USERNAME)
-            .orElseThrow(AccountNotFoundException:: new);
+        IamAccount account =
+                iamAccountRepo.findByUsername(USERNAME).orElseThrow(AccountNotFoundException::new);
 
         iamAccountRepo.delete(account);
 
