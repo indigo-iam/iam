@@ -45,6 +45,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParser;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
@@ -208,8 +209,10 @@ public class RegistrationRequestCertificateTests {
 
         httpRequest.getSession();
 
+        Optional<ExternalAuthenticationRegistrationInfo> optional = Optional.empty();
+
         org.junit.jupiter.api.Assertions.assertThrows(CredentialAlreadyBoundException.class, () -> 
-            defaultRegistrationRequestService.createRequest(request, Optional.empty(), httpRequest)
+            defaultRegistrationRequestService.createRequest(request,optional, httpRequest)
         );
 
         List<IamRegistrationRequest> requests =
