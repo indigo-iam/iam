@@ -91,7 +91,7 @@ public class IamUserInfo implements Serializable {
 
   private String birthdate;
 
-  @Column(length = 4096)
+  @Column(length = 200)
   private String affiliation;
 
   private transient JsonObject src;
