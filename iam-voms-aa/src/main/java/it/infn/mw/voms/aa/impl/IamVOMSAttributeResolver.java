@@ -50,14 +50,6 @@ public class IamVOMSAttributeResolver implements AttributeResolver {
     this.properties = properties;
   }
 
-  protected boolean iamGroupIsVomsGroup(VOMSRequestContext context, IamGroup g) {
-    final String voName = context.getVOName();
-    final boolean nameMatches = g.getName().equals(voName) || g.getName().startsWith(voName + "/");
-
-    return nameMatches && !g.getLabels().contains(vomsRoleLabel)
-        && !g.getLabels().contains(optionalGroupLabel);
-  }
-
   protected void noSuchUserError(VOMSRequestContext context) {
     VOMSErrorMessage m = VOMSErrorMessage.noSuchUser(context.getRequest().getHolderSubject(),
         context.getRequest().getHolderIssuer());
@@ -75,19 +67,24 @@ public class IamVOMSAttributeResolver implements AttributeResolver {
     context.setHandled(true);
   }
 
+  protected boolean startsWithVOName(String attr) {
+    final String voName = properties.getAa().getVoName();
+
+    return attr.equals(voName) || attr.startsWith(voName + "/");
+  }
 
   protected boolean iamGroupIsVomsRole(IamGroup g) {
     return g.getLabels().contains(vomsRoleLabel);
   }
 
-  protected boolean startsWithVOName(String attr) {
-    final String voName = properties.getAa().getVoName();
-    return attr.equals(voName) || attr.startsWith(voName + "/");
+  protected boolean iamGroupIsVomsGroup(IamGroup g) {
+    return startsWithVOName(g.getName()) && !iamGroupIsVomsRole(g)
+        && !g.getLabels().contains(optionalGroupLabel);
   }
 
   protected boolean groupMatchesFqan(IamGroup g, VOMSFqan fqan) {
     final String name = fqan.asIamGroupName();
-    final boolean nameMatches = name.equals(g.getName()) && startsWithVOName(name);
+    final boolean nameMatches = startsWithVOName(name) && name.equals(g.getName());
     if (fqan.isRoleFqan()) {
       return nameMatches && g.getLabels().contains(vomsRoleLabel);
     } else {
@@ -133,7 +130,7 @@ public class IamVOMSAttributeResolver implements AttributeResolver {
       .getGroups()
       .stream()
       .sorted(comparing(gm -> gm.getGroup().getName()))
-      .filter(g -> iamGroupIsVomsGroup(requestContext, g.getGroup()))
+      .filter(g -> iamGroupIsVomsGroup(g.getGroup()))
       .forEach(g -> issueCompulsoryGroupFqan(requestContext, g.getGroup()));
 
     if (requestContext.getResponse().getIssuedFQANs().isEmpty()) {
