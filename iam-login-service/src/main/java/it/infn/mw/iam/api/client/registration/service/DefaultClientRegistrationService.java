@@ -69,23 +69,22 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @Service
-@ConditionalOnProperty(name = "client-registration.enable", havingValue = "true",
-    matchIfMissing = false)
+@ConditionalOnProperty(name = "client-registration.enable", havingValue = "true", matchIfMissing = false)
 @Validated
 @SuppressWarnings("deprecation")
 public class DefaultClientRegistrationService implements ClientRegistrationService {
 
   public static final String INVALID_ACCESS_TOKEN_ERROR = "Invalid registration access token";
   public static final String NO_AUTH_USER_ERROR = "No authenticated user found";
-  public static final String ACCESS_DENIED_ERROR =
-      "You do not have enough privileges to access this client registration API";
+  public static final String ACCESS_DENIED_ERROR = "You do not have enough privileges to access this client registration API";
 
   public static final String GRANT_TYPE_NOT_ALLOWED_ERROR_STR = "Grant type not allowed: %s";
 
-  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER =
-      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
-  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS =
-      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS);
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER = EnumSet
+      .of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
+  private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS = EnumSet.of(
+      AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE,
+      AuthorizationGrantType.CLIENT_CREDENTIALS);
 
   private final Clock clock;
   private final ClientService clientService;
@@ -98,7 +97,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ClientRegistrationProperties registrationProperties;
   private final ScopeMatcherRegistry scopeMatcherRegistry;
   private final ApplicationEventPublisher eventPublisher;
-
 
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
@@ -136,7 +134,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return isNull(authentication) || (authentication instanceof AnonymousAuthenticationToken);
   }
 
-
   private void checkAllowedGrantTypes(RegisteredClientDTO request, Authentication authentication) {
 
     if (accountUtils.isAdmin(authentication)) {
@@ -144,16 +141,16 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-      .stream()
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+          .stream()
+          .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+          .findFirst()
+          .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
-      .stream()
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+          .stream()
+          .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+          .findFirst()
+          .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
@@ -165,18 +162,18 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-      .stream()
-      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+          .stream()
+          .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+          .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+          .findFirst()
+          .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
-      .stream()
-      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+          .stream()
+          .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+          .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+          .findFirst()
+          .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
@@ -187,50 +184,48 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     if (!accountUtils.isAdmin(authentication)) {
       Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
-        .stream()
-        .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
-        .collect(toSet());
+          .stream()
+          .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
+          .collect(toSet());
 
       Set<String> filteredClientScopes = request.getScope()
-        .stream()
-        .filter(s -> matchers.stream()
-          .noneMatch(m -> m.matches(s) && !oldClient.getScope().contains(s)))
-        .collect(toSet());
+          .stream()
+          .filter(s -> matchers.stream()
+              .noneMatch(m -> m.matches(s) && !oldClient.getScope().contains(s)))
+          .collect(toSet());
 
       request.setScope(filteredClientScopes);
     }
 
   }
 
-
   private void removeRestrictedScopes(ClientDetailsEntity entity) {
     Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
-      .stream()
-      .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
-      .collect(toSet());
+        .stream()
+        .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
+        .collect(toSet());
 
     Set<String> filteredClientScopes = entity.getScope()
-      .stream()
-      .filter(s -> matchers.stream().noneMatch(m -> m.matches(s)))
-      .collect(toSet());
+        .stream()
+        .filter(s -> matchers.stream().noneMatch(m -> m.matches(s)))
+        .collect(toSet());
 
     entity.setScope(filteredClientScopes);
   }
 
-    private void removeCustomScopes(ClientDetailsEntity entity) {
+  private void removeCustomScopes(ClientDetailsEntity entity) {
     Set<ScopeMatcher> matchers = systemScopeService.getAll()
-      .stream()
-      .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
-      .collect(toSet());
+        .stream()
+        .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
+        .collect(toSet());
 
     Set<String> filteredClientScopes = entity.getScope()
-      .stream()
-      .filter(s -> matchers.stream().anyMatch(m -> m.matches(s)))
-      .collect(toSet());
+        .stream()
+        .filter(s -> matchers.stream().anyMatch(m -> m.matches(s)))
+        .collect(toSet());
 
     entity.setScope(filteredClientScopes);
   }
-
 
   private void cleanupRequestedScopes(ClientDetailsEntity entity, Authentication authentication) {
 
@@ -238,7 +233,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
       systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
-      if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)){
+      if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
         removeCustomScopes(entity);
       }
       if (!accountUtils.isAdmin(authentication)) {
@@ -248,14 +243,13 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   }
 
   private void authzChecks(Authentication authentication) {
-    ClientRegistrationAuthorizationPolicy allowedForRegistration =
-        registrationProperties.getAllowFor();
+    ClientRegistrationAuthorizationPolicy allowedForRegistration = registrationProperties.getAllowFor();
 
-    boolean registrationAllowed =
-        (ADMINISTRATORS.equals(allowedForRegistration) && accountUtils.isAdmin(authentication))
-            || (REGISTERED_USERS.equals(allowedForRegistration)
-                && accountUtils.isRegisteredUser(authentication))
-            || (ANYONE.equals(allowedForRegistration));
+    boolean registrationAllowed = (ADMINISTRATORS.equals(allowedForRegistration)
+        && accountUtils.isAdmin(authentication))
+        || (REGISTERED_USERS.equals(allowedForRegistration)
+            && accountUtils.isRegisteredUser(authentication))
+        || (ANYONE.equals(allowedForRegistration));
 
     if (!registrationAllowed) {
       throw new AccessDeniedException(ACCESS_DENIED_ERROR);
@@ -267,8 +261,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       Authentication authentication) {
     if (authentication instanceof OAuth2Authentication oauth) {
       return oauth.getOAuth2Request().getClientId().equals(clientId) && oauth.getOAuth2Request()
-        .getScope()
-        .contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+          .getScope()
+          .contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
     }
 
     return false;
@@ -276,7 +270,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   private boolean ratHasExpired(OAuth2AccessTokenEntity token) throws ParseException {
     final int defaultRatValiditySeconds = registrationProperties.getClientDefaults()
-      .getDefaultRegistrationAccessTokenValiditySeconds();
+        .getDefaultRegistrationAccessTokenValiditySeconds();
 
     if (defaultRatValiditySeconds < 0) {
       return false;
@@ -294,8 +288,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
       OAuth2AccessTokenEntity token = tokenService.readAccessToken(rat);
 
-      var hasRegistrationScope =
-          token.getScope().contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
+      var hasRegistrationScope = token.getScope().contains(SystemScopeService.REGISTRATION_TOKEN_SCOPE);
 
       var matchesClientId = token.getClient().getClientId().equals(clientId);
 
@@ -343,7 +336,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     if (accountUtils.isAdmin(authentication)) {
       return;
     }
-    if(!oldClient.isActive()){
+    if (!oldClient.isActive()) {
       throw new ClientSuspended("Client " + oldClient.getClientId() + " is suspended!");
     }
   }
@@ -375,8 +368,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     } else {
 
-      IamAccount account =
-          accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+      IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
 
       client.getContacts().add(account.getUserInfo().getEmail());
 
@@ -399,8 +391,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       return clientService.findClientByClientId(clientId);
     } else {
 
-      IamAccount account =
-          accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+      IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
 
       return clientService.findClientByClientIdAndAccount(clientId, account);
     }
@@ -411,9 +402,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     authzChecks(authentication);
 
     return lookupClient(clientId, authentication).map(converter::registrationResponseFromClient)
-      .orElseThrow(clientNotFound(clientId));
+        .orElseThrow(clientNotFound(clientId));
   }
-
 
   @Validated(OnDynamicClientUpdate.class)
   @Override
@@ -421,13 +411,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       Authentication authentication) throws ParseException {
     authzChecks(authentication);
 
-    ClientDetailsEntity oldClient =
-        lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
+    ClientDetailsEntity oldClient = lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
-    checkUserUpdatingSuspendedClient(authentication, oldClient);    
+    checkUserUpdatingSuspendedClient(authentication, oldClient);
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
-       
+
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
     newClient.setClientSecret(oldClient.getClientSecret());
@@ -442,8 +431,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
 
-    if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)){
-        removeCustomScopes(newClient);
+    if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
+      removeCustomScopes(newClient);
     }
 
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
@@ -456,21 +445,19 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
       response.setRegistrationAccessToken(t);
     });
-    return response;      
+    return response;
   }
 
   @Override
   public void deleteClient(String clientId, Authentication authentication) {
     authzChecks(authentication);
 
-    ClientDetailsEntity client =
-        lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
+    ClientDetailsEntity client = lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
     clientService.deleteClient(client);
 
     eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
   }
-
 
   @Override
   public RegisteredClientDTO redeemClient(@NotBlank String clientId,
@@ -485,11 +472,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       throw new InvalidClientRegistrationRequest(INVALID_ACCESS_TOKEN_ERROR);
     }
 
-    ClientDetailsEntity client =
-        clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId).orElseThrow(clientNotFound(clientId));
 
-    final IamAccount account =
-        accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
+    final IamAccount account = accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());
 
     client = clientService.linkClientToAccount(client, account);
 
