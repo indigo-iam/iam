@@ -28,16 +28,16 @@ public class IamRevokedAccessToken {
 
   @Id
   @Column(nullable = false, unique = true)
-  String jti;
+  private String jti;
 
   @Column(nullable = false)
-  Date expiration;
+  private Date expiration;
 
   public String getJti() {
     return jti;
   }
 
-  public void setJit(String jti) {
+  public void setJti(String jti) {
     this.jti = jti;
   }
 

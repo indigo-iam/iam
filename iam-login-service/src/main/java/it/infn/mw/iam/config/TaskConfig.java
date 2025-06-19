@@ -18,9 +18,7 @@ package it.infn.mw.iam.config;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
-import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +33,7 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
+import it.infn.mw.iam.core.gc.GarbageCollector;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.AupReminderTask;
@@ -62,9 +61,6 @@ public class TaskConfig implements SchedulingConfigurer {
   OAuth2TokenEntityService tokenEntityService;
 
   @Autowired
-  ApprovedSiteService approvedSiteService;
-
-  @Autowired
   NotificationStoreService notificationStoreService;
 
   @Autowired
@@ -72,9 +68,6 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Autowired
   IamAccountService accountService;
-
-  @Autowired
-  DeviceCodeService deviceCodeService;
 
   @Autowired
   NotificationDeliveryTask deliveryTask;
@@ -94,6 +87,9 @@ public class TaskConfig implements SchedulingConfigurer {
   @Autowired
   ExecutorService taskScheduler;
 
+  @Autowired
+  GarbageCollector garbageCollector;
+
   @Value("${notification.disable}")
   boolean notificationDisabled;
 
@@ -110,14 +106,21 @@ public class TaskConfig implements SchedulingConfigurer {
   @Scheduled(fixedDelayString = "${task.tokenCleanupPeriodMsec}", initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredTokens() {
 
-    tokenEntityService.clearExpiredTokens();
+    garbageCollector.clearExpiredTokens();
+  }
+
+  @Scheduled(fixedDelayString = "${task.revokedTokenCleanupPeriodMsec}",
+      initialDelay = TEN_MINUTES_MSEC)
+  public void clearExpiredRevokedTokens() {
+
+    garbageCollector.clearExpiredRevokedTokens();
   }
 
   @Scheduled(fixedDelayString = "${task.approvalCleanupPeriodMsec}",
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredSites() {
 
-    approvedSiteService.clearExpiredSites();
+    garbageCollector.clearExpiredApprovedSites();
   }
 
   @Scheduled(fixedDelay = THIRTY_SECONDS_MSEC, initialDelay = TEN_MINUTES_MSEC)
@@ -128,7 +131,15 @@ public class TaskConfig implements SchedulingConfigurer {
   @Scheduled(fixedDelayString = "${task.deviceCodeCleanupPeriodMsec}",
       initialDelay = TEN_MINUTES_MSEC)
   public void clearExpiredDeviceCodes() {
-    deviceCodeService.clearExpiredDeviceCodes();
+
+    garbageCollector.clearExpiredDeviceCodes();
+  }
+
+  @Scheduled(fixedDelayString = "${task.authzCodeCleanupPeriodMsec}",
+      initialDelay = THIRTY_SECONDS_MSEC)
+  public void clearExpiredAuthorizationCodes() {
+
+    garbageCollector.clearExpiredAuthorizationCodes();
   }
 
   @Scheduled(fixedRateString = "${task.aupReminder:14400}", timeUnit = TimeUnit.SECONDS,

@@ -27,10 +27,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
+import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.repository.SystemScopeRepository;
+import org.mitre.oauth2.service.AuthenticationHolderEntityService;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
-import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
+import it.infn.mw.iam.core.oauth.IamAuthorizationCodeService;
 import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
@@ -182,9 +184,8 @@ public class IamConfig {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
-    KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
-            scopeFilter);
+    KeycloakProfileAccessTokenBuilder atBuilder = new KeycloakProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
@@ -227,8 +228,8 @@ public class IamConfig {
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
       IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
-    JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
+    JWTAccessTokenBuilder accessTokenBuilder = new WLCGProfileAccessTokenBuilder(props,
+        attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
         claimTranslationService, claimValueHelper, groupHelper, props);
@@ -281,8 +282,11 @@ public class IamConfig {
   }
 
   @Bean
-  AuthorizationCodeServices authorizationCodeServices() {
-    return new DefaultOAuth2AuthorizationCodeService();
+  @Primary
+  AuthorizationCodeServices authorizationCodeService(
+      AuthorizationCodeRepository authorizationCodeRepo,
+      AuthenticationHolderEntityService authenticationHolderService) {
+    return new IamAuthorizationCodeService(authorizationCodeRepo, authenticationHolderService);
   }
 
   @Bean

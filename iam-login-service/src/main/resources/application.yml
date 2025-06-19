@@ -32,7 +32,7 @@ server:
       pattern: "%{X-Forwarded-For}i %l %u %t \"%r\" %s %b"
 
   forward-headers-strategy: ${IAM_FORWARD_HEADERS_STRATEGY:none}
-  
+
 spring:
   redis:
     
@@ -91,6 +91,9 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: "ant-path-matcher"
+
+  jmx:
+    enabled: false
 
 iam:
   host: ${IAM_HOST:localhost}
@@ -216,9 +219,11 @@ notification:
     resetPassword: Reset your ${iam.organisation.name} account password
 
 task:
+  revokedTokenCleanupPeriodMsec: ${IAM_REVOKED_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   tokenCleanupPeriodMsec: ${IAM_TOKEN_CLEANUP_PERIOD_MSEC:300000}
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
+  authzCodeCleanupPeriodMsec: ${IAM_AUTHZ_CODE_CLEANUP_PERIOD_MSEC:300000}
   wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
 
 client-registration:

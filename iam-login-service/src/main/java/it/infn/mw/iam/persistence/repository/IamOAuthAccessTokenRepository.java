@@ -94,4 +94,7 @@ public interface IamOAuthAccessTokenRepository
     + "select sua.id from SavedUserAuthentication sua where sua.name not in ("
     + "select a.username from IamAccount a))")
   List<OAuth2AccessTokenEntity> findOrphanedTokens();
+
+  @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= current_date")
+  Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op);
 }

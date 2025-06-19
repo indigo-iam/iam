@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.persistence.repository;
+package it.infn.mw.iam.core.gc;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+public interface GarbageCollector {
 
-import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+  void clearExpiredApprovedSites();
 
-public interface IamRevokedAccessTokenRepository
-  extends PagingAndSortingRepository<IamRevokedAccessToken, String> {
+  void clearExpiredAuthorizationCodes();
 
-  @Query("select t from IamRevokedAccessToken t where t.expiration < current_date")
-  Page<IamRevokedAccessToken> findExpired(Pageable p);
+  void clearExpiredDeviceCodes();
+
+  void clearExpiredRevokedTokens();
+
+  void clearExpiredTokens();
+
 }

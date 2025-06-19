@@ -88,7 +88,7 @@ public class TestTokensUtils {
   @Autowired
   protected PasswordEncoder encoder;
 
-  private OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
+  protected OAuth2Authentication oauth2Authentication(ClientDetailsEntity client, String username,
       String[] scopes) {
 
     Authentication userAuth = null;
