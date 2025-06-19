@@ -93,6 +93,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
     function updateLoggedUserInfo() {
 
         $rootScope.isRegistrationEnabled = Utils.isRegistrationEnabled();
+        $rootScope.isAdminOnlyCustomScope = Utils.isAdminOnlyCustomScope();
         $rootScope.isOidcEnabled = Utils.isOidcEnabled();
         $rootScope.isSamlEnabled = Utils.isSamlEnabled();
 

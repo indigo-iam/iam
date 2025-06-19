@@ -47,6 +47,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean githubEnabled;
   private boolean samlEnabled;
   private boolean registrationEnabled;
+  private boolean adminOnlyCustomScopes;
   private boolean localAuthenticationVisible;
   private boolean showLinkToLocalAuthn;
   private boolean defaultLoginPageLayout;
@@ -77,6 +78,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     githubEnabled = env.acceptsProfiles(Profiles.of("github"));
     samlEnabled = env.acceptsProfiles(Profiles.of("saml"));
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
+    adminOnlyCustomScopes = env.acceptsProfiles(Profiles.of("registration"));
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
@@ -115,6 +117,12 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   public boolean isRegistrationEnabled() {
 
     return registrationEnabled;
+  }
+
+    @Override
+  public boolean isAdminOnlyCustomScopes() {
+
+    return adminOnlyCustomScopes;
   }
 
   @Override

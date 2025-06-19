@@ -33,6 +33,7 @@
             isPreAuthenticated: isPreAuthenticated,
             getLoggedUser: getLoggedUser,
             isRegistrationEnabled: isRegistrationEnabled,
+            isAdminOnlyCustomScope: isAdminOnlyCustomScope,
             isOidcEnabled: isOidcEnabled,
             isSamlEnabled: isSamlEnabled,
             buildErrorOperationResult: buildErrorOperationResult,
@@ -127,6 +128,11 @@
         function isRegistrationEnabled() {
 
             return getRegistrationEnabled();
+        }
+
+        function isAdminOnlyCustomScope() {
+
+            return getAdminOnlyCustomScope();
         }
 
         function isOidcEnabled() {
