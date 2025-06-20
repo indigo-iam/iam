@@ -28,16 +28,16 @@
 
         self.clipboardSuccess = clipboardSuccess;
         self.clipboardError = clipboardError;
-      
-        $ctrl.ok = function() {
+
+        $ctrl.ok = function () {
             $uibModalInstance.close($ctrl.selected);
         };
-      
-        $ctrl.closeModal = function() {
+
+        $ctrl.closeModal = function () {
             $uibModalInstance.dismiss('cancel');
         };
 
-        $ctrl.toggleSecretVisibility = function() {
+        $ctrl.toggleSecretVisibility = function () {
             $ctrl.showSecret = !$ctrl.showSecret;
         };
 
@@ -101,23 +101,23 @@
 
             var res = () => {
                 var modalInstance = $uibModal.open({
-                  templateUrl: 'clientsecret-view.content.html',
-                  controller: 'ModalClientSecretViewController',
-                  resolve: {
-                    data: function() {
-                      return {
-                        title: '',
-                        message: '',
-                        clientDetail: res,
-                      };
+                    templateUrl: 'clientsecret-view.content.html',
+                    controller: 'ModalClientSecretViewController',
+                    resolve: {
+                        data: function () {
+                            return {
+                                title: '',
+                                message: '',
+                                clientDetail: res,
+                            };
+                        }
                     }
-                  }
                 });
-          
-                modalInstance.result.then(function(selectedItem) {
-                  $ctrl.selected = selectedItem;
-                }, function() {
-                  console.log('Dialog dismissed at: ' + new Date());
+
+                modalInstance.result.then(function (selectedItem) {
+                    $ctrl.selected = selectedItem;
+                }, function () {
+                    console.log('Dialog dismissed at: ' + new Date());
                 });
                 return res;
             }
@@ -139,7 +139,13 @@
 
         function registerClient() {
             return ClientRegistrationService.registerClient(self.clientVal).then(res => {
-               handleSuccess(res);
+                handleSuccess(res);
+                const isNewClientPublic = self.clientVal.token_endpoint_auth_method === 'none';
+
+                if (isNewClientPublic) {
+                    $location.path('/home/clients');
+                    return res;
+                }
 
                 var modalSecret = $uibModal.open({
                     templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/newclientsecretshow/newclientsecretshow.component.html',
@@ -154,17 +160,16 @@
                         }
                     }
                 });
-
                 modalSecret.result
-                .then(() => {$location.path('/home/clients');})
-                .catch(() => {
-                    toaster.pop({
-                        type: 'error',
-                        body: errorMsg
+                    .then(() => { $location.path('/home/clients'); })
+                    .catch(() => {
+                        toaster.pop({
+                            type: 'error',
+                            body: errorMsg
+                        });
                     });
-                });
-                return res;
 
+                return res;
             }).catch(handleError);
         }
 

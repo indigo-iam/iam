@@ -136,6 +136,13 @@
                         body: 'Client saved!'
                     });
 
+                    const isNewClientPublic = self.clientVal.token_endpoint_auth_method === 'none';
+                   
+                    if (isNewClientPublic) {
+                        $location.path('/clients');
+                        return;
+                    }
+
                     var modalSecret = $uibModal.open({
                         templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/newclientsecretshow/newclientsecretshow.component.html',
                         controller: ClientSecretViewController,
