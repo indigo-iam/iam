@@ -26,8 +26,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
@@ -79,6 +81,8 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   public static final Logger LOG = LoggerFactory.getLogger(IamTokenService.class);
 
   private static final String CLIENT_ID_CLAIM = "client_id";
+  private static final String AUD_CLAIM = "aud";
+  private static final String SUB_CLAIM = "sub";
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
@@ -206,35 +210,39 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     }
     // access token
     Set<String> scopes = entity.getScope();
+    Map<String, Object> additionalInfo = entity.getAdditionalInformation();
     Set<String> audiences = new HashSet<>();
-    Object audClaimObject = entity.getAdditionalInformation().get("aud");
-    if (audClaimObject instanceof List<?>) {
-      audiences.addAll(((List<?>) audClaimObject).stream()
+    Object audClaimObject = additionalInfo.get(AUD_CLAIM);
+    if (audClaimObject instanceof List<?> audList) {
+      audiences.addAll(audList.stream()
         .filter(String.class::isInstance)
         .map(String.class::cast)
-        .toList());
+        .collect(Collectors.toSet()));
     }
-    if (entity.getAdditionalInformation().get(CLIENT_ID_CLAIM) == null) {
-      throw new InvalidTokenException("client id not found on token");
-    }
-    String clientId = String.valueOf(entity.getAdditionalInformation().get(CLIENT_ID_CLAIM));
-    if (entity.getAdditionalInformation().get("sub") == null) {
-      throw new InvalidTokenException("sub not found on token");
-    }
-    String subject = String.valueOf(entity.getAdditionalInformation().get("sub"));
+    String clientId = getRequiredClaim(additionalInfo, CLIENT_ID_CLAIM);
+    String subject = getRequiredClaim(additionalInfo, SUB_CLAIM);
     if (clientId.equals(valueOf(subject))) {
       return getAuthentication(clientId, scopes, Set.of(new SimpleGrantedAuthority("ROLE_CLIENT")),
           audiences, null);
     }
     IamAccount account = accountRepository.findByUuid(subject)
       .orElseThrow(() -> new InvalidTokenException("User with subject " + subject + " not found"));
-    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-    account.getAuthorities()
-      .forEach(a -> authorities.add(new SimpleGrantedAuthority(a.getAuthority())));
+    Set<SimpleGrantedAuthority> authorities = account.getAuthorities()
+      .stream()
+      .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
+      .collect(Collectors.toSet());
     scopes = scopeFilter.filterScopes(scopes, account);
     UsernamePasswordAuthenticationToken userAuthentication =
         new UsernamePasswordAuthenticationToken(account.getUsername(), null, authorities);
     return getAuthentication(clientId, scopes, authorities, audiences, userAuthentication);
+  }
+
+  private String getRequiredClaim(Map<String, Object> info, String claim) {
+    Object value = info.get(claim);
+    if (value == null) {
+      throw new InvalidTokenException(claim + " not found on token");
+    }
+    return value.toString();
   }
 
   private boolean isResourceAccessToken(OAuth2AccessTokenEntity entity) {
@@ -272,14 +280,17 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     try {
       jwtToken = SignedJWT.parse(accessTokenValue);
     } catch (ParseException e) {
+      LOG.warn("Problem on parsing token: {}, token hash={}", e.getMessage(), sha256(accessTokenValue));
       throw new InvalidTokenException("Token parsing error: " + e.getMessage());
     }
     if (!jwtSigningService.validateSignature(jwtToken)) {
+      LOG.warn("Invalid signature for token hash={}", sha256(accessTokenValue));
       throw new InvalidTokenException("Invalid token signature");
     }
     try {
       authn = jwtConverter.convert(jwtToken);
     } catch (ParseException e) {
+      LOG.warn("Problem on converting token: {}, token hash={}", e.getMessage(), sha256(accessTokenValue));
       throw new InvalidTokenException("Token parsing error: " + e.getMessage());
     }
     if (authn.getScope().contains(REGISTRATION_TOKEN_SCOPE)
