@@ -240,6 +240,8 @@ public class IamProperties {
 
     String samlEntityId;
 
+    String registrationButtonText;
+
     Map<String, RegistrationFieldProperties> fields = new HashMap<>();
 
     List<DefaultGroup> defaultGroups;
@@ -250,6 +252,14 @@ public class IamProperties {
 
     public void setShowRegistrationButtonInLoginPage(boolean showRegistrationButtonInLoginPage) {
       this.showRegistrationButtonInLoginPage = showRegistrationButtonInLoginPage;
+    }
+
+    public String getRegistrationButtonText(){
+      return registrationButtonText;
+    }
+
+    public void setRegistrationButtonText(String registrationButtonText){
+      this.registrationButtonText = registrationButtonText;
     }
 
     public boolean isRequireExternalAuthentication() {

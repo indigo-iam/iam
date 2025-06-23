@@ -191,7 +191,7 @@
                 <div class="registration-preamble text-muted">
                    Not a member?
                 </div>
-                <a class="btn btn-success btn-block" href="/start-registration">Apply for an account</a>
+            <a class="btn btn-success btn-block" href="/start-registration">${loginPageConfiguration.registrationButtonText}</a>
                 <c:if test="${
                     loginPageConfiguration.samlEnabled
                     && iamSamlProperties.wayfLoginButton.visible

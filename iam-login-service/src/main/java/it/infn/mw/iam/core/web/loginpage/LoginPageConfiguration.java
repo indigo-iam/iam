@@ -54,6 +54,8 @@ public interface LoginPageConfiguration {
 
   String getLoginButtonText();
 
+  String getRegistrationButtonText();
+
   List<OidcProvider> getOidcProviders();
 
   Logo getLogo();
