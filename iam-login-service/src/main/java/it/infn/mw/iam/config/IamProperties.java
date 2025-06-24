@@ -401,9 +401,30 @@ public class IamProperties {
     }
   }
 
-  public static class LoginLink {
+  public static class PrivacyPolicy {
     String url;
-    String text = "";
+    String text = "Privacy policy";
+
+    public String getUrl() {
+      return url;
+    }
+
+    public void setUrl(String url) {
+      this.url = url;
+    }
+
+    public String getText() {
+      return text;
+    }
+
+    public void setText(String text) {
+      this.text = text;
+    }
+  }
+
+  public static class Support {
+    String url;
+    String text = "Support";
 
     public String getUrl() {
       return url;
@@ -626,9 +647,9 @@ public class IamProperties {
 
   private RegistractionAccessToken token = new RegistractionAccessToken();
 
-  private LoginLink privacyPolicy = new LoginLink();
+  private PrivacyPolicy privacyPolicy = new PrivacyPolicy();
 
-  private LoginLink support = new LoginLink();
+  private Support support = new Support();
 
   private LoginPageLayout loginPageLayout = new LoginPageLayout();
 
@@ -740,19 +761,19 @@ public class IamProperties {
     this.verifyButton = verifyButton;
   }
 
-  public void setPrivacyPolicy(LoginLink privacyPolicy) {
+  public void setPrivacyPolicy(PrivacyPolicy privacyPolicy) {
     this.privacyPolicy = privacyPolicy;
   }
 
-  public LoginLink getPrivacyPolicy() {
+  public PrivacyPolicy getPrivacyPolicy() {
     return privacyPolicy;
   }
 
-  public void setSupport(LoginLink newSupport) {
+  public void setSupport(Support newSupport) {
     this.support = newSupport;
   }
 
-  public LoginLink getSupport() {
+  public Support getSupport() {
     return support;
   }
 
