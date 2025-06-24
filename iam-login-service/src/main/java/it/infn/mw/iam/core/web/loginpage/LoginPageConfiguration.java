@@ -52,6 +52,10 @@ public interface LoginPageConfiguration {
 
   String getPrivacyPolicyText();
 
+  Optional<String> getSupportUrl();
+
+  String getSupportText();
+
   String getLoginButtonText();
 
   List<OidcProvider> getOidcProviders();

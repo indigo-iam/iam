@@ -422,6 +422,27 @@ public class IamProperties {
     }
   }
 
+  public static class Support {
+    String url;
+    String text = "Support";
+
+    public String getUrl() {
+      return url;
+    }
+
+    public void setUrl(String url) {
+      this.url = url;
+    }
+
+    public String getText() {
+      return text;
+    }
+
+    public void setText(String text) {
+      this.text = text;
+    }
+  }
+
   public static class LoginPageLayout {
 
     public enum ExternalAuthnOptions {
@@ -628,6 +649,8 @@ public class IamProperties {
 
   private PrivacyPolicy privacyPolicy = new PrivacyPolicy();
 
+  private Support support = new Support();
+
   private LoginPageLayout loginPageLayout = new LoginPageLayout();
 
   private ActuatorUserProperties actuatorUser = new ActuatorUserProperties();
@@ -744,6 +767,14 @@ public class IamProperties {
 
   public PrivacyPolicy getPrivacyPolicy() {
     return privacyPolicy;
+  }
+
+  public void setSupport(Support newSupport) {
+    this.support = newSupport;
+  }
+
+  public Support getSupport() {
+    return support;
   }
 
   public LoginPageLayout getLoginPageLayout() {

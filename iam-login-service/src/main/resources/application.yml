@@ -126,6 +126,10 @@ iam:
   privacyPolicy:
     url: ${IAM_PRIVACY_POLICY_URL:}
     text: ${IAM_PRIVACY_POLICY_TEXT:Privacy policy}
+
+  support:
+    url: ${IAM_SUPPORT_URL:}
+    text: ${IAM_SUPPORT_TEXT:Support}
   
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
