@@ -63,10 +63,8 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
@@ -85,7 +83,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
       .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
-        .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
+      .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
   }
 
@@ -152,7 +150,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   }
 
   @Override
-  public String getRegistrationButtonText(){
+  public String getRegistrationButtonText() {
     return registrationButtonText;
   }
 

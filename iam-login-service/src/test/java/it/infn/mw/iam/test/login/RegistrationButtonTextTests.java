@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.login;
 
+
 import static org.junit.Assert.assertEquals;
 
 import org.junit.BeforeClass;
@@ -34,54 +35,57 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 
+
 @RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {"iam.registration.show-registration-button-in-login-page=false"})
-public class RegistrationButtonDisabledTests {
+@TestPropertySource(properties = {"iam.registration.show-registration-button-in-login-page=true"})
+public class RegistrationButtonTextTests {
 
-  @Value("${local.server.port}")
-  private Integer serverPort;
 
-  @Autowired
-  private IamProperties iamProperties;
+    @Value("${local.server.port}")
+    private Integer serverPort;
 
-  @BeforeClass
-  public static void init() {
-    TestUtils.initRestAssured();
-  }
+    @Autowired
+    private IamProperties iamProperties;
 
-  @Test
-  public void noRegistrationButtonSuccess() {
-    RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200);
-  }
+    @BeforeClass
+    public static void init() {
+        TestUtils.initRestAssured();
+    }
 
-  @Test
-  public void registrationButtonIsNotShown() {
-    String responseBody = RestAssured.given()
-      .port(serverPort)
-      .when()
-      .get("/login")
-      .then()
-      .statusCode(200)
-      .extract()
-      .body()
-      .asString();
+    @Test
+    public void registrationButtonSuccess() {
+        RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200);
+    }
 
-    int amountOccurences = 0;
-    int index = 0;
+    @Test
+    public void registrationButtonIsShown() {
+        String responseBody = RestAssured.given()
+            .port(serverPort)
+            .when()
+            .get("/login")
+            .then()
+            .statusCode(200)
+            .extract()
+            .body()
+            .asString();
 
-    while (responseBody.indexOf(iamProperties.getRegistration().getRegistrationButtonText(),
-        index) != -1) {
-      amountOccurences++;
-      index =
-          responseBody.indexOf(iamProperties.getRegistration().getRegistrationButtonText(), index)
-              + 1;
+        int amountOccurences = 0;
+        int index = 0;
+
+        while (responseBody.indexOf(iamProperties.getRegistration().getRegistrationButtonText(),
+                index) != -1) {
+            amountOccurences++;
+            index = responseBody
+                .indexOf(iamProperties.getRegistration().getRegistrationButtonText(), index) + 1;
+
+        }
+
+        assertEquals(2, amountOccurences);
 
     }
 
-    assertEquals(1, amountOccurences);
-
-  }
-
 }
+
+

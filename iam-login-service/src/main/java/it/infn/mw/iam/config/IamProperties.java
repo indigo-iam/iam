@@ -44,8 +44,7 @@ public class IamProperties {
   }
 
   public enum LoginPageLayoutOptions {
-    LOGIN_FORM,
-    LOGIN_EXTERNAL_AUTHN
+    LOGIN_FORM, LOGIN_EXTERNAL_AUTHN
   }
 
   public enum LocalAuthenticationLoginPageMode {
@@ -53,9 +52,7 @@ public class IamProperties {
   }
 
   public enum ExternalAuthAttributeSectionBehaviour {
-    MANDATORY,
-    OPTIONAL,
-    HIDDEN
+    MANDATORY, OPTIONAL, HIDDEN
   }
 
   public static class AccountLinkingProperties {
@@ -198,7 +195,8 @@ public class IamProperties {
   public static class RegistrationFieldProperties {
     boolean readOnly = false;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour = ExternalAuthAttributeSectionBehaviour.MANDATORY;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour =
+        ExternalAuthAttributeSectionBehaviour.MANDATORY;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -231,7 +229,7 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
-    
+
     boolean addNicknameAsAttribute = false;
 
     ExternalAuthenticationType authenticationType;
@@ -254,11 +252,11 @@ public class IamProperties {
       this.showRegistrationButtonInLoginPage = showRegistrationButtonInLoginPage;
     }
 
-    public String getRegistrationButtonText(){
+    public String getRegistrationButtonText() {
       return registrationButtonText;
     }
 
-    public void setRegistrationButtonText(String registrationButtonText){
+    public void setRegistrationButtonText(String registrationButtonText) {
       this.registrationButtonText = registrationButtonText;
     }
 
@@ -269,7 +267,7 @@ public class IamProperties {
     public void setRequireExternalAuthentication(boolean requireExternalAuthentication) {
       this.requireExternalAuthentication = requireExternalAuthentication;
     }
-    
+
     public boolean isAddNicknameAsAttribute() {
       return addNicknameAsAttribute;
     }
@@ -394,10 +392,7 @@ public class IamProperties {
   public static class JWTProfile {
 
     public enum Profile {
-      IAM,
-      WLCG,
-      AARC,
-      KC
+      IAM, WLCG, AARC, KC
     }
 
     Profile defaultProfile = Profile.IAM;
@@ -435,9 +430,7 @@ public class IamProperties {
   public static class LoginPageLayout {
 
     public enum ExternalAuthnOptions {
-      X509,
-      OIDC,
-      SAML
+      X509, OIDC, SAML
     }
 
     LoginPageLayoutOptions sectionToBeDisplayedFirst;
@@ -660,9 +653,11 @@ public class IamProperties {
 
   private CustomizationProperties customization = new CustomizationProperties();
 
-  private VersionedStaticResourcesProperties versionedStaticResources = new VersionedStaticResourcesProperties();
+  private VersionedStaticResourcesProperties versionedStaticResources =
+      new VersionedStaticResourcesProperties();
 
-  private ExternalConnectivityProbeProperties externalConnectivityProbe = new ExternalConnectivityProbeProperties();
+  private ExternalConnectivityProbeProperties externalConnectivityProbe =
+      new ExternalConnectivityProbeProperties();
 
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
 
@@ -898,8 +893,8 @@ public class IamProperties {
     this.client = client;
   }
 
-  public ClientProperties getClient(){
-    return client;    
+  public ClientProperties getClient() {
+    return client;
   }
 
 }
