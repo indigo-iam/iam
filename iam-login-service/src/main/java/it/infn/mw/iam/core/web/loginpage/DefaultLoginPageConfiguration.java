@@ -62,14 +62,13 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+      OidcValidatedProviders providers,
+      IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
-
 
   @PostConstruct
   public void init() {
@@ -79,9 +78,9 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     samlEnabled = env.acceptsProfiles(Profiles.of("saml"));
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
         .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
@@ -175,7 +174,6 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     return iamProperties.getLogo();
   }
 
-
   @Override
   public boolean isExternalAuthenticationEnabled() {
     return isOidcEnabled() || isSamlEnabled();
@@ -185,7 +183,6 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   public boolean isLocalAuthenticationVisible() {
     return localAuthenticationVisible;
   }
-
 
   @Override
   public boolean isShowLinkToLocalAuthenticationPage() {
