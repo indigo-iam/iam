@@ -16,14 +16,15 @@
 package it.infn.mw.iam.core.web.federation;
 
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.util.JSONObjectUtils;
 
 import it.infn.mw.iam.core.oidc.EntityConfigurationBuilder;
@@ -32,18 +33,21 @@ import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 @RestController
 public class EntityConfigurationEndpoint {
 
-  @Autowired
-  private IamJWKSetPublishingEndpoint jwkController;
+  private final IamJWKSetPublishingEndpoint jwkController;
+  private final EntityConfigurationBuilder builder;
 
-  @Autowired
-  private EntityConfigurationBuilder builder;
+  public EntityConfigurationEndpoint(IamJWKSetPublishingEndpoint jwkController,
+      EntityConfigurationBuilder builder) {
+    this.jwkController = jwkController;
+    this.builder = builder;
+  }
 
   @Value("${iam.issuer}")
   private String issuer;
 
   @GetMapping(value = "/.well-known/openid-federation",
       produces = "application/entity-statement+jwt")
-  public ResponseEntity<byte[]> getEntityConfiguration() throws Exception {
+  public ResponseEntity<byte[]> getEntityConfiguration() throws ParseException, JOSEException {
     String jsonKeys = jwkController.getJwk().getBody();
     Map<String, Object> jwks = JSONObjectUtils.parse(jsonKeys);
     String ecJwt = builder.buildEntityConfiguration(issuer, jwks);

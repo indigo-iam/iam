@@ -59,7 +59,6 @@ public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport 
 
     SignedJWT token = (SignedJWT) JWTParser.parse(getAccessTokenForUser());
     assertThat(token.getHeader().getKeyID(), is("iam"));
-
   }
 
   @Test

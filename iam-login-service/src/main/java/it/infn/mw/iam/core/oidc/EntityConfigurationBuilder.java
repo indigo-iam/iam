@@ -42,7 +42,7 @@ public class EntityConfigurationBuilder {
 
   private final JWSSigner signer;
   private final RSAKey signingKey;
-  private final JWSAlgorithm algo = JWSAlgorithm.RS256;
+  private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
   private final IamWellKnownInfoProvider wellKnownInfoProvider;
 
   public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
@@ -61,7 +61,7 @@ public class EntityConfigurationBuilder {
       this.signer = JWKUtils.buildSigner(signingKey)
         .orElseThrow(() -> new IllegalStateException("Cannot build signer from key"));
     } catch (JOSEException e) {
-      throw new RuntimeException("Failed to build signer", e);
+      throw new IllegalStateException("Failed to build signer", e);
     }
   }
 
@@ -81,7 +81,7 @@ public class EntityConfigurationBuilder {
       .claim("authority_hints", List.of("https://federation-authority.example.org"))
       .build();
 
-    JWSHeader header = new JWSHeader.Builder(algo).keyID(signingKey.getKeyID())
+    JWSHeader header = new JWSHeader.Builder(alg).keyID(signingKey.getKeyID())
       .type(new JOSEObjectType("entity-statement+jwt"))
       .build();
 
