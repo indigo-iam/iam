@@ -59,7 +59,7 @@ public class EntityConfigurationEndpointTests {
 
     SignedJWT jwt = SignedJWT.parse(responseBody);
     assertThat(jwt.getHeader().getAlgorithm().getName()).isNotNull();
-    assertThat(jwt.getHeader().getType().toString()).isEqualTo("entity-statement+jwt");
+    assertThat(jwt.getHeader().getType().toString()).hasToString("entity-statement+jwt");
     assertThat(jwt.getJWTClaimsSet().getIssuer()).isNotNull();
     assertThat(jwt.getJWTClaimsSet().getSubject()).isNotNull();
     assertThat(jwt.getJWTClaimsSet().getSubject()).isEqualTo(jwt.getJWTClaimsSet().getIssuer());
