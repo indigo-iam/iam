@@ -38,7 +38,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-@ActiveProfiles({"h2-test", "dev"})
+@ActiveProfiles({"h2-test", "dev", "openid-federation"})
 public class EntityConfigurationEndpointTests {
 
   private String endpoint = "/.well-known/openid-federation";

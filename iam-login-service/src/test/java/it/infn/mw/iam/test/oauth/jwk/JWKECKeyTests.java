@@ -67,7 +67,7 @@ public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport 
     mvc.perform(get(JWK_ENDPOINT))
       .andExpect(status().isOk())
       .andExpect(content().contentType(APPLICATION_JSON))
-      .andExpect(jsonPath("$.keys", hasSize(2)))
-      .andExpect(jsonPath("$.keys[?(@.kid=='iam')]").exists());
+      .andExpect(jsonPath("$.keys", hasSize(1)))
+      .andExpect(jsonPath("$.keys[0].kid", is("iam")));
   }
 }

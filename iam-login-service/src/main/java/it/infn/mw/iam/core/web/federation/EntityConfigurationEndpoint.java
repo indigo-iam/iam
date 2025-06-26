@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +32,7 @@ import it.infn.mw.iam.core.oidc.EntityConfigurationBuilder;
 import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @RestController
+@Profile("openid-federation")
 public class EntityConfigurationEndpoint {
 
   private final IamJWKSetPublishingEndpoint jwkController;

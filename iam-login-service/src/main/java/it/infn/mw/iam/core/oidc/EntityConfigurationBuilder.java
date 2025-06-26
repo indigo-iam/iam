@@ -16,13 +16,13 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.mitre.jose.keystore.JWKSetKeyStore;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import com.nimbusds.jose.JOSEException;
@@ -34,21 +34,26 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
 @Component
+@Profile("openid-federation")
 public class EntityConfigurationBuilder {
 
   private final JWSSigner signer;
   private final RSAKey signingKey;
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
   private final IamWellKnownInfoProvider wellKnownInfoProvider;
+  private final OpenidFederationProperties openidFedProperties;
 
   public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
-      IamWellKnownInfoProvider wellKnownInfoProvider) {
+      IamWellKnownInfoProvider wellKnownInfoProvider,
+      OpenidFederationProperties openidFedProperties) {
 
     this.wellKnownInfoProvider = wellKnownInfoProvider;
+    this.openidFedProperties = openidFedProperties;
 
     this.signingKey = keyStore.getKeys()
       .stream()
@@ -75,10 +80,11 @@ public class EntityConfigurationBuilder {
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(issuer)
       .issueTime(new Date())
-      .expirationTime(Date.from(Instant.now().plus(1, ChronoUnit.DAYS)))
+      .expirationTime(Date.from(Instant.now()
+        .plusSeconds(openidFedProperties.getEntityConfiguration().getExpirationSeconds())))
       .claim("jwks", jwks)
       .claim("metadata", metadata)
-      .claim("authority_hints", List.of("https://federation-authority.example.org"))
+      .claim("authority_hints", openidFedProperties.getEntityConfiguration().getAuthorityHints())
       .build();
 
     JWSHeader header = new JWSHeader.Builder(alg).keyID(signingKey.getKeyID())
