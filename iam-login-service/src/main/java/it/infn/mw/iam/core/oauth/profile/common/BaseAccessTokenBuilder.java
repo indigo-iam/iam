@@ -159,7 +159,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     if (hasCustomValidityRequest(authentication)) {
-      expiry = (String) authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
+      expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     }
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
@@ -175,14 +175,11 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     if (!isNullOrEmpty(expiry)) {
       Integer maxValidity = token.getClient().getAccessTokenValiditySeconds();
-      try {
-        Integer desiredValidity = Integer.valueOf(expiry);
-        if (desiredValidity <= maxValidity) {
-          Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
-          expTime = newValidity;
-          token.setExpiration(newValidity);
-        }
-      } catch (NumberFormatException e) {
+      Integer desiredValidity = Integer.valueOf(expiry);
+      if (desiredValidity <= maxValidity) {
+        Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
+        expTime = newValidity;
+        token.setExpiration(newValidity);
       }
     }
     builder.expirationTime(expTime);
