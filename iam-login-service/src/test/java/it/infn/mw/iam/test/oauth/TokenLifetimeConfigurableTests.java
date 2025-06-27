@@ -18,26 +18,46 @@ package it.infn.mw.iam.test.oauth;
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+
+import java.text.ParseException;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
+@SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 public class TokenLifetimeConfigurableTests {
@@ -50,6 +70,8 @@ public class TokenLifetimeConfigurableTests {
 
   public static final String CLIENT_CRED_GRANT_CLIENT_ID = "client-cred";
   public static final String CLIENT_CRED_GRANT_CLIENT_SECRET = "secret";
+
+  private static final String SCOPE = "openid profile offline_access";
 
   @Autowired
   private ObjectMapper mapper;
@@ -134,6 +156,84 @@ public class TokenLifetimeConfigurableTests {
     assertNotNull(claims.getIssueTime());
     assertNotNull(claims.getExpirationTime());
     assertThat((int) (claims.getExpirationTime().getTime() - claims.getIssueTime().getTime()) / 1000, equalTo(maxValidity));
+  }
+
+    @Test
+  public void testTokenLifetimeRequestRefreshFlow() throws Exception {
+
+    String clientId = "password-grant";
+    String clientSecret = "secret";
+
+    String ordinaryTokenResponse = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "password")
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", SCOPE))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    // @formatter:off
+    String configuredLifetimeTokenResponse = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "password")
+        .param("username", TEST_USERNAME)
+        .param("password", TEST_PASSWORD)
+        .param("scope", SCOPE)
+        .param("expires_in", "300"))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+
+    DefaultOAuth2AccessToken ordinaryToken =
+        mapper.readValue(ordinaryTokenResponse, DefaultOAuth2AccessToken.class);
+
+    String ordinaryRefresh = ordinaryToken.getRefreshToken().toString();
+
+    DefaultOAuth2AccessToken tokenResponse =
+        mapper.readValue(configuredLifetimeTokenResponse, DefaultOAuth2AccessToken.class);
+
+    String refreshwithConfiguredAccessToken = tokenResponse.getRefreshToken().toString();
+
+    // @formatter:off
+    String ordinaryReponse = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "refresh_token")
+        .param("refresh_token", ordinaryRefresh))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+
+    // @formatter:off
+    String configuredReponse = mvc.perform(post("/token")
+        .with(httpBasic(clientId, clientSecret))
+        .param("grant_type", "refresh_token")
+        .param("refresh_token", refreshwithConfiguredAccessToken))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+    // @formatter:on
+
+    String ordinaryAccessToken = mapper.readTree(ordinaryReponse).get("access_token").asText();
+    JWTClaimsSet ordinaryClaims = JWTParser.parse(ordinaryAccessToken).getJWTClaimsSet();
+
+    assertNotNull(ordinaryClaims.getIssueTime());
+    assertNotNull(ordinaryClaims.getExpirationTime());
+    assertThat((int) (ordinaryClaims.getExpirationTime().getTime() - ordinaryClaims.getIssueTime().getTime()) / 1000, equalTo(3600));
+
+    String configuredAccessToken = mapper.readTree(configuredReponse).get("access_token").asText();
+    JWTClaimsSet configuredClaims = JWTParser.parse(configuredAccessToken).getJWTClaimsSet();
+
+    assertNotNull(configuredClaims.getIssueTime());
+    assertNotNull(configuredClaims.getExpirationTime());
+    assertThat((int) (configuredClaims.getExpirationTime().getTime() - configuredClaims.getIssueTime().getTime()) / 1000, equalTo(300));
   }
 
 }
