@@ -16,11 +16,11 @@
 package it.infn.mw.iam.test.login;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -29,7 +29,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import io.restassured.RestAssured;
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
@@ -43,8 +42,7 @@ public class RegistrationButtonDisabledTests {
   @Value("${local.server.port}")
   private Integer serverPort;
 
-  @Autowired
-  private IamProperties iamProperties;
+  private final String REGISTRATIONBUTTONTEXT = "Apply for an account";
 
   @BeforeClass
   public static void init() {
@@ -71,16 +69,30 @@ public class RegistrationButtonDisabledTests {
     int amountOccurences = 0;
     int index = 0;
 
-    while (responseBody.indexOf(iamProperties.getRegistration().getRegistrationButtonText(),
-        index) != -1) {
+    while (responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) != -1) {
       amountOccurences++;
-      index =
-          responseBody.indexOf(iamProperties.getRegistration().getRegistrationButtonText(), index)
-              + 1;
+      index = responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) + 1;
 
     }
 
     assertEquals(1, amountOccurences);
+
+  }
+
+  @Test
+  public void registrationButtonTextFound() {
+
+    String responseBody = RestAssured.given()
+      .port(serverPort)
+      .when()
+      .get("/login")
+      .then()
+      .statusCode(200)
+      .extract()
+      .body()
+      .asString();
+
+    assertTrue(responseBody.contains(REGISTRATIONBUTTONTEXT));
 
   }
 
