@@ -27,12 +27,14 @@ import java.util.stream.Stream;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @SuppressWarnings("deprecation")
+@Component
 public class WLCGGroupHelper {
 
   public static final String WLCG_GROUP_REGEXP_STR = "wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$";

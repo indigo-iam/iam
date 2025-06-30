@@ -18,8 +18,16 @@ package it.infn.mw.iam.core.oauth.profile.common;
 import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
 import static java.util.Objects.isNull;
 
+import java.text.ParseException;
+import java.util.List;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -32,10 +40,12 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
+  public static final Logger LOG = LoggerFactory.getLogger(BaseIdTokenCustomizer.class);
+
   private final IamAccountRepository accountRepo;
   private final IamProperties properties;
 
-  public BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties) {
+  protected BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties) {
     this.accountRepo = accountRepo;
     this.properties = properties;
   }
@@ -67,4 +77,30 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
     }
   }
 
+  protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
+      OAuth2AccessTokenEntity accessToken) {
+
+    Object amrClaim = request.getExtensions().get("amr");
+
+    if (amrClaim instanceof String amrString) {
+      try {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String[] amrArray = objectMapper.readValue(amrString, String[].class);
+
+        builder.claim("amr", List.of(amrArray));
+
+      } catch (Exception e) {
+        LOG.error("Failed to deserialize amr claim", e);
+      }
+    }
+
+    try {
+      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
+      if (acrClaim != null) {
+        builder.claim("acr", acrClaim);
+      }
+    } catch (ParseException e) {
+      LOG.error("Error parsing JWT claims: {}", e.getMessage());
+    }
+  }
 }

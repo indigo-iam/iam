@@ -16,7 +16,8 @@
 package it.infn.mw.iam.authn.multi_factor_authentication;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import javax.servlet.FilterChain;
@@ -28,6 +29,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 
@@ -76,18 +80,14 @@ public class ExtendedHttpServletRequestFilter extends GenericFilterBean {
    * @param amrSet the set of authentication method references
    * @return the parsed string
    */
-  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet) {
-    String amrClaim = "";
-    Iterator<IamAuthenticationMethodReference> it = amrSet.iterator();
-    while (it.hasNext()) {
-      IamAuthenticationMethodReference current = it.next();
-      StringBuilder amrClaimBuilder = new StringBuilder(amrClaim);
-      amrClaimBuilder.append(current.getName()).append("+");
-      amrClaim = amrClaimBuilder.toString();
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)
+      throws JsonProcessingException {
+    List<String> amrList = new ArrayList<>();
+    for (IamAuthenticationMethodReference amr : amrSet) {
+      amrList.add(amr.getName());
     }
 
-    // Remove trailing + symbol at end of string
-    amrClaim = amrClaim.substring(0, amrClaim.length() - 1);
-    return amrClaim;
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(amrList);
   }
 }

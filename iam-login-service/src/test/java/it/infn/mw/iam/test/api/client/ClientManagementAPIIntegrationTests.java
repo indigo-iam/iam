@@ -59,6 +59,7 @@ import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 
 @IamMockMvcIntegrationTest
+
 @SpringBootTest(classes = { IamLoginService.class, CoreControllerTestSupport.class })
 public class ClientManagementAPIIntegrationTests extends TestSupport {
         protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
@@ -392,4 +393,275 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
                                 .andExpect(OK)
                                 .andExpect(jsonPath("$.active").value(true));
         }
+}
+=======
+@SpringBootTest(classes = {IamLoginService.class, CoreControllerTestSupport.class})
+class ClientManagementAPIIntegrationTests extends TestSupport {
+
+  @Autowired
+  private MockMvc mvc;
+
+  @Autowired
+  private ObjectMapper mapper;
+
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
+
+  @Autowired
+  private IamClientRepository clientRepo;
+
+  @BeforeEach
+  void setup() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @AfterEach
+  void teardown() {
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  private void clientManagementFailsWithResponseForClient(ResultMatcher response, String clientId)
+      throws Exception {
+    String clientJson = ClientJsonStringBuilder.builder().build();
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT)).andExpect(response);
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(response);
+    mvc
+      .perform(
+          put(ClientManagementAPIController.ENDPOINT + "/" + clientId).contentType(APPLICATION_JSON)
+            .content(clientJson))
+      .andExpect(response);
+    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/" + clientId))
+      .andExpect(response);
+  }
+
+  private void paginatedGetClientsTest() throws Exception {
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").value(20))
+      .andExpect(jsonPath("$.itemsPerPage").value(10))
+      .andExpect(jsonPath("$.startIndex").value(1))
+      .andExpect(jsonPath("$.Resources", hasSize(10)))
+      .andExpect(jsonPath("$.Resources[0].client_id").value("admin-client-ro"));
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "12"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.totalResults").value(20))
+      .andExpect(jsonPath("$.itemsPerPage").value(9))
+      .andExpect(jsonPath("$.startIndex").value(12))
+      .andExpect(jsonPath("$.Resources", hasSize(9)))
+      .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
+  }
+
+  @Test
+  @WithAnonymousUser
+  void clientManagementRequiresAuthenticatedUser() throws Exception {
+    clientManagementFailsWithResponseForClient(UNAUTHORIZED, "client");
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  void clientManagementIsForbiddenForUsers() throws Exception {
+    clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", scopes = {"openid"})
+  void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
+    clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "test", scopes = {"iam:admin.read"})
+  void paginatedGetClientsWorksWithScopes() throws Exception {
+    paginatedGetClientsTest();
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void paginatedGetClientsWorksAsAdmin() throws Exception {
+    paginatedGetClientsTest();
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void clientRemovalWorks() throws Exception {
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.client_id").value("client"));
+
+    mvc.perform(delete(ClientManagementAPIController.ENDPOINT + "/client")).andExpect(NO_CONTENT);
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(NOT_FOUND)
+      .andExpect(jsonPath("$.error", containsString("Client not found")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void ratRotationWorks() throws Exception {
+
+    String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
+
+    String responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertThat(client.getRegistrationAccessToken(), nullValue());
+
+    final String url =
+        String.format("%s/%s/rat", ClientManagementAPIController.ENDPOINT, client.getClientId());
+
+    responseJson = mvc.perform(post(url)).andReturn().getResponse().getContentAsString();
+    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertThat(client.getRegistrationAccessToken(), notNullValue());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void setTokenLifetimesWorks() throws Exception {
+
+    String clientJson = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .accessTokenValiditySeconds(null)
+      .refreshTokenValiditySeconds(null)
+      .build();
+
+    String responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    RegisteredClientDTO client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertEquals(3600, client.getAccessTokenValiditySeconds());
+    assertEquals(2592000, client.getRefreshTokenValiditySeconds());
+    assertEquals(600, client.getIdTokenValiditySeconds());
+    assertEquals(600, client.getDeviceCodeValiditySeconds());
+
+    Optional<ClientDetailsEntity> clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+
+    clientJson = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .accessTokenValiditySeconds(0)
+      .refreshTokenValiditySeconds(0)
+      .build();
+
+    responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertEquals(3600, client.getAccessTokenValiditySeconds());
+    assertEquals(0, client.getRefreshTokenValiditySeconds());
+
+    clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+
+    clientJson = ClientJsonStringBuilder.builder()
+      .scopes("openid")
+      .accessTokenValiditySeconds(10)
+      .refreshTokenValiditySeconds(10)
+      .build();
+
+    responseJson = mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(CREATED)
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    client = mapper.readValue(responseJson, RegisteredClientDTO.class);
+    assertEquals(10, client.getAccessTokenValiditySeconds());
+    assertEquals(10, client.getRefreshTokenValiditySeconds());
+
+    clientDB = clientRepo.findByClientId(client.getClientId());
+    assertEquals(client.getAccessTokenValiditySeconds(), clientDB.get().getAccessTokenValiditySeconds());
+    assertEquals(client.getRefreshTokenValiditySeconds(), clientDB.get().getRefreshTokenValiditySeconds());
+    assertEquals(client.getIdTokenValiditySeconds(), clientDB.get().getIdTokenValiditySeconds());
+    assertEquals(client.getDeviceCodeValiditySeconds(), clientDB.get().getDeviceCodeValiditySeconds());
+
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void negativeAccessTokenLifetimesSetToDefault() throws Exception {
+
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1).build();
+
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
+
+    String clientJson =
+        ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1).build();
+
+    mvc
+      .perform(post(ClientManagementAPIController.ENDPOINT).contentType(APPLICATION_JSON)
+        .content(clientJson))
+      .andExpect(BAD_REQUEST)
+      .andExpect(jsonPath("$.error", containsString("must be greater than or equal to 0")));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void setClientEnableWorks() throws Exception {
+
+   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/enable", "client")
+    ).andExpect(OK);
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = {"ADMIN", "USER"})
+  void setClientDisableWorks() throws Exception {
+
+   mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(true));
+
+    mvc.perform(patch(ClientManagementAPIController.ENDPOINT + "/{clientId}/disable", "client")
+    ).andExpect(OK);
+
+    mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
+      .andExpect(OK)
+      .andExpect(jsonPath("$.active").value(false));
+  }
 }

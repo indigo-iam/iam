@@ -102,7 +102,6 @@ public class TestTokensUtils {
     MockOAuth2Request req = new MockOAuth2Request(client.getClientId(), scopes);
     req.setRequestParameters(requestParameters);
     return new OAuth2Authentication(req, userAuth);
-
   }
 
   public ClientDetailsEntity loadTestClient(String clientId) {

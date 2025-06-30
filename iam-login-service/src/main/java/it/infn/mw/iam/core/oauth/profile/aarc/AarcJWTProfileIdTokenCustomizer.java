@@ -27,23 +27,19 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
-public class AarcJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
-
-  protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final AarcClaimValueHelper claimValueHelper;
+public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
   public AarcJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, AarcClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
       IamProperties properties) {
-    super(accountRepo, properties);
-    this.scopeClaimConverter = scopeClaimConverter;
-    this.claimValueHelper = claimValueHelper;
+    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
   }
 
   @Override
@@ -58,11 +54,10 @@ public class AarcJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
       .filter(ADDITIONAL_CLAIMS::contains)
       .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
 
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
+
     includeLabelsInIdToken(idClaims, account);
 
-
     idClaims.claim("voperson_id", account.getUserInfo().getSub());
-
   }
-
 }

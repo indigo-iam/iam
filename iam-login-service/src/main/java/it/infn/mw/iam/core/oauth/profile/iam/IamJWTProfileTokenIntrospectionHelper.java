@@ -54,9 +54,9 @@ public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelp
 
     // Intersection of scopes authorized for the client and scopes linked to the
     // access token, using the scope matchers registry
-    
+
     Set<String> scopes = filterScopes(accessToken, authScopes);
-    
+
     addScopeClaim(result, scopes);
 
     if (userInfo != null) {
@@ -79,6 +79,8 @@ public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelp
         result.put(EMAIL, userInfo.getEmail());
       }
     }
+
+    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }
