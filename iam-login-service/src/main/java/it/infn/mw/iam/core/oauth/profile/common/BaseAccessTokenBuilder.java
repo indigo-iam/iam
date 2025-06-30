@@ -175,12 +175,17 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     if (!isNullOrEmpty(expiry)) {
       Integer maxValidity = token.getClient().getAccessTokenValiditySeconds();
-      Integer desiredValidity = Integer.valueOf(expiry);
-      if (desiredValidity <= maxValidity && desiredValidity > 0) {
-        Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
-        expTime = newValidity;
-        token.setExpiration(newValidity);
+      try {
+        Integer desiredValidity = Integer.valueOf(expiry);
+        if (desiredValidity <= maxValidity && desiredValidity > 0) {
+          Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
+          expTime = newValidity;
+          token.setExpiration(newValidity);
+        }
+      } catch (NumberFormatException e){
+        throw new InvalidRequestException("Value of 'expires_in' parameter is not an integer");
       }
+      
     }
     builder.expirationTime(expTime);
 
