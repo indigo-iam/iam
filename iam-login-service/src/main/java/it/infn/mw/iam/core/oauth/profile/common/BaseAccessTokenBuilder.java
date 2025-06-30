@@ -181,6 +181,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
           Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
           expTime = newValidity;
           token.setExpiration(newValidity);
+        } else if (desiredValidity <= 0 ) {
+          throw new InvalidRequestException("Value of 'expires_in' parameter is not a positive value");
         }
       } catch (NumberFormatException e){
         throw new InvalidRequestException("Value of 'expires_in' parameter is not an integer");
