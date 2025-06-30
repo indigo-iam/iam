@@ -45,7 +45,7 @@
                     self.dismiss({ $value: res });
                 });
             }
-            if (self.revokeAccessTokens) {
+            else if (self.revokeAccessTokens) {
                 ClientsService.revokeAccessTokens(self.client.client_id).then(function (res) {
                     self.close({ $value: res });
                 }).catch(function (res) {

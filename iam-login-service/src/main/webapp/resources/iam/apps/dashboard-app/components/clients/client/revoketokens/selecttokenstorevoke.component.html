@@ -28,7 +28,7 @@
     <ul>
         <li><input type="checkbox" name="refresh" ng-model="$ctrl.revokeRefreshTokens"><label for="refresh"> Revoke
                 refresh tokens</label></li>
-        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens" ng-change="$ctrl.change()"><label
+        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens" ng-checked="$ctrl.revokeRefreshTokens"><label
                 for="access"> Revoke access tokens</label>
         </li>
     </ul>
