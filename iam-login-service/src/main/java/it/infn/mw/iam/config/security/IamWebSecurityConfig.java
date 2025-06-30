@@ -110,12 +110,12 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamAccountRepository accountRepo;
-    
-    @Autowired
-    private IamTotpMfaRepository totpMfaRepository;
 
     @Autowired
     private IamX509CertificateRepository certRepo;
+
+    @Autowired
+    private IamTotpMfaRepository totpMfaRepository;
 
     @Autowired
     private AUPSignatureCheckService aupSignatureCheckService;
