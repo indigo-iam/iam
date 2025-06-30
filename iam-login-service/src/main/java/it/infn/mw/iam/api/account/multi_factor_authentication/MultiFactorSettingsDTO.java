@@ -17,7 +17,6 @@ package it.infn.mw.iam.api.account.multi_factor_authentication;
 
 import javax.validation.constraints.NotEmpty;
 
-
 /**
  * DTO containing info about enabled factors of authentication
  */
@@ -49,5 +48,4 @@ public class MultiFactorSettingsDTO {
   public void setAuthenticatorAppActive(final boolean authenticatorAppActive) {
     this.authenticatorAppActive = authenticatorAppActive;
   }
-
 }
