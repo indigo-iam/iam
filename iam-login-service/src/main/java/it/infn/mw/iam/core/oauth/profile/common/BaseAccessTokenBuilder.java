@@ -182,13 +182,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
           Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
           expTime = newValidity;
           token.setExpiration(newValidity);
-        } else if (desiredValidity <= 0 ) {
+        } else if (desiredValidity <= 0) {
           throw new InvalidRequestException(INVALID_PARAMETER);
         }
-      } catch (NumberFormatException e){
+      } catch (NumberFormatException e) {
         throw new InvalidRequestException(INVALID_PARAMETER);
       }
-      
+
     }
     builder.expirationTime(expTime);
 
