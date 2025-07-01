@@ -58,6 +58,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final String SPACE = " ";
 
   public static final String SUBJECT_TOKEN = "subject_token";
+  public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
   protected final IamProperties properties;
 
@@ -182,10 +183,10 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
           expTime = newValidity;
           token.setExpiration(newValidity);
         } else if (desiredValidity <= 0 ) {
-          throw new InvalidRequestException("Value of 'expires_in' parameter is not a positive value");
+          throw new InvalidRequestException(INVALID_PARAMETER);
         }
       } catch (NumberFormatException e){
-        throw new InvalidRequestException("Value of 'expires_in' parameter is not an integer");
+        throw new InvalidRequestException(INVALID_PARAMETER);
       }
       
     }

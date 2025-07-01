@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 
@@ -38,6 +39,7 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
@@ -55,6 +57,7 @@ public class TokenLifetimeConfigurableTests {
 
   private static final String SCOPE = "openid profile offline_access";
   private static final String CUSTOM_LIFETIME = "300";
+  private static final String INVALID_PARAMETER = BaseAccessTokenBuilder.INVALID_PARAMETER;
 
   @Autowired
   private ObjectMapper mapper;
@@ -142,6 +145,26 @@ public class TokenLifetimeConfigurableTests {
     assertNotNull(claims.getExpirationTime());
     assertThat((int) (claims.getExpirationTime().getTime() - claims.getIssueTime().getTime()) / 1000,
         equalTo(maxValidity));
+  }
+
+  @Test
+  public void testTokenLifetimeNegative() throws Exception {
+    mvc.perform(post("/token").param("grant_type", "client_credentials")
+        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("expires_in", String.valueOf(-5)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error_description", equalTo(INVALID_PARAMETER)));
+  }
+
+  @Test
+  public void testTokenLifetimeNotInteger() throws Exception {
+    mvc.perform(post("/token").param("grant_type", "client_credentials")
+        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+        .param("expires_in", "test"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error_description", equalTo(INVALID_PARAMETER)));
   }
 
   @Test
