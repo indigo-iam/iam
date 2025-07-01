@@ -43,10 +43,10 @@ import org.springframework.test.web.servlet.ResultMatcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.client.management.ClientManagementAPIController;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
@@ -56,14 +56,10 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = { IamLoginService.class, CoreControllerTestSupport.class })
-public class ClientManagementAPIIntegrationTests extends TestSupport {
-        protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
-
-        protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
+class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Autowired
         private MockMvc mvc;
@@ -80,9 +76,6 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
         @Autowired
         private ClientDetailsEntityService clientDetailsService;
 
-        @Autowired
-        protected DefaultOAuth2ProviderTokenService tokenService;
-
         public static final String[] REFRESH_SCOPES = { "openid", "profile", "offline_access" };
 
         public static final String[] ACCESS_SCOPES = { "openid", "profile" };
@@ -91,13 +84,17 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         private static final String TESTUSER_USERNAME = "test_102";
 
+        protected static final String REFRESH_TOKENS_BASE_PATH = Constants.REFRESH_TOKENS_ENDPOINT;
+
+        protected static final String ACCESS_TOKENS_BASE_PATH = Constants.ACCESS_TOKENS_ENDPOINT;
+
         @BeforeEach
-        public void setup() {
+        void setup() {
                 mockOAuth2Filter.cleanupSecurityContext();
         }
 
         @AfterEach
-        public void teardown() {
+        void teardown() {
                 mockOAuth2Filter.cleanupSecurityContext();
         }
 
@@ -122,54 +119,54 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
         private void paginatedGetClientsTest() throws Exception {
                 mvc.perform(get(ClientManagementAPIController.ENDPOINT))
                                 .andExpect(OK)
-                                .andExpect(jsonPath("$.totalResults").value(19))
+                                .andExpect(jsonPath("$.totalResults").value(20))
                                 .andExpect(jsonPath("$.itemsPerPage").value(10))
                                 .andExpect(jsonPath("$.startIndex").value(1))
                                 .andExpect(jsonPath("$.Resources", hasSize(10)))
                                 .andExpect(jsonPath("$.Resources[0].client_id").value("admin-client-ro"));
 
-                mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "11"))
+                mvc.perform(get(ClientManagementAPIController.ENDPOINT).param("startIndex", "12"))
                                 .andExpect(OK)
-                                .andExpect(jsonPath("$.totalResults").value(19))
+                                .andExpect(jsonPath("$.totalResults").value(20))
                                 .andExpect(jsonPath("$.itemsPerPage").value(9))
-                                .andExpect(jsonPath("$.startIndex").value(11))
+                                .andExpect(jsonPath("$.startIndex").value(12))
                                 .andExpect(jsonPath("$.Resources", hasSize(9)))
-                                .andExpect(jsonPath("$.Resources[0].client_id").value("public-client"));
+                                .andExpect(jsonPath("$.Resources[0].client_id").value("public-dc-client"));
         }
 
         @Test
         @WithAnonymousUser
-        public void clientManagementRequiresAuthenticatedUser() throws Exception {
+        void clientManagementRequiresAuthenticatedUser() throws Exception {
                 clientManagementFailsWithResponseForClient(UNAUTHORIZED, "client");
         }
 
         @Test
         @WithMockUser(username = "test", roles = "USER")
-        public void clientManagementIsForbiddenForUsers() throws Exception {
+        void clientManagementIsForbiddenForUsers() throws Exception {
                 clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
         }
 
         @Test
         @WithMockOAuthUser(user = "test", scopes = { "openid" })
-        public void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
+        void clientManagementIsForbiddenWithoutAdminScopes() throws Exception {
                 clientManagementFailsWithResponseForClient(FORBIDDEN, "client");
         }
 
         @Test
         @WithMockOAuthUser(user = "test", scopes = { "iam:admin.read" })
-        public void paginatedGetClientsWorksWithScopes() throws Exception {
+        void paginatedGetClientsWorksWithScopes() throws Exception {
                 paginatedGetClientsTest();
         }
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void paginatedGetClientsWorksAsAdmin() throws Exception {
+        void paginatedGetClientsWorksAsAdmin() throws Exception {
                 paginatedGetClientsTest();
         }
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void clientRemovalWorks() throws Exception {
+        void clientRemovalWorks() throws Exception {
 
                 mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
                                 .andExpect(OK)
@@ -184,7 +181,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void ratRotationWorks() throws Exception {
+        void ratRotationWorks() throws Exception {
 
                 String clientJson = ClientJsonStringBuilder.builder().scopes("openid").build();
 
@@ -209,7 +206,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void setTokenLifetimesWorks() throws Exception {
+        void setTokenLifetimesWorks() throws Exception {
 
                 String clientJson = ClientJsonStringBuilder.builder()
                                 .scopes("openid")
@@ -289,7 +286,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void negativeAccessTokenLifetimesSetToDefault() throws Exception {
+        void negativeAccessTokenLifetimesSetToDefault() throws Exception {
 
                 String clientJson = ClientJsonStringBuilder.builder().scopes("openid").accessTokenValiditySeconds(-1)
                                 .build();
@@ -303,7 +300,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
+        void negativeRefreshTokenLifetimesSetToInfinite() throws Exception {
 
                 String clientJson = ClientJsonStringBuilder.builder().scopes("openid").refreshTokenValiditySeconds(-1)
                                 .build();
@@ -317,7 +314,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void setClientEnableWorks() throws Exception {
+        void setClientEnableWorks() throws Exception {
 
                 mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
                                 .andExpect(OK)
@@ -333,7 +330,7 @@ public class ClientManagementAPIIntegrationTests extends TestSupport {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN", "USER" })
-        public void setClientDisableWorks() throws Exception {
+        void setClientDisableWorks() throws Exception {
 
                 mvc.perform(get(ClientManagementAPIController.ENDPOINT + "/client"))
                                 .andExpect(OK)
