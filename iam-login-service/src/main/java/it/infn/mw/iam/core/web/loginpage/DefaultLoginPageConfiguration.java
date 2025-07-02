@@ -61,9 +61,7 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-      OidcValidatedProviders providers,
-      IamProperties properties,
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
       IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
@@ -79,11 +77,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
     adminOnlyCustomScopes = env.acceptsProfiles(Profiles.of("registration"));
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
-        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
-        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
-        .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
+      .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
   }
 

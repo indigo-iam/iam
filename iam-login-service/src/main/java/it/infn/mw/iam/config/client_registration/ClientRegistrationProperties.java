@@ -84,11 +84,9 @@ public class ClientRegistrationProperties {
   }
 
   public enum ClientRegistrationAuthorizationPolicy {
-    ADMINISTRATORS,
-    REGISTERED_USERS,
-    ANYONE
+    ADMINISTRATORS, REGISTERED_USERS, ANYONE
   }
-  
+
   private ClientRegistrationAuthorizationPolicy allowFor = ANYONE;
 
   private ClientDefaultsProperties clientDefaults = new ClientDefaultsProperties();
@@ -121,12 +119,12 @@ public class ClientRegistrationProperties {
     this.enable = enable;
   }
 
-  public boolean isAdminOnlyCustomScopes(){
+  public boolean isAdminOnlyCustomScopes() {
     return adminOnlyCustomScopes;
   }
 
-  public void setAdminOnlyCustomScopes(boolean enableAdminOnly){
-    this.adminOnlyCustomScopes = enableAdminOnly ;
+  public void setAdminOnlyCustomScopes(boolean enableAdminOnly) {
+    this.adminOnlyCustomScopes = enableAdminOnly;
   }
 
 }
