@@ -61,14 +61,16 @@ public class ScimRestUtilsMvc extends RestUtils {
 
   public ScimUsersBulkResponse postUserBulk(ScimUsersBulkRequest bulkRequest) throws Exception {
 
-    return mapper.readValue(postUserBulk(bulkRequest, OK).andReturn().getResponse().getContentAsString(),
-    ScimUsersBulkResponse.class);
+    return mapper.readValue(
+        postUserBulk(bulkRequest, OK).andReturn().getResponse().getContentAsString(),
+        ScimUsersBulkResponse.class);
   }
 
-  public ResultActions postUserBulk(ScimUsersBulkRequest bulkRequest, HttpStatus expectedStatus) throws Exception {
+  public ResultActions postUserBulk(ScimUsersBulkRequest bulkRequest, HttpStatus expectedStatus)
+      throws Exception {
 
-    return doPost(
-      getUsersBulkLocation(), bulkRequest, SCIM_CONTENT_TYPE, SCIM_CONTENT_TYPE, expectedStatus);
+    return doPost(getUsersBulkLocation(), bulkRequest, SCIM_CONTENT_TYPE, SCIM_CONTENT_TYPE,
+        expectedStatus);
   }
 
   public ScimUser getUser(String uuid) throws Exception {

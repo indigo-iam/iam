@@ -68,17 +68,18 @@ public class ScimUsersBulkController extends ScimControllerSupport {
   private final ScimExceptionHandler errorHandler;
 
   public ScimUsersBulkController(ScimUserProvisioning userProvisioningService,
-      ObjectMapper objectMapper,
-      ScimExceptionHandler errorHandler) {
+      ObjectMapper objectMapper, ScimExceptionHandler errorHandler) {
     this.userProvisioningService = userProvisioningService;
     this.objectMapper = objectMapper;
     this.errorHandler = errorHandler;
   }
 
   @PreAuthorize("#iam.hasScope('scim:write')")
-  @PostMapping(consumes = ScimConstants.SCIM_CONTENT_TYPE, produces = ScimConstants.SCIM_CONTENT_TYPE)
+  @PostMapping(consumes = ScimConstants.SCIM_CONTENT_TYPE,
+      produces = ScimConstants.SCIM_CONTENT_TYPE)
   @ResponseStatus(HttpStatus.OK)
-  public MappingJacksonValue bulkPost(@RequestBody @Validated final ScimUsersBulkRequest bulkRequest,
+  public MappingJacksonValue bulkPost(
+      @RequestBody @Validated final ScimUsersBulkRequest bulkRequest,
       final BindingResult validationResult) {
 
     handleValidationError(INVALID_BULK_MSG, validationResult);
@@ -94,7 +95,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
           ScimUser user = singleOperation.getDataAs(ScimUser.class, objectMapper);
           handlePost(bulkResponse, user, singleOperation, bulkRequest, bulkIdMap);
         } else if (singleOperation.getMethod().equals(PATCH)) {
-          ScimUserPatchRequest patch = singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
+          ScimUserPatchRequest patch =
+              singleOperation.getDataAs(ScimUserPatchRequest.class, objectMapper);
           handlePatch(bulkResponse, patch, singleOperation, bulkRequest, bulkIdMap);
         } else {
           ScimException error = new ScimException(
@@ -104,7 +106,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
           bulkRequest.decrementfailOnError();
         }
       } catch (NullPointerException | JsonProcessingException e) {
-        ScimException error = new ScimException("Failed to process operation data: " + e.getMessage());
+        ScimException error =
+            new ScimException("Failed to process operation data: " + e.getMessage());
         ScimErrorResponse errorResp = errorHandler.handleInvalidArgumentException(error);
         bulkResponse.addErrorResponse(PATCH, errorResp.getStatus(), errorResp);
         bulkRequest.decrementfailOnError();
@@ -114,14 +117,16 @@ public class ScimUsersBulkController extends ScimControllerSupport {
     return new MappingJacksonValue(bulkResponse.build());
   }
 
-  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user, ScimBulkOperationSingle operation,
-      ScimUsersBulkRequest bulkRequest, Map<String, String> bulkIdMap) {
+  private void handlePost(ScimUsersBulkResponse.Builder bulkResponse, ScimUser user,
+      ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest,
+      Map<String, String> bulkIdMap) {
     try {
       if (bulkIdMap.containsKey("bulkId:" + operation.getbulkId())) {
         throw new IllegalArgumentException("Duplicate bulkId " + operation.getbulkId());
       }
       ScimResource resp = userProvisioningService.create(user);
-      bulkResponse.addSuccessResponse(POST, resp.getMeta().getLocation(), operation.getbulkId(), "201");
+      bulkResponse.addSuccessResponse(POST, resp.getMeta().getLocation(), operation.getbulkId(),
+          "201");
       String id = StringUtils.substringAfterLast(resp.getMeta().getLocation(), "/");
       bulkIdMap.put("bulkId:" + operation.getbulkId(), id);
     } catch (ScimResourceExistsException e) {
@@ -136,7 +141,8 @@ public class ScimUsersBulkController extends ScimControllerSupport {
   }
 
   private void handlePatch(ScimUsersBulkResponse.Builder bulkResponse, ScimUserPatchRequest patch,
-      ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest, Map<String, String> bulkIdMap) {
+      ScimBulkOperationSingle operation, ScimUsersBulkRequest bulkRequest,
+      Map<String, String> bulkIdMap) {
     String id = StringUtils.substringAfterLast(operation.getPath(), "/");
     if (bulkIdMap.keySet().contains(id)) {
       id = bulkIdMap.get(id);

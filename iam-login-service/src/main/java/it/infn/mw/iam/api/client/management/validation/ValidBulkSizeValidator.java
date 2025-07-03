@@ -26,7 +26,8 @@ import it.infn.mw.iam.api.scim.exception.ScimBulkPayloadSizeExceeded;
 import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 
 @Scope("prototype")
-public class ValidBulkSizeValidator implements ConstraintValidator<ValidBulkSize, List<ScimBulkOperationSingle>> {
+public class ValidBulkSizeValidator
+    implements ConstraintValidator<ValidBulkSize, List<ScimBulkOperationSingle>> {
 
   private long max;
 
@@ -36,7 +37,8 @@ public class ValidBulkSizeValidator implements ConstraintValidator<ValidBulkSize
   }
 
   @Override
-  public boolean isValid(List<ScimBulkOperationSingle> operations, ConstraintValidatorContext context) {
+  public boolean isValid(List<ScimBulkOperationSingle> operations,
+      ConstraintValidatorContext context) {
     if (operations.size() > max) {
       throw new ScimBulkPayloadSizeExceeded("Maximum number of operations exceeded (" + max + ")");
     }

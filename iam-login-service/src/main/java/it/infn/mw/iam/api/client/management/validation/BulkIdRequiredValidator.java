@@ -23,7 +23,8 @@ import org.springframework.context.annotation.Scope;
 import it.infn.mw.iam.api.scim.model.ScimBulkOperationSingle;
 
 @Scope("prototype")
-public class BulkIdRequiredValidator implements ConstraintValidator<BulkIdRequired, ScimBulkOperationSingle> {
+public class BulkIdRequiredValidator
+    implements ConstraintValidator<BulkIdRequired, ScimBulkOperationSingle> {
 
   @Override
   public boolean isValid(ScimBulkOperationSingle operation, ConstraintValidatorContext context) {

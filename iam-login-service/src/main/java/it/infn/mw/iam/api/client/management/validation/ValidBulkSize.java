@@ -26,7 +26,7 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Retention(RUNTIME)
-@Target({ FIELD, PARAMETER })
+@Target({FIELD, PARAMETER})
 @Constraint(validatedBy = ValidBulkSizeValidator.class)
 public @interface ValidBulkSize {
 

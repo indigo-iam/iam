@@ -34,7 +34,8 @@ import it.infn.mw.iam.api.client.management.validation.ValidBulkSize;
 @JsonInclude(Include.NON_EMPTY)
 public class ScimUsersBulkRequest {
 
-  public static final String BULKREQUEST_SCHEMA = "urn:ietf:params:scim:api:messages:2.0:BulkRequest";
+  public static final String BULKREQUEST_SCHEMA =
+      "urn:ietf:params:scim:api:messages:2.0:BulkRequest";
   @NotEmpty
   private final Set<String> schemas;
 
@@ -47,7 +48,8 @@ public class ScimUsersBulkRequest {
 
   @JsonCreator
   private ScimUsersBulkRequest(@JsonProperty("schemas") Set<String> schemas,
-      @JsonProperty("operations") @Valid @ValidBulkSize(max = 500) List<ScimBulkOperationSingle> operations,
+      @JsonProperty("operations") @Valid @ValidBulkSize(
+          max = 500) List<ScimBulkOperationSingle> operations,
       @JsonProperty("failOnErrors") long failOnErrors) {
 
     this.schemas = schemas;
@@ -110,19 +112,19 @@ public class ScimUsersBulkRequest {
     public Builder addPostSingleOperation(JsonNode postBody, String bulkId, String path) {
 
       operations.add((new ScimBulkOperationSingle.Builder()).method("POST")
-          .path(path)
-          .bulkId(bulkId)
-          .data(postBody)
-          .build());
+        .path(path)
+        .bulkId(bulkId)
+        .data(postBody)
+        .build());
       return this;
     }
 
     public Builder addPatchSingleOperation(JsonNode patchBody, String path) {
 
       operations.add((new ScimBulkOperationSingle.Builder()).method("PATCH")
-          .path(path)
-          .data(patchBody)
-          .build());
+        .path(path)
+        .data(patchBody)
+        .build());
       return this;
     }
 

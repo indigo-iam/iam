@@ -42,7 +42,8 @@ public class ScimBulkOperationResponse {
   @JsonCreator
   public ScimBulkOperationResponse(@JsonProperty("method") String method,
       @JsonProperty("status") String status, @JsonProperty("location") String location,
-      @JsonProperty("bulkId") String bulkId, @JsonProperty("errorResponse") ScimErrorResponse errorResponse) {
+      @JsonProperty("bulkId") String bulkId,
+      @JsonProperty("errorResponse") ScimErrorResponse errorResponse) {
     this.method = method;
     this.status = status;
     this.location = location;
