@@ -78,7 +78,8 @@ public class ClientManagementAPIController {
   DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public ClientManagementAPIController(ClientManagementService managementService,
-      AccountUtils accountUtils, OAuth2TokenEntityService tokenService, ClientService clientService) {
+      AccountUtils accountUtils, OAuth2TokenEntityService tokenService,
+      ClientService clientService) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
     this.tokenService = tokenService;
@@ -93,7 +94,7 @@ public class ClientManagementAPIController {
     return managementService.saveNewClient(client);
   }
 
-  @JsonView({ ClientViews.ClientManagement.class })
+  @JsonView({ClientViews.ClientManagement.class})
   @GetMapping
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public ListResponseDTO<RegisteredClientDTO> retrieveClients(
@@ -109,12 +110,12 @@ public class ClientManagementAPIController {
     }
   }
 
-  @JsonView({ ClientViews.ClientManagement.class })
+  @JsonView({ClientViews.ClientManagement.class})
   @GetMapping("/{clientId}")
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public RegisteredClientDTO retrieveClient(@PathVariable String clientId) {
     return managementService.retrieveClientByClientId(clientId)
-        .orElseThrow(clientNotFound(clientId));
+      .orElseThrow(clientNotFound(clientId));
   }
 
   @GetMapping("/{clientId}/owners")
@@ -175,9 +176,8 @@ public class ClientManagementAPIController {
   public void revokeRefreshTokens(@PathVariable String clientId) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
-        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getRefreshTokensForClient(client)
-        .forEach(tokenService::revokeRefreshToken);
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
@@ -187,9 +187,8 @@ public class ClientManagementAPIController {
   public void revokeAccessTokens(@PathVariable String clientId) {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
-        .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getAccessTokensForClient(client)
-        .forEach(tokenService::revokeAccessToken);
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
     rotateClientSecret(clientId);
     enableClient(clientId);
   }
