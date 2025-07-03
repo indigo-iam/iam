@@ -88,6 +88,18 @@ function RegistrationController(
 			showField: true,
 			debounceTime: 500
 		},
+		affiliation: {
+			name: "affiliation",
+			label: "Affiliation",
+			ngModelName: "affiliation",
+			articleToUse: "an",
+			placeholder:
+				"Enter your affiliation",
+			type: "text",
+			required: true,
+			showField: true,
+			debounceTime: 500
+		},
 		notes: {
 			name: "notes",
 			label: "Notes",
@@ -237,6 +249,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
+			affiliation: '',
 		};
 	}
 

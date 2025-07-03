@@ -86,6 +86,7 @@ public class ScimIndigoUser {
   private final List<ScimGroupRef> managedGroups;
 
   private Boolean serviceAccount;
+  private String affiliation;
 
   @JsonCreator
   private ScimIndigoUser(@JsonProperty("oidcIds") List<ScimOidcId> oidcIds,
@@ -94,7 +95,8 @@ public class ScimIndigoUser {
       @JsonProperty("x509Certificates") List<ScimX509Certificate> certs,
       @JsonProperty("aupSignatureTime") Date aupSignatureTime,
       @JsonProperty("endTime") Date endTime, 
-      @JsonProperty("serviceAccount") Boolean serviceAccount) {
+      @JsonProperty("serviceAccount") Boolean serviceAccount,
+      @JsonProperty("affiliation") String affiliation) {
 
     this.oidcIds = oidcIds != null ? oidcIds : new LinkedList<>();
     this.sshKeys = sshKeys != null ? sshKeys : new LinkedList<>();
@@ -103,6 +105,7 @@ public class ScimIndigoUser {
     this.aupSignatureTime = aupSignatureTime;
     this.endTime = endTime;
     this.serviceAccount = serviceAccount;
+    this.affiliation = affiliation;
     this.labels = null;
     this.authorities = null;
     this.attributes = null;
@@ -117,6 +120,7 @@ public class ScimIndigoUser {
     this.aupSignatureTime = b.aupSignatureTime;
     this.endTime = b.endTime;
     this.serviceAccount = b.serviceAccount;
+    this.affiliation = b.affiliation;
     this.labels = b.labels;
     this.attributes = b.attributes;
     this.managedGroups = b.managedGroups;
@@ -170,6 +174,10 @@ public class ScimIndigoUser {
     return serviceAccount;
   }
 
+  public String getAffiliation() {
+    return affiliation;
+  }
+
   public static Builder builder() {
 
     return new Builder();
@@ -186,6 +194,7 @@ public class ScimIndigoUser {
     private Date aupSignatureTime;
     private Date endTime;
     private Boolean serviceAccount;
+    private String affiliation;
 
     private List<String> authorities = Lists.newLinkedList();
     private List<ScimAttribute> attributes = Lists.newLinkedList();
@@ -226,6 +235,11 @@ public class ScimIndigoUser {
 
     public Builder serviceAccount(Boolean serviceAccount) {
       this.serviceAccount = serviceAccount;
+      return this;
+    }
+
+    public Builder affiliation(String affiliation) {
+      this.affiliation = affiliation;
       return this;
     }
 

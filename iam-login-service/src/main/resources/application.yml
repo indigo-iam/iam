@@ -155,6 +155,11 @@ iam:
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
     add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
+    fields:
+      affiliation:
+        read-only: false
+        external-auth-attribute: affiliation
+        field-behaviour: optional
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}

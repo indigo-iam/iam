@@ -282,6 +282,10 @@ public class ScimUser extends ScimResource {
     return indigoUser != null && indigoUser.getServiceAccount() != null;
   }
 
+  public boolean hasAffiliation() {
+    return indigoUser != null && indigoUser.getAffiliation() != null;
+  }
+
   public static Builder builder(String username) {
 
     return new Builder(username);
@@ -473,6 +477,11 @@ public class ScimUser extends ScimResource {
 
     public Builder serviceAccount(Boolean serviceAccount) {
       indigoUserBuilder.serviceAccount(serviceAccount);
+      return this;
+    }
+
+    public Builder affiliation(String affiliation) {
+      indigoUserBuilder.affiliation(affiliation);
       return this;
     }
 

@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.scim.me;
 
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
+import static it.infn.mw.iam.api.scim.model.ScimConstants.INDIGO_USER_SCHEMA;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.ATTRIBUTES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.AUTHORITIES;
 import static it.infn.mw.iam.api.scim.model.ScimIndigoUser.INDIGO_USER_SCHEMA.MANAGED_GROUPS;
@@ -84,7 +85,8 @@ public class ScimMeFullResponseEndpointTests {
       .andExpect(jsonPath("$." + MANAGED_GROUPS).isArray())
       .andExpect(jsonPath("$." + MANAGED_GROUPS, hasSize(1)))
       .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].display").value("Production"))
-      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].value").value("c617d586-54e6-411d-8e38-64967798fa8a"));
+      .andExpect(jsonPath("$." + MANAGED_GROUPS + "[0].value").value("c617d586-54e6-411d-8e38-64967798fa8a"))
+      .andExpect(jsonPath("$." + INDIGO_USER_SCHEMA + ".affiliation").value("INFN-CNAF"));
     //@formatter:on
   }
 

@@ -108,6 +108,16 @@
           }
         });
       }
+      if ($scope.userUpdateForm.affiliation.$dirty) {
+        operations.push({
+          op: 'replace',
+          value: {
+            "urn:indigo-dc:scim:schemas:IndigoUser": {
+              affiliation: self.eUser.affiliation
+            }
+          }
+        });
+      }
 
       console.info('Operations ... ', operations);
 
@@ -141,7 +151,8 @@
         surname: self.oUser.name.familyName,
         picture: self.oUser.photos ? self.oUser.photos[0].value : '',
         email: self.oUser.emails[0].value,
-        username: self.oUser.userName
+        username: self.oUser.userName,
+        affiliation: self.oUser["urn:indigo-dc:scim:schemas:IndigoUser"].affiliation
       };
       if ($scope.userUpdateForm) {
         $scope.userUpdateForm.$setPristine();
@@ -163,7 +174,8 @@
         $scope.userUpdateForm.surname.$invalid ||
         ($scope.userUpdateForm.email.$invalid && $scope.userUpdateForm.email.$dirty) ||
         ($scope.userUpdateForm.username.$invalid && $scope.userUpdateForm.username.$dirty) ||
-        ($scope.userUpdateForm.picture.$invalid && $scope.userUpdateForm.picture.$dirty);
+        ($scope.userUpdateForm.picture.$invalid && $scope.userUpdateForm.picture.$dirty)||
+        ($scope.userUpdateForm.affiliation.$invalid && $scope.userUpdateForm.affiliation.$dirty);
     }
   }
 })();
