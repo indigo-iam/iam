@@ -638,4 +638,12 @@ public class IamAccount implements Serializable {
   public void setServiceAccount(boolean serviceAccount) {
     this.serviceAccount = serviceAccount;
   }
+
+  public boolean hasAffiliation() {
+    return this.getUserInfo() != null && this.getUserInfo().getAffiliation() != null;
+  }
+
+  public String getAffiliation() {
+    return this.userInfo.getAffiliation();
+  }
 }

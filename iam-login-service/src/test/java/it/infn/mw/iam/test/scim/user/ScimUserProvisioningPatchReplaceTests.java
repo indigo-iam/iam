@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.After;
 import org.junit.Before;
@@ -35,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
@@ -61,20 +63,22 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
+  private ScimUser testUser;
+
   @Before
   public void setup() throws Exception {
     mockOAuth2Filter.cleanupSecurityContext();
-
+    testUser = createLennonTestUser();
   }
 
   @After
   public void teardown() {
+    deleteScimUser(testUser);
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
   public void testReplaceEmailWithEmptyValue() throws Exception {
-    ScimUser testUser = createLennonTestUser();
     ScimUser updates = ScimUser.builder().buildEmail("").build();
 
     scimUtils.patchUser(testUser.getId(), replace, updates, BAD_REQUEST)
@@ -83,8 +87,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testReplaceEmailWithNullValue() throws Exception {
-
-    ScimUser testUser = createLennonTestUser();
     ScimUser updates = ScimUser.builder().buildEmail(null).build();
 
     scimUtils.patchUser(testUser.getId(), replace, updates, BAD_REQUEST)
@@ -93,8 +95,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testReplaceEmailWithSameValue() throws Exception {
-
-    ScimUser testUser = createLennonTestUser();
     ScimUser updates =
         ScimUser.builder().buildEmail(testUser.getEmails().get(0).getValue()).build();
 
@@ -103,8 +103,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testReplaceEmailWithInvalidValue() throws Exception {
-
-    ScimUser testUser = createLennonTestUser();
     ScimUser updates = ScimUser.builder().buildEmail("fakeEmail").build();
 
     scimUtils.patchUser(testUser.getId(), replace, updates, BAD_REQUEST)
@@ -113,8 +111,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testReplacePicture() throws Exception {
-    ScimUser testUser = createLennonTestUser();
-
     assertThat(testUser.getPhotos(), hasSize(equalTo(1)));
     assertThat(testUser.getPhotos().get(0).getValue(), equalTo(PICTURES.get(0)));
 
@@ -129,8 +125,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testReplaceUsername() throws Exception {
-
-    ScimUser testUser = createLennonTestUser();
     final String ANOTHERUSER_USERNAME = "test";
 
     ScimUser updates = ScimUser.builder().userName(ANOTHERUSER_USERNAME).build();
@@ -140,8 +134,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testPatchReplaceSshKeyNotSupported() throws Exception {
-    ScimUser testUser = createLennonTestUser();
-
     String keyValue = testUser.getIndigoUser().getSshKeys().get(0).getValue();
 
     ScimUser updates = ScimUser.builder()
@@ -153,7 +145,6 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
 
   @Test
   public void testPatchReplaceX509CertificateNotSupported() throws Exception {
-    ScimUser testUser = createLennonTestUser();
     String certValue = testUser.getIndigoUser().getCertificates().get(0).getPemEncodedCertificate();
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
@@ -165,5 +156,26 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
     ScimUser updates = ScimUser.builder().addX509Certificate(cert).build();
 
     scimUtils.patchUser(testUser.getId(), replace, updates, HttpStatus.BAD_REQUEST);
+  }
+
+  @Test
+  @WithMockUser(username = "john_lennon", roles = { "USER" })
+  public void testUserCanNotChangeAffiliation() throws Exception {
+    ScimUser updates = ScimUser.builder().affiliation("Test-Affiliation").build();
+
+    scimUtils.patchUser(testUser.getId(), replace, updates, HttpStatus.FORBIDDEN)
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(username = "admin", roles = { "ADMIN" })
+  public void testAdminCanChangeAffiliation() throws Exception {
+    ScimUser updates = ScimUser.builder().affiliation("Test-Affiliation").build();
+
+    scimUtils.patchUser(testUser.getId(), replace, updates, HttpStatus.NO_CONTENT)
+        .andExpect(status().isNoContent());
+
+    scimUtils.getUser(testUser.getId(), HttpStatus.OK)
+        .andExpect(jsonPath("$.urn:indigo-dc:scim:schemas:IndigoUser.affiliation", containsString("Test-Affiliation")));
   }
 }
