@@ -115,9 +115,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected boolean hasRefreshTokenAudienceRequest(OAuth2Authentication authentication) {
     if (!isNull(authentication.getOAuth2Request().getRefreshTokenRequest())) {
       final String audience = authentication.getOAuth2Request()
-          .getRefreshTokenRequest()
-          .getRequestParameters()
-          .get(AUD_KEY);
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(AUD_KEY);
       return !isNullOrEmpty(audience);
     }
     return false;
@@ -129,7 +129,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
-    final String audience = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
+    final String audience =
+        authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     return !isNullOrEmpty(audience);
   }
 
@@ -147,9 +148,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     Builder builder = new JWTClaimsSet.Builder().issuer(properties.getIssuer())
-        .issueTime(Date.from(issueTime))
-        .subject(subject)
-        .jwtID(UUID.randomUUID().toString());
+      .issueTime(Date.from(issueTime))
+      .subject(subject)
+      .jwtID(UUID.randomUUID().toString());
 
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
@@ -165,9 +166,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
-          .getRefreshTokenRequest()
-          .getRequestParameters()
-          .get(AUD_KEY);
+        .getRefreshTokenRequest()
+        .getRequestParameters()
+        .get(AUD_KEY);
     }
 
     if (!isNullOrEmpty(audience)) {
