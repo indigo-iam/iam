@@ -219,6 +219,10 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     if (user.hasPhotos()) {
       addUpdater(updaters, Objects::nonNull, user.getPhotos().get(0)::getValue, replace::picture);
     }
+
+    if (user.hasAffiliation()) {
+      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getAffiliation, replace::affiliation);
+    }
   }
 
   @Override
