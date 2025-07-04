@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.scim.provisioning;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +25,6 @@ import java.util.function.Supplier;
 
 import javax.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -71,17 +69,17 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   private final ScimResourceLocationProvider locationProvider;
 
-  @Autowired
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
-      ScimResourceLocationProvider locationProvider, Clock clock, IamAccountRepository accountRepo) {
+      ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
 
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
-    this.groupUpdaterFactory = new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
+    this.groupUpdaterFactory =
+        new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
@@ -115,8 +113,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       String parentGroupName = group.getIndigoGroup().getParentGroup().getDisplay();
 
       iamParentGroup = groupService.findByUuid(parentGroupUuid)
-          .orElseThrow(() -> new ScimResourceNotFoundException(
-              String.format("Parent group '%s' not found", parentGroupUuid)));
+        .orElseThrow(() -> new ScimResourceNotFoundException(
+            String.format("Parent group '%s' not found", parentGroupUuid)));
 
       String fullName = String.format("%s/%s", parentGroupName, group.getDisplayName());
       fullNameSanityChecks(fullName);
@@ -278,10 +276,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
     for (IamAccount a : accounts.getContent()) {
       resources.add(ScimMemberRef.builder()
-          .value(a.getUuid())
-          .display(a.getUserInfo().getName())
-          .ref(locationProvider.userLocation(a.getUuid()))
-          .build());
+        .value(a.getUuid())
+        .display(a.getUserInfo().getName())
+        .ref(locationProvider.userLocation(a.getUuid()))
+        .build());
     }
 
     results.fromPage(accounts, pr);
@@ -300,10 +298,10 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     List<ScimMemberRef> resources = newArrayList();
     for (IamGroup g : subgroups.getContent()) {
       resources.add(ScimMemberRef.builder()
-          .value(g.getUuid())
-          .display(g.getName())
-          .ref(locationProvider.groupLocation(g.getUuid()))
-          .build());
+        .value(g.getUuid())
+        .display(g.getName())
+        .ref(locationProvider.groupLocation(g.getUuid()))
+        .build());
     }
 
     results.fromPage(subgroups, pr);
