@@ -62,10 +62,8 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
