@@ -16,6 +16,7 @@
 package it.infn.mw.iam.api.scim.provisioning;
 
 import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,8 +24,6 @@ import java.util.function.Supplier;
 
 import javax.transaction.Transactional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -76,12 +75,13 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
       GroupRequestsService groupRequestsService, GroupConverter converter,
       ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
 
-
     this.accountService = accountService;
     this.groupService = groupService;
     this.converter = converter;
 
     this.groupRequestsService = groupRequestsService;
+    this.groupUpdaterFactory =
+        new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.groupUpdaterFactory =
         new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
