@@ -20,6 +20,7 @@ import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
@@ -56,9 +57,11 @@ import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
+import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @SuppressWarnings("deprecation")
@@ -66,6 +69,10 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 @RequestMapping("/scim/Me")
 @Transactional
 public class ScimMeController implements ApplicationEventPublisherAware {
+
+  protected static final EnumSet<UpdaterType> ACCOUNT_LINKING_UPDATERS =
+      EnumSet.of(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY,
+          ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_REMOVE_GROUP_MEMBERSHIP);
 
   private final IamAccountRepository iamAccountRepository;
 
@@ -77,7 +84,8 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   private final Set<UpdaterType> enabledUpdaters;
 
-  public ScimMeController(IamAccountRepository accountRepository, IamAccountService accountService,
+  public ScimMeController(IamAccountRepository accountRepository,
+      IamGroupRepository groupRepository, IamAccountService accountService,
       OAuth2TokenEntityService tokenService, ScimUserProvisioning scimUserProvisioning, UserConverter userConverter,
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
@@ -88,7 +96,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator);
+        x509CertificateConverter, usernameValidator, groupRepository);
     
     enabledUpdaters = scimUserProvisioning.getEnabledUpdaters();
   }

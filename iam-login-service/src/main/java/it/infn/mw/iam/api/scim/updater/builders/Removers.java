@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_GROUP_MEMBERSHIP;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_OIDC_ID;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_PICTURE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SAML_ID;
@@ -24,17 +25,21 @@ import static java.util.Objects.isNull;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.DefaultAccountUpdater;
 import it.infn.mw.iam.audit.events.account.PictureRemovedEvent;
+import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.oidc.OidcAccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.saml.SamlAccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.ssh.SshKeyRemovedEvent;
 import it.infn.mw.iam.audit.events.account.x509.X509CertificateRemovedEvent;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
@@ -43,8 +48,10 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 public class Removers extends AccountBuilderSupport {
-  
+
   final Consumer<Collection<IamSshKey>> unlinkSshKeys;
+
+  final Consumer<Collection<IamGroup>> unlinkGroups;
 
   public Removers(IamAccountRepository repo, IamAccountService accountService, IamAccount account) {
     super(repo, accountService, account);
@@ -55,6 +62,28 @@ public class Removers extends AccountBuilderSupport {
         }
       }
     };
+    unlinkGroups = groups -> {
+      for (IamGroup g : groups) {
+        if (!isNull(g)) {
+          accountService.removeFromGroup(account, g);
+        }
+      }
+    };
+  }
+
+  public AccountUpdater group(Collection<IamGroup> tobeRemoved) {
+
+    return new DefaultAccountUpdater<Collection<IamGroup>, GroupMembershipRemovedEvent>(account,
+        ACCOUNT_REMOVE_GROUP_MEMBERSHIP, unlinkGroups, tobeRemoved, i -> {
+          Set<String> accountGroupNames = account.getGroups()
+            .stream()
+            .map(m -> m.getGroup().getName())
+            .collect(Collectors.toSet());
+
+          Set<String> toRemoveNames = i.stream().map(IamGroup::getName).collect(Collectors.toSet());
+
+          return !Collections.disjoint(accountGroupNames, toRemoveNames);
+        }, null);
   }
 
   public AccountUpdater oidcId(Collection<IamOidcId> toBeRemoved) {
