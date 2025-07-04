@@ -231,7 +231,7 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage = true;
 
     boolean requireExternalAuthentication = false;
-    
+
     boolean addNicknameAsAttribute = false;
 
     ExternalAuthenticationType authenticationType;
@@ -259,7 +259,7 @@ public class IamProperties {
     public void setRequireExternalAuthentication(boolean requireExternalAuthentication) {
       this.requireExternalAuthentication = requireExternalAuthentication;
     }
-    
+
     public boolean isAddNicknameAsAttribute() {
       return addNicknameAsAttribute;
     }
@@ -401,9 +401,9 @@ public class IamProperties {
     }
   }
 
-  public static class PrivacyPolicy {
+  public static class LoginLink {
     String url;
-    String text = "Privacy policy";
+    String text;
 
     public String getUrl() {
       return url;
@@ -626,7 +626,9 @@ public class IamProperties {
 
   private RegistractionAccessToken token = new RegistractionAccessToken();
 
-  private PrivacyPolicy privacyPolicy = new PrivacyPolicy();
+  private LoginLink privacyPolicy = new LoginLink();
+
+  private LoginLink support = new LoginLink();
 
   private LoginPageLayout loginPageLayout = new LoginPageLayout();
 
@@ -738,12 +740,20 @@ public class IamProperties {
     this.verifyButton = verifyButton;
   }
 
-  public void setPrivacyPolicy(PrivacyPolicy privacyPolicy) {
+  public void setPrivacyPolicy(LoginLink privacyPolicy) {
     this.privacyPolicy = privacyPolicy;
   }
 
-  public PrivacyPolicy getPrivacyPolicy() {
+  public LoginLink getPrivacyPolicy() {
     return privacyPolicy;
+  }
+
+  public void setSupport(LoginLink newSupport) {
+    this.support = newSupport;
+  }
+
+  public LoginLink getSupport() {
+    return support;
   }
 
   public LoginPageLayout getLoginPageLayout() {
@@ -888,8 +898,8 @@ public class IamProperties {
     this.client = client;
   }
 
-  public ClientProperties getClient(){
-    return client;    
+  public ClientProperties getClient() {
+    return client;
   }
 
 }

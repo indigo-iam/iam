@@ -39,6 +39,7 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 public class DefaultLoginPageConfiguration implements LoginPageConfiguration, EnvironmentAware {
 
   public static final String DEFAULT_PRIVACY_POLICY_TEXT = "Privacy policy";
+  public static final String DEFAULT_SUPPORT_TEXT = "Support";
   public static final String DEFAULT_LOGIN_BUTTON_TEXT = "Sign in";
 
   private Environment env;
@@ -61,8 +62,10 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
-      IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(
+    OidcValidatedProviders providers,
+    IamProperties properties,
+    IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
@@ -77,9 +80,9 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
     adminOnlyCustomScopes = env.acceptsProfiles(Profiles.of("registration"));
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
       .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
@@ -143,6 +146,22 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       return DEFAULT_PRIVACY_POLICY_TEXT;
     }
     return iamProperties.getPrivacyPolicy().getText();
+  }
+
+  @Override
+  public Optional<String> getSupportUrl() {
+    if (Strings.isNullOrEmpty(iamProperties.getSupport().getUrl())) {
+      return Optional.empty();
+    }
+    return Optional.of(iamProperties.getSupport().getUrl());
+  }
+
+  @Override
+  public String getSupportText() {
+    if (Strings.isNullOrEmpty(iamProperties.getSupport().getText())) {
+      return DEFAULT_SUPPORT_TEXT;
+    }
+    return iamProperties.getSupport().getText();
   }
 
   @Override

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.PrivacyPolicy;
+import it.infn.mw.iam.config.IamProperties.LoginLink;
 import it.infn.mw.iam.config.IamProperties.UserProfileProperties;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.config.login.LoginButtonProperties;
@@ -69,7 +69,7 @@ public class ConfigurationController {
   }
 
   @RequestMapping(method = GET, value = "/privacy-policy")
-  public PrivacyPolicy privacyPolicyURL() {
+  public LoginLink privacyPolicyURL() {
     return iamProperties.getPrivacyPolicy();
   }
 
