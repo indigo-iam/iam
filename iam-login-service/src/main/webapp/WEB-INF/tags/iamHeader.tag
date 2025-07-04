@@ -84,6 +84,10 @@ function getRegistrationEnabled() {
   return ${loginPageConfiguration.registrationEnabled};
 }
 
+function getAdminOnlyCustomScope() {
+  return ${loginPageConfiguration.adminOnlyCustomScopes};
+}
+
 function getAccountLinkingEnabled() {
   return ${loginPageConfiguration.accountLinkingEnabled};
 }
