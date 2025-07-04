@@ -211,6 +211,15 @@
                 </a>
             </div>
         </c:if>
+
+        <c:if test="${loginPageConfiguration.supportUrl.isPresent()}">
+                <div id="support">
+                    <a class="btn btn-link btn-block" target="_blank" rel="noopener noreferrer"
+                href="${loginPageConfiguration.supportUrl.get()}">
+                    ${loginPageConfiguration.supportText}
+                </a>
+            </div>
+        </c:if>
         
         <c:if test="${not empty IAM_X509_CRED && !IAM_X509_CRED.failedVerification()}">
             <div id="x509-authn-info">
