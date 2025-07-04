@@ -44,10 +44,10 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
                 var user = result[0];
                 if (result[1] !== null) {
                     user.aupSignature = result[1].data;
-                    if (user.aupSignature.aup.signatureValidityInDays != 0){
-                        user.aupSignatureExpiryDate = new Date(new Date(user.aupSignature.signatureTime).getTime() + 
-                                                        user.aupSignature.aup.signatureValidityInDays * 24 * 60 * 60 * 1000);
-                    }  
+                    if (user.aupSignature.aup.signatureValidityInDays != 0) {
+                        user.aupSignatureExpiryDate = new Date(new Date(user.aupSignature.signatureTime).getTime() +
+                            user.aupSignature.aup.signatureValidityInDays * 24 * 60 * 60 * 1000);
+                    }
                 } else {
                     user.aupSignature = null;
                 }
@@ -64,16 +64,16 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
     function getUser(userId) {
         return $q
             .all([scimFactory.getUser(userId), Authorities.getAuthorities(userId), AupService.getAupSignatureForUser(userId),
-                AuthenticatorAppService.getMfaSettingsForAccount(userId)
+            AuthenticatorAppService.getMfaSettingsForAccount(userId)
             ])
             .then(function (result) {
                 var user = result[0].data;
                 user.authorities = result[1].data.authorities;
                 if (result[2] !== null) {
                     user.aupSignature = result[2].data;
-                    if (user.aupSignature.aup.signatureValidityInDays != 0){
-                        user.aupSignatureExpiryDate = new Date(new Date(user.aupSignature.signatureTime).getTime() + 
-                                                        user.aupSignature.aup.signatureValidityInDays * 24 * 60 * 60 * 1000);
+                    if (user.aupSignature.aup.signatureValidityInDays != 0) {
+                        user.aupSignatureExpiryDate = new Date(new Date(user.aupSignature.signatureTime).getTime() +
+                            user.aupSignature.aup.signatureValidityInDays * 24 * 60 * 60 * 1000);
                     }
                 } else {
                     user.aupSignature = null;
@@ -93,6 +93,7 @@ function UserService($q, $rootScope, scimFactory, Authorities, Utils, AupService
     function updateLoggedUserInfo() {
 
         $rootScope.isRegistrationEnabled = Utils.isRegistrationEnabled();
+        $rootScope.isAdminOnlyCustomScope = Utils.isAdminOnlyCustomScope();
         $rootScope.isOidcEnabled = Utils.isOidcEnabled();
         $rootScope.isSamlEnabled = Utils.isSamlEnabled();
 

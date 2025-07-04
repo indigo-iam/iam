@@ -42,6 +42,8 @@ public interface LoginPageConfiguration {
 
   boolean isRegistrationEnabled();
 
+  boolean isAdminOnlyCustomScopes();
+
   boolean isAccountLinkingEnabled();
 
   boolean isIncludeCustomContent();
