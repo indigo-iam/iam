@@ -49,20 +49,20 @@ public class ScimRestUtils {
   public <B> ValidatableResponse doPost(String location, B content, HttpStatus expectedError) {
 
     return given().port(8080)
-      .auth()
-      .preemptive()
-      .oauth2(accessToken)
-      .contentType(SCIM_CONTENT_TYPE)
-      .body(content)
-      .log()
-      .all(true)
-      .when()
-      .post(location)
-      .then()
-      .log()
-      .all(true)
-      .statusCode(expectedError.value())
-      .contentType(SCIM_CONTENT_TYPE);
+        .auth()
+        .preemptive()
+        .oauth2(accessToken)
+        .contentType(SCIM_CONTENT_TYPE)
+        .body(content)
+        .log()
+        .all(true)
+        .when()
+        .post(location)
+        .then()
+        .log()
+        .all(true)
+        .statusCode(expectedError.value())
+        .contentType(SCIM_CONTENT_TYPE);
   }
 
   public <B> ValidatableResponse doPut(String location, B content) {
