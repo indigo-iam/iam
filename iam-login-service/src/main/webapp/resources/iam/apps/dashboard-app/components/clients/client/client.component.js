@@ -24,6 +24,7 @@
         self.saveClient = saveClient;
         self.loadClient = loadClient;
         self.deleteClient = deleteClient;
+        self.resetClient = resetClient;
         self.revokeTokens = revokeTokens;
         self.cancel = cancel;
         self.getClientStatusMessage = getClientStatusMessage;
@@ -142,6 +143,7 @@
                     }
                 }
             });
+            
 
             modalInstance.result.then(function (res) {
                 toaster.pop({
@@ -160,6 +162,31 @@
                     toaster.pop({
                         type: 'error',
                         body: 'Error removing client tokens'
+                    });
+                }
+            });
+        }
+
+        function resetClient() {
+            var modalInstance = $uibModal.open({
+                component: 'confirmresetclient',
+                resolve: {
+                    client: function () {
+                        return self.clientVal;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function (res) {
+                toaster.pop({
+                    type: 'success',
+                    body: 'Client reset! Here is the new client secret: '+ res 
+                });
+            }, function (res) {
+                if (res !== 'cancel') {
+                    toaster.pop({
+                        type: 'error',
+                        body: 'Error reseting client'
                     });
                 }
             });

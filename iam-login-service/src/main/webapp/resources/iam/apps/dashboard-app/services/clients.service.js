@@ -49,6 +49,7 @@
             disableClient: disableClient,
             revokeRefreshTokens: revokeRefreshTokens,
             revokeAccessTokens: revokeAccessTokens,
+            resetClient: resetClient
         };
 
         return service;
@@ -205,8 +206,17 @@
 
         }
 
-        function revokeAccessTokens(clientId, timeIssued) {
+        function revokeAccessTokens(clientId) {
             return $http.patch(endpoint(clientId) + "/revoke-access-tokens").then(function (res) {
+                return res.data;
+            }).catch(function (res) {
+                return $q.reject(res);
+            });
+
+        }
+
+        function resetClient(clientId) {
+            return $http.patch(endpoint(clientId) + "/reset-client").then(function (res) {
                 return res.data;
             }).catch(function (res) {
                 return $q.reject(res);

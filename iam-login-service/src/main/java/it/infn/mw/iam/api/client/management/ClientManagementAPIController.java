@@ -32,6 +32,7 @@ import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -174,23 +175,30 @@ public class ClientManagementAPIController {
   @PatchMapping("/{clientId}/revoke-refresh-tokens")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void revokeRefreshTokens(@PathVariable String clientId) {
-    disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
-    rotateClientSecret(clientId);
-    enableClient(clientId);
   }
 
   @PatchMapping("/{clientId}/revoke-access-tokens")
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void revokeAccessTokens(@PathVariable String clientId) {
-    disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
-    rotateClientSecret(clientId);
+  }
+
+  @PatchMapping("/{clientId}/reset-client")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public MappingJacksonValue resetClient(@PathVariable String clientId) {
+    disableClient(clientId);
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
+    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    RegisteredClientDTO resetClient = rotateClientSecret(clientId);
     enableClient(clientId);
+    return new MappingJacksonValue(resetClient.getClientSecret());
   }
 
   @PostMapping("/{clientId}/secret")

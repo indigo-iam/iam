@@ -17,7 +17,7 @@
     'use strict';
 
 
-    function ClientTokenController(ClientsService) {
+    function ConfirmResetClientController(ClientsService) {
         var self = this;
 
         self.ok = ok;
@@ -26,29 +26,16 @@
 
         self.$onInit = function () {
             self.client = self.resolve.client;
-
-            self.revokeRefreshTokens = false;
-            self.revokeAccessTokens = false;
         };
 
         function ok() {
-            if (!self.revokeAccessTokens && !self.revokeRefreshTokens) {
-                self.dismiss({ $value: 'no-option' });
-            }
-            if (self.revokeRefreshTokens) {
-                ClientsService.revokeRefreshTokens(self.client.client_id).then(function (res) {
-                    self.close({ $value: res });
-                }).catch(function (res) {
-                    self.dismiss({ $value: res });
-                });
-            }
-            else if (self.revokeAccessTokens) {
-                ClientsService.revokeAccessTokens(self.client.client_id).then(function (res) {
-                    self.close({ $value: res });
-                }).catch(function (res) {
-                    self.dismiss({ $value: res });
-                });
-            }
+            self.enabled = false;
+            ClientsService.resetClient(self.client.client_id).then(function (res) {
+                self.close({ $value: res });
+            }).catch(function (res) {
+                self.dismiss({ $value: res });
+            });
+
         }
 
         function cancel() {
@@ -59,18 +46,18 @@
 
     angular
         .module('dashboardApp')
-        .component('selecttokenstorevoke', confirmtokenremoval());
+        .component('confirmresetclient', confirmresetclient());
 
 
-    function confirmtokenremoval() {
+    function confirmresetclient() {
         return {
-            templateUrl: '/resources/iam/apps/dashboard-app/components/clients/client/revoketokens/selecttokenstorevoke.component.html',
+            templateUrl: "/resources/iam/apps/dashboard-app/components/clients/client/resetclient/confirmresetclient.component.html",
             bindings: {
                 resolve: '<',
                 close: '&',
                 dismiss: '&'
             },
-            controller: ['ClientsService', ClientTokenController],
+            controller: ['ClientsService', ConfirmResetClientController],
             controllerAs: '$ctrl'
         };
     }

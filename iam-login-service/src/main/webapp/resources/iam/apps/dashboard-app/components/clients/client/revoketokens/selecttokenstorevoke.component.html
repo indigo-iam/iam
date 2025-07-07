@@ -27,12 +27,11 @@
     </p>
     <ul>
         <li><input type="checkbox" name="refresh" ng-model="$ctrl.revokeRefreshTokens"><label for="refresh"> Revoke
-                refresh tokens</label></li>
-        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens" ng-checked="$ctrl.revokeRefreshTokens"><label
+                refresh tokens</label></li> <small>All associated access tokens will be removed</small>
+        <li><input type="checkbox" name="access" ng-model="$ctrl.revokeAccessTokens"><label
                 for="access"> Revoke access tokens</label>
         </li>
     </ul>
-    <small>After tokens are revoked, client ID will be changed for security reasons.</small>
 </div>
 
 

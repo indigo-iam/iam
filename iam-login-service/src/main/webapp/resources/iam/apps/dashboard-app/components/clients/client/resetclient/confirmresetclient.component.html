@@ -17,13 +17,13 @@
 -->
 <div class="modal-header">
     <h3 class="modal-title">
-        Delete client <strong>{{ $ctrl.client.client_name }}</strong> ?
+        Reset client <strong>{{ $ctrl.client.client_name }}</strong> ?
     </h3>
 </div>
 
 <div class="modal-body">
     <p class="text-justify text-wrapped">
-        The following client will be reset by revoking all associated tokens and changing the client secret:
+        The following client will be reset:
     </p>
     <dl>
         <dt>Name</dt>
@@ -35,7 +35,7 @@
 
 <div class="modal-footer">
     <button class="btn btn-primary" type="button" id="modal-btn-confirm" ng-disabled="!$ctrl.enabled"
-        ng-click="$ctrl.ok()">Remove client</button>
+        ng-click="$ctrl.ok()">Reset client</button>
 
     <button class="btn btn-danger" type="button" id="modal-btn-cancel" ng-click="$ctrl.cancel()">Cancel</button>
 </div>
