@@ -102,9 +102,9 @@
 		return ${loginPageConfiguration.externalAuthenticationEnabled};
 	}
 
-  function getRegistrationButtonText() {
-    return '${loginPageConfiguration.registrationButtonText}';
-  }
+  	function getRegistrationButtonText() {
+    		return '${loginPageConfiguration.registrationButtonText}';
+  	}
 	
 	function getOrganisationName() {
 		return '${iamOrganisationName}';
