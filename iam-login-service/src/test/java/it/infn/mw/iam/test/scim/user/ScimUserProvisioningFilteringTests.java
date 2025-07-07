@@ -676,7 +676,8 @@ public class ScimUserProvisioningFilteringTests {
     scimUtils
       .getUsers(ParamsBuilder.builder().filters("username eq mrWorldWide").count(0).build(),
           HttpStatus.NOT_FOUND)
-      .andExpect(jsonPath("$.detail", equalTo("No user mapped to givenName \"mrWorldWide\"")));
+      .andExpect(jsonPath("$.detail", equalTo(
+          "the filter \"username,eq,mrWorldWide\" produced no results as no data fulfilled the criteria.")));
 
   }
 

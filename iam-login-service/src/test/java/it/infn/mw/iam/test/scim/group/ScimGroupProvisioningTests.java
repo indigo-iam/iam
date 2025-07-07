@@ -45,7 +45,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.model.ScimConstants;
 import it.infn.mw.iam.api.scim.model.ScimGroup;
 import it.infn.mw.iam.api.scim.provisioning.ScimGroupProvisioning;
@@ -284,11 +283,10 @@ public class ScimGroupProvisioningTests {
   @Test
   public void groupListFilterReference() {
 
-    Exception notimplemented =
-        assertThrows(ScimInvalidMethod.class, () -> scimGroupProvisioning.list(null, null));
+    Exception notimplemented = assertThrows(UnsupportedOperationException.class,
+        () -> scimGroupProvisioning.list(null, null));
 
-    assertTrue(notimplemented.getMessage()
-      .contains("The method \"list(final ScimPageRequest params, String filter)\" is not yet supported in ScimGroupProvisioning"));
+    assertTrue(notimplemented.getMessage().contains("Unsupported filtered list"));
 
   }
 

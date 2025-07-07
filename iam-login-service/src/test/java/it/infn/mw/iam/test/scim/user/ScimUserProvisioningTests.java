@@ -52,7 +52,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.api.scim.exception.ScimInvalidMethod;
 import it.infn.mw.iam.api.scim.model.ScimEmail.ScimEmailType;
 import it.infn.mw.iam.api.scim.model.ScimGroupRef;
 import it.infn.mw.iam.api.scim.model.ScimUser;
@@ -353,10 +352,9 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
   public void userListFilterReference() {
 
     Exception notimplemented =
-        assertThrows(ScimInvalidMethod.class, () -> scimUserProvisioning.list(null));
+        assertThrows(UnsupportedOperationException.class, () -> scimUserProvisioning.list(null));
 
-    assertTrue(notimplemented.getMessage()
-      .contains("The method \"list(final ScimPageRequest params)\" is not yet supported in ScimUserProvisioning"));
+    assertTrue(notimplemented.getMessage().contains("Unsupported list method"));
 
   }
 }
