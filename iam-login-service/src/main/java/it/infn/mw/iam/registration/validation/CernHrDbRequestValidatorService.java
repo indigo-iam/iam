@@ -75,6 +75,8 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
     request.setGivenname(voPersonDTO.getFirstName());
     request.setFamilyname(voPersonDTO.getName());
     request.setEmail(voPersonDTO.getEmail());
+    request.setAffiliation(voPersonDTO.getAffiliation());
+
   }
 
   @Override

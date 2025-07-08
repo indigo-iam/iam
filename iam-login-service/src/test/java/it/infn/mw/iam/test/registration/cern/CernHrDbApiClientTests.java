@@ -107,6 +107,7 @@ public class CernHrDbApiClientTests extends CernTestSupport {
     assertThat(user.isPresent(), is(true));
     assertThat(user.get().getFirstName(), is(MOCK_HR_USER_FIRST_NAME));
     assertThat(user.get().getName(), is(MOCK_HR_USER_FAMILY_NAME));
+    assertThat(user.get().getAffiliation(), is(MOCK_HR_AFFILIATION));
   }
 
   @Test
