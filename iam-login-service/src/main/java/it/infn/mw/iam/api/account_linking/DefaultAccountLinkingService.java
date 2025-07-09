@@ -190,20 +190,22 @@ public class DefaultAccountLinkingService
   }
 
   @Override
-  public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject) {
+  public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject,
+      String certificateIssuer) {
     IamAccount userAccount = findAccount(authenticatedUser);
 
     boolean removed = userAccount.getX509Certificates()
-      .removeIf(c -> c.getSubjectDn().equals(certificateSubject));
+      .removeIf(c -> c.getSubjectDn().equals(certificateSubject)
+          && c.getIssuerDn().equals(certificateIssuer));
 
     if (removed) {
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
-      eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount,
-          String.format("User '%s' unlinked certificate with subject '%s' from his/her membership",
-              userAccount.getUsername(), certificateSubject),
-          certificateSubject));
+      eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount, String.format(
+          "User '%s' unlinked certificate with subject '%s' and issuer '%s' from his/her membership",
+          userAccount.getUsername(), certificateSubject, certificateIssuer), certificateSubject,
+          certificateIssuer));
     }
   }
 
