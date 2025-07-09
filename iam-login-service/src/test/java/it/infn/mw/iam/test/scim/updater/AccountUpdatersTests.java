@@ -43,7 +43,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
+import it.infn.mw.iam.api.scim.model.ScimX509Certificate;
 import it.infn.mw.iam.api.scim.updater.Updater;
 import it.infn.mw.iam.api.scim.updater.builders.AccountUpdaters;
 import it.infn.mw.iam.api.scim.updater.builders.Adders;
@@ -115,6 +117,9 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   @Mock
   private ApplicationEventPublisher publisher;
+
+  @Autowired
+  private X509CertificateConverter x509Converter;
 
   private IamAccount account;
   private IamAccount other;
@@ -712,6 +717,16 @@ public class AccountUpdatersTests extends X509TestSupport {
 
   }
 
+  @Test
+  public void testX509CertificateParsingWorks() {
+
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .display("test")
+      .build();
+
+    x509Converter.entityFromDto(cert);
+  }
 
   @Test
   public void testX509CertificateAdderWorksWithNoUpdate() {
