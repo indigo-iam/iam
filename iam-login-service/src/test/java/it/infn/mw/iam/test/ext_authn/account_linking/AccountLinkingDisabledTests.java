@@ -50,8 +50,10 @@ public class AccountLinkingDisabledTests {
     mvc.perform(post("/iam/account-linking/X509").with(csrf().asHeader()))
       .andExpect(status().isForbidden());
 
-    mvc.perform(delete("/iam/account-linking/X509")
-      .param("certificateSubject", "certificateSubject").with(csrf().asHeader()))
+    mvc
+      .perform(delete("/iam/account-linking/X509").param("certificateSubject", "certificateSubject")
+        .param("certificateIssuer", "certificateIssuer")
+        .with(csrf().asHeader()))
       .andExpect(status().isForbidden());
 
     mvc.perform(post("/iam/account-linking/OIDC").with(csrf().asHeader()))
@@ -60,9 +62,11 @@ public class AccountLinkingDisabledTests {
     mvc.perform(get("/iam/account-linking/OIDC/done").with(csrf().asHeader()))
       .andExpect(status().isForbidden());
 
-    mvc.perform(delete("/iam/account-linking/OIDC").param("sub", "sub")
-      .param("iss", "iss")
-      .with(csrf().asHeader())).andExpect(status().isForbidden());
+    mvc
+      .perform(delete("/iam/account-linking/OIDC").param("sub", "sub")
+        .param("iss", "iss")
+        .with(csrf().asHeader()))
+      .andExpect(status().isForbidden());
 
     mvc.perform(post("/iam/account-linking/SAML").with(csrf().asHeader()))
       .andExpect(status().isForbidden());
