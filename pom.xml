@@ -233,6 +233,12 @@
 			</dependency>
 
 			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-ext-jdk15on</artifactId>
+				<version>${bc.version}</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.italiangrid</groupId>
 				<artifactId>voms-clients</artifactId>
 				<version>${voms.version}</version>
