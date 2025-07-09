@@ -391,6 +391,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_0_ISSUER)
         .with(csrf().asHeader()))
       .andDo(print())
       .andExpect(status().isNoContent());
@@ -415,6 +416,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_0_ISSUER)
         .with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 
