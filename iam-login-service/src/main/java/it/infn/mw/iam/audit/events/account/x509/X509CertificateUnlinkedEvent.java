@@ -29,15 +29,21 @@ public class X509CertificateUnlinkedEvent extends AccountEvent {
 
 
   private final String certificateSubject;
+  private final String certificateIssuer;
 
   public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
-      String certificateSubject) {
+      String certificateSubject, String certificateIssuer) {
     super(source, account, message);
     this.certificateSubject = sanitize(certificateSubject);
+    this.certificateIssuer = sanitize(certificateIssuer);
   }
 
   public String getCertificateSubject() {
     return certificateSubject;
+  }
+  
+  public String getCertificateIssuer() {
+    return certificateIssuer;
   }
 
 }
