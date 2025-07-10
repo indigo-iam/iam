@@ -57,7 +57,6 @@ import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
-import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -69,10 +68,6 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 @RequestMapping("/scim/Me")
 @Transactional
 public class ScimMeController implements ApplicationEventPublisherAware {
-
-  protected static final EnumSet<UpdaterType> ACCOUNT_LINKING_UPDATERS =
-      EnumSet.of(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY,
-          ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_REMOVE_GROUP_MEMBERSHIP);
 
   private final IamAccountRepository iamAccountRepository;
 
