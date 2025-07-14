@@ -215,7 +215,8 @@ public class DefaultRegistrationRequestService
       .buildName(dto.getGivenname(), dto.getFamilyname())
       .buildEmail(dto.getEmail())
       .userName(dto.getUsername())
-      .password(dto.getPassword());
+      .password(dto.getPassword())
+      .affiliation(dto.getAffiliation());
 
 
     if (iamProperties.getRegistration()

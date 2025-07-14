@@ -44,6 +44,7 @@ public class ScimCollectionConverter<EntityType, ScimType>
       .stream()
       .filter(Objects::nonNull)
       .map(converter::fromScim)
+      .filter(Objects::nonNull)
       .collect(Collectors.toList());
   }
 

@@ -18,6 +18,7 @@ package it.infn.mw.iam.api.scim.controller;
 import static it.infn.mw.iam.api.scim.controller.utils.ValidationHelper.handleValidationError;
 import static it.infn.mw.iam.api.scim.model.ScimConstants.SCIM_CONTENT_TYPE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_ADD_SSH_KEY;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_GROUP_MEMBERSHIP;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_OIDC_ID;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_PICTURE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SAML_ID;
@@ -69,6 +70,7 @@ import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @SuppressWarnings("deprecation")
@@ -79,7 +81,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   protected static final EnumSet<UpdaterType> ACCOUNT_LINKING_UPDATERS =
       EnumSet.of(ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY,
-          ACCOUNT_REMOVE_SSH_KEY);
+          ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_REMOVE_GROUP_MEMBERSHIP);
 
   private final IamAccountRepository iamAccountRepository;
 
@@ -91,7 +93,8 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   private final EnumSet<UpdaterType> enabledUpdaters;
 
-  public ScimMeController(IamAccountRepository accountRepository, IamAccountService accountService,
+  public ScimMeController(IamAccountRepository accountRepository,
+      IamGroupRepository groupRepository, IamAccountService accountService,
       OAuth2TokenEntityService tokenService, UserConverter userConverter,
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
@@ -102,12 +105,12 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator);
+        x509CertificateConverter, usernameValidator, groupRepository);
 
     enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
 
     enabledUpdaters.addAll(ACCOUNT_LINKING_UPDATERS);
-    
+
     properties.getUserProfile().getEditableFields().forEach(e -> {
       if (EditableFields.NAME.equals(e)) {
         enabledUpdaters.add(ACCOUNT_REPLACE_GIVEN_NAME);

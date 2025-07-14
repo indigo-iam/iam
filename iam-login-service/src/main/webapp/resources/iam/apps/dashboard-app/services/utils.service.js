@@ -33,6 +33,7 @@
             isPreAuthenticated: isPreAuthenticated,
             getLoggedUser: getLoggedUser,
             isRegistrationEnabled: isRegistrationEnabled,
+            isAdminOnlyCustomScope: isAdminOnlyCustomScope,
             isOidcEnabled: isOidcEnabled,
             isSamlEnabled: isSamlEnabled,
             buildErrorOperationResult: buildErrorOperationResult,
@@ -120,13 +121,20 @@
         }
 
         function getLoggedUser() {
-            return { info: getUserInfo(), auth: getUserAuthorities(), isAdmin: isAdmin(), isGroupManager: isGroupManager(), 
-                isGroupManagerForGroup: isGroupManagerForGroup(), isReader: isReader() };
+            return {
+                info: getUserInfo(), auth: getUserAuthorities(), isAdmin: isAdmin(), isGroupManager: isGroupManager(),
+                isGroupManagerForGroup: isGroupManagerForGroup(), isReader: isReader()
+            };
         }
 
         function isRegistrationEnabled() {
 
             return getRegistrationEnabled();
+        }
+
+        function isAdminOnlyCustomScope() {
+
+            return getAdminOnlyCustomScope();
         }
 
         function isOidcEnabled() {

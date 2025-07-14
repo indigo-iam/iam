@@ -64,10 +64,10 @@ public class AccountLinkingController extends ExternalAuthenticationHandlerSuppo
   @DeleteMapping(value = "/X509")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
   public void unlinkX509Certificate(Principal principal, @RequestParam String certificateSubject,
-      RedirectAttributes attributes) {
+      @RequestParam String certificateIssuer, RedirectAttributes attributes) {
 
     checkAccountLinkingEnabled(attributes);
-    linkingService.unlinkX509Certificate(principal, certificateSubject);
+    linkingService.unlinkX509Certificate(principal, certificateSubject, certificateIssuer);
   }
 
 
