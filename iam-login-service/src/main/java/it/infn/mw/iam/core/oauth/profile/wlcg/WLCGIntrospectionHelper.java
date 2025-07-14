@@ -47,13 +47,15 @@ public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
     addIssuerClaim(result);
     addAudience(result, accessToken);
     addScopeClaim(result, filterScopes(accessToken, authScopes));
-    
+
     Set<String> groups =
         groupHelper.resolveGroupNames(accessToken, ((UserInfoAdapter) userInfo).getUserinfo());
 
     if (!groups.isEmpty()) {
       result.put(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groups);
     }
+
+    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }

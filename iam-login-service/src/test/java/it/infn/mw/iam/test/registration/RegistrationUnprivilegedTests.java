@@ -19,10 +19,15 @@ import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -145,11 +150,8 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
   @Test
   public void testListRequestsUnauthorized() throws Exception {
 
-    // @formatter:off
-    mvc.perform(get("/registration/list")
-        .with(authentication(anonymousAuthenticationToken())))
+    mvc.perform(get("/registration/list").with(authentication(anonymousAuthenticationToken())))
       .andExpect(status().isUnauthorized());
-    // @formatter:on
   }
 
   @Test
@@ -173,33 +175,28 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     String token = generator.getLastToken();
     assertNotNull(token);
 
+    mvc.perform(head("/registration/verify/" + token)).andExpect(status().isOk());
+
     confirmRegistrationRequest(token);
 
-    // @formatter:off
     mvc.perform(post("/registration/{uuid}/{decision}", reg.getUuid(), APPROVED.name())
-        .with(authentication(anonymousAuthenticationToken())))
-      .andExpect(status().isUnauthorized());
-    // @formatter:on
+      .with(authentication(anonymousAuthenticationToken()))).andExpect(status().isUnauthorized());
   }
 
   @Test
   public void testUsernameAvailable() throws Exception {
     String username = "tester";
-    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("true"));
-    // @formatter:on
   }
 
   @Test
   public void testUsernameAlreadyTaken() throws Exception {
     String username = "admin";
-    // @formatter:off
     mvc.perform(get("/registration/username-available/{username}", username))
       .andExpect(status().isOk())
       .andExpect(content().string("false"));
-    // @formatter:on
   }
 
   @Test
@@ -270,7 +267,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setNotes("Some short notes...");
     request.setPassword("password");
 
-    // @formatter:off
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
@@ -278,7 +274,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
       .andReturn()
       .getResponse()
       .getContentAsString();
-    // @formatter:on
 
     return objectMapper.readValue(response, RegistrationRequestDto.class);
   }
@@ -290,5 +285,25 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     // @formatter:on
   }
 
+  @Test
+  public void testRegistrationFieldReadOnlyGetterAndSetter() {
+    RegistrationFieldProperties properties = new RegistrationFieldProperties();
+
+    assertFalse(properties.isReadOnly());
+
+    properties.setReadOnly(true);
+    assertTrue(properties.isReadOnly());
+  }
+
+  @Test
+  public void testRegistrationFieldExternalAuthAttributeGetterAndSetter() {
+    RegistrationFieldProperties properties = new RegistrationFieldProperties();
+
+    assertNull(properties.getExternalAuthAttribute());
+
+    String testValue = "TestAttribute";
+    properties.setExternalAuthAttribute(testValue);
+    assertEquals(testValue, properties.getExternalAuthAttribute());
+  }
 
 }

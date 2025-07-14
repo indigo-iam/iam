@@ -24,11 +24,12 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @Component
-public class AarcClaimValueHelper {
+public class AarcClaimValueHelper implements ClaimValueHelper {
 
   public static final Set<String> ADDITIONAL_CLAIMS = Set.of("eduperson_scoped_affiliation",
       "eduperson_entitlement", "eduperson_assurance", "entitlements");
@@ -47,6 +48,7 @@ public class AarcClaimValueHelper {
 
   static final String DEFAULT_AFFILIATION_TYPE = "member";
 
+  @Override
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
 
     switch (claim) {

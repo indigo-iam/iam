@@ -39,6 +39,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -48,22 +50,24 @@ import com.nimbusds.jwt.JWTParser;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.TestUtils;
+import it.infn.mw.iam.test.repository.ScopePolicyTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
-public class AuthorizationCodeIntegrationTests {
-
-  @Value("${local.server.port}")
-  private Integer iamPort;
-
-  @Autowired
-  ObjectMapper mapper;
-
-  @Autowired
-  private IamOAuthRefreshTokenRepository refreshTokenRepository;
+@TestPropertySource(
+  // @formatter:off
+  properties = {
+    "iam.access_token.include_scope=true"
+  }
+  // @formatter:on
+)
+@ActiveProfiles({"h2-test", "h2", "wlcg-scopes"})
+public class AuthorizationCodeIntegrationTests extends ScopePolicyTestUtils {
 
   public static final String TEST_CLIENT_ID = "client";
   public static final String TEST_CLIENT_SECRET = "secret";
@@ -83,6 +87,23 @@ public class AuthorizationCodeIntegrationTests {
   private String loginUrl;
   private String authorizeUrl;
   private String tokenUrl;
+
+  @Value("${local.server.port}")
+  private Integer iamPort;
+
+  @Autowired
+  ObjectMapper mapper;
+
+  @Autowired
+  private IamOAuthRefreshTokenRepository refreshTokenRepository;
+
+  @Autowired
+  private IamAccountRepository accountRepo;
+
+  IamAccount findTestAccount() {
+    return accountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test account not found!"));
+  }
 
   private ValidatableResponse getTokenResponseWithAudience(String resourceParamAuthz,
       String resourceParamToken, String resourceValueAuthz, String resourceValueToken) {
@@ -167,7 +188,6 @@ public class AuthorizationCodeIntegrationTests {
       .post(tokenUrl)
       .then()
       .statusCode(HttpStatus.OK.value());
-
   }
 
   @BeforeClass

@@ -30,7 +30,7 @@ public enum IamAuthenticationLogger implements AuthenticationLogger {
   @Override
   public void logAuthenticationSuccess(Authentication auth) {
     if (!(auth instanceof OAuth2Authentication)) {
-      log.info("{} was authenticated succesfully", auth.getName());
+      log.info("{} was authenticated successfully", auth.getName());
       return;
     }
 

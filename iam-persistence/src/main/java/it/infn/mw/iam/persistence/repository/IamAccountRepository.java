@@ -120,10 +120,10 @@ public interface IamAccountRepository
     List<IamAccount> findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(
             @Param("timestamp") Date timestamp);
 
-    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+    @Query("select a from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
     Page<IamAccount> findByFilter(@Param("filter") String filter, Pageable op);
 
-    @Query("select count(a) from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+    @Query("select count(a) from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
     long countByFilter(@Param("filter") String filter);
 
     @Query("select a from IamAccount a where a.endTime < :timestamp")
@@ -211,5 +211,4 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
     List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
-
 }

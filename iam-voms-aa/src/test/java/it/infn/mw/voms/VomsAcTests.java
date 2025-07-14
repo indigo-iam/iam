@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -502,5 +503,65 @@ public class VomsAcTests extends TestSupport {
     assertThat(response.errorMessages(), arrayWithSize(1));
     assertThat(response.errorMessages()[0].getMessage(),
         containsString("Failed to convert property value"));
+  }
+
+  @Test
+  public void allDescendantsFromRootGroupAreReturnedForUser() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
+    IamGroup subGroup = createChildGroup(rootGroup, "sub");
+    IamGroup subSubGroup = createChildGroup(subGroup, "subsub");
+    IamGroup anotherRoot = createGroup("another");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, roleGroup);
+    addAccountToGroup(testAccount, subGroup);
+    addAccountToGroup(testAccount, subSubGroup);
+    addAccountToGroup(testAccount, anotherRoot);
+
+    byte[] xmlResponse = mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(false));
+    VOMSAttribute attrs = getAttributeCertificate(response);
+    assertThat(attrs.getFQANs(), not(hasItem("/another")));
+    assertThat(attrs.getFQANs(), hasSize(3));
+    assertThat(attrs.getFQANs(), hasItem("/test"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub"));
+    assertThat(attrs.getFQANs(), hasItem("/test/sub/subsub"));
+    assertThat(attrs.getNotAfter(), lessThanOrEqualTo(Date.from(NOW_PLUS_12_HOURS)));
+  }
+
+  @Test
+  public void groupNotDescendantsFromRootCannotBeReturnedForUser() throws Exception {
+    IamAccount testAccount = setupTestUser();
+    IamGroup rootGroup = createVomsRootGroup();
+    IamGroup roleGroup = createRoleGroup(rootGroup, "VO-Admin");
+    IamGroup subGroup = createChildGroup(rootGroup, "sub");
+    IamGroup subSubGroup = createChildGroup(subGroup, "subsub");
+    IamGroup anotherRoot = createGroup("another");
+
+    addAccountToGroup(testAccount, rootGroup);
+    addAccountToGroup(testAccount, roleGroup);
+    addAccountToGroup(testAccount, subGroup);
+    addAccountToGroup(testAccount, subSubGroup);
+    addAccountToGroup(testAccount, anotherRoot);
+
+    byte[] xmlResponse =
+        mvc.perform(get("/generate-ac").headers(test0VOMSHeaders()).param("fqans", "/another"))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsByteArray();
+
+    VOMSResponse response = parser.parse(new ByteArrayInputStream(xmlResponse));
+    assertThat(response.hasErrors(), is(true));
+    assertThat(response.errorMessages()[0].getMessage(),
+        containsString("User is not authorized to request attribute"));
   }
 }

@@ -18,9 +18,9 @@ package it.infn.mw.iam.test.core;
 import java.time.Instant;
 
 import org.mockito.Mockito;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 
@@ -28,7 +28,7 @@ import it.infn.mw.iam.test.util.MockTimeProvider;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @SuppressWarnings("deprecation")
-@Configuration
+@TestConfiguration
 public class CoreControllerTestSupport {
   public static final Instant NOW = Instant.parse("2019-01-01T00:00:00.00Z");
 

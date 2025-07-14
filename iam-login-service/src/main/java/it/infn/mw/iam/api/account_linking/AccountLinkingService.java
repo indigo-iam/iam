@@ -24,14 +24,15 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 
 public interface AccountLinkingService {
 
-  void linkX509ProxyCertificate(Principal authenticatedUser, 
+  void linkX509ProxyCertificate(Principal authenticatedUser,
       IamX509AuthenticationCredential x509Credential, String proxyCertificatePemString,
       Date proxyCertificateExpirationTime);
-  
+
   void linkX509Certificate(Principal authenticatedUser,
       IamX509AuthenticationCredential x509Credential);
 
-  void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject);
+  void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject,
+      String certificateIssuer);
 
   void linkExternalAccount(Principal authenticatedUser,
       AbstractExternalAuthenticationToken<?> externalAuthenticationToken);
