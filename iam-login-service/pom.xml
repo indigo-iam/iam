@@ -22,7 +22,7 @@
   <parent>
     <groupId>it.infn.mw.iam-parent</groupId>
     <artifactId>iam-parent</artifactId>
-    <version>1.12.0</version>
+    <version>1.13.0</version>
   </parent>
 
   <groupId>it.infn.mw.iam-login-service</groupId>
@@ -488,7 +488,7 @@
           <!-- Jacoco prepare-agent builds some command-line params without -->
           <!-- which jacoco will not instrument. Hence it is important to add -->
           <!-- those command-line params here (${argLine} holds those params) -->
-          <argLine>${argLine} ${jvm.test.args}</argLine>
+          <argLine>@{argLine} ${jvm.test.args}</argLine>
           <runOrder>alphabetical</runOrder>
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>

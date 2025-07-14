@@ -13,30 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.audit.events.account;
+package it.infn.mw.iam.api.client.management.validation;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import it.infn.mw.iam.persistence.model.IamAccount;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public class X509CertificateUnlinkedEvent extends AccountEvent {
+import javax.validation.Constraint;
+import javax.validation.Payload;
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
+@Retention(RUNTIME)
+@Target({ElementType.TYPE})
+@Constraint(validatedBy = BulkIdRequiredValidator.class)
+public @interface BulkIdRequired {
 
+  String message() default "POST operations require a bulkId";
 
-  private final String certificateSubject;
+  Class<?>[] groups() default {};
 
-  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
-      String certificateSubject) {
-    super(source, account, message);
-    this.certificateSubject = sanitize(certificateSubject);
-  }
-
-  public String getCertificateSubject() {
-    return certificateSubject;
-  }
+  Class<? extends Payload>[] payload() default {};
 
 }

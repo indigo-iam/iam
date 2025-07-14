@@ -21,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -50,6 +51,16 @@ public class AccountClientController {
 
     handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
     return clientSearchService.findOwnedClients(form);
+  }
+
+  @JsonView(ClientViews.Limited.class)
+  @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
+  @GetMapping("/iam/account/{id}/clients")
+  public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable("id") String id,
+      @Validated PaginatedRequestForm form, final BindingResult validationResult) {
+
+    handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
+    return clientSearchService.findClientsOwnedByAccount(id, form);
   }
 
 }

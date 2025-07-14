@@ -138,7 +138,6 @@ public class IamOIDCTokenService implements OIDCTokenService {
   public JWT createIdToken(ClientDetailsEntity client, OAuth2Request request, Date issueTime,
       String sub, OAuth2AccessTokenEntity accessToken) {
 
-
     JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();
 
     if (client.getIdTokenSignedResponseAlg() != null) {
@@ -255,8 +254,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
 
     Map<String, String> authorizationParameters = Maps.newHashMap();
     OAuth2Request clientAuth = new OAuth2Request(authorizationParameters, client.getClientId(),
-        Sets.newHashSet(Authorities.ROLE_CLIENT), true, scope, null, null, null,
-        null);
+        Sets.newHashSet(Authorities.ROLE_CLIENT), true, scope, null, null, null, null);
 
     OAuth2Authentication authentication = new OAuth2Authentication(clientAuth, null);
 

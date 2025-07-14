@@ -18,11 +18,14 @@ package it.infn.mw.iam.authn;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.providers.ExpiringUsernameAuthenticationToken;
 
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 public abstract class AbstractExternalAuthenticationToken<T extends Serializable>
@@ -32,6 +35,10 @@ public abstract class AbstractExternalAuthenticationToken<T extends Serializable
    * 
    */
   private static final long serialVersionUID = 3728054624371667370L;
+
+  private Set<IamAuthenticationMethodReference> authenticationMethodReferences = new HashSet<>();
+  private String totp;
+  private Set<GrantedAuthority> fullyAuthenticatedAuthorities;
 
   final T wrappedAuthentication;
 
@@ -52,12 +59,38 @@ public abstract class AbstractExternalAuthenticationToken<T extends Serializable
   }
 
   public abstract Map<String, String> buildAuthnInfoMap();
-  
+
   public abstract Map<String, String> buildAuthnInfoMap(ExternalAuthenticationInfoBuilder visitor);
 
   public abstract void linkToIamAccount(ExternalAccountLinker visitor, IamAccount account);
 
   public abstract ExternalAuthenticationRegistrationInfo toExernalAuthenticationRegistrationInfo();
+
+  public Set<GrantedAuthority> getFullyAuthenticatedAuthorities() {
+    return fullyAuthenticatedAuthorities;
+  }
+
+  public void setFullyAuthenticatedAuthorities(
+      Set<GrantedAuthority> fullyAuthenticatedAuthorities) {
+    this.fullyAuthenticatedAuthorities = fullyAuthenticatedAuthorities;
+  }
+
+  public Set<IamAuthenticationMethodReference> getAuthenticationMethodReferences() {
+    return authenticationMethodReferences;
+  }
+
+  public void setAuthenticationMethodReferences(
+      Set<IamAuthenticationMethodReference> authenticationMethodReferences) {
+    this.authenticationMethodReferences = authenticationMethodReferences;
+  }
+
+  public String getTotp() {
+    return totp;
+  }
+
+  public void setTotp(String totp) {
+    this.totp = totp;
+  }
 
   @Override
   public int hashCode() {

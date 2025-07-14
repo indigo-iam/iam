@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.service.client;
 
-
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ADMINISTRATORS;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.REGISTERED_USERS;
 import static java.util.Collections.emptySet;
@@ -28,8 +27,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -47,7 +49,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mockito.Mockito;
@@ -63,6 +64,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.mercateo.test.clock.TestClock;
@@ -88,15 +90,9 @@ import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
 @SuppressWarnings("deprecation")
 @IamNoMvcTest
 @SpringBootTest(classes = {IamLoginService.class, ClientTestConfig.class},
-    webEnvironment = WebEnvironment.NONE, properties = {
-    // @formatter:off
-        "scope.matchers[0].name=storage.read", 
-        "scope.matchers[0].type=path",
-        "scope.matchers[0].prefix=storage.read", 
-        "scope.matchers[0].path=/",
-     // @formatter:on
-    })
-public class ClientRegistrationServiceTests {
+    webEnvironment = WebEnvironment.NONE)
+@ActiveProfiles({"h2", "wlcg-scopes"})
+class ClientRegistrationServiceTests {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -111,13 +107,13 @@ public class ClientRegistrationServiceTests {
   private SystemScopeService scopeService;
 
   @Autowired
+  private ClientRegistrationProperties registrationProperties;
+
+  @Autowired
   private Clock clock;
 
   @MockBean
   private BlacklistedSiteService blsService;
-
-  @MockBean
-  private ClientRegistrationProperties clientRegProps;
 
   @SpyBean
   private AccountUtils accountUtils;
@@ -142,7 +138,7 @@ public class ClientRegistrationServiceTests {
   private IamAccount adminAccount;
 
   @BeforeEach
-  public void beforeEach() {
+  void beforeEach() {
 
     userAuth = Mockito.mock(UsernamePasswordAuthenticationToken.class);
     when(userAuth.getName()).thenReturn("test");
@@ -175,19 +171,12 @@ public class ClientRegistrationServiceTests {
     when(ratAuth.getOAuth2Request()).thenReturn(oauthRequest);
     when(ratAuth.getDetails()).thenReturn(oauthDetails);
 
-    when(clientRegProps.getAllowFor()).thenReturn(ClientRegistrationAuthorizationPolicy.ANYONE);
+    registrationProperties.setAllowFor(ClientRegistrationAuthorizationPolicy.ANYONE);
 
-    when(clientRegProps.getClientDefaults()).thenReturn(new ClientDefaultsProperties());
-
-    SystemScope ss = new SystemScope("storage.read:/");
-    ss.setDefaultScope(false);
-    ss.setRestricted(true);
-
-    scopeService.save(ss);
   }
 
   @Test
-  public void testRegistrationRequestRequiresClientName() {
+  void testRegistrationRequestRequiresClientName() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -202,7 +191,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testNoRedirectUriWithAuthzCodeValidation() {
+  void testNoRedirectUriWithAuthzCodeValidation() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -219,7 +208,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testScopeValidation() {
+  void testScopeValidation() {
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
@@ -234,7 +223,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRedirectUrisValidation() {
+  void testRedirectUrisValidation() {
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -248,7 +237,6 @@ public class ClientRegistrationServiceTests {
 
     assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
 
-
     exception = Assertions.assertThrows(ConstraintViolationException.class, () -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
       request.setClientName("example");
@@ -259,7 +247,6 @@ public class ClientRegistrationServiceTests {
     });
 
     assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
-
 
     Assertions.assertDoesNotThrow(() -> {
       RegisteredClientDTO request = new RegisteredClientDTO();
@@ -276,14 +263,10 @@ public class ClientRegistrationServiceTests {
       request.setRedirectUris(Sets.newHashSet("edu.kit.data.oidc-agent:/redirect"));
       service.registerClient(request, userAuth);
     });
-
-
-
   }
 
-
   @Test
-  public void testBlacklistedUriValidation() {
+  void testBlacklistedUriValidation() {
 
     when(blsService.isBlacklisted("https://deny.example/cb")).thenReturn(true);
 
@@ -302,7 +285,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAllowedGrantTypeChecks() throws ParseException {
+  void testAllowedGrantTypeChecks() throws ParseException {
 
     // ask exchange grant type as user
     InvalidClientRegistrationRequest exception =
@@ -318,7 +301,6 @@ public class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
 
-    // ask exchange grant type as anonymous
     exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
           RegisteredClientDTO request = new RegisteredClientDTO();
@@ -415,7 +397,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesAreFilteredOut() {
+  void testRestrictedScopesAreFilteredOut() {
 
     scopeService.getRestricted().forEach(ss -> {
       final String restrictedScope = ss.getValue();
@@ -439,7 +421,6 @@ public class ClientRegistrationServiceTests {
       assertThat(client.getScope(), hasItem("openid"));
       assertThat(client.getScope(), not(hasItem(restrictedScope)));
 
-
       response.getScope().add(restrictedScope);
       try {
         response = service.updateClient(response.getClientId(), response, userAuth);
@@ -452,7 +433,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesAreFilteredOutWithMatchers() throws ParseException {
+  void testRestrictedScopesAreFilteredOutWithMatchers() throws ParseException {
 
     String restrictedScope1 = "storage.read:/whatever";
     String restrictedScope2 = "storage.read:/";
@@ -477,7 +458,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testReservedScopesAreFilteredOut() {
+  void testReservedScopesAreFilteredOut() {
 
     scopeService.getReserved().forEach(ss -> {
       final String reservedScope = ss.getValue();
@@ -509,7 +490,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAdminCanRegisterClientWithRestrictedScope() {
+  void testAdminCanRegisterClientWithRestrictedScope() {
     scopeService.getRestricted().forEach(ss -> {
       final String restrictedScope = ss.getValue();
       RegisteredClientDTO request = new RegisteredClientDTO();
@@ -539,7 +520,243 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAnonymousRequestYeldsRegistrationAccessToken() throws ParseException {
+  void testNonAdminRegisterClientWithCustomScopeWithAdminOnlyEnabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(true);
+    assertTrue(registrationProperties.isAdminOnlyCustomScopes());
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setScope(Sets.newHashSet("customscope", "openid"));
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    assertFalse(defaultScopes.contains("customscope"));
+    assertTrue(defaultScopes.contains("openid"));
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, userAuth);
+      assertThat(response.getScope(), hasItem("openid"));
+      assertThat(response.getScope(), hasSize(1));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testNonAdminRegisterClientWithCustomScopeAdminOnlyDisabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(false);
+    assertFalse(registrationProperties.isAdminOnlyCustomScopes());
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setScope(Sets.newHashSet("customscope", "openid"));
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    assertFalse(defaultScopes.contains("customscope"));
+    assertTrue(defaultScopes.contains("openid"));
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, userAuth);
+      assertThat(response.getScope(), hasItem("openid"));
+      assertThat(response.getScope(), hasSize(2));
+      assertThat(response.getScope(), hasItem("customscope"));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testAdminRegisterClientWithCustomScopeAdminOnlyEnabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(true);
+    assertTrue(registrationProperties.isAdminOnlyCustomScopes());
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    assertFalse(defaultScopes.contains("customscope"));
+    assertTrue(defaultScopes.contains("openid"));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setScope(Sets.newHashSet("customscope", "openid"));
+    // maybe assert that customscope is not in system scopes
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, adminAuth);
+      assertThat(response.getScope(), hasItem("openid"));
+      assertThat(response.getScope(), hasSize(2));
+      assertThat(response.getScope(), hasItem("customscope"));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testAdminRegisterClientWithCustomScopeAdminOnlyDisabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(false);
+    assertFalse(registrationProperties.isAdminOnlyCustomScopes());
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    assertFalse(defaultScopes.contains("customscope"));
+    assertTrue(defaultScopes.contains("openid"));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    request.setScope(Sets.newHashSet("customscope", "openid"));
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, adminAuth);
+      assertThat(response.getScope(), hasItem("openid"));
+      assertThat(response.getScope(), hasSize(2));
+      assertThat(response.getScope(), hasItem("customscope"));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testNonAdminUpdateClientWithCustomScopeWithAdminOnlyEnabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(true);
+    assertTrue(registrationProperties.isAdminOnlyCustomScopes());
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> scopes = Sets.newHashSet("openid");
+    assertTrue(defaultScopes.contains("openid"));
+    request.setScope(scopes);
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, userAuth);
+      RegisteredClientDTO updateReq = response;
+      scopes.add("customscope");
+      assertFalse(defaultScopes.contains("customscope"));
+      updateReq.setScope(scopes);
+      RegisteredClientDTO updateResponse =
+          service.updateClient(response.getClientId(), updateReq, userAuth);
+
+      assertThat(updateResponse.getScope(), hasItem("openid"));
+      assertThat(updateResponse.getScope(), hasSize(1));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+
+  }
+
+  @Test
+  void testNonAdminUpdateClientWithCustomScopeAdminOnlyDisabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(false);
+    assertFalse(registrationProperties.isAdminOnlyCustomScopes());
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    Set<String> scopes = Sets.newHashSet("openid");
+    assertTrue(defaultScopes.contains("openid"));
+    request.setScope(scopes);
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, userAuth);
+      RegisteredClientDTO updateReq = response;
+      scopes.add("customscope");
+      assertFalse(defaultScopes.contains("customscope"));
+      updateReq.setScope(scopes);
+      RegisteredClientDTO updateResponse =
+          service.updateClient(response.getClientId(), updateReq, userAuth);
+
+      assertThat(updateResponse.getScope(), hasItem("openid"));
+      assertThat(updateResponse.getScope(), hasItem("customscope"));
+      assertThat(updateResponse.getScope(), hasSize(2));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testAdminUpdateClientWithCustomScopeAdminOnlyEnabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(true);
+    assertTrue(registrationProperties.isAdminOnlyCustomScopes());
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    Set<String> scopes = Sets.newHashSet("openid");
+    assertTrue(defaultScopes.contains("openid"));
+    request.setScope(scopes);
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, adminAuth);
+      RegisteredClientDTO updateReq = response;
+      scopes.add("customscope");
+      assertFalse(defaultScopes.contains("customscope"));
+      updateReq.setScope(scopes);
+      RegisteredClientDTO updateResponse =
+          service.updateClient(response.getClientId(), updateReq, adminAuth);
+
+      assertThat(updateResponse.getScope(), hasItem("openid"));
+      assertThat(updateResponse.getScope(), hasItem("customscope"));
+      assertThat(updateResponse.getScope(), hasSize(2));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testAdminUpdateClientWithCustomScopeAdminOnlyDisabled() {
+    assertNotNull(registrationProperties);
+    registrationProperties.setAdminOnlyCustomScopes(false);
+    assertFalse(registrationProperties.isAdminOnlyCustomScopes());
+    Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
+    assertFalse(defaultScopes.contains("customscope"));
+
+    RegisteredClientDTO request = new RegisteredClientDTO();
+    request.setClientName("example");
+    request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
+    request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+    Set<String> scopes = Sets.newHashSet("openid");
+    assertTrue(defaultScopes.contains("openid"));
+    request.setScope(scopes);
+
+    RegisteredClientDTO response = null;
+    try {
+      response = service.registerClient(request, adminAuth);
+      RegisteredClientDTO updateReq = response;
+      scopes.add("customscope");
+      assertFalse(defaultScopes.contains("customscope"));
+      updateReq.setScope(scopes);
+      RegisteredClientDTO updateResponse =
+          service.updateClient(response.getClientId(), updateReq, adminAuth);
+
+      assertThat(updateResponse.getScope(), hasItem("openid"));
+      assertThat(updateResponse.getScope(), hasItem("customscope"));
+      assertThat(updateResponse.getScope(), hasSize(2));
+    } catch (ParseException e) {
+      fail("Unexpected JSON mapping problem");
+    }
+  }
+
+  @Test
+  void testAnonymousRequestYeldsRegistrationAccessToken() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -557,7 +774,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testSuccesfullRegistration() throws ParseException {
+  void testSuccesfullRegistration() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -577,7 +794,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void noScopeYeldsDefaultScopes() throws ParseException {
+  void noScopeYeldsDefaultScopes() throws ParseException {
 
     Set<String> defaultScopes = scopeService.toStrings(scopeService.getDefaults());
 
@@ -591,9 +808,9 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRegisteredUserAuthzPolicy() {
+  void testRegisteredUserAuthzPolicy() {
 
-    when(clientRegProps.getAllowFor()).thenReturn(REGISTERED_USERS);
+    registrationProperties.setAllowFor(REGISTERED_USERS);
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
@@ -614,9 +831,9 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAdministratorsAuthzPolicy() {
+  void testAdministratorsAuthzPolicy() {
 
-    when(clientRegProps.getAllowFor()).thenReturn(ADMINISTRATORS);
+    registrationProperties.setAllowFor(ADMINISTRATORS);
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
@@ -641,7 +858,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAuthzComesBeforeLookupForRetrieveClient() {
+  void testAuthzComesBeforeLookupForRetrieveClient() {
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -658,7 +875,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRegisterAndRetrieveWorksForUser() throws ParseException {
+  void testRegisterAndRetrieveWorksForUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -680,9 +897,8 @@ public class ClientRegistrationServiceTests {
 
   }
 
-
   @Test
-  public void testRegisterAndRetrieveWorksForAnonymousUser() throws ParseException {
+  void testRegisterAndRetrieveWorksForAnonymousUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -707,9 +923,8 @@ public class ClientRegistrationServiceTests {
 
   }
 
-
   @Test
-  public void testRatClientIdAndScopesAreChecked() throws ParseException {
+  void testRatClientIdAndScopesAreChecked() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -736,12 +951,10 @@ public class ClientRegistrationServiceTests {
     });
 
     assertThat(exception.getMessage(), containsString("Invalid registration access token"));
-
   }
 
-
   @Test
-  public void testSuccesfullDelete() throws ParseException {
+  void testSuccesfullDelete() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -766,7 +979,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testAccountAuthzForClientManagement() throws ParseException {
+  void testAccountAuthzForClientManagement() throws ParseException {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
@@ -786,7 +999,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testGranTypesAreCheckedOnUpdate() throws ParseException {
+  void testGranTypesAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -814,15 +1027,16 @@ public class ClientRegistrationServiceTests {
     RegisteredClientDTO updateReq = respClient;
     updateReq.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS,
         AuthorizationGrantType.TOKEN_EXCHANGE));
-    RegisteredClientDTO updateResponse = service.updateClient(respClient.getClientId(), updateReq, adminAuth);
+    RegisteredClientDTO updateResponse =
+        service.updateClient(respClient.getClientId(), updateReq, adminAuth);
 
-    assertThat(updateResponse.getGrantTypes(), hasItems(AuthorizationGrantType.CLIENT_CREDENTIALS,
-        AuthorizationGrantType.TOKEN_EXCHANGE));
+    assertThat(updateResponse.getGrantTypes(),
+        hasItems(AuthorizationGrantType.CLIENT_CREDENTIALS, AuthorizationGrantType.TOKEN_EXCHANGE));
 
   }
 
   @Test
-  public void testRedirectUrisAreCheckedOnUpdate() throws ParseException {
+  void testRedirectUrisAreCheckedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -842,16 +1056,14 @@ public class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString("code requires a valid redirect uri"));
   }
 
-
   @Test
-  public void testRatIsUpdated() throws ParseException {
+  void testRatIsUpdated() throws ParseException {
 
     TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
     props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
 
-    when(clientRegProps.getClientDefaults()).thenReturn(props);
-
+    registrationProperties.setClientDefaults(props);
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -880,7 +1092,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
+  void testPrivilegedGrantTypesArePreservedOnUpdate() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -912,7 +1124,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testPrivilegedGrantTypesAreCheckedOnUpdateForAnonymousUser() throws ParseException {
+  void testPrivilegedGrantTypesAreCheckedOnUpdateForAnonymousUser() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
@@ -938,7 +1150,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testRestrictedScopesArePreserved() throws ParseException {
+  void testRestrictedScopesArePreserved() throws ParseException {
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("restricted-scopes-preserved");
@@ -965,15 +1177,14 @@ public class ClientRegistrationServiceTests {
         hasItems("scim:read", "storage.read:/example", "entitlements"));
   }
 
-
   @Test
-  public void testRedeemClient() throws ParseException {
+  void testRedeemClient() throws ParseException {
 
     TestClock testClock = (TestClock) clock;
     ClientDefaultsProperties props = new ClientDefaultsProperties();
     props.setDefaultRegistrationAccessTokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(1));
 
-    when(clientRegProps.getClientDefaults()).thenReturn(props);
+    registrationProperties.setClientDefaults(props);
 
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("redeem-client-test");
@@ -1022,7 +1233,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testClientWithJwkValue() throws ParseException {
+  void testClientWithJwkValue() throws ParseException {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
     final String VALID_JSON_VALUE =
@@ -1052,7 +1263,7 @@ public class ClientRegistrationServiceTests {
   }
 
   @Test
-  public void testClientWithJwksUri() throws ParseException {
+  void testClientWithJwksUri() throws ParseException {
 
     final String NOT_A_VALID_URI = "This is not a valid URI";
     final String VALID_URI = "https://host.domain.com/this/is/my/public-key";

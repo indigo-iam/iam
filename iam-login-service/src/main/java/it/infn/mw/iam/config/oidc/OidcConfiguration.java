@@ -35,7 +35,6 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -48,18 +47,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.authn.EnforceAupSignatureSuccessHandler;
+import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.ExternalAuthenticationFailureHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationSuccessHandler;
 import it.infn.mw.iam.authn.InactiveAccountAuthenticationHander;
-import it.infn.mw.iam.authn.RootIsDashboardSuccessHandler;
 import it.infn.mw.iam.authn.common.config.AuthenticationValidator;
 import it.infn.mw.iam.authn.oidc.DefaultOidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.DefaultRestTemplateFactory;
@@ -68,28 +64,17 @@ import it.infn.mw.iam.authn.oidc.OidcClientFilter;
 import it.infn.mw.iam.authn.oidc.OidcExceptionMessageHelper;
 import it.infn.mw.iam.authn.oidc.OidcTokenRequestor;
 import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
-import it.infn.mw.iam.authn.oidc.service.DefaultOidcUserDetailsService;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
-import it.infn.mw.iam.authn.oidc.service.OidcUserDetailsService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
 public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
-
-  @Autowired
-  private IamAccountRepository accountRepo;
-
-  @Autowired
-  private AUPSignatureCheckService aupSignatureCheckService;
-
-  @Autowired
-  private AccountUtils accountUtils;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -149,15 +134,9 @@ public class OidcConfiguration {
   }
 
   @Bean(name = "OIDCExternalAuthenticationSuccessHandler")
-  AuthenticationSuccessHandler successHandler() {
+  AuthenticationSuccessHandler successHandler(AuthenticationSuccessHandlerHelper helper) {
 
-    RootIsDashboardSuccessHandler sa =
-        new RootIsDashboardSuccessHandler(iamBaseUrl, new HttpSessionRequestCache());
-
-    EnforceAupSignatureSuccessHandler successHandler = new EnforceAupSignatureSuccessHandler(sa,
-        aupSignatureCheckService, accountUtils, accountRepo);
-
-    return new ExternalAuthenticationSuccessHandler(successHandler, "/");
+    return new ExternalAuthenticationSuccessHandler("/", helper);
   }
 
   @Bean(name = "OIDCAuthenticationManager")
@@ -168,12 +147,14 @@ public class OidcConfiguration {
 
   @Bean
   OIDCAuthenticationProvider openIdConnectAuthenticationProvider(Clock clock,
-      OidcUserDetailsService userDetailService, UserInfoFetcher userInfoFetcher,
-      AuthenticationValidator<OIDCAuthenticationToken> validator, SessionTimeoutHelper timeoutHelper) {
+      UserInfoFetcher userInfoFetcher, AuthenticationValidator<OIDCAuthenticationToken> validator,
+      SessionTimeoutHelper timeoutHelper, IamAccountRepository accountRepo,
+      InactiveAccountAuthenticationHander inactiveAccountHandler,
+      IamTotpMfaRepository totpMfaRepository) {
 
-    OidcAuthenticationProvider provider =
-        new OidcAuthenticationProvider(userDetailService, validator, timeoutHelper);
-    
+    OidcAuthenticationProvider provider = new OidcAuthenticationProvider(validator, timeoutHelper,
+        accountRepo, inactiveAccountHandler, totpMfaRepository);
+
     provider.setUserInfoFetcher(userInfoFetcher);
 
     return provider;
@@ -243,20 +224,12 @@ public class OidcConfiguration {
   }
 
   @Bean
-  OidcUserDetailsService userDetailService(IamAccountRepository repo,
-      InactiveAccountAuthenticationHander handler) {
-
-    return new DefaultOidcUserDetailsService(repo, handler);
-  }
-
-  @Bean
   UserInfoFetcher userInfoFetcher() {
     return new UserInfoFetcher();
   }
 
   @Bean
-  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory,
-      ObjectMapper mapper) {
+  OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
   }
 }

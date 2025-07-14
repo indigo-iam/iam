@@ -211,7 +211,8 @@ public class DefaultAccountLinkingService
 
 
   @Override
-  public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject) {
+  public void unlinkX509Certificate(Principal authenticatedUser, String certificateSubject,
+      String certificateIssuer) {
     IamAccount userAccount = findAccount(authenticatedUser);
 
     boolean removed = false;
@@ -225,16 +226,18 @@ public class DefaultAccountLinkingService
         break;
       }
     }
+    
     removed = certificates.remove(certificate);
 
     if (removed) {
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
-      eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount,
-          String.format("User '%s' unlinked certificate with subject '%s' from his/her membership",
-              userAccount.getUsername(), certificateSubject),
-          certificateSubject));
+
+      eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount, String.format(
+          "User '%s' unlinked certificate with subject '%s' and issuer '%s' from his/her membership",
+          userAccount.getUsername(), certificateSubject, certificateIssuer), certificateSubject,
+          certificateIssuer));
 
       if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
           && (notificationProperties.getAdminNotificationPolicy()
@@ -244,8 +247,6 @@ public class DefaultAccountLinkingService
         notificationFactory.createUnlinkedCertificateMessage(userAccount, certificate);
       }
     }
-
-
   }
 
   @Override
@@ -272,7 +273,5 @@ public class DefaultAccountLinkingService
 
     userAccount.touch();
     iamAccountRepository.save(userAccount);
-
   }
-
 }

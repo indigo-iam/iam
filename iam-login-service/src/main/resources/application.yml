@@ -126,6 +126,10 @@ iam:
   privacyPolicy:
     url: ${IAM_PRIVACY_POLICY_URL:}
     text: ${IAM_PRIVACY_POLICY_TEXT:Privacy policy}
+
+  support:
+    url: ${IAM_SUPPORT_URL:}
+    text: ${IAM_SUPPORT_TEXT:Support}
   
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
@@ -155,6 +159,11 @@ iam:
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
     saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
     add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
+    fields:
+      affiliation:
+        read-only: false
+        external-auth-attribute: affiliation
+        field-behaviour: optional
     
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
@@ -228,6 +237,7 @@ task:
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
+  admin-only-custom-scopes: ${IAM_CLIENT_ADMIN_ONLY_CUSTOM_SCOPES:false}
   client-defaults:
     default-access-token-validity-seconds: ${IAM_DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
     default-device-code-validity-seconds: ${IAM_DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}

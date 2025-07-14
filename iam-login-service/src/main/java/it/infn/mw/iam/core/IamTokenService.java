@@ -55,14 +55,13 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   private final IamProperties iamProperties;
   private final ScopeFilter scopeFilter;
 
-
-  public IamTokenService(IamOAuthAccessTokenRepository atRepo,
-      IamOAuthRefreshTokenRepository rtRepo, ApplicationEventPublisher publisher,
+  public IamTokenService(IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ApplicationEventPublisher eventPublisher,
       IamProperties iamProperties, ScopeFilter scopeFilter) {
 
-    this.accessTokenRepo = atRepo;
-    this.refreshTokenRepo = rtRepo;
-    this.eventPublisher = publisher;
+    this.accessTokenRepo = accessTokenRepo;
+    this.refreshTokenRepo = refreshTokenRepo;
+    this.eventPublisher = eventPublisher;
     this.iamProperties = iamProperties;
     this.scopeFilter = scopeFilter;
   }

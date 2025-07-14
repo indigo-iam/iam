@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.authn.oidc.service;
+package it.infn.mw.iam.api.scim.exception;
 
-import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-@FunctionalInterface
-public interface OidcUserDetailsService {
+public class ScimBulkPayloadSizeExceeded extends ScimException {
 
-  Object loadUserByOIDC(OIDCAuthenticationToken token);
+  private static final long serialVersionUID = 1L;
 
+  public ScimBulkPayloadSizeExceeded(String message) {
+    super(message);
+  }
 
 }

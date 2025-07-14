@@ -52,8 +52,13 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import it.infn.mw.iam.authn.AbstractExternalAuthenticationToken;
+import it.infn.mw.iam.authn.multi_factor_authentication.IamAuthenticationMethodReference;
+import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.core.error.InvalidResourceError;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
@@ -108,14 +113,45 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       Set<String> requestedScopes =
           OAuth2Utils.parseParameterList(inputParams.get(OAuth2Utils.SCOPE));
 
+      // scope are filtered also here to avoid authorizing them on the consent page
       inputParams.put(OAuth2Utils.SCOPE,
           joiner.join(scopeFilter.filterScopes(requestedScopes, authn)));
     }
 
     validateAndUpdateAudienceRequest(inputParams);
 
-    return super.createAuthorizationRequest(inputParams);
+    AuthorizationRequest authzRequest = super.createAuthorizationRequest(inputParams);
 
+    Set<IamAuthenticationMethodReference> amrSet;
+    if (authn instanceof ExtendedAuthenticationToken extendedToken) {
+      amrSet = extendedToken.getAuthenticationMethodReferences();
+      processToken(amrSet, authzRequest);
+    } else if (authn instanceof AbstractExternalAuthenticationToken<?> externalToken) {
+      amrSet = externalToken.getAuthenticationMethodReferences();
+      processToken(amrSet, authzRequest);
+    }
+
+    return authzRequest;
+  }
+
+  private void processToken(Set<IamAuthenticationMethodReference> amrSet,
+      AuthorizationRequest authzRequest) {
+    try {
+      authzRequest.getExtensions().put("amr", parseAuthenticationMethodReferences(amrSet));
+    } catch (JsonProcessingException e) {
+      LOG.error("Failed to convert amr set to JSON array", e);
+    }
+  }
+
+  private String parseAuthenticationMethodReferences(Set<IamAuthenticationMethodReference> amrSet)
+      throws JsonProcessingException {
+    List<String> amrList = new ArrayList<>();
+    for (IamAuthenticationMethodReference amr : amrSet) {
+      amrList.add(amr.getName());
+    }
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(amrList);
   }
 
   private void handlePasswordGrantAuthenticationTimestamp(OAuth2Request request) {
@@ -145,8 +181,6 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
   public TokenRequest createTokenRequest(Map<String, String> requestParameters,
       ClientDetails authenticatedClient) {
 
-    Authentication authn = SecurityContextHolder.getContext().getAuthentication();
-
     String clientId = requestParameters.get(OAuth2Utils.CLIENT_ID);
     if (clientId == null) {
       clientId = authenticatedClient.getClientId();
@@ -171,7 +205,7 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
     }
 
     return new TokenRequest(updatedTokenRequestParameters(requestParameters, authenticatedClient),
-        clientId, scopeFilter.filterScopes(scopes, authn), grantType);
+        clientId, scopes, grantType);
   }
 
   private Map<String, String> updatedTokenRequestParameters(

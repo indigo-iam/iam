@@ -75,6 +75,10 @@ function AuthenticatorAppService($http, $httpParamSerializerJQLike) {
 	}
 
 	function handleError(res) {
+		if (res.status == 403) {
+			console.info("MFA settings error");
+			return null;
+		}
 		return $q.reject(res);
 	}
 

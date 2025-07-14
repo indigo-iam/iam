@@ -25,7 +25,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -37,7 +37,7 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
   private final KeycloakGroupHelper groupHelper;
 
   public KeycloakIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
       KeycloakGroupHelper groupHelper, IamProperties properties) {
     super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
     this.groupHelper = groupHelper;
@@ -59,8 +59,9 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     // Drop group claims as set by IAM JWT profile
     idClaims.claim("groups", null);
 
-    includeLabelsInIdToken(idClaims, account);
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
 
+    includeLabelsInIdToken(idClaims, account);
   }
 
 }
