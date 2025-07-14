@@ -310,7 +310,7 @@ function RegistrationController(
 			username: '',
 			email: '',
 			notes: '',
-			registerCertificate: true
+			registerCertificate: true,
 			affiliation: '',
 		};
 	}

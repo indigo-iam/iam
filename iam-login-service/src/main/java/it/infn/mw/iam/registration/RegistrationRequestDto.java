@@ -117,7 +117,8 @@ public class RegistrationRequestDto {
       @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
       @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
-      @JsonProperty("affiliation") String affiliation, @JsonProperty("labels") List<LabelDTO> labels) {
+      @JsonProperty("affiliation") String affiliation,
+      @JsonProperty("labels") List<LabelDTO> labels) {
     super();
     this.registerCertificate = registerCertificate;
     this.username = username;
@@ -261,6 +262,7 @@ public class RegistrationRequestDto {
 
   public void setRegisterCertificate(String registerCertificate) {
     this.registerCertificate = registerCertificate;
+  }
 
   public String getAffiliation() {
     return affiliation;
