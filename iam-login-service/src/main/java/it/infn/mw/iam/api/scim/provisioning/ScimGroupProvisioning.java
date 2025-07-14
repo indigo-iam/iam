@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 
 import javax.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -63,6 +65,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   private final IamAccountService accountService;
   private final GroupConverter converter;
   private final GroupRequestsService groupRequestsService;
+
+  public static final Logger log = LoggerFactory.getLogger(ScimGroupProvisioning.class);
 
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
@@ -233,7 +237,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
 
   @Override
   public ScimListResponse<ScimGroup> list(final ScimPageRequest params, String filter) {
-    throw new UnsupportedOperationException("Unsupported filtered list");
+    log.warn("Unsupported filtered list, reverting to default and ignoring filter");
+    return list(params);
   }
 
   private Supplier<ScimResourceNotFoundException> noGroupMappedToId(String id) {
