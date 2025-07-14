@@ -133,7 +133,7 @@ public class RegistrationApiController {
   @PostMapping(value = "/registration/reject/{uuid}")
   public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
       @RequestParam(required = false) String motivation,
-      @RequestParam(required = false) boolean doNotSendEmail) {
+      @RequestParam(required = false) Boolean doNotSendEmail) {
 
     return service.rejectRequest(uuid, Optional.ofNullable(motivation), doNotSendEmail);
   }
