@@ -300,7 +300,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                         .setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADMINS);
                 notificationProperties.setCertificateUpdate(true);
 
-                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT);
+                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
 
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
@@ -341,7 +341,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
 
 
-                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT);
+                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
@@ -382,7 +382,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 notificationProperties.setCertificateUpdate(false);
 
 
-                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT);
+                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
 
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
@@ -402,7 +402,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 notificationProperties.setCertificateUpdate(true);
 
 
-                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT);
+                linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
 
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
