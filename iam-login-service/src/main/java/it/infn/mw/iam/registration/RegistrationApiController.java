@@ -135,7 +135,7 @@ public class RegistrationApiController {
       @RequestParam(required = false) String motivation,
       @RequestParam(required = false) Boolean doNotSendEmail) {
 
-    return service.rejectRequest(uuid, Optional.ofNullable(motivation), doNotSendEmail);
+    return service.rejectRequest(uuid, Optional.ofNullable(motivation), Boolean.TRUE.equals(doNotSendEmail));
   }
 
   @GetMapping(value = "/registration/verify/{token}")
