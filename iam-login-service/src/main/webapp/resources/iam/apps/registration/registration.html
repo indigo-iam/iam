@@ -44,13 +44,12 @@
 		</p>
 
 
-		<!-- This one I get  -->
+		<!-- In case certificate is REQUIRED, but none were provided  -->
 		<p ng-if="!iamX509Cred && iamX509Required === 'REQUIRED'"
 			style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
 			A certificate is required upon <br> registration, but none were presented.
 			Please link a certificate to your<br> browser.
 		</p>
-
 
 		<!-- In case certificate is REQUIRED, but it is already linked  -->
 		<div id="x509-authn-info"

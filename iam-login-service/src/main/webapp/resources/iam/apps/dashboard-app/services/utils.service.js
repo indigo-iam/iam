@@ -16,7 +16,7 @@
 (function () {
 
     'use strict';
-    
+
     angular.module('dashboardApp').factory("Utils", Utils);
 
     Utils.$inject = [];

@@ -95,7 +95,6 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -183,9 +182,8 @@ public class IamConfig {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
-    KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
-            scopeFilter);
+    KeycloakProfileAccessTokenBuilder atBuilder = new KeycloakProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
@@ -228,8 +226,8 @@ public class IamConfig {
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
       IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
-    JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
+    JWTAccessTokenBuilder accessTokenBuilder = new WLCGProfileAccessTokenBuilder(props,
+        attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
         claimTranslationService, claimValueHelper, groupHelper, props);
