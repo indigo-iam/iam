@@ -163,8 +163,8 @@ public class ScimUserProvisioningPatchReplaceTests extends ScimUserTestSupport {
   public void testUserCanNotChangeAffiliation() throws Exception {
     ScimUser updates = ScimUser.builder().affiliation("Test-Affiliation").build();
 
-    scimUtils.patchUser(testUser.getId(), replace, updates, HttpStatus.FORBIDDEN)
-        .andExpect(status().isForbidden());
+    scimUtils.patchUser(testUser.getId(), replace, updates, HttpStatus.BAD_REQUEST)
+        .andExpect(status().isBadRequest());
   }
 
   @Test

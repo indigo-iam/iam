@@ -33,18 +33,24 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWO
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_GROUP_MEMBERSHIP;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
@@ -55,6 +61,7 @@ import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
+import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
@@ -71,12 +78,15 @@ import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
 import it.infn.mw.iam.api.scim.updater.factory.DefaultAccountUpdaterFactory;
 import it.infn.mw.iam.audit.events.account.AccountReplacedEvent;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.EditableFields;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -85,15 +95,16 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
+      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
+      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
+      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
+      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
+      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
+      ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
-      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
-          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
-          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
-          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
-          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
-          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
-
+  protected static final EnumSet<UpdaterType> ACCOUNT_LINKING_UPDATERS = EnumSet.of(ACCOUNT_REMOVE_OIDC_ID,
+      ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_REMOVE_GROUP_MEMBERSHIP);
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
@@ -101,6 +112,7 @@ public class ScimUserProvisioning
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
+  private final IamProperties iamProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -110,7 +122,7 @@ public class ScimUserProvisioning
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties,
-      IamGroupRepository groupRepository) {
+      IamGroupRepository groupRepository, IamProperties iamProperties) {
 
     this.notificationProperties = notificationProperties;
     this.accountService = accountService;
@@ -120,6 +132,7 @@ public class ScimUserProvisioning
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
         x509CertificateConverter, usernameValidator, groupRepository);
+    this.iamProperties = iamProperties;    
   }
 
 
@@ -564,7 +577,75 @@ public class ScimUserProvisioning
   public void update(final String id, final List<ScimPatchOperation<ScimUser>> operations) {
 
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
+    Optional<IamAccount> currentUserAccount = getCurrentUserAccount();  
+    if (!currentUserAccount.isPresent() || isAdmin(currentUserAccount.get())) {
+      operations.forEach(op -> executePatchOperation(account, op));
+    } else {
+      operations.forEach(op -> executePatchOperationByUser(account, op));
+    }
+  }
 
-    operations.forEach(op -> executePatchOperation(account, op));
+  private boolean isAdmin(IamAccount userAccount) {
+    return userAccount.getAuthorities().stream()
+        .anyMatch(IamAuthority::isAdminAuthority);
+  }
+
+  private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
+    Set<UpdaterType> enabledUpdaters = getEnabledUpdaters();
+
+    List<AccountUpdater> updaters = updatersFactory.getUpdatersForPatchOperation(account, op);
+
+    for (AccountUpdater updater : updaters) {
+      if (!enabledUpdaters.contains(updater.getType())) {
+        throw new ScimPatchOperationNotSupported(updater.getType().getDescription() + " not supported");
+      }
+    }
+
+    List<AccountUpdater> updatesToPublish = updaters.stream()
+        .filter(AccountUpdater::update)
+        .toList();
+
+    if (!updatesToPublish.isEmpty()) {
+      account.touch();
+      accountRepository.save(account);
+      updatesToPublish.forEach(u -> u.publishUpdateEvent(this, eventPublisher));
+    }
+  }
+
+  public Set<UpdaterType> getEnabledUpdaters() {
+    EnumSet<UpdaterType> enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
+
+    enabledUpdaters.addAll(ACCOUNT_LINKING_UPDATERS);
+
+    iamProperties.getUserProfile().getEditableFields().forEach(e -> {
+      if (EditableFields.NAME.equals(e)) {
+        enabledUpdaters.add(ACCOUNT_REPLACE_GIVEN_NAME);
+      } else if (EditableFields.SURNAME.equals(e)) {
+        enabledUpdaters.add(ACCOUNT_REPLACE_FAMILY_NAME);
+      } else if (EditableFields.PICTURE.equals(e)) {
+        enabledUpdaters.add(ACCOUNT_REPLACE_PICTURE);
+        enabledUpdaters.add(ACCOUNT_REMOVE_PICTURE);
+      } else if (EditableFields.EMAIL.equals(e)) {
+        enabledUpdaters.add(ACCOUNT_REPLACE_EMAIL);
+      }
+    });
+
+    return enabledUpdaters;
+  }
+
+  @SuppressWarnings("deprecation")
+  private Optional<IamAccount> getCurrentUserAccount() throws ScimException, ScimResourceNotFoundException {
+
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null) {
+      return Optional.empty();
+    }
+    if (auth instanceof OAuth2Authentication oauth) {
+      auth = oauth.getUserAuthentication();
+      if (auth == null) {
+        return Optional.empty();
+      }
+    }
+    return accountRepository.findByUsername(auth.getName());
   }
 }
