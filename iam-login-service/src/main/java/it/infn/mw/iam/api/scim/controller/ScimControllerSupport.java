@@ -28,6 +28,8 @@ public class ScimControllerSupport {
     return buildPageRequest(count, startIndex, SCIM_USER_MAX_PAGE_SIZE);
   }
 
+
+
   protected ScimPageRequest buildGroupPageRequest(Integer count, Integer startIndex) {
     return buildPageRequest(count, startIndex, SCIM_GROUP_MAX_PAGE_SIZE);
   }
