@@ -19,9 +19,6 @@ import static java.lang.Boolean.FALSE;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import javax.validation.constraints.Min;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -29,23 +26,13 @@ import org.springframework.validation.annotation.Validated;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.config.JitProvisioningProperties;
-
 @Validated
 @ConfigurationProperties(prefix = "oidc.jit-account-provisioning")
-public class IamOidcJITAccountProvisioningProperties implements JitProvisioningProperties {
+public class IamOidcJITAccountProvisioningProperties {
 
   private boolean enabled = FALSE;
   private String trustedIdps = "all";
-  private boolean cleanupTaskEnabled = FALSE;
 
-  @Min(5)
-  private long cleanupTaskPeriodSec = TimeUnit.DAYS.toSeconds(1);
-
-  @Min(1)
-  private int inactiveAccountLifetimeDays = 15;
-
-  @Override
   public Boolean getEnabled() {
     return enabled;
   }
@@ -75,33 +62,6 @@ public class IamOidcJITAccountProvisioningProperties implements JitProvisioningP
     }
 
     return Optional.of(trustedIdpIds);
-  }
-
-  @Override
-  public Boolean getCleanupTaskEnabled() {
-    return cleanupTaskEnabled;
-  }
-
-  public void setCleanupTaskEnabled(boolean cleanupTaskEnabled) {
-    this.cleanupTaskEnabled = cleanupTaskEnabled;
-  }
-
-  @Override
-  public long getCleanupTaskPeriodSec() {
-    return cleanupTaskPeriodSec;
-  }
-
-  public void setCleanupTaskPeriodSec(long cleanupTaskPeriodSec) {
-    this.cleanupTaskPeriodSec = cleanupTaskPeriodSec;
-  }
-
-  @Override
-  public Integer getInactiveAccountLifetimeDays() {
-    return inactiveAccountLifetimeDays;
-  }
-
-  public void setInactiveAccountLifetimeDays(int inactiveAccountLifetimeDays) {
-    this.inactiveAccountLifetimeDays = inactiveAccountLifetimeDays;
   }
 }
 

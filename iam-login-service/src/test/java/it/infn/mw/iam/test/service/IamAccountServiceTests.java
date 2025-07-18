@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.service;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -41,8 +40,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
-import com.google.common.collect.Sets;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -143,7 +140,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Mock
   private IamProperties iamProperties;
 
-  private IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
+  private IamProperties.RegistrationProperties registrationProperties =
+      new IamProperties.RegistrationProperties();
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -151,8 +149,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Before
   public void setup() {
 
-    when(accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(any()))
-      .thenReturn(emptyList());
     when(accountRepo.findByCertificateSubject(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySshKeyValue(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
@@ -161,7 +157,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(accountRepo.findByEmail(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepo.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(TEST_ACCOUNT));
-    when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID)).thenThrow(EmailAlreadyBoundException.class);
+    when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID))
+      .thenThrow(EmailAlreadyBoundException.class);
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
@@ -169,7 +166,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
         passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory,
-        
         iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo, iamTotpMfaRepository);
   }
 
@@ -806,29 +802,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     verify(eventPublisher, times(1)).publishEvent(any());
   }
 
-  @Test(expected = NullPointerException.class)
-  public void testDeleteInactiveProvisionedAccountFailsWithNullTimestamp() {
-    try {
-      accountService.deleteInactiveProvisionedUsersSinceTime(null);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), equalTo("null timestamp"));
-      throw e;
-    }
-  }
-
-  @Test
-  public void testDeleteInactiveProvisionedAccountWorks() {
-
-    when(accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(any()))
-      .thenReturn(Arrays.asList(CICCIO_ACCOUNT, TEST_ACCOUNT));
-
-    accountService.deleteInactiveProvisionedUsersSinceTime(new Date());
-
-    verify(accountRepo, times(1)).delete(CICCIO_ACCOUNT);
-    verify(accountRepo, times(1)).delete(TEST_ACCOUNT);
-    verify(eventPublisher, times(2)).publishEvent(any());
-  }
-
   @Test
   public void testTokensAreRemovedWhenAccountIsRemoved() {
     OAuth2AccessTokenEntity accessToken = mock(OAuth2AccessTokenEntity.class);
@@ -1065,7 +1038,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   }
 
   private IamGroup getGroup(IamAccount account) {
-    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    Optional<IamAccountGroupMembership> groupMembershipOptional =
+        account.getGroups().stream().findFirst();
     if (groupMembershipOptional.isPresent()) {
       return groupMembershipOptional.get().getGroup();
     }
@@ -1078,7 +1052,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     account = accountService.createAccount(account);
 
-    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    Optional<IamAccountGroupMembership> groupMembershipOptional =
+        account.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
   }
 }

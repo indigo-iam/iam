@@ -67,8 +67,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -155,7 +153,6 @@ import it.infn.mw.iam.authn.saml.util.metadata.SirtfiAttributeMetadataFilter;
 import it.infn.mw.iam.authn.util.SamlMetadataFetchTimer;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.JitCleanupScheduler;
 import it.infn.mw.iam.config.saml.SamlConfig.ServerProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -167,7 +164,7 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 @EnableConfigurationProperties({IamSamlProperties.class,
     IamSamlJITAccountProvisioningProperties.class, ServerProperties.class})
 public class SamlConfig extends WebSecurityConfigurerAdapter
-    implements SchedulingConfigurer, InitializingBean, DisposableBean {
+    implements InitializingBean, DisposableBean {
 
   public static final Logger LOG = LoggerFactory.getLogger(SamlConfig.class);
 
@@ -221,9 +218,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Autowired
   private HttpFirewall firewall;
-
-  @Autowired
-  private JitCleanupScheduler cleanupScheduler;
 
   private MultiThreadedHttpConnectionManager connectionManager;
 
@@ -883,9 +877,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     http.antMatcher(pattern);
 
-    http.csrf().ignoringAntMatchers(pattern);
+      http.csrf(csrf -> csrf.ignoringAntMatchers(pattern));
 
-    http.authorizeRequests().antMatchers(pattern).permitAll();
+    http.authorizeHttpRequests().antMatchers(pattern).permitAll();
 
     http.addFilterBefore(metadataGeneratorFilter(), ChannelProcessingFilter.class)
       .addFilterAfter(samlFilter(), BasicAuthenticationFilter.class);
@@ -896,11 +890,6 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
     auth.authenticationProvider(
         samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler, mappingResolver,
             validator, sessionTimeoutHelper, totpMfaRepository));
-  }
-
-  @Override
-  public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-    cleanupScheduler.scheduleCleanupTask(taskRegistrar, jitProperties, accountService, "SAML");
   }
 
   @Override

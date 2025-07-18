@@ -20,9 +20,6 @@ import static java.lang.Boolean.FALSE;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import javax.validation.constraints.Min;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -31,11 +28,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.config.JitProvisioningProperties;
-
 @Validated
 @ConfigurationProperties(prefix = "saml.jit-account-provisioning")
-public class IamSamlJITAccountProvisioningProperties implements JitProvisioningProperties {
+public class IamSamlJITAccountProvisioningProperties {
 
   public enum UsernameMappingPolicy {
     randomUuidPolicy, samlIdPolicy, attributeValuePolicy;
@@ -117,19 +112,11 @@ public class IamSamlJITAccountProvisioningProperties implements JitProvisioningP
 
   private Boolean enabled = FALSE;
   private String trustedIdps = "all";
-  private Boolean cleanupTaskEnabled = FALSE;
-
-  @Min(5)
-  private long cleanupTaskPeriodSec = TimeUnit.DAYS.toSeconds(1);
-
-  @Min(1)
-  private Integer inactiveAccountLifetimeDays = 15;
 
   private AttributeMappingProperties defaultMapping = new AttributeMappingProperties();
 
   private List<EntityAttributeMappingProperties> entityMapping = Lists.newArrayList();
 
-  @Override
   public Boolean getEnabled() {
     return enabled;
   }
@@ -145,34 +132,6 @@ public class IamSamlJITAccountProvisioningProperties implements JitProvisioningP
   public void setTrustedIdps(String trustedIdps) {
     this.trustedIdps = trustedIdps;
   }
-
-  @Override
-  public Boolean getCleanupTaskEnabled() {
-    return cleanupTaskEnabled;
-  }
-
-  public void setCleanupTaskEnabled(Boolean cleanupEnabled) {
-    this.cleanupTaskEnabled = cleanupEnabled;
-  }
-
-  @Override
-  public Integer getInactiveAccountLifetimeDays() {
-    return inactiveAccountLifetimeDays;
-  }
-
-  public void setInactiveAccountLifetimeDays(Integer inactiveUserLifetimeDays) {
-    this.inactiveAccountLifetimeDays = inactiveUserLifetimeDays;
-  }
-
-  @Override
-  public long getCleanupTaskPeriodSec() {
-    return cleanupTaskPeriodSec;
-  }
-
-  public void setCleanupTaskPeriodSec(long cleanupTaskPeriodSec) {
-    this.cleanupTaskPeriodSec = cleanupTaskPeriodSec;
-  }
-
 
   public Optional<Set<String>> getTrustedIdpsAsOptionalSet() {
     if ("all".equals(trustedIdps)) {

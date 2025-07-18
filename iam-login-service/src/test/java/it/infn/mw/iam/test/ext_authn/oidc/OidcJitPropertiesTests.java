@@ -69,34 +69,4 @@ public class OidcJitPropertiesTests {
     Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet();
     assertFalse(trustedIdps.isPresent());
   }
-
-  @Test
-  public void testCleanupTaskEnabledDefaultAndSetter() {
-    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
-
-    assertFalse(props.getCleanupTaskEnabled());
-
-    props.setCleanupTaskEnabled(true);
-    assertTrue(props.getCleanupTaskEnabled());
-  }
-
-  @Test
-  public void testCleanupTaskPeriodSetterGetter() {
-    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
-
-    assertEquals(86400L, props.getCleanupTaskPeriodSec());
-
-    props.setCleanupTaskPeriodSec(3600L);
-    assertEquals(3600L, props.getCleanupTaskPeriodSec());
-  }
-
-  @Test
-  public void testInactiveAccountLifetimeDaysSetterGetter() {
-    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
-
-    assertEquals(15, props.getInactiveAccountLifetimeDays());
-
-    props.setInactiveAccountLifetimeDays(30);
-    assertEquals(Integer.valueOf(30), props.getInactiveAccountLifetimeDays());
-  }
 }

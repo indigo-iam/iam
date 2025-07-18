@@ -45,8 +45,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -71,27 +69,19 @@ import it.infn.mw.iam.authn.oidc.RestTemplateFactory;
 import it.infn.mw.iam.authn.oidc.service.NullClientConfigurationService;
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.authn.util.SessionTimeoutHelper;
-import it.infn.mw.iam.config.JitCleanupScheduler;
 import it.infn.mw.iam.core.IamThirdPartyIssuerService;
-import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @Configuration
 @EnableConfigurationProperties(IamOidcJITAccountProvisioningProperties.class)
-public class OidcConfiguration implements SchedulingConfigurer {
+public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
 
   @Autowired
   private IamOidcJITAccountProvisioningProperties jitProperties;
-
-  @Autowired
-  private IamAccountService accountService;
-
-  @Autowired
-  private JitCleanupScheduler cleanupScheduler;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -250,10 +240,5 @@ public class OidcConfiguration implements SchedulingConfigurer {
   @Bean
   OidcTokenRequestor tokenRequestor(RestTemplateFactory restTemplateFactory, ObjectMapper mapper) {
     return new DefaultOidcTokenRequestor(restTemplateFactory, mapper);
-  }
-
-  @Override
-  public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-    cleanupScheduler.scheduleCleanupTask(taskRegistrar, jitProperties, accountService, "OIDC");
   }
 }
