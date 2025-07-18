@@ -15,22 +15,18 @@
  */
 package it.infn.mw.iam.config.saml;
 
-import static java.lang.Boolean.FALSE;
-
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+
+import it.infn.mw.iam.config.JitProvisioningProperties;
 
 @Validated
 @ConfigurationProperties(prefix = "saml.jit-account-provisioning")
-public class IamSamlJITAccountProvisioningProperties {
+public class IamSamlJITAccountProvisioningProperties extends JitProvisioningProperties {
 
   public enum UsernameMappingPolicy {
     randomUuidPolicy, samlIdPolicy, attributeValuePolicy;
@@ -110,43 +106,9 @@ public class IamSamlJITAccountProvisioningProperties {
     }
   }
 
-  private Boolean enabled = FALSE;
-  private String trustedIdps = "all";
-
   private AttributeMappingProperties defaultMapping = new AttributeMappingProperties();
 
   private List<EntityAttributeMappingProperties> entityMapping = Lists.newArrayList();
-
-  public Boolean getEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(Boolean enabled) {
-    this.enabled = enabled;
-  }
-
-  public String getTrustedIdps() {
-    return trustedIdps;
-  }
-
-  public void setTrustedIdps(String trustedIdps) {
-    this.trustedIdps = trustedIdps;
-  }
-
-  public Optional<Set<String>> getTrustedIdpsAsOptionalSet() {
-    if ("all".equals(trustedIdps)) {
-      return Optional.empty();
-    }
-
-    Set<String> trustedIdpIds =
-        Sets.newHashSet(Splitter.on(",").trimResults().omitEmptyStrings().split(trustedIdps));
-
-    if (trustedIdpIds.isEmpty()) {
-      return Optional.empty();
-    }
-
-    return Optional.of(trustedIdpIds);
-  }
 
   public AttributeMappingProperties getDefaultMapping() {
     return defaultMapping;
