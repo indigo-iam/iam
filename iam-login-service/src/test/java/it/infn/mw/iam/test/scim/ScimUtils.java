@@ -124,6 +124,11 @@ public class ScimUtils {
       return this;
     }
 
+    public ParamsBuilder filters(String filters) {
+      params.add("filters", filters);
+      return this;
+    }
+
     public MultiValueMap<String, String> build() {
       return params;
     }
