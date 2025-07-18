@@ -60,7 +60,6 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
-import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
