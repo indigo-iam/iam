@@ -346,8 +346,9 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Bean
   SAMLUserDetailsService samlUserDetailsService(SamlUserIdentifierResolver resolver,
-      IamAccountRepository accountRepo, InactiveAccountAuthenticationHander handler,
-      MappingPropertiesResolver mpResolver) {
+      IamAccountRepository accountRepo, IamAccountService accountService,
+      InactiveAccountAuthenticationHander handler, MappingPropertiesResolver mpResolver,
+      IamSamlJITAccountProvisioningProperties jitProperties) {
 
     if (jitProperties.getEnabled()) {
 
@@ -402,16 +403,17 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
   @Bean
   SAMLAuthenticationProvider samlAuthenticationProvider(SamlUserIdentifierResolver resolver,
-      IamAccountRepository accountRepo, InactiveAccountAuthenticationHander handler,
-      MappingPropertiesResolver mpResolver,
+      IamAccountRepository accountRepo, IamAccountService accountService,
+      InactiveAccountAuthenticationHander handler, MappingPropertiesResolver mpResolver,
       AuthenticationValidator<ExpiringUsernameAuthenticationToken> validator,
-      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository) {
+      SessionTimeoutHelper helper, IamTotpMfaRepository totpMfaRepository,
+      IamSamlJITAccountProvisioningProperties jitProperties) {
 
     IamSamlAuthenticationProvider samlAuthenticationProvider = new IamSamlAuthenticationProvider(
         resolver, validator, helper, accountRepo, totpMfaRepository);
 
-    samlAuthenticationProvider
-      .setUserDetails(samlUserDetailsService(resolver, accountRepo, handler, mpResolver));
+    samlAuthenticationProvider.setUserDetails(samlUserDetailsService(resolver, accountRepo,
+        accountService, handler, mpResolver, jitProperties));
     samlAuthenticationProvider.setForcePrincipalAsString(false);
     return samlAuthenticationProvider;
   }
@@ -877,7 +879,7 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
 
     http.antMatcher(pattern);
 
-      http.csrf(csrf -> csrf.ignoringAntMatchers(pattern));
+    http.csrf(csrf -> csrf.ignoringAntMatchers(pattern));
 
     http.authorizeHttpRequests().antMatchers(pattern).permitAll();
 
@@ -888,8 +890,8 @@ public class SamlConfig extends WebSecurityConfigurerAdapter
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
     auth.authenticationProvider(
-        samlAuthenticationProvider(resolver, accountRepo, inactiveAccountHandler, mappingResolver,
-            validator, sessionTimeoutHelper, totpMfaRepository));
+        samlAuthenticationProvider(resolver, accountRepo, accountService, inactiveAccountHandler,
+            mappingResolver, validator, sessionTimeoutHelper, totpMfaRepository, jitProperties));
   }
 
   @Override

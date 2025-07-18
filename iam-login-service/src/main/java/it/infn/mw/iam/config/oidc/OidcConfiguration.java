@@ -35,7 +35,6 @@ import org.mitre.openid.connect.client.service.impl.PlainAuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.impl.StaticClientConfigurationService;
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -79,9 +78,6 @@ public class OidcConfiguration {
 
   @Value("${iam.baseUrl}")
   private String iamBaseUrl;
-
-  @Autowired
-  private IamOidcJITAccountProvisioningProperties jitProperties;
 
   public static final String DEFINE_ME_PLEASE = "define_me_please";
 
@@ -158,6 +154,7 @@ public class OidcConfiguration {
       SessionTimeoutHelper timeoutHelper,
       InactiveAccountAuthenticationHander inactiveAccountHandler,
       IamTotpMfaRepository totpMfaRepository, IamAccountRepository accountRepo,
+      IamOidcJITAccountProvisioningProperties jitProperties,
       OidcAccountProvisioningService oidcProvisioningService) {
 
     OidcAuthenticationProvider provider =
