@@ -39,6 +39,9 @@ public interface IamAccountRepository
 
     Optional<IamAccount> findByUsername(@Param("username") String username);
 
+    @Query("select a from IamAccount a where a.username = :username")
+    IamAccount findAccountByUsername(@Param("username") String username);
+
     @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
             + "and si.attributeId = :attributeId and si.userId = :userId")
     Optional<IamAccount> findBySamlId(@Param("idpId") String idpId,
@@ -72,6 +75,9 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
     Optional<IamAccount> findByEmail(@Param("emailAddress") String emailAddress);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
+    List<IamAccount> findMultipleByEmail(@Param("emailAddress") String emailAddress);
 
     @Query("select a from IamAccount a where a.username = :username and a.uuid != :uuid")
     Optional<IamAccount> findByUsernameWithDifferentUUID(@Param("username") String username,
