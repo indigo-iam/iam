@@ -83,6 +83,7 @@ import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -127,6 +128,9 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private DefaultIamGroupService iamGroupService;
 
   @Mock
+  private IamTotpMfaRepository iamTotpMfaRepository;
+
+  @Mock
   private IamProperties iamProperties;
 
   private IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
@@ -154,7 +158,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory, iamProperties, iamGroupService);
+        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory, 
+        iamProperties, iamGroupService, iamTotpMfaRepository);
   }
 
   @Test(expected = NullPointerException.class)
@@ -827,6 +832,16 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     accountService.deleteAccount(CICCIO_ACCOUNT);
     verify(tokenService).revokeAccessToken(Mockito.eq(accessToken));
     verify(tokenService).revokeRefreshToken(Mockito.eq(refreshToken));
+  }
+
+  @Test
+  public void testMfaRemovedWhenAccountRemoved() {
+    when(iamTotpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
+
+    accountService.deleteAccount(TOTP_MFA_ACCOUNT);
+
+    verify(iamTotpMfaRepository, times(1)).delete(TOTP_MFA);
+    verify(accountRepo, times(1)).delete(TOTP_MFA_ACCOUNT);
   }
 
   @Test(expected = NullPointerException.class)

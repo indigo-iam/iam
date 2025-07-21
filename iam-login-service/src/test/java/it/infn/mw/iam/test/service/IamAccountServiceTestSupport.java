@@ -20,7 +20,9 @@ import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 public class IamAccountServiceTestSupport {
 
@@ -37,6 +39,14 @@ public class IamAccountServiceTestSupport {
   public static final String CICCIO_EMAIL = "ciccio@example.org";
   public static final String CICCIO_GIVEN_NAME = "Ciccio";
   public static final String CICCIO_FAMILY_NAME = "Paglia";
+
+  public static final String TOTP_USERNAME = "test-mfa-user";
+  public static final String TOTP_UUID = "ceb173b4-28e3-43ad-aaf7-15d3730e2b90";
+  public static final String TOTP_EMAIL = "test-mfa@example.org";
+  public static final String TOTP_GIVEN_NAME = "Test";
+  public static final String TOTP_FAMILY_NAME = "Mfa";
+  public static final String KEY_TO_ENCRYPT_DECRYPT = "define_me_please";
+  public static final String TOTP_MFA_SECRET = "secret";
 
   public static final String TEST_SAML_ID_IDP_ID = "idpId";
   public static final String TEST_SAML_ID_USER_ID = "userId";
@@ -61,6 +71,8 @@ public class IamAccountServiceTestSupport {
 
   protected final IamAccount TEST_ACCOUNT;
   protected final IamAccount CICCIO_ACCOUNT;
+  protected final IamAccount TOTP_MFA_ACCOUNT;
+  protected final IamTotpMfa TOTP_MFA;
   protected final IamAuthority ROLE_USER_AUTHORITY;
   protected final IamSamlId TEST_SAML_ID;
   protected final IamOidcId TEST_OIDC_ID;
@@ -86,6 +98,23 @@ public class IamAccountServiceTestSupport {
     CICCIO_ACCOUNT.getUserInfo().setEmail(CICCIO_EMAIL);
     CICCIO_ACCOUNT.getUserInfo().setGivenName(CICCIO_GIVEN_NAME);
     CICCIO_ACCOUNT.getUserInfo().setFamilyName(CICCIO_FAMILY_NAME);
+
+    TOTP_MFA_ACCOUNT = IamAccount.newAccount();
+    TOTP_MFA_ACCOUNT.setUsername(TOTP_USERNAME);
+    TOTP_MFA_ACCOUNT.setUuid(TOTP_UUID);
+    TOTP_MFA_ACCOUNT.getUserInfo().setEmail(TOTP_EMAIL);
+    TOTP_MFA_ACCOUNT.getUserInfo().setGivenName(TOTP_GIVEN_NAME);
+    TOTP_MFA_ACCOUNT.getUserInfo().setFamilyName(TOTP_FAMILY_NAME);
+
+    TOTP_MFA_ACCOUNT.touch();
+
+    TOTP_MFA = new IamTotpMfa();
+    TOTP_MFA.setAccount(TOTP_MFA_ACCOUNT);
+    TOTP_MFA.setSecret(
+        IamTotpMfaEncryptionAndDecryptionUtil.encryptSecret(
+            TOTP_MFA_SECRET, KEY_TO_ENCRYPT_DECRYPT));
+    TOTP_MFA.setActive(true);
+    TOTP_MFA.touch();
 
     TEST_SAML_ID =
         new IamSamlId(TEST_SAML_ID_IDP_ID, TEST_SAML_ID_ATTRIBUTE_ID, TEST_SAML_ID_USER_ID);
