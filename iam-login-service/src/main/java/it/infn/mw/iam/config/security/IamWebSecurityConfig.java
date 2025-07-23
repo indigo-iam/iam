@@ -166,7 +166,7 @@ public class IamWebSecurityConfig {
       // @formatter:off
       http.requestMatchers()
         .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**", "/dashboard**",
-            "/reset-session", "/device/**")
+            "/reset-session", "/device/**", "/idp/saml/sso")
         .and()
         .sessionManagement()
           .enableSessionUrlRewriting(false)
@@ -175,6 +175,7 @@ public class IamWebSecurityConfig {
             .antMatchers("/login**", "/webjars/**").permitAll()
             .antMatchers("/authorize**").permitAll()
             .antMatchers("/reset-session").permitAll()
+            .antMatchers("/idp/saml/sso").permitAll()
             .antMatchers("/device/**").authenticated()
             .antMatchers("/").authenticated()
         .and()
