@@ -129,9 +129,9 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   }
 
   protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
-    final String audience =
+    final String expiration =
         authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
-    return !isNullOrEmpty(audience);
+    return !isNullOrEmpty(expiration);
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,

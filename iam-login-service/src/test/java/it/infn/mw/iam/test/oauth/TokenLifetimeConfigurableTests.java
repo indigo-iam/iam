@@ -190,52 +190,74 @@ public class TokenLifetimeConfigurableTests {
                         .getResponse()
                         .getContentAsString();
 
-    // @formatter:off
-    String configuredLifetimeTokenResponse = mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
-        .param("grant_type", "password")
-        .param("username", TEST_USERNAME)
-        .param("password", TEST_PASSWORD)
-        .param("scope", SCOPE)
-        .param("expires_in", CUSTOM_LIFETIME))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-    // @formatter:on
+                // @formatter:off
+                String configuredLifetimeTokenResponse = mvc.perform(post("/token")
+                        .with(httpBasic(clientId, clientSecret))
+                        .param("grant_type", "password")
+                        .param("username", TEST_USERNAME)
+                        .param("password", TEST_PASSWORD)
+                        .param("scope", SCOPE)
+                        .param("expires_in", CUSTOM_LIFETIME))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+                // @formatter:on
 
                 DefaultOAuth2AccessToken ordinaryToken = mapper.readValue(ordinaryTokenResponse,
                                 DefaultOAuth2AccessToken.class);
 
                 String ordinaryRefresh = ordinaryToken.getRefreshToken().toString();
 
+                String oAT = mapper.readTree(ordinaryTokenResponse).get("access_token").asText();
+                JWTClaimsSet oATClaims = JWTParser.parse(oAT).getJWTClaimsSet();
+
+                assertNotNull(oATClaims.getIssueTime());
+                assertNotNull(oATClaims.getExpirationTime());
+                assertThat((int) (oATClaims.getExpirationTime().getTime()
+                                - oATClaims.getIssueTime().getTime()) / 1000, equalTo(3600));
+
+                // check that refresh token experiration is 30 days
+
                 DefaultOAuth2AccessToken tokenResponse = mapper
                         .readValue(configuredLifetimeTokenResponse, DefaultOAuth2AccessToken.class);
 
                 String refreshwithConfiguredAccessToken =
                                 tokenResponse.getRefreshToken().toString();
+                String cAT = mapper.readTree(configuredLifetimeTokenResponse)
+                        .get("access_token")
+                        .asText();
+                JWTClaimsSet cATClaims = JWTParser.parse(cAT).getJWTClaimsSet();
 
-    // @formatter:off
-    String ordinaryReponse = mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
-        .param("grant_type", "refresh_token")
-        .param("refresh_token", ordinaryRefresh))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-    // @formatter:on
+                assertNotNull(cATClaims.getIssueTime());
+                assertNotNull(cATClaims.getExpirationTime());
+                assertThat((int) (cATClaims.getExpirationTime().getTime()
+                                - cATClaims.getIssueTime().getTime()) / 1000,
+                                equalTo(Integer.parseInt(CUSTOM_LIFETIME)));
 
-    // @formatter:off
-    String configuredReponse = mvc.perform(post("/token")
-        .with(httpBasic(clientId, clientSecret))
-        .param("grant_type", "refresh_token")
-        .param("refresh_token", refreshwithConfiguredAccessToken))
-      .andExpect(status().isOk())
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-    // @formatter:on
+                // check that refresh token experiration is 30 days
+
+                // @formatter:off
+                String ordinaryReponse = mvc.perform(post("/token")
+                        .with(httpBasic(clientId, clientSecret))
+                        .param("grant_type", "refresh_token")
+                        .param("refresh_token", ordinaryRefresh))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+                // @formatter:on
+
+                // @formatter:off
+                String configuredReponse = mvc.perform(post("/token")
+                        .with(httpBasic(clientId, clientSecret))
+                        .param("grant_type", "refresh_token")
+                        .param("refresh_token", refreshwithConfiguredAccessToken))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+                // @formatter:on
 
                 String ordinaryAccessToken =
                                 mapper.readTree(ordinaryReponse).get("access_token").asText();
