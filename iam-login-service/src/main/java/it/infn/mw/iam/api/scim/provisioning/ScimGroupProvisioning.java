@@ -84,8 +84,6 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     this.groupRequestsService = groupRequestsService;
     this.groupUpdaterFactory =
         new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
-    this.groupUpdaterFactory =
-        new DefaultGroupMembershipUpdaterFactory(accountService, locationProvider, accountRepo);
     this.locationProvider = locationProvider;
   }
 
