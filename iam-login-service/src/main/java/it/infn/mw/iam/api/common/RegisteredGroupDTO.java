@@ -30,148 +30,146 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 
 public class RegisteredGroupDTO implements Serializable {
+  private Long id;
+  private String uuid;
+  private String name;
+  private String description;
+  private RegisteredGroupDTO parentGroup;
+  private Set<RegisteredGroupDTO> childrenGroups = new HashSet<>();
+  private Set<IamLabel> labels = new HashSet<>();
+
+  @JsonSerialize(using = JsonDateSerializer.class)
+  private Date joiningDate;
+  private List<String> scopePoliciesDescription;
+
+  private RegisteredGroupDTO(Builder builder) {
+    this.id = builder.id;
+    this.uuid = builder.uuid;
+    this.name = builder.name;
+    this.description = builder.description;
+    this.parentGroup = builder.parentGroup;
+    this.childrenGroups = builder.childrenGroups != null ? builder.childrenGroups : new HashSet<>();
+    this.labels = builder.labels != null ? builder.labels : new HashSet<>();
+    this.joiningDate = builder.joiningDate;
+    this.scopePoliciesDescription = builder.scopePoliciesDescription;
+  }
+
+  public static class Builder {
     private Long id;
     private String uuid;
     private String name;
     private String description;
     private RegisteredGroupDTO parentGroup;
-    private Set<RegisteredGroupDTO> childrenGroups = new HashSet<>();
-    private Set<IamLabel> labels = new HashSet<>();
-
-    @JsonSerialize(using = JsonDateSerializer.class)
+    private Set<RegisteredGroupDTO> childrenGroups;
+    private Set<IamLabel> labels;
     private Date joiningDate;
     private List<String> scopePoliciesDescription;
 
-    private RegisteredGroupDTO(Builder builder) {
-        this.id = builder.id;
-        this.uuid = builder.uuid;
-        this.name = builder.name;
-        this.description = builder.description;
-        this.parentGroup = builder.parentGroup;
-        this.childrenGroups = builder.childrenGroups != null ? builder.childrenGroups : new HashSet<>();
-        this.labels = builder.labels != null ? builder.labels : new HashSet<>();
-        this.joiningDate = builder.joiningDate;
-        this.scopePoliciesDescription = builder.scopePoliciesDescription;
+    public Builder id(Long id) {
+        this.id = id;
+        return this;
     }
 
-    public static class Builder {
-        private Long id;
-        private String uuid;
-        private String name;
-        private String description;
-        private RegisteredGroupDTO parentGroup;
-        private Set<RegisteredGroupDTO> childrenGroups;
-        private Set<IamLabel> labels;
-        private Date joiningDate;
-        private List<String> scopePoliciesDescription;
+    public Builder uuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
 
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
+    public Builder name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Builder description(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public Builder parentGroup(IamGroup parentGroup) {
+        if (parentGroup != null) {
+            this.parentGroup = new RegisteredGroupDTO.Builder()
+                    .id(parentGroup.getId())
+                    .uuid(parentGroup.getUuid())
+                    .name(parentGroup.getName())
+                    .description(parentGroup.getDescription())
+                    .parentGroup(parentGroup.getParentGroup())
+                    .labels(parentGroup.getLabels())
+                    .build();
         }
-
-        public Builder uuid(String uuid) {
-            this.uuid = uuid;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder parentGroup(IamGroup parentGroup) {
-            if (parentGroup != null) {
-                this.parentGroup = new RegisteredGroupDTO.Builder()
-                        .id(parentGroup.getId())
-                        .uuid(parentGroup.getUuid())
-                        .name(parentGroup.getName())
-                        .description(parentGroup.getDescription())
-                        .parentGroup(parentGroup.getParentGroup())
-                        // .childrenGroups(parentGroup.getChildrenGroups())
-                        .labels(parentGroup.getLabels())
-                        .build();
-            }
-            return this;
-        }
-
-        public Builder childrenGroups(Set<IamGroup> childrenGroups) {
-            this.childrenGroups = childrenGroups.stream()
-                    .map(gr -> new RegisteredGroupDTO.Builder()
-                            .id(gr.getId())
-                            .uuid(gr.getUuid())
-                            .name(gr.getName())
-                            .description(gr.getDescription())
-                            //.parentGroup(gr.getParentGroup())
-                            .childrenGroups(gr.getChildrenGroups())
-                            .labels(gr.getLabels())
-                            .build())
-                    .collect(Collectors.toSet());
-            return this;
-        }
-
-        public Builder labels(Set<IamLabel> labels) {
-            this.labels = labels;
-            return this;
-        }
-
-        public Builder joiningDate(Date joiningDate) {
-            this.joiningDate = joiningDate;
-            return this;
-        }
-
-        public Builder scopePoliciesDescription(Set<IamScopePolicy> scopePolicies) {
-            this.scopePoliciesDescription = scopePolicies.stream()
-                    .map(IamScopePolicy::getDescription)
-                    .sorted()
-                    .toList();
-            return this;
-        }
-
-        public RegisteredGroupDTO build() {
-            return new RegisteredGroupDTO(this);
-        }
+        return this;
     }
 
-    public Long getId() {
-        return id;
+    public Builder childrenGroups(Set<IamGroup> childrenGroups) {
+        this.childrenGroups = childrenGroups.stream()
+                .map(gr -> new RegisteredGroupDTO.Builder()
+                        .id(gr.getId())
+                        .uuid(gr.getUuid())
+                        .name(gr.getName())
+                        .description(gr.getDescription())
+                        .childrenGroups(gr.getChildrenGroups())
+                        .labels(gr.getLabels())
+                        .build())
+                .collect(Collectors.toSet());
+        return this;
     }
 
-    public String getUuid() {
-        return uuid;
+    public Builder labels(Set<IamLabel> labels) {
+        this.labels = labels;
+        return this;
     }
 
-    public String getName() {
-        return name;
+    public Builder joiningDate(Date joiningDate) {
+        this.joiningDate = joiningDate;
+        return this;
     }
 
-    public String getDescription() {
-        return description;
+    public Builder scopePoliciesDescription(Set<IamScopePolicy> scopePolicies) {
+        this.scopePoliciesDescription = scopePolicies.stream()
+                .map(IamScopePolicy::getDescription)
+                .sorted()
+                .toList();
+        return this;
     }
 
-    public RegisteredGroupDTO getParentGroup() {
-        return parentGroup;
+    public RegisteredGroupDTO build() {
+        return new RegisteredGroupDTO(this);
     }
+  }
 
-    public Set<RegisteredGroupDTO> getChildrenGroups() {
-        return childrenGroups;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public Set<IamLabel> getLabels() {
-        return labels;
-    }
+  public String getUuid() {
+    return uuid;
+  }
 
-    public Date getJoiningDate() {
-        return joiningDate;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public List<String> getScopePoliciesDescription() {
-        return scopePoliciesDescription;
-    }
+  public String getDescription() {
+    return description;
+  }
+
+  public RegisteredGroupDTO getParentGroup() {
+    return parentGroup;
+  }
+
+  public Set<RegisteredGroupDTO> getChildrenGroups() {
+    return childrenGroups;
+  }
+
+  public Set<IamLabel> getLabels() {
+    return labels;
+  }
+
+  public Date getJoiningDate() {
+    return joiningDate;
+  }
+
+  public List<String> getScopePoliciesDescription() {
+    return scopePoliciesDescription;
+  }
 
 }
