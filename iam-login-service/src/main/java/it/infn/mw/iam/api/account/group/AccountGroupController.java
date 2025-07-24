@@ -71,10 +71,7 @@ public class AccountGroupController {
     IamAccount account = accountUtils.getAuthenticatedUserAccount()
         .orElseThrow(
             () -> new IllegalStateException("No iam account found for authenticated user"));
-
-    handleValidationError(INVALID_PAGINATION_REQUEST, validationResult);
-    OffsetPageable offsetPageable = new OffsetPageable(form.getStartIndex(), form.getCount());
-    return accountService.getGroups(account, offsetPageable);
+    return getUsersGroups(account.getUuid(), form, validationResult);
   }
 
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
