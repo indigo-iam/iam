@@ -90,7 +90,6 @@ public class GroupAttributeTests {
     return () -> new AssertionError(message);
   }
 
-
   @Test
   public void managingAttributesRequiresAuthenticatedUser() throws Exception {
 
@@ -99,15 +98,10 @@ public class GroupAttributeTests {
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid())).andExpect(UNAUTHORIZED);
 
-    AttributeDTO attr = new AttributeDTO();
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
-
-    mvc.perform(
-        put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
-          .content(mapper.writeValueAsString(attr)))
-      .andExpect(UNAUTHORIZED);
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(attr))).andExpect(UNAUTHORIZED);
 
     mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
       .andExpect(UNAUTHORIZED);
@@ -122,15 +116,10 @@ public class GroupAttributeTests {
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid())).andExpect(FORBIDDEN);
 
-    AttributeDTO attr = new AttributeDTO();
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
-
-    mvc.perform(
-        put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
-          .content(mapper.writeValueAsString(attr)))
-      .andExpect(FORBIDDEN);
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(attr))).andExpect(FORBIDDEN);
 
     mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
       .andExpect(FORBIDDEN);
@@ -155,15 +144,10 @@ public class GroupAttributeTests {
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    AttributeDTO attr = new AttributeDTO();
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
-
-    mvc.perform(
-        put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
-          .content(mapper.writeValueAsString(attr)))
-      .andExpect(status().isOk());
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid()))
       .andExpect(status().isOk())
@@ -171,12 +155,10 @@ public class GroupAttributeTests {
       .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
       .andExpect(jsonPath("$[0].value", is(ATTR_VALUE)));
 
-    attr.setValue(null);
+    attr = new AttributeDTO(ATTR_NAME, null);
 
-    mvc.perform(
-        put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
-          .content(mapper.writeValueAsString(attr)))
-      .andExpect(status().isOk());
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
     mvc.perform(get("/iam/group/{id}/attributes", testGroup.getUuid()))
       .andExpect(status().isOk())
@@ -192,15 +174,10 @@ public class GroupAttributeTests {
     IamGroup testGroup =
         groupRepo.findByName(TEST_001_GROUP).orElseThrow(assertionError(EXPECTED_GROUP_NOT_FOUND));
 
-    AttributeDTO attr = new AttributeDTO();
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
-
-    mvc.perform(
-        put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
-          .content(mapper.writeValueAsString(attr)))
-      .andExpect(status().isOk());
+    mvc.perform(put("/iam/group/{id}/attributes", testGroup.getUuid()).contentType(APPLICATION_JSON)
+      .content(mapper.writeValueAsString(attr))).andExpect(status().isOk());
 
     mvc.perform(delete("/iam/group/{id}/attributes", testGroup.getUuid()).param("name", ATTR_NAME))
       .andExpect(status().isNoContent());
@@ -214,10 +191,7 @@ public class GroupAttributeTests {
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void nonExistingGroupIsHandledCorrectly() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc.perform(get("/iam/group/{id}/attributes", randomUuid))
       .andExpect(NOT_FOUND)
