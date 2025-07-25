@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config.oidc;
 
-import java.util.List;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +38,7 @@ public class OpenidFederationProperties {
 
     private long expirationSeconds = 86400;
 
-    private List<String> authorityHints;
+    private Set<String> authorityHints;
 
     public long getExpirationSeconds() {
       return expirationSeconds;
@@ -48,11 +48,11 @@ public class OpenidFederationProperties {
       this.expirationSeconds = expirationSeconds;
     }
 
-    public List<String> getAuthorityHints() {
+    public Set<String> getAuthorityHints() {
       return authorityHints;
     }
 
-    public void setAuthorityHints(List<String> authorityHints) {
+    public void setAuthorityHints(Set<String> authorityHints) {
       this.authorityHints = authorityHints;
     }
   }

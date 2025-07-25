@@ -40,7 +40,7 @@ public class CacheConfig {
   @ConditionalOnExpression("${cache.enabled} == true and ${cache.redis.enabled} == false")
   CacheManager localCacheManager(CacheProperties props) {
     return new ConcurrentMapCacheManager(IamWellKnownInfoProvider.CACHE_KEY,
-        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY);
+        DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY, "federationTrustChains");
   }
 
   @Bean
@@ -50,6 +50,8 @@ public class CacheConfig {
       .withCacheConfiguration(IamWellKnownInfoProvider.CACHE_KEY,
           RedisCacheConfiguration.defaultCacheConfig())
       .withCacheConfiguration(DefaultScopeMatcherRegistry.SCOPE_CACHE_KEY,
+          RedisCacheConfiguration.defaultCacheConfig())
+      .withCacheConfiguration("federationTrustChains",
           RedisCacheConfiguration.defaultCacheConfig());
   }
 
