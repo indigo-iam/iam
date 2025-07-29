@@ -16,10 +16,16 @@
 package it.infn.mw.iam.test.oauth;
 
 import static org.hamcrest.Matchers.notNullValue;
+
+import java.time.Duration;
+import java.util.Date;
+
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.TestPropertySource;
@@ -29,6 +35,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
@@ -40,6 +47,9 @@ public class NbfTokenTests extends EndpointsTestUtils {
   
   private static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   private static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
+
+  @Autowired
+  private IamProperties properties;
 
   @Test
   public void testScopeIncludedInAccessTokenClientCred() throws Exception {
@@ -53,7 +63,23 @@ public class NbfTokenTests extends EndpointsTestUtils {
     token.getJWTClaimsSet().getNotBeforeTime();
      
     assertThat(token.getJWTClaimsSet().getNotBeforeTime(), notNullValue());
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
     
+  }
+
+    @Test
+  public void testConfiguredNbfIncludedInAccessTokenClientCred() throws Exception {
+
+    properties.getAccessToken().setCustomNbf(360);
+    String accessToken = new AccessTokenGetter().grantType("client_credentials")
+      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
+      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
+      .getAccessTokenValue();
+
+    JWT token = JWTParser.parse(accessToken);
+    token.getJWTClaimsSet().getNotBeforeTime();
+     
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
   }
 
 }

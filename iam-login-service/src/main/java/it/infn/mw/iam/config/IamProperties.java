@@ -467,6 +467,8 @@ public class IamProperties {
     boolean includeAuthnInfo = false;
     boolean includeScope = false;
     boolean includeNbf = false;
+    int maxNbf = 300;
+    int customNbf = 60;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -490,6 +492,18 @@ public class IamProperties {
 
     public void setIncludeNbf(boolean includeNbf) {
       this.includeNbf = includeNbf;
+    }
+
+    public int getCustomNbf() {
+      return customNbf;
+    }
+
+    public void setCustomNbf(int nbfTime) {
+      if (nbfTime < 0) {
+        this.customNbf = 0;
+      } else {
+        this.customNbf = Math.min(nbfTime, maxNbf);
+      }
     }
   }
 
