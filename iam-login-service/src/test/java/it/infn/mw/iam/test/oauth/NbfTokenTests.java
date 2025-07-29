@@ -15,13 +15,12 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
 import java.time.Duration;
 import java.util.Date;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +69,38 @@ public class NbfTokenTests extends EndpointsTestUtils {
     @Test
   public void testConfiguredNbfIncludedInAccessTokenClientCred() throws Exception {
 
+    properties.getAccessToken().setCustomNbf(100);
+    String accessToken = new AccessTokenGetter().grantType("client_credentials")
+      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
+      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
+      .getAccessTokenValue();
+
+    JWT token = JWTParser.parse(accessToken);
+    token.getJWTClaimsSet().getNotBeforeTime();
+     
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+  }
+
+      @Test
+  public void testNegativeValueNbfIncludedInAccessTokenClientCred() throws Exception {
+
+    properties.getAccessToken().setCustomNbf(-60);
+    String accessToken = new AccessTokenGetter().grantType("client_credentials")
+      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
+      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
+      .getAccessTokenValue();
+
+    JWT token = JWTParser.parse(accessToken);
+    token.getJWTClaimsSet().getNotBeforeTime();
+     
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant())));
+  }
+
+      @Test
+  public void testExceedingMaxNbfIncludedInAccessTokenClientCred() throws Exception {
+
     properties.getAccessToken().setCustomNbf(360);
+    assertThat(properties.getAccessToken().getCustomNbf(), equalTo(properties.getAccessToken().getMaxNbf()));
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)

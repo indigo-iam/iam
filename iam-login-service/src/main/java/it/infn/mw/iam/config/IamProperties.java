@@ -505,6 +505,10 @@ public class IamProperties {
         this.customNbf = Math.min(nbfTime, maxNbf);
       }
     }
+
+    public int getMaxNbf(){
+      return maxNbf;
+    }
   }
 
   public static class Organisation {
