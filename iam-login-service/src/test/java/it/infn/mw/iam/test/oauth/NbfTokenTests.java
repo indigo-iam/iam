@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNull;
 
 import java.time.Duration;
 import java.util.Date;
@@ -43,7 +44,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @TestPropertySource(properties = {"iam.access_token.include_nbf=true"})
 public class NbfTokenTests extends EndpointsTestUtils {
-  
+
   private static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   private static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
 
@@ -60,13 +61,32 @@ public class NbfTokenTests extends EndpointsTestUtils {
 
     JWT token = JWTParser.parse(accessToken);
     token.getJWTClaimsSet().getNotBeforeTime();
-     
+
     assertThat(token.getJWTClaimsSet().getNotBeforeTime(), notNullValue());
-    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
-    
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(),
+        equalTo(Date.from(token.getJWTClaimsSet()
+          .getIssueTime()
+          .toInstant()
+          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+
   }
 
-    @Test
+  @Test
+  public void testScopeNotIncludedInAccessTokenClientCred() throws Exception {
+    properties.getAccessToken().setIncludeNbf(false);
+    String accessToken = new AccessTokenGetter().grantType("client_credentials")
+      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
+      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
+      .getAccessTokenValue();
+
+    JWT token = JWTParser.parse(accessToken);
+    token.getJWTClaimsSet().getNotBeforeTime();
+
+    assertNull(token.getJWTClaimsSet().getNotBeforeTime());
+    properties.getAccessToken().setIncludeNbf(true);
+  }
+
+  @Test
   public void testConfiguredNbfIncludedInAccessTokenClientCred() throws Exception {
 
     properties.getAccessToken().setCustomNbf(100);
@@ -77,11 +97,15 @@ public class NbfTokenTests extends EndpointsTestUtils {
 
     JWT token = JWTParser.parse(accessToken);
     token.getJWTClaimsSet().getNotBeforeTime();
-     
-    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(),
+        equalTo(Date.from(token.getJWTClaimsSet()
+          .getIssueTime()
+          .toInstant()
+          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
   }
 
-      @Test
+  @Test
   public void testNegativeValueNbfIncludedInAccessTokenClientCred() throws Exception {
 
     properties.getAccessToken().setCustomNbf(-60);
@@ -92,15 +116,17 @@ public class NbfTokenTests extends EndpointsTestUtils {
 
     JWT token = JWTParser.parse(accessToken);
     token.getJWTClaimsSet().getNotBeforeTime();
-     
-    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant())));
+
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(),
+        equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant())));
   }
 
-      @Test
+  @Test
   public void testExceedingMaxNbfIncludedInAccessTokenClientCred() throws Exception {
 
     properties.getAccessToken().setCustomNbf(360);
-    assertThat(properties.getAccessToken().getCustomNbf(), equalTo(properties.getAccessToken().getMaxNbf()));
+    assertThat(properties.getAccessToken().getCustomNbf(),
+        equalTo(properties.getAccessToken().getMaxNbf()));
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
@@ -108,8 +134,12 @@ public class NbfTokenTests extends EndpointsTestUtils {
 
     JWT token = JWTParser.parse(accessToken);
     token.getJWTClaimsSet().getNotBeforeTime();
-     
-    assertThat(token.getJWTClaimsSet().getNotBeforeTime(), equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant().minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+
+    assertThat(token.getJWTClaimsSet().getNotBeforeTime(),
+        equalTo(Date.from(token.getJWTClaimsSet()
+          .getIssueTime()
+          .toInstant()
+          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
   }
 
 }
