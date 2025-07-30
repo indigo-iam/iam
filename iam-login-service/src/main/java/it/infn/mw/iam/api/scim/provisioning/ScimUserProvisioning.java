@@ -34,7 +34,11 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTUR
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -118,12 +122,79 @@ public class ScimUserProvisioning
   }
 
 
+  private boolean hasGetter(Class<?> clazz, String attributePath) {
+    String[] parts = attributePath.split("\\.");
+    return hasAttributesPathRecursive(clazz, parts, 0);
+  }
+
+  private boolean hasAttributesPathRecursive(Class<?> clazz, String[] parts, int index) {
+    // If you reached the end of the nested attribute then the path is valid
+    if (index >= parts.length)
+      return true;
+
+    // If not the end, then dig deeper
+    try {
+      Field field = clazz.getDeclaredField(parts[index]);
+      Class<?> fieldType = field.getType();
+
+      //Check if it is Generic collection
+      if(Collection.class.isAssignableFrom(fieldType)){
+        Type genericType = field.getGenericType();
+
+        if(genericType instanceof ParameterizedType){
+          Type actualType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
+          
+          if(actualType instanceof Class<?>){
+            return hasAttributesPathRecursive((Class<?>) actualType, parts, index + 1);
+          }
+        }else{
+
+          // Can't determine the type from Generic
+          return false;
+        }
+      }
+
+      return hasAttributesPathRecursive(fieldType, parts, index + 1);
+
+    } catch (NoSuchFieldException e) {
+      // If the path doesn't exist
+      return false;
+    }
+  }
+
+
+
+  private Boolean verifySchemaPath(String path) {
+
+    
+    // If Indigo Schema
+    if (path.contains(ScimConstants.INDIGO_USER_SCHEMA)) {
+
+      // Removing the schema, operator and value to get the path for the ScimUser
+      path = path.substring(0,path.indexOf(" ")).replaceFirst(Pattern.quote(ScimConstants.INDIGO_USER_SCHEMA) + "\\.?", "");
+
+      // Validating attribute through getters 
+      return hasGetter(ScimUser.class, path);
+
+      // Default path will be the IamAccount user schema
+    } else {
+      
+      // Removing the schema, operator and value to get the path for the IamAccount
+      path = path.substring(0,path.indexOf(" ")).replaceFirst(Pattern.quote(ScimUser.USER_SCHEMA) + "\\.?", "");
+
+      // Validating attribute through getters
+      return hasGetter(IamAccount.class, path);
+    }
+  }
+
 
   private ScimFilter parseFilters(final String filtersParameter) {
 
+    if(!verifySchemaPath(filtersParameter)){
+      throw invalidFilter(filtersParameter);
+    };
 
     StringBuilder regex = new StringBuilder();
-
 
     // Ensuring that the optional schema is there that it is valid
     // Adding the 2 schemas available, if more then apply
