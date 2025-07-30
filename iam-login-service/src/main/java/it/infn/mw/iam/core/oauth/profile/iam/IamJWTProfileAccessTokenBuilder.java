@@ -74,7 +74,7 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     if (properties.getAccessToken().isIncludeNbf()) {
       builder.notBeforeTime(Date
-        .from(issueTime.minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf()))));
+        .from(issueTime.minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds()))));
     }
 
     return builder.build();

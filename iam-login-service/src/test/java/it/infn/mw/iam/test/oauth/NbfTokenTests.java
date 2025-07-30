@@ -67,7 +67,7 @@ public class NbfTokenTests extends EndpointsTestUtils {
         equalTo(Date.from(token.getJWTClaimsSet()
           .getIssueTime()
           .toInstant()
-          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+          .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds())))));
 
   }
 
@@ -89,7 +89,7 @@ public class NbfTokenTests extends EndpointsTestUtils {
   @Test
   public void testConfiguredNbfIncludedInAccessTokenClientCred() throws Exception {
 
-    properties.getAccessToken().setCustomNbf(100);
+    properties.getAccessToken().setNbfOffsetSeconds(100);
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
@@ -102,13 +102,13 @@ public class NbfTokenTests extends EndpointsTestUtils {
         equalTo(Date.from(token.getJWTClaimsSet()
           .getIssueTime()
           .toInstant()
-          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+          .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds())))));
   }
 
   @Test
   public void testNegativeValueNbfIncludedInAccessTokenClientCred() throws Exception {
 
-    properties.getAccessToken().setCustomNbf(-60);
+    properties.getAccessToken().setNbfOffsetSeconds(-60);
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
       .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
@@ -124,8 +124,8 @@ public class NbfTokenTests extends EndpointsTestUtils {
   @Test
   public void testExceedingMaxNbfIncludedInAccessTokenClientCred() throws Exception {
 
-    properties.getAccessToken().setCustomNbf(360);
-    assertThat(properties.getAccessToken().getCustomNbf(),
+    properties.getAccessToken().setNbfOffsetSeconds(360);
+    assertThat(properties.getAccessToken().getNbfOffsetSeconds(),
         equalTo(properties.getAccessToken().getMaxNbf()));
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
@@ -139,7 +139,7 @@ public class NbfTokenTests extends EndpointsTestUtils {
         equalTo(Date.from(token.getJWTClaimsSet()
           .getIssueTime()
           .toInstant()
-          .minus(Duration.ofSeconds(properties.getAccessToken().getCustomNbf())))));
+          .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds())))));
   }
 
 }

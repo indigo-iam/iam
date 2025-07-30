@@ -461,7 +461,7 @@ public class IamProperties {
     boolean includeScope = false;
     boolean includeNbf = false;
     int maxNbf = 300;
-    int customNbf = 60;
+    int nbfOffsetSeconds = 60;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -487,15 +487,15 @@ public class IamProperties {
       this.includeNbf = includeNbf;
     }
 
-    public int getCustomNbf() {
-      return customNbf;
+    public int getNbfOffsetSeconds() {
+      return nbfOffsetSeconds;
     }
 
-    public void setCustomNbf(int nbfTime) {
+    public void setNbfOffsetSeconds(int nbfTime) {
       if (nbfTime < 0) {
-        this.customNbf = 0;
+        this.nbfOffsetSeconds = 0;
       } else {
-        this.customNbf = Math.min(nbfTime, maxNbf);
+        this.nbfOffsetSeconds = Math.min(nbfTime, maxNbf);
       }
     }
 
