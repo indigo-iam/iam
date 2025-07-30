@@ -20,24 +20,30 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.invalidS
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notApplicable;
 import static java.util.Comparator.comparing;
 
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
 
+import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
 @SuppressWarnings("deprecation")
@@ -58,6 +64,9 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+
+  @Autowired
+  private IamOAuthAccessTokenRepository tokenRepo;
 
   @Autowired
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
@@ -101,13 +110,55 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
     // The requested scopes must be allowed by the origin client (destination is impersonating the
     // origin client)
-    Set<ScopeMatcher> originClientMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+    // If environment variable iam.jwt-profile.token-exchange-disable-upscoping is true then 
+    // check requested scope is permitted by subject token instead of client configuration to 
+    // prevent upscoping
+    // Check requested scope is permitted by client configuration
+
+
+    // Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+    // String invalidScopeMessage = "scope not allowed by origin client configuration";
+    // if (properties.getJwtProfile().isTokenExchangeDisableUpscoping()){
+    //   try {
+    //     DefaultOAuth2AccessToken subjectToken = mapper.readValue(request.getRequestParameters().get("subject_token"),DefaultOAuth2AccessToken.class);
+    //     Set<String> scopes = subjectToken.getScope();
+    //     Set<ScopeMatcher> tokenScopeMatcher = new HashSet<>();
+    //     for(String scope : scopes){
+    //       tokenScopeMatcher.add(scopeMatcherRegistry.findMatcherForScope(scope));
+    //     }
+    //     scopeMatchers = tokenScopeMatcher;
+    //     invalidScopeMessage = "scope not allowed by subject token configuration";
+    //   } catch (JsonProcessingException e) {
+    //     e.printStackTrace();
+    //   }
+    // }
+
+    Set<ScopeMatcher> scopeMatchers = new HashSet<>();
+    String invalidScopeMessage = "scope not allowed by subject token configuration";
+
+    try {
+        String subjectToken = request.getRequestParameters().get("subject_token");
+        OffsetPageable op = new OffsetPageable(0, (int) tokenRepo.countValidAccessTokensForClient(origin.getClientId(), new Date()));
+        Page<OAuth2AccessTokenEntity> possibleTokens = tokenRepo.findValidAccessTokensForClient(origin.getClientId(), new Date(), op);
+        // Is there a better way of doing this ??
+        for(OAuth2AccessTokenEntity token : possibleTokens) {
+          if (token.getValue().equals(subjectToken)){
+            for(String scope : token.getScope()){
+              scopeMatchers.add(scopeMatcherRegistry.findMatcherForScope(scope));
+            }
+            break;
+          }
+        }
+      } catch (Exception e) {
+        scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+        invalidScopeMessage = "scope not allowed by origin client configuration";
+      }
+    
 
     for (String scope : request.getScope()) {
-      // Check requested scope is permitted by client configuration
-      if (originClientMatchers.stream().noneMatch(m -> m.matches(scope))) {
-        return invalidScope(p, scope, "scope not allowed by origin client configuration");
-      }
+      if (scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+          return invalidScope(p, scope, invalidScopeMessage);
+        }
 
       // Check requested scope is compliant with policies
       if (p.scopePolicies()
