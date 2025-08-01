@@ -173,8 +173,7 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
   }
 
   @Test
-  public void testAcrValuesClaimIsNotAddedWhenMfaProfileIsNotActive()
-      throws JOSEException, JsonProcessingException, RestClientException {
+  public void testAcrValuesClaimIsNotAddedWhenMfaProfileIsNotActive() throws RestClientException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);

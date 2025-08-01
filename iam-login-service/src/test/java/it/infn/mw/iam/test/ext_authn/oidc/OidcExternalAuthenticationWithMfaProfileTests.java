@@ -34,9 +34,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.JOSEException;
-
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
@@ -49,8 +46,8 @@ public class OidcExternalAuthenticationWithMfaProfileTests
     extends OidcExternalAuthenticationTestsSupport {
 
   @Test
-  public void testAcrValuesClaimIsAddedWhenMfaProfileIsActive() throws JOSEException,
-      JsonProcessingException, RestClientException, UnsupportedEncodingException {
+  public void testAcrValuesClaimIsAddedWhenMfaProfileIsActive()
+      throws RestClientException, UnsupportedEncodingException {
 
     RestTemplate rt = noRedirectRestTemplate();
     ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
