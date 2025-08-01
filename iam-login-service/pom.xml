@@ -529,15 +529,8 @@
               <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
             </env>
           </image>
+          <skip>false</skip>
         </configuration>
-
-        <executions>
-          <execution>
-            <goals>
-              <goal>build-info</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
