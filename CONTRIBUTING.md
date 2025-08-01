@@ -71,8 +71,18 @@ mvn -pl iam-login-service -am spring-boot:run -Dspring-boot.run.profiles=h2-test
 ```
 
 The __iam-test-client__ package is a simple web application used to showcase an authorization code flow where `iam-login-service` is the OAuth Authorization Server. It listens by default on http://localhost:9090/iam-test-client. The main class to be run is `it.infn.mw.tc.IamTestClientApplication`.
+From the command line iam-test-client can be run with:
+
+```
+mvn -pl iam-test-client -am spring-boot:run
+```
 
 The __voms-aa__ package is a micro-service which provides backward-compatible VOMS support for a Virtual Organization managed by `iam-login-service`. It listens by default on http://localhost:15000. The main class to be run is `it.infn.mw.voms.VomsService`.
+From the command line iam-voms-aa can be run with:
+
+```
+mvn -pl iam-voms-aa -am spring-boot:run -Dspring-boot.run.profiles=h2
+```
 
 
 ## Repository workflow
