@@ -111,7 +111,6 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNull(info.getGivenName());
     assertNull(info.getFamilyName());
     assertNull(info.getEmail());
-
   }
 
   @Test
@@ -141,7 +140,6 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
-
   }
 
   @Test
@@ -172,6 +170,18 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
+  }
+
+  @Test
+  public void testAcrValuesClaimIsNotAddedWhenMfaProfileIsNotActive() throws RestClientException {
+
+    RestTemplate rt = noRedirectRestTemplate();
+    ResponseEntity<String> response = rt.getForEntity(openidConnectLoginURL(), String.class);
+
+    UriComponents locationUri =
+        UriComponentsBuilder.fromUri(response.getHeaders().getLocation()).build();
+
+    assertNull(locationUri.getQueryParams().get("acr_values"));
   }
 
   @Test
@@ -227,7 +237,6 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(mfaVerifyPageURL()));
-
   }
 
   @Test
@@ -257,7 +266,5 @@ public class OidcExternalAuthenticationTests extends OidcExternalAuthenticationT
     assertNotNull(response.getHeaders().getLocation());
 
     assertThat(response.getHeaders().getLocation().toString(), equalTo(landingPageURL()));
-
   }
-
 }
