@@ -39,6 +39,10 @@ public class IamProperties {
     NAME, SURNAME, EMAIL, PICTURE
   }
 
+  public enum RegistrationField {
+    email, name, surname, username, affiliation, notes
+  }
+
   public enum LocalAuthenticationAllowedUsers {
     ALL, VO_ADMINS, NONE
   }
@@ -193,10 +197,9 @@ public class IamProperties {
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationFieldProperties {
-    boolean readOnly = false;
+    boolean readOnly;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour =
-        ExternalAuthAttributeSectionBehaviour.MANDATORY;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -226,11 +229,11 @@ public class IamProperties {
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationProperties {
 
-    boolean showRegistrationButtonInLoginPage = true;
+    boolean showRegistrationButtonInLoginPage;
 
-    boolean requireExternalAuthentication = false;
-
-    boolean addNicknameAsAttribute = false;
+    boolean requireExternalAuthentication;
+    
+    boolean addNicknameAsAttribute;
 
     ExternalAuthenticationType authenticationType;
 
@@ -240,7 +243,7 @@ public class IamProperties {
 
     String registrationButtonText;
 
-    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
+    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
 
     List<DefaultGroup> defaultGroups;
 
@@ -300,11 +303,11 @@ public class IamProperties {
       this.samlEntityId = samlEntityId;
     }
 
-    public Map<String, RegistrationFieldProperties> getFields() {
+    public Map<RegistrationField, RegistrationFieldProperties> getFields() {
       return fields;
     }
 
-    public void setFields(Map<String, RegistrationFieldProperties> fields) {
+    public void setFields(Map<RegistrationField, RegistrationFieldProperties> fields) {
       this.fields = fields;
     }
 
