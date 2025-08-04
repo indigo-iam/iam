@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.12.1 (2025-08-04)
+
+### What's Fixed
+
+* Fix link/unlink x509 personal certificate issue due to runtime bouncy-castle conflict
+* Consider both subject DN and issuer DN when unlinking x509 personal certificate
+* Send acr_values only when mfa is included within the active profiles
+* Ensure access tokens are not issued before totp verification
+* Add validation when registration fields are read-only
+
+### Note
+
+The Multi-Factor Authentication feature is still considered as experimental.
+It will be enhanced and expanded in future releases, based also on users feedback.
+
 ## 1.12.0 (2025-05-29)
 
 ### What's Changed
