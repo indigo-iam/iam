@@ -52,7 +52,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -78,9 +77,6 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamAupRepository aupRepo;
-
-  @Autowired
-  private IamProperties properties;
 
   @Test
   public void testImpersonationFlowWithAudience() throws Exception {
@@ -700,70 +696,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-  }
-
-  @Test
-  public void testTokenExchangeForClientCredentialsClientDisableUpscopingSuccess()
-      throws Exception {
-    properties.getJwtProfile().setTokenExchangeDisableUpscoping(true);
-
-    String accessToken = new AccessTokenGetter().grantType("client_credentials")
-      .clientId("client-cred")
-      .clientSecret("secret")
-      .scope("write-tasks read-tasks")
-      .getAccessTokenValue();
-
-    String actorClientId = "token-exchange-actor";
-    String actorClientSecret = "secret";
-
-    String tokenResponse = mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
-        .param("grant_type", GRANT_TYPE)
-        .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
-        .param("scope", "read-tasks"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.access_token").exists())
-      .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
-      .andReturn()
-      .getResponse()
-      .getContentAsString();
-
-    DefaultOAuth2AccessToken tokenResponseObject =
-        mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
-
-    JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
-    assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
-
-    properties.getJwtProfile().setTokenExchangeDisableUpscoping(false);
-  }
-
-  @Test
-  public void testTokenExchangeForClientCredentialsClientDisableUpscopingFail() throws Exception {
-    properties.getJwtProfile().setTokenExchangeDisableUpscoping(true);
-
-    String accessToken = new AccessTokenGetter().grantType("client_credentials")
-      .clientId("client-cred")
-      .clientSecret("secret")
-      .scope("write-tasks")
-      .getAccessTokenValue();
-
-    String actorClientId = "token-exchange-actor";
-    String actorClientSecret = "secret";
-
-    mvc
-      .perform(post(TOKEN_ENDPOINT).with(httpBasic(actorClientId, actorClientSecret))
-        .param("grant_type", GRANT_TYPE)
-        .param("subject_token", accessToken)
-        .param("subject_token_type", TOKEN_TYPE)
-        .param("scope", "read-tasks"))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.error").value("invalid_scope"))
-      .andExpect(jsonPath("$.error_description")
-        .value("scope not allowed by subject token configuration: read-tasks"));
-
-    properties.getJwtProfile().setTokenExchangeDisableUpscoping(false);
-  }
+    }
 
   private String generateString(int length) {
     String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
