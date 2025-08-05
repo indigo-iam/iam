@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -725,7 +726,7 @@ public class AccountUpdatersTests extends X509TestSupport {
       .display("test")
       .build();
 
-    x509Converter.entityFromDto(cert);
+    assertDoesNotThrow(() -> x509Converter.entityFromDto(cert));
   }
 
   @Test
