@@ -118,28 +118,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     // prevent upscoping
     // Check requested scope is permitted by client configuration
 
-
-    // Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
-    // String invalidScopeMessage = "scope not allowed by origin client configuration";
-    // if (properties.getJwtProfile().isTokenExchangeDisableUpscoping()){
-    //   try {
-    //     DefaultOAuth2AccessToken subjectToken = mapper.readValue(request.getRequestParameters().get("subject_token"),DefaultOAuth2AccessToken.class);
-    //     Set<String> scopes = subjectToken.getScope();
-    //     Set<ScopeMatcher> tokenScopeMatcher = new HashSet<>();
-    //     for(String scope : scopes){
-    //       tokenScopeMatcher.add(scopeMatcherRegistry.findMatcherForScope(scope));
-    //     }
-    //     scopeMatchers = tokenScopeMatcher;
-    //     invalidScopeMessage = "scope not allowed by subject token configuration";
-    //   } catch (JsonProcessingException e) {
-    //     e.printStackTrace();
-    //   }
-    // }
-
-    Set<ScopeMatcher> scopeMatchers = new HashSet<>();
-    
-
-    scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+    Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
 
     if (properties.getJwtProfile().isTokenExchangeDisableUpscoping()){
@@ -148,6 +127,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
         OffsetPageable op = new OffsetPageable(0, (int) tokenRepo.countValidAccessTokensForClient(origin.getClientId(), new Date()));
         Page<OAuth2AccessTokenEntity> possibleTokens = tokenRepo.findValidAccessTokensForClient(origin.getClientId(), new Date(), op);
         invalidScopeMessage = "scope not allowed by subject token configuration";
+        scopeMatchers = new HashSet<>();
         // Is there a better way of doing this ??
         for(OAuth2AccessTokenEntity token : possibleTokens) {
           if (token.getValue().equals(subjectToken)){
