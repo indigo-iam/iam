@@ -264,6 +264,14 @@ public class IamProperties {
       this.registrationButtonText = registrationButtonText;
     }
 
+    public String getRegistrationButtonText() {
+      return registrationButtonText;
+    }
+
+    public void setRegistrationButtonText(String registrationButtonText) {
+      this.registrationButtonText = registrationButtonText;
+    }
+
     public boolean isRequireExternalAuthentication() {
       return requireExternalAuthentication;
     }
