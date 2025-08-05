@@ -36,10 +36,10 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -64,12 +64,14 @@ public class RegistrationFieldsValidationServiceTests {
   private IamProperties iamProperties;
 
   @Mock
+  private ApplicationEventPublisher eventPublisher;
+
+  @Mock
   private IamProperties.RegistrationProperties registrationProperties;
 
   @Mock
   private RegistrationFieldProperties notesFieldProperties;
 
-  @InjectMocks
   private RegistrationFieldsValidationService service;
 
   @Before
@@ -78,6 +80,7 @@ public class RegistrationFieldsValidationServiceTests {
 
     // Mock the registration properties and fields map
     when(iamProperties.getRegistration()).thenReturn(registrationProperties);
+    service = new RegistrationFieldsValidationService(iamProperties, eventPublisher);
   }
 
   private RegistrationFieldProperties buildFieldProperties(boolean isReadOnly,
