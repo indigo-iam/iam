@@ -111,7 +111,6 @@ public class RegistrationLifecycleTests extends EndpointsTestUtils {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
     request.setAffiliation("Test-Affiliation");
 
     // @formatter:off

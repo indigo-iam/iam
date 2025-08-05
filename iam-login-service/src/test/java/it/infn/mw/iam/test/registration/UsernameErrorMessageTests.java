@@ -84,7 +84,6 @@ public class UsernameErrorMessageTests extends TestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
 
     return request;
   }

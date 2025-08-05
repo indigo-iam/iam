@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import org.junit.Before;
@@ -57,6 +57,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -235,12 +236,13 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
   @Test
   public void testRegistrationConfig() throws Exception {
-    Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+    Map<RegistrationField, RegistrationFieldProperties> fieldAttribute =
+        new EnumMap<>(RegistrationField.class);
     RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
     notesProperties.setReadOnly(true);
     notesProperties.setExternalAuthAttribute("notes");
     notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put("notes", notesProperties);
+    fieldAttribute.put(RegistrationField.NOTES, notesProperties);
 
     when(registrationProperties.getFields()).thenReturn(fieldAttribute);
 
@@ -265,7 +267,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
 
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
