@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.affiliation;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.email;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.name;
 import static it.infn.mw.iam.config.IamProperties.RegistrationField.surname;
@@ -195,11 +196,14 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
           account.getUserInfo()::setEmail);
       handle(username, dto, info, "suggested_username", info.get()::getSuggestedUsername,
           dto::getUsername, account::setUsername);
+      handle(affiliation, dto, info, "", dto::getAffiliation, dto::getAffiliation,
+          account.getUserInfo()::setAffiliation);
     } else {
       account.getUserInfo().setGivenName(dto.getGivenname());
       account.getUserInfo().setFamilyName(dto.getFamilyname());
       account.getUserInfo().setEmail(dto.getEmail());
       account.setUsername(dto.getUsername());
+      account.getUserInfo().setAffiliation(dto.getAffiliation());
     }
 
     account.getUserInfo().setEmailVerified(false);

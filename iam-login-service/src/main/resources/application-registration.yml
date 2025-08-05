@@ -40,6 +40,9 @@ iam:
         read-only: false
         field-behaviour: mandatory
         external-auth-attribute: suggested_username
+      affiliation:
+        read-only: false
+        field-behaviour: optional
       notes:
         read-only: false
         field-behaviour: mandatory

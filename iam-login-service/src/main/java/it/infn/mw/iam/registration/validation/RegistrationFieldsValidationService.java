@@ -117,6 +117,9 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
       case username:
         return dto.getUsername().equals(extAuthnInfo.getSuggestedUsername()) || dto.getUsername()
           .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
+      case affiliation:
+        return dto.getAffiliation()
+          .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
       case notes:
         return true;
       default:
