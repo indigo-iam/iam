@@ -15,8 +15,8 @@
  */
 package it.infn.mw.iam.test.login;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,13 +35,14 @@ import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
 
 @RunWith(SpringRunner.class)
 @IamRandomPortIntegrationTest
-@SpringBootTest(classes = {IamLoginService.class},
-    webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {"iam.registration.show-registration-button-in-login-page=false"})
 public class RegistrationButtonDisabledTests {
 
   @Value("${local.server.port}")
   private Integer serverPort;
+
+  private final String REGISTRATIONBUTTONTEXT = "Apply for an account";
 
   @BeforeClass
   public static void init() {
@@ -49,14 +50,50 @@ public class RegistrationButtonDisabledTests {
   }
 
   @Test
+  public void noRegistrationButtonSuccess() {
+    RestAssured.given().port(serverPort).when().get("/login").then().statusCode(200);
+  }
+
+  @Test
   public void registrationButtonIsNotShown() {
-    RestAssured.given()
+    String responseBody = RestAssured.given()
       .port(serverPort)
       .when()
       .get("/login")
       .then()
       .statusCode(200)
-      .body(not(containsString("Apply for an account")));
+      .extract()
+      .body()
+      .asString();
+
+    int amountOccurences = 0;
+    int index = 0;
+
+    while (responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) != -1) {
+      amountOccurences++;
+      index = responseBody.indexOf(REGISTRATIONBUTTONTEXT, index) + 1;
+
+    }
+
+    assertEquals(1, amountOccurences);
+
+  }
+
+  @Test
+  public void registrationButtonTextFound() {
+
+    String responseBody = RestAssured.given()
+      .port(serverPort)
+      .when()
+      .get("/login")
+      .then()
+      .statusCode(200)
+      .extract()
+      .body()
+      .asString();
+
+    assertTrue(responseBody.contains(REGISTRATIONBUTTONTEXT));
+
   }
 
 }

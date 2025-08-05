@@ -18,6 +18,11 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.AFFILIATION;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
@@ -26,10 +31,13 @@ import java.time.Clock;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -49,6 +57,7 @@ import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRemovedEvent;
 import it.infn.mw.iam.audit.events.account.AccountRestoredEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
+import it.infn.mw.iam.audit.events.account.EmailVerifiedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.audit.events.account.attribute.AccountAttributeRemovedEvent;
@@ -57,8 +66,12 @@ import it.infn.mw.iam.audit.events.account.group.GroupMembershipAddedEvent;
 import it.infn.mw.iam.audit.events.account.group.GroupMembershipRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelRemovedEvent;
 import it.infn.mw.iam.audit.events.account.label.AccountLabelSetEvent;
+import it.infn.mw.iam.audit.events.aup.AupSignedEvent;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
@@ -68,6 +81,8 @@ import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamAttribute;
+import it.infn.mw.iam.persistence.model.IamAup;
+import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
@@ -76,9 +91,12 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
+import it.infn.mw.iam.registration.RegistrationRequestDto;
+import it.infn.mw.iam.registration.TokenGenerator;
 
 @Service
 @Transactional
@@ -95,13 +113,16 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final NotificationFactory notificationFactory;
   private final IamProperties iamProperties;
   private final DefaultIamGroupService iamGroupService;
+  private final TokenGenerator tokenGenerator;
+  private final IamAupSignatureRepository iamAupSignatureRepo;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
       OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
       NotificationFactory notificationFactory, IamProperties iamProperties,
-      DefaultIamGroupService iamGroupService) {
+      DefaultIamGroupService iamGroupService, TokenGenerator tokenGenerator,
+      IamAupSignatureRepository iamAupSignatureRepo) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -114,6 +135,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.notificationFactory = notificationFactory;
     this.iamProperties = iamProperties;
     this.iamGroupService = iamGroupService;
+    this.tokenGenerator = tokenGenerator;
+    this.iamAupSignatureRepo = iamAupSignatureRepo;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -140,6 +163,97 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     eventPublisher.publishEvent(new AccountAttributeRemovedEvent(this, account, attribute));
   }
 
+  private void handle(RegistrationField field,
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, String defaultAttributeName,
+      Supplier<String> externalGetter, Supplier<String> defaultGetter, Consumer<String> setter) {
+
+    if (extAuthnInfo.isPresent() && isReadOnlyField(RegistrationField.NAME)) {
+      Map<String, String> attributes = extAuthnInfo.get().getAdditionalAttributes();
+      Optional<String> externalAuthAttribute = getExternalAuthAttribute(field);
+      if (externalAuthAttribute.isPresent() && attributes.containsKey(externalAuthAttribute.get())
+          && !defaultAttributeName.equals(externalAuthAttribute.get().toLowerCase())) {
+        setter.accept(attributes.get(externalAuthAttribute.get()));
+      } else {
+        setter.accept(externalGetter.get());
+      }
+    } else {
+      setter.accept(defaultGetter.get());
+    }
+  }
+
+  @Override
+  public IamAccount createAccount(RegistrationRequestDto dto,
+      Optional<ExternalAuthenticationRegistrationInfo> info) {
+
+    IamAccount account = IamAccount.newAccount();
+
+    if (info.isPresent()) {
+      handle(NAME, info, "given_name", info.get()::getGivenName, dto::getGivenname,
+          account.getUserInfo()::setGivenName);
+      handle(SURNAME, info, "family_name", info.get()::getFamilyName, dto::getFamilyname,
+          account.getUserInfo()::setFamilyName);
+      handle(EMAIL, info, "email", info.get()::getEmail, dto::getEmail,
+          account.getUserInfo()::setEmail);
+      handle(USERNAME, info, "suggested_username", info.get()::getSuggestedUsername,
+          dto::getUsername, account::setUsername);
+      handle(AFFILIATION, info, "", dto::getAffiliation, dto::getAffiliation,
+          account.getUserInfo()::setAffiliation);
+    } else {
+      account.getUserInfo().setGivenName(dto.getGivenname());
+      account.getUserInfo().setFamilyName(dto.getFamilyname());
+      account.getUserInfo().setEmail(dto.getEmail());
+      account.setUsername(dto.getUsername());
+      account.getUserInfo().setAffiliation(dto.getAffiliation());
+    }
+
+    account.getUserInfo().setEmailVerified(false);
+    account.setActive(false);
+    account.setPassword(UUID.randomUUID().toString());
+
+    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
+      account.setAttributes(Set.of(IamAttribute.newInstance("nickname", account.getUsername())));
+    }
+
+    info.ifPresent(i -> addExternalAuthnInfo(account, i));
+
+    account.setConfirmationKey(tokenGenerator.generateToken());
+
+    return createAccount(account);
+  }
+
+  private IamAccount addExternalAuthnInfo(IamAccount account,
+      ExternalAuthenticationRegistrationInfo i) {
+
+    if (ExternalAuthenticationType.OIDC.equals(i.getType())) {
+      IamOidcId oidcId = new IamOidcId();
+      oidcId.setAccount(account);
+      oidcId.setIssuer(i.getIssuer());
+      oidcId.setSubject(i.getSubject());
+      account.getOidcIds().add(oidcId);
+    } else {
+      IamSamlId samlId = new IamSamlId();
+      samlId.setAccount(account);
+      samlId.setIdpId(i.getIssuer());
+      samlId.setUserId(i.getSubject());
+      samlId.setAttributeId(i.getSubjectAttribute());
+      account.getSamlIds().add(samlId);
+    }
+    return account;
+  }
+
+  private boolean isReadOnlyField(RegistrationField field) {
+    return iamProperties.getRegistration().getFields().containsKey(field)
+        && iamProperties.getRegistration().getFields().get(field).isReadOnly();
+  }
+
+  private Optional<String> getExternalAuthAttribute(RegistrationField field) {
+    if (iamProperties.getRegistration().getFields().containsKey(field)) {
+      return Optional.ofNullable(
+          iamProperties.getRegistration().getFields().get(field).getExternalAuthAttribute());
+    }
+    return Optional.empty();
+  }
+
   @Override
   public IamAccount createAccount(IamAccount account) {
     checkNotNull(account, "Cannot create a null account");
@@ -158,8 +272,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     account.setLastUpdateTime(now);
-
-    account.getUserInfo().setEmailVerified(true);
 
     if (account.getPassword() == null) {
       account.setPassword(UUID.randomUUID().toString());
@@ -198,6 +310,19 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
         "Account created for user " + account.getUsername()));
 
     addToDefaultGroups(account);
+    return account;
+  }
+
+  @Override
+  public IamAccount verifyAccount(IamAccount account) {
+
+    account.getUserInfo().setEmailVerified(true);
+    account.setConfirmationKey(null);
+    accountRepo.save(account);
+
+    eventPublisher.publishEvent(
+        new EmailVerifiedEvent(this, account, "Email verified for user " + account.getUsername()));
+
     return account;
   }
 
@@ -644,4 +769,17 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
     eventPublisher = applicationEventPublisher;
   }
+
+  @Override
+  public IamAccount signAup(IamAccount account, IamAup aup) {
+
+    if (aup == null) {
+      return account;
+    }
+    IamAupSignature signature =
+        iamAupSignatureRepo.createSignatureForAccount(aup, account, Date.from(clock.instant()));
+    eventPublisher.publishEvent(new AupSignedEvent(this, signature));
+    return account;
+  }
+
 }
