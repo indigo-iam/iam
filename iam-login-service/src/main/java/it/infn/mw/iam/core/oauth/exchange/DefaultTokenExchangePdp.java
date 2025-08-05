@@ -134,6 +134,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
     if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
+      invalidScopeMessage = "scope not allowed by subject token configuration";
       scopeMatchers = findScopeMatchersForToken(origin.getClientId(), subjectToken);
     }
 
