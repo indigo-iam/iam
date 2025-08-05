@@ -33,13 +33,16 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.test.context.junit4.SpringRunner;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.Decision;
@@ -49,8 +52,9 @@ import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
 public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
   @Spy
@@ -62,15 +66,17 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Mock
   ClientDetails destinationClient;
 
-  @Mock
+  @MockBean
   IamTokenExchangePolicyRepository repo;
 
-  @Mock
+  @MockBean
   ScopeMatcherRegistry scopeMatchersRegistry;
 
-  @InjectMocks
+  @Autowired
   DefaultTokenExchangePdp pdp;
 
+  @Autowired
+  IamProperties properties;
 
   private TokenRequest buildTokenRequest() {
     return new TokenRequest(emptyMap(), "destination", Collections.emptySet(), TOKEN_EXCHANGE_GRANT_TYPE);

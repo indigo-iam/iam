@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.Lists;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
@@ -69,6 +70,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private IamOAuthAccessTokenRepository tokenRepo;
 
   @Autowired
+  private IamProperties properties;
+
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
       ScopeMatcherRegistry scopeMatcherRegistry) {
     this.repo = repo;
@@ -134,12 +137,17 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     // }
 
     Set<ScopeMatcher> scopeMatchers = new HashSet<>();
-    String invalidScopeMessage = "scope not allowed by subject token configuration";
+    
 
-    try {
+    scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
+    String invalidScopeMessage = "scope not allowed by origin client configuration";
+
+    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping()){
+      try {
         String subjectToken = request.getRequestParameters().get("subject_token");
         OffsetPageable op = new OffsetPageable(0, (int) tokenRepo.countValidAccessTokensForClient(origin.getClientId(), new Date()));
         Page<OAuth2AccessTokenEntity> possibleTokens = tokenRepo.findValidAccessTokensForClient(origin.getClientId(), new Date(), op);
+        invalidScopeMessage = "scope not allowed by subject token configuration";
         // Is there a better way of doing this ??
         for(OAuth2AccessTokenEntity token : possibleTokens) {
           if (token.getValue().equals(subjectToken)){
@@ -150,13 +158,12 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
           }
         }
       } catch (Exception e) {
-        scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
-        invalidScopeMessage = "scope not allowed by origin client configuration";
-      }
+      }}
+    
     
 
     for (String scope : request.getScope()) {
-      if (scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+      if (!scope.equals("offline_access") && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
           return invalidScope(p, scope, invalidScopeMessage);
         }
 

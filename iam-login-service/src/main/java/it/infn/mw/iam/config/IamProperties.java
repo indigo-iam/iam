@@ -392,12 +392,22 @@ public class IamProperties {
 
     Profile defaultProfile = Profile.IAM;
 
+    boolean tokenExchangeDisableUpscoping = false;
+
     public Profile getDefaultProfile() {
       return defaultProfile;
     }
 
     public void setDefaultProfile(Profile defaultProfile) {
       this.defaultProfile = defaultProfile;
+    }
+
+     public boolean isTokenExchangeDisableUpscoping() {
+      return tokenExchangeDisableUpscoping;
+    }
+
+    public void setTokenExchangeDisableUpscoping(boolean isDisableValue) {
+      this.tokenExchangeDisableUpscoping = isDisableValue;
     }
   }
 
