@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.2 (2025-08-05)
+
+### What's Changed
+
+* Upgrade CANL to 2.8.3 and Bouncy Castle to 1.81 by moving to latest VOMS API Java v3.3.6
+
+### Note
+
+This update fixes a problem we observed with VOMS API Java v3.3.5,
+firstly added to the release candidates of IAM v1.12.0 and later downgraded to v3.3.4 before
+the official release.
+
 ## 1.12.1 (2025-08-04)
 
 ### What's Fixed
