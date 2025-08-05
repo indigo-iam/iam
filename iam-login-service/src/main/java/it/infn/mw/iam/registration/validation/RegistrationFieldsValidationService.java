@@ -45,10 +45,10 @@ import it.infn.mw.iam.registration.RegistrationRequestDto;
 @Profile("!cern")
 public class RegistrationFieldsValidationService implements RegistrationRequestValidationService {
 
-  public final String ERROR_01 = "External Authentication is required by configuration";
-  public final String ERROR_02 = "Mandatory %s field cannot be null or an empty string";
-  public final String ERROR_03 = "External authentication is required with read only fields";
-  public final String ERROR_04 =
+  public static final String ERROR_01 = "External Authentication is required by configuration";
+  public static final String ERROR_02 = "Mandatory %s field cannot be null or an empty string";
+  public static final String ERROR_03 = "External authentication is required with read only fields";
+  public static final String ERROR_04 =
       "Invalid value for the read only field %s: not coherent with the external authn";
 
   public static final Logger LOG =
@@ -105,22 +105,22 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
       RegistrationRequestDto dto, ExternalAuthenticationRegistrationInfo extAuthnInfo) {
 
     switch (field) {
-      case email:
+      case EMAIL:
         return dto.getEmail().equals(extAuthnInfo.getEmail())
             || dto.getEmail().equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
-      case name:
+      case NAME:
         return dto.getGivenname().equals(extAuthnInfo.getGivenName()) || dto.getGivenname()
           .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
-      case surname:
+      case SURNAME:
         return dto.getFamilyname().equals(extAuthnInfo.getFamilyName()) || dto.getFamilyname()
           .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
-      case username:
+      case USERNAME:
         return dto.getUsername().equals(extAuthnInfo.getSuggestedUsername()) || dto.getUsername()
           .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
-      case affiliation:
+      case AFFILIATION:
         return dto.getAffiliation()
           .equals(extAuthnInfo.getAdditionalAttributes().get(extAuthAttribute));
-      case notes:
+      case NOTES:
         return true;
       default:
         return false;
@@ -134,15 +134,15 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
       return true;
     }
     switch (entry.getKey()) {
-      case name:
+      case NAME:
         return dto.getGivenname() != null && !dto.getGivenname().isBlank();
-      case surname:
+      case SURNAME:
         return dto.getFamilyname() != null && !dto.getFamilyname().isBlank();
-      case username:
+      case USERNAME:
         return dto.getUsername() != null && !dto.getUsername().isBlank();
-      case email:
+      case EMAIL:
         return dto.getEmail() != null && !dto.getEmail().isBlank();
-      case notes:
+      case NOTES:
         return dto.getNotes() != null && !dto.getNotes().isBlank();
       default:
         return false;

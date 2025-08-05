@@ -18,11 +18,11 @@ package it.infn.mw.iam.core.user;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.affiliation;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.email;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.name;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.surname;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.username;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.AFFILIATION;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler.LIFECYCLE_STATUS_LABEL;
 import static java.lang.String.format;
 import static java.util.Objects.isNull;
@@ -163,11 +163,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     eventPublisher.publishEvent(new AccountAttributeRemovedEvent(this, account, attribute));
   }
 
-  private void handle(RegistrationField field, RegistrationRequestDto dto,
+  private void handle(RegistrationField field,
       Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo, String defaultAttributeName,
       Supplier<String> externalGetter, Supplier<String> defaultGetter, Consumer<String> setter) {
 
-    if (extAuthnInfo.isPresent() && isReadOnlyField(RegistrationField.name)) {
+    if (extAuthnInfo.isPresent() && isReadOnlyField(RegistrationField.NAME)) {
       Map<String, String> attributes = extAuthnInfo.get().getAdditionalAttributes();
       Optional<String> externalAuthAttribute = getExternalAuthAttribute(field);
       if (externalAuthAttribute.isPresent() && attributes.containsKey(externalAuthAttribute.get())
@@ -188,15 +188,15 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     IamAccount account = IamAccount.newAccount();
 
     if (info.isPresent()) {
-      handle(name, dto, info, "given_name", info.get()::getGivenName, dto::getGivenname,
+      handle(NAME, info, "given_name", info.get()::getGivenName, dto::getGivenname,
           account.getUserInfo()::setGivenName);
-      handle(surname, dto, info, "family_name", info.get()::getFamilyName, dto::getFamilyname,
+      handle(SURNAME, info, "family_name", info.get()::getFamilyName, dto::getFamilyname,
           account.getUserInfo()::setFamilyName);
-      handle(email, dto, info, "email", info.get()::getEmail, dto::getEmail,
+      handle(EMAIL, info, "email", info.get()::getEmail, dto::getEmail,
           account.getUserInfo()::setEmail);
-      handle(username, dto, info, "suggested_username", info.get()::getSuggestedUsername,
+      handle(USERNAME, info, "suggested_username", info.get()::getSuggestedUsername,
           dto::getUsername, account::setUsername);
-      handle(affiliation, dto, info, "", dto::getAffiliation, dto::getAffiliation,
+      handle(AFFILIATION, info, "", dto::getAffiliation, dto::getAffiliation,
           account.getUserInfo()::setAffiliation);
     } else {
       account.getUserInfo().setGivenName(dto.getGivenname());

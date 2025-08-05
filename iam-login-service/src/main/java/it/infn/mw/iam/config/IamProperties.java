@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +40,7 @@ public class IamProperties {
   }
 
   public enum RegistrationField {
-    email, name, surname, username, affiliation, notes
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES
   }
 
   public enum LocalAuthenticationAllowedUsers {
@@ -243,7 +243,7 @@ public class IamProperties {
 
     String registrationButtonText;
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
+    Map<RegistrationField, RegistrationFieldProperties> fields = new EnumMap<>(RegistrationField.class);
 
     List<DefaultGroup> defaultGroups;
 

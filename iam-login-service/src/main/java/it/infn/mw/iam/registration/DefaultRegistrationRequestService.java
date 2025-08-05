@@ -126,9 +126,7 @@ public class DefaultRegistrationRequestService
         .build();
 
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
-    iamAupRepo.findDefaultAup().ifPresent(aup -> {
-      accountService.signAup(account, aup);
-    });
+    iamAupRepo.findDefaultAup().ifPresent(aup -> accountService.signAup(account, aup));
   }
 
   @Override

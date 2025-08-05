@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import org.junit.Before;
@@ -236,12 +236,13 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
 
   @Test
   public void testRegistrationConfig() throws Exception {
-    Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+    Map<RegistrationField, RegistrationFieldProperties> fieldAttribute =
+        new EnumMap<>(RegistrationField.class);
     RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
     notesProperties.setReadOnly(true);
     notesProperties.setExternalAuthAttribute("notes");
     notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-    fieldAttribute.put(RegistrationField.notes, notesProperties);
+    fieldAttribute.put(RegistrationField.NOTES, notesProperties);
 
     when(registrationProperties.getFields()).thenReturn(fieldAttribute);
 

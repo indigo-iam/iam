@@ -19,17 +19,17 @@ package it.infn.mw.iam.test.registration;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.HIDDEN;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.MANDATORY;
 import static it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour.OPTIONAL;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.email;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.name;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.notes;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.surname;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.username;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NOTES;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -108,12 +108,13 @@ public class RegistrationFieldsValidationServiceTests {
     // Hidden or Optional: null is ignored
     request = getDefaultFullRegistrationRequest();
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, MANDATORY, null));
-    fields.put(surname, buildFieldProperties(false, MANDATORY, null));
-    fields.put(email, buildFieldProperties(false, MANDATORY, null));
-    fields.put(username, buildFieldProperties(false, MANDATORY, null));
-    fields.put(notes, buildFieldProperties(false, MANDATORY, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+    fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
@@ -130,23 +131,24 @@ public class RegistrationFieldsValidationServiceTests {
     request = getDefaultFullRegistrationRequest();
     request.setGivenname(null);
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, HIDDEN, null));
-    fields.put(surname, buildFieldProperties(false, MANDATORY, null));
-    fields.put(email, buildFieldProperties(false, MANDATORY, null));
-    fields.put(username, buildFieldProperties(false, MANDATORY, null));
-    fields.put(notes, buildFieldProperties(false, MANDATORY, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, HIDDEN, null));
+    fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+    fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
-    fields.get(name).setFieldBehaviour(OPTIONAL);
+    fields.get(NAME).setFieldBehaviour(OPTIONAL);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
     // Mandatory: expected error
-    fields.get(name).setFieldBehaviour(MANDATORY);
+    fields.get(NAME).setFieldBehaviour(MANDATORY);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertFalse(result.isOk());
     assertEquals("Mandatory name field cannot be null or an empty string",
@@ -175,23 +177,24 @@ public class RegistrationFieldsValidationServiceTests {
     request = getDefaultFullRegistrationRequest();
     request.setFamilyname(null);
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, MANDATORY, null));
-    fields.put(surname, buildFieldProperties(false, HIDDEN, null));
-    fields.put(email, buildFieldProperties(false, MANDATORY, null));
-    fields.put(username, buildFieldProperties(false, MANDATORY, null));
-    fields.put(notes, buildFieldProperties(false, MANDATORY, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(SURNAME, buildFieldProperties(false, HIDDEN, null));
+    fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+    fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
-    fields.get(surname).setFieldBehaviour(OPTIONAL);
+    fields.get(SURNAME).setFieldBehaviour(OPTIONAL);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
     // Mandatory: expected error
-    fields.get(surname).setFieldBehaviour(MANDATORY);
+    fields.get(SURNAME).setFieldBehaviour(MANDATORY);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertFalse(result.isOk());
     assertEquals("Mandatory surname field cannot be null or an empty string",
@@ -220,23 +223,24 @@ public class RegistrationFieldsValidationServiceTests {
     request = getDefaultFullRegistrationRequest();
     request.setEmail(null);
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, MANDATORY, null));
-    fields.put(surname, buildFieldProperties(false, MANDATORY, null));
-    fields.put(email, buildFieldProperties(false, HIDDEN, null));
-    fields.put(username, buildFieldProperties(false, MANDATORY, null));
-    fields.put(notes, buildFieldProperties(false, MANDATORY, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(EMAIL, buildFieldProperties(false, HIDDEN, null));
+    fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
-    fields.get(email).setFieldBehaviour(OPTIONAL);
+    fields.get(EMAIL).setFieldBehaviour(OPTIONAL);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
     // Mandatory: expected error
-    fields.get(email).setFieldBehaviour(MANDATORY);
+    fields.get(EMAIL).setFieldBehaviour(MANDATORY);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertFalse(result.isOk());
     assertEquals("Mandatory email field cannot be null or an empty string",
@@ -265,23 +269,24 @@ public class RegistrationFieldsValidationServiceTests {
     request = getDefaultFullRegistrationRequest();
     request.setUsername(null);
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, MANDATORY, null));
-    fields.put(surname, buildFieldProperties(false, MANDATORY, null));
-    fields.put(email, buildFieldProperties(false, MANDATORY, null));
-    fields.put(username, buildFieldProperties(false, HIDDEN, null));
-    fields.put(notes, buildFieldProperties(false, MANDATORY, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+    fields.put(USERNAME, buildFieldProperties(false, HIDDEN, null));
+    fields.put(NOTES, buildFieldProperties(false, MANDATORY, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
-    fields.get(username).setFieldBehaviour(OPTIONAL);
+    fields.get(USERNAME).setFieldBehaviour(OPTIONAL);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
     // Mandatory: expected error
-    fields.get(username).setFieldBehaviour(MANDATORY);
+    fields.get(USERNAME).setFieldBehaviour(MANDATORY);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertFalse(result.isOk());
     assertEquals("Mandatory username field cannot be null or an empty string",
@@ -310,23 +315,24 @@ public class RegistrationFieldsValidationServiceTests {
     request = getDefaultFullRegistrationRequest();
     request.setNotes(null);
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new HashMap<>();
-    fields.put(name, buildFieldProperties(false, MANDATORY, null));
-    fields.put(surname, buildFieldProperties(false, MANDATORY, null));
-    fields.put(email, buildFieldProperties(false, MANDATORY, null));
-    fields.put(username, buildFieldProperties(false, MANDATORY, null));
-    fields.put(notes, buildFieldProperties(false, HIDDEN, null));
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
+    fields.put(NAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(SURNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(EMAIL, buildFieldProperties(false, MANDATORY, null));
+    fields.put(USERNAME, buildFieldProperties(false, MANDATORY, null));
+    fields.put(NOTES, buildFieldProperties(false, HIDDEN, null));
     when(iamProperties.getRegistration().getFields()).thenReturn(fields);
 
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
-    fields.get(notes).setFieldBehaviour(OPTIONAL);
+    fields.get(NOTES).setFieldBehaviour(OPTIONAL);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertTrue(result.isOk());
 
     // Mandatory: expected error
-    fields.get(notes).setFieldBehaviour(MANDATORY);
+    fields.get(NOTES).setFieldBehaviour(MANDATORY);
     result = service.validateRegistrationRequest(request, Optional.empty());
     assertFalse(result.isOk());
     assertEquals("Mandatory notes field cannot be null or an empty string",

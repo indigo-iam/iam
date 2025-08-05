@@ -15,10 +15,10 @@
  */
 package it.infn.mw.iam.test.registration;
 
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.email;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.name;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.surname;
-import static it.infn.mw.iam.config.IamProperties.RegistrationField.username;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.EMAIL;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.NAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.SURNAME;
+import static it.infn.mw.iam.config.IamProperties.RegistrationField.USERNAME;
 import static it.infn.mw.iam.registration.DefaultRegistrationRequestService.NICKNAME_ATTRIBUTE_KEY;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.DEFAULT_IDP_ID;
 import static java.lang.String.format;
@@ -234,7 +234,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, username)));
+      .andExpect(content().json(format(EXPECTED_ERROR, USERNAME)));
 
     r = createSamlRegistrationRequest();
     r.setGivenname("custom-name");
@@ -243,7 +243,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, name)));
+      .andExpect(content().json(format(EXPECTED_ERROR, NAME)));
 
     r = createSamlRegistrationRequest();
     r.setFamilyname("custom-surname");
@@ -252,7 +252,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, surname)));
+      .andExpect(content().json(format(EXPECTED_ERROR, SURNAME)));
 
     r = createSamlRegistrationRequest();
     r.setEmail("custom-email@example.com");
@@ -261,7 +261,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, email)));
+      .andExpect(content().json(format(EXPECTED_ERROR, EMAIL)));
   }
 
   @Test
@@ -280,7 +280,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, username)));
+      .andExpect(content().json(format(EXPECTED_ERROR, USERNAME)));
 
     r = createOidcRegistrationRequest();
     r.setGivenname("custom-name");
@@ -289,7 +289,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, name)));
+      .andExpect(content().json(format(EXPECTED_ERROR, NAME)));
 
     r = createOidcRegistrationRequest();
     r.setFamilyname("custom-surname");
@@ -298,7 +298,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, surname)));
+      .andExpect(content().json(format(EXPECTED_ERROR, SURNAME)));
 
     r = createOidcRegistrationRequest();
     r.setEmail("custom-email@example.com");
@@ -307,7 +307,7 @@ public class ReadOnlyFieldsValidationTests extends TestSupport {
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(r)))
       .andExpect(status().isBadRequest())
-      .andExpect(content().json(format(EXPECTED_ERROR, email)));
+      .andExpect(content().json(format(EXPECTED_ERROR, EMAIL)));
   }
 
 }
