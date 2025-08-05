@@ -18,6 +18,7 @@ package it.infn.mw.iam.util.test.saml;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_FIRST_NAME;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.CERN_PERSON_ID;
+import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.EPPN;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.GIVEN_NAME;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.MAIL;
 import static it.infn.mw.iam.authn.saml.util.Saml2Attribute.SN;
@@ -78,12 +79,21 @@ public class SamlSecurityContextBuilder extends SecurityContextBuilderSupport {
   @Override
   public SecurityContextBuilderSupport name(String givenName, String familyName) {
 
-    if (!Strings.isNullOrEmpty(givenName) && Strings.isNullOrEmpty(familyName)) {
+    if (!Strings.isNullOrEmpty(givenName) && !Strings.isNullOrEmpty(familyName)) {
       when(samlCredential.getAttributeAsString(GIVEN_NAME.getAttributeName()))
         .thenReturn(givenName);
       when(samlCredential.getAttributeAsString(SN.getAttributeName())).thenReturn(familyName);
     }
+    return this;
+  }
 
+  @Override
+  public SecurityContextBuilderSupport username(String username) {
+
+    if (!Strings.isNullOrEmpty(username)) {
+      when(samlCredential.getAttributeAsString(EPPN.getAttributeName()))
+        .thenReturn(username);
+    }
     return this;
   }
 

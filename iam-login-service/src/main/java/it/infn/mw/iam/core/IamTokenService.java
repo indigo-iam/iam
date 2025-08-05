@@ -29,12 +29,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
 import it.infn.mw.iam.config.IamProperties;
@@ -95,6 +97,13 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public OAuth2AccessTokenEntity createAccessToken(OAuth2Authentication authentication) {
 
+    if (authentication.getUserAuthentication() != null && 
+      authentication.getUserAuthentication().getAuthorities() != null &&
+      authentication.getUserAuthentication()
+      .getAuthorities()
+      .contains(Authorities.ROLE_PRE_AUTHENTICATED)) {
+      throw new InvalidGrantException("User is not fully authenticated.");
+    } 
     OAuth2AccessTokenEntity token = super.createAccessToken(scopeFilter.filterScopes(authentication));
 
     if (iamProperties.getClient().isTrackLastUsed()) {

@@ -32,10 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import it.infn.mw.iam.api.account.password_reset.PasswordUpdateController;
-import it.infn.mw.iam.api.scim.model.ScimEmail;
-import it.infn.mw.iam.api.scim.model.ScimName;
-import it.infn.mw.iam.api.scim.model.ScimUser;
-import it.infn.mw.iam.api.scim.provisioning.ScimUserProvisioning;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.test.TestUtils;
@@ -48,15 +45,16 @@ public class PasswordUpdateTests {
   @Value("${local.server.port}")
   private Integer iamPort;
 
-  private ScimUser testUser;
+  private IamAccount testUser;
 
   private final String USER_USERNAME = "password_tester_user";
   private final String USER_PASSWORD = "password";
-  private final ScimName USER_NAME = ScimName.builder().givenName("TESTER").familyName("USER").build();
-  private final ScimEmail USER_EMAIL = ScimEmail.builder().email("password_tester_user@test.org").build();
+  private final String USER_NAME = "TESTER";
+  private final String USER_SURNAME = "USER";
+  private final String USER_EMAIL = "password_tester_user@test.org";
 
   @Autowired
-  private ScimUserProvisioning userService;
+  private IamAccountService accountService;
   @Autowired
   private IamAccountRepository accountRepository;
 
@@ -68,20 +66,21 @@ public class PasswordUpdateTests {
   @Before
   public void testSetup() {
 
-    testUser = userService.create(ScimUser.builder()
-        .active(true)
-        .addEmail(USER_EMAIL)
-        .name(USER_NAME)
-        .displayName(USER_USERNAME)
-        .userName(USER_USERNAME)
-        .password(USER_PASSWORD)
-        .build());
+    IamAccount account = IamAccount.newAccount();
+    account.setActive(true);
+    account.setUsername(USER_USERNAME);
+    account.setPassword(USER_PASSWORD);
+    account.getUserInfo().setGivenName(USER_NAME);
+    account.getUserInfo().setFamilyName(USER_SURNAME);
+    account.getUserInfo().setEmail(USER_EMAIL);
+    account.getUserInfo().setEmailVerified(true);
+    testUser = accountService.createAccount(account);
   }
 
   @After
   public void testTeardown() {
 
-    userService.delete(testUser.getId());
+    accountService.deleteAccount(testUser);
   }
 
   private ValidatableResponse doPost(String accessToken, String currentPassword,
@@ -125,14 +124,14 @@ public class PasswordUpdateTests {
     String newPassword = "Secure_p@ssw0rd";
 
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
 
     passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(newPassword)
         .getAccessToken();
   }
@@ -144,14 +143,14 @@ public class PasswordUpdateTests {
     String newPassword = "S3crP@ss";
 
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
     doPost(accessToken, currentPassword, newPassword).statusCode(HttpStatus.OK.value());
 
     passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(newPassword)
         .getAccessToken();
 
@@ -178,7 +177,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Secure_P@ssw0rd!";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -202,7 +201,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = null;
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -215,7 +214,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -228,7 +227,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "pass";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -241,7 +240,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "newweakpassword";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -254,7 +253,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Password1";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -267,7 +266,7 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "Sjfyt-hdddW!";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
@@ -280,11 +279,11 @@ public class PasswordUpdateTests {
     String currentPassword = "password";
     String newPassword = "newP@ssw0rd";
     String accessToken = passwordTokenGetter().port(iamPort)
-        .username(testUser.getUserName())
+        .username(testUser.getUsername())
         .password(currentPassword)
         .getAccessToken();
 
-    IamAccount account = accountRepository.findByUsername(testUser.getUserName())
+    IamAccount account = accountRepository.findByUsername(testUser.getUsername())
         .orElseThrow(() -> new Exception("Test user not found"));
     account.setActive(false);
     accountRepository.save(account);
