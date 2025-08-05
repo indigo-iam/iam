@@ -56,6 +56,8 @@
 		<spring-security-oauth2.version>2.5.2.RELEASE</spring-security-oauth2.version>
 
 		<voms.version>3.3.4</voms.version>
+		<bc.version>1.69</bc.version>
+
 		<spring-security-saml.version>1.0.10.RELEASE</spring-security-saml.version>
 
 		<!-- Update this in sync with the parent project version -->
@@ -217,10 +219,35 @@
 				<version>${voms.version}</version>
 			</dependency>
 
+			<!-- Bouncy Castle -->
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcpkix-jdk15on</artifactId>
+				<version>${bc.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk15on</artifactId>
+				<version>${bc.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-ext-jdk15on</artifactId>
+				<version>${bc.version}</version>
+			</dependency>
+
 			<dependency>
 				<groupId>org.italiangrid</groupId>
 				<artifactId>voms-clients</artifactId>
 				<version>${voms.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.italiangrid</groupId>
+						<artifactId>voms-api-java</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 
 			<!-- Mitre -->
@@ -234,6 +261,20 @@
 				<groupId>org.mitre</groupId>
 				<artifactId>openid-connect-server</artifactId>
 				<version>${mitreid.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcprov-jdk15on</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcprov-ext-jdk15on</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcpkix-jdk15on</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 
 			<dependency>
@@ -260,6 +301,24 @@
 				<groupId>org.springframework.security.extensions</groupId>
 				<artifactId>spring-security-saml2-core</artifactId>
 				<version>${spring-security-saml.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>xml-apis</groupId>
+						<artifactId>xml-apis</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcprov-jdk15on</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcprov-ext-jdk15on</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.bouncycastle</groupId>
+						<artifactId>bcpkix-jdk15on</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 
 			<dependency>
