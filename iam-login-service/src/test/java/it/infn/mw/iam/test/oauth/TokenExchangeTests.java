@@ -79,7 +79,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
   @Autowired
   private IamAupRepository aupRepo;
 
-  @Autowired 
+  @Autowired
   private IamProperties properties;
 
   @Test
@@ -342,13 +342,13 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
@@ -374,11 +374,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .param("token", refreshedToken.getValue()))
@@ -514,7 +514,8 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getAccessTokenValue();
 
 
-    mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
+    mvc
+      .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
         .param("grant_type", GRANT_TYPE)
         .param("subject_token", accessToken)
         .param("subject_token_type", TOKEN_TYPE)
@@ -576,13 +577,13 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     DefaultOAuth2AccessToken responseToken =
         mapper.readValue(response, DefaultOAuth2AccessToken.class);
-    
-    
+
+
     JWT exchangedToken = JWTParser.parse(responseToken.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
-    
+
     Map<String, Object> actClaim = exchangedToken.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
@@ -608,20 +609,20 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     JWT refreshedTokenJwt = JWTParser.parse(refreshedToken.getValue());
     assertThat(refreshedTokenJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = refreshedTokenJwt.getJWTClaimsSet().getJSONObjectClaim("act");
-    
+
     assertThat(actClaim, notNullValue());
     assertThat(actClaim.get("sub"), is("token-exchange-actor"));
     assertThat(actClaim.get("act"), nullValue());
-    
+
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
         .param("token", refreshedToken.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    
-    
+
+
     String secondActorClient = "token-lookup-client";
-    
+
     // @formatter:off
     response = mvc.perform(post(TOKEN_ENDPOINT)
         .with(httpBasic(secondActorClient, "secret"))
@@ -641,7 +642,8 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getContentAsString();
     // @formatter:on
 
-    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+    DefaultOAuth2AccessToken secondExchangeResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
     actClaim = secondExchangeJwt.getJWTClaimsSet().getJSONObjectClaim("act");
@@ -693,14 +695,16 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .getResponse()
       .getContentAsString();
     // @formatter:on
-    
-    DefaultOAuth2AccessToken secondExchangeResponse =  mapper.readValue(response, DefaultOAuth2AccessToken.class);
+
+    DefaultOAuth2AccessToken secondExchangeResponse =
+        mapper.readValue(response, DefaultOAuth2AccessToken.class);
     JWT secondExchangeJwt = JWTParser.parse(secondExchangeResponse.getValue());
     assertThat(secondExchangeJwt.getJWTClaimsSet().getSubject(), is(TEST_USER_SUB));
   }
 
-    @Test
-  public void testTokenExchangeForClientCredentialsClientDisableUpscopingSuccess() throws Exception {
+  @Test
+  public void testTokenExchangeForClientCredentialsClientDisableUpscopingSuccess()
+      throws Exception {
     properties.getJwtProfile().setTokenExchangeDisableUpscoping(true);
 
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
@@ -720,8 +724,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
         .param("scope", "read-tasks"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
-      .andExpect(jsonPath("$.scope",
-          allOf(containsString("read-tasks"))))
+      .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -731,11 +734,11 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
     assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
-    
+
     properties.getJwtProfile().setTokenExchangeDisableUpscoping(false);
   }
 
-      @Test
+  @Test
   public void testTokenExchangeForClientCredentialsClientDisableUpscopingFail() throws Exception {
     properties.getJwtProfile().setTokenExchangeDisableUpscoping(true);
 
@@ -758,7 +761,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.error").value("invalid_scope"))
       .andExpect(jsonPath("$.error_description")
         .value("scope not allowed by subject token configuration: read-tasks"));
-    
+
     properties.getJwtProfile().setTokenExchangeDisableUpscoping(false);
   }
 

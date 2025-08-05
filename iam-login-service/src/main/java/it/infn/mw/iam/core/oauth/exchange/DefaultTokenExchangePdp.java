@@ -60,22 +60,23 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
+  private final IamOAuthAccessTokenRepository tokenRepo;
+
+  private final IamProperties properties;
+
   private List<TokenExchangePolicy> policies = Lists.newArrayList();
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
-  @Autowired
-  private IamOAuthAccessTokenRepository tokenRepo;
-
-  @Autowired
-  private IamProperties properties;
-
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties,
+      IamOAuthAccessTokenRepository tokenRepo) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
+    this.properties = properties;
+    this.tokenRepo = tokenRepo;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
@@ -84,11 +85,29 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       .collect(Collectors.toSet());
   }
 
+  private Set<ScopeMatcher> findScopeMatchersForToken(String clientId, String subjectToken) {
+    Set<ScopeMatcher> scopeMatchers = new HashSet<>();
+    OffsetPageable op = new OffsetPageable(0,
+        (int) tokenRepo.countValidAccessTokensForClient(clientId, new Date()));
+    Page<OAuth2AccessTokenEntity> possibleTokens =
+        tokenRepo.findValidAccessTokensForClient(clientId, new Date(), op);
+    // Is there a better way of doing this ??
+    for (OAuth2AccessTokenEntity token : possibleTokens) {
+      if (token.getValue().equals(subjectToken)) {
+        scopeMatchers = scopeMatcherRegistry.findMatchersForToken(token);
+        break;
+      }
+    }
+    return scopeMatchers;
+  }
+
   /**
    * In an exchange of scopes between the origin and destination client, the destination client is
    * the client that issued the token request. The scope verification at this stage checks that the
-   * requested scopes are allowed by the origin client configuration, as the destination client is
-   * impersonating the origin client.
+   * requested scopes are allowed. By default the scopes are verified against the origin client
+   * configuration, as the destination client is impersonating the origin client - this allows for
+   * "upscoping". If the VO config disables "upscoping", then the scopes will be verified against
+   * the subject token scopes.
    * 
    * After this checks, the scope policies linked to the exchange policy are applied for each
    * requested scope. If there's a policy that does not allow one of the requested scope, an
@@ -111,41 +130,18 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       return fromPolicy(p);
     }
 
-    // The requested scopes must be allowed by the origin client (destination is impersonating the
-    // origin client)
-    // If environment variable iam.jwt-profile.token-exchange-disable-upscoping is true then 
-    // check requested scope is permitted by subject token instead of client configuration to 
-    // prevent upscoping
-    // Check requested scope is permitted by client configuration
-
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
-
-    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping()){
-      try {
-        String subjectToken = request.getRequestParameters().get("subject_token");
-        OffsetPageable op = new OffsetPageable(0, (int) tokenRepo.countValidAccessTokensForClient(origin.getClientId(), new Date()));
-        Page<OAuth2AccessTokenEntity> possibleTokens = tokenRepo.findValidAccessTokensForClient(origin.getClientId(), new Date(), op);
-        invalidScopeMessage = "scope not allowed by subject token configuration";
-        scopeMatchers = new HashSet<>();
-        // Is there a better way of doing this ??
-        for(OAuth2AccessTokenEntity token : possibleTokens) {
-          if (token.getValue().equals(subjectToken)){
-            for(String scope : token.getScope()){
-              scopeMatchers.add(scopeMatcherRegistry.findMatcherForScope(scope));
-            }
-            break;
-          }
-        }
-      } catch (Exception e) {
-      }}
-    
-    
+    String subjectToken = request.getRequestParameters().get("subject_token");
+    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
+      scopeMatchers = findScopeMatchersForToken(origin.getClientId(), subjectToken);
+    }
 
     for (String scope : request.getScope()) {
-      if (!scope.equals("offline_access") && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
-          return invalidScope(p, scope, invalidScopeMessage);
-        }
+      if (!scope.equals("offline_access")
+          && scopeMatchers.stream().noneMatch(m -> m.matches(scope))) {
+        return invalidScope(p, scope, invalidScopeMessage);
+      }
 
       // Check requested scope is compliant with policies
       if (p.scopePolicies()

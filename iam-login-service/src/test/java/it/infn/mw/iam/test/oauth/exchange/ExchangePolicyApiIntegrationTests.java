@@ -51,11 +51,13 @@ import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.exchange_policy.ClientMatchingPolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangePolicyDTO;
 import it.infn.mw.iam.api.exchange_policy.ExchangeScopePolicyDTO;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
@@ -70,11 +72,18 @@ public class ExchangePolicyApiIntegrationTests {
 
   @Configuration
   public static class TestBeans {
+    @Autowired
+    private IamOAuthAccessTokenRepository tokenRepo;
+
+    @Autowired
+    private IamProperties properties;
+
     @Bean
     @Primary
     public TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
-      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry);
+      DefaultTokenExchangePdp pdp =
+          new DefaultTokenExchangePdp(repo, registry, properties, tokenRepo);
       return Mockito.spy(pdp);
     }
   }
@@ -127,7 +136,8 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin.read")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.read")
   public void listPoliciesWorks() throws Exception {
     mvc.perform(get(ENDPOINT))
       .andExpect(status().isOk())
@@ -152,7 +162,8 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin.write")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.write")
   public void deletePolicyWorks() throws Exception {
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNoContent());
     mvc.perform(delete(ENDPOINT + "/1")).andExpect(status().isNotFound());
@@ -175,7 +186,8 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"iam:admin.read", "iam:admin.write"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = {"iam:admin.read", "iam:admin.write"})
   public void createPolicyWorks() throws Exception {
     repo.deleteAll();
 
@@ -213,7 +225,8 @@ public class ExchangePolicyApiIntegrationTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = {"iam:admin.write", "iam:admin.read"})
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = {"iam:admin.write", "iam:admin.read"})
   public void createPolicyWithScopePoliciesWorks() throws Exception {
 
     repo.deleteAll();
@@ -260,7 +273,8 @@ public class ExchangePolicyApiIntegrationTests {
 
 
   @Test
-  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"}, scopes = "iam:admin.write")
+  @WithMockOAuthUser(user = "admin", authorities = {"ROLE_USER", "ROLE_ADMIN"},
+      scopes = "iam:admin.write")
   public void policyValidation() throws Exception {
 
     // Empty object

@@ -79,7 +79,8 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   IamProperties properties;
 
   private TokenRequest buildTokenRequest() {
-    return new TokenRequest(emptyMap(), "destination", Collections.emptySet(), TOKEN_EXCHANGE_GRANT_TYPE);
+    return new TokenRequest(emptyMap(), "destination", Collections.emptySet(),
+        TOKEN_EXCHANGE_GRANT_TYPE);
   }
 
 
@@ -87,10 +88,10 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   public void before() {
     when(originClient.getClientId()).thenReturn(ORIGIN_CLIENT_ID);
     // when(destinationClient.getClientId()).thenReturn(DESTINATION_CLIENT_ID);
-    
+
     when(originClient.getScope()).thenReturn(ORIGIN_CLIENT_SCOPES);
     when(destinationClient.getScope()).thenReturn(DESTINATION_CLIENT_SCOPES);
-    
+
     when(scopeMatchersRegistry.findMatchersForClient(originClient))
       .thenReturn(ORIGIN_CLIENT_SCOPES.stream()
         .map(StringEqualsScopeMatcher::stringEqualsMatcher)
@@ -129,7 +130,7 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   public void tokenDenyAllExchanges() {
 
     IamTokenExchangePolicyEntity pe = buildDenyExamplePolicy(1L, "Deny all exchanges");
-    
+
     when(repo.findAll()).thenReturn(Arrays.asList(pe));
     pdp.reloadPolicies();
 
@@ -145,10 +146,11 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Test
   public void testPolicyRankedCombination() {
     IamTokenExchangePolicyEntity p1 = buildDenyExamplePolicy(1L, "Deny all exchanges");
-    
-    IamTokenExchangePolicyEntity p2 = buildPermitExamplePolicy(2L, "Allow exchanges from client origin");
+
+    IamTokenExchangePolicyEntity p2 =
+        buildPermitExamplePolicy(2L, "Allow exchanges from client origin");
     p2.setOriginClient(buildByIdClientMatcher("origin"));
-    
+
     when(repo.findAll()).thenReturn(Arrays.asList(p1, p2));
     pdp.reloadPolicies();
 
@@ -167,7 +169,7 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
     IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
     IamTokenExchangePolicyEntity p2 = buildDenyExamplePolicy(2L, "Deny all exchanges");
     IamTokenExchangePolicyEntity p3 = buildPermitExamplePolicy(3L, "Allow all exchanges");
-    
+
     when(repo.findAll()).thenReturn(asList(p1, p2, p3));
     pdp.reloadPolicies();
 
@@ -184,16 +186,18 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Test
   public void rankingWorksAsExpected() {
 
-    IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow exchanges between scope s2 clients");
-    
-    IamClientMatchingPolicy s2ScopeClient =  buildByScopeClientMatcher("s2");
+    IamTokenExchangePolicyEntity p1 =
+        buildPermitExamplePolicy(1L, "Allow exchanges between scope s2 clients");
+
+    IamClientMatchingPolicy s2ScopeClient = buildByScopeClientMatcher("s2");
     p1.setOriginClient(s2ScopeClient);
     p1.setDestinationClient(s2ScopeClient);
-    
-    IamTokenExchangePolicyEntity p2 = buildDenyExamplePolicy(2L,"Deny exchanges between origin and scope s2 clients");
+
+    IamTokenExchangePolicyEntity p2 =
+        buildDenyExamplePolicy(2L, "Deny exchanges between origin and scope s2 clients");
     p2.setOriginClient(buildByIdClientMatcher("origin"));
     p2.setDestinationClient(s2ScopeClient);
-    
+
     when(repo.findAll()).thenReturn(asList(p1, p2));
     pdp.reloadPolicies();
 
@@ -211,18 +215,18 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   public void clientScopeCheckingWorks() {
     IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
     request.setScope(asList("s5"));
-    
+
     when(repo.findAll()).thenReturn(asList(p1));
     pdp.reloadPolicies();
-    
+
     TokenExchangePdpResult result =
         pdp.validateTokenExchange(request, originClient, destinationClient);
-    
+
     assertThat(result.decision(), is(Decision.INVALID_SCOPE));
     assertThat(result.message().isPresent(), is(true));
     assertThat(result.message().get(), is("scope not allowed by origin client configuration"));
   }
-  
+
   @Test
   public void clientOriginScopeCheckingWorks() {
     IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
@@ -242,36 +246,36 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
   @Test
   public void clientScopeCheckWorks() {
     IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
-    request.setScope(asList("s1","s2"));
-    
+    request.setScope(asList("s1", "s2"));
+
     when(repo.findAll()).thenReturn(asList(p1));
     pdp.reloadPolicies();
-    
+
     TokenExchangePdpResult result =
         pdp.validateTokenExchange(request, originClient, destinationClient);
-    
-    assertThat(result.decision(), is(Decision.PERMIT)); 
+
+    assertThat(result.decision(), is(Decision.PERMIT));
   }
-  
+
   @Test
   public void scopeExchangeDenyPolicyWorks() {
     IamTokenExchangePolicyEntity p1 = buildPermitExamplePolicy(1L, "Allow all exchanges");
     request.setScope(asList("s2", "s1"));
-    
+
     p1.getScopePolicies().add(buildScopePolicy(DENY, "s1"));
     p1.getScopePolicies().add(buildScopePolicy(PERMIT, "s2"));
-    
+
     when(repo.findAll()).thenReturn(asList(p1));
     pdp.reloadPolicies();
-    
+
     TokenExchangePdpResult result =
         pdp.validateTokenExchange(request, originClient, destinationClient);
-    
+
     assertThat(result.decision(), is(Decision.INVALID_SCOPE));
-    
-    assertThat(result.invalidScope().isPresent(), is (true));
+
+    assertThat(result.invalidScope().isPresent(), is(true));
     assertThat(result.invalidScope().get(), is("s1"));
-    assertThat(result.message().isPresent(), is (true));
+    assertThat(result.message().isPresent(), is(true));
     assertThat(result.message().get(), is("scope exchange not allowed by policy"));
   }
 
@@ -290,7 +294,7 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         pdp.validateTokenExchange(request, originClient, destinationClient);
 
     assertThat(result.decision(), is(Decision.INVALID_SCOPE));
-    
+
     assertThat(result.invalidScope().isPresent(), is(true));
     assertThat(result.invalidScope().get(), is("s1"));
     assertThat(result.message().isPresent(), is(true));
