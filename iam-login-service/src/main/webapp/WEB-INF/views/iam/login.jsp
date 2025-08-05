@@ -191,14 +191,14 @@
                 <div class="registration-preamble text-muted">
                    Not a member?
                 </div>
-                <a class="btn btn-success btn-block" href="/start-registration">Apply for an account</a>
-                <c:if test="${
-                    loginPageConfiguration.samlEnabled
-                    && iamSamlProperties.wayfLoginButton.visible
-                    && iamSamlProperties.wayfLoginButton.image.url.contains('edugain-logo.gif')
-                }">
-                  <!-- WAYF login button -->
-                  <a class="btn btn-success btn-block" href="/saml/login">Register an account with eduGAIN</a>
+                    <a class="btn btn-success btn-block" href="/start-registration">${loginPageConfiguration.registrationButtonText}</a>
+                        <c:if test="${
+                            loginPageConfiguration.samlEnabled
+                            && iamSamlProperties.wayfLoginButton.visible
+                            && iamSamlProperties.wayfLoginButton.image.url.contains('edugain-logo.gif')
+                        }">
+                    <!-- WAYF login button -->
+                    <a class="btn btn-success btn-block" href="/saml/login">Register an account with eduGAIN</a>
                 </c:if>
             </div>
         </c:if>

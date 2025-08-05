@@ -154,6 +154,7 @@ iam:
   
   registration:
     show-registration-button-in-login-page: ${IAM_REGISTRATION_SHOW_REGISTRATION_BUTTON_IN_LOGIN_PAGE:true}
+    registration-button-text: ${IAM_REGISTRATION_BUTTON_TEXT:Apply for an account}
     require-external-authentication: ${IAM_REGISTRATION_REQUIRE_EXTERNAL_AUTHENTICATION:false}
     authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
     oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
