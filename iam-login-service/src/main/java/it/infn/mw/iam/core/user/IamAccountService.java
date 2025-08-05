@@ -22,14 +22,17 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
+import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamSshKey;
+import it.infn.mw.iam.registration.RegistrationRequestDto;
 
 /**
  * This service provides basic functionality used to manage IAM accounts
@@ -46,6 +49,16 @@ public interface IamAccountService {
   Optional<IamAccount> findByUuid(String uuid);
 
   /**
+   * Creates a new {@link IamAccount} from a registration request.
+   *
+   * @param dto the registration request
+   * @param extAuthnInfo the eventual external authentication wrapped in an {@link Optional}
+   * @return the created {@link IamAccount}
+   */
+  IamAccount createAccount(RegistrationRequestDto dto,
+      Optional<ExternalAuthenticationRegistrationInfo> extAuthnInfo);
+
+  /**
    * Creates a new {@link IamAccount}, after some checks.
    * 
    * @param account the account to be created
@@ -53,6 +66,13 @@ public interface IamAccountService {
    */
   IamAccount createAccount(IamAccount account);
 
+  /**
+   * Set the account's email as verified
+   *
+   * @param account the owner of the email
+   * @return the updated {@link IamAccount}
+   */
+  IamAccount verifyAccount(IamAccount account);
 
   /**
    * Triggers a save operation for the account
@@ -221,4 +241,12 @@ public interface IamAccountService {
    */
   IamAccount removeSshKey(IamAccount account, IamSshKey key);
 
+  /**
+   * Sign the AUP passed as a parameter
+   *
+   * @param account the signer account
+   * @param aup the signed AUP
+   * @return the updated signer account
+   */
+  IamAccount signAup(IamAccount account, IamAup aup);
 }

@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +37,10 @@ public class IamProperties {
 
   public enum EditableFields {
     NAME, SURNAME, EMAIL, PICTURE
+  }
+
+  public enum RegistrationField {
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES
   }
 
   public enum LocalAuthenticationAllowedUsers {
@@ -193,10 +197,9 @@ public class IamProperties {
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationFieldProperties {
-    boolean readOnly = false;
+    boolean readOnly;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour =
-        ExternalAuthAttributeSectionBehaviour.MANDATORY;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -226,11 +229,11 @@ public class IamProperties {
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationProperties {
 
-    boolean showRegistrationButtonInLoginPage = true;
+    boolean showRegistrationButtonInLoginPage;
 
-    boolean requireExternalAuthentication = false;
+    boolean requireExternalAuthentication;
 
-    boolean addNicknameAsAttribute = false;
+    boolean addNicknameAsAttribute;
 
     ExternalAuthenticationType authenticationType;
 
@@ -240,7 +243,8 @@ public class IamProperties {
 
     String registrationButtonText;
 
-    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
 
     List<DefaultGroup> defaultGroups;
 
@@ -300,11 +304,11 @@ public class IamProperties {
       this.samlEntityId = samlEntityId;
     }
 
-    public Map<String, RegistrationFieldProperties> getFields() {
+    public Map<RegistrationField, RegistrationFieldProperties> getFields() {
       return fields;
     }
 
-    public void setFields(Map<String, RegistrationFieldProperties> fields) {
+    public void setFields(Map<RegistrationField, RegistrationFieldProperties> fields) {
       this.fields = fields;
     }
 
