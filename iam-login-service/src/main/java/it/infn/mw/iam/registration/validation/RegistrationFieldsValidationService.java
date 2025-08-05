@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -54,11 +53,14 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
   public static final Logger LOG =
       LoggerFactory.getLogger(RegistrationFieldsValidationService.class);
 
-  @Autowired
-  private IamProperties properties;
+  private final IamProperties properties;
+  private final ApplicationEventPublisher eventPublisher;
 
-  @Autowired
-  private ApplicationEventPublisher eventPublisher;
+  public RegistrationFieldsValidationService(IamProperties properties,
+      ApplicationEventPublisher eventPublisher) {
+    this.properties = properties;
+    this.eventPublisher = eventPublisher;
+  }
 
   @Override
   public RegistrationRequestValidationResult validateRegistrationRequest(RegistrationRequestDto dto,
