@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.registration;
 
-import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
-import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
-
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
@@ -25,7 +22,6 @@ import java.util.List;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -66,12 +62,6 @@ public class RegistrationRequestDto implements Serializable {
   @UsernameRegExp
   private String username;
 
-  @JsonView(RegistrationViews.RegistrationExtendDetail.class)
-  @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_REGEX_MESSAGE_ERROR,
-      groups = {OnRegistrationCreation.class})
-  @Size(min = 8, message = "password should have at least 8 characters")
-  private String password;
-
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
   @Size(min = 2, max = 128, groups = {OnRegistrationCreation.class})
@@ -99,6 +89,9 @@ public class RegistrationRequestDto implements Serializable {
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
       RegistrationViews.RegistrationDetail.class})
   private String notes;
+
+  @JsonView({RegistrationViews.RegistrationExtendDetail.class,
+    RegistrationViews.RegistrationDetail.class})
   private String affiliation;
 
   @JsonView({RegistrationViews.RegistrationExtendDetail.class,
@@ -112,15 +105,14 @@ public class RegistrationRequestDto implements Serializable {
       @JsonProperty(value = "givenname", required = true) String givenname,
       @JsonProperty(value = "familyname", required = true) String familyname,
       @JsonProperty(value = "email", required = true) String email,
-      @JsonProperty("notes") String notes, @JsonProperty("password") String password,
-      @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
-      @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
-      @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
+      @JsonProperty("notes") String notes, @JsonProperty("uuid") String uuid,
+      @JsonProperty("birthdate") String birthdate, @JsonProperty("accountId") String accountId,
+      @JsonProperty("creationTime") Date creationTime, @JsonProperty("status") String status,
+      @JsonProperty("lastUpdateTime") Date lastUpdateTime,
       @JsonProperty("affiliation") String affiliation,
       @JsonProperty("labels") List<LabelDTO> labels) {
     super();
     this.username = username;
-    this.password = password;
     this.givenname = givenname;
     this.familyname = familyname;
     this.email = email;
@@ -183,16 +175,6 @@ public class RegistrationRequestDto implements Serializable {
   public void setUsername(String username) {
 
     this.username = username;
-  }
-
-  public String getPassword() {
-
-    return password;
-  }
-
-  public void setPassword(String password) {
-
-    this.password = password;
   }
 
   public String getGivenname() {

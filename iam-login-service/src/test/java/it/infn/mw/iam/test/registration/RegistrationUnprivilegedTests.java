@@ -267,7 +267,6 @@ public class RegistrationUnprivilegedTests extends AupTestSupport {
     request.setEmail(email);
     request.setUsername(username);
     request.setNotes("Some short notes...");
-    request.setPassword("password");
 
     String response = mvc
       .perform(post("/registration/create").contentType(MediaType.APPLICATION_JSON)
