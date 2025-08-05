@@ -474,7 +474,6 @@ public class IamProperties {
     boolean includeAuthnInfo = false;
     boolean includeScope = false;
     boolean includeNbf = false;
-    int maxNbf = 300;
     int nbfOffsetSeconds = 60;
 
     public boolean isIncludeAuthnInfo() {
@@ -509,12 +508,8 @@ public class IamProperties {
       if (nbfTime < 0) {
         this.nbfOffsetSeconds = 0;
       } else {
-        this.nbfOffsetSeconds = Math.min(nbfTime, maxNbf);
+        this.nbfOffsetSeconds = nbfTime;
       }
-    }
-
-    public int getMaxNbf() {
-      return maxNbf;
     }
   }
 

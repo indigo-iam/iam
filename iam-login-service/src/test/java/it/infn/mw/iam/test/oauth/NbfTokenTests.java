@@ -121,25 +121,4 @@ public class NbfTokenTests extends EndpointsTestUtils {
         equalTo(Date.from(token.getJWTClaimsSet().getIssueTime().toInstant())));
   }
 
-  @Test
-  public void testExceedingMaxNbfIncludedInAccessTokenClientCred() throws Exception {
-
-    properties.getAccessToken().setNbfOffsetSeconds(360);
-    assertThat(properties.getAccessToken().getNbfOffsetSeconds(),
-        equalTo(properties.getAccessToken().getMaxNbf()));
-    String accessToken = new AccessTokenGetter().grantType("client_credentials")
-      .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
-      .clientSecret(CLIENT_CREDENTIALS_CLIENT_SECRET)
-      .getAccessTokenValue();
-
-    JWT token = JWTParser.parse(accessToken);
-    token.getJWTClaimsSet().getNotBeforeTime();
-
-    assertThat(token.getJWTClaimsSet().getNotBeforeTime(),
-        equalTo(Date.from(token.getJWTClaimsSet()
-          .getIssueTime()
-          .toInstant()
-          .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds())))));
-  }
-
 }
