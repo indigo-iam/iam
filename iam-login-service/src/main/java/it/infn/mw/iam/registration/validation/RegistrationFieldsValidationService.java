@@ -75,7 +75,7 @@ public class RegistrationFieldsValidationService implements RegistrationRequestV
 
       /* Check mandatory fields are not null or blank */
       if (!validateMandatoryField(pair, dto)) {
-        return error(format(ERROR_02, pair.getKey().name()));
+        return error(format(ERROR_02, pair.getKey().name().toLowerCase()));
       }
 
       /* Check read only fields are coherent with external authentication */
