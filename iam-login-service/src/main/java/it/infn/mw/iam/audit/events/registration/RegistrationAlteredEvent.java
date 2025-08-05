@@ -27,8 +27,9 @@ public class RegistrationAlteredEvent extends IamAuditApplicationEvent {
   private RegistrationRequestDto dto;
   private ExternalAuthenticationRegistrationInfo externalAuthn;
 
-  public RegistrationAlteredEvent(Object source, RegistrationRequestDto dto, ExternalAuthenticationRegistrationInfo externalAuthn, String message) {
-    super(IamEventCategory.REGISTRATION,source, message);
+  public RegistrationAlteredEvent(Object source, RegistrationRequestDto dto,
+      ExternalAuthenticationRegistrationInfo externalAuthn, String message) {
+    super(IamEventCategory.REGISTRATION, source, message);
     this.dto = dto;
     this.externalAuthn = externalAuthn;
   }

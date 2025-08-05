@@ -232,7 +232,7 @@ public class IamProperties {
     boolean showRegistrationButtonInLoginPage;
 
     boolean requireExternalAuthentication;
-    
+
     boolean addNicknameAsAttribute;
 
     ExternalAuthenticationType authenticationType;
@@ -243,7 +243,8 @@ public class IamProperties {
 
     String registrationButtonText;
 
-    Map<RegistrationField, RegistrationFieldProperties> fields = new EnumMap<>(RegistrationField.class);
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
 
     List<DefaultGroup> defaultGroups;
 

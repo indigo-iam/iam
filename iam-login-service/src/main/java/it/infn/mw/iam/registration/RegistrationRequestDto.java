@@ -18,20 +18,22 @@ package it.infn.mw.iam.registration;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX;
 import static it.infn.mw.iam.util.RegexUtil.PASSWORD_REGEX_MESSAGE_ERROR;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
+
 import it.infn.mw.iam.api.client.management.validation.OnRegistrationCreation;
 import it.infn.mw.iam.api.common.LabelDTO;
 import it.infn.mw.iam.api.common.RegistrationViews;
@@ -41,7 +43,9 @@ import it.infn.mw.iam.registration.validation.UsernameRegExp;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView({RegistrationViews.RegistrationExtendDetail.class,
     RegistrationViews.RegistrationDetail.class})
-public class RegistrationRequestDto {
+public class RegistrationRequestDto implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   @JsonView(RegistrationViews.RegistrationExtendDetail.class)
   private String uuid;
@@ -112,7 +116,8 @@ public class RegistrationRequestDto {
       @JsonProperty("uuid") String uuid, @JsonProperty("birthdate") String birthdate,
       @JsonProperty("accountId") String accountId, @JsonProperty("creationTime") Date creationTime,
       @JsonProperty("status") String status, @JsonProperty("lastUpdateTime") Date lastUpdateTime,
-      @JsonProperty("affiliation") String affiliation, @JsonProperty("labels") List<LabelDTO> labels) {
+      @JsonProperty("affiliation") String affiliation,
+      @JsonProperty("labels") List<LabelDTO> labels) {
     super();
     this.username = username;
     this.password = password;
