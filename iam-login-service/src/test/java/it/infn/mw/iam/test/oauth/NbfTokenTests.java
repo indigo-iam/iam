@@ -52,7 +52,7 @@ public class NbfTokenTests extends EndpointsTestUtils {
   private IamProperties properties;
 
   @Test
-  public void testScopeIncludedInAccessTokenClientCred() throws Exception {
+  public void testNbfIncludedInAccessTokenClientCred() throws Exception {
 
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
@@ -72,7 +72,7 @@ public class NbfTokenTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testScopeNotIncludedInAccessTokenClientCred() throws Exception {
+  public void testNbfNotIncludedInAccessTokenClientCred() throws Exception {
     properties.getAccessToken().setIncludeNbf(false);
     String accessToken = new AccessTokenGetter().grantType("client_credentials")
       .clientId(CLIENT_CREDENTIALS_CLIENT_ID)
