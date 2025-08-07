@@ -32,6 +32,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mockito.Mock;
@@ -42,14 +43,18 @@ import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
+import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 
 @SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
-public class ScopeRegistryTests {
+public class ScopeRegistryTests extends TestTokensUtils {
 
 
   @Mock
   ClientDetails client;
+
+  @Mock
+  OAuth2AccessTokenEntity token;
 
   @Mock
   SystemScopeRepository scopeRepo;
@@ -99,6 +104,25 @@ public class ScopeRegistryTests {
     when(client.getScope())
       .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
+
+    assertThat(matchers, not(nullValue()));
+    assertThat(matchers, hasSize(5));
+    assertThat(matchers, hasItem(stringEqualsMatcher("openid")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("profile")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("test")));
+    assertThat(matchers, hasItem(regexpMatcher("^test:/.*$")));
+    assertThat(matchers, hasItem(stringEqualsMatcher("storage.create:/whatever")));
+  }
+
+  @Test
+  public void testMatchingScopeUsingToken() {
+
+    DefaultScopeMatcherRegistry matcherRegistry =
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);
+
+    when(token.getScope())
+      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
+    Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForToken(token);
 
     assertThat(matchers, not(nullValue()));
     assertThat(matchers, hasSize(5));
