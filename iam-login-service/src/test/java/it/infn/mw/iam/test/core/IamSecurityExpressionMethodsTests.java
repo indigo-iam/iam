@@ -97,6 +97,10 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @After
   public void destroy() {
     repo.deleteAll();
+    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername(TEST_ADMIN).get());
+    clientService.unlinkClientFromAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername("test_200").get());
   }
 
   private IamSecurityExpressionMethods getMethods() {
@@ -140,8 +144,6 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"})
   public void testIsClientOwnerNoAuthenticatedUser() {
-    // when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(null);
-
     assertFalse(getMethods().isClientOwner("client"));
   }
 
