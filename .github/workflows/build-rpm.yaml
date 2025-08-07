@@ -1,0 +1,84 @@
+name: Build RPM
+on: push
+
+jobs:
+  build-rpm:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [almalinux]
+        version: [8, 9]
+    outputs:
+      repo: ${{ steps.info.outputs.repo }}
+      version: ${{ steps.info.outputs.version }}
+    runs-on: ubuntu-latest
+    container: '${{ matrix.os }}:${{ matrix.version }}'
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf upgrade -y
+          [[ "${{ matrix.version }}" -lt 10 ]] && dnf module enable -y maven:3.8 && dnf install -y maven-openjdk17
+          [[ "${{ matrix.version }}" = 10 ]] && dnf install -y almalinux-release-devel maven-openjdk21
+          dnf install -y git rpmdevtools rpmlint
+      - name: Setup build tree
+        run: |
+          echo "%_topdir $(pwd)/rpmbuild" >> ~/.rpmmacros
+          rpmdev-setuptree
+      - uses: actions/checkout@v4
+        with:
+          path: 'rpmbuild/BUILD'
+          fetch-depth: 0
+      - name: Calculate version and repo
+        id: info
+        run: |
+          cd rpmbuild/BUILD/iam-login-service
+          if [[ ${{ github.ref_type }} = 'tag' ]]; then
+            # In case is a tag, check if the tag matches v<x>.<y>.<z>(-[0-9A-Za-z-]+)?
+            if [[ ${GITHUB_REF_NAME} =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-[[:alnum:]-]+)?$ ]]; then
+              if [[ -z ${BASH_REMATCH[2]} ]]; then
+                REPO='stable'
+                VERSION="${BASH_REMATCH[1]}"
+                VERSION_POM=$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -q -DforceStdout)
+                if [[ ${VERSION} != ${VERSION_POM} ]]; then
+                  echo "Version mismatch between tag (${VERSION}) and POM file (${VERSION_POM})"
+                  exit 1
+                fi
+              else
+                # If the tag includes a "-" is a beta, substitute the first "-" with "~" and any other ones with "_"
+                REPO='beta'
+                PRERELEASE=$(echo ${BASH_REMATCH[2]:1} | sed 's/-/_/g')
+                VERSION="${BASH_REMATCH[1]}~${PRERELEASE}"
+              fi
+            fi
+          else
+            # Use the output of "git describe" to create version dropping the leading "v" and substituting:
+            # - the last "-" with "."
+            # - the now last "-" with "^"
+            # - the first remaining "-" (if any) with "~"
+            # - all possible remaining "-" with "_"
+            VERSION=$(git describe --tags --long | sed 's/^v//' | sed -r 's/(.*)-/\1./' | sed -r 's/(.*)-/\1^/' | sed 's/-/~/' | sed 's/-/_/g')
+            if [[ ${GITHUB_REF_NAME} = ${{ github.event.repository.default_branch }} ]]; then
+              REPO='nightly'
+            fi
+          fi
+          echo "REPO=${REPO}" >> "${GITHUB_ENV}"
+          echo "repo=${REPO}" >> "${GITHUB_OUTPUT}"
+          echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Version: ${VERSION}"
+          echo "Repo: ${REPO:-none}"
+      - name: Build RPM
+        run: |
+          cp rpmbuild/BUILD/iam-login-service/iam-login-service.spec rpmbuild/SPECS/iam-login-service.spec
+          rpmlint rpmbuild/SPECS/iam-login-service.spec
+          rpmbuild --define "base_version ${VERSION}" -ba rpmbuild/SPECS/iam-login-service.spec
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-rpm-${{ matrix.os }}-${{ matrix.version }}
+          path: |
+            rpmbuild/RPMS/noarch/*.rpm
+      - name: Upload release to repo
+        if: env.REPO != ''
+        run: |
+          curl --fail --user "${{ vars.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}" --upload-file rpmbuild/RPMS/noarch/*.rpm https://repo.cloud.cnaf.infn.it/repository/indigp-iam-rpm-${REPO}/redhat${{ matrix.version }}/
