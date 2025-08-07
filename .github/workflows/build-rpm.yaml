@@ -81,4 +81,4 @@ jobs:
       - name: Upload release to repo
         if: env.REPO != ''
         run: |
-          curl --fail --user "${{ vars.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}" --upload-file rpmbuild/RPMS/noarch/*.rpm https://repo.cloud.cnaf.infn.it/repository/indigp-iam-rpm-${REPO}/redhat${{ matrix.version }}/
+          curl --fail --user "${{ vars.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}" --upload-file rpmbuild/RPMS/noarch/*.rpm https://repo.cloud.cnaf.infn.it/repository/indigo-iam-rpm-${{ env.REPO }}/redhat${{ matrix.version }}/
