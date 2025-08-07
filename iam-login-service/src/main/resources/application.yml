@@ -140,6 +140,7 @@ iam:
     include_authn_info: ${IAM_ACCESS_TOKEN_INCLUDE_AUTHN_INFO:false}
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
+    nbf-offset-seconds: ${IAM_ACCESS_TOKEN_NBF_OFFSET_SECONDS:60}
 
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}

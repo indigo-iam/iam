@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth.profile.iam;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
 import static java.util.stream.Collectors.joining;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
@@ -72,7 +73,8 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     }
 
     if (properties.getAccessToken().isIncludeNbf()) {
-      builder.notBeforeTime(Date.from(issueTime));
+      builder.notBeforeTime(Date
+        .from(issueTime.minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds()))));
     }
 
     return builder.build();

@@ -474,6 +474,7 @@ public class IamProperties {
     boolean includeAuthnInfo = false;
     boolean includeScope = false;
     boolean includeNbf = false;
+    int nbfOffsetSeconds = 60;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -497,6 +498,18 @@ public class IamProperties {
 
     public void setIncludeNbf(boolean includeNbf) {
       this.includeNbf = includeNbf;
+    }
+
+    public int getNbfOffsetSeconds() {
+      return nbfOffsetSeconds;
+    }
+
+    public void setNbfOffsetSeconds(int nbfTime) {
+      if (nbfTime < 0) {
+        this.nbfOffsetSeconds = 0;
+      } else {
+        this.nbfOffsetSeconds = nbfTime;
+      }
     }
   }
 
