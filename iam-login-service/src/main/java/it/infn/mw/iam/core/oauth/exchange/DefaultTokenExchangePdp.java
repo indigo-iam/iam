@@ -124,7 +124,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
         }
         scopeMatchers = result;
       } catch (Exception e) {
-        new InvalidRequestException("Error parsing subject token: " + e.getMessage());
+        throw new InvalidRequestException("Error parsing subject token: " + e.getMessage());
       }
     }
 
