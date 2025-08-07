@@ -13,39 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.util;
+package it.infn.mw.iam.test.core;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Date;
+import java.util.Optional;
 
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.service.ClientDetailsEntityService;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountClient;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.api.requests.GroupRequestsTestUtils;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
+@SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
+public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
 
-  @Autowired
-  private AccountUtils accountUtils;
+  public static final String TEST_CLIENT_ID = "client";
 
   @Autowired
   private GroupRequestUtils groupRequestUtils;
@@ -60,7 +80,25 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
   private IamAccountClientRepository accountClientRepo;
 
   @Autowired
+  private IamAccountRepository accountRepo;
+
+  @Autowired
+  private ClientService clientService;
+
+  @Autowired
+  private ClientDetailsEntityService clientDetailsService;
+
+  @Mock
   private IamClientRepository clientRepo;
+
+  @Mock
+  OAuth2Authentication authentication;
+
+  @Mock
+  AccountUtils accountUtils;
+
+  @Spy
+  MockOAuth2Request oauth2Request = new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
 
   @After
   public void destroy() {
@@ -103,5 +141,56 @@ public class IamSecurityExpressionsTests extends GroupRequestsTestUtils {
     assertFalse(getMethods().canAccessGroupRequest(notMine.getUuid()));
     assertFalse(getMethods().canManageGroupRequest(notMine.getUuid()));
     assertFalse(getMethods().userCanDeleteGroupRequest(notMine.getUuid()));
+  }
+
+  @Test
+  public void testIsClientOwnerNoAuthenticatedUser() {
+    when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(null);
+
+    assertFalse(getMethods().isClientOwner("client"));
+  }
+
+  @Test
+  public void testIsClientOwnerIsAdmin() {
+    String owner = "admin";
+    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername(owner).get());
+
+    when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.empty());
+    IamAccount adminAccount = accountRepo.findByUsername(owner).orElseThrow();
+    doReturn(Optional.of(adminAccount)).when(accountUtils).getAuthenticatedUserAccount();
+    ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+
+    assertTrue(getMethods().isClientOwner(TEST_CLIENT_ID));
+  }
+
+ @Test
+  public void testIsClientOwnerIsUser() {
+    String owner = "test_200";
+    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername(owner).get());
+
+    IamAccount userAccount = accountRepo.findByUsername(owner).orElseThrow();
+    doReturn(Optional.of(userAccount)).when(accountUtils).getAuthenticatedUserAccount();
+    ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+
+    assertTrue(getMethods().isClientOwner(TEST_CLIENT_ID));
+  }
+
+  @Test
+  public void testIsClientOwnerIsNotUser() {
+    String owner = "test_200";
+    String notOwner = "admin";
+    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
+        accountRepo.findByUsername(owner).get());
+
+    IamAccount userAccount = accountRepo.findByUsername(notOwner).orElseThrow();
+    doReturn(Optional.of(userAccount)).when(accountUtils).getAuthenticatedUserAccount();
+    ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
+    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+
+    assertFalse(getMethods().isClientOwner(TEST_CLIENT_ID));
   }
 }
