@@ -41,7 +41,6 @@ public class VOPersonDTO {
   private String email;
   private String physicalEmail;
   private Set<ParticipationDTO> participations;
-  private String affiliation;
 
   public Long getId() {
     return id;
@@ -177,13 +176,5 @@ public class VOPersonDTO {
 
   public void setParticipations(Set<ParticipationDTO> participations) {
     this.participations = participations;
-  }
-
-  public String getAffiliation() {
-    return affiliation;
-  }
-
-  public void setAffiliation(String affiliation) {
-    this.affiliation = affiliation;
   }
 }

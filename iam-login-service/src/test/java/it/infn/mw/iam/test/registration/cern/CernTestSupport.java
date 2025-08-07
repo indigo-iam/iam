@@ -69,7 +69,6 @@ public class CernTestSupport {
     dto.setFirstName(MOCK_HR_USER_FIRST_NAME);
     dto.setName(MOCK_HR_USER_FAMILY_NAME);
     dto.setEmail(MOCK_HR_USER_EMAIL);
-    dto.setAffiliation(MOCK_HR_AFFILIATION);
     dto.setParticipations(Sets.newHashSet());
 
     dto.setId(Long.parseLong(personId));
