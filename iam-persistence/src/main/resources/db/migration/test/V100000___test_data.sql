@@ -9,34 +9,30 @@ INSERT INTO system_scope(scope, description, icon, restricted, default_scope, st
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
-  token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, created_at, active) VALUES
-  (1, 'client', 'secret', 'Test Client', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (2, 'tasks-app', 'secret', 'Tasks App', false, null, 0, 0, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (3, 'post-client', 'secret', 'Post client', false, null, 3600,600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (4, 'client-cred', 'secret', 'Client credentials', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), true),
-  (5, 'password-grant', 'secret', 'Password grant client', false, null, 3600, 600, true, 'SECRET_BASIC',true, null, CURRENT_TIMESTAMP(), true),
-  (6, 'scim-client-ro', 'secret', 'SCIM client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), true),
-  (7, 'scim-client-rw', 'secret', 'SCIM client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), true),
-  (8, 'token-exchange-actor', 'secret', 'Token Exchange grant client actor', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (9, 'token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (11, 'token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), true),
-  (12, 'device-code-client', 'secret', 'Device code client', false, null, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), true),
-  (13, 'implicit-flow-client', null, 'Implicit Flow client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), true),
-  (14, 'public-dc-client', null, 'Public Device Code client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), true),
-  (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
-  (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
-  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true);
+  token_endpoint_auth_method, require_auth_time, device_code_validity_seconds, created_at, token_endpoint_auth_signing_alg, jwks, active) VALUES
+  (1, 'client', 'secret', 'Test Client', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (2, 'tasks-app', 'secret', 'Tasks App', false, null, 0, 0, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (3, 'post-client', 'secret', 'Post client', false, null, 3600,600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (4, 'client-cred', 'secret', 'Client credentials', false, null, 3600, 600, true, 'SECRET_BASIC',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (5, 'password-grant', 'secret', 'Password grant client', false, null, 3600, 600, true, 'SECRET_BASIC',true, null, CURRENT_TIMESTAMP(), null, null, true),
+  (6, 'scim-client-ro', 'secret', 'SCIM client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), null, null, true),
+  (7, 'scim-client-rw', 'secret', 'SCIM client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, 600, CURRENT_TIMESTAMP(), null, null, true),
+  (8, 'token-exchange-actor', 'secret', 'Token Exchange grant client actor', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (9, 'token-exchange-subject', 'secret', 'Token Exchange grant client subject', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (10, 'registration-client', 'secret', 'Registration service test client', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (11, 'token-lookup-client', 'secret', 'Token lookup client', false, null, 3600, 600, true, 'SECRET_BASIC', false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (12, 'device-code-client', 'secret', 'Device code client', false, null, 3600, 600, true, 'SECRET_BASIC', false, 600, CURRENT_TIMESTAMP(), null, null, true),
+  (13, 'implicit-flow-client', null, 'Implicit Flow client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), null, null, true),
+  (14, 'public-dc-client', null, 'Public Device Code client', false, null, 3600, 600, false, null, false, 600, CURRENT_TIMESTAMP(), null, null, true),
+  (15, 'jwt-auth-client_secret_jwt', 'secret', 'JWT Bearer Auth Client (client_secret_jwt)', false, null, 3600, 600, true, 'SECRET_JWT', false, null, CURRENT_TIMESTAMP(), 'HS256', null, true),
+  (16, 'jwt-auth-private_key_jwt', 'secret', 'JWT Bearer Auth Client (private_key_jwt)', false, null, 3600, 600, true,'PRIVATE_KEY', false, null, CURRENT_TIMESTAMP(),  'RS256',
+  '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}', true),
+  (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), null, null, true),
+  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), null, null, true);
 
-INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
-  refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
-  token_endpoint_auth_method, require_auth_time, token_endpoint_auth_signing_alg, jwks, active) VALUES
-  (15, 'jwt-auth-client_secret_jwt', 'c8e9eed0-e6e4-4a66-b16e-6f37096356a7', 'JWT Bearer Auth Client (client_secret_jwt)',
-  false, null, 3600, 600, true, 'SECRET_JWT', false, 'HS256', null, true),
-  (16, 'jwt-auth-private_key_jwt', 'secret', 'JWT Bearer Auth Client (private_key_jwt)', 
-  false, null, 3600, 600, true,'PRIVATE_KEY', false, 'RS256',
-  '{"keys":[{"kty":"RSA","e":"AQAB","kid":"rsa1","n":"1y1CP181zqPNPlV1JDM7Xv0QnGswhSTHe8_XPZHxDTJkykpk_1BmgA3ovP62QRE2ORgsv5oSBI_Z_RaOc4Zx2FonjEJF2oBHtBjsAiF-pxGkM5ZPjFNgFTGp1yUUBjFDcEeIGCwPEyYSt93sQIP_0DRbViMUnpyn3xgM_a1dO5brEWR2n1Uqff1yA5NXfLS03qpl2dpH4HFY5-Zs4bvtJykpAOhoHuIQbz-hmxb9MZ3uTAwsx2HiyEJtz-suyTBHO3BM2o8UcCeyfa34ShPB8i86-sf78fOk2KeRIW1Bju3ANmdV3sxL0j29cesxKCZ06u2ZiGR3Srbft8EdLPzf-w"}]}', true);
+UPDATE client_details SET client_secret = '$2a$12$P6AOS2.9DS6L.VaI1qjWnuVFbqUlpU449WDpISytV23H2ANUq0Gtu' WHERE client_secret = 'secret';
 
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),

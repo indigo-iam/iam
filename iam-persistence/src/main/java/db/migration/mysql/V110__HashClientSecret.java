@@ -25,9 +25,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.persistence.migrations.BaseFlywayJavaMigrationAdapter;
 
-public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
+public class V110__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
 
-  public static final Logger LOG = LoggerFactory.getLogger(V109__HashClientSecret.class);
+  public static final Logger LOG = LoggerFactory.getLogger(V110__HashClientSecret.class);
 
   @Override
   public void migrate(JdbcTemplate jdbcTemplate) throws DataAccessException {
@@ -36,7 +36,7 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
 
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(DEFAULT_ROUND);
 
-    LOG.debug("### START MIGRATION V109__HashClientSecret ###");
+    LOG.debug("### START MIGRATION V110__HashClientSecret ###");
 
     SqlRowSet clientList =
         jdbcTemplate.queryForRowSet("SELECT id, client_secret FROM client_details");
@@ -53,7 +53,7 @@ public class V109__HashClientSecret extends BaseFlywayJavaMigrationAdapter {
       jdbcTemplate.update("UPDATE client_details SET client_secret=? WHERE id=?", secretHash, id);
     }
 
-    LOG.debug("### END MIGRATION V109__HashClientSecret ###");
+    LOG.debug("### END MIGRATION V110__HashClientSecret ###");
   }
 
 }
