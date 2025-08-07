@@ -24,7 +24,9 @@ INSERT INTO iam_account_authority(account_id, authority_id) VALUES
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered, refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection, token_endpoint_auth_method) VALUES
  (1, 'client', 'secret', 'Test Client', false, null, 3600, 600, true, 'SECRET_BASIC');
- 
+
+UPDATE client_details SET client_secret = '$2a$12$P6AOS2.9DS6L.VaI1qjWnuVFbqUlpU449WDpISytV23H2ANUq0Gtu' WHERE client_secret = 'secret';
+
 INSERT INTO client_scope (owner_id, scope) VALUES
   (1, 'openid'),
   (1, 'profile'),
