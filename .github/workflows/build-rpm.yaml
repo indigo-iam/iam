@@ -82,22 +82,3 @@ jobs:
         if: env.REPO != ''
         run: |
           curl --fail --user "${{ vars.NEXUS_USERNAME }}:${{ secrets.NEXUS_PASSWORD }}" --upload-file rpmbuild/RPMS/noarch/*.rpm https://repo.cloud.cnaf.infn.it/repository/indigp-iam-rpm-${REPO}/redhat${{ matrix.version }}/
-  create-release:
-    needs: build-rpm
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION: ${{ needs.build-rpm.outputs.version }}
-    if: needs.build-rpm.outputs.repo == 'stable'
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-      - name: Create release
-        run: |
-          # Get from the changelog file only the part related to the tagged release, in particular:
-          # - Delete lines up to the one beginning with "## <x>.<y>.<z>" (inclusive)
-          # - Delete lines from the next one beginning with "## " until the end of the file
-          # - Change all the "### " to "## " to use heading level 2 instead of level 3
-          sed -e "1,/^## ${VERSION}/d;/^## /,\$d;s/^### /## /g" CHANGELOG.md > RELEASE-CHANGELOG.md
-          gh release create v${VERSION} --title "INDIGO IAM v${VERSION}" --notes-file RELEASE-CHANGELOG.md build-*/*
