@@ -30,29 +30,23 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
-import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
@@ -88,14 +82,14 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @Autowired
   private ClientDetailsEntityService clientDetailsService;
 
+  @Autowired
+  AccountUtils accountUtils;
+
   @Mock
   private IamClientRepository clientRepo;
 
   @Mock
   OAuth2Authentication authentication;
-
-  @Mock
-  AccountUtils accountUtils;
 
   @Spy
   MockOAuth2Request oauth2Request = new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
@@ -144,21 +138,18 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = {"ADMIN", "USER"})
   public void testIsClientOwnerNoAuthenticatedUser() {
-    when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(null);
+    // when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(null);
 
     assertFalse(getMethods().isClientOwner("client"));
   }
 
   @Test
+  @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   public void testIsClientOwnerIsAdmin() {
-    String owner = "admin";
     clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername(owner).get());
-
-    when(accountUtils.getAuthenticatedUserAccount(Mockito.any())).thenReturn(Optional.empty());
-    IamAccount adminAccount = accountRepo.findByUsername(owner).orElseThrow();
-    doReturn(Optional.of(adminAccount)).when(accountUtils).getAuthenticatedUserAccount();
+        accountRepo.findByUsername(TEST_ADMIN).get());
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
     doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
@@ -166,13 +157,12 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   }
 
  @Test
+  @WithMockUser(roles = {"ADMIN", "USER"}, username = "test_200")
   public void testIsClientOwnerIsUser() {
     String owner = "test_200";
     clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
         accountRepo.findByUsername(owner).get());
 
-    IamAccount userAccount = accountRepo.findByUsername(owner).orElseThrow();
-    doReturn(Optional.of(userAccount)).when(accountUtils).getAuthenticatedUserAccount();
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
     doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
@@ -180,14 +170,12 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   public void testIsClientOwnerIsNotUser() {
     String owner = "test_200";
-    String notOwner = "admin";
     clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
         accountRepo.findByUsername(owner).get());
 
-    IamAccount userAccount = accountRepo.findByUsername(notOwner).orElseThrow();
-    doReturn(Optional.of(userAccount)).when(accountUtils).getAuthenticatedUserAccount();
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
     doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
