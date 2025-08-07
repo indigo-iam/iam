@@ -57,7 +57,6 @@ import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamScopePolicy.MatchingPolicy;
 import it.infn.mw.iam.persistence.model.PolicyRule;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
@@ -73,17 +72,13 @@ public class ExchangePolicyApiIntegrationTests {
   @Configuration
   public static class TestBeans {
     @Autowired
-    private IamOAuthAccessTokenRepository tokenRepo;
-
-    @Autowired
     private IamProperties properties;
 
     @Bean
     @Primary
     public TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
-      DefaultTokenExchangePdp pdp =
-          new DefaultTokenExchangePdp(repo, registry, properties, tokenRepo);
+      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, properties);
       return Mockito.spy(pdp);
     }
   }

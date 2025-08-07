@@ -20,31 +20,28 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.invalidS
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notApplicable;
 import static java.util.Comparator.comparing;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 
-import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
-import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
 @SuppressWarnings("deprecation")
@@ -56,11 +53,11 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   public static final String NOT_APPLICABLE_ERROR_TEMPLATE =
       "No applicable policies found for clients: %s -> %s";
 
+  private static final String SCOPE_CLAIM = "scope";
+
   private final IamTokenExchangePolicyRepository repo;
 
   private final ScopeMatcherRegistry scopeMatcherRegistry;
-
-  private final IamOAuthAccessTokenRepository tokenRepo;
 
   private final IamProperties properties;
 
@@ -71,34 +68,16 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties,
-      IamOAuthAccessTokenRepository tokenRepo) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
     this.properties = properties;
-    this.tokenRepo = tokenRepo;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
     return policies.stream()
       .filter(p -> p.appicableFor(origin, destination))
       .collect(Collectors.toSet());
-  }
-
-  private Set<ScopeMatcher> findScopeMatchersForToken(String clientId, String subjectToken) {
-    Set<ScopeMatcher> scopeMatchers = new HashSet<>();
-    OffsetPageable op = new OffsetPageable(0,
-        (int) tokenRepo.countValidAccessTokensForClient(clientId, new Date()));
-    Page<OAuth2AccessTokenEntity> possibleTokens =
-        tokenRepo.findValidAccessTokensForClient(clientId, new Date(), op);
-    // Is there a better way of doing this ??
-    for (OAuth2AccessTokenEntity token : possibleTokens) {
-      if (token.getValue().equals(subjectToken)) {
-        scopeMatchers = scopeMatcherRegistry.findMatchersForToken(token);
-        break;
-      }
-    }
-    return scopeMatchers;
   }
 
   /**
@@ -135,7 +114,18 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     String subjectToken = request.getRequestParameters().get("subject_token");
     if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
       invalidScopeMessage = "scope not allowed by subject token configuration";
-      scopeMatchers = findScopeMatchersForToken(origin.getClientId(), subjectToken);
+      try {
+        // this assumes that iam.access_token.include_scope=true
+        JWT token = JWTParser.parse(subjectToken);
+        String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
+        Set<ScopeMatcher> result = new HashSet<>();
+        for (String scope : scopes) {
+          result.add(scopeMatcherRegistry.findMatcherForScope(scope));
+        }
+        scopeMatchers = result;
+      } catch (Exception e) {
+        new InvalidRequestException("Error parsing subject token: " + e.getMessage());
+      }
     }
 
     for (String scope : request.getScope()) {

@@ -42,8 +42,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"iam.jwt-profile.token-exchange-disable-upscoping=true"})
-public class TokenExchangeDisableUpscoping extends EndpointsTestUtils {
+@TestPropertySource(properties = {"iam.jwt-profile.token-exchange-disable-upscoping=true",
+        "iam.access_token.include_scope=true"})
+public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
     private static final String TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
@@ -68,8 +69,7 @@ public class TokenExchangeDisableUpscoping extends EndpointsTestUtils {
     }
 
     @Test
-    public void testTokenExchangeForClientCredentialsClientDisableUpscopingSuccess()
-            throws Exception {
+    public void testTokenExchangeForClientCredentialsDisableUpscopingSuccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -92,7 +92,7 @@ public class TokenExchangeDisableUpscoping extends EndpointsTestUtils {
     }
 
     @Test
-    public void testTokenExchangeForClientCredentialsClientDisableUpscopingFail() throws Exception {
+    public void testTokenExchangeForClientCredentialsDisableUpscopingFail() throws Exception {
 
         mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
             .param("grant_type", GRANT_TYPE)
@@ -103,5 +103,29 @@ public class TokenExchangeDisableUpscoping extends EndpointsTestUtils {
             .andExpect(jsonPath("$.error").value("invalid_scope"))
             .andExpect(jsonPath("$.error_description")
                 .value("scope not allowed by subject token configuration: profile"));
+    }
+
+    @Test
+    public void testTokenExchangeForClientCredentialsDisableUpscopingIncludingOfflineScope()
+            throws Exception {
+
+        String tokenResponse = mvc
+            .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+                .param("grant_type", GRANT_TYPE)
+                .param("subject_token", accessToken)
+                .param("subject_token_type", TOKEN_TYPE)
+                .param("scope", "read-tasks offline_access"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.access_token").exists())
+            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks offline_access"))))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        DefaultOAuth2AccessToken tokenResponseObject =
+                mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
+
+        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
+        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
     }
 }

@@ -17,14 +17,11 @@ package it.infn.mw.iam.core.oauth.scope.matchers;
 
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 @SuppressWarnings("deprecation")
 public interface ScopeMatcherRegistry {
   Set<ScopeMatcher> findMatchersForClient(ClientDetails client);
-
-  Set<ScopeMatcher> findMatchersForToken(OAuth2AccessTokenEntity token);
 
   ScopeMatcher findMatcherForScope(String scope);
 }

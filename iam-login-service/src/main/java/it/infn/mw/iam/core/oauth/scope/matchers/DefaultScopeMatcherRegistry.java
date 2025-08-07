@@ -17,7 +17,6 @@ package it.infn.mw.iam.core.oauth.scope.matchers;
 
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.springframework.cache.annotation.Cacheable;
@@ -48,18 +47,6 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
     for (String s : client.getScope()) {
       result.add(findMatcherForScope(s));
 
-    }
-
-    return result;
-  }
-
-  @Override
-  @Cacheable(value = SCOPE_CACHE_KEY, key = "{#client?.id}")
-  public Set<ScopeMatcher> findMatchersForToken(OAuth2AccessTokenEntity token) {
-    Set<ScopeMatcher> result = Sets.newHashSet();
-
-    for (String scope : token.getScope()) {
-      result.add(findMatcherForScope(scope));
     }
 
     return result;
