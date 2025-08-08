@@ -17,6 +17,8 @@ package it.infn.mw.iam.core;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
@@ -109,6 +111,14 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
       AuthenticationHolderEntity authHolder) {
+    Map<String, String> filteredParameters = new HashMap<>();
+    for (String param : authHolder.getRequestParameters().keySet()) {
+      if (param != "expires_in") {
+        filteredParameters.put(param, authHolder.getRequestParameters().get(param));
+      }
+    }
+    authHolder.setRequestParameters(filteredParameters);
+
 
     OAuth2RefreshTokenEntity token = super.createRefreshToken(client, scopeFilter.filterScopes(authHolder));
 
