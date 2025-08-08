@@ -33,8 +33,7 @@ public class DefaultScopeMatcherRegistry implements ScopeMatcherRegistry {
 
   private final SystemScopeRepository scopeRepo;
 
-  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers,
-      SystemScopeRepository scopeRepo) {
+  public DefaultScopeMatcherRegistry(Set<ScopeMatcher> customMatchers, SystemScopeRepository scopeRepo) {
     this.customMatchers = customMatchers;
     this.scopeRepo = scopeRepo;
   }
