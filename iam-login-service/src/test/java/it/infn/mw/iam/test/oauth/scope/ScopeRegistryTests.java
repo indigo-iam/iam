@@ -39,22 +39,17 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.security.oauth2.provider.ClientDetails;
 
 import com.google.common.collect.Sets;
-import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
-import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 
 @SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
-public class ScopeRegistryTests extends TestTokensUtils {
+public class ScopeRegistryTests {
 
 
   @Mock
   ClientDetails client;
-
-  @Mock
-  JWT token;
 
   @Mock
   SystemScopeRepository scopeRepo;
@@ -98,12 +93,11 @@ public class ScopeRegistryTests extends TestTokensUtils {
   @Test
   public void testMatchingScope() {
 
-    DefaultScopeMatcherRegistry matcherRegistry = new DefaultScopeMatcherRegistry(
-        newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")),
-        scopeRepo);
+    DefaultScopeMatcherRegistry matcherRegistry =
+        new DefaultScopeMatcherRegistry(newHashSet(regexpMatcher("^test:/.*$"), structuredPathMatcher("storage.create", "/")), scopeRepo);
 
-    when(client.getScope()).thenReturn(
-        Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
+    when(client.getScope())
+      .thenReturn(Sets.newHashSet("openid", "profile", "test", "test:/whatever", "storage.create:/whatever"));
     Set<ScopeMatcher> matchers = matcherRegistry.findMatchersForClient(client);
 
     assertThat(matchers, not(nullValue()));
