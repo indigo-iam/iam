@@ -51,8 +51,8 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
     private static final String TOKEN_ENDPOINT = "/token";
 
-    String ACTOR_CLIENT_ID = "token-exchange-actor";
-    String ACTOR_CLIENT_SECRET = "secret";
+    private static final String ACTOR_CLIENT_ID = "token-exchange-actor";
+    private static final String ACTOR_CLIENT_SECRET = "secret";
 
     private String accessToken;
 

@@ -32,7 +32,6 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SystemScope;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mockito.Mock;
@@ -56,8 +55,6 @@ public class ScopeRegistryTests extends TestTokensUtils {
 
   @Mock
   JWT token;
-
-  private static final String SCOPE_CLAIM = "scope";
 
   @Mock
   SystemScopeRepository scopeRepo;
