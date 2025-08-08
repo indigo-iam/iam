@@ -367,13 +367,8 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   private void deleteTotpMfa(IamAccount account) {
-    Optional<IamTotpMfa> totpMfaOptional = iamTotpMfaRepository.findByAccount(account);
-    if (totpMfaOptional.isPresent()) {
-      IamTotpMfa totpMfa = totpMfaOptional.get();
-      iamTotpMfaRepository.delete(totpMfa);
-
-      saveAccount(account);
-    }
+    iamTotpMfaRepository.findByAccount(account)
+        .ifPresent(iamTotpMfaRepository::delete);
   }
 
   @Override
