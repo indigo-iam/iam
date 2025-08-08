@@ -242,12 +242,6 @@
 						<artifactId>voms-api-java</artifactId>
 					</exclusion>
 				</exclusions>
-				<exclusions>
-					<exclusion>
-						<groupId>org.italiangrid</groupId>
-						<artifactId>voms-api-java</artifactId>
-					</exclusion>
-				</exclusions>
 			</dependency>
 
 			<!-- Mitre -->
