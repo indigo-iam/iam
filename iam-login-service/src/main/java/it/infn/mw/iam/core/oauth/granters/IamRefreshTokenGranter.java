@@ -72,11 +72,14 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
 
     OAuth2AccessToken newToken =
         getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
-
-    OAuth2Authentication authentication = new OAuth2Authentication(
+    
+    if (tokenRequest.getRequestParameters().containsKey("expires_in")){
+      OAuth2Authentication authentication = new OAuth2Authentication(
         getRequestFactory().createOAuth2Request(client, tokenRequest), null);
-
-    return tokenEnhancer.enhance(newToken, authentication);
+      newToken = tokenEnhancer.enhance(newToken, authentication);
+    }
+    
+    return newToken;
   }
 
   public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
