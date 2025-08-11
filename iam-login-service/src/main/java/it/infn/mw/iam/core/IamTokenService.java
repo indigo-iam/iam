@@ -113,7 +113,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
       AuthenticationHolderEntity authHolder) {
     Map<String, String> filteredParameters = new HashMap<>();
     for (String param : authHolder.getRequestParameters().keySet()) {
-      if (param != "expires_in") {
+      if (!param.equals("expires_in")) {
         filteredParameters.put(param, authHolder.getRequestParameters().get(param));
       }
     }
