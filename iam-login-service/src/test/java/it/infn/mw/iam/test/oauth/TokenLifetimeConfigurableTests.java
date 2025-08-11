@@ -234,11 +234,11 @@ public class TokenLifetimeConfigurableTests {
                 // checking that refresh token expiration is 30 days
                 String refreshwithConfiguredAccessToken =
                                 configuredAccessToken.getRefreshToken().toString();
-                JWTClaimsSet RTClaims =
+                JWTClaimsSet rtClaims =
                                 JWTParser.parse(refreshwithConfiguredAccessToken).getJWTClaimsSet();
-                assertNotNull(RTClaims.getExpirationTime());
+                assertNotNull(rtClaims.getExpirationTime());
                 Date currentTime = new Date();
-                diffInSeconds = (RTClaims.getExpirationTime().getTime() - currentTime.getTime())
+                diffInSeconds = (rtClaims.getExpirationTime().getTime() - currentTime.getTime())
                                 / 1000;
                 assertThat(diffInSeconds, allOf(
                                 greaterThanOrEqualTo(DEFAULT_REFRESH_TOKEN_LIFETIME - TOLERANCE),
@@ -302,10 +302,10 @@ public class TokenLifetimeConfigurableTests {
 
                 // checking that refresh token expiration is 30 days
                 String ordinaryRefresh = ordinaryToken.getRefreshToken().toString();
-                JWTClaimsSet RTClaims = JWTParser.parse(ordinaryRefresh).getJWTClaimsSet();
-                assertNotNull(RTClaims.getExpirationTime());
+                JWTClaimsSet rtClaims = JWTParser.parse(ordinaryRefresh).getJWTClaimsSet();
+                assertNotNull(rtClaims.getExpirationTime());
                 Date currentTime = new Date();
-                diffInSeconds = (RTClaims.getExpirationTime().getTime() - currentTime.getTime())
+                diffInSeconds = (rtClaims.getExpirationTime().getTime() - currentTime.getTime())
                                 / 1000;
                 assertThat(diffInSeconds, allOf(
                                 greaterThanOrEqualTo(DEFAULT_REFRESH_TOKEN_LIFETIME - TOLERANCE),
