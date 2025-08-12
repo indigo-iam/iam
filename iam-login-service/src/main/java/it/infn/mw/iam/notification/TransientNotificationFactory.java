@@ -42,7 +42,6 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
-import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
@@ -54,7 +53,6 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
-import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -488,16 +486,9 @@ public class TransientNotificationFactory implements NotificationFactory {
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
       IamX509AuthenticationCredential x509Credential) {
 
-    String name = account.getUserInfo().getName();
-    String username = account.getUsername();
-    String email = account.getUserInfo().getEmail();
-    String issuerDn = x509Credential.getIssuer();
-    String subjectDn = x509Credential.getSubject();
-
     String subject = "New x509Certificate linked to user";
 
-    Map<String, Object> model =
-        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
 
     IamEmailNotification notification =
         createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
@@ -507,11 +498,26 @@ public class TransientNotificationFactory implements NotificationFactory {
     LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
 
     return notification;
-
   }
 
   @Override
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential) {
+
+    String subject = "Removed x509Certificate from user";
+
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  private Map<String, Object> getObjectForCertificateMessage(IamAccount account,
       IamX509AuthenticationCredential x509Credential) {
 
     String name = account.getUserInfo().getName();
@@ -521,19 +527,7 @@ public class TransientNotificationFactory implements NotificationFactory {
     String issuerDn = x509Credential.getIssuer();
     String subjectDn = x509Credential.getSubject();
 
-    String subject = "Removed x509Certificate from user";
-
-    Map<String, Object> model =
-        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
-
-    IamEmailNotification notification =
-        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
-
-
-    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
-
-    return notification;
+    return generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
   }
 
   private Map<String, Object> generateCertificateModel(String name, String username, String email,
