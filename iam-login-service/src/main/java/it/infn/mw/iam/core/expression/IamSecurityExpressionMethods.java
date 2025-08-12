@@ -165,9 +165,6 @@ public class IamSecurityExpressionMethods {
   public boolean isClientOwner(String clientId) {
     Optional<IamAccount> owner = accountUtils.getAuthenticatedUserAccount();
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
-    if (!owner.isPresent() || !client.isPresent()) {
-      return false;
-    }
-    return accountClientRepo.findByAccountAndClient(owner.get(), client.get()).isPresent();
+    return owner.isPresent() && client.isPresent() && accountClientRepo.findByAccountAndClient(owner.get(), client.get()).isPresent();
   }
 }

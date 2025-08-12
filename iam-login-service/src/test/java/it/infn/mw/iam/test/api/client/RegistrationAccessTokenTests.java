@@ -45,6 +45,7 @@ import it.infn.mw.iam.test.TestUtils;
 import it.infn.mw.iam.test.api.TestSupport;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
 import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
+import it.infn.mw.iam.util.IamClientSecretEncoder;
 
 @IamRandomPortIntegrationTest
 public class RegistrationAccessTokenTests extends TestSupport {
@@ -111,7 +112,7 @@ public class RegistrationAccessTokenTests extends TestSupport {
       .body()
       .as(RegisteredClientDTO.class);
 
-    assertThat(new BCryptPasswordEncoder(12).matches(registerResponse.getClientSecret(), getResponse.getClientSecret()), is(true));
+    assertThat(new IamClientSecretEncoder().matches(registerResponse.getClientSecret(), getResponse.getClientSecret()), is(true));
     assertThat(getResponse.getRegistrationAccessToken(), nullValue());
 
     RegisteredClientDTO rotatedRatClient =
