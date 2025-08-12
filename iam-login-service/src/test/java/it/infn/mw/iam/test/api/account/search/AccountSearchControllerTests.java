@@ -273,10 +273,15 @@ public class AccountSearchControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(user = "test",
-      authorities = {"ROLE_USER", "ROLE_GM:c617d586-54e6-411d-8e38-649677980001"},
-      scopes = "iam:admin.read")
+  @WithMockUser(username = "test", roles = "GM")
   public void getUsersAsGroupManager() throws Exception {
+    mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
+      .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockOAuthUser(scopes = "iam:admin.read")
+  public void getUsersWithAdminScope() throws Exception {
     mvc.perform(get(ACCOUNT_SEARCH_ENDPOINT).contentType(APPLICATION_JSON_CONTENT_TYPE))
       .andExpect(status().isOk());
   }

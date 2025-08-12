@@ -59,6 +59,7 @@ import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 @Transactional
 public class ScimUserController extends ScimControllerSupport {
 
+
   @Autowired
   ScimUserProvisioning userProvisioningService;
 
@@ -83,13 +84,18 @@ public class ScimUserController extends ScimControllerSupport {
   @GetMapping(produces = ScimConstants.SCIM_CONTENT_TYPE)
   public MappingJacksonValue listUsers(@RequestParam(required = false) final Integer count,
       @RequestParam(required = false) final Integer startIndex,
-      @RequestParam(required = false) final String attributes) {
+      @RequestParam(required = false) final String attributes,
+      @RequestParam(required = false) final String filters) {
+
 
     ScimPageRequest pr = buildUserPageRequest(count, startIndex);
-    ScimListResponse<ScimUser> result = userProvisioningService.list(pr);
+
+    ScimListResponse<ScimUser> result = userProvisioningService.list(pr, filters);
+
 
     MappingJacksonValue wrapper = new MappingJacksonValue(result);
     SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+
 
     if (attributes != null) {
       Set<String> includeAttributes = parseAttributes(attributes);

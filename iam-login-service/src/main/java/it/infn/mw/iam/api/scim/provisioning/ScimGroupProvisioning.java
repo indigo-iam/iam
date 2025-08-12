@@ -15,9 +15,7 @@
  */
 package it.infn.mw.iam.api.scim.provisioning;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -25,10 +23,13 @@ import java.util.function.Supplier;
 
 import javax.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
+import static com.google.common.collect.Lists.newArrayList;
 
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.requests.service.GroupRequestsService;
@@ -65,6 +66,8 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   private final GroupConverter converter;
   private final GroupRequestsService groupRequestsService;
 
+  public static final Logger log = LoggerFactory.getLogger(ScimGroupProvisioning.class);
+
   private final DefaultGroupMembershipUpdaterFactory groupUpdaterFactory;
 
   private final ScimResourceLocationProvider locationProvider;
@@ -72,6 +75,7 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
   public ScimGroupProvisioning(IamGroupService groupService, IamAccountService accountService,
       GroupRequestsService groupRequestsService, GroupConverter converter,
       ScimResourceLocationProvider locationProvider, IamAccountRepository accountRepo) {
+
 
     this.accountService = accountService;
     this.groupService = groupService;
@@ -229,6 +233,12 @@ public class ScimGroupProvisioning implements ScimProvisioning<ScimGroup, List<S
     }
 
     return builder.build();
+  }
+
+  @Override
+  public ScimListResponse<ScimGroup> list(final ScimPageRequest params, String filter) {
+    log.warn("Unsupported filtered list, reverting to default and ignoring filter");
+    return list(params);
   }
 
   private Supplier<ScimResourceNotFoundException> noGroupMappedToId(String id) {

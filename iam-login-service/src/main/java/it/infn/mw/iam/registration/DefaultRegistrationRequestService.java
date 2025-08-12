@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.registration;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.CONFIRMED;
 import static it.infn.mw.iam.core.IamRegistrationRequestStatus.NEW;
@@ -51,7 +49,6 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 
 import it.infn.mw.iam.api.common.LabelDTOConverter;
-import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
 import it.infn.mw.iam.api.scim.model.ScimOidcId;
@@ -73,15 +70,11 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAttribute;
-import it.infn.mw.iam.persistence.model.IamAup;
-import it.infn.mw.iam.persistence.model.IamAupSignature;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
-import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamRegistrationRequestRepository;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationResult;
 import it.infn.mw.iam.registration.validation.RegistrationRequestValidationService;
@@ -100,9 +93,6 @@ public class DefaultRegistrationRequestService
   private IamAccountService accountService;
 
   @Autowired
-  private UserConverter userConverter;
-
-  @Autowired
   private NotificationFactory notificationFactory;
 
   @Autowired
@@ -116,9 +106,6 @@ public class DefaultRegistrationRequestService
 
   @Autowired
   private IamAupRepository iamAupRepo;
-
-  @Autowired
-  private IamAupSignatureRepository iamAupSignatureRepo;
 
   @Autowired
   private LabelDTOConverter labelConverter;
@@ -163,37 +150,9 @@ public class DefaultRegistrationRequestService
         .put(REJECTED, CONFIRMED, true)
         .build();
 
-
-  private void addExternalAuthnInfo(ScimUser.Builder user,
-      ExternalAuthenticationRegistrationInfo extAuthnInfo) {
-
-    checkNotNull(extAuthnInfo.getType());
-    checkNotNull(extAuthnInfo.getSubject());
-    checkNotNull(extAuthnInfo.getIssuer());
-
-    if (OIDC.equals(extAuthnInfo.getType())) {
-      ScimOidcId oidcId = new ScimOidcId.Builder().issuer(extAuthnInfo.getIssuer())
-        .subject(extAuthnInfo.getSubject())
-        .build();
-      user.addOidcId(oidcId);
-    } else if (ExternalAuthenticationType.SAML.equals(extAuthnInfo.getType())) {
-      ScimSamlId samlId = new ScimSamlId.Builder().idpId(extAuthnInfo.getIssuer())
-        .userId(extAuthnInfo.getSubject())
-        .attributeId(extAuthnInfo.getSubjectAttribute())
-        .build();
-      user.addSamlId(samlId);
-    }
-  }
-
   private void createAupSignatureForAccountIfNeeded(IamAccount account) {
-    Optional<IamAup> aup = iamAupRepo.findDefaultAup();
-    if (aup.isPresent()) {
-      IamAupSignature signature = iamAupSignatureRepo.createSignatureForAccount(aup.get(), account,
-          Date.from(clock.instant()));
-      eventPublisher.publishEvent(new AupSignedEvent(this, signature));
-    }
+    iamAupRepo.findDefaultAup().ifPresent(aup -> accountService.signAup(account, aup));
   }
-
 
   @Override
   public RegistrationRequestDto createRequest(RegistrationRequestDto dto,
@@ -209,14 +168,12 @@ public class DefaultRegistrationRequestService
       }
     }
 
-
     ScimUser.Builder userBuilder = ScimUser.builder()
       .buildName(dto.getGivenname(), dto.getFamilyname())
       .buildEmail(dto.getEmail())
       .userName(dto.getUsername())
       .password(dto.getPassword())
       .affiliation(dto.getAffiliation());
-
 
     if (iamProperties.getRegistration()
       .getRequireCertificate()
@@ -240,24 +197,14 @@ public class DefaultRegistrationRequestService
       ScimX509Certificate fin = x509Converter.dtoFromEntity(cert);
 
       userBuilder.addX509Certificate(fin);
-
     }
-
-
 
     extAuthnInfo.ifPresent(i -> addExternalAuthnInfo(userBuilder, i));
 
-    IamAccount accountEntity =
-        accountService.createAccount(userConverter.entityFromDto(userBuilder.build()));
-    accountEntity.setConfirmationKey(tokenGenerator.generateToken());
-    accountEntity.setActive(false);
+    IamAccount account = accountService.createAccount(dto, extAuthnInfo);
 
-    if (iamProperties.getRegistration().isAddNicknameAsAttribute()) {
-      accountEntity.getAttributes()
-        .add(IamAttribute.newInstance(NICKNAME_ATTRIBUTE_KEY, dto.getUsername()));
-    }
-
-    createAupSignatureForAccountIfNeeded(accountEntity);
+    // sign the default AUP if present
+    createAupSignatureForAccountIfNeeded(account);
 
     IamRegistrationRequest requestEntity = new IamRegistrationRequest();
     requestEntity.setUuid(UUID.randomUUID().toString());
@@ -266,8 +213,8 @@ public class DefaultRegistrationRequestService
     requestEntity.setStatus(NEW);
     requestEntity.setNotes(dto.getNotes());
 
-    requestEntity.setAccount(accountEntity);
-    accountEntity.setRegistrationRequest(requestEntity);
+    requestEntity.setAccount(account);
+    account.setRegistrationRequest(requestEntity);
 
     if (!isNull(dto.getLabels())) {
       Set<IamLabel> labels =
@@ -279,7 +226,7 @@ public class DefaultRegistrationRequestService
     requestRepository.save(requestEntity);
 
     eventPublisher.publishEvent(new RegistrationRequestEvent(this, requestEntity,
-        "New registration request from user " + accountEntity.getUsername()));
+        "New registration request from user " + account.getUsername()));
 
     notificationFactory.createConfirmationMessage(requestEntity);
 
@@ -387,10 +334,11 @@ public class DefaultRegistrationRequestService
   }
 
   private RegistrationRequestDto handleConfirm(IamRegistrationRequest request) {
+
+    accountService.verifyAccount(request.getAccount());
+
     request.setStatus(CONFIRMED);
     request.setLastUpdateTime(Date.from(clock.instant()));
-    request.getAccount().getUserInfo().setEmailVerified(true);
-    request.getAccount().setConfirmationKey(null);
     requestRepository.save(request);
 
     notificationFactory.createAdminHandleRequestMessage(request);
