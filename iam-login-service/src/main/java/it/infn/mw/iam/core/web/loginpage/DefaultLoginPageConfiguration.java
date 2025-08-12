@@ -54,6 +54,9 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean defaultLoginPageLayout;
   private boolean mfaSettingsBtnEnabled;
 
+  @Value("${iam.registration.registration-button-text}")
+  private String registrationButtonText;
+
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
 
@@ -62,10 +65,8 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
@@ -170,6 +171,11 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
       return DEFAULT_LOGIN_BUTTON_TEXT;
     }
     return iamProperties.getLoginButton().getText();
+  }
+
+  @Override
+  public String getRegistrationButtonText() {
+    return registrationButtonText;
   }
 
   @Override

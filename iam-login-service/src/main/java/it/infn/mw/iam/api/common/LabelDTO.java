@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.api.common;
 
+import java.io.Serializable;
+
 import javax.annotation.Generated;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
@@ -25,7 +27,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import it.infn.mw.iam.api.common.validator.NoNewLineOrCarriageReturn;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class LabelDTO {
+public class LabelDTO implements Serializable {
+
+  private static final long serialVersionUID = -1113512581500998353L;
 
   // Matches simple domain names
   public static final String PREFIX_REGEXP = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$";

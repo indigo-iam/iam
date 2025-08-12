@@ -4,7 +4,7 @@ IAM_JAVA_OPTS=-Dspring.profiles.active=prod,registration
 # Generic options
 IAM_BASE_URL=https://iam.example.org
 IAM_ISSUER=https://iam.example.org/
-IAM_USE_FORWARDED_HEADERS=true
+#IAM_FORWARD_HEADERS_STRATEGY=native
 #IAM_KEY_STORE_LOCATION=file:///var/lib/indigo/iam-login-service/keystore.jks
 IAM_ORGANISATION_NAME=indigo-dc
 

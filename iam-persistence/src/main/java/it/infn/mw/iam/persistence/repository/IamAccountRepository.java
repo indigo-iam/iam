@@ -29,12 +29,16 @@ import org.springframework.data.repository.query.Param;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 
+
 public interface IamAccountRepository
         extends PagingAndSortingRepository<IamAccount, Long>, IamAccountRepositoryCustom {
 
     Optional<IamAccount> findByUuid(@Param("uuid") String uuid);
 
     Optional<IamAccount> findByUsername(@Param("username") String username);
+
+    @Query("select a from IamAccount a where a.username = :username")
+    IamAccount findAccountByUsername(@Param("username") String username);
 
     @Query("select a from IamAccount a join a.samlIds si where si.idpId = :idpId "
             + "and si.attributeId = :attributeId and si.userId = :userId")
@@ -56,6 +60,9 @@ public interface IamAccountRepository
 
     @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
     Optional<IamAccount> findByEmail(@Param("emailAddress") String emailAddress);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress")
+    List<IamAccount> findMultipleByEmail(@Param("emailAddress") String emailAddress);
 
     @Query("select a from IamAccount a where a.username = :username and a.uuid != :uuid")
     Optional<IamAccount> findByUsernameWithDifferentUUID(@Param("username") String username,
@@ -151,4 +158,57 @@ public interface IamAccountRepository
     @Query("delete from IamAccountGroupMembership")
     void deleteAllAccountGroupMemberships();
 
+    @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
+    Page<IamAccount> findByGivenName(@Param("givenName") String givenName,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.givenName = :givenName")
+    List<IamAccount> findByGivenName(@Param("givenName") String givenName);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
+    Page<IamAccount> containsGivenName(@Param("givenName") String givenName,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.givenName) LIKE lower(concat('%', :givenName, '%'))")
+    List<IamAccount> containsGivenName(@Param("givenName") String givenName);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
+    Page<IamAccount> findByFamilyName(@Param("familyName") String familyName,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.familyName = :familyName")
+    List<IamAccount> findByFamilyName(@Param("familyName") String familyName);
+
+    @Query("select a from IamAccount a  where a.active = :active")
+    Page<IamAccount> findByActive(@Param("active") Boolean active, @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a  where a.active = :active")
+    List<IamAccount> findByActive(@Param("active") Boolean active);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
+    Page<IamAccount> containsFamilyName(@Param("familyName") String familyName,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.familyName) LIKE lower(concat('%', :familyName, '%'))")
+    List<IamAccount> containsFamilyName(@Param("familyName") String familyName);
+
+    @Query("select a from IamAccount a  where a.username = :username")
+    Page<IamAccount> findByUsername(@Param("username") String username, @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
+    Page<IamAccount> containsUsername(@Param("username") String username, @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a where lower(a.username) LIKE lower(concat('%', :username, '%'))")
+    List<IamAccount> containsUsername(@Param("username") String username);
+
+    @Query("select a from IamAccount a join a.userInfo ui where ui.email = :emailAddress order by a.username ASC")
+    Page<IamAccount> findByEmail(@Param("emailAddress") String emailAddress,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
+    Page<IamAccount> containsEmail(@Param("emailAddress") String emailAddress,
+            @Param("op") Pageable op);
+
+    @Query("select a from IamAccount a join a.userInfo ui where lower(ui.email) LIKE lower(concat('%', :emailAddress, '%')) order by a.username ASC")
+    List<IamAccount> containsEmail(@Param("emailAddress") String emailAddress);
 }
