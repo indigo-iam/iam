@@ -233,6 +233,8 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(null)
       .pemEncodedCertificate(X509CERT_TEST.getPemEncodedCertificate())
+      .subjectDn(X509CERT_TEST.getSubjectDn())
+      .issuerDn(X509CERT_TEST.getIssuerDn())
       .build();
 
     ScimUser lennon_remove = ScimUser.builder().addX509Certificate(cert).build();
