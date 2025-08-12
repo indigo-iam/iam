@@ -484,67 +484,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
-  protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
-      IamNotificationType messageType, String subject, List<String> receiverAddress) {
-
-    try {
-      String formattedSubject = String.format("%s %s", properties.getSubjectPrefix(), subject);
-      Template template = freeMarkerConfiguration.getTemplate(templateName);
-      String body = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
-
-      IamEmailNotification message = new IamEmailNotification();
-
-      message.setUuid(UUID.randomUUID().toString());
-      message.setType(messageType);
-      message.setSubject(formattedSubject);
-      message.setBody(body);
-      message.setCreationTime(new Date());
-      message.setDeliveryStatus(IamDeliveryStatus.PENDING);
-      message.setReceivers(receiverAddress.stream()
-        .map(a -> IamNotificationReceiver.forAddress(message, a))
-        .collect(Collectors.toList()));
-
-      return message;
-    } catch (IOException | TemplateException e) {
-      LOG.error("Exception encountered when attempting to create message: {}", e.toString());
-      return null;
-    }
-  }
-
-
-
-  @Override
-  public IamEmailNotification createLinkedCertificateMessage(IamAccount account, AccountUpdater u) {
-
-    String name = account.getUserInfo().getName();
-    String username = account.getUsername();
-    String email = account.getUserInfo().getEmail();
-
-
-    // Don't think typecasting is the best, but this would be how
-    // IamX509Certificate newValue= ((ArrayList<IamX509Certificate>) u.getNewValue()).get(0);
-
-    IamX509Certificate addedCertificate = u.getNewValue(IamX509Certificate.class);
-
-    String issuerDn = addedCertificate.getIssuerDn();
-    String subjectDn = addedCertificate.getSubjectDn();
-
-    String subject = "New x509Certificate linked to user";
-
-    Map<String, Object> model =
-        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
-
-    IamEmailNotification notification =
-        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
-            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
-
-
-    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
-
-    return notification;
-
-  }
-
   @Override
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
       IamX509AuthenticationCredential x509Credential) {
@@ -571,24 +510,16 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   }
 
-
-
   @Override
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-      AccountUpdater u) {
+      IamX509AuthenticationCredential x509Credential) {
 
     String name = account.getUserInfo().getName();
     String username = account.getUsername();
     String email = account.getUserInfo().getEmail();
 
-
-    // Don't think typecasting is the best, but this would be how
-    // IamX509Certificate newValue = ((ArrayList<IamX509Certificate>) u.getNewValue()).get(0);
-
-    IamX509Certificate removedCertificate = u.getNewValue(IamX509Certificate.class);
-
-    String issuerDn = removedCertificate.getIssuerDn();
-    String subjectDn = removedCertificate.getSubjectDn();
+    String issuerDn = x509Credential.getIssuer();
+    String subjectDn = x509Credential.getSubject();
 
     String subject = "Removed x509Certificate from user";
 
@@ -603,35 +534,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
 
     return notification;
-
-  }
-
-
-  @Override
-  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-      IamX509Certificate x509Certificate) {
-
-    String name = account.getUserInfo().getName();
-    String username = account.getUsername();
-    String email = account.getUserInfo().getEmail();
-
-    String issuerDn = x509Certificate.getIssuerDn();
-    String subjectDn = x509Certificate.getSubjectDn();
-
-    String subject = "Removed x509Certificate from user";
-
-    Map<String, Object> model =
-        generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
-
-    IamEmailNotification notification =
-        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
-
-
-    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
-
-    return notification;
-
   }
 
   private Map<String, Object> generateCertificateModel(String name, String username, String email,
@@ -647,5 +549,30 @@ public class TransientNotificationFactory implements NotificationFactory {
     return model;
   }
 
+  protected IamEmailNotification createMessage(String templateName, Map<String, Object> model,
+      IamNotificationType messageType, String subject, List<String> receiverAddress) {
 
+    try {
+      String formattedSubject = String.format("%s %s", properties.getSubjectPrefix(), subject);
+      Template template = freeMarkerConfiguration.getTemplate(templateName);
+      String body = FreeMarkerTemplateUtils.processTemplateIntoString(template, model);
+
+      IamEmailNotification message = new IamEmailNotification();
+
+      message.setUuid(UUID.randomUUID().toString());
+      message.setType(messageType);
+      message.setSubject(formattedSubject);
+      message.setBody(body);
+      message.setCreationTime(new Date());
+      message.setDeliveryStatus(IamDeliveryStatus.PENDING);
+      message.setReceivers(receiverAddress.stream()
+        .map(a -> IamNotificationReceiver.forAddress(message, a))
+        .collect(Collectors.toList()));
+
+      return message;
+    } catch (IOException | TemplateException e) {
+      LOG.error("Exception encountered when attempting to create message: {}", e.toString());
+      return null;
+    }
+  }
 }

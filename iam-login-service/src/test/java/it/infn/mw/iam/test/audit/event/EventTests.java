@@ -304,6 +304,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
       .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -333,6 +335,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
       .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -381,6 +385,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
       .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -451,7 +457,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testAddX509CertificateEventNotificationPolicyFalse() {
+  public void testAddX509CertificateEventNotificationPolicy() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS);
     notificationProperties.setCertificateUpdate(true);
@@ -460,6 +466,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_0_CERT_STRING)
       .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -479,7 +487,7 @@ public class EventTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(0, pending.size());
+    Assert.assertEquals(1, pending.size());
 
   }
 
@@ -494,6 +502,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
       .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -541,6 +551,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
       .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -611,7 +623,7 @@ public class EventTests extends X509TestSupport {
   }
 
   @Test
-  public void testRemoveX509CertificateEventEventNotificationPolicyFalse() {
+  public void testRemoveX509CertificateEventEventNotificationPolicy() {
 
     notificationProperties.setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS);
     notificationProperties.setCertificateUpdate(true);
@@ -619,6 +631,8 @@ public class EventTests extends X509TestSupport {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
       .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
@@ -638,18 +652,20 @@ public class EventTests extends X509TestSupport {
 
     List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-    Assert.assertEquals(0, pending.size());
+    Assert.assertEquals(1, pending.size());
 
   }
 
 
-
+// Need to debug tests
   @Test
   public void testRemoveX509CertificateEvent() {
 
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .pemEncodedCertificate(TEST_1_CERT_STRING)
       .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
       .build();
 
     ScimUser update = ScimUser.builder().addX509Certificate(cert).build();

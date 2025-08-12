@@ -21,7 +21,6 @@ import static java.lang.String.format;
 import java.security.Principal;
 import java.util.Date;
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -40,7 +39,6 @@ import it.infn.mw.iam.authn.error.AccountAlreadyLinkedError;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
-import it.infn.mw.iam.notification.NotificationProperties.AdminNotificationPolicy;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -198,12 +196,7 @@ public class DefaultAccountLinkingService
           x509Credential));
     }
 
-    notificationProperties.getAdminNotificationPolicy();
-    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
-        && (notificationProperties.getAdminNotificationPolicy()
-          .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
-            || notificationProperties.getAdminNotificationPolicy()
-              .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
+    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
       notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
     }
   }
@@ -217,17 +210,15 @@ public class DefaultAccountLinkingService
 
     boolean removed = false;
 
-    IamX509Certificate certificate = null;
+    Optional<IamX509Certificate> certificate = userAccount.getX509Certificates()
+      .stream()
+      .filter(cert -> cert.getSubjectDn().equals(certificateSubject)
+          && cert.getIssuerDn().equals(certificateIssuer))
+      .findFirst();
 
-    Set<IamX509Certificate> certificates = userAccount.getX509Certificates();
-    for (IamX509Certificate cert : certificates) {
-      if (cert.getSubjectDn().equals(certificateSubject)) {
-        certificate = cert;
-        break;
-      }
+    if (certificate.isPresent()) {
+      removed = userAccount.getX509Certificates().remove(certificate.get());
     }
-    
-    removed = certificates.remove(certificate);
 
     if (removed) {
       userAccount.touch();
@@ -239,12 +230,15 @@ public class DefaultAccountLinkingService
           userAccount.getUsername(), certificateSubject, certificateIssuer), certificateSubject,
           certificateIssuer));
 
-      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())
-          && (notificationProperties.getAdminNotificationPolicy()
-            .equals(AdminNotificationPolicy.NOTIFY_ADMINS)
-              || notificationProperties.getAdminNotificationPolicy()
-                .equals(AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS))) {
-        notificationFactory.createUnlinkedCertificateMessage(userAccount, certificate);
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+
+        IamX509AuthenticationCredential iamX509AuthenticationCredential =
+            new IamX509AuthenticationCredential.Builder().issuer(certificate.get().getIssuerDn())
+              .subject(certificate.get().getSubjectDn())
+              .build();
+
+        notificationFactory.createUnlinkedCertificateMessage(userAccount,
+            iamX509AuthenticationCredential);
       }
     }
   }

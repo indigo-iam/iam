@@ -145,10 +145,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
 
 
                 account = accountService.createAccount(userConverter.entityFromDto(user));
-
-
         }
-
 
 
         // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
@@ -191,11 +188,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 assertThat(pending.get(0).getBody(),
                                 containsString("The " + iamProperties.getOrganisation().getName()
                                                 + " registration service"));
-
-
         }
-
-
 
         // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
         @Test
@@ -238,7 +231,6 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 assertThat(pending.get(0).getBody(),
                                 containsString("The " + iamProperties.getOrganisation().getName()
                                                 + " registration service"));
-
         }
 
         // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is false
@@ -261,15 +253,12 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(0,pending.size());
-
+                Assert.assertEquals(0, pending.size());
         }
 
-        // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true,
-        // but
-        // wrong notification policy
+        // When the user is linking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
         @Test
-        public void notificationwhenLinkingCertificateWrongNotificationPolicy() {
+        public void notificationwhenLinkingCertificateNotificationPolicy() {
 
 
                 notificationProperties
@@ -288,8 +277,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(0, pending.size());
-
+                Assert.assertEquals(1, pending.size());
         }
 
         // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
@@ -327,8 +315,6 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 assertThat(pending.get(0).getBody(),
                                 containsString("The " + iamProperties.getOrganisation().getName()
                                                 + " registration service"));
-
-
         }
 
         // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
@@ -338,8 +324,6 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 notificationProperties.setAdminNotificationPolicy(
                                 AdminNotificationPolicy.NOTIFY_ADDRESS_AND_ADMINS);
                 notificationProperties.setCertificateUpdate(true);
-
-
 
                 linkingService.unlinkX509Certificate(principal, TEST_1_SUBJECT, TEST_1_ISSUER);
                 List<IamEmailNotification> pending =
@@ -367,9 +351,6 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 assertThat(pending.get(0).getBody(),
                                 containsString("The " + iamProperties.getOrganisation().getName()
                                                 + " registration service"));
-
-
-
         }
 
 
@@ -388,14 +369,11 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
                 Assert.assertEquals(0, pending.size());
-
-
-
         }
 
         // When the user is unlinking the certificate and the IAM_NOTIFICATION_CERTIFICATE is true
         @Test
-        public void notificationwhenUnlinkingCertificateWrongNotificationPolicy() {
+        public void notificationwhenUnlinkingCertificateNotificationPolicy() {
 
                 notificationProperties
                         .setAdminNotificationPolicy(AdminNotificationPolicy.NOTIFY_ADDRESS);
@@ -407,12 +385,7 @@ public class AccountLinkCertificateNotificationTests extends X509TestSupport {
                 List<IamEmailNotification> pending =
                                 emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(0, pending.size());
-
-
+                Assert.assertEquals(1, pending.size());
 
         }
-
-
-
 }
