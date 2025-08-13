@@ -29,6 +29,7 @@ import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -471,7 +472,7 @@ public class RegistrationRequestCertificateOptionalTests {
 
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
-        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new EnumMap<>(RegistrationField.class);
         RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
         RegistrationField registrationField = RegistrationField.CERTIFICATE;
         notesProperties.setReadOnly(true);

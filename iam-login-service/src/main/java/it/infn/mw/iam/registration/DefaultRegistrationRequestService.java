@@ -106,7 +106,6 @@ public class DefaultRegistrationRequestService
   @Autowired
   private IamX509CertificateRepository iamX509CertificateRepository;
 
-  @Autowired
   private LabelDTOConverter labelConverter;
 
   @Autowired(required = false)
@@ -118,12 +117,18 @@ public class DefaultRegistrationRequestService
   @Autowired
   private Clock clock;
 
-  @Autowired
   private IamProperties iamProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
   public static final String NICKNAME_ATTRIBUTE_KEY = "nickname";
+
+  @Autowired
+  public DefaultRegistrationRequestService(LabelDTOConverter labelConverter,
+      IamProperties iamProperties) {
+    this.labelConverter = labelConverter;
+    this.iamProperties = iamProperties;
+  }
 
   private IamRegistrationRequest findRequestById(String requestUuid) {
     return requestRepository.findByUuid(requestUuid)
