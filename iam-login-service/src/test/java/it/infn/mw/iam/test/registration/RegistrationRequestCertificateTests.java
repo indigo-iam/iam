@@ -51,6 +51,7 @@ import it.infn.mw.iam.authn.x509.X509CertificateChainParser;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -126,7 +127,6 @@ public class RegistrationRequestCertificateTests {
         request.setEmail(email);
         request.setUsername(USERNAME);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
@@ -177,7 +177,6 @@ public class RegistrationRequestCertificateTests {
         request.setEmail(email);
         request.setUsername(USERNAME);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
@@ -233,12 +232,13 @@ public class RegistrationRequestCertificateTests {
 
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
-        Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
         RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
+        RegistrationField registrationField = RegistrationField.CERTIFICATE;
         notesProperties.setReadOnly(true);
         notesProperties.setExternalAuthAttribute("notes");
         notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-        fieldAttribute.put("notes", notesProperties);
+        fieldAttribute.put(registrationField, notesProperties);
 
         when(registrationProperties.getFields()).thenReturn(fieldAttribute);
 

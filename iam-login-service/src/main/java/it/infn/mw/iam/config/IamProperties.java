@@ -40,7 +40,7 @@ public class IamProperties {
   }
 
   public enum RegistrationField {
-    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES, CERTIFICATE
   }
 
   public enum LocalAuthenticationAllowedUsers {

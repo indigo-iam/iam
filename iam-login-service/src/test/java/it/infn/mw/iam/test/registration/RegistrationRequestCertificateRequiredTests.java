@@ -55,6 +55,7 @@ import it.infn.mw.iam.authn.x509.X509CertificateChainParser;
 import it.infn.mw.iam.authn.x509.X509CertificateChainParsingResult;
 import it.infn.mw.iam.authn.x509.X509CertificateVerificationResult;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.IamProperties.RegistrationFieldProperties;
 import it.infn.mw.iam.config.IamProperties.RegistrationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -155,7 +156,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request.setEmail(email);
         request.setUsername(USERNAME);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
@@ -206,7 +206,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request.setEmail(email);
         request.setUsername(USERNAME_2);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
@@ -259,7 +258,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request.setEmail(email);
         request.setUsername(USERNAME_2);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("false");
 
         HttpSession session = httpRequest.getSession();
@@ -312,7 +310,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request1.setEmail(email);
         request1.setUsername(USERNAME);
         request1.setNotes("Some short notes...");
-        request1.setPassword("password");
         request1.setRegisterCertificate("false");
 
         MockHttpServletRequest req1 = new MockHttpServletRequest();
@@ -344,7 +341,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request2.setEmail(email2);
         request2.setUsername(USERNAME_2);
         request2.setNotes("Some short notes...");
-        request2.setPassword("password");
 
         MockHttpServletRequest req2 = new MockHttpServletRequest();
         MockHttpSession session2 = new MockHttpSession();
@@ -409,7 +405,6 @@ public class RegistrationRequestCertificateRequiredTests {
         request.setEmail(email);
         request.setUsername(USERNAME);
         request.setNotes("Some short notes...");
-        request.setPassword("password");
         request.setRegisterCertificate("true");
 
         HttpSession session = httpRequest.getSession();
@@ -465,12 +460,13 @@ public class RegistrationRequestCertificateRequiredTests {
 
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
-        Map<String, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
+        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new HashMap<>();
         RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
+        RegistrationField registrationField = RegistrationField.CERTIFICATE;
         notesProperties.setReadOnly(true);
         notesProperties.setExternalAuthAttribute("notes");
         notesProperties.setFieldBehaviour(ExternalAuthAttributeSectionBehaviour.MANDATORY);
-        fieldAttribute.put("notes", notesProperties);
+        fieldAttribute.put(registrationField, notesProperties);
 
         when(registrationProperties.getFields()).thenReturn(fieldAttribute);
 
