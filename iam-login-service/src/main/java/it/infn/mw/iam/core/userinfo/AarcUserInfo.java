@@ -36,4 +36,8 @@ public interface AarcUserInfo extends UserInfo {
   String getVoPersonId();
 
   void setVoPersonId(String vopPersonId);
+
+  String getVoPersonExternalAffiliation();
+
+  void setVoPersonExternalAffiliation(String vopPersonId);
 }

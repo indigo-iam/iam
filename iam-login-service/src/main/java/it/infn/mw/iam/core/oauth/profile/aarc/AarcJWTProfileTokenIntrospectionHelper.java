@@ -86,6 +86,7 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
       }
 
       result.put("voperson_id", userInfo.getSub());
+      result.put("voperson_external_affiliation", iamUserInfo.getAffiliation());
 
     }
 

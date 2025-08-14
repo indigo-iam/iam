@@ -32,11 +32,13 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
   public static final String ENTITLEMENTS_CLAIM = "entitlements";
   public static final String EDUPERSON_ASSURANCE_CLAIM = "eduperson_assurance";
   public static final String VOPERSON_ID = "voperson_id";
+  public static final String VOPERSON_EXTERNAL_AFFILIATION = "voperson_external_affiliation";
 
   private String scopedAffiliation;
   private Set<String> entitlements;
   private Set<String> assurance;
   private String vopersonId;
+  private String vopersonExternalAffiliation;
 
   public AarcDecoratedUserInfo(UserInfo delegate) {
     super(delegate);
@@ -60,8 +62,9 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
     json.add(ENTITLEMENTS_CLAIM, urns);
     json.add(EDUPERSON_ENTITLEMENT_CLAIM, urns);
 
-
     json.add(VOPERSON_ID, new JsonPrimitive(getVoPersonId()));
+
+    json.add(VOPERSON_EXTERNAL_AFFILIATION, new JsonPrimitive(getVoPersonExternalAffiliation()));
 
     return json;
   }
@@ -104,6 +107,16 @@ public class AarcDecoratedUserInfo extends DelegateUserInfoAdapter implements Aa
   @Override
   public String getVoPersonId() {
     return this.vopersonId;
+  }
+
+  @Override
+  public void setVoPersonExternalAffiliation(String vopersonExternalAffiliation) {
+    this.vopersonExternalAffiliation = vopersonExternalAffiliation;
+  }
+
+  @Override
+  public String getVoPersonExternalAffiliation() {
+    return this.vopersonExternalAffiliation;
   }
 
   public static AarcDecoratedUserInfo forUser(UserInfo u) {
