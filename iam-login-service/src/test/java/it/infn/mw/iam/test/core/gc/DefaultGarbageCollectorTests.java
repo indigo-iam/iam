@@ -126,7 +126,7 @@ public class DefaultGarbageCollectorTests extends TestTokensUtils {
     // create expired revoked code
     IamRevokedAccessToken entity = new IamRevokedAccessToken();
     entity.setJti("ABCDEF");
-    entity.setExp(EXPIRED_DATE);
+    entity.setExpiration(EXPIRED_DATE);
     revokedAccessTokenRepo.save(entity);
     
     assertThat(revokedAccessTokenRepo.findExpired(DEFAULT_PAGE).getContent().isEmpty(), is(false));

@@ -71,7 +71,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
       validate(clientId, jwt);
       IamRevokedAccessToken revoked = new IamRevokedAccessToken();
       revoked.setJti(jwt.getJWTClaimsSet().getJWTID());
-      revoked.setExp(jwt.getJWTClaimsSet().getExpirationTime());
+      revoked.setExpiration(jwt.getJWTClaimsSet().getExpirationTime());
       revokedAccessTokenRepo.save(revoked);
     } catch (InvalidTokenException | ParseException e) {
       /*
