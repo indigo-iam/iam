@@ -28,25 +28,37 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 public class HintAwareAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
   public static final String EXT_AUTHN_HINT_PARAM = "ext_authn_hint";
+  public static final String AARC_HINT_PARAM = "aarc_idp_hint";
 
   private final AuthenticationEntryPoint delegate;
   private final ExternalAuthenticationHintService hintService;
+  private final AARCHintService aarcHintService;
 
   public HintAwareAuthenticationEntryPoint(AuthenticationEntryPoint delegate,
-      ExternalAuthenticationHintService service) {
+      ExternalAuthenticationHintService service, AARCHintService aarcHintService) {
     this.delegate = delegate;
     this.hintService = service;
+    this.aarcHintService = aarcHintService;
   }
 
   protected boolean isOAuthAuthorizationRequestWithHint(HttpServletRequest request) {
 
     // This is some current way of handling whether there is a hint or not
-    // I need to have a similar method to check if my hint is there 
-    boolean isAuthorizeRequest = "/authorize".equals(request.getRequestURI()); 
+    // I need to have a similar method to check if my hint is there
+    boolean isAuthorizeRequest = "/authorize".equals(request.getRequestURI());
     String hintParam = request.getParameter(EXT_AUTHN_HINT_PARAM);
     return isAuthorizeRequest && !Objects.isNull(hintParam);
 
   }
+
+  protected boolean isOAuthAuthorizationRequestWithAARCHint(HttpServletRequest request) {
+
+    boolean isAuthorizeRequest = "/authorize".equals(request.getRequestURI());
+    String aarcHintParam = request.getParameter(AARC_HINT_PARAM);
+
+    return isAuthorizeRequest && !Objects.isNull(aarcHintParam);
+  }
+
 
   protected void handleExternalAuthenticationHint(HttpServletRequest request,
       HttpServletResponse response) throws IOException {
@@ -55,11 +67,34 @@ public class HintAwareAuthenticationEntryPoint implements AuthenticationEntryPoi
     response.sendRedirect(redirectUrl);
   }
 
+
+  protected void handleAARCIdpHint(HttpServletRequest request, HttpServletResponse response)
+      throws IOException {
+
+    String redirectUrl = aarcHintService.resolve(request.getParameter(AARC_HINT_PARAM));
+    response.sendRedirect(redirectUrl);
+
+  }
+
   @Override
   public void commence(HttpServletRequest request, HttpServletResponse response,
       AuthenticationException authException) throws IOException, ServletException {
 
-    if (isOAuthAuthorizationRequestWithHint(request)) {
+    // No, this is where the AI spirit wants me to implement the aarc_hint
+
+    // Fuck ofcourse, this is after the failed authenthication
+    // It makes sense
+
+    // I need to get the aarc idp hint value from here.
+
+    // Need to have the aarc idp hint within the request
+
+
+    if (isOAuthAuthorizationRequestWithAARCHint(request)) {
+      handleAARCIdpHint(request, response);
+      return;
+
+    } else if (isOAuthAuthorizationRequestWithHint(request)) {
       handleExternalAuthenticationHint(request, response);
       return;
     }
