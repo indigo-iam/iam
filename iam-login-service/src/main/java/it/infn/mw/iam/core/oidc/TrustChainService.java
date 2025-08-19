@@ -87,6 +87,12 @@ public class TrustChainService {
       validateClaims(es);
     }
 
+    // RP: check iss == sub
+    EntityStatement rpEC = chain.get(0);
+    if (!rpEC.getClaimsSet().isSelfStatement()) {
+      throw new TrustChainException("Entity Configuration of RP must be self-issued (iss == sub)");
+    }
+
     // Build TrustChain (check iss/sub chain)
     TrustChain trustChain;
     try {
