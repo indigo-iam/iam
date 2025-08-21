@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oidc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -38,6 +38,8 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.config.TrustChainCache;
+
 @Service
 @Profile("openid-federation")
 public class TrustChainService {
@@ -46,10 +48,13 @@ public class TrustChainService {
 
   private final RestTemplate restTemplate;
   private final TrustAnchorRepository trustAnchorRepository;
+  private final TrustChainCache trustChainCache;
 
-  public TrustChainService(TrustAnchorRepository trustAnchorRepository) {
+  public TrustChainService(TrustAnchorRepository trustAnchorRepository,
+      TrustChainCache trustChainCache) {
     this.restTemplate = new RestTemplate();
     this.trustAnchorRepository = trustAnchorRepository;
+    this.trustChainCache = trustChainCache;
   }
 
   /**
@@ -59,8 +64,13 @@ public class TrustChainService {
    * @throws BadJOSEException
    */
   public Optional<TrustChain> getOrResolve(String entityId) throws BadJOSEException, JOSEException {
+    Optional<TrustChain> cachedChain = trustChainCache.get(entityId);
+    if (!cachedChain.isEmpty()) {
+      return cachedChain;
+    }
     try {
       TrustChain resolvedChain = resolveTrustChain(entityId);
+      trustChainCache.put(entityId, resolvedChain);
       return Optional.of(resolvedChain);
     } catch (TrustChainException e) {
       return Optional.empty();
@@ -73,7 +83,6 @@ public class TrustChainService {
    * @throws JOSEException
    * @throws BadJOSEException
    */
-  @Cacheable(cacheNames = "federationTrustChains", key = "#entityId")
   public TrustChain resolveTrustChain(String entityId)
       throws TrustChainException, BadJOSEException, JOSEException {
     // Retrieve RP Entity Configuration
@@ -82,21 +91,25 @@ public class TrustChainService {
     // Recursive Trust Chain construction
     List<EntityStatement> chain = buildChain(ec, new HashSet<>());
 
+    // Clean EC of intermediate entities
+    List<EntityStatement> cleanedChain = stripIntermediateECs(chain);
+
     // Validate base claims
-    for (EntityStatement es : chain) {
+    for (EntityStatement es : cleanedChain) {
       validateClaims(es);
     }
 
     // RP: check iss == sub
-    EntityStatement rpEC = chain.get(0);
+    EntityStatement rpEC = cleanedChain.get(0);
     if (!rpEC.getClaimsSet().isSelfStatement()) {
       throw new TrustChainException("Entity Configuration of RP must be self-issued (iss == sub)");
     }
 
     // Build TrustChain (check iss/sub chain)
     TrustChain trustChain;
+    List<EntityStatement> withoutLeaf = cleanedChain.subList(1, cleanedChain.size());
     try {
-      trustChain = new TrustChain(ec, chain);
+      trustChain = new TrustChain(ec, withoutLeaf);
     } catch (IllegalArgumentException e) {
       throw new TrustChainException("Invalid trust chain structure: " + e.getMessage(), e);
     }
@@ -108,7 +121,7 @@ public class TrustChainService {
     }
 
     // Cascading signatures (from TA to RP)
-    EntityStatement ta = chain.get(chain.size() - 1);
+    EntityStatement ta = cleanedChain.get(cleanedChain.size() - 1);
     trustChain.verifySignatures(ta.getClaimsSet().getJWKSet());
 
     return trustChain;
@@ -168,37 +181,39 @@ public class TrustChainService {
       return List.of(current);
     }
 
-    List<EntityID> hints = current.getClaimsSet().getAuthorityHints();
-    for (EntityID superior : hints) {
+    List<List<EntityStatement>> candidateChains = new ArrayList<>();
+
+    for (EntityID superior : current.getClaimsSet().getAuthorityHints()) {
       try {
         // 1. Download EC of superior
         EntityStatement superiorEC = fetchEntityConfiguration(superior.getValue());
 
         // 2. Extract fetch_endpoint from the metadata
-        String fetchEndpoint = superiorEC.getClaimsSet()
-          .getFederationEntityMetadata()
-          .getFederationAPIEndpointURI()
-          .toASCIIString();
-
-        if (fetchEndpoint == null) {
+        var fedMeta = superiorEC.getClaimsSet().getFederationEntityMetadata();
+        if (fedMeta == null || fedMeta.getFederationAPIEndpointURI() == null) {
           throw new TrustChainException("No fetch_endpoint for " + superior.getValue());
         }
+        String fetchEndpoint = fedMeta.getFederationAPIEndpointURI().toASCIIString();
 
         // 3. Make the request fetch?sub=...
         EntityStatement es = fetchEntityStatement(fetchEndpoint, superior.getValue(), currentId);
 
         // 4. Recourse to the trust anchor
-        List<EntityStatement> chain = buildChain(es, seenEntityIds);
-        List<EntityStatement> fullChain = new ArrayList<>(chain);
-        fullChain.add(0, current);
-        return fullChain;
+        List<EntityStatement> upperChain = buildChain(superiorEC, seenEntityIds);
+        List<EntityStatement> fullChain = new ArrayList<>();
+        fullChain.add(current);
+        fullChain.add(es);
+        fullChain.addAll(upperChain);
+        candidateChains.add(fullChain);
 
       } catch (TrustChainException e) {
         LOG.warn("Failed to resolve authority hint {} for entity {}: {}", superior.getValue(),
             current.getEntityID().getValue(), e.getMessage());
       }
     }
-    throw new TrustChainException("No valid authority for: " + currentId);
+    return candidateChains.stream()
+      .min(Comparator.comparingInt(List::size)) // a shorter chain is preferred
+      .orElseThrow(() -> new TrustChainException("No valid authority for: " + currentId));
   }
 
   private void validateClaims(EntityStatement es) throws TrustChainException {
@@ -220,5 +235,32 @@ public class TrustChainService {
     if (exp.before(now)) {
       throw new TrustChainException("Entity Statement is expired: " + exp);
     }
+  }
+
+  private List<EntityStatement> stripIntermediateECs(List<EntityStatement> chain) {
+    if (chain.isEmpty()) {
+      return chain;
+    }
+
+    List<EntityStatement> cleaned = new ArrayList<>();
+
+    // Leaf EC
+    if (chain.get(0).getClaimsSet().isSelfStatement()) {
+      cleaned.add(chain.get(0));
+    }
+
+    // ES only (skip intermediates ECs)
+    chain.subList(1, chain.size() - 1)
+      .stream()
+      .filter(es -> !es.getClaimsSet().isSelfStatement())
+      .forEach(cleaned::add);
+
+    // TA EC
+    EntityStatement last = chain.get(chain.size() - 1);
+    if (last.isTrustAnchor()) {
+      cleaned.add(last);
+    }
+
+    return cleaned;
   }
 }
