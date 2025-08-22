@@ -83,8 +83,6 @@ public class IamWebSecurityConfig {
     return new SecurityEvaluationContextExtension();
   }
 
-  public static final String AUTHORIZE = "/authorize";
-
   @Configuration
   @Order(100)
   public static class UserLoginConfig extends WebSecurityConfigurerAdapter {
@@ -169,7 +167,7 @@ public class IamWebSecurityConfig {
 
       // @formatter:off
       http.requestMatchers()
-        .antMatchers("/", "/login**", "/logout", AUTHORIZE, "/manage/**", "/dashboard**",
+        .antMatchers("/", "/login**", "/logout", "/authorize", "/manage/**", "/dashboard**",
             "/reset-session", "/device/**")
         .and()
         .sessionManagement()
@@ -177,7 +175,7 @@ public class IamWebSecurityConfig {
         .and()
           .authorizeRequests()
             .antMatchers("/login**", "/webjars/**").permitAll()
-            .antMatchers(AUTHORIZE + "**").permitAll()
+            .antMatchers("/authorize**").permitAll()
             .antMatchers("/reset-session").permitAll()
             .antMatchers("/device/**").authenticated()
             .antMatchers("/").authenticated()
@@ -202,7 +200,7 @@ public class IamWebSecurityConfig {
         .and().anonymous()
         .and()
           .csrf()
-            .requireCsrfProtectionMatcher(new AntPathRequestMatcher(AUTHORIZE)).disable()
+            .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize")).disable()
         .addFilter(iamX509Filter());
       // @formatter:on
     }
@@ -295,7 +293,7 @@ public class IamWebSecurityConfig {
           .anonymous()
           .and()
           .csrf()
-          .requireCsrfProtectionMatcher(new AntPathRequestMatcher(AUTHORIZE))
+          .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize"))
           .disable()
           .addFilter(userLoginConfig.iamX509Filter());
       } else {
