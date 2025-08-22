@@ -160,7 +160,6 @@ public class IamWebSecurityConfig {
 
     protected AuthenticationEntryPoint entryPoint() {
 
-      // The AI overlord suggests to do the check here
       LoginUrlAuthenticationEntryPoint delegate = new LoginUrlAuthenticationEntryPoint("/login");
       return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }

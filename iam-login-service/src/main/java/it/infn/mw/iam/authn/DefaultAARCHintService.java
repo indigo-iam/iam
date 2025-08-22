@@ -15,26 +15,34 @@
  */
 package it.infn.mw.iam.authn;
 
+import java.util.List;
 import java.util.Objects;
+
+import it.infn.mw.iam.config.oidc.OidcProvider;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
 
 import it.infn.mw.iam.authn.error.InvalidAARCHintError;
+import it.infn.mw.iam.authn.saml.DefaultMetadataLookupService;
+import it.infn.mw.iam.authn.saml.model.IdpDescription;
+import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 
 @Service
 public class DefaultAARCHintService implements AARCHintService {
 
-  private static final String SAML_COLON = "saml:";
-
-
   private String baseUrl;
 
+  @Autowired
+  private OidcValidatedProviders oidcProviders;
 
-  // right, now I need to modify this, so it doesn't just accept SAML
+
+  private DefaultMetadataLookupService samlProviders;
+
 
   @Autowired
   public DefaultAARCHintService(@Value("${iam.baseUrl}") String url) {
@@ -51,36 +59,34 @@ public class DefaultAARCHintService implements AARCHintService {
     }
   }
 
+  @Autowired
+  public void setSaml(@Lazy DefaultMetadataLookupService samlProviders) {
+    this.samlProviders = samlProviders;
+  }
+
   @Override
   public String resolve(String aarcHint) {
     hintSanityChecks(aarcHint);
 
-    // Okay, this works, but I need to check for OIDC providers and SAML providers
-    // fuck yes, this seems to be working!! 
-    // Now I just need to gather the whitelisted providers so I can check with them
-
-
+    List<OidcProvider> availableOidcProviders = oidcProviders.getValidatedProviders();
+    List<IdpDescription> availableSamlProviders = samlProviders.listIdps();
 
     // OIDC redirect
-    //return String.format("%s/openid_connect_login?iss=%s", baseUrl, aarcHint);
+    if (availableOidcProviders.stream()
+      .anyMatch(provider -> provider.getIssuer().equals(aarcHint))) {
 
-    // SAML redirect 
-    return String.format("%s/saml/login?idp=%s", baseUrl, aarcHint);
+      return String.format("%s/openid_connect_login?iss=%s", baseUrl, aarcHint);
 
+      // SAML redirect
+    } else if (availableSamlProviders.stream()
+      .anyMatch(provider -> provider.getEntityId().equals(aarcHint))) {
 
-    // It shouldn't be if the hint starts with it. 
-    // It should be if it is within the oidc list 
-    // and otherwise it should check if it is in the saml list
-/*     if (aarcHint.startsWith(SAML_COLON)) {
-      if (SAML_COLON.equals(aarcHint)) {
-        return String.format("%s/saml/login", baseUrl);
-      }
-      return String.format("%s/saml/login?idp=%s", baseUrl, aarcHint.substring(5));
+      return String.format("%s/saml/login?idp=%s", baseUrl, aarcHint);
+
+    } else {
+
+      throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHint));
     }
-    throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHint));
- */
-    
   }
-
 }
 

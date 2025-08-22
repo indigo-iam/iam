@@ -43,8 +43,6 @@ public class HintAwareAuthenticationEntryPoint implements AuthenticationEntryPoi
 
   protected boolean isOAuthAuthorizationRequestWithHint(HttpServletRequest request) {
 
-    // This is some current way of handling whether there is a hint or not
-    // I need to have a similar method to check if my hint is there
     boolean isAuthorizeRequest = "/authorize".equals(request.getRequestURI());
     String hintParam = request.getParameter(EXT_AUTHN_HINT_PARAM);
     return isAuthorizeRequest && !Objects.isNull(hintParam);
@@ -79,16 +77,6 @@ public class HintAwareAuthenticationEntryPoint implements AuthenticationEntryPoi
   @Override
   public void commence(HttpServletRequest request, HttpServletResponse response,
       AuthenticationException authException) throws IOException, ServletException {
-
-    // No, this is where the AI spirit wants me to implement the aarc_hint
-
-    // Fuck ofcourse, this is after the failed authenthication
-    // It makes sense
-
-    // I need to get the aarc idp hint value from here.
-
-    // Need to have the aarc idp hint within the request
-
 
     if (isOAuthAuthorizationRequestWithAARCHint(request)) {
       handleAARCIdpHint(request, response);
