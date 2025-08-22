@@ -68,24 +68,30 @@ public class DefaultAARCHintService implements AARCHintService {
   public String resolve(String aarcHint) {
     hintSanityChecks(aarcHint);
 
+    int indexOfNestedHints = aarcHint.indexOf('?');
+
+    // Currently not accepting the nested hint parameters
+    String aarcHintEntityID =
+        (indexOfNestedHints != -1) ? aarcHint.substring(0, indexOfNestedHints) : aarcHint;
+
     List<OidcProvider> availableOidcProviders = oidcProviders.getValidatedProviders();
     List<IdpDescription> availableSamlProviders = samlProviders.listIdps();
 
     // OIDC redirect
     if (availableOidcProviders.stream()
-      .anyMatch(provider -> provider.getIssuer().equals(aarcHint))) {
+      .anyMatch(provider -> provider.getIssuer().equals(aarcHintEntityID))) {
 
-      return String.format("%s/openid_connect_login?iss=%s", baseUrl, aarcHint);
+      return String.format("%s/openid_connect_login?iss=%s", baseUrl, aarcHintEntityID);
 
       // SAML redirect
     } else if (availableSamlProviders.stream()
-      .anyMatch(provider -> provider.getEntityId().equals(aarcHint))) {
+      .anyMatch(provider -> provider.getEntityId().equals(aarcHintEntityID))) {
 
-      return String.format("%s/saml/login?idp=%s", baseUrl, aarcHint);
+      return String.format("%s/saml/login?idp=%s", baseUrl, aarcHintEntityID);
 
     } else {
 
-      throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHint));
+      throw new InvalidAARCHintError(String.format("unsupported hint: %s", aarcHintEntityID));
     }
   }
 }
