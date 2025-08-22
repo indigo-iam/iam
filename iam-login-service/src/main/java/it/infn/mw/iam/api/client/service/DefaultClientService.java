@@ -21,8 +21,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -50,19 +48,18 @@ public class DefaultClientService implements ClientService {
 
   private ApplicationEventPublisher eventPublisher;
 
-  private OAuth2TokenEntityService tokenService;
-
   public DefaultClientService(Clock clock, IamClientRepository clientRepo,
-      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher, OAuth2TokenEntityService tokenService) {
+      IamAccountClientRepository accountClientRepo, ApplicationEventPublisher eventPublisher) {
+
     this.clock = clock;
     this.clientRepo = clientRepo;
     this.accountClientRepo = accountClientRepo;
     this.eventPublisher = eventPublisher;
-    this.tokenService = tokenService;
   }
 
   @Override
   public ClientDetailsEntity saveNewClient(ClientDetailsEntity client) {
+
     client.setCreatedAt(Date.from(clock.instant()));
     eventPublisher.publishEvent(new ClientCreatedEvent(this, client));
     return clientRepo.save(client);
@@ -71,6 +68,7 @@ public class DefaultClientService implements ClientService {
 
   private Supplier<IamAccountClient> newAccountClient(IamAccount owner,
       ClientDetailsEntity client) {
+
     return () -> {
       IamAccountClient ac = new IamAccountClient();
       ac.setAccount(owner);
@@ -82,8 +80,9 @@ public class DefaultClientService implements ClientService {
 
   @Override
   public ClientDetailsEntity linkClientToAccount(ClientDetailsEntity client, IamAccount owner) {
+
     IamAccountClient ac = accountClientRepo.findByAccountAndClient(owner, client)
-        .orElseGet(newAccountClient(owner, client));
+      .orElseGet(newAccountClient(owner, client));
     return ac.getClient();
   }
 
@@ -103,7 +102,9 @@ public class DefaultClientService implements ClientService {
   }
 
   @Override
-  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status, String userId) {
+  public ClientDetailsEntity updateClientStatus(ClientDetailsEntity client, boolean status,
+      String userId) {
+
     client.setActive(status);
     client.setStatusChangedBy(userId);
     client.setStatusChangedOn(Date.from(clock.instant()));
@@ -112,6 +113,7 @@ public class DefaultClientService implements ClientService {
 
   @Override
   public Optional<ClientDetailsEntity> findClientByClientId(String clientId) {
+
     return clientRepo.findByClientId(clientId);
   }
 
@@ -124,7 +126,7 @@ public class DefaultClientService implements ClientService {
 
     if (maybeClient.isPresent()) {
       return accountClientRepo.findByAccountAndClientId(account, maybeClient.get().getId())
-          .map(IamAccountClient::getClient);
+        .map(IamAccountClient::getClient);
     }
 
     return Optional.empty();
@@ -133,38 +135,22 @@ public class DefaultClientService implements ClientService {
 
   @Override
   public void deleteClient(ClientDetailsEntity client) {
+
     accountClientRepo.deleteByClientId(client.getId());
-    deleteTokensByClient(client);
     clientRepo.delete(client);
-  }
-
-  private boolean isValidAccessToken(OAuth2AccessTokenEntity a) {
-    return !(a.getScope().contains("registration-token")
-        || a.getScope().contains("resource-token"));
-  }
-
-  private void deleteTokensByClient(ClientDetailsEntity client) {
-    // delete all valid access tokens (exclude registration and resource tokens)
-    tokenService.getAccessTokensForClient(client)
-        .stream()
-        .filter(this::isValidAccessToken)
-        .forEach(at -> tokenService.revokeAccessToken(at));
-    // delete all valid refresh tokens
-    tokenService.getRefreshTokensForClient(client)
-        .forEach(rt -> tokenService.revokeRefreshToken(rt));
   }
 
   @Override
   public Page<ClientDetailsEntity> findAll(Pageable page) {
+
     return clientRepo.findAll(page);
   }
 
-
   @Override
   public Page<ClientDetailsEntity> findAllDynamicallyRegistered(Pageable page) {
+
     return clientRepo.findAll(ClientSpecs.isDynamicallyRegistered(), page);
   }
-
 
   @Override
   public Page<IamAccountClient> findClientOwners(String clientId, Pageable page) {

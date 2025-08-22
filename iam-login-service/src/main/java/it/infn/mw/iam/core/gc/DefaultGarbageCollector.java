@@ -26,7 +26,6 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.oauth2.repository.impl.DeviceCodeRepository;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +45,6 @@ public class DefaultGarbageCollector implements GarbageCollector {
   public static final Logger LOG = LoggerFactory.getLogger(DefaultGarbageCollector.class);
 
   private final ApprovedSiteService approvedSiteService;
-  private final OAuth2TokenEntityService tokenService;
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
   private final DeviceCodeRepository deviceCodeRepo;
@@ -55,7 +53,6 @@ public class DefaultGarbageCollector implements GarbageCollector {
   private final AuthorizationCodeRepository authzCodeRepo;
 
   public DefaultGarbageCollector(ApprovedSiteService approvedSiteService,
-      OAuth2TokenEntityService tokenService,
       IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo, DeviceCodeRepository deviceCodeRepo,
       AuthenticationHolderRepository authenticationHolderRepository,
@@ -63,7 +60,6 @@ public class DefaultGarbageCollector implements GarbageCollector {
       AuthorizationCodeRepository authzCodeRepo) {
 
     this.approvedSiteService = approvedSiteService;
-    this.tokenService = tokenService;
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
     this.deviceCodeRepo = deviceCodeRepo;
@@ -112,12 +108,12 @@ public class DefaultGarbageCollector implements GarbageCollector {
 
     Page<OAuth2AccessTokenEntity> expiredAccessTokens =
         accessTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
-    expiredAccessTokens.forEach(tokenService::revokeAccessToken);
+    expiredAccessTokens.forEach(accessTokenRepo::delete);
     LOG.debug("Removed {} expired access tokens", expiredAccessTokens.getNumberOfElements());
 
     Page<OAuth2RefreshTokenEntity> expiredRefreshTokens =
         refreshTokenRepo.findExpiredTokens(new OffsetPageable(0, 100));
-    expiredRefreshTokens.forEach(tokenService::revokeRefreshToken);
+    expiredRefreshTokens.forEach(refreshTokenRepo::delete);
     LOG.debug("Removed {} expired refresh tokens", expiredRefreshTokens.getNumberOfElements());
 
     Collection<AuthenticationHolderEntity> orphanedHolders =

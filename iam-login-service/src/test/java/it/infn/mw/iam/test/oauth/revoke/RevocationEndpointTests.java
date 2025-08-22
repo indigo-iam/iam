@@ -164,7 +164,8 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
             .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
             .param(TOKEN_TYPE_HINT_PARAM, TokenTypeHint.ACCESS_TOKEN.name())
             .param(TOKEN_PARAM, INVALID_TOKEN_VALUE))
-      .andExpect(status().isBadRequest());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
@@ -235,7 +236,8 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
             .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
             .param(TOKEN_TYPE_HINT_PARAM, TokenTypeHint.REFRESH_TOKEN.name())
             .param(TOKEN_PARAM, INVALID_TOKEN_VALUE))
-      .andExpect(status().isBadRequest());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
@@ -246,7 +248,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testRevokeRefreshTokenIsForbiddenForNonIssuerClients() throws Exception {
+  public void testRevokeRefreshTokenIsDisabledButOkForNonIssuerClients() throws Exception {
 
     mvc
       .perform(
@@ -265,5 +267,14 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
         .param(TOKEN_TYPE_HINT_PARAM, TokenTypeHint.REFRESH_TOKEN.name())
         .param(TOKEN_PARAM, refreshToken))
       .andExpect(status().isForbidden());
+
+    mvc
+    .perform(
+        post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+          .param(TOKEN_TYPE_HINT_PARAM, TokenTypeHint.REFRESH_TOKEN.name())
+          .param(TOKEN_PARAM, refreshToken))
+    .andExpect(status().isOk())
+    .andExpect(jsonPath("$.active", equalTo(true)));
   }
 }

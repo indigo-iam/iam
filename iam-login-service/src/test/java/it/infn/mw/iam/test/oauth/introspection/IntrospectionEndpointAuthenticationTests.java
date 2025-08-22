@@ -62,13 +62,14 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   }
 
   @Test
-  public void testTokenIntrospectionEndpointBasicAuthenticationWithIntrospectionDisabledClient() throws Exception {
+  public void testTokenIntrospectionEndpointBasicAuthenticationWithIntrospectionDisabledClientGetsInactiveResponse() throws Exception {
     // @formatter:off
     mvc.perform(post(ENDPOINT)
         .with(httpBasic("no-introspect-client", "secret"))
         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
 

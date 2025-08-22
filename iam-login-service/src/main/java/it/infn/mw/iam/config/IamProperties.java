@@ -471,10 +471,11 @@ public class IamProperties {
 
   public static class AccessToken {
 
-    boolean includeAuthnInfo = false;
-    boolean includeScope = false;
-    boolean includeNbf = false;
-    int nbfOffsetSeconds = 60;
+    boolean includeAuthnInfo;
+    boolean includeScope;
+    boolean includeNbf;
+    int nbfOffsetSeconds;
+    boolean storeOnDatabase;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -510,6 +511,14 @@ public class IamProperties {
       } else {
         this.nbfOffsetSeconds = nbfTime;
       }
+    }
+
+    public boolean isStoreOnDatabase() {
+      return storeOnDatabase;
+    }
+
+    public void setStoreOnDatabase(boolean storeOnDatabase) {
+      this.storeOnDatabase = storeOnDatabase;
     }
   }
 

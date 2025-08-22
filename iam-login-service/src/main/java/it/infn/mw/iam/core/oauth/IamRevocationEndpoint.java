@@ -19,12 +19,14 @@ import java.text.ParseException;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,12 +34,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.core.oauth.exceptions.ClientNotAllowed;
+import it.infn.mw.iam.core.IamTokenService;
+import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -49,55 +53,64 @@ public class IamRevocationEndpoint {
 
   public static final String URL = "revoke";
 
+  private final IamTokenService tokenService;
   private final TokenRevocationService revocationService;
-  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final IamClientRepository clientRepo;
 
-  public IamRevocationEndpoint(TokenRevocationService revocationService,
-      IamOAuthRefreshTokenRepository refreshTokenRepo) {
+  public IamRevocationEndpoint(IamTokenService tokenService, TokenRevocationService revocationService,
+      IamClientRepository clientRepo) {
+    this.tokenService = tokenService;
     this.revocationService = revocationService;
-    this.refreshTokenRepo = refreshTokenRepo;
+    this.clientRepo = clientRepo;
   }
 
   @PostMapping(value = "/" + URL, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public void revoke(@RequestParam(name = TOKEN_PARAM, required = true) String tokenValue,
       @RequestParam(name = TOKEN_TYPE_HINT_PARAM, required = false) TokenTypeHint tokenType,
-      Authentication auth) throws ClientNotAllowed {
+      Authentication auth)
+      throws UnauthorizedClientException, ParseException, InvalidTokenException {
 
-    String clientId = loadClientId(auth);
+    ClientDetailsEntity authenticatedClient = loadAuthenticatedClient(auth);
+    JWT jwt = JWTParser.parse(tokenValue);
+    tokenType = tokenType == null ? TokenTypeHint.valueFrom(jwt) : tokenType;
+    checkAuthorization(authenticatedClient, jwt, tokenType);
+    revocationService.revokeToken(jwt, tokenType);
+  }
 
-    if (tokenType == null) {
-      tokenType = TokenTypeHint.ACCESS_TOKEN;
-      try {
-        if (refreshTokenRepo.findByTokenValue(PlainJWT.parse(tokenValue)).isPresent()) {
-          tokenType = TokenTypeHint.REFRESH_TOKEN;
-        }
-      } catch (ParseException e) {
-        // ignore and keep tokenType as ACCESS_TOKEN
-      }
-    }
+  private void checkAuthorization(ClientDetailsEntity authenticatedClient, JWT jwt, TokenTypeHint tokenType) throws UnauthorizedClientException {
 
-    switch (tokenType) {
-      case ACCESS_TOKEN:
-        revocationService.revokeAccessToken(clientId, tokenValue);
-        break;
-      case REFRESH_TOKEN:
-        default:
-        revocationService.revokeRefreshToken(clientId, tokenValue);
-        break;
+    ClientDetailsEntity client = tokenService.getClientForToken(jwt, tokenType);
+    if (!authenticatedClient.getClientId()
+        .equals(client.getClientId())) {
+      throw new UnauthorizedClientException();
     }
   }
 
-  private String loadClientId(Authentication auth) {
+  private ClientDetailsEntity loadAuthenticatedClient(Authentication auth) {
 
-    return auth instanceof OAuth2Authentication oauth2authentication
+    String clientId = auth instanceof OAuth2Authentication oauth2authentication
         ? oauth2authentication.getOAuth2Request().getClientId()
         : auth.getName();
+    return clientRepo.findByClientId(clientId)
+      .orElseThrow(() -> new IllegalStateException("Unable to find the authenticated client"));
   }
 
   @ResponseStatus(value = HttpStatus.FORBIDDEN)
-  @ExceptionHandler(ClientNotAllowed.class)
+  @ExceptionHandler(UnauthorizedClientException.class)
   public ErrorDTO clientIsNotTheIssuerError(HttpServletRequest req, Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
+
+    return ErrorDTO.fromString("unauthorized_client");
+  }
+
+  @ResponseStatus(value = HttpStatus.OK)
+  @ExceptionHandler({IllegalArgumentException.class, ParseException.class,
+      InvalidTokenException.class, IllegalArgumentException.class})
+  public void invalidTokenRequest(HttpServletRequest req, Exception ex) {
+    /*
+     * From RFC-7009: invalid tokens do not cause an error response since the client cannot handle
+     * such an error in a reasonable way. Moreover, the purpose of the revocation request,
+     * invalidating the particular token, is already achieved.
+     */
   }
 }

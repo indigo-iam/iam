@@ -121,7 +121,7 @@ iam:
   
   token:
     # This is the registration access token lifetime
-    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}  
+    lifetime: ${IAM_REGISTRATION_TOKEN_LIFETIME:-1}
 
   organisation:
     name: ${IAM_ORGANISATION_NAME:indigo-dc}
@@ -144,6 +144,8 @@ iam:
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
     nbf-offset-seconds: ${IAM_ACCESS_TOKEN_NBF_OFFSET_SECONDS:60}
+    store-on-database: ${IAM_ACCESS_TOKEN_STORE_ON_DATABASE:true}
+
 
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}

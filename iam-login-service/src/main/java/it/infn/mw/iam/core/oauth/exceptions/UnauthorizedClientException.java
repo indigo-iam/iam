@@ -15,15 +15,26 @@
  */
 package it.infn.mw.iam.core.oauth.exceptions;
 
-public class ClientNotAllowed extends Exception {
+public class UnauthorizedClientException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
-  public ClientNotAllowed(String message) {
-    super(message);
+  private String description;
+
+  public UnauthorizedClientException() {
+    this("unauthorized_client");
   }
 
-  public ClientNotAllowed() {
-    super();
+  public UnauthorizedClientException(String description) {
+    super("unauthorized_client");
+    this.setDescription(description);
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 }

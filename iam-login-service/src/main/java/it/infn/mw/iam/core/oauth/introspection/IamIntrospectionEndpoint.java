@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.introspection;
 
 import java.text.ParseException;
-import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -41,15 +40,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.base.Strings;
 import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.TokenRevocationService;
-import it.infn.mw.iam.core.oauth.exceptions.ClientNotAllowed;
+import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
-import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -64,101 +62,94 @@ public class IamIntrospectionEndpoint {
   private static final String SUSPENDED_CLIENT_ERROR =
       "Client %s has been suspended and is not allowed to call introspection endpoint";
 
-  private final OAuth2TokenEntityService tokenServices;
+  private final OAuth2TokenEntityService tokenService;
   private final ClientDetailsEntityService clientService;
-  private final IamOAuthRefreshTokenRepository refreshTokenRepo;
-  private final IamAccountRepository accountRepository;
+  private final IamAccountService accountService;
   private final TokenRevocationService revocationService;
 
-  public IamIntrospectionEndpoint(OAuth2TokenEntityService tokenServices,
-      ClientDetailsEntityService clientService, IamOAuthRefreshTokenRepository refreshTokenRepo,
-      IamAccountRepository accountRepository, TokenRevocationService revocationService) {
-    this.tokenServices = tokenServices;
+  public IamIntrospectionEndpoint(OAuth2TokenEntityService tokenService,
+      ClientDetailsEntityService clientService,
+      IamAccountService accountService,
+      TokenRevocationService revocationService) {
+    this.tokenService = tokenService;
     this.clientService = clientService;
-    this.refreshTokenRepo = refreshTokenRepo;
-    this.accountRepository = accountRepository;
+    this.accountService = accountService;
     this.revocationService = revocationService;
   }
 
   @PostMapping(value = "/" + URL, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
       produces = {MediaType.APPLICATION_JSON_VALUE})
   @PreAuthorize("hasRole('ROLE_CLIENT')")
-  public IntrospectionResponse verify(
+  public IntrospectionResponse introspect(
       @RequestParam(value = "token", required = true) String tokenValue,
       @RequestParam(value = "token_type_hint", required = false) TokenTypeHint tokenType,
-      Authentication auth) throws ClientNotAllowed, ParseException {
+      Authentication auth)
+      throws UnauthorizedClientException, ParseException, InvalidTokenException {
 
     ClientDetailsEntity c = loadClient(auth);
-
-    // check client is suspended
-    if (!c.isActive()) {
-      String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
-      logger.error(errorMsg);
-      throw new ClientNotAllowed(errorMsg);
-    }
-
-    // check client is allowed to introspect tokens
-    if (!c.isAllowIntrospection()) {
-      String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
-      logger.error(errorMsg);
-      throw new ClientNotAllowed(errorMsg);
-    }
-
-    // invalid null token to introspect
-    if (Strings.isNullOrEmpty(tokenValue)) {
-      logger.error("Verify failed; token value is null");
-      return IntrospectionResponse.inactive();
-    }
-
     if (tokenType == null) {
-      try {
-        if (refreshTokenRepo.findByTokenValue(PlainJWT.parse(tokenValue)).isPresent()) {
-          return introspectRefreshToken(tokenValue);
-        }
-      } catch (ParseException e) {
-        // skip
-      }
-      return introspectAccessToken(tokenValue);
+      tokenType = getTokenTypeFrom(tokenValue);
     }
+    validate(c, tokenValue, tokenType);
 
     switch (tokenType) {
       case REFRESH_TOKEN:
         return introspectRefreshToken(tokenValue);
-      case ACCESS_TOKEN:
       default:
         return introspectAccessToken(tokenValue);
     }
   }
 
-  private IntrospectionResponse introspectRefreshToken(String tokenValue) throws ParseException {
+  private void validate(ClientDetailsEntity c, String tokenValue, TokenTypeHint tokenType)
+      throws UnauthorizedClientException, InvalidTokenException {
 
-    Optional<OAuth2RefreshTokenEntity> refreshToken =
-        refreshTokenRepo.findByTokenValue(PlainJWT.parse(tokenValue));
-    if (refreshToken.isEmpty() || refreshToken.get().isExpired()) {
+    // check if client has been suspended
+    if (!c.isActive()) {
+      String errorMsg = String.format(SUSPENDED_CLIENT_ERROR, c.getClientId());
+      logger.error(errorMsg);
+      throw new UnauthorizedClientException(errorMsg);
+    }
+
+    // check if client is allowed to introspect tokens
+    if (!c.isAllowIntrospection()) {
+      String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
+      logger.error(errorMsg);
+      throw new UnauthorizedClientException(errorMsg);
+    }
+
+    // invalid null token to introspect
+    if (Strings.isNullOrEmpty(tokenValue)) {
+      String errorMsg = "Verify failed; token value is null";
+      logger.error(errorMsg);
+      throw new InvalidTokenException(errorMsg);
+    }
+  }
+
+  private IntrospectionResponse introspectRefreshToken(String token)
+      throws ParseException, InvalidTokenException {
+
+    OAuth2RefreshTokenEntity refreshToken = tokenService.getRefreshToken(token);
+    if (refreshToken.isExpired()) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    builder.addField("exp", refreshToken.get().getExpiration());
-    refreshToken.get()
-      .getJwt()
-      .getJWTClaimsSet()
-      .getClaims()
-      .forEach(builder::addField);
+    builder.addField("exp", refreshToken.getExpiration());
+    refreshToken.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addField);
     return builder.build();
   }
 
-  private IntrospectionResponse introspectAccessToken(String tokenValue)
+  private IntrospectionResponse introspectAccessToken(String token)
       throws InvalidTokenException, ParseException {
 
-    OAuth2AccessTokenEntity accessToken = tokenServices.readAccessToken(tokenValue);
-    if (accessToken.isExpired() || isRevoked(tokenValue)) {
+    OAuth2AccessTokenEntity at = tokenService.readAccessToken(token);
+    if (at.isExpired() || isRevoked(at)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    builder.addField("exp", accessToken.getExpiration());
-    accessToken.getJwt().getJWTClaimsSet().getClaims().forEach((k, v) -> {
-      if (k.equals("sub") && !accessToken.getClient().getClientId().equals(String.valueOf(v))) {
-        IamAccount a = accountRepository.findByUuid(String.valueOf(v))
+    builder.addField("exp", at.getExpiration());
+    at.getJwt().getJWTClaimsSet().getClaims().forEach((k, v) -> {
+      if (k.equals("sub") && !at.getClient().getClientId().equals(String.valueOf(v))) {
+        IamAccount a = accountService.findByUuid(String.valueOf(v))
           .orElseThrow(
               () -> new InvalidTokenException("Token sub doesn't refer to any registered user"));
         builder.addField("user_id", a.getUsername());
@@ -168,8 +159,9 @@ public class IamIntrospectionEndpoint {
     return builder.build();
   }
 
-  private boolean isRevoked(String tokenValue) {
-    return revocationService.isAccessTokenRevoked(tokenValue);
+  private boolean isRevoked(OAuth2AccessTokenEntity at)
+      throws InvalidTokenException, ParseException {
+    return revocationService.isTokenRevoked(at.getJwt(), TokenTypeHint.ACCESS_TOKEN);
   }
 
   private ClientDetailsEntity loadClient(Authentication auth) {
@@ -179,21 +171,27 @@ public class IamIntrospectionEndpoint {
             : auth.getName());
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(ParseException.class)
-  public ErrorDTO errorOnParsingToken(HttpServletRequest req, Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
+  private TokenTypeHint getTokenTypeFrom(String token) throws ParseException {
+
+    try {
+      PlainJWT.parse(token);
+      return TokenTypeHint.REFRESH_TOKEN;
+    } catch (ParseException e) {
+      // ignore
+    }
+    SignedJWT.parse(token);
+    return TokenTypeHint.ACCESS_TOKEN;
   }
 
-  @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidTokenException.class)
-  public ErrorDTO invalidToken(HttpServletRequest req, Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
-  }
-
-  @ResponseStatus(value = HttpStatus.FORBIDDEN)
-  @ExceptionHandler(ClientNotAllowed.class)
-  public ErrorDTO clientNotAllowed(HttpServletRequest req, Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
+  @ResponseStatus(value = HttpStatus.OK)
+  @ExceptionHandler({UnauthorizedClientException.class, InvalidTokenException.class,
+      ParseException.class})
+  public IntrospectionResponse invalidClientOrToken(HttpServletRequest req, Exception ex) {
+    /*
+     * From RFC 7663 in case of valid credentials, but the token is not owned by the authenticated
+     * client (or client is not allowed to introspect it) the response must be 200 OK with
+     * {"active": false}.
+     */
+    return IntrospectionResponse.inactive();
   }
 }

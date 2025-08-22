@@ -35,13 +35,13 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
@@ -77,7 +77,7 @@ public class IamTokenRepositoryTests {
   private ClientDetailsEntityService clientDetailsService;
 
   @Autowired
-  private DefaultOAuth2ProviderTokenService tokenService;
+  private IamTokenService tokenService;
 
   @Before
   public void setup() {
@@ -126,8 +126,9 @@ public class IamTokenRepositoryTests {
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_346_USER, currentTimestamp),
         hasSize(0));
 
+    assertThat(tokenService.isAccessTokenOnDatabase(), is(true));
     assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, currentTimestamp),
-        hasSize(0));
+        hasSize(1));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, currentTimestamp),
         hasSize(1));
   }
@@ -179,7 +180,8 @@ public class IamTokenRepositoryTests {
     at.setExpiration(exp);
     at.getRefreshToken().setExpiration(exp);
 
-    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(0));
+    assertThat(tokenService.isAccessTokenOnDatabase(), is(true));
+    assertThat(accessTokenRepo.findValidAccessTokensForUser(TEST_347_USER, now), hasSize(1));
     assertThat(refreshTokenRepo.findValidRefreshTokensForUser(TEST_347_USER, now), hasSize(1));
   }
 
@@ -188,7 +190,8 @@ public class IamTokenRepositoryTests {
     OAuth2AccessTokenEntity at = buildAccessToken(loadTestClient(), TEST_347_USER);
     OAuth2RefreshTokenEntity rt = at.getRefreshToken();
     AuthenticationHolderEntity ah = rt.getAuthenticationHolder();
-    assertThat(accessTokenRepo.findByTokenValue(at.getTokenValueHash()).isPresent(), is(false));
+    assertThat(tokenService.isAccessTokenOnDatabase(), is(true));
+    assertThat(accessTokenRepo.findByTokenValue(at.getTokenValueHash()).isPresent(), is(true));
     assertThat(refreshTokenRepo.findById(rt.getId()).isPresent(), is(true));
     assertThat(authenticationHolderRepository.getById(ah.getId()), notNullValue());
     refreshTokenRepo.delete(rt);

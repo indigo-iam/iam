@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth;
+package it.infn.mw.iam.core.oauth.tokens;
 
-import java.text.ParseException;
+public class OAuthTokenClaims {
 
-import com.nimbusds.jwt.JWT;
+  public static final String AUD_CLAIM = "aud";
+  public static final String SUB_CLAIM = "sub";
 
-import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
-
-public interface TokenRevocationService {
-
-  public boolean isTokenRevoked(JWT token, TokenTypeHint tokenType)
-      throws ParseException;
-
-  public void revokeToken(JWT token, TokenTypeHint tokenType)
-      throws ParseException;
+  public static final String CLIENT_ID_CLAIM = "client_id";
+  public static final String SCOPE_CLAIM = "scope";
 
 }

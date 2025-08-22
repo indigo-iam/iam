@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -29,7 +30,6 @@ import java.util.Date;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -43,6 +43,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
@@ -77,7 +78,7 @@ public class ResourceOwnerPasswordCredentialsTests {
   private IamAccountRepository accountRepo;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
+  private IamTokenService tokenService;
 
   @Autowired
   private IamOAuthAccessTokenRepository accessTokenRepo;
@@ -248,8 +249,8 @@ public class ResourceOwnerPasswordCredentialsTests {
       .andExpect(status().isOk());
     // @formatter:on
 
-    // empty: ATs are not stored on database
-    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(0));
+    assertThat(tokenService.isAccessTokenOnDatabase(), is(true));
+    assertThat(tokenService.getAllAccessTokensForUser(USERNAME), hasSize(1));
 
     assertThat(tokenService.getAllRefreshTokensForUser(USERNAME), hasSize(1));
 
