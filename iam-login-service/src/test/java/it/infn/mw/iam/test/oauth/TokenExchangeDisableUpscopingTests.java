@@ -32,11 +32,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
@@ -58,6 +60,9 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
     @Autowired
     private ObjectMapper mapper;
+
+    @Autowired
+    private IamProperties properties;
 
     @Before
     public void setup() throws Exception {
@@ -104,6 +109,66 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
             .andExpect(jsonPath("$.error_description")
                 .value("scope not allowed by subject token configuration: profile"));
     }
+
+    @Test
+    public void testTokenExchangeForClientCredentialsDisableUpscopingDisableTokenScopes()
+            throws Exception {
+        properties.getAccessToken().setIncludeScope(false);
+
+        String tokenResponse = mvc
+            .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+                .param("grant_type", GRANT_TYPE)
+                .param("subject_token", accessToken)
+                .param("subject_token_type", TOKEN_TYPE)
+                .param("scope", "read-tasks"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.access_token").exists())
+            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        DefaultOAuth2AccessToken tokenResponseObject =
+                mapper.readValue(tokenResponse, DefaultOAuth2AccessToken.class);
+
+        JWT exchangedToken = JWTParser.parse(tokenResponseObject.getValue());
+        assertThat(exchangedToken.getJWTClaimsSet().getSubject(), is("client-cred"));
+
+        properties.getAccessToken().setIncludeAuthnInfo(true);
+    }
+
+    @Test
+    public void testTokenExchangeForClientCredentialsDisableUpscopingTokenWithoutScopes()
+            throws Exception {
+        properties.getAccessToken().setIncludeScope(false);
+
+        MockHttpServletRequestBuilder req = post("/token").param("grant_type", "client_credentials")
+            .param("client_id", "client-cred")
+            .param("client_secret", "secret");
+
+        String response = mvc.perform(req)
+            .andExpect(status().is(200))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        String accessTokenNoScopes =
+                mapper.readValue(response, DefaultOAuth2AccessToken.class).getValue();
+
+        properties.getAccessToken().setIncludeScope(true);
+
+        mvc.perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
+            .param("grant_type", GRANT_TYPE)
+            .param("subject_token", accessTokenNoScopes)
+            .param("subject_token_type", TOKEN_TYPE)
+            .param("scope", "profile"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("invalid_request"))
+            .andExpect(jsonPath("$.error_description")
+                .value("cannot verify requested scopes with subject token"));
+
+    }
+
 
     @Test
     public void testTokenExchangeForClientCredentialsDisableUpscopingIncludingOfflineScope()

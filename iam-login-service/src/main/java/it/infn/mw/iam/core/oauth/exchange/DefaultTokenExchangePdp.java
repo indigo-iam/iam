@@ -112,10 +112,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
+    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()
+        && properties.getAccessToken().isIncludeScope()) {
       invalidScopeMessage = "scope not allowed by subject token configuration";
       try {
-        // this assumes that iam.access_token.include_scope=true
         JWT token = JWTParser.parse(subjectToken);
         String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
         Set<ScopeMatcher> result = new HashSet<>();
@@ -123,8 +123,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
           result.add(scopeMatcherRegistry.findMatcherForScope(scope));
         }
         scopeMatchers = result;
-      } catch (Exception e) {
-        throw new InvalidRequestException("Error parsing subject token: " + e.getMessage());
+      } catch (Throwable e) {
+        throw new InvalidRequestException("cannot verify requested scopes with subject token");
       }
     }
 
