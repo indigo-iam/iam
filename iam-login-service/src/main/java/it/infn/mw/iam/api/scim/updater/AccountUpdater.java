@@ -20,5 +20,4 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 public interface AccountUpdater extends Updater {
 
   public IamAccount getAccount();
-
 }

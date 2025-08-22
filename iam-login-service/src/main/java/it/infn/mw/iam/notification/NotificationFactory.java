@@ -29,47 +29,47 @@ import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
 
 public interface NotificationFactory {
 
-    IamEmailNotification createConfirmationMessage(IamRegistrationRequest request);
+        IamEmailNotification createConfirmationMessage(IamRegistrationRequest request);
 
-    IamEmailNotification createAccountActivatedMessage(IamRegistrationRequest request);
+        IamEmailNotification createAccountActivatedMessage(IamRegistrationRequest request);
 
-    IamEmailNotification createRequestRejectedMessage(IamRegistrationRequest request,
-            Optional<String> motivation);
+        IamEmailNotification createRequestRejectedMessage(IamRegistrationRequest request,
+                        Optional<String> motivation);
 
-    IamEmailNotification createAdminHandleRequestMessage(IamRegistrationRequest request);
+        IamEmailNotification createAdminHandleRequestMessage(IamRegistrationRequest request);
 
-    IamEmailNotification createResetPasswordMessage(IamAccount account);
+        IamEmailNotification createResetPasswordMessage(IamAccount account);
 
-    IamEmailNotification createAdminHandleGroupRequestMessage(IamGroupRequest groupRequest);
+        IamEmailNotification createAdminHandleGroupRequestMessage(IamGroupRequest groupRequest);
 
-    IamEmailNotification createGroupMembershipApprovedMessage(IamGroupRequest groupRequest);
+        IamEmailNotification createGroupMembershipApprovedMessage(IamGroupRequest groupRequest);
 
-    IamEmailNotification createGroupMembershipRejectedMessage(IamGroupRequest groupRequest);
+        IamEmailNotification createGroupMembershipRejectedMessage(IamGroupRequest groupRequest);
 
-    IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
-            List<IamAccount> accounts);
+        IamEmailNotification createClientStatusChangedMessageFor(ClientDetailsEntity client,
+                        List<IamAccount> accounts);
 
-    IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup);
+        IamEmailNotification createAupReminderMessage(IamAccount account, IamAup aup);
 
-    IamEmailNotification createAupSignatureExpMessage(IamAccount account);
+        IamEmailNotification createAupSignatureExpMessage(IamAccount account);
 
-    IamEmailNotification createAupSignatureRequestMessage(IamAccount account);
+        IamEmailNotification createAupSignatureRequestMessage(IamAccount account);
 
-    IamEmailNotification createAccountSuspendedMessage(IamAccount account);
+        IamEmailNotification createAccountSuspendedMessage(IamAccount account);
 
-    IamEmailNotification createAccountRestoredMessage(IamAccount account);
+        IamEmailNotification createAccountRestoredMessage(IamAccount account);
 
-    IamEmailNotification createMfaDisableMessage(IamAccount account);
+        IamEmailNotification createMfaDisableMessage(IamAccount account);
 
-    IamEmailNotification createMfaEnableMessage(IamAccount account);
+        IamEmailNotification createMfaEnableMessage(IamAccount account);
 
-    IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
+        IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
 
-    IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
+        IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
 
-    IamEmailNotification createLinkedCertificateMessage(IamAccount account,
-            IamX509AuthenticationCredential x509Credential);
+        IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+                        IamX509AuthenticationCredential x509Credential);
 
-    IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-            IamX509AuthenticationCredential x509Credential);
+        IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+                        IamX509AuthenticationCredential x509Credential);
 }

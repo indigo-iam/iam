@@ -551,13 +551,13 @@ public class ScimUserProvisioning
       if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
 
         notificationFactory.createLinkedCertificateMessage(account,
-            getNewX509AuthCredValue(indigoUser));
+            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
       }
 
       else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
 
         notificationFactory.createUnlinkedCertificateMessage(account,
-            getNewX509AuthCredValue(indigoUser));
+            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
       }
     }
   }
@@ -568,15 +568,5 @@ public class ScimUserProvisioning
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
 
     operations.forEach(op -> executePatchOperation(account, op));
-  }
-
-  private IamX509AuthenticationCredential getNewX509AuthCredValue(ScimIndigoUser indigoUser) {
-
-    List<ScimX509Certificate> updatedCertificates = indigoUser.getCertificates();
-
-    return new IamX509AuthenticationCredential.Builder()
-      .issuer(updatedCertificates.get(0).getIssuerDn())
-      .subject(updatedCertificates.get(0).getSubjectDn())
-      .build();
   }
 }

@@ -72,7 +72,6 @@ It will be enhanced and expanded in future releases, based also on users feedbac
 
 * Fix scope policy filter when refresh token has been already issued by @enricovianello in https://github.com/indigo-iam/iam/pull/982
 
-
 ## 1.11.1 (2025-05-12)
 
 ### What's Fixed
