@@ -15,13 +15,20 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -38,8 +45,11 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.config.TrustChainCache;
+import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
 import it.infn.mw.iam.core.oidc.TrustChainService;
+
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(MockitoJUnitRunner.class)
@@ -47,6 +57,9 @@ public class TrustChainServiceTests {
 
   @Mock
   TrustAnchorRepository trustAnchorRepository;
+
+  @Mock
+  private TrustChainCache trustChainCache;
 
   @Mock
   RestTemplate restTemplate;
@@ -61,8 +74,7 @@ public class TrustChainServiceTests {
     fakeChain = TrustChainTestFactory.createRpToTaChain();
   }
 
-  @Test
-  public void testResolveTrustChainFromRpToTa() throws Exception {
+  private void mockRpToTaChain(boolean taTrusted) throws Exception {
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -71,11 +83,10 @@ public class TrustChainServiceTests {
 
     // Build TA EC (self-issued)
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600_000), null,
+        new Date(System.currentTimeMillis() + 600000), null,
         URI.create("https://ta.example/fetch"), null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
-    // Mock HTTP responses
     when(
         restTemplate.getForObject("https://rp.example/.well-known/openid-federation", String.class))
           .thenReturn(rpJwt);
@@ -90,13 +101,34 @@ public class TrustChainServiceTests {
     // Inject mock
     ReflectionTestUtils.setField(service, "restTemplate", restTemplate);
 
-    // TA trusted
-    when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
+    // TA trusted?
+    when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(taTrusted);
+  }
 
+  @Test
+  public void testGetOrResolveReturnsCachedChain() throws Exception {
+    when(trustChainCache.get("entityA")).thenReturn(Optional.of(fakeChain));
+
+    Optional<TrustChain> result = service.getOrResolve("entityA");
+
+    assertTrue(result.isPresent());
+    assertEquals(fakeChain, result.get());
+    verify(trustChainCache, never()).put(anyString(), any());
+  }
+
+  @Test
+  public void testResolveTrustChainFromRpToTa() throws Exception {
+    mockRpToTaChain(true);
     TrustChain resolved = service.resolveTrustChain("https://rp.example");
 
     assertNotNull(resolved);
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
+  }
+
+  @Test(expected = InvalidTrustChainException.class)
+  public void testUntrustedTrustAnchor() throws Exception {
+    mockRpToTaChain(false);
+    service.resolveTrustChain("https://rp.example");
   }
 
   @Test
@@ -152,9 +184,36 @@ public class TrustChainServiceTests {
 
     TrustChain resolved = service.resolveTrustChain("https://rp.example");
 
-    // Assertions
     assertNotNull(resolved);
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
     assertEquals(3, resolved.getSuperiorStatements().size());
+  }
+
+  @Test
+  public void testValidateClaimsThrowsWhenIatInFuture() throws JOSEException {
+    Date futureIat = new Date(System.currentTimeMillis() + 60000);
+    Date exp = new Date(System.currentTimeMillis() + 600000);
+
+    EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", futureIat, exp, null,
+        URI.create("https://rp.example/fetch"), null);
+
+    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+        () -> ReflectionTestUtils.invokeMethod(service, "validateClaims", es));
+    assertEquals("invalid_trust_chain", ex.getErrorCode());
+    assertTrue(ex.getMessage().contains("Entity Statement has iat in the future"));
+  }
+
+  @Test
+  public void testValidateClaimsThrowsWhenExpired() throws JOSEException {
+    Date iat = new Date(System.currentTimeMillis() - 600000);
+    Date exp = new Date(System.currentTimeMillis() - 60000);
+
+    EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", iat, exp, null,
+        URI.create("https://rp.example/fetch"), null);
+
+    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+        () -> ReflectionTestUtils.invokeMethod(service, "validateClaims", es));
+    assertEquals("invalid_trust_chain", ex.getErrorCode());
+    assertTrue(ex.getMessage().contains("Entity Statement is expired"));
   }
 }

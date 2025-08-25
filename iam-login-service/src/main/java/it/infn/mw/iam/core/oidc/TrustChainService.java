@@ -72,7 +72,7 @@ public class TrustChainService {
       TrustChain resolvedChain = resolveTrustChain(entityId);
       trustChainCache.put(entityId, resolvedChain);
       return Optional.of(resolvedChain);
-    } catch (TrustChainException e) {
+    } catch (InvalidTrustChainException e) {
       return Optional.empty();
     }
   }
@@ -84,7 +84,7 @@ public class TrustChainService {
    * @throws BadJOSEException
    */
   public TrustChain resolveTrustChain(String entityId)
-      throws TrustChainException, BadJOSEException, JOSEException {
+      throws InvalidTrustChainException, BadJOSEException, JOSEException {
     // Retrieve RP Entity Configuration
     EntityStatement ec = fetchEntityConfiguration(entityId);
 
@@ -102,7 +102,8 @@ public class TrustChainService {
     // RP: check iss == sub
     EntityStatement rpEC = cleanedChain.get(0);
     if (!rpEC.getClaimsSet().isSelfStatement()) {
-      throw new TrustChainException("Entity Configuration of RP must be self-issued (iss == sub)");
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Entity Configuration of RP must be self-issued (iss == sub)");
     }
 
     // Build TrustChain (check iss/sub chain)
@@ -111,13 +112,15 @@ public class TrustChainService {
     try {
       trustChain = new TrustChain(ec, withoutLeaf);
     } catch (IllegalArgumentException e) {
-      throw new TrustChainException("Invalid trust chain structure: " + e.getMessage(), e);
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Invalid trust chain structure: " + e.getMessage(), e);
     }
 
     // Check that Trust Chain ends with a trusted TA
     EntityID taId = trustChain.getTrustAnchorEntityID();
     if (!trustAnchorRepository.isTrusted(taId.getValue())) {
-      throw new TrustChainException("No trusted Trust Anchor found: " + taId.getValue());
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "No trusted Trust Anchor found: " + taId.getValue());
     }
 
     // Cascading signatures (from TA to RP)
@@ -130,13 +133,14 @@ public class TrustChainService {
   /**
    * Download Entity Configuration
    */
-  private EntityStatement fetchEntityConfiguration(String entityId) throws TrustChainException {
+  private EntityStatement fetchEntityConfiguration(String entityId) throws InvalidTrustChainException {
     String url = entityId + "/.well-known/openid-federation";
     try {
       String jwt = restTemplate.getForObject(url, String.class);
       return EntityStatement.parse(jwt); // JWT decoding and parsing
     } catch (Exception e) {
-      throw new TrustChainException("Failed to fetch EC: " + e.getMessage(), e);
+      throw new InvalidTrustChainException("invalid_trust_chain", "Failed to fetch EC: " + e.getMessage(),
+          e);
     }
   }
 
@@ -144,7 +148,7 @@ public class TrustChainService {
    * Download Entity Statement
    */
   private EntityStatement fetchEntityStatement(String fetchEndpoint, String issuer, String subject)
-      throws TrustChainException {
+      throws InvalidTrustChainException {
     try {
       String url = String.format("%s?sub=%s", fetchEndpoint,
           UriUtils.encode(subject, StandardCharsets.UTF_8));
@@ -154,11 +158,11 @@ public class TrustChainService {
 
       if (!issuer.equals(es.getClaimsSet().getIssuer().getValue())
           || !subject.equals(es.getClaimsSet().getSubject().getValue())) {
-        throw new TrustChainException("Entity statement mismatch (iss/sub)");
+        throw new InvalidTrustChainException("invalid_trust_chain", "Entity statement mismatch (iss/sub)");
       }
       return es;
     } catch (Exception e) {
-      throw new TrustChainException(
+      throw new InvalidTrustChainException("invalid_trust_chain",
           "Failed to fetch entity statement: " + issuer + " -> " + subject, e);
     }
   }
@@ -167,12 +171,12 @@ public class TrustChainService {
    * Recursively constructs the Trust Chain
    */
   private List<EntityStatement> buildChain(EntityStatement current, Set<String> seenEntityIds)
-      throws TrustChainException {
+      throws InvalidTrustChainException {
 
     String currentId = current.getEntityID().getValue();
 
     if (seenEntityIds.contains(currentId)) {
-      throw new TrustChainException("invalid_trust_chain: loop detected at " + currentId);
+      throw new InvalidTrustChainException("invalid_trust_chain", "Loop detected at " + currentId);
     }
     seenEntityIds.add(currentId);
 
@@ -191,7 +195,8 @@ public class TrustChainService {
         // 2. Extract fetch_endpoint from the metadata
         var fedMeta = superiorEC.getClaimsSet().getFederationEntityMetadata();
         if (fedMeta == null || fedMeta.getFederationAPIEndpointURI() == null) {
-          throw new TrustChainException("No fetch_endpoint for " + superior.getValue());
+          throw new InvalidTrustChainException("invalid_trust_chain",
+              "No fetch_endpoint for " + superior.getValue());
         }
         String fetchEndpoint = fedMeta.getFederationAPIEndpointURI().toASCIIString();
 
@@ -206,22 +211,24 @@ public class TrustChainService {
         fullChain.addAll(upperChain);
         candidateChains.add(fullChain);
 
-      } catch (TrustChainException e) {
+      } catch (InvalidTrustChainException e) {
         LOG.warn("Failed to resolve authority hint {} for entity {}: {}", superior.getValue(),
             current.getEntityID().getValue(), e.getMessage());
       }
     }
     return candidateChains.stream()
       .min(Comparator.comparingInt(List::size)) // a shorter chain is preferred
-      .orElseThrow(() -> new TrustChainException("No valid authority for: " + currentId));
+      .orElseThrow(() -> new InvalidTrustChainException("invalid_trust_chain",
+          "No valid authority for: " + currentId));
   }
 
-  private void validateClaims(EntityStatement es) throws TrustChainException {
+  private void validateClaims(EntityStatement es) throws InvalidTrustChainException {
     Date now = new Date();
     try {
       es.getClaimsSet().validateRequiredClaimsPresence();
     } catch (ParseException e) {
-      throw new TrustChainException("Missing or invalid required claims: " + e.getMessage(), e);
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Missing or invalid required claims: " + e.getMessage(), e);
     }
 
     // Check iat <= now && exp >= now
@@ -229,11 +236,12 @@ public class TrustChainService {
     Date exp = es.getClaimsSet().getExpirationTime();
 
     if (iat.after(now)) {
-      throw new TrustChainException("Entity Statement has iat in the future: " + iat);
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Entity Statement has iat in the future: " + iat);
     }
 
     if (exp.before(now)) {
-      throw new TrustChainException("Entity Statement is expired: " + exp);
+      throw new InvalidTrustChainException("invalid_trust_chain", "Entity Statement is expired: " + exp);
     }
   }
 

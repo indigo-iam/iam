@@ -15,15 +15,22 @@
  */
 package it.infn.mw.iam.core.oidc;
 
-public class TrustChainException extends Exception {
+public class InvalidTrustChainException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
+  private final String errorCode;
 
-  public TrustChainException(String message) {
+  public InvalidTrustChainException(String errorCode, String message) {
     super(message);
+    this.errorCode = errorCode;
   }
 
-  public TrustChainException(String message, Throwable cause) {
+  public InvalidTrustChainException(String errorCode, String message, Throwable cause) {
     super(message, cause);
+    this.errorCode = errorCode;
+  }
+
+  public String getErrorCode() {
+    return errorCode;
   }
 }
