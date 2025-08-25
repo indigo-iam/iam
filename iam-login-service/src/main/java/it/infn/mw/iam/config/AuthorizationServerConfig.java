@@ -142,8 +142,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     resourceOwnerPasswordCredentialGranter.setAccountUtils(accountUtils);
     resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
 
-    IamRefreshTokenGranter refreshTokenGranter = new IamRefreshTokenGranter(tokenServices,
-        clientDetailsService, requestFactory);
+    IamRefreshTokenGranter refreshTokenGranter =
+        new IamRefreshTokenGranter(tokenServices, clientDetailsService, requestFactory);
     refreshTokenGranter.setAccountUtils(accountUtils);
     refreshTokenGranter.setSignatureCheckService(signatureCheckService);
 
