@@ -51,7 +51,6 @@ import org.springframework.security.oauth2.provider.code.AuthorizationCodeTokenG
 import org.springframework.security.oauth2.provider.error.DefaultWebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.error.WebResponseExceptionTranslator;
 import org.springframework.security.oauth2.provider.implicit.ImplicitTokenGranter;
-import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.core.oauth.exchange.TokenExchangePdp;
@@ -105,9 +104,6 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   @Autowired
   private TokenExchangePdp tokenExchangePdp;
 
-  @Autowired
-  private TokenEnhancer tokenEnhancer;
-
   @Bean
   WebResponseExceptionTranslator<OAuth2Exception> webResponseExceptionTranslator() {
 
@@ -147,7 +143,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
     resourceOwnerPasswordCredentialGranter.setSignatureCheckService(signatureCheckService);
 
     IamRefreshTokenGranter refreshTokenGranter = new IamRefreshTokenGranter(tokenServices,
-        clientDetailsService, requestFactory, tokenEnhancer);
+        clientDetailsService, requestFactory);
     refreshTokenGranter.setAccountUtils(accountUtils);
     refreshTokenGranter.setSignatureCheckService(signatureCheckService);
 

@@ -26,11 +26,9 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.refresh.RefreshTokenGranter;
-import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -42,14 +40,11 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
   private final OAuth2TokenEntityService tokenServices;
   private AUPSignatureCheckService signatureCheckService;
   private AccountUtils accountUtils;
-  private TokenEnhancer tokenEnhancer;
 
   public IamRefreshTokenGranter(OAuth2TokenEntityService tokenServices,
-      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory,
-      TokenEnhancer tokenEnhancer) {
+      ClientDetailsService clientDetailsService, OAuth2RequestFactory requestFactory) {
     super(tokenServices, clientDetailsService, requestFactory);
     this.tokenServices = tokenServices;
-    this.tokenEnhancer = tokenEnhancer;
   }
 
   @Override
@@ -69,7 +64,7 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
           format("User %s needs to sign AUP for this organization in order to proceed.",
               user.get().getUsername()));
     }
-    
+
     return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
   }
 
@@ -82,4 +77,3 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
   }
 
 }
-
