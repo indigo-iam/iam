@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
@@ -164,6 +165,10 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     }
 
+    if(authentication.getOAuth2Request().isRefresh() && authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
+      expiry = authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().get(EXPIRES_IN_KEY);
+    }
+
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
@@ -192,6 +197,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     }
     builder.expirationTime(expTime);
+
 
     if (isTokenExchangeRequest(authentication)) {
       handleClientTokenExchange(builder, token, authentication, userInfo);

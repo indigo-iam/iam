@@ -69,17 +69,8 @@ public class IamRefreshTokenGranter extends RefreshTokenGranter {
           format("User %s needs to sign AUP for this organization in order to proceed.",
               user.get().getUsername()));
     }
-
-    OAuth2AccessToken newToken =
-        getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
     
-    if (tokenRequest.getRequestParameters().containsKey("expires_in")){
-      OAuth2Authentication authentication = new OAuth2Authentication(
-        getRequestFactory().createOAuth2Request(client, tokenRequest), null);
-      newToken = tokenEnhancer.enhance(newToken, authentication);
-    }
-    
-    return newToken;
+    return getTokenServices().refreshAccessToken(refreshTokenValue, tokenRequest);
   }
 
   public void setSignatureCheckService(AUPSignatureCheckService signatureCheckService) {
