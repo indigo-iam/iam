@@ -15,13 +15,17 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.VOPERSON_EXTERNAL_AFFILIATION;
+
 import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -32,11 +36,14 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
 
   protected final AarcClaimValueHelper claimValueHelper;
 
+  protected final ExternalAuthenticationInfoProcessor extAuthnProcessor;
+
   public AarcJWTProfileTokenIntrospectionHelper(IamProperties props,
       IntrospectionResultAssembler assembler, ScopeMatcherRegistry scopeMatchersRegistry,
-      AarcClaimValueHelper claimValueHelper) {
+      AarcClaimValueHelper claimValueHelper, ExternalAuthenticationInfoProcessor proc) {
     super(props, assembler, scopeMatchersRegistry);
     this.claimValueHelper = claimValueHelper;
+    this.extAuthnProcessor = proc;
   }
 
   @Override
@@ -86,10 +93,16 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
       }
 
       result.put("voperson_id", userInfo.getSub());
-      result.put("voperson_external_affiliation", iamUserInfo.getAffiliation());
-
+      OAuth2Authentication auth = accessToken.getAuthenticationHolder().getAuthentication();
+      Map<String, String> claims = extAuthnProcessor.process(auth);
+      String voPersonExternalAffiliation = "";
+      if (claims.containsKey("EPSA")) {
+        voPersonExternalAffiliation = claims.get("EPSA");
+      } else if (claims.containsKey("eduperson_scoped_affiliation")) {
+        voPersonExternalAffiliation = claims.get("eduperson_scoped_affiliation");
+      }
+      result.put(VOPERSON_EXTERNAL_AFFILIATION, voPersonExternalAffiliation);
     }
-
     addAcrClaimIfNeeded(accessToken, result);
 
     return result;

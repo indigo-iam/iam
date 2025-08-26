@@ -17,10 +17,13 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import static java.util.Objects.isNull;
 
+import java.util.Map;
+
 import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
 import it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo;
@@ -32,10 +35,13 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
 
   protected final AarcClaimValueHelper claimValueHelper;
 
+  private final ExternalAuthenticationInfoProcessor extAuthnProcessor;
+
   public AarcJWTProfileUserinfoHelper(IamProperties props, UserInfoService userInfoService,
-      AarcClaimValueHelper claimValueHelper) {
+      AarcClaimValueHelper claimValueHelper, ExternalAuthenticationInfoProcessor proc) {
     super(props, userInfoService);
     this.claimValueHelper = claimValueHelper;
+    this.extAuthnProcessor = proc;
   }
 
   @Override
@@ -50,6 +56,15 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
     IamUserInfo iamUserInfo = ((UserInfoAdapter) ui).getUserinfo();
 
     AarcDecoratedUserInfo aui = AarcDecoratedUserInfo.forUser(ui);
+    Map<String, String> claims = extAuthnProcessor.process(authentication);
+    if (claims.containsKey("EPSA")) {
+      aui.setVoPersonExternalAffiliation(claims.get("EPSA"));
+    } else if (claims.containsKey("eduperson_scoped_affiliation")) {
+      aui.setVoPersonExternalAffiliation(claims.get("eduperson_scoped_affiliation"));
+    } else {
+      aui.setVoPersonExternalAffiliation("");
+    }
+
     aui.setScopedAffiliation(
         claimValueHelper.getClaimValueFromUserInfo("eduperson_scoped_affiliation", iamUserInfo)
           .toString());
@@ -57,8 +72,6 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
     aui.setAssurance(claimValueHelper.resolveLOA());
     aui.setVoPersonId(
         claimValueHelper.getClaimValueFromUserInfo("voperson_id", iamUserInfo).toString());
-    aui.setVoPersonExternalAffiliation(
-        claimValueHelper.getClaimValueFromUserInfo("voperson_external_affiliation", iamUserInfo).toString());
 
     return aui;
   }

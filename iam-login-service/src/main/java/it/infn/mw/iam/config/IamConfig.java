@@ -157,19 +157,20 @@ public class IamConfig {
   JWTProfile aarcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
       AccountUtils accountUtils, IamAccountRepository accountRepo,
       ScopeClaimTranslationService converter, AarcClaimValueHelper claimHelper,
-      UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
+      UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter,
+      ExternalAuthenticationInfoProcessor proc) {
 
     AarcJWTProfileAccessTokenBuilder atBuilder = new AarcJWTProfileAccessTokenBuilder(props,
         totpMfaRepository, accountUtils, scopeFilter, converter, claimHelper);
 
     AarcJWTProfileUserinfoHelper uiHelper =
-        new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
+        new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper, proc);
 
     AarcJWTProfileIdTokenCustomizer idHelper =
         new AarcJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
     BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(props,
-        new DefaultIntrospectionResultAssembler(), registry, claimHelper);
+        new DefaultIntrospectionResultAssembler(), registry, claimHelper, proc);
 
     return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
@@ -182,9 +183,8 @@ public class IamConfig {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
-    KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
-            scopeFilter);
+    KeycloakProfileAccessTokenBuilder atBuilder = new KeycloakProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
 
@@ -227,8 +227,8 @@ public class IamConfig {
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
       IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
-    JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
+    JWTAccessTokenBuilder accessTokenBuilder = new WLCGProfileAccessTokenBuilder(props,
+        attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
         claimTranslationService, claimValueHelper, groupHelper, props);
