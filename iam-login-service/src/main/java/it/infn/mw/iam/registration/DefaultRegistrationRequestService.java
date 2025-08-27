@@ -58,7 +58,8 @@ import it.infn.mw.iam.audit.events.registration.RegistrationRequestEvent;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
 import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.IamRegistrationRequestStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -165,17 +166,27 @@ public class DefaultRegistrationRequestService
       }
     }
 
-    IamAccount account = accountService.createAccount(dto, extAuthnInfo);
+    IamAccount account;
 
     if (iamProperties.getRegistration()
-      .getRequireCertificate()
-      .equals(RequireCertificateOption.REQUIRED)
+      .getFields()
+      .get(RegistrationField.CERTIFICATE)
+      .getFieldBehaviour()
+      .equals(ExternalAuthAttributeSectionBehaviour.MANDATORY)
         || (iamProperties.getRegistration()
-          .getRequireCertificate()
-          .equals(RequireCertificateOption.OPTIONAL)
+          .getFields()
+          .get(RegistrationField.CERTIFICATE)
+          .getFieldBehaviour()
+          .equals(ExternalAuthAttributeSectionBehaviour.OPTIONAL)
             && dto.getRegisterCertificate().equals("true"))) {
 
+      certificateSanityCheck(request);
+
+      account = accountService.createAccount(dto, extAuthnInfo);
+
       linkRequestCertificateToAccount(account, request);
+    } else {
+      account = accountService.createAccount(dto, extAuthnInfo);
     }
 
     // sign the default AUP if present
@@ -342,7 +353,8 @@ public class DefaultRegistrationRequestService
     return retval;
   }
 
-  private void linkRequestCertificateToAccount(IamAccount account, HttpServletRequest request) {
+
+  private void certificateSanityCheck(HttpServletRequest request) {
 
     HttpSession session = request.getSession(false);
 
@@ -353,19 +365,28 @@ public class DefaultRegistrationRequestService
 
     IamX509Certificate cert = cred.asIamX509Certificate();
 
+    iamAccountRepo.findByCertificateSubject(cert.getSubjectDn()).ifPresent(c -> {
+      throw new CredentialAlreadyBoundException(
+          String.format("X509 certificate with subject '%s' is already bound to another user",
+              cert.getSubjectDn()));
+    });
+  }
+
+  private void linkRequestCertificateToAccount(IamAccount account, HttpServletRequest request) {
+
+    HttpSession session = request.getSession(false);
+
+    IamX509AuthenticationCredential cred =
+        (IamX509AuthenticationCredential) session.getAttribute(X509_CREDENTIAL_SESSION_KEY);
+
+    IamX509Certificate cert = cred.asIamX509Certificate();
+
     final Date now = Date.from(clock.instant());
     cert.setAccount(account);
     cert.setLabel("cert-0");
     cert.setPrimary(true);
     cert.setCreationTime(now);
     cert.setLastUpdateTime(now);
-
-    iamAccountRepo.findByCertificateSubject(cert.getSubjectDn()).ifPresent(c -> {
-      iamAccountRepo.delete(account);
-      throw new CredentialAlreadyBoundException(
-          String.format("X509 certificate with subject '%s' is already bound to another user",
-              cert.getSubjectDn()));
-    });
 
     Set<IamX509Certificate> certificates = new HashSet<>(List.of(cert));
 

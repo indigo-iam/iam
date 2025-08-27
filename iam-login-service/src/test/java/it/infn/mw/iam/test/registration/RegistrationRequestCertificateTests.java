@@ -16,6 +16,8 @@
 package it.infn.mw.iam.test.registration;
 
 import static it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter.X509_CREDENTIAL_SESSION_KEY;
+import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,7 +66,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-        properties = "iam.registration.require-certificate=REQUIRED")
+        properties = "iam.registration.fields.certificate.field-behaviour=MANDATORY")
 public class RegistrationRequestCertificateTests {
 
 
@@ -166,6 +168,50 @@ public class RegistrationRequestCertificateTests {
 
     }
 
+    @Test
+    public void testVerifySanityError() throws Exception {
+
+        String email = USERNAME + "@example.org";
+        RegistrationRequestDto request = new RegistrationRequestDto();
+        request.setGivenname("Test");
+        request.setFamilyname("User");
+        request.setEmail(email);
+        request.setUsername(USERNAME);
+        request.setNotes("Some short notes...");
+        request.setRegisterCertificate("true");
+
+        HttpSession session = httpRequest.getSession();
+
+        X509CertificateChainParsingResult result = parser.parseChainFromString(TEST_0_CERT);
+
+        IamX509AuthenticationCredential test0Cred = IamX509AuthenticationCredential.builder()
+            .certificateChain(result.getChain())
+            .certificateChainPemString(result.getPemString())
+            .subject(TEST_0_SUBJECT)
+            .issuer(TEST_0_ISSUER)
+            .verificationResult(X509CertificateVerificationResult.success())
+            .build();
+
+        httpRequest.setAttribute(X509_CREDENTIAL_SESSION_KEY, test0Cred);
+
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                it.infn.mw.iam.api.scim.exception.IllegalArgumentException.class,
+                () -> defaultRegistrationRequestService.createRequest(request, Optional.empty(),
+                        httpRequest));
+
+
+
+        List<IamRegistrationRequest> requests =
+                iamRequestRepo.findByStatus(IamRegistrationRequestStatus.NEW)
+                    .orElseThrow(() -> new AccountNotFoundException(
+                            "Can not remove suspended account as none is found"));
+
+        assertEquals(0, requests.size());
+
+        assertFalse(iamAccountRepo.findByUsername(USERNAME).isPresent());
+    }
+
 
     @Test
     public void testVerifyErrorRegisterCertificate() throws Exception {
@@ -232,7 +278,8 @@ public class RegistrationRequestCertificateTests {
 
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
-        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new EnumMap<>(RegistrationField.class);
+        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute =
+                new EnumMap<>(RegistrationField.class);
         RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
         RegistrationField registrationField = RegistrationField.CERTIFICATE;
         notesProperties.setReadOnly(true);

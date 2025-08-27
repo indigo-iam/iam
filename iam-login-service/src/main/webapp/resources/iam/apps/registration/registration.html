@@ -44,16 +44,16 @@
 		</p>
 
 
-		<!-- In case certificate is REQUIRED, but none were provided  -->
-		<p ng-if="!iamX509Cred && iamX509Required === 'REQUIRED'"
+		<!-- In case certificate is MANDATORY, but none were provided  -->
+		<p ng-if="!iamX509Cred && iamX509Required === 'MANDATORY'"
 			style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
 			A certificate is required upon <br> registration, but none were presented.
 			Please link a certificate to your<br> browser.
 		</p>
 
-		<!-- In case certificate is REQUIRED, but it is already linked  -->
+		<!-- In case certificate is MANDATORY, but it is already linked  -->
 		<div id="x509-authn-info"
-			ng-if="iamX509Cred && iamX509Required === 'REQUIRED' && (iamX509CanLogin || iamX509SuspendedAccount)">
+			ng-if="iamX509Cred && iamX509Required === 'MANDATORY' && (iamX509CanLogin || iamX509SuspendedAccount)">
 			You have been succesfully authenticated as<br>
 			<strong>{{iamX509Subject}}</strong> <br> <br>
 
@@ -64,16 +64,16 @@
 
 		</div>
 
-		<!-- In case certificate is REQUIRED and it is linked to another account -->
-		<p ng-if="iamX509Required === 'REQUIRED' && iamX509CanLogin && iamX509Cred"
+		<!-- In case certificate is MANDATORY and it is linked to another account -->
+		<p ng-if="iamX509Required === 'MANDATORY' && iamX509CanLogin && iamX509Cred"
 			style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
 			This certificate is already linked to an account in the organization and can not be linked to multiple
 			accounts.
 			Please add a different certificate to the browser.
 		</p>
 
-		<!-- In case certificate is REQUIRED and it is linked to an suspended account -->
-		<p ng-if="iamX509Required === 'REQUIRED' && iamX509SuspendedAccount"
+		<!-- In case certificate is MANDATORY and it is linked to an suspended account -->
+		<p ng-if="iamX509Required === 'MANDATORY' && iamX509SuspendedAccount"
 			style="color: red; font-size: 24px; font-family: 'Comic Neue', cursive, sans-serif;">
 			This certificate is linked to a<br> suspended account in this<br> organization.
 			<br><br>Please add a different<br> certificate to the browser or confer with the admin why the linked
@@ -82,7 +82,7 @@
 
 
 		<p
-			ng-if="iamX509Required === 'OFF' || iamX509Required === 'OPTIONAL' || (iamX509Required === 'REQUIRED' && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount) ">
+			ng-if="iamX509Required === 'HIDDEN' || iamX509Required === 'OPTIONAL' || (iamX509Required === 'MANDATORY' && iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount) ">
 			To proceed with the registration please fill in your personal
 			information below.</p>
 	</div>
@@ -100,7 +100,7 @@
 			<!-- Dynamic form fields generated from the controller's fields array -->
 			<div ng-repeat="field in fields">
 				<div class="form-group"
-					ng-if="field.showField && !(iamX509Required === 'REQUIRED') || (iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)"
+					ng-if="field.showField && !(iamX509Required === 'MANDATORY') || (iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)"
 					ng-class="{'has-error': rc.fieldInvalid(field.name), 'has-success': rc.fieldValid(field.name)}">
 					<label class="control-label" for="{{field.name}}">{{field.label}}</label>
 
@@ -132,50 +132,54 @@
 						ng-model="request[field.ngModelName]" ng-required="field.required"
 						ng-minlength="{{field.minlength}}" ng-readonly="rc.fieldReadonly(field.name)"></textarea>
 
+					<chekbox ng-if="field.type === 'certificate'">
+						<div id="checkbox"
+							ng-attr-title="{{(request.registerCertificate) ? 'Un-check to not link your certificate to the account' : 'Check to link your certificate to the account'}}"
+							ng-if="iamX509Required === 'OPTIONAL'">
+
+							<label for="register-certificate"
+								ng-style="(request.registerCertificate && (iamX509SuspendedAccount || iamX509CanLogin)) ? {'color' : 'red'} : {}">
+								Register certificate
+							</label><br>
+
+							<input type="checkbox" id="register-certificate" name="register-certificate"
+								ng-model="request.registerCertificate">
+
+							<!-- Certificate is already linked -->
+							<span
+								ng-if="(iamX509Required === 'OPTIONAL') && iamX509CanLogin && request.registerCertificate"
+								style="color: red;">
+								Certificate is already linked to an account. It can not be linked
+							</span>
+
+							<!-- Certificate is linked to a blocked account -->
+							<span
+								ng-if="(iamX509Required === 'OPTIONAL') && iamX509SuspendedAccount && request.registerCertificate"
+								style="color: red;">
+								Certificate is linked to an suspended account. It can not be linked
+							</span>
+
+							<!-- Certificate is not present in the browser -->
+							<span ng-if="(iamX509Required === 'OPTIONAL') &&!iamX509Cred && request.registerCertificate"
+								style="color: red;">
+								No certificate present to link. Not possible to link certificate
+							</span>
+
+							<!-- No errors or the box is not checked -->
+							<span
+								ng-if="(iamX509Required === 'OPTIONAL') && ((!iamX509SuspendedAccount && !iamX509CanLogin && iamX509Cred && request.registerCertificate) || !request.registerCertificate)">
+								Link your certificate to the account
+							</span>
+
+							<br><br>
+
+						</div>
+					</chekbox>
+
 					<span class="help-block"
 						ng-show="registrationForm[field.name].$dirty && rc.getFieldErrorMessage(field.name)">
 						{{ rc.getFieldErrorMessage(field.name) }} </span>
 				</div>
-			</div>
-
-			<div id="checkbox"
-				ng-attr-title="{{(request.registerCertificate) ? 'Un-check to not link your certificate to the account' : 'Check to link your certificate to the account'}}"
-				ng-if="iamX509Required === 'OPTIONAL'">
-
-				<label for="register-certificate"
-					ng-style="(request.registerCertificate && (iamX509SuspendedAccount || iamX509CanLogin)) ? {'color' : 'red'} : {}">
-					Register certificate
-				</label><br>
-
-				<input type="checkbox" id="register-certificate" name="register-certificate"
-					ng-model="request.registerCertificate">
-
-				<!-- Certificate is already linked -->
-				<span ng-if="(iamX509Required === 'OPTIONAL') && iamX509CanLogin && request.registerCertificate"
-					style="color: red;">
-					Certificate is already linked to an account. It can not be linked
-				</span>
-
-				<!-- Certificate is linked to a blocked account -->
-				<span ng-if="(iamX509Required === 'OPTIONAL') && iamX509SuspendedAccount && request.registerCertificate"
-					style="color: red;">
-					Certificate is linked to an suspended account. It can not be linked
-				</span>
-
-				<!-- Certificate is not present in the browser -->
-				<span ng-if="(iamX509Required === 'OPTIONAL') &&!iamX509Cred && request.registerCertificate"
-					style="color: red;">
-					No certificate present to link. Not possible to link certificate
-				</span>
-
-				<!-- No errors or the box is not checked -->
-				<span
-					ng-if="(iamX509Required === 'OPTIONAL') && ((!iamX509SuspendedAccount && !iamX509CanLogin && iamX509Cred && request.registerCertificate) || !request.registerCertificate)">
-					Link your certificate to the account
-				</span>
-
-				<br><br>
-
 			</div>
 
 			<div ng-if="!aup && privacyPolicy.url">
@@ -215,7 +219,7 @@
 				</div>
 			</div>
 			<div class="form-group"
-				ng-if="!(iamX509Required === 'REQUIRED') || (iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)">
+				ng-if="!(iamX509Required === 'MANDATORY') || (iamX509Cred && !iamX509CanLogin && !iamX509SuspendedAccount)">
 				<button class="btn btn-primary" type="submit" id="register-submit-btn" name="register"
 					ng-disabled="!registrationForm.$valid || busy || (iamX509Required === 'OPTIONAL' && request.registerCertificate && (iamX509CanLogin || iamX509SuspendedAccount || !iamX509Cred))"
 					ng-click="rc.submit()">Register</button>
@@ -224,7 +228,7 @@
 
 			</div>
 			<div id="x509-authn-info"
-				ng-if="iamX509Cred && (iamX509Required === 'OPTIONAL' || (iamX509Required === 'REQUIRED' && !iamX509CanLogin && !iamX509SuspendedAccount))">
+				ng-if="iamX509Cred && (iamX509Required === 'OPTIONAL' || (iamX509Required === 'MANDATORY' && !iamX509CanLogin && !iamX509SuspendedAccount))">
 				You have been succesfully authenticated as, {{registerCertificate}}<br>
 				<strong>{{iamX509Subject}}</strong>
 

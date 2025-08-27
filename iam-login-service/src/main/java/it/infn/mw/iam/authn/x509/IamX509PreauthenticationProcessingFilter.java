@@ -33,6 +33,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
@@ -120,13 +121,14 @@ public class IamX509PreauthenticationProcessingFilter
 
 
     request.setAttribute(X509_REQUIRED,
-        iamProperties.getRegistration().getRequireCertificate().name());
-
+        iamProperties.getRegistration()
+          .getFields()
+          .get(RegistrationField.CERTIFICATE)
+          .getFieldBehaviour());
 
     if (!credential.isPresent()) {
       return null;
     }
-
 
     Date expirationDate = credential.get().getCertificateChain()[0].getNotAfter();
     Calendar calendar = Calendar.getInstance();

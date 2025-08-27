@@ -129,7 +129,9 @@ function RegistrationController(
 			showField: true,
 		},
 		registerCertificate: {
-
+			type: "certificate",
+			required: false,
+			showField: true,
 		}
 
 	};
@@ -197,7 +199,7 @@ function RegistrationController(
 				vm.populateFieldsWithAdminPreference();
 				vm.populateRequest();
 			})
-			.catch(function (err) {
+			.catch(function (res) {
 				console.error(
 					'Error fetching registration config: ' + res.status + ' ' +
 					res.statusText);

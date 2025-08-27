@@ -68,7 +68,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK,
-        properties = "iam.registration.require-certificate=REQUIRED")
+        properties = "iam.registration.fields.certificate.field-behaviour=MANDATORY")
 public class RegistrationRequestCertificateRequiredTests {
 
     @Autowired
@@ -341,6 +341,7 @@ public class RegistrationRequestCertificateRequiredTests {
         request2.setEmail(email2);
         request2.setUsername(USERNAME_2);
         request2.setNotes("Some short notes...");
+        request2.setRegisterCertificate("false");
 
         MockHttpServletRequest req2 = new MockHttpServletRequest();
         MockHttpSession session2 = new MockHttpSession();
@@ -460,7 +461,8 @@ public class RegistrationRequestCertificateRequiredTests {
 
     @Test
     public void testRegistrationConfigRequireCertificate() throws Exception {
-        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute = new EnumMap<>(RegistrationField.class);
+        Map<RegistrationField, RegistrationFieldProperties> fieldAttribute =
+                new EnumMap<>(RegistrationField.class);
         RegistrationFieldProperties notesProperties = new RegistrationFieldProperties();
         RegistrationField registrationField = RegistrationField.CERTIFICATE;
         notesProperties.setReadOnly(true);

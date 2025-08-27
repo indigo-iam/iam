@@ -66,12 +66,13 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
 import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.IamX509CertificateRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
-import it.infn.mw.iam.config.IamProperties.RequireCertificateOption;
 
 @SuppressWarnings("deprecation")
 @Configuration
@@ -281,8 +282,10 @@ public class IamWebSecurityConfig {
     protected void configure(HttpSecurity http) throws Exception {
 
       if (!iamProperties.getRegistration()
-        .getRequireCertificate()
-        .equals(RequireCertificateOption.OFF)) {
+        .getFields()
+        .get(RegistrationField.CERTIFICATE)
+        .getFieldBehaviour()
+        .equals(ExternalAuthAttributeSectionBehaviour.HIDDEN)) {
         http.requestMatchers()
           .antMatchers(START_REGISTRATION_ENDPOINT)
           .and()
