@@ -306,11 +306,11 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, 
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
       externallyAuthenticated = true,
       scopes = {"openid profile eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfo() throws Exception {
-    
+
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -331,8 +331,9 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, externallyAuthenticated = true, scopes = {
-      "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
+      externallyAuthenticated = true, scopes = {
+          "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfoWithEmail() throws Exception {
 
     // @formatter:off
@@ -356,8 +357,9 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, externallyAuthenticated = true, scopes = {
-      "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
+      externallyAuthenticated = true, scopes = {
+          "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfoWithVoperson_id() throws Exception {
 
     // @formatter:off
@@ -488,5 +490,53 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
   }
 
+  @Test
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
+      externallyAuthenticated = true, additionalInfo = {"eduperson_scoped_affiliation"},
+      scopes = {"openid profile"})
+  public void testAarcProfileUserinfoWithVopersonExternalAffiliationOIDC() throws Exception {
+
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION, equalTo("staff@google")))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")));
+    // @formatter:on
+  }
+
+  @Test
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
+      externallyAuthenticated = true, additionalInfo = {"EPSA"}, scopes = {"openid profile"})
+  public void testAarcProfileUserinfoWithVopersonExternalAffiliationSAML() throws Exception {
+
+
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.organisation_name").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION, equalTo("staff@google")))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")));
+    // @formatter:on
+  }
 
 }

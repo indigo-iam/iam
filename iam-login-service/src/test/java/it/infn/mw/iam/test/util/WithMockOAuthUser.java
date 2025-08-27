@@ -41,4 +41,6 @@ public @interface WithMockOAuthUser {
   boolean externallyAuthenticated() default false;
 
   ExternalAuthenticationType externalAuthenticationType() default ExternalAuthenticationType.OIDC;
+
+  String[] additionalInfo() default {};
 }

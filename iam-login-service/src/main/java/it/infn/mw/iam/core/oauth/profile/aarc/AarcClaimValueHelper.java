@@ -68,9 +68,6 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
       case "voperson_id":
         return String.format("%s", info.getSub());
 
-      case "voperson_external_affiliation":
-        return String.format("%s", info.getAffiliation());
-
       default:
         return null;
     }

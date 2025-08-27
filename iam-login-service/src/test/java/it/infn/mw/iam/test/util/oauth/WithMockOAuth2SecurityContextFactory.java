@@ -15,7 +15,10 @@
  */
 package it.infn.mw.iam.test.util.oauth;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mockito.Mockito;
@@ -63,8 +66,18 @@ public class WithMockOAuth2SecurityContextFactory
       additionalInfo.put("sub", "sub");
       additionalInfo.put("iss", "iss");
 
-      userAuth.setAdditionalInfo(additionalInfo);
+      Set<String> addInfos = new HashSet<String>(Arrays.asList(annotation.additionalInfo()));
 
+
+      if (addInfos.contains("eduperson_scoped_affiliation")) {
+        additionalInfo.put("eduperson_scoped_affiliation", "staff@google");
+      }
+
+      if (addInfos.contains("EPSA")) {
+        additionalInfo.put("EPSA", "staff@google");
+      }
+
+      userAuth.setAdditionalInfo(additionalInfo);
     } else {
 
       userAuth.setSourceClass(SamlExternalAuthenticationToken.class.getName());
