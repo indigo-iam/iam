@@ -180,7 +180,7 @@ public class RegistrationRequestCertificateTests {
         request.setNotes("Some short notes...");
         request.setRegisterCertificate("true");
 
-        HttpSession session = httpRequest.getSession();
+        httpRequest.getSession();
 
         X509CertificateChainParsingResult result = parser.parseChainFromString(TEST_0_CERT);
 
