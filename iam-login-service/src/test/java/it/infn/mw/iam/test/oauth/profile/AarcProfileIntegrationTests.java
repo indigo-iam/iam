@@ -19,6 +19,7 @@ package it.infn.mw.iam.test.oauth.profile;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.VOPERSON_EXTERNAL_AFFILIATION;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 import static java.lang.String.join;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -30,6 +31,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -304,9 +306,11 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"},
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, 
+      externallyAuthenticated = true,
       scopes = {"openid profile eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfo() throws Exception {
+    
 
     // @formatter:off
     mvc.perform(get("/userinfo"))
@@ -315,6 +319,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
@@ -326,7 +331,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, scopes = {
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, externallyAuthenticated = true, scopes = {
       "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfoWithEmail() throws Exception {
 
@@ -337,6 +342,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
@@ -350,7 +356,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, scopes = {
+  @WithMockOAuthUser(clientId = CLIENT_ID, user = USERNAME, authorities = {"ROLE_USER"}, externallyAuthenticated = true, scopes = {
       "openid profile email eduperson_scoped_affiliation entitlements eduperson_assurance"})
   public void testAarcProfileUserinfoWithVoperson_id() throws Exception {
 
@@ -362,6 +368,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.voperson_id").isNotEmpty())
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
