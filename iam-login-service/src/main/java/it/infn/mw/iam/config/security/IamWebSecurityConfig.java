@@ -281,7 +281,15 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      if (!iamProperties.getRegistration()
+      boolean registrationCertField = iamProperties.getRegistration().getFields() != null
+          && !iamProperties.getRegistration().getFields().isEmpty()
+          && iamProperties.getRegistration().getFields().get(RegistrationField.CERTIFICATE) != null
+          && iamProperties.getRegistration()
+            .getFields()
+            .get(RegistrationField.CERTIFICATE)
+            .getFieldBehaviour() != null;
+
+      if (registrationCertField && !iamProperties.getRegistration()
         .getFields()
         .get(RegistrationField.CERTIFICATE)
         .getFieldBehaviour()
