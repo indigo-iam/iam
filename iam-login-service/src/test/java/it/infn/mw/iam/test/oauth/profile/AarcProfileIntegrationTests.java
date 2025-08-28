@@ -18,9 +18,9 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ASSURANCE_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_ENTITLEMENT_CLAIM;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.ENTITLEMENTS_CLAIM;
 import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.VOPERSON_EXTERNAL_AFFILIATION;
-import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 import static java.lang.String.join;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -31,17 +31,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 import java.util.List;
 import java.util.Set;
-
 
 import org.junit.After;
 import org.junit.Before;

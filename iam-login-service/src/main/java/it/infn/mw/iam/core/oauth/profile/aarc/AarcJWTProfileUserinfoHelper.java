@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import static java.util.Objects.isNull;
+import static it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo.EDUPERSON_SCOPED_AFFILIATION_CLAIM;
 
 import java.util.Map;
 
@@ -59,14 +60,14 @@ public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
     Map<String, String> claims = extAuthnProcessor.process(authentication);
     if (claims.containsKey("EPSA")) {
       aui.setVoPersonExternalAffiliation(claims.get("EPSA"));
-    } else if (claims.containsKey("eduperson_scoped_affiliation")) {
-      aui.setVoPersonExternalAffiliation(claims.get("eduperson_scoped_affiliation"));
+    } else if (claims.containsKey(EDUPERSON_SCOPED_AFFILIATION_CLAIM)) {
+      aui.setVoPersonExternalAffiliation(claims.get(EDUPERSON_SCOPED_AFFILIATION_CLAIM));
     } else {
       aui.setVoPersonExternalAffiliation("");
     }
 
     aui.setScopedAffiliation(
-        claimValueHelper.getClaimValueFromUserInfo("eduperson_scoped_affiliation", iamUserInfo)
+        claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_SCOPED_AFFILIATION_CLAIM, iamUserInfo)
           .toString());
     aui.setEntitlements(claimValueHelper.resolveGroups(iamUserInfo));
     aui.setAssurance(claimValueHelper.resolveLOA());

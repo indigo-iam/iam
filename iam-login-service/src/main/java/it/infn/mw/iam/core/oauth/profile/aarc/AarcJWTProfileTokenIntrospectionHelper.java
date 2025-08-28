@@ -32,6 +32,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
+@SuppressWarnings("deprecation")
 public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
 
   protected final AarcClaimValueHelper claimValueHelper;
