@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -93,20 +94,27 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
             claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ASSURANCE, iamUserInfo));
       }
 
-      result.put("voperson_id", userInfo.getSub());
       OAuth2Authentication auth = accessToken.getAuthenticationHolder().getAuthentication();
-      Map<String, String> claims = extAuthnProcessor.process(auth);
-      String voPersonExternalAffiliation = "";
-      if (claims.containsKey("EPSA")) {
-        voPersonExternalAffiliation = claims.get("EPSA");
-      } else if (claims.containsKey("eduperson_scoped_affiliation")) {
-        voPersonExternalAffiliation = claims.get("eduperson_scoped_affiliation");
+      SavedUserAuthentication userAuth = (SavedUserAuthentication) auth.getUserAuthentication();
+      if (userAuth != null && !userAuth.getAdditionalInfo().isEmpty()){
+        result.put(VOPERSON_EXTERNAL_AFFILIATION, addVoPersonExternalAffiliation(auth));
       }
-      result.put(VOPERSON_EXTERNAL_AFFILIATION, voPersonExternalAffiliation);
+      
     }
     addAcrClaimIfNeeded(accessToken, result);
 
     return result;
+  }
+
+  private String addVoPersonExternalAffiliation (OAuth2Authentication auth){
+    Map<String, String> claims = extAuthnProcessor.process(auth);
+      if (claims.containsKey("EPSA")) {
+        return claims.get("EPSA");
+      } 
+      if (claims.containsKey("eduperson_scoped_affiliation")) {
+        return claims.get("eduperson_scoped_affiliation");
+      }
+    return "";
   }
 
 }
