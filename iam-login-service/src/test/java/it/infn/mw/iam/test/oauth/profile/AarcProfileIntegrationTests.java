@@ -44,8 +44,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -62,6 +66,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@SuppressWarnings("deprecation")
 @TestPropertySource(properties = {
 // @formatter:off
     "iam.host=example.org",
@@ -95,6 +100,9 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   @Autowired
   private MockOAuth2Filter oauth2Filter;
+
+  @Autowired
+  private OAuth2TokenRepository tokenRepo;
 
   @Before
   public void setup() {
@@ -534,6 +542,76 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.given_name", equalTo("Test")))
       .andExpect(jsonPath("$.family_name", equalTo("User")));
     // @formatter:on
+  }
+
+  @Test
+  public void testAarcProfileIntrospectWithEduPersonScopedAffiliationOIDC() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
+        "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
+    String token = getAccessTokenForUser(scopes);
+
+    OAuth2AccessTokenEntity accessTokenEntity =
+        tokenRepo.getAccessTokenByValue(token);
+    
+    OAuth2Authentication auth = accessTokenEntity.getAuthenticationHolder().getAuthentication();
+      SavedUserAuthentication userAuth = (SavedUserAuthentication) auth.getUserAuthentication();
+      userAuth.getAdditionalInfo().put(EDUPERSON_SCOPED_AFFILIATION_CLAIM, "staff@google");
+
+    // @formatter:off
+    mvc.perform(post("/introspect")
+        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .param("token", token))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.voperson_id").doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION, equalTo("staff@google")))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")))
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
+    // @formatter:on
+
+  }
+
+    @Test
+  public void testAarcProfileIntrospectWithEduPersonScopedAffiliationSAML() throws Exception {
+
+    Set<String> scopes = Sets.newHashSet("openid", "profile", "email",
+        "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
+    String token = getAccessTokenForUser(scopes);
+
+    OAuth2AccessTokenEntity accessTokenEntity =
+        tokenRepo.getAccessTokenByValue(token);
+    
+    OAuth2Authentication auth = accessTokenEntity.getAuthenticationHolder().getAuthentication();
+      SavedUserAuthentication userAuth = (SavedUserAuthentication) auth.getUserAuthentication();
+      userAuth.getAdditionalInfo().put("EPSA", "staff@google");
+
+    // @formatter:off
+    mvc.perform(post("/introspect")
+        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .param("token", token))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.voperson_id").doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + VOPERSON_EXTERNAL_AFFILIATION, equalTo("staff@google")))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, hasSize(equalTo(2))))
+      .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE_CLAIM, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
+      .andExpect(jsonPath("$.name", equalTo("Test User")))
+      .andExpect(jsonPath("$.given_name", equalTo("Test")))
+      .andExpect(jsonPath("$.family_name", equalTo("User")))
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
+    // @formatter:on
+
   }
 
 }
