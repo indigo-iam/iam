@@ -168,13 +168,13 @@ public class DefaultClientManagementService implements ClientManagementService {
 
   @Validated(OnClientUpdate.class)
   @Override
-  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO client)
+  public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO clientDTO)
       throws ParseException {
 
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(client);
+    ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
 
     newClient.setId(oldClient.getId());
     newClient.setCreatedAt(oldClient.getCreatedAt());
@@ -185,8 +185,11 @@ public class DefaultClientManagementService implements ClientManagementService {
 
     if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
       newClient.setClientSecret(null);
-    } else if (isNull(client.getClientSecret())) {
-      client.setClientSecret(defaultsService.generateClientSecret());
+    } else if (isNull(clientDTO.getClientSecret()) && isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
+    } else {
+      // user cannot change the clientSecret on update
+      newClient.setClientSecret(oldClient.getClientSecret());
     }
 
     newClient = clientService.updateClient(newClient);
@@ -290,3 +293,7 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
 }
+
+
+
+// Fix updateClient with old clientSecret value
