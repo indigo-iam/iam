@@ -79,7 +79,7 @@ public class AarcHintAwareAuthenticationEntryPointTests {
 
         entryPoint.commence(authorizeRequest, response, exception);
         verify(delegateEntryPoint, times(0)).commence(authorizeRequest, response, exception);
-        verify(aarcHintService, times(1)).resolve(eq(SAML_ENTITYID));
+        verify(aarcHintService, times(1)).resolve(SAML_ENTITYID);
         verify(response, times(1)).sendRedirect("/saml/login?idp=" + SAML_ENTITYID);
     }
 }
