@@ -40,15 +40,14 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 public class AarcAuthenticationHintServiceTests {
 
     private static final String BASE_URL = "http://localhost:8080";
-
-    @InjectMocks
-    private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL);
-
     private static final String OIDC_ISSUER = "https://accounts.google.com";
     private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
 
     @Mock
     private OidcValidatedProviders oidcProviders;
+
+    @InjectMocks
+    private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL, oidcProviders);
 
     @Mock
     private DefaultMetadataLookupService samlProviders;
