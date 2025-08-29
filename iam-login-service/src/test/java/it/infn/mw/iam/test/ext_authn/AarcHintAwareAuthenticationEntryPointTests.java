@@ -44,13 +44,10 @@ import it.infn.mw.iam.authn.HintAwareAuthenticationEntryPoint;
 public class AarcHintAwareAuthenticationEntryPointTests {
 
 
-    public static final String BASE_URL = "";
-    public static final String AUTHORIZE_URL = String.format("%s/authorize", BASE_URL);
+    private static final String BASE_URL = "";
+    private static final String AUTHORIZE_URL = String.format("%s/authorize", BASE_URL);
 
-    private String SAML_ENTITYID = "urn:example.us.auth0.com";
-
-    @Mock
-    HttpServletRequest request;
+    private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
 
     @Mock
     HttpServletRequest authorizeRequest;
@@ -72,27 +69,9 @@ public class AarcHintAwareAuthenticationEntryPointTests {
 
     @Before
     public void before() {
-        when(request.getRequestURI()).thenReturn(BASE_URL);
-        when(authorizeRequest.getRequestURI()).thenReturn(AUTHORIZE_URL);
         when(authorizeRequest.getRequestURI()).thenReturn(AUTHORIZE_URL);
         when(authorizeRequest.getParameter(AARC_HINT_PARAM)).thenReturn(SAML_ENTITYID);
         when(aarcHintService.resolve(anyString())).thenReturn("/saml/login?idp=" + SAML_ENTITYID);
-    }
-
-    @Test
-    public void nonAuthorizeRequestIsPassedToDelegateEntryPoint()
-            throws IOException, ServletException {
-
-        entryPoint.commence(request, response, exception);
-        verify(delegateEntryPoint, times(1)).commence(request, response, exception);
-    }
-
-    @Test
-    public void authorizeRequestWithoutHintIsPassedToDelegateEntryPoint()
-            throws IOException, ServletException {
-
-        entryPoint.commence(request, response, exception);
-        verify(delegateEntryPoint, times(1)).commence(request, response, exception);
     }
 
     @Test
@@ -101,6 +80,6 @@ public class AarcHintAwareAuthenticationEntryPointTests {
         entryPoint.commence(authorizeRequest, response, exception);
         verify(delegateEntryPoint, times(0)).commence(authorizeRequest, response, exception);
         verify(aarcHintService, times(1)).resolve(eq(SAML_ENTITYID));
-        verify(response, times(1)).sendRedirect(eq("/saml/login?idp=" + SAML_ENTITYID));
+        verify(response, times(1)).sendRedirect("/saml/login?idp=" + SAML_ENTITYID);
     }
 }

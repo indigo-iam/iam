@@ -39,13 +39,13 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 @RunWith(MockitoJUnitRunner.class)
 public class AarcAuthenticationHintServiceTests {
 
-    public static final String BASE_URL = "http://localhost:8080";
+    private static final String BASE_URL = "http://localhost:8080";
 
     @InjectMocks
     private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL);
 
-    private String OIDC_ISSUER = "https://accounts.google.com";
-    private String SAML_ENTITYID = "urn:example.us.auth0.com";
+    private static final String OIDC_ISSUER = "https://accounts.google.com";
+    private static final String SAML_ENTITYID = "urn:example.us.auth0.com";
 
     @Mock
     private OidcValidatedProviders oidcProviders;

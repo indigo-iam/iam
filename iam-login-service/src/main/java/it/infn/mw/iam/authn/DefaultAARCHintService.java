@@ -37,9 +37,7 @@ public class DefaultAARCHintService implements AARCHintService {
 
   private String baseUrl;
 
-  @Autowired
   private OidcValidatedProviders oidcProviders;
-
 
   private DefaultMetadataLookupService samlProviders;
 
@@ -47,6 +45,13 @@ public class DefaultAARCHintService implements AARCHintService {
   @Autowired
   public DefaultAARCHintService(@Value("${iam.baseUrl}") String url) {
     this.baseUrl = url;
+  }
+
+  @Autowired
+  public DefaultAARCHintService(@Value("${iam.baseUrl}") String url,
+      OidcValidatedProviders oidcProviders) {
+    this.baseUrl = url;
+    this.oidcProviders = oidcProviders;
   }
 
   protected void hintSanityChecks(String hint) {
