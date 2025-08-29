@@ -42,7 +42,7 @@ public class AarcAuthenticationHintServiceTests {
     public static final String BASE_URL = "http://localhost:8080";
 
     @InjectMocks
-    DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL);
+    private DefaultAARCHintService service = new DefaultAARCHintService(BASE_URL);
 
     private String OIDC_ISSUER = "https://accounts.google.com";
     private String SAML_ENTITYID = "urn:example.us.auth0.com";
@@ -55,7 +55,7 @@ public class AarcAuthenticationHintServiceTests {
 
 
     @Before
-    public void setUp(){
+    public void setUp() {
 
         // Populating known Oidc's
         OidcProvider oidcProvider = new OidcProvider();
@@ -64,7 +64,7 @@ public class AarcAuthenticationHintServiceTests {
 
         when(oidcProviders.getValidatedProviders()).thenReturn(oidcProvidersTemp);
 
-        // Populating known Saml's 
+        // Populating known Saml's
         IdpDescription idpDescription = new IdpDescription();
         idpDescription.setEntityId(SAML_ENTITYID);
         List<IdpDescription> idpDescriptionsTemp = List.of(idpDescription);
@@ -97,7 +97,7 @@ public class AarcAuthenticationHintServiceTests {
     @Test
     public void testSamlWorks() {
         String url = service.resolve(SAML_ENTITYID);
-        assertThat(url, is(String.format("%s/saml/login?idp=%s", BASE_URL,SAML_ENTITYID)));
+        assertThat(url, is(String.format("%s/saml/login?idp=%s", BASE_URL, SAML_ENTITYID)));
     }
 
     @Test
