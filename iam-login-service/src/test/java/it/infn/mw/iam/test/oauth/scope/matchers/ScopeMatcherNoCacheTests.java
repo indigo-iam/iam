@@ -20,6 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
 
+import java.util.Set;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -76,6 +78,7 @@ public class ScopeMatcherNoCacheTests extends EndpointsTestUtils {
     client.setClientId(CLIENT_ID);
     client.setClientSecret(CLIENT_SECRET);
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
+    client.setGrantTypes(Set.of("client_credentials"));
     clientRepo.save(client);
 
     try {
