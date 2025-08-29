@@ -71,7 +71,7 @@ public class TrustChainResolver {
   }
 
   /**
-   * Resolves the Trust Chain starting from an entity_id
+   * Resolve the Trust Chain starting from an entity_id
    */
   public List<EntityStatement> resolveFromEntityId(String entityId)
       throws InvalidTrustChainException {
@@ -80,7 +80,7 @@ public class TrustChainResolver {
   }
 
   /**
-   * Resolves the Trust Chain starting from an EntityConfiguration already provided
+   * Resolve the Trust Chain starting from an EntityConfiguration already provided
    */
   public List<EntityStatement> resolveFromEntityConfiguration(EntityStatement ec)
       throws InvalidTrustChainException {
