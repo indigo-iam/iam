@@ -18,6 +18,7 @@ package it.infn.mw.iam.config.security;
 import static it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH;
 import static it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType.OIDC;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
+import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import javax.servlet.RequestDispatcher;
 
@@ -37,8 +38,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
+import org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint;
 import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurityExpressionHandler;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -395,6 +398,48 @@ public class IamWebSecurityConfig {
         .authenticationEntryPoint(mfaAuthenticationEntryPoint())
         .and()
         .addFilterAt(multiFactorVerificationFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+  }
+
+  @Configuration
+  @Order(15)
+  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    @Qualifier("clientUserDetailsService")
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
+
+      auth.userDetailsService(userDetailsService)
+        .passwordEncoder(NoOpPasswordEncoder.getInstance());
+    }
+
+    @Override
+    protected void configure(final HttpSecurity http) throws Exception {
+
+      // @formatter:off
+      http.antMatcher("/introspect/**")
+        .httpBasic()
+          .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .cors()
+        .and()
+            .exceptionHandling()
+              .authenticationEntryPoint(authenticationEntryPoint)
+        .and()
+          .sessionManagement()
+            .sessionCreationPolicy(STATELESS).and()
+        .csrf()
+          .disable()
+        .authorizeRequests()
+          .anyRequest()
+            .fullyAuthenticated();
+      // @formatter:on
     }
   }
 }

@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -124,8 +125,9 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenForUser("openid profile"));
 
     // @formatter:off
-    mvc.perform(post("/introspect")
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -144,8 +146,9 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getAccessTokenWithAudience("openid profile", "myAudience"));
 
     // @formatter:off
-    mvc.perform(post("/introspect")
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -166,8 +169,9 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .getAccessTokenValue();
 
     // @formatter:off
-    mvc.perform(post("/introspect")
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessTokenString))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))

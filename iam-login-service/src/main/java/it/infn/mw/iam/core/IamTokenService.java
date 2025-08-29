@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
@@ -35,10 +36,11 @@ import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 
-import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
+import it.infn.mw.iam.authn.util.Authorities;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -152,5 +154,9 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
         clientLastUsed.setLastUsed(now);
       }
     }
+  }
+
+  public static String sha256(String tokenString) {
+    return Hashing.sha256().hashString(tokenString, StandardCharsets.UTF_8).toString();
   }
 }

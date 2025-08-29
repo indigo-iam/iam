@@ -171,48 +171,6 @@ public class MitreSecurityConfig {
   }
 
   @Configuration
-  @Order(15)
-  public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
-    private UserDetailsService userDetailsService;
-
-    @Override
-    protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-
-      auth.userDetailsService(userDetailsService)
-        .passwordEncoder(NoOpPasswordEncoder.getInstance());
-    }
-
-    @Override
-    protected void configure(final HttpSecurity http) throws Exception {
-
-      // @formatter:off
-      http.antMatcher("/introspect/**")
-        .httpBasic()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .cors()
-        .and()
-            .exceptionHandling()
-              .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .sessionManagement()
-            .sessionCreationPolicy(STATELESS).and()
-        .csrf()
-          .disable()
-        .authorizeRequests()
-          .anyRequest()
-            .fullyAuthenticated();
-      // @formatter:on
-    }
-  }
-
-  @Configuration
   @Order(16)
   public static class RevokeEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 

@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.oauth.devicecode;
 
-import static it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.REGISTER_ENDPOINT;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -25,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -59,6 +59,7 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.oauth.client_registration.ClientRegistrationTestSupport.ClientJsonStringBuilder;
@@ -67,7 +68,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
+public class DeviceCodeTests extends EndpointsTestUtils {
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -512,7 +513,9 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
@@ -523,6 +526,7 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(DEVICE_CODE_ENDPOINT).contentType(APPLICATION_FORM_URLENCODED)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
         .param("client_id", "device-code-client")
         .param("scope", "openid profile offline_access custom-scope"))
       .andExpect(status().isBadRequest())
@@ -611,7 +615,9 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
   }
@@ -751,7 +757,9 @@ public class DeviceCodeTests extends EndpointsTestUtils implements DeviceCodeTes
     mvc
       .perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic(SCIM_DEVICE_CLIENT_ID, SCIM_DEVICE_CLIENT_SECRET))
-        .param("token", accessToken))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 

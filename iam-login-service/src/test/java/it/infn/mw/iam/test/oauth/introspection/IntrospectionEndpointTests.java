@@ -17,22 +17,34 @@ package it.infn.mw.iam.test.oauth.introspection;
 
 
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -48,28 +60,68 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
   @Value("${iam.issuer}")
   String issuer;
 
-  private static final String ENDPOINT = "/introspect";
-  private static final String CLIENT_ID = "password-grant";
-  private static final String CLIENT_SECRET = "secret";
+  @Autowired
+  IamClientRepository clientRepository;
+
+  @Autowired
+  IamAccountRepository accountRepository;
+
+  @Autowired
+  ObjectMapper mapper;
 
   @Test
   public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
-    String accessToken = getPasswordAccessToken();
 
-    // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-        .param("token", accessToken))
+    String accessToken = getPasswordAccessToken("openid");
+
+    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
+    IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
+
+    IntrospectionResponse response = mapper.readValue(mvc
+      .perform(
+          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .param("token", accessToken)
+            .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.iss", equalTo(issuer+"/")))
-      .andExpect(jsonPath("$.groups", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.groups", containsInAnyOrder("Production", "Analysis")))
-      .andExpect(jsonPath("$.name", equalTo("Test User")))
-      .andExpect(jsonPath("$.preferred_username", equalTo("test")))
-      .andExpect(jsonPath("$.organisation_name", equalTo(organisationName)))
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
-    // @formatter:on
+      .andExpect(jsonPath("$.sub", equalTo(account.getUuid())))
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.client_id").exists())
+      .andExpect(jsonPath("$.client_id", equalTo(client.getClientId())))
+      .andExpect(jsonPath("$.iss", equalTo(issuer)))
+      .andExpect(jsonPath("$.exp").exists())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.name").doesNotExist())
+      .andExpect(jsonPath("$.given_name").doesNotExist())
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andReturn()
+      .getResponse()
+      .getContentAsString(), IntrospectionResponse.class);
+
+    List<String> scopes =
+        List.of(String.valueOf(response.getAdditionalFields().get("scope")).trim().split("\\s+"));
+    assertEquals(1, scopes.size());
+    assertEquals("openid", scopes.get(0));
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testIntrospectionEndpointWithRefreshToken() throws Exception {
+
+    String refreshToken =
+        getPasswordTokenResponse("openid profile offline_access").getRefreshToken().getValue();
+
+    mvc
+      .perform(
+          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .param("token", refreshToken)
+            .param("token_type_hint", TokenTypeHint.REFRESH_TOKEN.name()))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.exp", nullValue()))
+      .andExpect(jsonPath("$.jti").exists());
   }
 
   @Test
@@ -77,8 +129,9 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid");
 
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
@@ -86,7 +139,8 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.name").doesNotExist())
       .andExpect(jsonPath("$.preferred_username").doesNotExist())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email").doesNotExist());
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andExpect(jsonPath("$.email_verified").doesNotExist());
     // @formatter:on
   }
 
@@ -95,16 +149,52 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid email");
 
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
-        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.name").doesNotExist())
+      .andExpect(jsonPath("$.given_name").doesNotExist())
+      .andExpect(jsonPath("$.family_name").doesNotExist())
+      .andExpect(jsonPath("$.middle_name").doesNotExist())
+      .andExpect(jsonPath("$.nickname").doesNotExist())
+      .andExpect(jsonPath("$.picture").doesNotExist())
+      .andExpect(jsonPath("$.updated_at").doesNotExist())
       .andExpect(jsonPath("$.preferred_username").doesNotExist())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")));
+      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
+      .andExpect(jsonPath("$.email_verified", equalTo(true)));
+    // @formatter:on
+  }
+
+  @Test
+  public void testProfileClaimsReturnedWithProfileScope() throws Exception {
+    String accessToken = getPasswordAccessToken("openid profile");
+    IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.name", equalTo(a.getUserInfo().getName())))
+      .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
+      .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
+      .andExpect(jsonPath("$.middle_name").doesNotExist())
+      .andExpect(jsonPath("$.nickname", equalTo(a.getUserInfo().getNickname())))
+      .andExpect(jsonPath("$.picture").doesNotExist())
+      .andExpect(jsonPath("$.updated_at", equalTo(a.getLastUpdateTime().toString())))
+      .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())))
+      .andExpect(jsonPath("$.affiliation", equalTo(a.getUserInfo().getAffiliation())))
+      .andExpect(jsonPath("$.updated_at").exists())
+      .andExpect(jsonPath("$.email").doesNotExist())
+      .andExpect(jsonPath("$.email_verified").doesNotExist());
     // @formatter:on
   }
 }

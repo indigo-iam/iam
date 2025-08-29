@@ -18,6 +18,7 @@ package it.infn.mw.iam;
 import org.mitre.discovery.web.DiscoveryEndpoint;
 import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
+import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
@@ -80,7 +81,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=DeviceEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=TofuUserApprovalHandler.class)
+        value=TofuUserApprovalHandler.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=IntrospectionEndpoint.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

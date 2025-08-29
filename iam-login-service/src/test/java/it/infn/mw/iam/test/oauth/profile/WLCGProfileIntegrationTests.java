@@ -29,6 +29,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -550,7 +551,8 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     // Check that token can be introspected properly
     mvc
-      .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+      .perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", tokenResponseObject.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -590,7 +592,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     // Check that token can be introspected properly
     mvc
-      .perform(post("/introspect").with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+      .perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", tokenResponseObject2.getValue()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));

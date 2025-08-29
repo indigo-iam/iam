@@ -16,6 +16,7 @@
 package it.infn.mw.iam.test.oauth.introspection;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,8 +39,6 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils {
 
-  private static final String ENDPOINT = "/introspect";
-
   private String accessToken;
 
   @Before
@@ -51,8 +50,9 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   @Test
   public void testTokenIntrospectionEndpointBasicAuthentication() throws Exception {
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
         .with(httpBasic("password-grant", "secret"))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
@@ -62,7 +62,8 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   @Test
   public void testTokenIntrospectionEndpointFormAuthentication() throws Exception {
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken)
         .param("client_id", "client-cred")
         .param("client_secret", "secret"))
@@ -73,7 +74,8 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   @Test
   public void testTokenIntrospectionEndpointNoAuthenticationFailure() throws Exception {
     // @formatter:off
-    mvc.perform(post(ENDPOINT)
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken))
       .andExpect(status().isUnauthorized());
    // @formatter:on
