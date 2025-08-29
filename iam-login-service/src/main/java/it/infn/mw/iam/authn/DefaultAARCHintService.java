@@ -43,7 +43,8 @@ public class DefaultAARCHintService implements AARCHintService {
 
 
   @Autowired
-  public DefaultAARCHintService(@Value("${iam.baseUrl}") String url, OidcValidatedProviders oidcProvicers) {
+  public DefaultAARCHintService(@Value("${iam.baseUrl}") String url,
+      OidcValidatedProviders oidcProvicers) {
     this.baseUrl = url;
     this.oidcProviders = oidcProvicers;
   }
