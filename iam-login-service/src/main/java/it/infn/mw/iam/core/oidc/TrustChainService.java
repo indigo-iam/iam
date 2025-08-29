@@ -45,7 +45,7 @@ public class TrustChainService {
 
   public Optional<TrustChain> getOrResolve(String entityId) throws BadJOSEException, JOSEException {
     Optional<TrustChain> cachedChain = trustChainCache.get(entityId);
-    if (cachedChain.isEmpty()) {
+    if (!cachedChain.isEmpty()) {
       return cachedChain;
     }
     try {
