@@ -81,7 +81,7 @@ public class TrustChainServiceTests {
   TrustChain fakeChain;
 
   @Before
-  public void setup() throws JOSEException {
+  public void setup() {
     TrustChainResolver realResolver = new TrustChainResolver();
     TrustChainValidator realValidator = new TrustChainValidator(trustAnchorRepository);
     ReflectionTestUtils.setField(realResolver, "restTemplate", restTemplate);
@@ -271,5 +271,30 @@ public class TrustChainServiceTests {
     TrustChain result = service.validateFromProvidedChain(chain);
 
     assertEquals("https://ta.example", result.getTrustAnchorEntityID().getValue());
+  }
+
+  @Test
+  public void testFetchEntityConfigurationFailure() throws Exception {
+    String entityId = "https://rp.example";
+
+    InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
+        () -> ReflectionTestUtils.invokeMethod(resolver, "fetchEntityConfiguration", entityId));
+
+    assertEquals("invalid_trust_chain", ex.getErrorCode());
+    assertTrue(ex.getMessage().contains("Failed to fetch EC"));
+  }
+
+  @Test
+  public void testFetchEntityStatementFailure() throws Exception {
+    String fetchEndpoint = "https://ta.example/fetch";
+    String subject = "https://rp.example";
+    String issuer = "https://ta.example";
+
+    InvalidTrustChainException ex =
+        assertThrows(InvalidTrustChainException.class, () -> ReflectionTestUtils
+          .invokeMethod(resolver, "fetchEntityStatement", fetchEndpoint, issuer, subject));
+
+    assertEquals("invalid_trust_chain", ex.getErrorCode());
+    assertTrue(ex.getMessage().contains("Failed to fetch entity statement"));
   }
 }
