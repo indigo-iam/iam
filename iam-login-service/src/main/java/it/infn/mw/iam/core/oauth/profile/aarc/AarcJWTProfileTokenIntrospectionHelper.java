@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -95,9 +94,10 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
       }
 
       OAuth2Authentication auth = accessToken.getAuthenticationHolder().getAuthentication();
-      SavedUserAuthentication userAuth = (SavedUserAuthentication) auth.getUserAuthentication();
-      if (userAuth != null && !userAuth.getAdditionalInfo().isEmpty()){
-        result.put(VOPERSON_EXTERNAL_AFFILIATION, addVoPersonExternalAffiliation(auth));
+      Map<String, String> claims = extAuthnProcessor.process(auth);
+      String authentication = addVoPersonExternalAffiliation(claims);
+      if (!authentication.isEmpty()){
+        result.put(VOPERSON_EXTERNAL_AFFILIATION, addVoPersonExternalAffiliation(claims));
       }
       result.put("voperson_id", userInfo.getSub());
     }
@@ -106,8 +106,7 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
     return result;
   }
 
-  private String addVoPersonExternalAffiliation (OAuth2Authentication auth){
-    Map<String, String> claims = extAuthnProcessor.process(auth);
+  private String addVoPersonExternalAffiliation (Map<String, String> claims){
       if (claims.containsKey("EPSA")) {
         return claims.get("EPSA");
       } 
