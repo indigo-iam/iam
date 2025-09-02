@@ -16,9 +16,11 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
 import static java.util.Objects.isNull;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -38,6 +40,7 @@ import org.springframework.security.oauth2.provider.OAuth2Request;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import com.nimbusds.jwt.JWTParser;
@@ -45,8 +48,8 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
@@ -54,8 +57,10 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
   public static final String SCOPE_CLAIM_NAME = "scope";
+  public static final String ACR_CLAIM_NAME = "acr";
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
+
   public static final String SPACE = " ";
 
   public static final String SUBJECT_TOKEN = "subject_token";
@@ -108,12 +113,12 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       }
 
       Map<String, Object> actClaimContent = Maps.newHashMap();
-      actClaimContent.put("sub", authentication.getOAuth2Request().getClientId());
+      actClaimContent.put(JWTClaimNames.SUBJECT, authentication.getOAuth2Request().getClientId());
 
       Object subjectTokenActClaim = subjectToken.getJWTClaimsSet().getClaim(ACT_CLAIM_NAME);
 
       if (!isNull(subjectTokenActClaim)) {
-        actClaimContent.put("act", subjectTokenActClaim);
+        actClaimContent.put(ACT_CLAIM_NAME, subjectTokenActClaim);
       }
 
       builder.claim(ACT_CLAIM_NAME, actClaimContent);
@@ -128,7 +133,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       final String audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
         .getRequestParameters()
-        .get(AUD_KEY);
+        .get(AUDIENCE);
       return !isNullOrEmpty(audience);
     }
     return false;
@@ -157,19 +162,19 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       .jwtID(UUID.randomUUID().toString());
 
 
-    builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
+    builder.claim(CLIENT_ID, token.getClient().getClientId());
 
     String audience = null;
 
     if (hasAudienceRequest(authentication)) {
-      audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
+      audience = authentication.getOAuth2Request().getRequestParameters().get(AUDIENCE);
     }
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
         .getRequestParameters()
-        .get(AUD_KEY);
+        .get(AUDIENCE);
     }
 
     if (!isNullOrEmpty(audience)) {
@@ -189,8 +194,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
     if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
-        && savedAuth.getAdditionalInfo().get("acr") != null) {
-      builder.claim("acr", savedAuth.getAdditionalInfo().get("acr"));
+        && savedAuth.getAdditionalInfo().get(ACR_CLAIM_NAME) != null) {
+      builder.claim(ACR_CLAIM_NAME, savedAuth.getAdditionalInfo().get(ACR_CLAIM_NAME));
     }
   }
 }

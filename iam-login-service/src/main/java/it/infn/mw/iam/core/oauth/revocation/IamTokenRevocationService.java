@@ -73,12 +73,7 @@ public class IamTokenRevocationService implements TokenRevocationService {
 
   private boolean validate(JWT token, TokenTypeHint tokenType) throws ParseException {
 
-    if (token == null || tokenType == null) {
-      return false;
-    }
-    /* check if the provided token type matches the expected type computed from JWT */
-    TokenTypeHint computedTokenType = TokenTypeHint.valueFrom(token);
-    return tokenType.equals(computedTokenType) && !isTokenExpired(token);
+    return token != null && tokenType != null && !isTokenExpired(token);
   }
 
   private boolean isTokenExpired(JWT jwt) throws ParseException {

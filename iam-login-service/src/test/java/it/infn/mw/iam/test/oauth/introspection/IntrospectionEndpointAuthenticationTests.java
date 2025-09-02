@@ -25,11 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -40,6 +43,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils {
 
   private String accessToken;
+
+  @Autowired
+  private IamClientRepository clientRepo;
 
   @Before
   public void setup() throws Exception {
@@ -79,5 +85,45 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
         .param("token", accessToken))
       .andExpect(status().isUnauthorized());
    // @formatter:on
+  }
+
+  @Test
+  public void testTokenIntrospectionEndpointWithDisabledClient() throws Exception {
+
+    ClientDetailsEntity c = clientRepo.findByClientId("password-grant").orElseThrow();
+    c.setActive(false);
+    clientRepo.save(c);
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic("password-grant", "secret"))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+
+    c.setActive(true);
+    clientRepo.save(c);
+  }
+
+  @Test
+  public void testTokenIntrospectionEndpointWithClientNotAllowedIntrospection() throws Exception {
+
+    ClientDetailsEntity c = clientRepo.findByClientId("password-grant").orElseThrow();
+    c.setAllowIntrospection(false);
+    clientRepo.save(c);
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic("password-grant", "secret"))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+
+    c.setAllowIntrospection(true);
+    clientRepo.save(c);
   }
 }
