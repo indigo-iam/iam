@@ -19,22 +19,7 @@ public class UnauthorizedClientException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
-  private String description;
-
-  public UnauthorizedClientException() {
-    this("unauthorized_client");
-  }
-
   public UnauthorizedClientException(String description) {
-    super("unauthorized_client");
-    this.setDescription(description);
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
+    super(description);
   }
 }

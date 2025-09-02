@@ -90,7 +90,8 @@ public class IamIntrospectionEndpoint {
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public IntrospectionResponse introspect(
       @RequestParam(value = OAuth2ParameterNames.TOKEN, required = true) String tokenValue,
-      @RequestParam(value = OAuth2ParameterNames.TOKEN_TYPE_HINT, required = false) TokenTypeHint tokenType,
+      @RequestParam(value = OAuth2ParameterNames.TOKEN_TYPE_HINT,
+          required = false) TokenTypeHint tokenType,
       Authentication auth)
       throws UnauthorizedClientException, ParseException, InvalidTokenException {
 
@@ -101,12 +102,10 @@ public class IamIntrospectionEndpoint {
       tokenType = valueFrom(tokenValue);
     }
 
-    switch (tokenType) {
-      case REFRESH_TOKEN:
-        return introspectRefreshToken(tokenValue);
-      default:
-        return introspectAccessToken(tokenValue);
+    if (TokenTypeHint.REFRESH_TOKEN.equals(tokenType)) {
+      return introspectRefreshToken(tokenValue);
     }
+    return introspectAccessToken(tokenValue);
   }
 
   private TokenTypeHint valueFrom(String tokenValue) throws ParseException {
@@ -176,9 +175,7 @@ public class IamIntrospectionEndpoint {
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
     // base response: copy all token claims
-    at.getJwt().getJWTClaimsSet().getClaims().forEach((k, v) -> {
-      builder.addField(k, v);
-    });
+    at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addField);
     // token type
     builder.addField(OAuth2TokenIntrospectionClaimNames.TOKEN_TYPE, TokenTypeHint.ACCESS_TOKEN);
     // override/populate more claims

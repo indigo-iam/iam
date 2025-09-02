@@ -47,12 +47,10 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public boolean isTokenRevoked(JWT token, TokenTypeHint tokenType) throws ParseException {
 
-    switch (tokenType) {
-      case REFRESH_TOKEN:
-        return isRefreshTokenRevoked((PlainJWT) token);
-      default:
-        return isAccessTokenRevoked((SignedJWT) token);
+    if (TokenTypeHint.REFRESH_TOKEN.equals(tokenType)) {
+      return isRefreshTokenRevoked((PlainJWT) token);
     }
+    return isAccessTokenRevoked((SignedJWT) token);
   }
 
   @Override
@@ -61,13 +59,10 @@ public class IamTokenRevocationService implements TokenRevocationService {
     if (!validate(token, tokenType)) {
       return;
     }
-    switch (tokenType) {
-      case REFRESH_TOKEN:
-        revokeRefreshToken((PlainJWT) token);
-        break;
-      default:
-        revokeAccessToken((SignedJWT) token);
-        break;
+    if (TokenTypeHint.REFRESH_TOKEN.equals(tokenType)) {
+      revokeRefreshToken((PlainJWT) token);
+    } else {
+      revokeAccessToken((SignedJWT) token);
     }
   }
 
@@ -82,12 +77,12 @@ public class IamTokenRevocationService implements TokenRevocationService {
     return expClaim.isPresent() && expClaim.get().before(new Date());
   }
 
-  private boolean isAccessTokenRevoked(SignedJWT jwt) throws ParseException {
+  private boolean isAccessTokenRevoked(SignedJWT jwt) {
 
     return accessTokenRepo.findByTokenValue(sha256(jwt.serialize())).isEmpty();
   }
 
-  private void revokeAccessToken(SignedJWT jwt) throws ParseException {
+  private void revokeAccessToken(SignedJWT jwt) {
 
     accessTokenRepo.findByTokenValue(sha256(jwt.serialize())).ifPresent(accessTokenRepo::delete);
   }

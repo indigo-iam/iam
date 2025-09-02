@@ -405,12 +405,16 @@ public class IamWebSecurityConfig {
   @Order(15)
   public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
-
-    @Autowired
-    @Qualifier("clientUserDetailsService")
     private UserDetailsService userDetailsService;
+
+    public IntrospectEndpointAuthorizationConfig(
+        OAuth2AuthenticationEntryPoint authenticationEntryPoint,
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService) {
+
+      this.authenticationEntryPoint = authenticationEntryPoint;
+      this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {

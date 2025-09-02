@@ -35,13 +35,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -65,6 +68,9 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
 
   @Autowired
   IamAccountRepository accountRepository;
+
+  @Autowired
+  TokenRevocationService revokeService;
 
   @Autowired
   ObjectMapper mapper;
@@ -195,6 +201,72 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.updated_at").exists())
       .andExpect(jsonPath("$.email").doesNotExist())
       .andExpect(jsonPath("$.email_verified").doesNotExist());
+    // @formatter:on
+  }
+
+  @Test
+  public void testIntrospectRevokedAccessToken() throws Exception {
+    String accessToken = getPasswordAccessToken("openid profile");
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    // @formatter:on
+
+    revokeService.revokeToken(JWTParser.parse(accessToken), TokenTypeHint.ACCESS_TOKEN);
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void testIntrospectRevokedRefreshToken() throws Exception {
+    
+    DefaultOAuth2AccessToken tokens = getPasswordTokenResponse("openid profile offline_access");
+    String accessToken = tokens.getValue();
+    String refreshToken = tokens.getRefreshToken().getValue();
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", refreshToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    // @formatter:on
+
+    revokeService.revokeToken(JWTParser.parse(refreshToken), TokenTypeHint.REFRESH_TOKEN);
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", refreshToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
 }
