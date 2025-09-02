@@ -274,7 +274,7 @@ public class TrustChainServiceTests {
   }
 
   @Test
-  public void testFetchEntityConfigurationFailure() throws Exception {
+  public void testFetchEntityConfigurationFailure() {
     String entityId = "https://rp.example";
 
     InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
@@ -285,7 +285,7 @@ public class TrustChainServiceTests {
   }
 
   @Test
-  public void testFetchEntityStatementFailure() throws Exception {
+  public void testFetchEntityStatementFailure() {
     String fetchEndpoint = "https://ta.example/fetch";
     String subject = "https://rp.example";
     String issuer = "https://ta.example";
