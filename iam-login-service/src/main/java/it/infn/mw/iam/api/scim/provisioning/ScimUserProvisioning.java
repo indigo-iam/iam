@@ -47,12 +47,10 @@ import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
@@ -60,7 +58,6 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
-import it.infn.mw.iam.api.scim.exception.ScimException;
 import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
@@ -86,7 +83,6 @@ import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -113,6 +109,7 @@ public class ScimUserProvisioning
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
   private final IamProperties iamProperties;
+  private final AccountUtils accountUtils;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -122,7 +119,7 @@ public class ScimUserProvisioning
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties,
-      IamGroupRepository groupRepository, IamProperties iamProperties) {
+      IamGroupRepository groupRepository, IamProperties iamProperties, AccountUtils accountUtils) {
 
     this.notificationProperties = notificationProperties;
     this.accountService = accountService;
@@ -133,6 +130,7 @@ public class ScimUserProvisioning
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
         x509CertificateConverter, usernameValidator, groupRepository);
     this.iamProperties = iamProperties;    
+    this.accountUtils = accountUtils;  
   }
 
 
@@ -577,17 +575,12 @@ public class ScimUserProvisioning
   public void update(final String id, final List<ScimPatchOperation<ScimUser>> operations) {
 
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
-    Optional<IamAccount> currentUserAccount = getCurrentUserAccount();  
-    if (!currentUserAccount.isPresent() || isAdmin(currentUserAccount.get())) {
+    Optional<IamAccount> currentUserAccount = accountUtils.getAuthenticatedUserAccount();  
+    if (!currentUserAccount.isPresent() || accountUtils.isAdmin(currentUserAccount.get())) {
       operations.forEach(op -> executePatchOperation(account, op));
     } else {
       operations.forEach(op -> executePatchOperationByUser(account, op));
     }
-  }
-
-  private boolean isAdmin(IamAccount userAccount) {
-    return userAccount.getAuthorities().stream()
-        .anyMatch(IamAuthority::isAdminAuthority);
   }
 
   private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
@@ -631,21 +624,5 @@ public class ScimUserProvisioning
     });
 
     return enabledUpdaters;
-  }
-
-  @SuppressWarnings("deprecation")
-  private Optional<IamAccount> getCurrentUserAccount() throws ScimException, ScimResourceNotFoundException {
-
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null) {
-      return Optional.empty();
-    }
-    if (auth instanceof OAuth2Authentication oauth) {
-      auth = oauth.getUserAuthentication();
-      if (auth == null) {
-        return Optional.empty();
-      }
-    }
-    return accountRepository.findByUsername(auth.getName());
   }
 }
