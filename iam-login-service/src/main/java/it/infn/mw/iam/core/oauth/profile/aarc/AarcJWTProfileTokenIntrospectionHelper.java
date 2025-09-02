@@ -99,7 +99,7 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
       if (userAuth != null && !userAuth.getAdditionalInfo().isEmpty()){
         result.put(VOPERSON_EXTERNAL_AFFILIATION, addVoPersonExternalAffiliation(auth));
       }
-      
+      result.put("voperson_id", userInfo.getSub());
     }
     addAcrClaimIfNeeded(accessToken, result);
 
