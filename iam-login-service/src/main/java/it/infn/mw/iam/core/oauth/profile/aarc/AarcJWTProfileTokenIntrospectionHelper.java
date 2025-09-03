@@ -97,7 +97,7 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
       Map<String, String> claims = extAuthnProcessor.process(auth);
       String authentication = addVoPersonExternalAffiliation(claims);
       if (!authentication.isEmpty()){
-        result.put(VOPERSON_EXTERNAL_AFFILIATION, addVoPersonExternalAffiliation(claims));
+        result.put(VOPERSON_EXTERNAL_AFFILIATION, authentication);
       }
       result.put("voperson_id", userInfo.getSub());
     }
