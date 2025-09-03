@@ -64,8 +64,6 @@ public class IamIntrospectionEndpoint {
 
   private static final Logger logger = LoggerFactory.getLogger(IamIntrospectionEndpoint.class);
 
-  public static final String URL = "introspect";
-
   private static final String NOT_ALLOWED_CLIENT_ERROR =
       "Client %s is not allowed to call introspection endpoint";
   private static final String SUSPENDED_CLIENT_ERROR =
@@ -79,13 +77,14 @@ public class IamIntrospectionEndpoint {
   public IamIntrospectionEndpoint(OAuth2TokenEntityService tokenService,
       ClientDetailsEntityService clientService, IamAccountService accountService,
       TokenRevocationService revocationService) {
+
     this.tokenService = tokenService;
     this.clientService = clientService;
     this.accountService = accountService;
     this.revocationService = revocationService;
   }
 
-  @PostMapping(value = "/" + URL, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
+  @PostMapping(value = "/introspect", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
       produces = {MediaType.APPLICATION_JSON_VALUE})
   @PreAuthorize("hasRole('ROLE_CLIENT')")
   public IntrospectionResponse introspect(
@@ -201,7 +200,7 @@ public class IamIntrospectionEndpoint {
     if (!clientId.equals(subject)) {
       IamAccount a = accountService.findByUuid(subject)
         .orElseThrow(
-            () -> new InvalidTokenException("Token sub doesn't refer to any registered user"));
+            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
       builder.addField(OAuth2TokenIntrospectionClaimNames.USERNAME, a.getUsername());
       // backward compatibility
       builder.addField("user_id", a.getUsername());
@@ -258,7 +257,7 @@ public class IamIntrospectionEndpoint {
       ParseException.class})
   public IntrospectionResponse invalidClientOrToken(HttpServletRequest req, Exception ex) {
     /*
-     * From RFC 7663 in case of valid credentials, but the token is not owned by the authenticated
+     * From RFC 7663: in case of valid credentials but the token is not owned by the authenticated
      * client (or client is not allowed to introspect it) the response must be 200 OK with
      * {"active": false}.
      */

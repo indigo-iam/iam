@@ -269,4 +269,18 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
+
+  @Test
+  public void testIntrospectWithInvalidToken() throws Exception {
+    String accessToken = "invalid-token";
+
+    // @formatter:off
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        .param("token", accessToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+  }
 }
