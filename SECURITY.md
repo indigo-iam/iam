@@ -10,7 +10,7 @@ At the administrators' discretion, security patches may be considered for versio
 This repository has a private vulnerability reporting enabled.
 This makes it easy for security researchers to report vulnerabilities directly to the repository maintainers using a simple form.
 
-Follow the following steps if you need to report a vulnerability or a security issue:
+Please, follow the steps below if you need to report a vulnerability or a security issue:
 
 1. On GitHub, navigate to the [main page](https://github.com/indigo-iam/iam) of the repository 
 2. Under the repository name, click  [Security](https://github.com/indigo-iam/iam/security). If you cannot see the "Security" tab, select the  dropdown menu, and then click Security.
@@ -19,7 +19,7 @@ Follow the following steps if you need to report a vulnerability or a security i
 
 > [!TIP]
 > In this form, only the title and description are mandatory.
-> However, we recommend provide as much information as possible on the form so that the maintainers can make an informed decision about the submitted report.
+> However, we recommend providing as much information as possible on the form so that the maintainers can make an informed decision about the submitted report.
 > You can adopt the template used by our security researchers from the GitHub Security Lab, which is available on the [github/securitylab](https://github.com/github/securitylab/blob/main/docs/report-template.md) repository.
 
 For more information about the fields available and guidance on filling in the form, 
@@ -32,6 +32,4 @@ and [Best practices for writing repository security advisories](https://docs.git
 > When the report is submitted, GitHub automatically adds the reporter of the vulnerability as a collaborator and as a credited user on the proposed advisory.
 
 6. Optionally, click **Start a temporary private fork** if you want to start to fix the issue. Note that only the repository maintainer can merge changes from that private fork into the parent repository.
-When the report is submitted, GitHub automatically adds the reporter of the vulnerability as a collaborator and as a credited user on the proposed advisory.
 
-Optionally, click Start a temporary private fork if you want to start to fix the issue. Note that only the repository maintainer can merge changes from that private fork into the parent repository.
