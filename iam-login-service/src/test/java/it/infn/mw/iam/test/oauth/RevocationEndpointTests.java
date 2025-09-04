@@ -131,8 +131,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
     iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
     iamTokenService.getAllRefreshTokensForUser("test").forEach(iamTokenService::revokeRefreshToken);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile offline_access");
+    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile offline_access");
     DefaultOAuth2AccessToken tokenResponseObject = tg.getTokenResponseObject();
     String refreshTokenValue = tokenResponseObject.getRefreshToken().getValue();
 
@@ -154,8 +153,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
     iamTokenService.getAllAccessTokensForUser("test").forEach(iamTokenService::revokeAccessToken);
     iamTokenService.getAllRefreshTokensForUser("test").forEach(iamTokenService::revokeRefreshToken);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile offline_access");
+    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile offline_access");
 
     String rt1 = tg.getTokenResponseObject().getRefreshToken().getValue();
     String rt2 = tg.getTokenResponseObject().getRefreshToken().getValue();

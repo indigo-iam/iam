@@ -38,18 +38,40 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
   @Autowired
   protected MockMvc mvc;
 
-  public AccessTokenGetter buildAccessTokenGetter() {
+  public AccessTokenGetter buildPasswordAccessTokenGetter(String clientId, String clientSecret,
+      String username, String password) {
+
     return new AccessTokenGetter().grantType("password")
-      .clientId(PASSWORD_CLIENT_ID)
-      .clientSecret(PASSWORD_CLIENT_SECRET)
-      .username(TEST_USERNAME)
-      .password(TEST_PASSWORD);
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .username(username)
+      .password(password);
+  }
+
+  public AccessTokenGetter buildPasswordAccessTokenGetter() {
+    return buildPasswordAccessTokenGetter(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD);
+  }
+
+  protected DefaultOAuth2AccessToken getPasswordTokenResponse(String clientId, String clientSecret,
+      String username, String password, String scope) throws Exception {
+
+    return buildPasswordAccessTokenGetter(clientId, clientSecret, username, password).scope(scope)
+      .getTokenResponseObject();
   }
 
   protected DefaultOAuth2AccessToken getPasswordTokenResponse(String scope) throws Exception {
 
-    AccessTokenGetter tg = buildAccessTokenGetter().scope(scope);
-    return tg.getTokenResponseObject();
+    return getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
+        TEST_PASSWORD, scope);
+  }
+
+  protected String getPasswordAccessToken(String clientId, String clientSecret, String username,
+      String password, String scope) throws Exception {
+
+    return buildPasswordAccessTokenGetter(clientId, clientSecret, username, password).scope(scope)
+      .getTokenResponseObject()
+      .getValue();
   }
 
   protected String getPasswordAccessToken(String scope) throws Exception {

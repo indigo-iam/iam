@@ -15,17 +15,15 @@
  */
 package it.infn.mw.iam.test.oauth.introspection;
 
-
-
+import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.ACCESS_TOKEN;
+import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.REFRESH_TOKEN;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,12 +35,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -75,6 +73,47 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
   @Autowired
   ObjectMapper mapper;
 
+  private ResultActions introspect(String username, String password, String tokenToIntrospect,
+      TokenTypeHint tokenTypeHint) throws Exception {
+
+    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
+      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+      .param("token", tokenToIntrospect)
+      .param("token_type_hint", tokenTypeHint.name()));
+  }
+
+  private ResultActions introspect(String username, String password, String tokenToIntrospect) throws Exception {
+
+    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
+      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+      .param("token", tokenToIntrospect));
+  }
+
+  private ResultActions introspect(String tokenToIntrospect, TokenTypeHint tokenTypeHint)
+      throws Exception {
+
+    return mvc.perform(post(INTROSPECTION_ENDPOINT).with(anonymous())
+      .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+      .param("token", tokenToIntrospect)
+      .param("token_type_hint", tokenTypeHint.name()));
+  }
+
+  @Test
+  public void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {
+
+    String accessToken = getPasswordAccessToken("openid");
+
+    introspect(accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void testIntrospectionEndpointForbiddenForBadCredentials() throws Exception {
+
+    String accessToken = getPasswordAccessToken("openid");
+
+    introspect("bad", "credentials", accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
+  }
+
   @Test
   public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
 
@@ -83,32 +122,21 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
     IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
-    IntrospectionResponse response = mapper.readValue(mvc
-      .perform(
-          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-            .param("token", accessToken)
-            .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.sub", equalTo(account.getUuid())))
-      .andExpect(jsonPath("$.scope").exists())
-      .andExpect(jsonPath("$.client_id").exists())
-      .andExpect(jsonPath("$.client_id", equalTo(client.getClientId())))
       .andExpect(jsonPath("$.iss", equalTo(issuer)))
+      .andExpect(jsonPath("$.client_id", equalTo(client.getClientId())))
+      .andExpect(jsonPath("$.client_name", equalTo(client.getClientName())))
       .andExpect(jsonPath("$.exp").exists())
+      .andExpect(jsonPath("$.scope", equalTo("openid")))
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.name").doesNotExist())
       .andExpect(jsonPath("$.given_name").doesNotExist())
-      .andExpect(jsonPath("$.email").doesNotExist())
-      .andReturn()
-      .getResponse()
-      .getContentAsString(), IntrospectionResponse.class);
-
-    List<String> scopes =
-        List.of(String.valueOf(response.getAdditionalFields().get("scope")).trim().split("\\s+"));
-    assertEquals(1, scopes.size());
-    assertEquals("openid", scopes.get(0));
+      .andExpect(jsonPath("$.email").doesNotExist());
+    // @formatter:on
   }
 
   @Test
@@ -118,16 +146,13 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String refreshToken =
         getPasswordTokenResponse("openid profile offline_access").getRefreshToken().getValue();
 
-    mvc
-      .perform(
-          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-            .param("token", refreshToken)
-            .param("token_type_hint", TokenTypeHint.REFRESH_TOKEN.name()))
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.exp", nullValue()))
       .andExpect(jsonPath("$.jti").exists());
+    // @formatter:on
   }
 
   @Test
@@ -135,10 +160,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid");
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.groups").doesNotExist())
@@ -155,10 +177,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid email");
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.groups").doesNotExist())
@@ -182,10 +201,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.groups").doesNotExist())
@@ -209,10 +225,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid profile");
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -220,10 +233,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     revokeService.revokeToken(JWTParser.parse(accessToken), TokenTypeHint.ACCESS_TOKEN);
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -232,39 +242,27 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
   @SuppressWarnings("deprecation")
   @Test
   public void testIntrospectRevokedRefreshToken() throws Exception {
-    
+
     DefaultOAuth2AccessToken tokens = getPasswordTokenResponse("openid profile offline_access");
     String accessToken = tokens.getValue();
     String refreshToken = tokens.getRefreshToken().getValue();
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", refreshToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeToken(JWTParser.parse(refreshToken), TokenTypeHint.REFRESH_TOKEN);
+    revokeService.revokeToken(JWTParser.parse(refreshToken), REFRESH_TOKEN);
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", refreshToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -275,10 +273,40 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = "invalid-token";
 
     // @formatter:off
-    mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-        .param("token", accessToken))
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testIntrospectTokensWithNoTokenTypeHint() throws Exception {
+
+    DefaultOAuth2AccessToken tokens = getPasswordTokenResponse("openid profile offline_access");
+    String accessToken = tokens.getValue();
+    String refreshToken = tokens.getRefreshToken().getValue();
+    IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
+
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
+      .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
+      .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())));
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
+    // @formatter:on
+
+    revokeService.revokeToken(JWTParser.parse(refreshToken), REFRESH_TOKEN);
+
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on

@@ -22,6 +22,7 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 
 import javax.servlet.RequestDispatcher;
 
+import org.mitre.openid.connect.assertion.JWTBearerClientAssertionTokenEndpointFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,6 +51,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
@@ -407,13 +409,16 @@ public class IamWebSecurityConfig {
 
     private OAuth2AuthenticationEntryPoint authenticationEntryPoint;
     private UserDetailsService userDetailsService;
+    private JWTBearerClientAssertionTokenEndpointFilter bearerFilter;
 
     public IntrospectEndpointAuthorizationConfig(
         OAuth2AuthenticationEntryPoint authenticationEntryPoint,
-        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService) {
+        @Qualifier("clientUserDetailsService") UserDetailsService userDetailsService,
+        JWTBearerClientAssertionTokenEndpointFilter bearerFilter) {
 
       this.authenticationEntryPoint = authenticationEntryPoint;
       this.userDetailsService = userDetailsService;
+      this.bearerFilter = bearerFilter;
     }
 
     @Override
@@ -428,21 +433,13 @@ public class IamWebSecurityConfig {
 
       // @formatter:off
       http.antMatcher("/introspect/**")
-        .httpBasic()
-          .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .cors()
-        .and()
-            .exceptionHandling()
-              .authenticationEntryPoint(authenticationEntryPoint)
-        .and()
-          .sessionManagement()
-            .sessionCreationPolicy(STATELESS).and()
-        .csrf()
-          .disable()
-        .authorizeRequests()
-          .anyRequest()
-            .fullyAuthenticated();
+        .csrf().disable()
+        .sessionManagement().sessionCreationPolicy(STATELESS).and()
+        .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
+        .cors().and()
+        .httpBasic().authenticationEntryPoint(authenticationEntryPoint).and()
+        .addFilterBefore(bearerFilter, BasicAuthenticationFilter.class)
+        .authorizeRequests().anyRequest().fullyAuthenticated();
       // @formatter:on
     }
   }

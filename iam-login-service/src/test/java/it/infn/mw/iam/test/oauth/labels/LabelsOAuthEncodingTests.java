@@ -93,8 +93,7 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
 
     accountService.addLabel(testAccount, TEST_LABEL);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile");
+    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile");
 
     JWT idToken = JWTParser
       .parse((String) tg.getTokenResponseObject().getAdditionalInformation().get("id_token"));
@@ -109,8 +108,7 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
 
     repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile");
+    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile");
 
     JWT idToken = JWTParser
       .parse((String) tg.getTokenResponseObject().getAdditionalInformation().get("id_token"));

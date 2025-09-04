@@ -74,6 +74,11 @@ public class IntrospectionResponse {
       return this;
     }
 
+    public Builder addFieldIfAbsent(String key, Object value) {
+      this.additionalFields.putIfAbsent(key, value);
+      return this;
+    }
+
     public IntrospectionResponse build() {
       return new IntrospectionResponse(this);
     }

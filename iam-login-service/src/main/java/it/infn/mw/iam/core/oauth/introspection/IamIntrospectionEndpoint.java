@@ -17,6 +17,8 @@ package it.infn.mw.iam.core.oauth.introspection;
 
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.Date;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -148,20 +150,20 @@ public class IamIntrospectionEndpoint {
       throws ParseException, InvalidTokenException {
 
     OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(token);
-    if (rt.isExpired()) {
+    if (rt.isExpired() || isRevoked(rt) || notYetValid(rt.getJwt())) {
       return IntrospectionResponse.inactive();
     }
+    ClientDetailsEntity client = rt.getClient();
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    // base response: copy all claims
-    rt.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addField);
-    // token type
     builder.addField(OAuth2TokenIntrospectionClaimNames.TOKEN_TYPE, TokenTypeHint.REFRESH_TOKEN);
     builder.addField(OAuth2TokenIntrospectionClaimNames.SUB,
         rt.getJwt().getJWTClaimsSet().getSubject());
-    builder.addField(OAuth2TokenIntrospectionClaimNames.CLIENT_ID, rt.getClient().getClientId());
-    includeIfNotNull(builder, "client_name", rt.getClient().getClientName());
-    includeIfNotNull(builder, "client_last_used", rt.getClient().getClientLastUsed());
+    builder.addField(OAuth2TokenIntrospectionClaimNames.CLIENT_ID, client.getClientId());
+    includeIfNotNull(builder, "client_name", client.getClientName());
+    includeIfNotNull(builder, "client_last_used", client.getClientLastUsed());
     builder.addField(OAuth2TokenIntrospectionClaimNames.EXP, rt.getExpiration());
+    // add all the others
+    rt.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
 
@@ -169,22 +171,18 @@ public class IamIntrospectionEndpoint {
       throws InvalidTokenException, ParseException {
 
     OAuth2AccessTokenEntity at = tokenService.readAccessToken(token);
-    if (at.isExpired() || isRevoked(at)) {
+    if (at.isExpired() || isRevoked(at) || notYetValid(at.getJwt())) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    // base response: copy all token claims
-    at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addField);
-    // token type
     builder.addField(OAuth2TokenIntrospectionClaimNames.TOKEN_TYPE, TokenTypeHint.ACCESS_TOKEN);
-    // override/populate more claims
     String subject = at.getJwt().getJWTClaimsSet().getSubject();
-    String clientId = at.getClient().getClientId();
+    ClientDetailsEntity client = at.getClient();
     builder.addField(OAuth2TokenIntrospectionClaimNames.SUB, subject);
-    builder.addField(OAuth2TokenIntrospectionClaimNames.CLIENT_ID, clientId);
-    includeIfNotNull(builder, "client_name", at.getClient().getClientName());
-    includeIfNotNull(builder, "client_last_used", at.getClient().getClientLastUsed());
-    builder.addField(OAuth2TokenIntrospectionClaimNames.EXP, at.getExpiration());
+    builder.addField(OAuth2TokenIntrospectionClaimNames.CLIENT_ID, client.getClientId());
+    includeIfNotNull(builder, "client_name", client.getClientName());
+    includeIfNotNull(builder, "client_last_used", client.getClientLastUsed());
+    includeIfNotNull(builder, OAuth2TokenIntrospectionClaimNames.EXP, at.getExpiration());
     builder.addField(OAuth2TokenIntrospectionClaimNames.IAT,
         at.getJwt().getJWTClaimsSet().getIssueTime());
     builder.addField(OAuth2TokenIntrospectionClaimNames.ISS,
@@ -197,7 +195,7 @@ public class IamIntrospectionEndpoint {
         at.getJwt().getJWTClaimsSet().getAudience());
     includeIfNotEmpty(builder, OAuth2TokenIntrospectionClaimNames.SCOPE, at.getScope());
 
-    if (!clientId.equals(subject)) {
+    if (!client.getClientId().equals(subject)) {
       IamAccount a = accountService.findByUuid(subject)
         .orElseThrow(
             () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
@@ -222,6 +220,8 @@ public class IamIntrospectionEndpoint {
         builder.addField(StandardClaimNames.EMAIL_VERIFIED, a.getUserInfo().getEmailVerified());
       }
     }
+    // add all the others
+    at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
 
@@ -239,10 +239,22 @@ public class IamIntrospectionEndpoint {
     }
   }
 
+  private boolean notYetValid(JWT jwt) throws ParseException {
+
+    Optional<Date> notBefore = Optional.ofNullable(jwt.getJWTClaimsSet().getNotBeforeTime());
+    return notBefore.isPresent() && notBefore.get().after(new Date());
+  }
+
   private boolean isRevoked(OAuth2AccessTokenEntity at)
       throws InvalidTokenException, ParseException {
 
     return revocationService.isTokenRevoked(at.getJwt(), TokenTypeHint.ACCESS_TOKEN);
+  }
+
+  private boolean isRevoked(OAuth2RefreshTokenEntity rt)
+      throws InvalidTokenException, ParseException {
+
+    return revocationService.isTokenRevoked(rt.getJwt(), TokenTypeHint.REFRESH_TOKEN);
   }
 
   private ClientDetailsEntity loadClient(Authentication auth) {
