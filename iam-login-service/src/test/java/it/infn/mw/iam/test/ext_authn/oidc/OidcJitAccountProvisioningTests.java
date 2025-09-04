@@ -36,7 +36,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 
 import it.infn.mw.iam.authn.oidc.service.OidcAccountProvisioningService;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -175,7 +175,25 @@ public class OidcJitAccountProvisioningTests {
     OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
     when(token.getIssuer()).thenReturn("https://untrusted-idp.com");
 
-    assertThrows(UsernameNotFoundException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+  }
+
+  @Test
+  public void provisionAccountThrowsExceptionWhenEmailIsAlreadyBound() {
+
+    OIDCAuthenticationToken token = mock(OIDCAuthenticationToken.class);
+    when(token.getIssuer()).thenReturn("https://trusted-idp.com");
+    UserInfo userInfo = mock(UserInfo.class);
+    when(userInfo.getGivenName()).thenReturn("Already");
+    when(userInfo.getFamilyName()).thenReturn("Bound");
+    when(userInfo.getEmail()).thenReturn("test@iam.test");
+    when(userInfo.getPreferredUsername()).thenReturn("abound");
+    when(token.getUserInfo()).thenReturn(userInfo);
+
+    when(repo.findByUsername("abound")).thenReturn(Optional.of(mock(IamAccount.class)));
+    when(repo.findByEmail("test@iam.test")).thenReturn(Optional.of(mock(IamAccount.class)));
+
+    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
   }
 
   @Test
@@ -188,6 +206,16 @@ public class OidcJitAccountProvisioningTests {
     UserInfo userInfo = token.getUserInfo();
     when(userInfo.getGivenName()).thenReturn(null);
 
-    assertThrows(UsernameNotFoundException.class, () -> service.provisionAccount(token));
+    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+
+    when(userInfo.getGivenName()).thenReturn("John");
+    when(userInfo.getFamilyName()).thenReturn(null);
+
+    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
+
+    when(userInfo.getFamilyName()).thenReturn("Doe");
+    when(userInfo.getEmail()).thenReturn(null);
+
+    assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
   }
 }

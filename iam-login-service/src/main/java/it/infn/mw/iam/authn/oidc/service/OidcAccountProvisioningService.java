@@ -15,12 +15,14 @@
  */
 package it.infn.mw.iam.authn.oidc.service;
 
+import static java.lang.String.format;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import org.mitre.openid.connect.model.OIDCAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.stereotype.Service;
 
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -30,6 +32,11 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @Service
 public class OidcAccountProvisioningService {
+
+  private final String UNTRUSTED_ISSUER_ERROR =
+      "OIDC issuer '%s' is not trusted for JIT provisioning.";
+  private final String MISSING_CLAIM_ERROR = "OIDC token is missing required claim '%s'.";
+  private final String EMAIL_ALREADY_BOUND_ERROR = "Email address already bound";
 
   private final IamAccountService accountService;
   private final Optional<Set<String>> trustedIdpEntityIds;
@@ -45,22 +52,27 @@ public class OidcAccountProvisioningService {
   private void checkTrustedIdp(String issuer) {
     trustedIdpEntityIds.ifPresent(trustedIds -> {
       if (!trustedIds.contains(issuer)) {
-        throw new UsernameNotFoundException(
-            String.format("OIDC issuer '%s' is not trusted for JIT provisioning.", issuer));
+        throw new InternalAuthenticationServiceException(format(UNTRUSTED_ISSUER_ERROR, issuer));
       }
     });
   }
 
   private void checkRequiredClaims(OIDCAuthenticationToken token) {
-    if (token.getUserInfo().getGivenName() == null || token.getUserInfo().getFamilyName() == null
-        || token.getUserInfo().getEmail() == null) {
-      throw new UsernameNotFoundException("OIDC token is missing required claims.");
+    if (token.getUserInfo().getGivenName() == null) {
+      throw new InternalAuthenticationServiceException(format(MISSING_CLAIM_ERROR, "given_name"));
+    }
+    if (token.getUserInfo().getFamilyName() == null) {
+      throw new InternalAuthenticationServiceException(format(MISSING_CLAIM_ERROR, "family_name"));
+    }
+    if (token.getUserInfo().getEmail() == null) {
+      throw new InternalAuthenticationServiceException(format(MISSING_CLAIM_ERROR, "email"));
     }
   }
 
   public IamAccount provisionAccount(OIDCAuthenticationToken token) {
     checkTrustedIdp(token.getIssuer());
     checkRequiredClaims(token);
+    checkEmailUniqueness(token);
 
     IamAccount newAccount = IamAccount.newAccount();
     String username = generateUniqueUsername(token.getUserInfo().getPreferredUsername(), repo);
@@ -79,9 +91,16 @@ public class OidcAccountProvisioningService {
     newAccount.getUserInfo().setGivenName(token.getUserInfo().getGivenName());
     newAccount.getUserInfo().setFamilyName(token.getUserInfo().getFamilyName());
     newAccount.getUserInfo().setEmail(token.getUserInfo().getEmail());
-
+    newAccount.getUserInfo().setEmailVerified(false);
     accountService.createAccount(newAccount);
     return newAccount;
+  }
+
+  private void checkEmailUniqueness(OIDCAuthenticationToken token) {
+
+    if (repo.findByEmail(token.getUserInfo().getEmail()).isPresent()) {
+      throw new InternalAuthenticationServiceException(EMAIL_ALREADY_BOUND_ERROR);
+    }
   }
 
   private String generateUniqueUsername(String preferredUsername,
