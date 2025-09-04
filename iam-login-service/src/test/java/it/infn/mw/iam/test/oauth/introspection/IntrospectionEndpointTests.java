@@ -20,14 +20,23 @@ import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.REFRES
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,9 +47,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -69,6 +83,12 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
 
   @Autowired
   TokenRevocationService revokeService;
+
+  @Autowired
+  IamTokenService tokenService;
+
+  @Autowired
+  JWTSigningAndValidationService signService;
 
   @Autowired
   ObjectMapper mapper;
@@ -112,6 +132,53 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
     String accessToken = getPasswordAccessToken("openid");
 
     introspect("bad", "credentials", accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void testIntrospectionEndpointInactiveWithEmptyStringToken() throws Exception {
+
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, "", ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, "", REFRESH_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+  }
+
+  @Test
+  public void testIntrospectionEndpointInactiveWithExpiredToken() throws Exception {
+
+    ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
+    String accessToken = getExpiredAccessToken(client).getValue();
+
+    // @formatter:off
+    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(false)));
+    // @formatter:on
+  }
+
+  private OAuth2AccessTokenEntity getExpiredAccessToken(ClientDetailsEntity client) {
+
+    OAuth2AccessTokenEntity accessToken = new OAuth2AccessTokenEntity();
+    Date expiredDate = new Date(System.currentTimeMillis() - 10000);
+    accessToken.setExpiration(expiredDate);
+    Map<String,Object> claims = new HashMap<>();
+    claims.put("exp", expiredDate);
+    JWTClaimsSet atClaims = (new JWTClaimsSet.Builder()).claim("exp", expiredDate).build();
+    JWSAlgorithm signingAlg = signService.getDefaultSigningAlgorithm();
+    JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null,
+        null, signService.getDefaultSignerKeyId(), null, null);
+    SignedJWT signedJWT = new SignedJWT(header, atClaims);
+    signService.signJwt(signedJWT);
+    accessToken.setJwt(signedJWT);
+    accessToken.setClient(client);
+    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
+    accessToken.setAuthenticationHolder(authHolder);
+    accessToken = tokenService.saveAccessToken(accessToken);
+    return accessToken;
   }
 
   @Test
