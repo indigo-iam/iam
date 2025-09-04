@@ -20,21 +20,14 @@ import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.REFRES
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
-import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
-import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
@@ -60,14 +49,13 @@ import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
-import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
+import it.infn.mw.iam.test.api.tokens.TestTokensUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class IntrospectionEndpointTests extends EndpointsTestUtils {
+public class IntrospectionEndpointTests extends TestTokensUtils {
 
   @Value("${iam.organisation.name}")
   String organisationName;
@@ -102,7 +90,8 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
       .param("token_type_hint", tokenTypeHint.name()));
   }
 
-  private ResultActions introspect(String username, String password, String tokenToIntrospect) throws Exception {
+  private ResultActions introspect(String username, String password, String tokenToIntrospect)
+      throws Exception {
 
     return mvc.perform(post(INTROSPECTION_ENDPOINT).with(httpBasic(username, password))
       .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -131,7 +120,8 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
 
     String accessToken = getPasswordAccessToken("openid");
 
-    introspect("bad", "credentials", accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
+    introspect("bad", "credentials", accessToken, ACCESS_TOKEN)
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -162,23 +152,7 @@ public class IntrospectionEndpointTests extends EndpointsTestUtils {
 
   private OAuth2AccessTokenEntity getExpiredAccessToken(ClientDetailsEntity client) {
 
-    OAuth2AccessTokenEntity accessToken = new OAuth2AccessTokenEntity();
-    Date expiredDate = new Date(System.currentTimeMillis() - 10000);
-    accessToken.setExpiration(expiredDate);
-    Map<String,Object> claims = new HashMap<>();
-    claims.put("exp", expiredDate);
-    JWTClaimsSet atClaims = (new JWTClaimsSet.Builder()).claim("exp", expiredDate).build();
-    JWSAlgorithm signingAlg = signService.getDefaultSigningAlgorithm();
-    JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null,
-        null, signService.getDefaultSignerKeyId(), null, null);
-    SignedJWT signedJWT = new SignedJWT(header, atClaims);
-    signService.signJwt(signedJWT);
-    accessToken.setJwt(signedJWT);
-    accessToken.setClient(client);
-    AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
-    accessToken.setAuthenticationHolder(authHolder);
-    accessToken = tokenService.saveAccessToken(accessToken);
-    return accessToken;
+    return buildExpiredAccessToken(client, TEST_USERNAME, new String[] {"openid", "profile"});
   }
 
   @Test
