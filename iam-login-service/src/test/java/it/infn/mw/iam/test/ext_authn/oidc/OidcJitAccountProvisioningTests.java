@@ -187,10 +187,8 @@ public class OidcJitAccountProvisioningTests {
     when(userInfo.getGivenName()).thenReturn("Already");
     when(userInfo.getFamilyName()).thenReturn("Bound");
     when(userInfo.getEmail()).thenReturn("test@iam.test");
-    when(userInfo.getPreferredUsername()).thenReturn("abound");
     when(token.getUserInfo()).thenReturn(userInfo);
 
-    when(repo.findByUsername("abound")).thenReturn(Optional.of(mock(IamAccount.class)));
     when(repo.findByEmail("test@iam.test")).thenReturn(Optional.of(mock(IamAccount.class)));
 
     assertThrows(InternalAuthenticationServiceException.class, () -> service.provisionAccount(token));
