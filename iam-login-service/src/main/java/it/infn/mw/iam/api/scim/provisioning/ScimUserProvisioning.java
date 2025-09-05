@@ -575,12 +575,17 @@ public class ScimUserProvisioning
   public void update(final String id, final List<ScimPatchOperation<ScimUser>> operations) {
 
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
-    Optional<IamAccount> currentUserAccount = accountUtils.getAuthenticatedUserAccount();  
-    if (!currentUserAccount.isPresent() || accountUtils.isAdmin(currentUserAccount.get())) {
-      operations.forEach(op -> executePatchOperation(account, op));
-    } else {
+    Optional<IamAccount> currentUserAccount = accountUtils.getAuthenticatedUserAccount();
+    
+    if (shouldExecuteAsUser(currentUserAccount)) {
       operations.forEach(op -> executePatchOperationByUser(account, op));
+    } else {
+      operations.forEach(op -> executePatchOperation(account, op));
     }
+  }
+
+  private boolean shouldExecuteAsUser(Optional<IamAccount> currentUserAccount) {
+    return currentUserAccount.isPresent() && !accountUtils.isAdmin(currentUserAccount.get());
   }
 
   private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
