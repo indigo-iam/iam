@@ -33,10 +33,10 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @Service
 public class OidcAccountProvisioningService {
 
-  private final String UNTRUSTED_ISSUER_ERROR =
+  private static final String UNTRUSTED_ISSUER_ERROR =
       "OIDC issuer '%s' is not trusted for JIT provisioning.";
-  private final String MISSING_CLAIM_ERROR = "OIDC token is missing required claim '%s'.";
-  private final String EMAIL_ALREADY_BOUND_ERROR = "Email address already bound";
+  private static final String MISSING_CLAIM_ERROR = "OIDC token is missing required claim '%s'.";
+  private static final String EMAIL_ALREADY_BOUND_ERROR = "Email address already bound";
 
   private final IamAccountService accountService;
   private final Optional<Set<String>> trustedIdpEntityIds;
