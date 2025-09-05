@@ -137,6 +137,16 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   protected boolean isRefreshFlow(OAuth2Authentication authentication) {
     return authentication.getOAuth2Request().isRefresh();
   }
+  protected String getRefreshFlowExpiration(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
+    // If refresh token was created with custom access token expiry, use client default validity
+    if (authentication.getOAuth2Request().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
+      return token.getClient().getAccessTokenValiditySeconds().toString();
+    // If refresh request has "expires_in", use value from refresh request to set access token expiry
+    } else if (authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
+      return authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().get(EXPIRES_IN_KEY);
+    }
+    return null;
+  }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
@@ -164,10 +174,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
-    if (isRefreshFlow(authentication) && authentication.getOAuth2Request().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
-      expiry = token.getClient().getAccessTokenValiditySeconds().toString();
-    } else if (isRefreshFlow(authentication) && authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
-      expiry = authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().get(EXPIRES_IN_KEY);
+    if (isRefreshFlow(authentication)){
+      expiry = getRefreshFlowExpiration(authentication, token);
     } else if (hasCustomValidityRequest(authentication)) {
       expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     }
