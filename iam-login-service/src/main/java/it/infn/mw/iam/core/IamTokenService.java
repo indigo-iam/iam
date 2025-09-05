@@ -17,8 +17,6 @@ package it.infn.mw.iam.core;
 
 import java.time.LocalDate;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
