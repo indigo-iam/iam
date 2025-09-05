@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,15 +43,12 @@ public class EntityConfigurationEndpoint {
     this.builder = builder;
   }
 
-  @Value("${iam.issuer}")
-  private String issuer;
-
   @GetMapping(value = "/.well-known/openid-federation",
       produces = "application/entity-statement+jwt")
   public ResponseEntity<byte[]> getEntityConfiguration() throws ParseException, JOSEException {
     String jsonKeys = jwkController.getJwk().getBody();
     Map<String, Object> jwks = JSONObjectUtils.parse(jsonKeys);
-    String ecJwt = builder.buildEntityConfiguration(issuer, jwks);
+    String ecJwt = builder.buildEntityConfiguration(jwks);
     return ResponseEntity.ok().body(ecJwt.getBytes(StandardCharsets.US_ASCII));
   }
 }

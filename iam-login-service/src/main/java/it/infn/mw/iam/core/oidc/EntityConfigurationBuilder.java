@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
@@ -42,19 +44,20 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 @Profile("openid-federation")
 public class EntityConfigurationBuilder {
 
+  private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
+
   private final JWSSigner signer;
   private final RSAKey signingKey;
-  private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
   private final IamWellKnownInfoProvider wellKnownInfoProvider;
   private final OpenidFederationProperties openidFedProperties;
+  private final IamProperties iamProperties;
 
   public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider,
-      OpenidFederationProperties openidFedProperties) {
-
+      OpenidFederationProperties openidFedProperties, IamProperties iamProperties) {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
     this.openidFedProperties = openidFedProperties;
-
+    this.iamProperties = iamProperties;
     this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
@@ -70,12 +73,22 @@ public class EntityConfigurationBuilder {
     }
   }
 
-  public String buildEntityConfiguration(String issuer, Map<String, Object> jwks)
-      throws JOSEException {
+  public String buildEntityConfiguration(Map<String, Object> jwks) throws JOSEException {
+    String issuer = iamProperties.getIssuer();
 
     Map<String, Object> opMetadata = new HashMap<>(wellKnownInfoProvider.getWellKnownInfo());
     opMetadata.putIfAbsent("client_registration_types_supported", List.of("explicit"));
-    Map<String, Object> metadata = Map.of("openid_provider", opMetadata);
+    opMetadata.put("federation_registration_endpoint",
+        URI.create(issuer).resolve("iam/openid-federation/client-registration"));
+
+    Map<String, Object> feMetadata = new HashMap<>();
+    feMetadata.put("contacts", "iam-support@lists.infn.it");
+    feMetadata.put("organization_name", iamProperties.getOrganisation().getName());
+    feMetadata.put("logo_uri", iamProperties.getLogo().getUrl());
+
+    Map<String, Object> metadata = new HashMap<>();
+    metadata.put("openid_provider", opMetadata);
+    metadata.put("federation_entity", feMetadata);
 
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
       .subject(issuer)
