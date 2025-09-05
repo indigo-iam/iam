@@ -111,14 +111,6 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
   @Override
   public OAuth2RefreshTokenEntity createRefreshToken(ClientDetailsEntity client,
       AuthenticationHolderEntity authHolder) {
-    Map<String, String> filteredParameters = new HashMap<>();
-    for (String param : authHolder.getRequestParameters().keySet()) {
-      if (!param.equals("expires_in")) {
-        filteredParameters.put(param, authHolder.getRequestParameters().get(param));
-      }
-    }
-    authHolder.setRequestParameters(filteredParameters);
-
 
     OAuth2RefreshTokenEntity token = super.createRefreshToken(client, scopeFilter.filterScopes(authHolder));
 

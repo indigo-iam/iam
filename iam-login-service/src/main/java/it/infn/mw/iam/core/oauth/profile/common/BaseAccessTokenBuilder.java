@@ -134,8 +134,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(expiration);
   }
 
-  protected boolean hasCustomValidityRefreshFlow(OAuth2Authentication authentication) {
-    return authentication.getOAuth2Request().isRefresh() && authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY);
+  protected boolean isRefreshFlow(OAuth2Authentication authentication) {
+    return authentication.getOAuth2Request().isRefresh();
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
@@ -164,12 +164,12 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
-    if (hasCustomValidityRequest(authentication)) {
-      expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
-    }
-
-    if(hasCustomValidityRefreshFlow(authentication)){
+    if (isRefreshFlow(authentication) && authentication.getOAuth2Request().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
+      expiry = token.getClient().getAccessTokenValiditySeconds().toString();
+    } else if (isRefreshFlow(authentication) && authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY)){
       expiry = authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().get(EXPIRES_IN_KEY);
+    } else if (hasCustomValidityRequest(authentication)) {
+      expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
     }
 
     if (hasRefreshTokenAudienceRequest(authentication)) {
