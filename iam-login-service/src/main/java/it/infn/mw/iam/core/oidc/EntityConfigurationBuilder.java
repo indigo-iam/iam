@@ -82,7 +82,7 @@ public class EntityConfigurationBuilder {
         URI.create(issuer).resolve("iam/openid-federation/client-registration"));
 
     Map<String, Object> feMetadata = new HashMap<>();
-    feMetadata.put("contacts", "iam-support@lists.infn.it");
+    feMetadata.put("contacts", List.of("iam-support@lists.infn.it"));
     feMetadata.put("organization_name", iamProperties.getOrganisation().getName());
     feMetadata.put("logo_uri", iamProperties.getLogo().getUrl());
 
