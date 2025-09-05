@@ -17,16 +17,17 @@ package it.infn.mw.iam.core.oauth.revocation;
 
 import java.text.ParseException;
 
-import com.nimbusds.jwt.JWT;
-
-import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
 
 public interface TokenRevocationService {
 
-  public boolean isTokenRevoked(JWT token, TokenTypeHint tokenType)
-      throws ParseException;
+  public boolean isAccessTokenRevoked(SignedJWT token) throws ParseException;
 
-  public void revokeToken(JWT token, TokenTypeHint tokenType)
-      throws ParseException;
+  public boolean isRefreshTokenRevoked(PlainJWT token) throws ParseException;
+
+  public void revokeAccessToken(SignedJWT token) throws ParseException;
+
+  public void revokeRefreshToken(PlainJWT token) throws ParseException;
 
 }

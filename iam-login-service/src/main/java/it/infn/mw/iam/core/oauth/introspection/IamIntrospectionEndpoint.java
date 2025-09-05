@@ -248,13 +248,13 @@ public class IamIntrospectionEndpoint {
   private boolean isRevoked(OAuth2AccessTokenEntity at)
       throws InvalidTokenException, ParseException {
 
-    return revocationService.isTokenRevoked(at.getJwt(), TokenTypeHint.ACCESS_TOKEN);
+    return revocationService.isAccessTokenRevoked((SignedJWT) at.getJwt());
   }
 
   private boolean isRevoked(OAuth2RefreshTokenEntity rt)
       throws InvalidTokenException, ParseException {
 
-    return revocationService.isTokenRevoked(rt.getJwt(), TokenTypeHint.REFRESH_TOKEN);
+    return revocationService.isRefreshTokenRevoked((PlainJWT) rt.getJwt());
   }
 
   private ClientDetailsEntity loadClient(Authentication auth) {

@@ -20,6 +20,7 @@ import org.mitre.oauth2.web.CorsFilter;
 import org.mitre.oauth2.web.DeviceEndpoint;
 import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
+import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
@@ -83,7 +84,9 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=TofuUserApprovalHandler.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=IntrospectionEndpoint.class)
+        value=IntrospectionEndpoint.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=RevocationEndpoint.class)
 })
 @EnableCaching
 @EnableAutoConfiguration(

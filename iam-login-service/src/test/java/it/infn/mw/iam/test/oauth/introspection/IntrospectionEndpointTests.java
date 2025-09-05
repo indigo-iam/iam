@@ -40,7 +40,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
@@ -271,7 +272,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeToken(JWTParser.parse(accessToken), TokenTypeHint.ACCESS_TOKEN);
+    revokeService.revokeAccessToken(SignedJWT.parse(accessToken));
 
     // @formatter:off
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
@@ -297,7 +298,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeToken(JWTParser.parse(refreshToken), REFRESH_TOKEN);
+    revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
 
     // @formatter:off
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
@@ -341,7 +342,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeToken(JWTParser.parse(refreshToken), REFRESH_TOKEN);
+    revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
 
     // @formatter:off
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)

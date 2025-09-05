@@ -27,7 +27,6 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
@@ -44,57 +43,40 @@ public class IamTokenRevocationService implements TokenRevocationService {
     this.refreshTokenRepo = refreshTokenRepo;
   }
 
-  @Override
-  public boolean isTokenRevoked(JWT token, TokenTypeHint tokenType) throws ParseException {
-
-    if (TokenTypeHint.REFRESH_TOKEN.equals(tokenType)) {
-      return isRefreshTokenRevoked((PlainJWT) token);
-    }
-    return isAccessTokenRevoked((SignedJWT) token);
-  }
-
-  @Override
-  public void revokeToken(JWT token, TokenTypeHint tokenType) throws ParseException {
-
-    if (!validate(token, tokenType)) {
-      return;
-    }
-    if (TokenTypeHint.REFRESH_TOKEN.equals(tokenType)) {
-      revokeRefreshToken((PlainJWT) token);
-    } else {
-      revokeAccessToken((SignedJWT) token);
-    }
-  }
-
-  private boolean validate(JWT token, TokenTypeHint tokenType) throws ParseException {
-
-    return token != null && tokenType != null && !isTokenExpired(token);
-  }
-
   private boolean isTokenExpired(JWT jwt) throws ParseException {
 
     Optional<Date> expClaim = Optional.ofNullable(jwt.getJWTClaimsSet().getDateClaim("exp"));
     return expClaim.isPresent() && expClaim.get().before(new Date());
   }
 
-  private boolean isAccessTokenRevoked(SignedJWT jwt) {
+  @Override
+  public boolean isAccessTokenRevoked(SignedJWT token) {
 
-    return accessTokenRepo.findByTokenValue(sha256(jwt.serialize())).isEmpty();
+    return accessTokenRepo.findByTokenValue(sha256(token.serialize())).isEmpty();
   }
 
-  private void revokeAccessToken(SignedJWT jwt) {
+  @Override
+  public boolean isRefreshTokenRevoked(PlainJWT token) {
 
-    accessTokenRepo.findByTokenValue(sha256(jwt.serialize())).ifPresent(accessTokenRepo::delete);
+    return refreshTokenRepo.findByTokenValue(token).isEmpty();
   }
 
-  private boolean isRefreshTokenRevoked(PlainJWT jwt) {
+  @Override
+  public void revokeAccessToken(SignedJWT token) throws ParseException {
 
-    return refreshTokenRepo.findByTokenValue(jwt).isEmpty();
+    if (isTokenExpired(token)) {
+      return;
+    }
+    accessTokenRepo.findByTokenValue(sha256(token.serialize())).ifPresent(accessTokenRepo::delete);
   }
 
-  private void revokeRefreshToken(PlainJWT jwt) {
+  @Override
+  public void revokeRefreshToken(PlainJWT token) throws ParseException {
 
-    refreshTokenRepo.findByTokenValue(jwt).ifPresent(refreshTokenRepo::delete);
+    if (isTokenExpired(token)) {
+      return;
+    }
+    refreshTokenRepo.findByTokenValue(token).ifPresent(refreshTokenRepo::delete);
   }
 
 }
