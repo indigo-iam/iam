@@ -62,6 +62,7 @@ import it.infn.mw.iam.test.core.CoreControllerTestSupport;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
+import it.infn.mw.iam.core.IamTokenService;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -74,11 +75,14 @@ public class ExchangePolicyApiIntegrationTests {
     @Autowired
     private IamProperties properties;
 
+    @Autowired
+    private IamTokenService tokenService;
+
     @Bean
     @Primary
     public TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
-      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, properties);
+      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, properties, tokenService);
       return Mockito.spy(pdp);
     }
   }

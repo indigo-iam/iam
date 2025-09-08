@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -43,6 +44,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
+import it.infn.mw.iam.core.IamTokenService;
 
 @SuppressWarnings("deprecation")
 @Service
@@ -57,6 +59,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
   private final IamTokenExchangePolicyRepository repo;
 
+  private final IamTokenService tokenService;
+
   private final ScopeMatcherRegistry scopeMatcherRegistry;
 
   private final IamProperties properties;
@@ -68,10 +72,12 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
   public DefaultTokenExchangePdp(IamTokenExchangePolicyRepository repo,
-      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties) {
+      ScopeMatcherRegistry scopeMatcherRegistry, IamProperties properties,
+      IamTokenService tokenService) {
     this.repo = repo;
     this.scopeMatcherRegistry = scopeMatcherRegistry;
     this.properties = properties;
+    this.tokenService = tokenService;
   }
 
   Set<TokenExchangePolicy> applicablePolicies(ClientDetails origin, ClientDetails destination) {
@@ -112,20 +118,27 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()
-        && properties.getAccessToken().isIncludeScope()) {
-      invalidScopeMessage = "scope not allowed by subject token configuration";
-      try {
-        JWT token = JWTParser.parse(subjectToken);
-        String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
-        Set<ScopeMatcher> result = new HashSet<>();
-        for (String scope : scopes) {
-          result.add(scopeMatcherRegistry.findMatcherForScope(scope));
+    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
+      if (properties.getAccessToken().isIncludeScope()) {
+        invalidScopeMessage = "scope not allowed by subject token configuration";
+        try {
+          JWT token = JWTParser.parse(subjectToken);
+          String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
+          Set<ScopeMatcher> result = new HashSet<>();
+          for (String scope : scopes) {
+            result.add(scopeMatcherRegistry.findMatcherForScope(scope));
+          }
+          scopeMatchers = result;
+        } catch (Throwable e) {
+          throw new InvalidRequestException("cannot verify requested scopes with subject token");
         }
+      } else {
+        OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
+        Set<ScopeMatcher> result = new HashSet<>();
+        at.getScope().forEach(s -> result.add(scopeMatcherRegistry.findMatcherForScope(s)));
         scopeMatchers = result;
-      } catch (Throwable e) {
-        throw new InvalidRequestException("cannot verify requested scopes with subject token");
       }
+      
     }
 
     for (String scope : request.getScope()) {
