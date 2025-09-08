@@ -22,7 +22,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
@@ -32,9 +31,9 @@ public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
 
   private final WLCGGroupHelper groupHelper;
 
-  public WLCGIntrospectionHelper(IamProperties props, IntrospectionResultAssembler assembler,
+  public WLCGIntrospectionHelper(IntrospectionResultAssembler assembler,
       ScopeMatcherRegistry registry, WLCGGroupHelper helper) {
-    super(props, assembler, registry);
+    super(assembler, registry);
     this.groupHelper = helper;
   }
 
@@ -44,18 +43,12 @@ public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
 
     Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
 
-    addIssuerClaim(result);
-    addAudience(result, accessToken);
-    addScopeClaim(result, filterScopes(accessToken, authScopes));
-
     Set<String> groups =
         groupHelper.resolveGroupNames(accessToken, ((UserInfoAdapter) userInfo).getUserinfo());
 
     if (!groups.isEmpty()) {
       result.put(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groups);
     }
-
-    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }

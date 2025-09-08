@@ -17,7 +17,10 @@ package it.infn.mw.iam.test.oauth.introspection;
 
 import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.ACCESS_TOKEN;
 import static it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint.REFRESH_TOKEN;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -192,7 +195,8 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.exp", nullValue()))
+      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
+      .andExpect(jsonPath("$.exp").doesNotExist())
       .andExpect(jsonPath("$.jti").exists());
     // @formatter:on
   }
@@ -205,6 +209,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.name").doesNotExist())
       .andExpect(jsonPath("$.preferred_username").doesNotExist())
@@ -222,6 +227,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.name").doesNotExist())
       .andExpect(jsonPath("$.given_name").doesNotExist())
@@ -242,11 +248,14 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = getPasswordAccessToken("openid profile");
     IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
+    assertThat(a.getGroups().size(), is(2));
+
     // @formatter:off
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
+      .andExpect(jsonPath("$.groups", allOf(containsString("Production"), containsString("Analysis"))))
       .andExpect(jsonPath("$.name", equalTo(a.getUserInfo().getName())))
       .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
       .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
@@ -256,6 +265,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.updated_at", equalTo(a.getLastUpdateTime().toString())))
       .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())))
       .andExpect(jsonPath("$.affiliation", equalTo(a.getUserInfo().getAffiliation())))
+      .andExpect(jsonPath("$.organisation_name", equalTo(organisationName)))
       .andExpect(jsonPath("$.updated_at").exists())
       .andExpect(jsonPath("$.email").doesNotExist())
       .andExpect(jsonPath("$.email_verified").doesNotExist());
@@ -334,6 +344,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
       .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
       .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
       .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())));

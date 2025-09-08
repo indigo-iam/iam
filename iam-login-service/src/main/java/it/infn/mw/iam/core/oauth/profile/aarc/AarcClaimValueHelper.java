@@ -31,8 +31,14 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @Component
 public class AarcClaimValueHelper implements ClaimValueHelper {
 
-  public static final Set<String> ADDITIONAL_CLAIMS = Set.of("eduperson_scoped_affiliation",
-      "eduperson_entitlement", "eduperson_assurance", "entitlements");
+  public static final String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
+  public static final String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
+  public static final String ENTITLEMENTS = "entitlements";
+  public static final String EDUPERSON_ASSURANCE = "eduperson_assurance";
+  public static final String VO_PERSON_ID = "voperson_id";
+
+  public static final Set<String> ADDITIONAL_CLAIMS = Set.of(EDUPERSON_SCOPED_AFFILIATION,
+      EDUPERSON_ENTITLEMENT, EDUPERSON_ASSURANCE, ENTITLEMENTS);
 
   @Value("${iam.aarc-profile.affiliation-scope}")
   String affiliationScope;
@@ -53,19 +59,19 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
 
     switch (claim) {
 
-      case "eduperson_scoped_affiliation":
+      case EDUPERSON_SCOPED_AFFILIATION:
         return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
 
-      case "eduperson_entitlement":
+      case EDUPERSON_ENTITLEMENT:
         return resolveGroups(info);
 
-      case "entitlements":
+      case ENTITLEMENTS:
         return resolveGroups(info);
 
-      case "eduperson_assurance":
+      case EDUPERSON_ASSURANCE:
         return resolveLOA();
 
-      case "voperson_id":
+      case VO_PERSON_ID:
         return String.format("%s", info.getSub());
 
       default:

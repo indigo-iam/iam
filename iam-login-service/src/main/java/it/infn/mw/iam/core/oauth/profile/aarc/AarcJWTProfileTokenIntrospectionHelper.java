@@ -15,6 +15,12 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_ASSURANCE;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_ENTITLEMENT;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_SCOPED_AFFILIATION;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.ENTITLEMENTS;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.VO_PERSON_ID;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -22,7 +28,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -32,10 +37,9 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
 
   protected final AarcClaimValueHelper claimValueHelper;
 
-  public AarcJWTProfileTokenIntrospectionHelper(IamProperties props,
-      IntrospectionResultAssembler assembler, ScopeMatcherRegistry scopeMatchersRegistry,
-      AarcClaimValueHelper claimValueHelper) {
-    super(props, assembler, scopeMatchersRegistry);
+  public AarcJWTProfileTokenIntrospectionHelper(IntrospectionResultAssembler assembler,
+      ScopeMatcherRegistry scopeMatchersRegistry, AarcClaimValueHelper claimValueHelper) {
+    super(assembler, scopeMatchersRegistry);
     this.claimValueHelper = claimValueHelper;
   }
 
@@ -50,18 +54,6 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
     if (userInfo != null) {
 
       IamUserInfo iamUserInfo = ((UserInfoAdapter) userInfo).getUserinfo();
-
-      if (scopes.contains(PROFILE)) {
-
-        result.put(NAME, iamUserInfo.getName());
-        result.put(GIVEN_NAME, iamUserInfo.getGivenName());
-        result.put(FAMILY_NAME, iamUserInfo.getFamilyName());
-
-      }
-
-      if (scopes.contains(EMAIL)) {
-        result.put(EMAIL, userInfo.getEmail());
-      }
 
       if (scopes.contains(EDUPERSON_SCOPED_AFFILIATION)) {
         result.put(EDUPERSON_SCOPED_AFFILIATION,
@@ -85,11 +77,9 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
             claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ASSURANCE, iamUserInfo));
       }
 
-      result.put("voperson_id", userInfo.getSub());
+      result.put(VO_PERSON_ID, userInfo.getSub());
 
     }
-
-    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }

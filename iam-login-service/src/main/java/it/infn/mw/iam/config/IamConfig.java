@@ -168,7 +168,7 @@ public class IamConfig {
     AarcJWTProfileIdTokenCustomizer idHelper =
         new AarcJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(props,
+    BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(
         new DefaultIntrospectionResultAssembler(), registry, claimHelper);
 
     return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
@@ -191,7 +191,7 @@ public class IamConfig {
     KeycloakIdTokenCustomizer idHelper =
         new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(props,
+    BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(
         new DefaultIntrospectionResultAssembler(), registry, groupHelper);
 
     return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
@@ -213,7 +213,7 @@ public class IamConfig {
     IamJWTProfileIdTokenCustomizer idHelper =
         new IamJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new IamJWTProfileTokenIntrospectionHelper(props,
+    BaseIntrospectionHelper intrHelper = new IamJWTProfileTokenIntrospectionHelper(
         new DefaultIntrospectionResultAssembler(), registry);
 
     return new IamJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
@@ -234,7 +234,7 @@ public class IamConfig {
         claimTranslationService, claimValueHelper, groupHelper, props);
 
     UserInfoHelper userInfoHelper = new WLCGUserinfoHelper(props, userInfoService);
-    IntrospectionResultHelper introspectionHelper = new WLCGIntrospectionHelper(props,
+    IntrospectionResultHelper introspectionHelper = new WLCGIntrospectionHelper(
         new DefaultIntrospectionResultAssembler(), registry, groupHelper);
 
     return new WLCGJWTProfile(accessTokenBuilder, idTokenCustomizer, userInfoHelper,

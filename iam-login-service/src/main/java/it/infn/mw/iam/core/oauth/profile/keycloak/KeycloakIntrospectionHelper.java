@@ -22,7 +22,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.IntrospectionResultAssembler;
 import org.mitre.openid.connect.model.UserInfo;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
@@ -32,9 +31,9 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
   private final KeycloakGroupHelper groupHelper;
 
-  public KeycloakIntrospectionHelper(IamProperties props, IntrospectionResultAssembler assembler,
+  public KeycloakIntrospectionHelper(IntrospectionResultAssembler assembler,
       ScopeMatcherRegistry registry, KeycloakGroupHelper helper) {
-    super(props, assembler, registry);
+    super(assembler, registry);
     this.groupHelper = helper;
   }
 
@@ -44,17 +43,11 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
     Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
 
-    addIssuerClaim(result);
-    addAudience(result, accessToken);
-    addScopeClaim(result, filterScopes(accessToken, authScopes));
-
     Set<String> groups = groupHelper.resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo());
 
     if (!groups.isEmpty()) {
       result.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
     }
-
-    addAcrClaimIfNeeded(accessToken, result);
 
     return result;
   }

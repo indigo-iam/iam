@@ -15,12 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import static java.util.stream.Collectors.joining;
-import static org.mitre.oauth2.service.IntrospectionResultAssembler.SCOPE;
-
-import java.text.ParseException;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
@@ -40,34 +33,13 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseIntrospectionHelper.class);
 
-  public static final String PROFILE = "profile";
-  public static final String AUDIENCE = "aud";
-  public static final String NAME = "name";
-  public static final String GIVEN_NAME = "given_name";
-  public static final String FAMILY_NAME = "family_name";
-  public static final String PREFERRED_USERNAME = "preferred_username";
-  public static final String EMAIL = "email";
-  public static final String GROUPS = "groups";
-  public static final String ORGANISATION_NAME = "organisation_name";
-  public static final String ISSUER = "iss";
-  public static final String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
-  public static final String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
-  public static final String ENTITLEMENTS = "entitlements";
-  public static final String EDUPERSON_ASSURANCE = "eduperson_assurance";
-
-  private final IamProperties properties;
   private final IntrospectionResultAssembler assembler;
   private final ScopeMatcherRegistry scopeMatchersRegistry;
 
-  public BaseIntrospectionHelper(IamProperties props, IntrospectionResultAssembler assembler,
+  public BaseIntrospectionHelper(IntrospectionResultAssembler assembler,
       ScopeMatcherRegistry scopeMatchersRegistry) {
-    this.properties = props;
     this.assembler = assembler;
     this.scopeMatchersRegistry = scopeMatchersRegistry;
-  }
-
-  public IamProperties getProperties() {
-    return properties;
   }
 
   public IntrospectionResultAssembler getAssembler() {
@@ -76,50 +48,6 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
 
   public ScopeMatcherRegistry getScopeMatchersRegistry() {
     return scopeMatchersRegistry;
-  }
-
-  protected void addScopeClaim(Map<String, Object> introspectionResult, Set<String> scopes) {
-    if (!scopes.isEmpty()) {
-      introspectionResult.put(SCOPE, scopes.stream().collect(joining(" ")));
-    }
-  }
-
-  protected void addIssuerClaim(Map<String, Object> introspectionResult) {
-    final String oidcIssuer = getProperties().getIssuer();
-    String trailingSlashIssuer = oidcIssuer.endsWith("/") ? oidcIssuer : oidcIssuer + "/";
-
-    introspectionResult.put(ISSUER, trailingSlashIssuer);
-  }
-
-  protected void addAudience(Map<String, Object> introspectionResult,
-      OAuth2AccessTokenEntity accessToken) {
-
-    try {
-
-      List<String> audience = accessToken.getJwt().getJWTClaimsSet().getAudience();
-
-      if (audience != null && !audience.isEmpty()) {
-        introspectionResult.put(AUDIENCE, audience.stream().collect(joining(" ")));
-      }
-
-    } catch (ParseException e) {
-      LOG.error("Error getting audience out of access token: {}", e.getMessage(), e);
-    }
-
-  }
-
-  protected void addAcrClaimIfNeeded(OAuth2AccessTokenEntity accessToken,
-      Map<String, Object> introspectionResult) {
-
-    try {
-      Object acr = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
-      if (acr instanceof String acrString) {
-        introspectionResult.put("acr", acrString);
-      }
-    } catch (ParseException e) {
-      LOG.error("Error getting acr claim out of access token: {}", e.getMessage(), e);
-    }
-
   }
 
   protected Set<String> filterScopes(OAuth2AccessTokenEntity accessToken, Set<String> authScopes) {

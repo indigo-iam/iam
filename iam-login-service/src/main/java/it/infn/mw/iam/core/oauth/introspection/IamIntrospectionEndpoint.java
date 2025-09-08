@@ -41,6 +41,8 @@ import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -72,6 +74,7 @@ import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse.Builder;
@@ -79,6 +82,8 @@ import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamGroup;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -95,15 +100,17 @@ public class IamIntrospectionEndpoint {
   private final ClientDetailsEntityService clientService;
   private final IamAccountService accountService;
   private final TokenRevocationService revocationService;
+  private final String organisationName;
 
   public IamIntrospectionEndpoint(OAuth2TokenEntityService tokenService,
       ClientDetailsEntityService clientService, IamAccountService accountService,
-      TokenRevocationService revocationService) {
+      TokenRevocationService revocationService, IamProperties properties) {
 
     this.tokenService = tokenService;
     this.clientService = clientService;
     this.accountService = accountService;
     this.revocationService = revocationService;
+    this.organisationName = properties.getOrganisation().getName();
   }
 
   @PostMapping(value = "/introspect", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
@@ -214,6 +221,8 @@ public class IamIntrospectionEndpoint {
         includeIfNotNull(builder, PREFERRED_USERNAME, a.getUserInfo().getPreferredUsername());
         includeIfNotNull(builder, UPDATED_AT, a.getLastUpdateTime());
         includeIfNotNull(builder, "last_login_at", a.getLastLoginTime());
+        builder.addField("organisation_name", organisationName);
+        includeIfNotEmpty(builder, "groups", getGroupsAsStringSet(a.getGroups()));
       }
       if (at.getScope().contains(OidcScopes.EMAIL)) {
         builder.addField(EMAIL, a.getUserInfo().getEmail());
@@ -223,6 +232,13 @@ public class IamIntrospectionEndpoint {
     // add all the others avoiding duplicates/override
     at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
+  }
+
+  private Collection<String> getGroupsAsStringSet(Set<IamAccountGroupMembership> groups) {
+    return groups.stream()
+      .map(IamAccountGroupMembership::getGroup)
+      .map(IamGroup::getName)
+      .collect(Collectors.toSet());
   }
 
   private void includeIfNotNull(Builder builder, String key, Object value) {
