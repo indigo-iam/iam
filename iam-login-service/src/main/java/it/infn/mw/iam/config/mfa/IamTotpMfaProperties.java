@@ -24,6 +24,7 @@ public class IamTotpMfaProperties {
 
   private boolean multiFactorSettingsBtnEnabled;
   private String passwordToEncryptAndDecrypt;
+  private String oldPasswordToDecrypt;
 
   public String getPasswordToEncryptOrDecrypt() {
     return passwordToEncryptAndDecrypt;
@@ -39,5 +40,13 @@ public class IamTotpMfaProperties {
 
   public boolean hasMultiFactorSettingsBtnEnabled() {
     return multiFactorSettingsBtnEnabled;
+  }
+
+  public String getOldPasswordToDecrypt() {
+    return oldPasswordToDecrypt;
+  }
+
+  public void setOldPasswordToDecrypt(String oldPasswordToDecrypt) {
+    this.oldPasswordToDecrypt = oldPasswordToDecrypt;
   }
 }

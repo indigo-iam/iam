@@ -131,7 +131,7 @@ public class IamTotpMfa implements Serializable {
 
   @Override
   public String toString() {
-    return "IamTotpMfa [active=" + active + ", id=" + id + ", secret=" + secret + "]";
+    return "IamTotpMfa [active=" + active + ", id=" + id + ", lastUpdateTime=" + lastUpdateTime + "]";
   }
 
   @Override
