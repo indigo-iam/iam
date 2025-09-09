@@ -108,6 +108,28 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
    * @param destination the destination client
    * @return a decision result
    */
+
+  private Set<ScopeMatcher> extractScopesFromToken(String subjectToken){
+    if (properties.getAccessToken().isIncludeScope()) {
+      try {
+        JWT token = JWTParser.parse(subjectToken);
+        String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
+        Set<ScopeMatcher> result = new HashSet<>();
+        for (String scope : scopes) {
+          result.add(scopeMatcherRegistry.findMatcherForScope(scope));
+        }
+        return result;
+      } catch (Throwable e) {
+        throw new InvalidRequestException("cannot verify requested scopes with subject token");
+      }
+    } else {
+      OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
+      Set<ScopeMatcher> result = new HashSet<>();
+      at.getScope().forEach(s -> result.add(scopeMatcherRegistry.findMatcherForScope(s)));
+      return result;
+    }
+  }
+
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
       ClientDetails origin, ClientDetails destination) {
 
@@ -119,25 +141,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
     if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
-      if (properties.getAccessToken().isIncludeScope()) {
-        invalidScopeMessage = "scope not allowed by subject token configuration";
-        try {
-          JWT token = JWTParser.parse(subjectToken);
-          String[] scopes = ((String) token.getJWTClaimsSet().getClaim(SCOPE_CLAIM)).split(" ");
-          Set<ScopeMatcher> result = new HashSet<>();
-          for (String scope : scopes) {
-            result.add(scopeMatcherRegistry.findMatcherForScope(scope));
-          }
-          scopeMatchers = result;
-        } catch (Throwable e) {
-          throw new InvalidRequestException("cannot verify requested scopes with subject token");
-        }
-      } else {
-        OAuth2AccessTokenEntity at = tokenService.readAccessToken(subjectToken);
-        Set<ScopeMatcher> result = new HashSet<>();
-        at.getScope().forEach(s -> result.add(scopeMatcherRegistry.findMatcherForScope(s)));
-        scopeMatchers = result;
-      }
+      scopeMatchers = extractScopesFromToken(subjectToken);
+      invalidScopeMessage = "scope not allowed by subject token configuration";
       
     }
 
