@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,10 +122,9 @@ public class TrustChainServiceTests {
     fakeChain = TrustChainTestFactory.createRpToTaChain();
     when(trustChainCache.get("entityA")).thenReturn(Optional.of(fakeChain));
 
-    Optional<TrustChain> result = service.getOrResolve("entityA");
+    TrustChain result = service.getOrResolve("entityA");
 
-    assertTrue(result.isPresent());
-    assertEquals(fakeChain, result.get());
+    assertEquals(fakeChain, result);
     verify(trustChainCache, never()).put(anyString(), any());
   }
 
@@ -134,19 +132,16 @@ public class TrustChainServiceTests {
   public void testResolveTrustChainFromRpToTa() throws Exception {
     mockRpToTaChain(true);
 
-    Optional<TrustChain> result = service.getOrResolve("https://rp.example");
+    TrustChain result = service.getOrResolve("https://rp.example");
 
-    assertTrue(result.isPresent());
-    assertEquals("https://ta.example", result.get().getTrustAnchorEntityID().getValue());
+    assertEquals("https://ta.example", result.getTrustAnchorEntityID().getValue());
   }
 
-  @Test
+  @Test(expected = InvalidTrustChainException.class)
   public void testUntrustedTrustAnchor() throws Exception {
     mockRpToTaChain(false);
 
-    Optional<TrustChain> result = service.getOrResolve("https://rp.example");
-
-    assertFalse(result.isPresent());
+    service.getOrResolve("https://rp.example");
   }
 
   @Test
@@ -198,11 +193,10 @@ public class TrustChainServiceTests {
 
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
 
-    Optional<TrustChain> resolved = service.getOrResolve("https://rp.example");
+    TrustChain resolved = service.getOrResolve("https://rp.example");
 
-    assertTrue(resolved.isPresent());
-    assertEquals("https://ta.example", resolved.get().getTrustAnchorEntityID().getValue());
-    assertEquals(3, resolved.get().getSuperiorStatements().size());
+    assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
+    assertEquals(3, resolved.getSuperiorStatements().size());
   }
 
   @Test

@@ -43,29 +43,25 @@ public class TrustChainService {
     this.trustChainCache = trustChainCache;
   }
 
-  public Optional<TrustChain> getOrResolve(String entityId) throws BadJOSEException, JOSEException {
+  public TrustChain getOrResolve(String entityId) throws BadJOSEException, JOSEException {
     Optional<TrustChain> cachedChain = trustChainCache.get(entityId);
     if (!cachedChain.isEmpty()) {
-      return cachedChain;
+      return cachedChain.get();
     }
-    try {
-      List<EntityStatement> chain = resolver.resolveFromEntityId(entityId);
-      TrustChain validated = validator.validate(chain);
-      trustChainCache.put(entityId, validated);
-      return Optional.of(validated);
-    } catch (InvalidTrustChainException e) {
-      return Optional.empty();
-    }
+    List<EntityStatement> chain = resolver.resolveFromEntityId(entityId);
+    TrustChain validated = validator.validate(chain);
+    trustChainCache.put(entityId, validated);
+    return validated;
   }
 
   public TrustChain validateFromEntityConfiguration(EntityStatement ec)
-      throws InvalidTrustChainException, BadJOSEException, JOSEException {
+      throws BadJOSEException, JOSEException {
     List<EntityStatement> chain = resolver.resolveFromEntityConfiguration(ec);
     return validator.validate(chain);
   }
 
   public TrustChain validateFromProvidedChain(List<EntityStatement> providedChain)
-      throws InvalidTrustChainException, BadJOSEException, JOSEException {
+      throws BadJOSEException, JOSEException {
     return validator.validate(providedChain);
   }
 }
