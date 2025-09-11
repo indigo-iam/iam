@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 
@@ -60,7 +61,7 @@ public class KeycloakProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
     builder.notBeforeTime(Date.from(issueTime));
 
     if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
+      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
     }
 
     if (!isNull(userInfo)) {

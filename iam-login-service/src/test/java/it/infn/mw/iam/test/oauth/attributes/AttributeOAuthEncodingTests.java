@@ -81,9 +81,9 @@ public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
     
     accountService.setAttribute(testAccount, TEST_ATTR);
 
-    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile");
+    String accessToken = getPasswordToken("openid profile").accessToken();
 
-    JWT token = JWTParser.parse(tg.getAccessTokenValue());
+    JWT token = JWTParser.parse(accessToken);
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr"), nullValue());
 
   }
@@ -95,9 +95,9 @@ public class AttributeOAuthEncodingTests extends EndpointsTestUtils {
 
     accountService.setAttribute(testAccount, TEST_ATTR);
 
-    AccessTokenGetter tg = buildPasswordAccessTokenGetter().scope("openid profile attr");
+    String accessToken = getPasswordToken("openid profile attr").accessToken();
 
-    JWT token = JWTParser.parse(tg.getAccessTokenValue());
+    JWT token = JWTParser.parse(accessToken);
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr"), notNullValue());
     assertThat(token.getJWTClaimsSet().getJSONObjectClaim("attr").get("test"), is("test"));
   }

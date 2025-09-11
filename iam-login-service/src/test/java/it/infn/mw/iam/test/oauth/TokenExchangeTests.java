@@ -146,7 +146,7 @@ public class TokenExchangeTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.aud", equalTo("tasks-app")))
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo("test")))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
   }
@@ -252,24 +252,22 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     // Introspect token
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic(actorClientId, actorClientSecret))
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
-        .param("token", actorAccessToken)
-        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
+        .param("token", actorAccessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud").doesNotExist())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", allOf(containsString("openid"), containsString("profile"))))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo(TEST_USERNAME)))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
 
-
- // @formatter:off
+    // @formatter:off
     mvc.perform(get("/userinfo")
         .header("Authorization", "Bearer " + actorAccessToken))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")));
+      .andExpect(jsonPath("$.sub", equalTo(TEST_UUID)));
     // @formatter:on
   }
 

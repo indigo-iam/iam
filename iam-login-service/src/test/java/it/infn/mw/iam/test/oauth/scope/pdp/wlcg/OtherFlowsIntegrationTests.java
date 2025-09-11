@@ -124,7 +124,8 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
       .andReturn();
   }
 
-  private void checkAccessTokenScopes(String accessToken, Set<String> scopes) throws ParseException {
+  private void checkAccessTokenScopes(String accessToken, Set<String> scopes)
+      throws ParseException {
 
     JWT token = JWTParser.parse(accessToken);
     JWTClaimsSet claims = token.getJWTClaimsSet();
@@ -167,10 +168,10 @@ class OtherFlowsIntegrationTests extends ScopePolicyTestUtils {
     checkAccessTokenScopes(accessToken, Set.of("openid", "profile", "offline_access"));
 
     accessToken = mapper
-        .readTree(
-            refreshFlow(CLIENT_ID, CLIENT_SECRET, refreshToken, "openid profile").getResponse().getContentAsString())
-        .get("access_token")
-        .asText();
+      .readTree(refreshFlow(CLIENT_ID, CLIENT_SECRET, refreshToken, "openid profile").getResponse()
+        .getContentAsString())
+      .get("access_token")
+      .asText();
 
     checkAccessTokenScopes(accessToken, Set.of("openid", "profile"));
 

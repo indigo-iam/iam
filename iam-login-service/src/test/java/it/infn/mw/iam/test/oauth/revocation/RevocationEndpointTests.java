@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -33,7 +32,6 @@ import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 public class RevocationEndpointTests extends EndpointsTestUtils {
@@ -45,10 +43,9 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Before
   public void setup() throws Exception {
-    DefaultOAuth2AccessToken tokenResponse =
-        getPasswordTokenResponse("openid profile offline_access");
-    accessToken = tokenResponse.getValue();
-    refreshToken = tokenResponse.getRefreshToken().getValue();
+    TokenEndpointResponse tokenResponse = getPasswordToken("openid profile offline_access");
+    accessToken = tokenResponse.accessToken();
+    refreshToken = tokenResponse.refreshToken();
   }
 
   @Test

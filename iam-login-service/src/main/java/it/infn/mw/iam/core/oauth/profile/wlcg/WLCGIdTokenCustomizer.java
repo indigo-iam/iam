@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
 import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder.PROFILE_VERSION;
-import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder.WLCG_VER_CLAIM;
 
 import java.util.Set;
 
@@ -37,7 +36,6 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
-  public static final String GROUPS_CLAIM = "groups";
   private final WLCGGroupHelper groupHelper;
 
   public WLCGIdTokenCustomizer(IamAccountRepository accountRepo,
@@ -57,12 +55,12 @@ public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     Set<String> groupNames = groupHelper.resolveGroupNames(accessToken, info);
 
     if (!groupNames.isEmpty()) {
-      idClaims.claim(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groupNames);
+      idClaims.claim(WlcgExtraClaimNames.WLCG_GROUPS, groupNames);
     }
 
     // Drop group claims as set by IAM JWT profile
-    idClaims.claim(GROUPS_CLAIM, null);
-    idClaims.claim(WLCG_VER_CLAIM, PROFILE_VERSION);
+    idClaims.claim(WlcgExtraClaimNames.GROUPS, null);
+    idClaims.claim(WlcgExtraClaimNames.WLCG_VER, PROFILE_VERSION);
 
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
 

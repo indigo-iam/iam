@@ -27,6 +27,7 @@ import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 @SuppressWarnings("deprecation")
 public class IamJWTProfile implements JWTProfile, RequestValidator {
 
+  public static final String PROFILE_ID = "iam";
   public static final String PROFILE_NAME = "IAM JWT profile";
 
   private final JWTAccessTokenBuilder accessTokenBuilder;
@@ -42,7 +43,6 @@ public class IamJWTProfile implements JWTProfile, RequestValidator {
     this.introspectionHelper = introspectionHelper;
   }
 
-
   @Override
   public JWTAccessTokenBuilder getAccessTokenBuilder() {
     return accessTokenBuilder;
@@ -53,34 +53,34 @@ public class IamJWTProfile implements JWTProfile, RequestValidator {
     return idTokenCustomizer;
   }
 
-
   @Override
   public IntrospectionResultHelper getIntrospectionResultHelper() {
     return introspectionHelper;
   }
-
 
   @Override
   public UserInfoHelper getUserinfoHelper() {
     return userInfoHelper;
   }
 
-
   @Override
   public String name() {
     return PROFILE_NAME;
   }
-
 
   @Override
   public void validateRequest(OAuth2Request request) {
     // no validation
   }
 
-
   @Override
   public RequestValidator getRequestValidator() {
     return this;
+  }
+
+  @Override
+  public String id() {
+    return PROFILE_ID;
   }
 
 }

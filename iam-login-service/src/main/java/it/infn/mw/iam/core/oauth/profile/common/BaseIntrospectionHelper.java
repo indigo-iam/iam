@@ -15,58 +15,111 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.joining;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.AUD;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.EXP;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.IAT;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.ISS;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.JTI;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.NBF;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SCOPE;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.TOKEN_TYPE;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
+import java.text.ParseException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
+import com.nimbusds.jwt.JWTClaimsSet;
 
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 public abstract class BaseIntrospectionHelper implements IntrospectionResultHelper {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseIntrospectionHelper.class);
 
-  private final IntrospectionResultAssembler assembler;
-  private final ScopeMatcherRegistry scopeMatchersRegistry;
+  private final IamAccountService accountService;
 
-  public BaseIntrospectionHelper(IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry scopeMatchersRegistry) {
-    this.assembler = assembler;
-    this.scopeMatchersRegistry = scopeMatchersRegistry;
+  protected BaseIntrospectionHelper(IamAccountService accountService) {
+
+    this.accountService = accountService;
   }
 
-  public IntrospectionResultAssembler getAssembler() {
-    return assembler;
+  public IamAccountService getAccountService() {
+    return accountService;
   }
 
-  public ScopeMatcherRegistry getScopeMatchersRegistry() {
-    return scopeMatchersRegistry;
+  @Override
+  public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
+      ClientDetailsEntity authenticatedClient) throws ParseException {
+
+    ClientDetailsEntity client = accessToken.getClient();
+    JWTClaimsSet claims = accessToken.getJwt().getJWTClaimsSet();
+    Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.ACCESS_TOKEN);
+    includeIfNotNull(result, SCOPE, accessToken.getScope().stream().collect(joining(" ")));
+    return result;
   }
 
-  protected Set<String> filterScopes(OAuth2AccessTokenEntity accessToken, Set<String> authScopes) {
+  @Override
+  public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    Set<ScopeMatcher> matchers = authScopes.stream()
-      .map(getScopeMatchersRegistry()::findMatcherForScope)
-      .collect(Collectors.toSet());
+    ClientDetailsEntity client = refreshToken.getClient();
+    JWTClaimsSet claims = refreshToken.getJwt().getJWTClaimsSet();
+    Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.REFRESH_TOKEN);
+    includeIfNotEmpty(result, SCOPE, refreshToken.getAuthenticationHolder().getScope());
+    return result;
+  }
 
-    Set<String> filteredScopes = Sets.newHashSet();
+  protected Optional<IamAccount> loadUserFrom(String subject) {
+    return accountService.findByUuid(subject);
+  }
 
-    // We must use for loop here since streams are not supported
-    // by this version of EclipseLink on entity collections
-    for (String accessTokenScope : accessToken.getScope()) {
-      if (matchers.stream().anyMatch(m -> m.matches(accessTokenScope))) {
-        filteredScopes.add(accessTokenScope);
-      }
+  protected Map<String, Object> assembleCommonClaims(JWTClaimsSet claims,
+      ClientDetailsEntity client, TokenTypeHint tokenType) {
+
+    Map<String, Object> result = new HashMap<>();
+    result.put(TOKEN_TYPE, tokenType);
+    result.put(SUB, claims.getSubject());
+    result.put(CLIENT_ID, client.getClientId());
+    includeIfNotNull(result, EXP, claims.getExpirationTime());
+    result.put(IAT, claims.getIssueTime());
+    result.put(ISS, claims.getIssuer());
+    result.put(JTI, claims.getJWTID());
+    Optional<IamAccount> account = loadUserFrom(claims.getSubject());
+    if (account.isPresent()) {
+      result.put(USERNAME, account.get().getUsername());
     }
+    includeIfNotNull(result, NBF, claims.getNotBeforeTime());
+    includeIfNotEmpty(result, AUD, claims.getAudience());
+    return result;
+  }
 
-    return filteredScopes;
+  protected void includeIfNotNull(Map<String, Object> result, String key, Object value) {
+
+    if (value != null) {
+      result.put(key, String.valueOf(value));
+    }
+  }
+
+  protected void includeIfNotEmpty(Map<String, Object> result, String key, Collection<?> value) {
+
+    if (!value.isEmpty()) {
+      result.put(key, value.stream().map(String::valueOf).collect(joining(" ")));
+    }
   }
 
 }

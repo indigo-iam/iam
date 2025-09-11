@@ -15,28 +15,52 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
+
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.tomcat.util.buf.StringUtils;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
+import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
 
-  public IamJWTProfileTokenIntrospectionHelper(IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry registry) {
-    super(assembler, registry);
+  public IamJWTProfileTokenIntrospectionHelper(IamAccountService accountService) {
+    super(accountService);
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes) {
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    return getAssembler().assembleFrom(accessToken, userInfo, authScopes);
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(accessToken, authenticatedClient);
+    addGroups(accessToken, claims);
+    return claims;
   }
 
+  private void addGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {
+
+    if (claims.containsKey(USERNAME)) {
+      IamAccount account = getAccountService().findByUuid(claims.get(SUB).toString())
+        .orElseThrow(
+            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+      Set<String> groupNames = account.getGroups()
+        .stream()
+        .map(IamAccountGroupMembership::getGroup)
+        .map(IamGroup::getName)
+        .collect(Collectors.toSet());
+      claims.put("groups", StringUtils.join(groupNames, ','));
+    }
+  }
 }

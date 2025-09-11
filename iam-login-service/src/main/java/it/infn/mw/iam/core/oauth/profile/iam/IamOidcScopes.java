@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile;
+package it.infn.mw.iam.core.oauth.profile.iam;
 
-import java.util.Map;
-import java.util.Set;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+public interface IamOidcScopes extends OidcScopes {
 
-import it.infn.mw.iam.persistence.model.IamAccount;
+  String ATTR = "attr";
 
-@SuppressWarnings("deprecation")
-public interface UserInfoHelper {
+  String SSH_KEYS = "ssh-keys";
 
-  Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
-      IamAccount account);
 }

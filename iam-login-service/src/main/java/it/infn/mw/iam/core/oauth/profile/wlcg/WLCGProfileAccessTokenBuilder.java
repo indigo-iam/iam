@@ -16,7 +16,8 @@
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
-import static it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper.ATTR_SCOPE;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ATTR;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 
@@ -35,23 +36,24 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
 public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
-  public static final String WLCG_VER_CLAIM = "wlcg.ver";
   public static final String PROFILE_VERSION = "1.0";
   public static final String ALL_AUDIENCES_VALUE = "https://wlcg.cern.ch/jwt/v1/any";
 
   final WLCGGroupHelper groupHelper;
   final AttributeMapHelper attributeHelper;
 
-  public WLCGProfileAccessTokenBuilder(IamProperties properties,
-      AttributeMapHelper attributeHelper, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
+  public WLCGProfileAccessTokenBuilder(IamProperties properties, AttributeMapHelper attributeHelper,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
+      WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
     super(properties, totpMfaRepository, accountUtils, scopeFilter);
     this.groupHelper = groupHelper;
     this.attributeHelper = attributeHelper;
@@ -74,15 +76,15 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
           groupHelper.resolveGroupNames(token, ((UserInfoAdapter) userInfo).getUserinfo());
       addWlcgGroupsScopeClaim(builder, groupNames);
 
-      if (token.getScope().contains(ATTR_SCOPE)) {
+      if (token.getScope().contains(IamOidcScopes.ATTR)) {
         addAttributeScopeClaim(builder, userInfo);
       }
       if (properties.getAccessToken().isIncludeAuthnInfo()) {
         addAuthnInfoClaims(builder, token.getScope(), userInfo);
       }
 
-      if (token.getScope().contains(ATTR_SCOPE)) {
-        builder.claim(ATTR_SCOPE, attributeHelper
+      if (token.getScope().contains(IamOidcScopes.ATTR)) {
+        builder.claim(IamExtraClaimNames.ATTR, attributeHelper
           .getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
       }
     }
@@ -94,22 +96,22 @@ public class WLCGProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   private void addScopeClaim(Builder builder, OAuth2AccessTokenEntity token) {
     if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
+      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
     }
   }
 
   private void addWlcgVerClaim(Builder builder) {
-    builder.claim(WLCG_VER_CLAIM, PROFILE_VERSION);
+    builder.claim(WlcgExtraClaimNames.WLCG_VER, PROFILE_VERSION);
   }
 
   private void addWlcgGroupsScopeClaim(Builder builder, Set<String> groupNames) {
     if (!groupNames.isEmpty()) {
-      builder.claim(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groupNames);
+      builder.claim(WlcgExtraClaimNames.WLCG_GROUPS, groupNames);
     }
   }
 
   private void addAttributeScopeClaim(Builder builder, UserInfo userInfo) {
-    builder.claim(ATTR_SCOPE,
+    builder.claim(ATTR,
         attributeHelper.getAttributeMapFromUserInfo(((UserInfoAdapter) userInfo).getUserinfo()));
   }
 

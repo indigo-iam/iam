@@ -15,42 +15,52 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
+
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 
 public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
 
   private final WLCGGroupHelper groupHelper;
 
-  public WLCGIntrospectionHelper(IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry registry, WLCGGroupHelper helper) {
-    super(assembler, registry);
+  public WLCGIntrospectionHelper(IamAccountService accountService, WLCGGroupHelper helper) {
+    super(accountService);
     this.groupHelper = helper;
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes) {
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
-
-    Set<String> groups =
-        groupHelper.resolveGroupNames(accessToken, ((UserInfoAdapter) userInfo).getUserinfo());
-
-    if (!groups.isEmpty()) {
-      result.put(WLCGGroupHelper.WLCG_GROUPS_SCOPE, groups);
-    }
-
-    return result;
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(accessToken, authenticatedClient);
+    addWlcgGroups(accessToken, claims);
+    return claims;
   }
 
+  private void addWlcgGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {
+
+    if (claims.containsKey(USERNAME)) {
+      IamAccount account = getAccountService().findByUuid(claims.get(SUB).toString())
+        .orElseThrow(
+            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+
+      Set<String> groups = groupHelper.resolveGroupNames(accessToken, account.getUserInfo());
+
+      if (!groups.isEmpty()) {
+        claims.put(WlcgExtraClaimNames.WLCG_GROUPS, groups);
+      }
+    }
+  }
 }

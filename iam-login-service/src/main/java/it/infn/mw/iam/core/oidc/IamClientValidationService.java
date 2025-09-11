@@ -27,7 +27,6 @@ import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.mitre.openid.connect.exception.ValidationException;
 import org.mitre.openid.connect.service.BlacklistedSiteService;
 import org.mitre.openid.connect.service.impl.DefaultDynamicClientValidationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcher;
@@ -38,7 +37,6 @@ public class IamClientValidationService extends DefaultDynamicClientValidationSe
 
   private final ScopeMatcherRegistry scopeRegistry;
 
-  @Autowired
   public IamClientValidationService(ScopeMatcherRegistry scopeRegistry,
       SystemScopeService scopeService,
       @Qualifier("clientAssertionValidator") AssertionValidator validator,

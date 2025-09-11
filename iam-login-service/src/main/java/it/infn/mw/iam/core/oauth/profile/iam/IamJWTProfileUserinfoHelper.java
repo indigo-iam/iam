@@ -15,50 +15,67 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.authn.util.AuthenticationUtils.isSupportedExternalAuthenticationToken;
-import static java.util.Objects.isNull;
-
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.UserInfoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.api.scim.model.ScimSshKey;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
-import it.infn.mw.iam.core.userinfo.IamDecoratedUserInfo;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamSshKey;
 
 @SuppressWarnings("deprecation")
 public class IamJWTProfileUserinfoHelper extends BaseUserinfoHelper {
 
+  public static final Logger LOG = LoggerFactory.getLogger(IamJWTProfileUserinfoHelper.class);
+
+  private final SshKeyConverter sshConverter;
   private final ExternalAuthenticationInfoProcessor extAuthnProcessor;
 
-  public IamJWTProfileUserinfoHelper(IamProperties props, UserInfoService userInfoService,
+  public IamJWTProfileUserinfoHelper(IamProperties props,
       ExternalAuthenticationInfoProcessor proc) {
-    super(props, userInfoService);
+    super(props);
     this.extAuthnProcessor = proc;
+    this.sshConverter = new SshKeyConverter();
   }
 
   @Override
-  public UserInfo resolveUserInfo(OAuth2Authentication authentication) {
+  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
+      IamAccount account) {
 
-    UserInfo ui = lookupUserinfo(authentication);
-
-    if (isNull(ui)) {
-      return null;
+    Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
+    if (scopes.contains(OidcScopes.PROFILE)) {
+      claims.put("scopes", scopes);
+      claims.put("organisation_name", getProperties().getOrganisation().getName());
+      includeIfNotNull(claims, "last_login_at", account.getLastLoginTime());
+      includeIfNotNull(claims, "affiliation", account.getAffiliation());
+      includeIfNotEmpty(claims, "groups", getGroupsAsStringSet(account.getUserInfo().getGroups()));
     }
-    
-    IamDecoratedUserInfo dui = IamDecoratedUserInfo.forUser(ui);
-    dui.setOrganisationName(getProperties().getOrganisation().getName());
-
-    if (isSupportedExternalAuthenticationToken(authentication.getUserAuthentication())) {
-      Map<String, String> processedAuthInfo = extAuthnProcessor.process(authentication);
-      if (!processedAuthInfo.isEmpty()) {
-        dui.setAuthenticationInfo(processedAuthInfo);
+    if (scopes.contains("ssh-keys")) {
+      if (!account.getSshKeys().isEmpty()) {
+        claims.put("ssh_keys", getSshKeysFilteredSet(account.getSshKeys()));
       }
     }
+    // external Authentication info?
+    if (AuthenticationUtils.isSupportedExternalAuthenticationToken(auth.getUserAuthentication())) {
+      Map<String, String> processedAuthInfo = extAuthnProcessor.process(auth);
+      if (!processedAuthInfo.isEmpty()) {
+        claims.put("external_authn", processedAuthInfo);
+      }
+    }
+    return claims;
+  }
 
-    return dui;
+  private Set<ScimSshKey> getSshKeysFilteredSet(Set<IamSshKey> sshKeys) {
+    return sshKeys.stream().map(sshConverter::dtoFromEntity).collect(Collectors.toSet());
   }
 }

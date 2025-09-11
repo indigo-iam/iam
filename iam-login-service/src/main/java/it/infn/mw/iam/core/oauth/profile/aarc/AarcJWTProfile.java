@@ -27,6 +27,7 @@ import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 @SuppressWarnings("deprecation")
 public class AarcJWTProfile implements JWTProfile, RequestValidator {
 
+  public static final String PROFILE_ID = "aarc";
   public static final String PROFILE_NAME = "AARC JWT profile";
 
   private final JWTAccessTokenBuilder accessTokenBuilder;
@@ -75,6 +76,11 @@ public class AarcJWTProfile implements JWTProfile, RequestValidator {
   @Override
   public RequestValidator getRequestValidator() {
     return this;
+  }
+
+  @Override
+  public String id() {
+    return PROFILE_ID;
   }
 
 }

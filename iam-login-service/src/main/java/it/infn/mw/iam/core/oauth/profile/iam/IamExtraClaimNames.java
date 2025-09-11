@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile;
+package it.infn.mw.iam.core.oauth.profile.iam;
 
-import java.util.Map;
-import java.util.Set;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+public interface IamExtraClaimNames extends StandardClaimNames {
 
-import it.infn.mw.iam.persistence.model.IamAccount;
-
-@SuppressWarnings("deprecation")
-public interface UserInfoHelper {
-
-  Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
-      IamAccount account);
+  String ACR = "acr";
+  String ACT = "act";
+  String AMR = "amr";
+  String ATTR = "attr";
+  String CLIENT_ID = "client_id";
+  String EXTERNAL_AUTHN = "external_authn";
+  String GROUPS = "groups";
+  String ORGANISATION_NAME = "organisation_name";
+  String SCOPE = "scope";
+  String SSH_KEYS = "ssh_keys";
 }

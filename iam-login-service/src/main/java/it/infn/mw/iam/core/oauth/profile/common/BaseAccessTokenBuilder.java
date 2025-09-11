@@ -19,7 +19,11 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
 import static it.infn.mw.iam.core.oauth.IamOAuth2RequestFactory.AUD_KEY;
 import static it.infn.mw.iam.core.oauth.granters.TokenExchangeTokenGranter.TOKEN_EXCHANGE_GRANT_TYPE;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ACR;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ACT;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
 import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.joining;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
 
 import java.text.ParseException;
@@ -55,11 +59,6 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
-
-  public static final String SCOPE_CLAIM_NAME = "scope";
-  public static final String ACR_CLAIM_NAME = "acr";
-  public static final String ACT_CLAIM_NAME = "act";
-  public static final String CLIENT_ID_CLAIM_NAME = "client_id";
 
   public static final String SPACE = " ";
 
@@ -115,13 +114,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       Map<String, Object> actClaimContent = Maps.newHashMap();
       actClaimContent.put(JWTClaimNames.SUBJECT, authentication.getOAuth2Request().getClientId());
 
-      Object subjectTokenActClaim = subjectToken.getJWTClaimsSet().getClaim(ACT_CLAIM_NAME);
+      Object subjectTokenActClaim = subjectToken.getJWTClaimsSet().getClaim(ACT);
 
       if (!isNull(subjectTokenActClaim)) {
-        actClaimContent.put(ACT_CLAIM_NAME, subjectTokenActClaim);
+        actClaimContent.put(ACT, subjectTokenActClaim);
       }
 
-      builder.claim(ACT_CLAIM_NAME, actClaimContent);
+      builder.claim(ACT, actClaimContent);
 
     } catch (ParseException e) {
       LOG.error("Error getting claims from subject token: {}", e.getMessage(), e);
@@ -187,15 +186,33 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     addAcrClaimIfNeeded(builder, authentication);
 
-    token.setScope(scopeFilter.filterScopes(token.getScope(), authentication));
+    filterAndSetScopes(token, authentication);
+
+    if (properties.getAccessToken().isIncludeScope()) {
+      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
+    }
 
     return builder;
   }
 
+  private void filterAndSetScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+
+    if (authentication.getOAuth2Request().isRefresh()
+        && !authentication.getOAuth2Request().getRefreshTokenRequest().getScope().isEmpty()) {
+      token.setScope(scopeFilter.filterScopes(
+          authentication.getOAuth2Request().getRefreshTokenRequest().getScope(), authentication));
+    } else {
+      token.setScope(
+          scopeFilter.filterScopes(token.getAuthenticationHolder().getScope(), authentication));
+    }
+  }
+
+
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
     if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth
-        && savedAuth.getAdditionalInfo().get(ACR_CLAIM_NAME) != null) {
-      builder.claim(ACR_CLAIM_NAME, savedAuth.getAdditionalInfo().get(ACR_CLAIM_NAME));
+        && savedAuth.getAdditionalInfo().get(ACR) != null) {
+      builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
     }
   }
 }

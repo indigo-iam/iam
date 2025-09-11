@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile;
+package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import java.util.Map;
-import java.util.Set;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+public interface KeycloakExtraClaimNames extends IamExtraClaimNames {
 
-import it.infn.mw.iam.persistence.model.IamAccount;
-
-@SuppressWarnings("deprecation")
-public interface UserInfoHelper {
-
-  Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
-      IamAccount account);
+  String ROLES = "roles";
 }

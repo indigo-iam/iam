@@ -15,73 +15,45 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_ASSURANCE;
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_ENTITLEMENT;
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.EDUPERSON_SCOPED_AFFILIATION;
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.ENTITLEMENTS;
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.VO_PERSON_ID;
-
+import java.text.ParseException;
 import java.util.Map;
-import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
+import it.infn.mw.iam.core.user.IamAccountService;
 
 public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
 
   protected final AarcClaimValueHelper claimValueHelper;
 
-  public AarcJWTProfileTokenIntrospectionHelper(IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry scopeMatchersRegistry, AarcClaimValueHelper claimValueHelper) {
-    super(assembler, scopeMatchersRegistry);
+  public AarcJWTProfileTokenIntrospectionHelper(IamAccountService accountService,
+      AarcClaimValueHelper claimValueHelper) {
+    super(accountService);
     this.claimValueHelper = claimValueHelper;
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes) {
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
-
-    Set<String> scopes = filterScopes(accessToken, authScopes);
-
-    if (userInfo != null) {
-
-      IamUserInfo iamUserInfo = ((UserInfoAdapter) userInfo).getUserinfo();
-
-      if (scopes.contains(EDUPERSON_SCOPED_AFFILIATION)) {
-        result.put(EDUPERSON_SCOPED_AFFILIATION,
-            claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_SCOPED_AFFILIATION, iamUserInfo));
-      }
-
-      if (scopes.contains(ENTITLEMENTS)) {
-        result.put(ENTITLEMENTS,
-            claimValueHelper.getClaimValueFromUserInfo(ENTITLEMENTS, iamUserInfo));
-      }
-
-      if (scopes.contains(EDUPERSON_ENTITLEMENT)) {
-        result.put(ENTITLEMENTS,
-            claimValueHelper.getClaimValueFromUserInfo(ENTITLEMENTS, iamUserInfo));
-        result.put(EDUPERSON_ENTITLEMENT,
-            claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ENTITLEMENT, iamUserInfo));
-      }
-
-      if (scopes.contains(EDUPERSON_ASSURANCE)) {
-        result.put(EDUPERSON_ASSURANCE,
-            claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ASSURANCE, iamUserInfo));
-      }
-
-      result.put(VO_PERSON_ID, userInfo.getSub());
-
-    }
-
-    return result;
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(accessToken, authenticatedClient);
+    // add all the others avoiding duplicates/override
+    accessToken.getJwt().getJWTClaimsSet().getClaims().forEach(claims::putIfAbsent);
+    return claims;
   }
 
+  @Override
+  public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
+      ClientDetailsEntity authenticatedClient) throws ParseException {
+
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(refreshToken, authenticatedClient);
+    // add all the others avoiding duplicates/override
+    refreshToken.getJwt().getJWTClaimsSet().getClaims().forEach(claims::putIfAbsent);
+    return claims;
+  }
 }

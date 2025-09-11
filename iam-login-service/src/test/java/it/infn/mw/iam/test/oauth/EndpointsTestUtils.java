@@ -19,8 +19,13 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Optional;
+import java.util.Set;
+
+import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -38,50 +43,71 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
   @Autowired
   protected MockMvc mvc;
 
-  public AccessTokenGetter buildPasswordAccessTokenGetter(String clientId, String clientSecret,
-      String username, String password) {
+  // Password Flow
+
+  protected DefaultOAuth2AccessToken getPasswordTokenResponse(String clientId, String clientSecret,
+      String username, String password, String scope) throws Exception {
 
     return new AccessTokenGetter().grantType("password")
       .clientId(clientId)
       .clientSecret(clientSecret)
       .username(username)
-      .password(password);
-  }
-
-  public AccessTokenGetter buildPasswordAccessTokenGetter() {
-    return buildPasswordAccessTokenGetter(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD);
-  }
-
-  protected DefaultOAuth2AccessToken getPasswordTokenResponse(String clientId, String clientSecret,
-      String username, String password, String scope) throws Exception {
-
-    return buildPasswordAccessTokenGetter(clientId, clientSecret, username, password).scope(scope)
+      .password(password)
+      .scope(scope)
       .getTokenResponseObject();
   }
 
-  protected DefaultOAuth2AccessToken getPasswordTokenResponse(String scope) throws Exception {
+  protected TokenEndpointResponse getPasswordToken() throws Exception {
 
-    return getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, TEST_USERNAME,
-        TEST_PASSWORD, scope);
+    return getPasswordToken(EMPTY_SCOPES);
   }
 
-  protected String getPasswordAccessToken(String clientId, String clientSecret, String username,
-      String password, String scope) throws Exception {
+  protected TokenEndpointResponse parseTokens(DefaultOAuth2AccessToken response) {
 
-    return buildPasswordAccessTokenGetter(clientId, clientSecret, username, password).scope(scope)
-      .getTokenResponseObject()
-      .getValue();
+    String accessToken = response.getValue();
+    String refreshToken = Optional.ofNullable(response.getRefreshToken())
+      .map(OAuth2RefreshToken::getValue)
+      .orElse(null);
+    String idToken = (String) response.getAdditionalInformation().get("id_token");
+    return new TokenEndpointResponse(accessToken, refreshToken, idToken);
   }
 
-  protected String getPasswordAccessToken(String scope) throws Exception {
+  protected TokenEndpointResponse getPasswordToken(String scopes) throws Exception {
 
-    return getPasswordTokenResponse(scope).getValue();
+    return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        TEST_USERNAME, TEST_PASSWORD, scopes));
   }
 
-  protected String getPasswordAccessToken() throws Exception {
+  protected TokenEndpointResponse getPasswordToken(Set<String> scopes) throws Exception {
 
-    return getPasswordAccessToken(EMPTY_SCOPES);
+    return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        TEST_USERNAME, TEST_PASSWORD, StringUtils.join(scopes, ' ')));
+  }
+
+  // Client Credentials Flow
+
+  public DefaultOAuth2AccessToken getClientCredentialsTokenResponse(String clientId,
+      String clientSecret, String scopes) throws Exception {
+
+    return new AccessTokenGetter().grantType(CLIENT_CREDENTIALS_GRANT_TYPE)
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .scope(scopes)
+      .getTokenResponseObject();
+  }
+
+  protected TokenEndpointResponse getClientCredentialsToken() throws Exception {
+
+    return getClientCredentialsToken(EMPTY_SCOPES);
+  }
+
+  protected TokenEndpointResponse getClientCredentialsToken(String scopes) throws Exception {
+
+    return parseTokens(getClientCredentialsTokenResponse(CLIENT_CREDENTIALS_CLIENT_ID,
+        CLIENT_CREDENTIALS_CLIENT_SECRET, scopes));
+  }
+
+  public record TokenEndpointResponse(String accessToken, String refreshToken, String idToken) {
   }
 
   public class AccessTokenGetter {

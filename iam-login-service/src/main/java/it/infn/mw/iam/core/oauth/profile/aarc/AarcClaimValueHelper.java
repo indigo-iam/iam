@@ -31,14 +31,9 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @Component
 public class AarcClaimValueHelper implements ClaimValueHelper {
 
-  public static final String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
-  public static final String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
-  public static final String ENTITLEMENTS = "entitlements";
-  public static final String EDUPERSON_ASSURANCE = "eduperson_assurance";
-  public static final String VO_PERSON_ID = "voperson_id";
-
-  public static final Set<String> ADDITIONAL_CLAIMS = Set.of(EDUPERSON_SCOPED_AFFILIATION,
-      EDUPERSON_ENTITLEMENT, EDUPERSON_ASSURANCE, ENTITLEMENTS);
+  public static final Set<String> ADDITIONAL_CLAIMS = Set.of(
+      AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.EDUPERSON_ENTITLEMENT,
+      AarcOidcScopes.EDUPERSON_ASSURANCE, AarcOidcScopes.ENTITLEMENTS, AarcOidcScopes.VO_PERSON_ID);
 
   @Value("${iam.aarc-profile.affiliation-scope}")
   String affiliationScope;
@@ -59,19 +54,19 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
 
     switch (claim) {
 
-      case EDUPERSON_SCOPED_AFFILIATION:
+      case AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION:
         return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
 
-      case EDUPERSON_ENTITLEMENT:
+      case AarcOidcScopes.EDUPERSON_ENTITLEMENT:
         return resolveGroups(info);
 
-      case ENTITLEMENTS:
+      case AarcOidcScopes.ENTITLEMENTS:
         return resolveGroups(info);
 
-      case EDUPERSON_ASSURANCE:
+      case AarcOidcScopes.EDUPERSON_ASSURANCE:
         return resolveLOA();
 
-      case VO_PERSON_ID:
+      case AarcOidcScopes.VO_PERSON_ID:
         return String.format("%s", info.getSub());
 
       default:

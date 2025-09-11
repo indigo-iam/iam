@@ -15,38 +15,12 @@
  */
 package it.infn.mw.iam.core.oauth.introspection;
 
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.AUD;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.EXP;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.IAT;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.ISS;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.JTI;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.NBF;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SCOPE;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.TOKEN_TYPE;
-import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL_VERIFIED;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.FAMILY_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.GIVEN_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.MIDDLE_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NICKNAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PICTURE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.UPDATED_AT;
-
 import java.text.ParseException;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.tomcat.util.buf.StringUtils;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
@@ -60,7 +34,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,16 +47,11 @@ import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
-import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse.Builder;
-import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
+import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
-import it.infn.mw.iam.core.user.IamAccountService;
-import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
-import it.infn.mw.iam.persistence.model.IamGroup;
 
 @SuppressWarnings("deprecation")
 @RestController
@@ -96,21 +64,19 @@ public class IamIntrospectionEndpoint {
   private static final String SUSPENDED_CLIENT_ERROR =
       "Client %s has been suspended and is not allowed to call introspection endpoint";
 
+  private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
   private final ClientDetailsEntityService clientService;
-  private final IamAccountService accountService;
   private final TokenRevocationService revocationService;
-  private final String organisationName;
 
-  public IamIntrospectionEndpoint(OAuth2TokenEntityService tokenService,
-      ClientDetailsEntityService clientService, IamAccountService accountService,
-      TokenRevocationService revocationService, IamProperties properties) {
+  public IamIntrospectionEndpoint(JWTProfileResolver profileResolver,
+      OAuth2TokenEntityService tokenService, ClientDetailsEntityService clientService,
+      TokenRevocationService revocationService) {
 
+    this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
-    this.accountService = accountService;
     this.revocationService = revocationService;
-    this.organisationName = properties.getOrganisation().getName();
   }
 
   @PostMapping(value = "/introspect", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE},
@@ -126,11 +92,11 @@ public class IamIntrospectionEndpoint {
     JWT jwt = JWTParser.parse(tokenValue);
     if (jwt instanceof PlainJWT refreshToken) {
       // It's a RefreshToken
-      return introspectRefreshToken(refreshToken);
+      return introspectRefreshToken(authenticatedClient, refreshToken);
     }
     if (jwt instanceof SignedJWT accessToken) {
       // It's an AccessToken
-      return introspectAccessToken(accessToken);
+      return introspectAccessToken(authenticatedClient, accessToken);
     }
     throw new InvalidTokenException("Expected a SignedJWT or PlainJWT object");
   }
@@ -160,99 +126,39 @@ public class IamIntrospectionEndpoint {
     }
   }
 
-  private IntrospectionResponse introspectRefreshToken(PlainJWT token)
-      throws ParseException, InvalidTokenException {
+  private IntrospectionResponse introspectRefreshToken(ClientDetailsEntity authenticatedClient,
+      PlainJWT token) throws ParseException, InvalidTokenException {
 
     OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(token.serialize());
     if (rt.isExpired() || isRevoked(rt) || notYetValid(rt.getJwt())) {
       return IntrospectionResponse.inactive();
     }
-    ClientDetailsEntity client = rt.getClient();
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    builder.addField(TOKEN_TYPE, TokenTypeHint.REFRESH_TOKEN);
-    builder.addField(SUB, rt.getJwt().getJWTClaimsSet().getSubject());
-    includeIfNotNull(builder, EXP, rt.getExpiration());
-    builder.addField(CLIENT_ID, client.getClientId());
-    includeIfNotNull(builder, "client_name", client.getClientName());
-    includeIfNotNull(builder, "client_last_used", client.getClientLastUsed());
+    JWTProfile profile = profileResolver.resolveProfile(rt.getClient().getScope());
+    profile.getIntrospectionResultHelper()
+      .assembleIntrospectionResult(rt, authenticatedClient)
+      .forEach(builder::addField);
     // add all the others avoiding duplicates/override
     rt.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
 
-  private IntrospectionResponse introspectAccessToken(SignedJWT token)
-      throws InvalidTokenException, ParseException {
+  private IntrospectionResponse introspectAccessToken(ClientDetailsEntity authenticatedClient,
+      SignedJWT token) throws InvalidTokenException, ParseException {
 
     OAuth2AccessTokenEntity at = tokenService.readAccessToken(token.serialize());
     if (at.isExpired() || isRevoked(at) || notYetValid(at.getJwt())) {
       return IntrospectionResponse.inactive();
     }
-    IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
-    builder.addField(TOKEN_TYPE, TokenTypeHint.ACCESS_TOKEN);
-    String subject = at.getJwt().getJWTClaimsSet().getSubject();
-    ClientDetailsEntity client = at.getClient();
-    builder.addField(SUB, subject);
-    builder.addField(CLIENT_ID, client.getClientId());
-    includeIfNotNull(builder, "client_name", client.getClientName());
-    includeIfNotNull(builder, "client_last_used", client.getClientLastUsed());
-    includeIfNotNull(builder, EXP, at.getExpiration());
-    builder.addField(IAT, at.getJwt().getJWTClaimsSet().getIssueTime());
-    builder.addField(ISS, at.getJwt().getJWTClaimsSet().getIssuer());
-    builder.addField(JTI, at.getJwt().getJWTClaimsSet().getJWTID());
-    includeIfNotNull(builder, NBF, at.getJwt().getJWTClaimsSet().getNotBeforeTime());
-    includeIfNotEmpty(builder, AUD, at.getJwt().getJWTClaimsSet().getAudience());
-    includeIfNotEmpty(builder, SCOPE, at.getScope());
 
-    if (!client.getClientId().equals(subject)) {
-      IamAccount a = accountService.findByUuid(subject)
-        .orElseThrow(
-            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
-      builder.addField(USERNAME, a.getUsername());
-      // backward compatibility
-      builder.addField("user_id", a.getUsername());
-      if (at.getScope().contains(OidcScopes.PROFILE)) {
-        includeIfNotNull(builder, GIVEN_NAME, a.getUserInfo().getGivenName());
-        includeIfNotNull(builder, MIDDLE_NAME, a.getUserInfo().getMiddleName());
-        includeIfNotNull(builder, FAMILY_NAME, a.getUserInfo().getFamilyName());
-        includeIfNotNull(builder, NAME, a.getUserInfo().getName());
-        includeIfNotNull(builder, NICKNAME, a.getUserInfo().getNickname());
-        includeIfNotNull(builder, PICTURE, a.getUserInfo().getPicture());
-        includeIfNotNull(builder, "affiliation", a.getUserInfo().getAffiliation());
-        includeIfNotNull(builder, PREFERRED_USERNAME, a.getUserInfo().getPreferredUsername());
-        includeIfNotNull(builder, UPDATED_AT, a.getLastUpdateTime());
-        includeIfNotNull(builder, "last_login_at", a.getLastLoginTime());
-        builder.addField("organisation_name", organisationName);
-        includeIfNotEmpty(builder, "groups", getGroupsAsStringSet(a.getGroups()));
-      }
-      if (at.getScope().contains(OidcScopes.EMAIL)) {
-        builder.addField(EMAIL, a.getUserInfo().getEmail());
-        builder.addField(EMAIL_VERIFIED, a.getUserInfo().getEmailVerified());
-      }
-    }
+    IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
+    JWTProfile profile = profileResolver.resolveProfile(at.getClient().getScope());
+    profile.getIntrospectionResultHelper()
+      .assembleIntrospectionResult(at, authenticatedClient)
+      .forEach(builder::addField);
     // add all the others avoiding duplicates/override
     at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
-  }
-
-  private Collection<String> getGroupsAsStringSet(Set<IamAccountGroupMembership> groups) {
-    return groups.stream()
-      .map(IamAccountGroupMembership::getGroup)
-      .map(IamGroup::getName)
-      .collect(Collectors.toSet());
-  }
-
-  private void includeIfNotNull(Builder builder, String key, Object value) {
-
-    if (value != null) {
-      builder.addField(key, value.toString());
-    }
-  }
-
-  private void includeIfNotEmpty(Builder builder, String key, Collection<String> value) {
-
-    if (!value.isEmpty()) {
-      builder.addField(key, StringUtils.join(value, ' '));
-    }
   }
 
   private boolean notYetValid(JWT jwt) throws ParseException {

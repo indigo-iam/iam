@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.userinfo;
+package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import java.util.Map;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 
-import org.mitre.openid.connect.model.UserInfo;
+public interface AarcExtraClaimNames extends IamExtraClaimNames {
 
-public interface DecoratedUserInfo extends UserInfo {
-
-  String getOrganisationName();
-
-  void setOrganisationName(String name);
-
-  Map<String, String> getAuthenticationInfo();
-
-  void setAuthenticationInfo(Map<String, String> info);
+  String EDUPERSON_ASSURANCE = "eduperson_assurance";
+  String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
+  String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
+  String ENTITLEMENTS = "entitlements";
+  String VO_PERSON_ID = "vo_person_id";
 
 }

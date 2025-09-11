@@ -15,11 +15,6 @@
  */
 package it.infn.mw.iam.config;
 
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.AARC_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.IAM_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.KC_PROFILE_ID;
-import static it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver.WLCG_PROFILE_ID;
-
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
@@ -28,8 +23,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.oauth2.service.impl.DefaultIntrospectionResultAssembler;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mitre.openid.connect.service.UserInfoService;
@@ -46,7 +39,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
@@ -55,7 +47,6 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
-import it.infn.mw.iam.core.oauth.IamIntrospectionResultAssembler;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
@@ -89,12 +80,13 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTProfile;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTUserinfoHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersProperties;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
@@ -155,7 +147,7 @@ public class IamConfig {
 
   @Bean(name = "aarcJwtProfile")
   JWTProfile aarcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
+      AccountUtils accountUtils, IamAccountRepository accountRepo, IamAccountService accountService,
       ScopeClaimTranslationService converter, AarcClaimValueHelper claimHelper,
       UserInfoService userInfoService, ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
 
@@ -163,43 +155,42 @@ public class IamConfig {
         totpMfaRepository, accountUtils, scopeFilter, converter, claimHelper);
 
     AarcJWTProfileUserinfoHelper uiHelper =
-        new AarcJWTProfileUserinfoHelper(props, userInfoService, claimHelper);
+        new AarcJWTProfileUserinfoHelper(props, claimHelper);
 
     AarcJWTProfileIdTokenCustomizer idHelper =
         new AarcJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new AarcJWTProfileTokenIntrospectionHelper(
-        new DefaultIntrospectionResultAssembler(), registry, claimHelper);
+    BaseIntrospectionHelper intrHelper =
+        new AarcJWTProfileTokenIntrospectionHelper(accountService, claimHelper);
 
     return new AarcJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
   @Bean(name = "kcJwtProfile")
   JWTProfile kcJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
-      ScopeClaimTranslationService converter, UserInfoService userInfoService,
-      ScopeMatcherRegistry registry, IamClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
+      AccountUtils accountUtils, IamAccountRepository accountRepo, IamAccountService accountService,
+      ScopeClaimTranslationService converter, ScopeMatcherRegistry registry,
+      IamClaimValueHelper claimHelper, ScopeFilter scopeFilter) {
 
     KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
-    KeycloakProfileAccessTokenBuilder atBuilder =
-        new KeycloakProfileAccessTokenBuilder(props, totpMfaRepository, accountUtils, groupHelper,
-            scopeFilter);
+    KeycloakProfileAccessTokenBuilder atBuilder = new KeycloakProfileAccessTokenBuilder(props,
+        totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
-    KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, userInfoService);
+    KeycloakUserinfoHelper uiHelper = new KeycloakUserinfoHelper(props, groupHelper);
 
     KeycloakIdTokenCustomizer idHelper =
         new KeycloakIdTokenCustomizer(accountRepo, converter, claimHelper, groupHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new KeycloakIntrospectionHelper(
-        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+    BaseIntrospectionHelper intrHelper =
+        new KeycloakIntrospectionHelper(accountService, groupHelper);
 
     return new KeycloakJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
   @Bean(name = "iamJwtProfile")
   JWTProfile iamJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
+      AccountUtils accountUtils, IamAccountRepository accountRepo, IamAccountService accountService,
       ScopeClaimTranslationService converter, IamClaimValueHelper claimHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeFilter scopeFilter) {
@@ -207,35 +198,34 @@ public class IamConfig {
     IamJWTProfileAccessTokenBuilder atBuilder = new IamJWTProfileAccessTokenBuilder(props,
         totpMfaRepository, accountUtils, converter, claimHelper, scopeFilter);
 
-    IamJWTProfileUserinfoHelper uiHelper =
-        new IamJWTProfileUserinfoHelper(props, userInfoService, proc);
+    IamJWTProfileUserinfoHelper uiHelper = new IamJWTProfileUserinfoHelper(props, proc);
 
     IamJWTProfileIdTokenCustomizer idHelper =
         new IamJWTProfileIdTokenCustomizer(accountRepo, converter, claimHelper, props);
 
-    BaseIntrospectionHelper intrHelper = new IamJWTProfileTokenIntrospectionHelper(
-        new DefaultIntrospectionResultAssembler(), registry);
+    IntrospectionResultHelper intrHelper =
+        new IamJWTProfileTokenIntrospectionHelper(accountService);
 
     return new IamJWTProfile(atBuilder, idHelper, uiHelper, intrHelper);
   }
 
   @Bean(name = "wlcgJwtProfile")
   JWTProfile wlcgJwtProfile(IamProperties props, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, IamAccountRepository accountRepo,
+      AccountUtils accountUtils, IamAccountRepository accountRepo, IamAccountService accountService,
       ScopeClaimTranslationService converter, AttributeMapHelper attributeMapHelper,
       UserInfoService userInfoService, ExternalAuthenticationInfoProcessor proc,
       ScopeMatcherRegistry registry, ScopeClaimTranslationService claimTranslationService,
       IamClaimValueHelper claimValueHelper, WLCGGroupHelper groupHelper, ScopeFilter scopeFilter) {
 
-    JWTAccessTokenBuilder accessTokenBuilder =
-        new WLCGProfileAccessTokenBuilder(props, attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
+    JWTAccessTokenBuilder accessTokenBuilder = new WLCGProfileAccessTokenBuilder(props,
+        attributeMapHelper, totpMfaRepository, accountUtils, groupHelper, scopeFilter);
 
     IDTokenCustomizer idTokenCustomizer = new WLCGIdTokenCustomizer(accountRepo,
         claimTranslationService, claimValueHelper, groupHelper, props);
 
-    UserInfoHelper userInfoHelper = new WLCGUserinfoHelper(props, userInfoService);
-    IntrospectionResultHelper introspectionHelper = new WLCGIntrospectionHelper(
-        new DefaultIntrospectionResultAssembler(), registry, groupHelper);
+    UserInfoHelper userInfoHelper = new WLCGJWTUserinfoHelper(props, proc, groupHelper);
+    IntrospectionResultHelper introspectionHelper =
+        new WLCGIntrospectionHelper(accountService, groupHelper);
 
     return new WLCGJWTProfile(accessTokenBuilder, idTokenCustomizer, userInfoHelper,
         introspectionHelper, groupHelper);
@@ -245,34 +235,33 @@ public class IamConfig {
   JWTProfileResolver jwtProfileResolver(@Qualifier("iamJwtProfile") JWTProfile iamProfile,
       @Qualifier("wlcgJwtProfile") JWTProfile wlcgProfile,
       @Qualifier("aarcJwtProfile") JWTProfile aarcProfile,
-      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties,
-      ClientDetailsService clientDetailsService) {
+      @Qualifier("kcJwtProfile") JWTProfile kcProfile, IamProperties properties) {
 
     JWTProfile defaultProfile = iamProfile;
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.WLCG
+    if (IamProperties.JWTProfile.Profile.WLCG
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = wlcgProfile;
     }
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.AARC
+    if (IamProperties.JWTProfile.Profile.AARC
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = aarcProfile;
     }
 
-    if (it.infn.mw.iam.config.IamProperties.JWTProfile.Profile.KC
+    if (IamProperties.JWTProfile.Profile.KC
       .equals(properties.getJwtProfile().getDefaultProfile())) {
       defaultProfile = kcProfile;
     }
 
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
-    profileMap.put(IAM_PROFILE_ID, iamProfile);
-    profileMap.put(WLCG_PROFILE_ID, wlcgProfile);
-    profileMap.put(AARC_PROFILE_ID, aarcProfile);
-    profileMap.put(KC_PROFILE_ID, kcProfile);
+    profileMap.put(iamProfile.id(), iamProfile);
+    profileMap.put(wlcgProfile.id(), wlcgProfile);
+    profileMap.put(aarcProfile.id(), aarcProfile);
+    profileMap.put(kcProfile.id(), kcProfile);
 
     LOG.info("Default JWT profile: {}", defaultProfile.name());
-    return new ScopeAwareProfileResolver(defaultProfile, profileMap, clientDetailsService);
+    return new ScopeAwareProfileResolver(defaultProfile, profileMap);
   }
 
   @Bean
@@ -289,12 +278,6 @@ public class IamConfig {
   @Primary
   TokenEnhancer iamTokenEnhancer() {
     return new IamTokenEnhancer();
-  }
-
-  @Bean
-  IntrospectionResultAssembler defaultIntrospectionResultAssembler(
-      JWTProfileResolver profileResolver) {
-    return new IamIntrospectionResultAssembler(profileResolver);
   }
 
   @Bean

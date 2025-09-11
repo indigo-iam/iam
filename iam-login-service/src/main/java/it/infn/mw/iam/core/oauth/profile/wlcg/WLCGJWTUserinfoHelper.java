@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile.keycloak;
+package it.infn.mw.iam.core.oauth.profile.wlcg;
 
 import java.util.Map;
 import java.util.Set;
@@ -22,30 +22,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileUserinfoHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-public class KeycloakUserinfoHelper extends BaseUserinfoHelper {
+public class WLCGJWTUserinfoHelper extends IamJWTProfileUserinfoHelper {
 
-  public static final Logger LOG = LoggerFactory.getLogger(KeycloakUserinfoHelper.class);
+  public static final Logger LOG = LoggerFactory.getLogger(WLCGJWTUserinfoHelper.class);
 
-  private KeycloakGroupHelper groupHelper;
+  private final WLCGGroupHelper groupHelper;
 
-  public KeycloakUserinfoHelper(IamProperties props, KeycloakGroupHelper groupHelper) {
-    super(props);
+  public WLCGJWTUserinfoHelper(IamProperties props, ExternalAuthenticationInfoProcessor proc,
+      WLCGGroupHelper groupHelper) {
+    super(props, proc);
     this.groupHelper = groupHelper;
   }
 
   @Override
-  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes, IamAccount account) {
+  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
+      IamAccount account) {
 
     Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
     claims.remove("groups");
-    Set<String> resolvedGroups = groupHelper.resolveGroupNames(account.getUserInfo());
-    includeIfNotEmpty(claims, KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, resolvedGroups);
+    claims.remove("organisation_name");
+    Set<String> resolvedGroups = groupHelper.resolveGroupNames(scopes, account.getUserInfo());
+    if (!resolvedGroups.isEmpty()) {
+      claims.put(WlcgExtraClaimNames.WLCG_GROUPS, resolvedGroups);
+    }
     return claims;
   }
-
 }

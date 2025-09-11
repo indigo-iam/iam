@@ -15,49 +15,25 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ADDRESS;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ATTR;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.BIRTHDATE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ENTITLEMENTS;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ENTITLEMENT;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_SCOPED_AFFILIATION;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EDUPERSON_ASSURANCE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EMAIL;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EMAIL_VERIFIED;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.EXTERNAL_AUTHN;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.FAMILY_NAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.GENDER;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.GIVEN_NAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.GROUPS;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.LOCALE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.MIDDLE_NAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.NAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.NICKNAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ORGANISATION_NAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.PHONE_NUMBER;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.PHONE_NUMBER_VERIFIED;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.PICTURE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.PREFERRED_USERNAME;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.PROFILE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.SSH_KEYS;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.SUB;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.UPDATED_AT;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WEBSITE;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.WLCG_GROUPS;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ZONEINFO;
-import static it.infn.mw.iam.core.userinfo.UserInfoClaim.ROLES;
-
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 
 @Service
 @Primary
@@ -65,49 +41,49 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
 
   private SetMultimap<String, String> scopesToClaims = HashMultimap.create();
 
-  public static final String OPENID_SCOPE = "openid";
-  public static final String PROFILE_SCOPE = "profile";
-  public static final String EMAIL_SCOPE = "email";
-  public static final String PHONE_SCOPE = "phone";
-  public static final String ADDRESS_SCOPE = "address";
-  public static final String EDUPERSON_SCOPED_AFFILIATION_SCOPE = "eduperson_scoped_affiliation";
-  public static final String EDUPERSON_ENTITLEMENT_SCOPE = "eduperson_entitlement";
-  public static final String ENTITLEMENTS_SCOPE = "entitlements";
-  public static final String EDUPERSON_ASSURANCE_SCOPE = "eduperson_assurance";
-  public static final String ATTR_SCOPE = "attr";
-  public static final String SSH_KEYS_SCOPE = "ssh-keys";
-  public static final String WLCG_GROUPS_SCOPE = "wlcg.groups";
+  protected static final Set<String> PROFILE_CLAIMS = Set.of(StandardClaimNames.NAME,
+      StandardClaimNames.PREFERRED_USERNAME, StandardClaimNames.GIVEN_NAME,
+      StandardClaimNames.FAMILY_NAME, StandardClaimNames.MIDDLE_NAME, StandardClaimNames.NICKNAME,
+      StandardClaimNames.PROFILE, StandardClaimNames.PICTURE, StandardClaimNames.WEBSITE,
+      StandardClaimNames.GENDER, StandardClaimNames.ZONEINFO, StandardClaimNames.LOCALE,
+      StandardClaimNames.UPDATED_AT, StandardClaimNames.BIRTHDATE,
+      IamExtraClaimNames.ORGANISATION_NAME, IamExtraClaimNames.GROUPS,
+      IamExtraClaimNames.EXTERNAL_AUTHN, KeycloakExtraClaimNames.ROLES);
 
-  protected static final Set<UserInfoClaim> PROFILE_CLAIMS = EnumSet.of(NAME, PREFERRED_USERNAME,
-      GIVEN_NAME, FAMILY_NAME, MIDDLE_NAME, NICKNAME, PROFILE, PICTURE, WEBSITE, GENDER, ZONEINFO,
-      LOCALE, UPDATED_AT, BIRTHDATE, ORGANISATION_NAME, GROUPS, EXTERNAL_AUTHN, ROLES);
+  protected static final Set<String> EMAIL_CLAIMS =
+      Set.of(StandardClaimNames.EMAIL, StandardClaimNames.EMAIL_VERIFIED);
 
-  protected static final Set<UserInfoClaim> EMAIL_CLAIMS = EnumSet.of(EMAIL, EMAIL_VERIFIED);
+  protected static final Set<String> PHONE_CLAIMS =
+      Set.of(StandardClaimNames.PHONE_NUMBER, StandardClaimNames.PHONE_NUMBER_VERIFIED);
 
-  protected static final Set<UserInfoClaim> PHONE_CLAIMS =
-      EnumSet.of(PHONE_NUMBER, PHONE_NUMBER_VERIFIED);
+  protected static final Set<String> ALL_ENTITLEMENT_CLAIMS =
+      Set.of(AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS);
 
   public IamScopeClaimTranslationService() {
-    mapScopeToClaim(OPENID_SCOPE, SUB);
-    mapScopeToClaim(PROFILE_SCOPE, PROFILE_CLAIMS);
-    mapScopeToClaim(EMAIL_SCOPE, EMAIL_CLAIMS);
-    mapScopeToClaim(PHONE_SCOPE, PHONE_CLAIMS);
-    mapScopeToClaim(ADDRESS_SCOPE, ADDRESS);
-    mapScopeToClaim(EDUPERSON_SCOPED_AFFILIATION_SCOPE, EDUPERSON_SCOPED_AFFILIATION);
-    mapScopeToClaim(ENTITLEMENTS_SCOPE, ENTITLEMENTS);
-    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, EDUPERSON_ENTITLEMENT);
-    mapScopeToClaim(EDUPERSON_ENTITLEMENT_SCOPE, ENTITLEMENTS);
-    mapScopeToClaim(EDUPERSON_ASSURANCE_SCOPE, EDUPERSON_ASSURANCE);
-    mapScopeToClaim(ATTR_SCOPE, ATTR);
-    mapScopeToClaim(SSH_KEYS_SCOPE, SSH_KEYS);
-    mapScopeToClaim(WLCG_GROUPS_SCOPE, WLCG_GROUPS);
+
+    mapScopeToClaim(IamOidcScopes.OPENID, StandardClaimNames.SUB);
+    mapScopeToClaim(IamOidcScopes.PROFILE, PROFILE_CLAIMS);
+    mapScopeToClaim(IamOidcScopes.EMAIL, EMAIL_CLAIMS);
+    mapScopeToClaim(IamOidcScopes.PHONE, PHONE_CLAIMS);
+    mapScopeToClaim(IamOidcScopes.ADDRESS, StandardClaimNames.ADDRESS);
+    mapScopeToClaim(AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION,
+        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION);
+    mapScopeToClaim(AarcOidcScopes.ENTITLEMENTS, AarcExtraClaimNames.ENTITLEMENTS);
+    mapScopeToClaim(AarcOidcScopes.EDUPERSON_ENTITLEMENT, ALL_ENTITLEMENT_CLAIMS);
+    mapScopeToClaim(AarcOidcScopes.EDUPERSON_ASSURANCE, AarcExtraClaimNames.EDUPERSON_ASSURANCE);
+    mapScopeToClaim(AarcOidcScopes.VO_PERSON_ID, AarcExtraClaimNames.VO_PERSON_ID);
+    mapScopeToClaim(IamOidcScopes.ATTR, IamExtraClaimNames.ATTR);
+    mapScopeToClaim(IamOidcScopes.SSH_KEYS, IamExtraClaimNames.SSH_KEYS);
+    mapScopeToClaim(WlcgOidcScopes.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_GROUPS);
   }
 
-  private void mapScopeToClaim(String scope, UserInfoClaim claim) {
-    scopesToClaims.put(scope, claim.getClaimName());
+  private void mapScopeToClaim(String scope, String claim) {
+
+    scopesToClaims.put(scope, claim);
   }
 
-  private void mapScopeToClaim(String scope, Set<UserInfoClaim> claimSet) {
+  private void mapScopeToClaim(String scope, Set<String> claimSet) {
+
     claimSet.forEach(c -> mapScopeToClaim(scope, c));
   }
 

@@ -43,9 +43,13 @@ public interface StructuredScopeTestSupportConstants {
   static final String DEVICE_USER_VERIFY_URL = "http://localhost:8080/device/verify";
   static final String DEVICE_USER_APPROVE_URL = "http://localhost:8080/device/approve";
 
+  static final String PROTECTED_RESOURCE_ID = "protected-resource";
+  static final String PROTECTED_RESOURCE_SECRET = "secret";
+
   static final String LOGIN_URL = "/login";
   static final String TEST_USERNAME = "test";
   static final String TEST_PASSWORD = "password";
+  static final String TEST_UUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
 
   static final String ADMIN_USERNAME = "admin";
   static final String ADMIN_PASSWORD = "password";

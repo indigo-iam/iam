@@ -16,6 +16,8 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ACR;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AMR;
 import static java.util.Objects.isNull;
 
 import java.text.ParseException;
@@ -87,7 +89,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
         ObjectMapper objectMapper = new ObjectMapper();
         String[] amrArray = objectMapper.readValue(amrString, String[].class);
 
-        builder.claim("amr", List.of(amrArray));
+        builder.claim(AMR, List.of(amrArray));
 
       } catch (Exception e) {
         LOG.error("Failed to deserialize amr claim", e);
@@ -95,9 +97,9 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
     }
 
     try {
-      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim("acr");
+      Object acrClaim = accessToken.getJwt().getJWTClaimsSet().getClaim(ACR);
       if (acrClaim != null) {
-        builder.claim("acr", acrClaim);
+        builder.claim(ACR, acrClaim);
       }
     } catch (ParseException e) {
       LOG.error("Error parsing JWT claims: {}", e.getMessage());

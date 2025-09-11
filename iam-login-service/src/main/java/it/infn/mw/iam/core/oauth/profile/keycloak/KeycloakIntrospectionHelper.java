@@ -15,41 +15,64 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
+
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 
 public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
   private final KeycloakGroupHelper groupHelper;
 
-  public KeycloakIntrospectionHelper(IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry registry, KeycloakGroupHelper helper) {
-    super(assembler, registry);
+  public KeycloakIntrospectionHelper(IamAccountService accountService, KeycloakGroupHelper helper) {
+    super(accountService);
     this.groupHelper = helper;
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes) {
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(accessToken, authenticatedClient);
+    addRoles(claims);
+    return claims;
+  }
 
-    Set<String> groups = groupHelper.resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo());
+  @Override
+  public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
+      ClientDetailsEntity authenticatedClient) throws ParseException {
 
-    if (!groups.isEmpty()) {
-      result.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
+    Map<String, Object> claims =
+        super.assembleIntrospectionResult(refreshToken, authenticatedClient);
+    addRoles(claims);
+    return claims;
+  }
+
+  private void addRoles(Map<String, Object> claims) {
+
+    if (claims.containsKey(USERNAME)) {
+      IamAccount account = getAccountService().findByUuid(claims.get(SUB).toString())
+        .orElseThrow(
+            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+
+      Set<String> groups = groupHelper.resolveGroupNames(account.getUserInfo());
+
+      if (!groups.isEmpty()) {
+        claims.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
+      }
     }
-
-    return result;
   }
 
 }

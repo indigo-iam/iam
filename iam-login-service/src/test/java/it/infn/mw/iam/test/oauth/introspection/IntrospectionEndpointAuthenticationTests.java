@@ -49,7 +49,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
 
   @Before
   public void setup() throws Exception {
-    accessToken = getPasswordAccessToken("openid profile offline_access");
+    accessToken = getPasswordToken("openid profile offline_access").accessToken();
   }
 
 
@@ -57,7 +57,7 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   public void testTokenIntrospectionEndpointBasicAuthentication() throws Exception {
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic("password-grant", "secret"))
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -71,8 +71,8 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
     mvc.perform(post(INTROSPECTION_ENDPOINT)
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken)
-        .param("client_id", "client-cred")
-        .param("client_secret", "secret"))
+        .param("client_id", PROTECTED_RESOURCE_ID)
+        .param("client_secret", PROTECTED_RESOURCE_SECRET))
       .andExpect(status().isUnauthorized());
     // @formatter:on
   }
@@ -90,13 +90,13 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   @Test
   public void testTokenIntrospectionEndpointWithDisabledClient() throws Exception {
 
-    ClientDetailsEntity c = clientRepo.findByClientId("password-grant").orElseThrow();
+    ClientDetailsEntity c = clientRepo.findByClientId(PROTECTED_RESOURCE_ID).orElseThrow();
     c.setActive(false);
     clientRepo.save(c);
 
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic("password-grant", "secret"))
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken))
       .andExpect(status().isOk())
@@ -110,13 +110,13 @@ public class IntrospectionEndpointAuthenticationTests extends EndpointsTestUtils
   @Test
   public void testTokenIntrospectionEndpointWithClientNotAllowedIntrospection() throws Exception {
 
-    ClientDetailsEntity c = clientRepo.findByClientId("password-grant").orElseThrow();
+    ClientDetailsEntity c = clientRepo.findByClientId(PROTECTED_RESOURCE_ID).orElseThrow();
     c.setAllowIntrospection(false);
     clientRepo.save(c);
 
     // @formatter:off
     mvc.perform(post(INTROSPECTION_ENDPOINT)
-        .with(httpBasic("password-grant", "secret"))
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
         .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", accessToken))
       .andExpect(status().isOk())

@@ -16,16 +16,18 @@
 package it.infn.mw.iam.core.oauth.profile;
 
 public interface JWTProfile {
-  
+
+  String id();
+
   String name();
-  
+
   JWTAccessTokenBuilder getAccessTokenBuilder();
-  
+
   IDTokenCustomizer getIDTokenCustomizer();
-  
+
   IntrospectionResultHelper getIntrospectionResultHelper();
 
   UserInfoHelper getUserinfoHelper();
-  
+
   RequestValidator getRequestValidator();
 }

@@ -79,8 +79,10 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
     OAuth2AccessTokenEntity accessTokenEntity = (OAuth2AccessTokenEntity) accessToken;
 
-    JWTProfile profile =
-        profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
+    ClientDetailsEntity client =
+        getClientService().loadClientByClientId(authentication.getOAuth2Request().getClientId());
+
+    JWTProfile profile = profileResolver.resolveProfile(client.getScope());
     
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
@@ -99,8 +101,6 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
      */
     if (originalAuthRequest.getScope().contains(SystemScopeService.OPENID_SCOPE)
         && !authentication.isClientOnly()) {
-
-      ClientDetailsEntity client = getClientService().loadClientByClientId(clientId);
 
       JWT idToken = connectTokenService.createIdToken(client, originalAuthRequest,
           Date.from(tokenIssueInstant),

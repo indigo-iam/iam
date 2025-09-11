@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.userinfo;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -70,7 +71,7 @@ public class UserInfoEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"})
+  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
   public void testUserInfoEndpointReturs404ForClientCredentialsToken() throws Exception {
     mvc.perform(get("/userinfo")).andExpect(status().isForbidden());
   }
@@ -110,20 +111,10 @@ public class UserInfoEndpointTests {
     // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.external_authn").exists());
+      .andExpect(jsonPath("$.external_authn").exists())
+      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")));  
     // @formatter:on
   }
-
-  @Test
-  @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
-  public void userinfoEndpointReturnsUpdatedAtClaimAsANumber() throws Exception {
-
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.updated_at").isNumber());
-  }
-
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},

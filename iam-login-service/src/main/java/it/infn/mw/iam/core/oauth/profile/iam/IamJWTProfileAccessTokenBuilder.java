@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oauth.profile.iam;
 
 import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
-import static java.util.stream.Collectors.joining;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -34,8 +33,8 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
@@ -66,10 +65,6 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
         .filter(ADDITIONAL_CLAIMS::contains)
         .forEach(c -> builder.claim(c, claimValueHelper.getClaimValueFromUserInfo(c,
             ((UserInfoAdapter) userInfo).getUserinfo())));
-    }
-
-    if (properties.getAccessToken().isIncludeScope() && !token.getScope().isEmpty()) {
-      builder.claim(SCOPE_CLAIM_NAME, token.getScope().stream().collect(joining(SPACE)));
     }
 
     if (properties.getAccessToken().isIncludeNbf()) {

@@ -38,7 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -114,7 +113,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   @Test
   public void testIntrospectionEndpointForbiddenForAnonymous() throws Exception {
 
-    String accessToken = getPasswordAccessToken("openid");
+    String accessToken = getPasswordToken("openid").accessToken();
 
     introspect(accessToken, ACCESS_TOKEN).andExpect(status().isUnauthorized());
   }
@@ -122,7 +121,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   @Test
   public void testIntrospectionEndpointForbiddenForBadCredentials() throws Exception {
 
-    String accessToken = getPasswordAccessToken("openid");
+    String accessToken = getPasswordToken("openid").accessToken();
 
     introspect("bad", "credentials", accessToken, ACCESS_TOKEN)
       .andExpect(status().isUnauthorized());
@@ -132,10 +131,10 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   public void testIntrospectionEndpointInactiveWithEmptyStringToken() throws Exception {
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, "", ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, "", REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, "", REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -148,7 +147,7 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = getExpiredAccessToken(client).getValue();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -162,122 +161,103 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
   @Test
   public void testIntrospectionEndpointReturnsBasicUserInformation() throws Exception {
 
-    String accessToken = getPasswordAccessToken("openid");
+    String accessToken = getPasswordToken("openid").accessToken();
 
     ClientDetailsEntity client = clientRepository.findByClientId(PASSWORD_CLIENT_ID).orElseThrow();
     IamAccount account = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.sub", equalTo(account.getUuid())))
       .andExpect(jsonPath("$.iss", equalTo(issuer)))
       .andExpect(jsonPath("$.client_id", equalTo(client.getClientId())))
-      .andExpect(jsonPath("$.client_name", equalTo(client.getClientName())))
       .andExpect(jsonPath("$.exp").exists())
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.groups").exists())
       .andExpect(jsonPath("$.name").doesNotExist())
-      .andExpect(jsonPath("$.given_name").doesNotExist())
       .andExpect(jsonPath("$.email").doesNotExist());
     // @formatter:on
   }
 
   @Test
-  @SuppressWarnings("deprecation")
   public void testIntrospectionEndpointWithRefreshToken() throws Exception {
 
-    String refreshToken =
-        getPasswordTokenResponse("openid profile offline_access").getRefreshToken().getValue();
+    String refreshToken = getPasswordToken("openid profile offline_access").refreshToken();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
+      .andExpect(jsonPath("$.scope", 
+          allOf(
+              containsString("openid"),
+              containsString("offline_access"),
+              containsString("profile")
+          )))
       .andExpect(jsonPath("$.exp").doesNotExist())
       .andExpect(jsonPath("$.jti").exists());
     // @formatter:on
   }
 
   @Test
-  public void testNoGroupsReturnedWithoutProfileScope() throws Exception {
-    String accessToken = getPasswordAccessToken("openid");
-
-    // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
-      .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$.name").doesNotExist())
-      .andExpect(jsonPath("$.preferred_username").doesNotExist())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email").doesNotExist())
-      .andExpect(jsonPath("$.email_verified").doesNotExist());
-    // @formatter:on
-  }
-
-  @Test
-  public void testEmailReturnedWithEmailScope() throws Exception {
-    String accessToken = getPasswordAccessToken("openid email");
-
-    // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
-      .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$.name").doesNotExist())
-      .andExpect(jsonPath("$.given_name").doesNotExist())
-      .andExpect(jsonPath("$.family_name").doesNotExist())
-      .andExpect(jsonPath("$.middle_name").doesNotExist())
-      .andExpect(jsonPath("$.nickname").doesNotExist())
-      .andExpect(jsonPath("$.picture").doesNotExist())
-      .andExpect(jsonPath("$.updated_at").doesNotExist())
-      .andExpect(jsonPath("$.preferred_username").doesNotExist())
-      .andExpect(jsonPath("$.organisation_name").doesNotExist())
-      .andExpect(jsonPath("$.email", equalTo("test@iam.test")))
-      .andExpect(jsonPath("$.email_verified", equalTo(true)));
-    // @formatter:on
-  }
-
-  @Test
-  public void testProfileClaimsReturnedWithProfileScope() throws Exception {
-    String accessToken = getPasswordAccessToken("openid profile");
+  public void testGroupsAndUsernameAreReturnedWhenUserIsTheSubject() throws Exception {
+    String accessToken = getPasswordToken("openid").accessToken();
     IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
 
     assertThat(a.getGroups().size(), is(2));
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
-      .andExpect(jsonPath("$.groups", allOf(containsString("Production"), containsString("Analysis"))))
-      .andExpect(jsonPath("$.name", equalTo(a.getUserInfo().getName())))
-      .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
-      .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
-      .andExpect(jsonPath("$.middle_name").doesNotExist())
-      .andExpect(jsonPath("$.nickname", equalTo(a.getUserInfo().getNickname())))
-      .andExpect(jsonPath("$.picture").doesNotExist())
-      .andExpect(jsonPath("$.updated_at", equalTo(a.getLastUpdateTime().toString())))
-      .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())))
-      .andExpect(jsonPath("$.affiliation", equalTo(a.getUserInfo().getAffiliation())))
-      .andExpect(jsonPath("$.organisation_name", equalTo(organisationName)))
-      .andExpect(jsonPath("$.updated_at").exists())
-      .andExpect(jsonPath("$.email").doesNotExist())
-      .andExpect(jsonPath("$.email_verified").doesNotExist());
+      .andExpect(jsonPath("$.sub", equalTo(a.getUuid())))
+      .andExpect(jsonPath("$.iss").exists())
+      .andExpect(jsonPath("$.iss", equalTo(issuer)))
+      .andExpect(jsonPath("$.iat").exists())
+      .andExpect(jsonPath("$.jti").exists())
+      .andExpect(jsonPath("$.client_id", equalTo(PASSWORD_CLIENT_ID)))
+      .andExpect(jsonPath("$.username").exists())
+      .andExpect(jsonPath("$.username", equalTo(TEST_USERNAME)))
+      .andExpect(jsonPath("$.groups",
+          allOf(
+              containsString("Production"),
+              containsString("Analysis")
+          )));
+    // @formatter:on
+  }
+
+  @Test
+  public void testGroupsAndUsernameAreNullWhenClientIsSubject() throws Exception {
+
+    String accessToken = getClientCredentialsToken("openid profile").accessToken();
+    IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
+
+    assertThat(a.getGroups().size(), is(2));
+
+    // @formatter:off
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.sub", equalTo(CLIENT_CREDENTIALS_CLIENT_ID)))
+      .andExpect(jsonPath("$.iss").exists())
+      .andExpect(jsonPath("$.iss", equalTo(issuer)))
+      .andExpect(jsonPath("$.iat").exists())
+      .andExpect(jsonPath("$.jti").exists())
+      .andExpect(jsonPath("$.client_id", equalTo(CLIENT_CREDENTIALS_CLIENT_ID)))
+      .andExpect(jsonPath("$.username").doesNotExist())
+      .andExpect(jsonPath("$.groups").doesNotExist());
     // @formatter:on
   }
 
   @Test
   public void testIntrospectRevokedAccessToken() throws Exception {
-    String accessToken = getPasswordAccessToken("openid profile");
+    String accessToken = getPasswordToken("openid profile").accessToken();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -285,25 +265,24 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     revokeService.revokeAccessToken(SignedJWT.parse(accessToken));
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void testIntrospectRevokedRefreshToken() throws Exception {
 
-    DefaultOAuth2AccessToken tokens = getPasswordTokenResponse("openid profile offline_access");
-    String accessToken = tokens.getValue();
-    String refreshToken = tokens.getRefreshToken().getValue();
+    TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
+    String accessToken = tokens.accessToken();
+    String refreshToken = tokens.refreshToken();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -311,10 +290,10 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken, REFRESH_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken, REFRESH_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
@@ -325,30 +304,25 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     String accessToken = "invalid-token";
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken, ACCESS_TOKEN)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on
   }
 
   @Test
-  @SuppressWarnings("deprecation")
   public void testIntrospectTokensWithNoTokenTypeHint() throws Exception {
 
-    DefaultOAuth2AccessToken tokens = getPasswordTokenResponse("openid profile offline_access");
-    String accessToken = tokens.getValue();
-    String refreshToken = tokens.getRefreshToken().getValue();
-    IamAccount a = accountRepository.findByUsername(TEST_USERNAME).orElseThrow();
+    TokenEndpointResponse tokens = getPasswordToken("openid profile offline_access");
+    String accessToken = tokens.accessToken();
+    String refreshToken = tokens.refreshToken();
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.client_id", equalTo("password-grant")))
-      .andExpect(jsonPath("$.given_name", equalTo(a.getUserInfo().getGivenName())))
-      .andExpect(jsonPath("$.family_name", equalTo(a.getUserInfo().getFamilyName())))
-      .andExpect(jsonPath("$.preferred_username", equalTo(a.getUsername())));
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken)
+      .andExpect(jsonPath("$.client_id", equalTo(PASSWORD_CLIENT_ID)));
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
@@ -356,10 +330,10 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
     revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
 
     // @formatter:off
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, accessToken)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
-    introspect(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET, refreshToken)
+    introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, refreshToken)
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(false)));
     // @formatter:on

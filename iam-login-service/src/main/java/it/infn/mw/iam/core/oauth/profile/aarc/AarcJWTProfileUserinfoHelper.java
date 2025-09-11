@@ -15,50 +15,34 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import static java.util.Objects.isNull;
+import java.util.Map;
+import java.util.Set;
 
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
-import it.infn.mw.iam.core.userinfo.AarcDecoratedUserInfo;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
 
   protected final AarcClaimValueHelper claimValueHelper;
 
-  public AarcJWTProfileUserinfoHelper(IamProperties props, UserInfoService userInfoService,
+  public AarcJWTProfileUserinfoHelper(IamProperties props,
       AarcClaimValueHelper claimValueHelper) {
-    super(props, userInfoService);
+    super(props);
     this.claimValueHelper = claimValueHelper;
   }
 
   @Override
-  public UserInfo resolveUserInfo(OAuth2Authentication authentication) {
+  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes, IamAccount account) {
 
-    UserInfo ui = lookupUserinfo(authentication);
-
-    if (isNull(ui)) {
-      return null;
-    }
-
-    IamUserInfo iamUserInfo = ((UserInfoAdapter) ui).getUserinfo();
-
-    AarcDecoratedUserInfo aui = AarcDecoratedUserInfo.forUser(ui);
-    aui.setScopedAffiliation(
-        claimValueHelper.getClaimValueFromUserInfo("eduperson_scoped_affiliation", iamUserInfo)
-          .toString());
-    aui.setEntitlements(claimValueHelper.resolveGroups(iamUserInfo));
-    aui.setAssurance(claimValueHelper.resolveLOA());
-    aui.setVoPersonId(
-        claimValueHelper.getClaimValueFromUserInfo("voperson_id", iamUserInfo).toString());
-
-    return aui;
+    Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
+    claims.remove("groups");
+    scopes.forEach(scope -> includeIfNotNull(claims, scope,
+        claimValueHelper.getClaimValueFromUserInfo(scope, account.getUserInfo())));
+    return claims;
   }
 
 }

@@ -13,27 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.userinfo;
+package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import java.util.Set;
+import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 
-import org.mitre.openid.connect.model.UserInfo;
+public interface AarcOidcScopes extends IamOidcScopes {
 
-public interface AarcUserInfo extends UserInfo {
+  String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
 
-  String getScopedAffiliation();
+  String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
 
-  void setScopedAffiliation(String scopedAffiliation);
+  String ENTITLEMENTS = "entitlements";
 
-  Set<String> getEntitlements();
+  String EDUPERSON_ASSURANCE = "eduperson_assurance";
 
-  void setEntitlements(Set<String> entitlements);
-
-  Set<String> getAssurance();
-
-  void setAssurance(Set<String> assurance);
-
-  String getVoPersonId();
-
-  void setVoPersonId(String vopPersonId);
+  String VO_PERSON_ID = "vo_person_id";
 }

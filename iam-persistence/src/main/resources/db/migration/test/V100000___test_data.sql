@@ -27,7 +27,8 @@ INSERT INTO client_details (id, client_id, client_secret, client_name, dynamical
   (17, 'admin-client-ro', 'secret', 'Admin client (read-only)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (18, 'admin-client-rw', 'secret', 'Admin client (read-write)', false, null, 3600, 600, true, 'SECRET_POST',false, null, CURRENT_TIMESTAMP(), true),
   (19, 'public-client', null, 'Public client', false, 3600, 3600, 600, true, 'NONE', false, null, CURRENT_TIMESTAMP(), true),
-  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true);
+  (20, 'refresh-client', 'secret', 'Refresh Flow client', false, 36000, 3600, 600, true, 'SECRET_BASIC', true, 30, CURRENT_TIMESTAMP(), true),
+  (21, 'protected-resource', 'secret', 'Protected Resource allowed only to introspect', false, 0, 0, 0, true, 'SECRET_BASIC', true, 0, CURRENT_TIMESTAMP(), true);
 
 INSERT INTO client_details (id, client_id, client_secret, client_name, dynamically_registered,
   refresh_token_validity_seconds, access_token_validity_seconds, id_token_validity_seconds, allow_introspection,
@@ -159,7 +160,12 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (20, 'phone'),
   (20, 'offline_access'),
   (20, 'storage.read:/'),
-  (20, 'storage.write:/');
+  (20, 'storage.write:/'),
+  (21, 'openid'),
+  (21, 'profile'),
+  (21, 'email'),
+  (21, 'address'),
+  (21, 'phone');
 
 
 INSERT INTO client_redirect_uri (owner_id, redirect_uri) VALUES
