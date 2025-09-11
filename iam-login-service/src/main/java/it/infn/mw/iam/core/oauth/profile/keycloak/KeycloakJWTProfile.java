@@ -23,7 +23,6 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
 
 public class KeycloakJWTProfile extends IamJWTProfile {
 
-  public static final String PROFILE_ID = "kc";
   public static final String PROFILE_VERSION = "1.0";
   public static final String PROFILE_NAME = "Keycloak JWT profile " + PROFILE_VERSION;
 
@@ -36,7 +35,7 @@ public class KeycloakJWTProfile extends IamJWTProfile {
 
   @Override
   public String name() {
-    return PROFILE_NAME;
+    return KeycloakOidcScopes.KEYCLOAK;
   }
 
 }

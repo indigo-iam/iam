@@ -47,7 +47,7 @@ public class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
   private MockOAuth2Filter mockOAuth2Filter;
 
   @Before
-  public void setup() throws Exception {
+  public void setup() {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 

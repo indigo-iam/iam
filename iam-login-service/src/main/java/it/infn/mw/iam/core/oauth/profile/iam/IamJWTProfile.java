@@ -27,7 +27,6 @@ import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 @SuppressWarnings("deprecation")
 public class IamJWTProfile implements JWTProfile, RequestValidator {
 
-  public static final String PROFILE_ID = "iam";
   public static final String PROFILE_NAME = "IAM JWT profile";
 
   private final JWTAccessTokenBuilder accessTokenBuilder;
@@ -80,7 +79,7 @@ public class IamJWTProfile implements JWTProfile, RequestValidator {
 
   @Override
   public String id() {
-    return PROFILE_ID;
+    return IamOidcScopes.IAM;
   }
 
 }

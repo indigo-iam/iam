@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.stereotype.Service;
 
@@ -61,11 +62,11 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
 
   public IamScopeClaimTranslationService() {
 
-    mapScopeToClaim(IamOidcScopes.OPENID, StandardClaimNames.SUB);
-    mapScopeToClaim(IamOidcScopes.PROFILE, PROFILE_CLAIMS);
-    mapScopeToClaim(IamOidcScopes.EMAIL, EMAIL_CLAIMS);
-    mapScopeToClaim(IamOidcScopes.PHONE, PHONE_CLAIMS);
-    mapScopeToClaim(IamOidcScopes.ADDRESS, StandardClaimNames.ADDRESS);
+    mapScopeToClaim(OidcScopes.OPENID, StandardClaimNames.SUB);
+    mapScopeToClaim(OidcScopes.PROFILE, PROFILE_CLAIMS);
+    mapScopeToClaim(OidcScopes.EMAIL, EMAIL_CLAIMS);
+    mapScopeToClaim(OidcScopes.PHONE, PHONE_CLAIMS);
+    mapScopeToClaim(OidcScopes.ADDRESS, StandardClaimNames.ADDRESS);
     mapScopeToClaim(AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION,
         AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION);
     mapScopeToClaim(AarcOidcScopes.ENTITLEMENTS, AarcExtraClaimNames.ENTITLEMENTS);

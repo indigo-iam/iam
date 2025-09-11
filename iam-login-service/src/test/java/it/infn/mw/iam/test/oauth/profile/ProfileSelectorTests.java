@@ -33,10 +33,10 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGJWTProfile;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 
 @SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
@@ -68,10 +68,10 @@ public class ProfileSelectorTests {
   public void setup() {
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
 
-    profileMap.put(AarcJWTProfile.PROFILE_ID, aarcProfile);
-    profileMap.put(IamJWTProfile.PROFILE_ID, iamProfile);
-    profileMap.put(WLCGJWTProfile.PROFILE_ID, wlcgProfile);
-    profileMap.put(KeycloakJWTProfile.PROFILE_ID, kcProfile);
+    profileMap.put(AarcOidcScopes.AARC, aarcProfile);
+    profileMap.put(IamOidcScopes.IAM, iamProfile);
+    profileMap.put(WlcgOidcScopes.WLCG, wlcgProfile);
+    profileMap.put(KeycloakOidcScopes.KEYCLOAK, kcProfile);
 
     profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap);
   }
@@ -82,14 +82,14 @@ public class ProfileSelectorTests {
   }
 
   @Test
-  public void profileNotFoundLeadsToDefaultProfile() throws Exception {
+  public void profileNotFoundLeadsToDefaultProfile() {
 
     JWTProfile profile = profileResolver.resolveProfile(Set.of("openid"));
     assertThat(profile, is(iamProfile));
   }
 
   @Test
-  public void multipleProfilesLeadToDefaultProfile() throws Exception {
+  public void multipleProfilesLeadToDefaultProfile() {
 
     JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "iam", "wlcg"));
     assertThat(profile, is(iamProfile));

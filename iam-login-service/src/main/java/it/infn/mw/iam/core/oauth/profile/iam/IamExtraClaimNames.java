@@ -21,11 +21,13 @@ public interface IamExtraClaimNames extends StandardClaimNames {
 
   String ACR = "acr";
   String ACT = "act";
+  String AFFILIATION = "affiliation";
   String AMR = "amr";
   String ATTR = "attr";
   String CLIENT_ID = "client_id";
   String EXTERNAL_AUTHN = "external_authn";
   String GROUPS = "groups";
+  String LAST_LOGIN_AT = "last_login_at";
   String ORGANISATION_NAME = "organisation_name";
   String SCOPE = "scope";
   String SSH_KEYS = "ssh_keys";

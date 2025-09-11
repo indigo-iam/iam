@@ -45,14 +45,14 @@ public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelp
 
     Map<String, Object> claims =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
-    addGroups(accessToken, claims);
+    addGroups(claims);
     return claims;
   }
 
-  private void addGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {
+  private void addGroups(Map<String, Object> claims) {
 
     if (claims.containsKey(USERNAME)) {
-      IamAccount account = getAccountService().findByUuid(claims.get(SUB).toString())
+      IamAccount account = loadUserFrom(claims.get(SUB).toString())
         .orElseThrow(
             () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
       Set<String> groupNames = account.getGroups()

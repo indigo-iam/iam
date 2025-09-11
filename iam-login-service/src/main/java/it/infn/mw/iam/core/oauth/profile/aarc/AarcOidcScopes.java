@@ -19,6 +19,8 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 
 public interface AarcOidcScopes extends IamOidcScopes {
 
+  String AARC = "aarc";
+
   String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
 
   String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";

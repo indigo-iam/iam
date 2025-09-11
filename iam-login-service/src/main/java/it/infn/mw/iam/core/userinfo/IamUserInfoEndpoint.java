@@ -92,7 +92,7 @@ public class IamUserInfoEndpoint {
     Map<String, Object> claims = profile.getUserinfoHelper().resolveScopeClaims(auth, scopes, account.get());
 
     UserInfoResponse.Builder builder = new UserInfoResponse.Builder(valueOf(claims.get(SUB)));
-    claims.forEach((claim, value) -> builder.addField(claim, value));
+    claims.forEach(builder::addField);
     return builder.build();
   }
 

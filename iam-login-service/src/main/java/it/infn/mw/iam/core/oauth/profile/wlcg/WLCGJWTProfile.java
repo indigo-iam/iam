@@ -27,7 +27,6 @@ import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 @SuppressWarnings("deprecation")
 public class WLCGJWTProfile implements JWTProfile, RequestValidator {
 
-  public static final String PROFILE_ID = "wlcg";
   public static final String PROFILE_VERSION = "1.0";
   public static final String PROFILE_NAME = "WLCG JWT profile " + PROFILE_VERSION;
 
@@ -83,6 +82,6 @@ public class WLCGJWTProfile implements JWTProfile, RequestValidator {
 
   @Override
   public String id() {
-    return PROFILE_ID;
+    return WlcgOidcScopes.WLCG;
   }
 }

@@ -19,5 +19,7 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 
 public interface WlcgOidcScopes extends IamOidcScopes {
 
+  String WLCG = "wlcg";
+
   String WLCG_GROUPS = "wlcg.groups";
 }

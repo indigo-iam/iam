@@ -54,22 +54,21 @@ public class IamJWTProfileUserinfoHelper extends BaseUserinfoHelper {
 
     Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
     if (scopes.contains(OidcScopes.PROFILE)) {
-      claims.put("scopes", scopes);
-      claims.put("organisation_name", getProperties().getOrganisation().getName());
-      includeIfNotNull(claims, "last_login_at", account.getLastLoginTime());
-      includeIfNotNull(claims, "affiliation", account.getAffiliation());
-      includeIfNotEmpty(claims, "groups", getGroupsAsStringSet(account.getUserInfo().getGroups()));
+      claims.put(IamExtraClaimNames.SCOPE, scopes);
+      claims.put(IamExtraClaimNames.ORGANISATION_NAME, getProperties().getOrganisation().getName());
+      includeIfNotNull(claims, IamExtraClaimNames.LAST_LOGIN_AT, account.getLastLoginTime());
+      includeIfNotNull(claims, IamExtraClaimNames.AFFILIATION, account.getAffiliation());
+      includeIfNotEmpty(claims, IamExtraClaimNames.GROUPS,
+          getGroupNames(account.getUserInfo().getGroups()));
     }
-    if (scopes.contains("ssh-keys")) {
-      if (!account.getSshKeys().isEmpty()) {
-        claims.put("ssh_keys", getSshKeysFilteredSet(account.getSshKeys()));
-      }
+    if (scopes.contains(IamOidcScopes.SSH_KEYS) && !account.getSshKeys().isEmpty()) {
+      claims.put(IamExtraClaimNames.SSH_KEYS, getSshKeysFilteredSet(account.getSshKeys()));
     }
     // external Authentication info?
     if (AuthenticationUtils.isSupportedExternalAuthenticationToken(auth.getUserAuthentication())) {
       Map<String, String> processedAuthInfo = extAuthnProcessor.process(auth);
       if (!processedAuthInfo.isEmpty()) {
-        claims.put("external_authn", processedAuthInfo);
+        claims.put(IamExtraClaimNames.EXTERNAL_AUTHN, processedAuthInfo);
       }
     }
     return claims;

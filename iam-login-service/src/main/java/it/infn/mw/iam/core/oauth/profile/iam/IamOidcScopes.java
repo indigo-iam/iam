@@ -19,6 +19,8 @@ import org.springframework.security.oauth2.core.oidc.OidcScopes;
 
 public interface IamOidcScopes extends OidcScopes {
 
+  String IAM = "iam";
+
   String ATTR = "attr";
 
   String SSH_KEYS = "ssh-keys";

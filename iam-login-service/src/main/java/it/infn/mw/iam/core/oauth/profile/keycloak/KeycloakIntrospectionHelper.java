@@ -63,7 +63,7 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
   private void addRoles(Map<String, Object> claims) {
 
     if (claims.containsKey(USERNAME)) {
-      IamAccount account = getAccountService().findByUuid(claims.get(SUB).toString())
+      IamAccount account = loadUserFrom(claims.get(SUB).toString())
         .orElseThrow(
             () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
 

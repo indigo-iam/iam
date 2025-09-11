@@ -56,7 +56,7 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
 
   private final IamProperties properties;
 
-  public BaseUserinfoHelper(IamProperties props) {
+  protected BaseUserinfoHelper(IamProperties props) {
     this.properties = props;
   }
 
@@ -71,15 +71,14 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
     }
   }
 
-  protected void includeIfNotEmpty(Map<String, Object> claims, String key,
-      Collection<String> value) {
+  protected void includeIfNotEmpty(Map<String, Object> claims, String key, Collection<?> value) {
 
     if (!value.isEmpty()) {
-      claims.putIfAbsent(key, value);
+      claims.put(key, value);
     }
   }
 
-  protected Collection<String> getGroupsAsStringSet(Set<IamGroup> groups) {
+  protected Collection<String> getGroupNames(Set<IamGroup> groups) {
     return groups.stream().map(IamGroup::getName).collect(Collectors.toSet());
   }
 
@@ -121,6 +120,7 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
         case OidcScopes.PHONE:
           includeIfNotNull(claims, PHONE_NUMBER, ui.getPhoneNumber());
           includeIfNotNull(claims, PHONE_NUMBER_VERIFIED, ui.getPhoneNumberVerified());
+          break;
         default:
           break;
       }

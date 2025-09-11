@@ -28,6 +28,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -59,7 +60,7 @@ public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
     }
 
     // Drop group claims as set by IAM JWT profile
-    idClaims.claim(WlcgExtraClaimNames.GROUPS, null);
+    idClaims.claim(IamExtraClaimNames.GROUPS, null);
     idClaims.claim(WlcgExtraClaimNames.WLCG_VER, PROFILE_VERSION);
 
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
