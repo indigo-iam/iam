@@ -118,7 +118,7 @@ public class FederationRegistrationController {
     // 1. Parse request Entity Statement (self-signed EC of the RP)
     EntityStatement rpRequest = EntityStatement.parse(requestJwt);
 
-    // 2. Verify that aud == issuer
+    // 2. Verify that aud == issuer (OP)
     if (!issuer.equals(rpRequest.getClaimsSet().getAudience().get(0).getValue())) {
       throw new InvalidTrustChainException("invalid_request", "Invalid audience");
     }

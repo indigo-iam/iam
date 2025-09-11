@@ -92,6 +92,11 @@ public class FederationResponseBuilder {
     rpMetadata.put("client_id", registered.getClientId());
     rpMetadata.put("redirect_uris", registered.getRedirectUris());
     rpMetadata.put("token_endpoint_auth_method", registered.getTokenEndpointAuthMethod());
+    rpMetadata.put("client_registration_types",
+        trustChain.getLeafSelfStatement()
+          .getClaimsSet()
+          .getRPMetadata()
+          .getClientRegistrationTypes());
 
     if (registered.getClientSecret() != null) {
       rpMetadata.put("client_secret", registered.getClientSecret());

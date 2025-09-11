@@ -20,7 +20,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import com.nimbusds.jose.JOSEException;
@@ -32,10 +31,9 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
 import com.nimbusds.openid.connect.sdk.federation.entities.FederationEntityMetadata;
-import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
+import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
-
-import net.minidev.json.JSONObject;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 public class TrustChainTestFactory {
 
@@ -53,7 +51,8 @@ public class TrustChainTestFactory {
 
   // self-issued EC: iss == sub, jwks = own key
   public static EntityStatement selfEC(String entity, Date iat, Date exp,
-      List<EntityID> authorityHints, URI fetchEndpoint, JSONObject metadata) throws JOSEException {
+      List<EntityID> authorityHints, URI fetchEndpoint, OIDCClientMetadata metadata)
+      throws JOSEException {
     RSAKey key = keyFor(entity);
     EntityID eid = new EntityID(entity);
 
@@ -61,7 +60,7 @@ public class TrustChainTestFactory {
         new EntityStatementClaimsSet(eid, eid, iat, exp, new JWKSet(key.toPublicJWK()));
 
     if (metadata != null) {
-      claims.setMetadata(FederationMetadataType.OPENID_RELYING_PARTY, metadata);
+      claims.setRPMetadata(metadata);
     }
     if (fetchEndpoint != null) {
       claims.setFederationEntityMetadata(new FederationEntityMetadata(fetchEndpoint));
@@ -96,11 +95,11 @@ public class TrustChainTestFactory {
     String ta = "https://ta.example";
 
     // RP self EC with authority_hint = TA
-    JSONObject claims = new JSONObject();
-    claims.put("redirect_uris", Set.of(rp + "/callback"));
-    claims.put("client_name", "Relying Party");
-
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, claims);
+    OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
+    clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
+    clientMetadata.setName("Relying Party");
+    clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
+    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata);
 
     // TA → RP ES
     EntityStatement taToRp = superiorES(ta, rp, now, exp);
@@ -119,9 +118,9 @@ public class TrustChainTestFactory {
     String ta = "https://ta.example";
 
     // RP self EC with authority_hint = Intermediate
-    JSONObject rpMetadata = new JSONObject();
-    rpMetadata.put("redirect_uris", Set.of(rp + "/callback"));
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, rpMetadata);
+    OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
+    clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
+    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, clientMetadata);
 
     // Intermediate → RP ES
     EntityStatement intermToRp = superiorES(ia, rp, now, exp);
