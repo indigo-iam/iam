@@ -20,12 +20,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
@@ -68,6 +70,8 @@ public class TrustChainTestFactory {
       claims.setAuthorityHints(authorityHints);
     }
 
+    claims.setAudience(new Audience("http://localhost:8080"));
+
     return EntityStatement.sign(claims, key);
   }
 
@@ -92,10 +96,11 @@ public class TrustChainTestFactory {
     String ta = "https://ta.example";
 
     // RP self EC with authority_hint = TA
-    JSONObject rpMetadata = new JSONObject();
-    rpMetadata.put("openid_relying_party", true);
+    JSONObject claims = new JSONObject();
+    claims.put("redirect_uris", Set.of(rp + "/callback"));
+    claims.put("client_name", "Relying Party");
 
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, rpMetadata);
+    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, claims);
 
     // TA → RP ES
     EntityStatement taToRp = superiorES(ta, rp, now, exp);
@@ -103,7 +108,7 @@ public class TrustChainTestFactory {
     // Build the TrustChain
     return new TrustChain(rpEC, List.of(taToRp));
   }
-  
+
   /** Trust Chain: RP → Intermediate → TA */
   public static TrustChain createRpToIntermediateToTaChain() throws JOSEException {
     Date now = new Date();
@@ -115,7 +120,7 @@ public class TrustChainTestFactory {
 
     // RP self EC with authority_hint = Intermediate
     JSONObject rpMetadata = new JSONObject();
-    rpMetadata.put("openid_relying_party", true);
+    rpMetadata.put("redirect_uris", Set.of(rp + "/callback"));
     EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, rpMetadata);
 
     // Intermediate → RP ES

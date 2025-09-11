@@ -183,7 +183,7 @@ class ClientRegistrationServiceTests {
           RegisteredClientDTO request = new RegisteredClientDTO();
           request.setClientId(null);
           request.setClientDescription(null);
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString("should not be blank"));
@@ -199,7 +199,7 @@ class ClientRegistrationServiceTests {
           request.setClientName("example");
           request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
 
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(),
@@ -216,7 +216,7 @@ class ClientRegistrationServiceTests {
           request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
           request.setScope(Sets.newHashSet(""));
 
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString("must not include blank strings"));
@@ -232,7 +232,7 @@ class ClientRegistrationServiceTests {
           request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
           request.setRedirectUris(Sets.newHashSet("not-a-uri"));
 
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
@@ -244,7 +244,7 @@ class ClientRegistrationServiceTests {
       request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
       request.setRedirectUris(Sets.newHashSet(" "));
 
-      service.registerClient(request, userAuth);
+      service.registerClient(request, userAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString("Invalid redirect URI"));
@@ -255,7 +255,7 @@ class ClientRegistrationServiceTests {
       request.setClientName("example");
       request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
       request.setRedirectUris(Sets.newHashSet("myapp://redirect"));
-      service.registerClient(request, userAuth);
+      service.registerClient(request, userAuth, false);
     });
 
     Assertions.assertDoesNotThrow(() -> {
@@ -263,7 +263,7 @@ class ClientRegistrationServiceTests {
       request.setClientName("example");
       request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
       request.setRedirectUris(Sets.newHashSet("edu.kit.data.oidc-agent:/redirect"));
-      service.registerClient(request, userAuth);
+      service.registerClient(request, userAuth, false);
     });
   }
 
@@ -279,7 +279,7 @@ class ClientRegistrationServiceTests {
           request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
           request.setRedirectUris(Sets.newHashSet("https://deny.example/cb"));
 
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString("https://deny.example/cb is not allowed"));
@@ -297,7 +297,7 @@ class ClientRegistrationServiceTests {
           request.setGrantTypes(
               Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
           request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-          service.registerClient(request, userAuth);
+          service.registerClient(request, userAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString(
@@ -311,7 +311,7 @@ class ClientRegistrationServiceTests {
           request.setGrantTypes(
               Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
           request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-          service.registerClient(request, noAuth);
+          service.registerClient(request, noAuth, false);
         });
 
     assertThat(exception.getMessage(), containsString(
@@ -324,7 +324,7 @@ class ClientRegistrationServiceTests {
       request.setGrantTypes(
           Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
       request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      service.registerClient(request, userAuth);
+      service.registerClient(request, userAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString(
@@ -337,7 +337,7 @@ class ClientRegistrationServiceTests {
       request.setGrantTypes(
           Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.PASSWORD));
       request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      service.registerClient(request, noAuth);
+      service.registerClient(request, noAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString(
@@ -350,7 +350,7 @@ class ClientRegistrationServiceTests {
       request.setGrantTypes(
           Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
       request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-      service.registerClient(request, noAuth);
+      service.registerClient(request, noAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString(
@@ -362,7 +362,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(
         Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.CLIENT_CREDENTIALS));
     request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.CLIENT_CREDENTIALS.getGrantType()));
@@ -384,7 +384,7 @@ class ClientRegistrationServiceTests {
           AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS));
     request.setRedirectUris(Sets.newHashSet("https://example/cb"));
 
-    response = service.registerClient(request, adminAuth);
+    response = service.registerClient(request, adminAuth, false);
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
     assertThat(response.getTokenEndpointAuthMethod(),
@@ -412,7 +412,7 @@ class ClientRegistrationServiceTests {
 
       RegisteredClientDTO response = null;
       try {
-        response = service.registerClient(request, userAuth);
+        response = service.registerClient(request, userAuth, false);
       } catch (ParseException e1) {
         fail("Unexpected JSON parsing problem");
       }
@@ -448,7 +448,7 @@ class ClientRegistrationServiceTests {
     request.setRedirectUris(Sets.newHashSet("https://example/cb"));
     request.setScope(Sets.newHashSet(restrictedScope1, restrictedScope2, "openid"));
 
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     assertThat(response.getScope(), hasItem("openid"));
     assertThat(response.getScope(), not(hasItems(restrictedScope1, restrictedScope2)));
@@ -474,7 +474,7 @@ class ClientRegistrationServiceTests {
 
       RegisteredClientDTO response = null;
       try {
-        response = service.registerClient(request, userAuth);
+        response = service.registerClient(request, userAuth, false);
       } catch (ParseException e) {
         fail("Unexpected JSON mapping problem");
       }
@@ -505,7 +505,7 @@ class ClientRegistrationServiceTests {
 
       RegisteredClientDTO response = null;
       try {
-        response = service.registerClient(request, adminAuth);
+        response = service.registerClient(request, adminAuth, false);
       } catch (ParseException e) {
         fail("Unexpected JSON mapping problem");
       }
@@ -529,7 +529,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
+    RegisteredClientDTO response = service.registerClient(request, noAuth, false);
 
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
@@ -547,7 +547,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     assertThat(response.getClientName(), is("example"));
     assertThat(response.getClientId(), notNullValue());
@@ -569,7 +569,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     defaultScopes.forEach(s -> assertThat(response.getScope(), hasItem(s)));
 
@@ -584,14 +584,14 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () -> {
-      service.registerClient(request, noAuth);
+      service.registerClient(request, noAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString("You do not have enough privileges"));
 
     Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO userResponse = service.registerClient(request, userAuth);
-      RegisteredClientDTO adminResponse = service.registerClient(request, adminAuth);
+      RegisteredClientDTO userResponse = service.registerClient(request, userAuth, false);
+      RegisteredClientDTO adminResponse = service.registerClient(request, adminAuth, false);
       assertThat(userResponse.getClientId(), notNullValue());
       assertThat(adminResponse.getClientId(), notNullValue());
     });
@@ -607,19 +607,19 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
 
     AccessDeniedException exception = Assertions.assertThrows(AccessDeniedException.class, () -> {
-      service.registerClient(request, noAuth);
+      service.registerClient(request, noAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString("You do not have enough privileges"));
 
     exception = Assertions.assertThrows(AccessDeniedException.class, () -> {
-      service.registerClient(request, userAuth);
+      service.registerClient(request, userAuth, false);
     });
 
     assertThat(exception.getMessage(), containsString("You do not have enough privileges"));
 
     Assertions.assertDoesNotThrow(() -> {
-      RegisteredClientDTO adminResponse = service.registerClient(request, adminAuth);
+      RegisteredClientDTO adminResponse = service.registerClient(request, adminAuth, false);
       assertThat(adminResponse.getClientId(), notNullValue());
     });
 
@@ -648,7 +648,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO registerResponse = service.registerClient(request, userAuth);
+    RegisteredClientDTO registerResponse = service.registerClient(request, userAuth, false);
 
     RegisteredClientDTO response = service.retrieveClient(registerResponse.getClientId(), userAuth);
 
@@ -672,7 +672,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
+    RegisteredClientDTO registerResponse = service.registerClient(request, noAuth, false);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
     when(oauthRequest.getClientId()).thenReturn(registerResponse.getClientId());
@@ -699,7 +699,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.DEVICE_CODE));
-    RegisteredClientDTO registerResponse = service.registerClient(request, noAuth);
+    RegisteredClientDTO registerResponse = service.registerClient(request, noAuth, false);
     assertThat(registerResponse.getRegistrationAccessToken(), notNullValue());
 
     when(oauthRequest.getClientId()).thenReturn("some-other-id");
@@ -729,7 +729,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -753,7 +753,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     NoSuchClient exception = Assertions.assertThrows(NoSuchClient.class, () -> {
       service.retrieveClient(response.getClientId(), anotherUserAuth);
@@ -774,7 +774,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -792,7 +792,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO reqClient = new RegisteredClientDTO();
     reqClient.setClientName("example2");
     reqClient.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO respClient = service.registerClient(reqClient, adminAuth);
+    RegisteredClientDTO respClient = service.registerClient(reqClient, adminAuth, false);
 
     RegisteredClientDTO updateReq = respClient;
     updateReq.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS,
@@ -812,7 +812,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     ConstraintViolationException exception =
         Assertions.assertThrows(ConstraintViolationException.class, () -> {
@@ -840,7 +840,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
+    RegisteredClientDTO response = service.registerClient(request, noAuth, false);
 
     when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
     when(oauthRequest.getClientId()).thenReturn(response.getClientId());
@@ -869,7 +869,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
+    RegisteredClientDTO response = service.registerClient(request, noAuth, false);
 
     when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
     when(oauthRequest.getClientId()).thenReturn(response.getClientId());
@@ -901,7 +901,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
+    RegisteredClientDTO response = service.registerClient(request, noAuth, false);
 
     when(oauthDetails.getTokenValue()).thenReturn(response.getRegistrationAccessToken());
     when(oauthRequest.getClientId()).thenReturn(response.getClientId());
@@ -927,7 +927,7 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, userAuth);
+    RegisteredClientDTO response = service.registerClient(request, userAuth, false);
 
     ClientDetailsEntity clientEntity =
         clientRepo.findByClientId(response.getClientId()).orElseThrow();
@@ -962,8 +962,8 @@ class ClientRegistrationServiceTests {
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CODE));
     request.setRedirectUris(Sets.newHashSet("https://test.example/cb"));
 
-    RegisteredClientDTO response = service.registerClient(request, noAuth);
-    RegisteredClientDTO response2 = service.registerClient(request, noAuth);
+    RegisteredClientDTO response = service.registerClient(request, noAuth, false);
+    RegisteredClientDTO response2 = service.registerClient(request, noAuth, false);
 
     InvalidClientRegistrationRequest exception =
         Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
@@ -1017,7 +1017,7 @@ class ClientRegistrationServiceTests {
     client.setJwk(NOT_A_JSON_STRING);
 
     ParseException e = assertThrows(ParseException.class, () -> {
-      service.registerClient(client, userAuth);
+      service.registerClient(client, userAuth, false);
     });
 
     assertTrue(e.getMessage().contains("Invalid JSON:"));
@@ -1025,7 +1025,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO savedClient = null;
     client.setJwk(VALID_JSON_VALUE);
     try {
-      savedClient = service.registerClient(client, userAuth);
+      savedClient = service.registerClient(client, userAuth, false);
       assertThat(savedClient.getClientId(), is(savedClient.getClientId()));
       assertThat(savedClient.getJwk(), is(VALID_JSON_VALUE));
     } finally {
@@ -1046,7 +1046,7 @@ class ClientRegistrationServiceTests {
     client.setJwksUri(NOT_A_VALID_URI);
 
     ConstraintViolationException e = assertThrows(ConstraintViolationException.class, () -> {
-      service.registerClient(client, userAuth);
+      service.registerClient(client, userAuth, false);
     });
 
     String expectedMessage = "registerClient.request.jwksUri:";
@@ -1057,7 +1057,7 @@ class ClientRegistrationServiceTests {
     RegisteredClientDTO savedClient = null;
     client.setJwksUri(VALID_URI);
     try {
-      savedClient = service.registerClient(client, userAuth);
+      savedClient = service.registerClient(client, userAuth, false);
       assertThat(savedClient.getClientId(), is(savedClient.getClientId()));
       assertThat(savedClient.getJwksUri(), is(VALID_URI));
     } finally {

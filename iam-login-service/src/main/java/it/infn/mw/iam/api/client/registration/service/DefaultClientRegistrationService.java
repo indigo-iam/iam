@@ -333,7 +333,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
-      Authentication authentication) throws ParseException {
+      Authentication authentication, boolean federationRegistration) throws ParseException {
 
     authzChecks(authentication);
 
@@ -349,13 +349,13 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
-    if (isAnonymous(authentication)) {
+    if (!federationRegistration && isAnonymous(authentication)) {
 
       OAuth2AccessTokenEntity ratEntity = clientTokenService.createRegistrationAccessToken(client);
       tokenService.saveAccessToken(ratEntity);
       response.setRegistrationAccessToken(ratEntity.getValue());
 
-    } else {
+    } else if (!isAnonymous(authentication)) {
 
       IamAccount account =
           accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());

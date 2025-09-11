@@ -48,7 +48,7 @@ public class DisabledClientRegistrationService implements ClientRegistrationServ
 
   @Override
   public RegisteredClientDTO registerClient(@Valid RegisteredClientDTO request,
-      Authentication authentication) {
+      Authentication authentication, boolean federationRegistration) {
     return registrationDisabled();
   }
 

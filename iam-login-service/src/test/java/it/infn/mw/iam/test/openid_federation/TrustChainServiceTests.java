@@ -54,7 +54,6 @@ import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
 
-
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(MockitoJUnitRunner.class)
 public class TrustChainServiceTests {
