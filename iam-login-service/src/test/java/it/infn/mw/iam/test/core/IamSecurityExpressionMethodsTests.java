@@ -18,10 +18,7 @@ package it.infn.mw.iam.test.core;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.util.Date;
 import java.util.Optional;
 
 import org.junit.After;
@@ -47,6 +44,7 @@ import it.infn.mw.iam.api.requests.GroupRequestUtils;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.expression.IamSecurityExpressionMethods;
 import it.infn.mw.iam.core.userinfo.OAuth2AuthenticationScopeResolver;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRequestRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
@@ -150,10 +148,11 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @Test
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   public void testIsClientOwnerIsAdmin() {
-    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername(TEST_ADMIN).get());
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+    Optional<IamAccount> account = accountRepo.findByUsername(TEST_ADMIN);
+    ClientDetailsEntity clientTestUpdate = clientService.linkClientToAccount(clientTest, account.get());
+
+    doReturn(Optional.of(clientTestUpdate)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
     assertTrue(getMethods().isClientOwner(TEST_CLIENT_ID));
   }
@@ -162,11 +161,11 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"}, username = "test_200")
   public void testIsClientOwnerIsUser() {
     String owner = "test_200";
-    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername(owner).get());
-
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+    Optional<IamAccount> account = accountRepo.findByUsername(owner);
+    ClientDetailsEntity clientTestUpdate = clientService.linkClientToAccount(clientTest, account.get());
+
+    doReturn(Optional.of(clientTestUpdate)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
     assertTrue(getMethods().isClientOwner(TEST_CLIENT_ID));
   }
@@ -175,11 +174,11 @@ public class IamSecurityExpressionMethodsTests extends GroupRequestsTestUtils {
   @WithMockUser(roles = {"ADMIN", "USER"}, username = TEST_ADMIN)
   public void testIsClientOwnerIsNotUser() {
     String owner = "test_200";
-    clientService.linkClientToAccount(clientDetailsService.loadClientByClientId(TEST_CLIENT_ID),
-        accountRepo.findByUsername(owner).get());
-
     ClientDetailsEntity clientTest = clientDetailsService.loadClientByClientId(TEST_CLIENT_ID);
-    doReturn(Optional.of(clientTest)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
+    Optional<IamAccount> account = accountRepo.findByUsername(owner);
+    ClientDetailsEntity clientTestUpdate = clientService.linkClientToAccount(clientTest, account.get());
+
+    doReturn(Optional.of(clientTestUpdate)).when(clientRepo).findByClientId(TEST_CLIENT_ID);
 
     assertFalse(getMethods().isClientOwner(TEST_CLIENT_ID));
   }
