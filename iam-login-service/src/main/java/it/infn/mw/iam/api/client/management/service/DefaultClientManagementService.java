@@ -175,7 +175,6 @@ public class DefaultClientManagementService implements ClientManagementService {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(clientDTO);
-
     newClient.setId(oldClient.getId());
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setClientId(oldClient.getClientId());
@@ -188,7 +187,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     } else if (isNull(clientDTO.getClientSecret()) && isNull(oldClient.getClientSecret())) {
       newClient.setClientSecret(defaultsService.generateClientSecret());
     } else {
-      // user cannot change the clientSecret on update
+      // Direct updates are disabled. Changes must be made via secret reset process
       newClient.setClientSecret(oldClient.getClientSecret());
     }
 
@@ -293,7 +292,3 @@ public class DefaultClientManagementService implements ClientManagementService {
   }
 
 }
-
-
-
-// Fix updateClient with old clientSecret value

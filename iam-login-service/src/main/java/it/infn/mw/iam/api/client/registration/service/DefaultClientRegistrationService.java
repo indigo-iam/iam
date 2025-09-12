@@ -19,6 +19,7 @@ import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ADMINISTRATORS;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.ANYONE;
 import static it.infn.mw.iam.config.client_registration.ClientRegistrationProperties.ClientRegistrationAuthorizationPolicy.REGISTERED_USERS;
+import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.NONE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -427,7 +428,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
-    newClient.setClientSecret(oldClient.getClientSecret());
     newClient.setAccessTokenValiditySeconds(oldClient.getAccessTokenValiditySeconds());
     newClient.setIdTokenValiditySeconds(oldClient.getIdTokenValiditySeconds());
     newClient.setRefreshTokenValiditySeconds(oldClient.getRefreshTokenValiditySeconds());
@@ -438,6 +438,15 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
+
+    if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
+      newClient.setClientSecret(null);
+    } else if (isNull(request.getClientSecret()) && isNull(oldClient.getClientSecret())) {
+      newClient.setClientSecret(defaultsService.generateClientSecret());
+    } else {
+      // Direct updates are disabled. Changes must be made via secret reset process
+      newClient.setClientSecret(oldClient.getClientSecret());
+    }
 
     if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
       removeCustomScopes(newClient);
