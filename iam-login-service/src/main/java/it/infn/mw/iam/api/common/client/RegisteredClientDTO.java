@@ -171,13 +171,13 @@ public class RegisteredClientDTO {
   @JsonDeserialize(using = StringAsSetOfStringsDeserializer.class)
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
-  private Set<@NotBlank(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-      OnClientCreation.class, OnClientUpdate.class},
+  private Set<@NotBlank(
+      groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
+          OnClientCreation.class, OnClientUpdate.class},
       message = "must not include blank strings") @Size(min = 1, max = 2048,
           message = "string size must be between 1 and 2048",
           groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
-              OnClientCreation.class, OnClientUpdate.class}) String> scope =
-          Sets.newHashSet();
+              OnClientCreation.class, OnClientUpdate.class}) String> scope = Sets.newHashSet();
 
   @Min(value = 0, groups = OnClientCreation.class)
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class})
@@ -243,6 +243,11 @@ public class RegisteredClientDTO {
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private LocalDate lastUsed;
 
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
+  private LocalDate expiration;
+
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   @Size(max = 2048, groups = {OnClientCreation.class, OnClientUpdate.class})
@@ -265,7 +270,7 @@ public class RegisteredClientDTO {
   private Date statusChangedOn;
 
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-    ClientViews.DynamicRegistration.class})
+      ClientViews.DynamicRegistration.class})
   private String statusChangedBy;
 
   public String getClientId() {
@@ -499,6 +504,14 @@ public class RegisteredClientDTO {
 
   public void setLastUsed(LocalDate lastUsed) {
     this.lastUsed = lastUsed;
+  }
+
+  public LocalDate getExpiration() {
+    return expiration;
+  }
+
+  public void setExpiration(LocalDate expiration) {
+    this.expiration = expiration;
   }
 
   public String getJwk() {

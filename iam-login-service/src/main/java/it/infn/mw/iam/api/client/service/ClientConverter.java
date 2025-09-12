@@ -130,6 +130,9 @@ public class ClientConverter {
     if (entity.getClientLastUsed() != null) {
       clientDTO.setLastUsed(entity.getClientLastUsed().getLastUsed());
     }
+    if (entity.getClientExpiration() != null) {
+      clientDTO.setExpiration(entity.getClientExpiration().getExpiration());
+    }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());
     clientDTO.setClearAccessTokensOnRefresh(entity.isClearAccessTokensOnRefresh());
@@ -191,19 +194,16 @@ public class ClientConverter {
     }
 
     client.setPolicyUri(dto.getPolicyUri());
-    
+
     client.setRedirectUris(cloneSet(dto.getRedirectUris()));
 
     client.setScope(cloneSet(dto.getScope()));
-    
-    client.setGrantTypes(new HashSet<>());   
+
+    client.setGrantTypes(new HashSet<>());
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(
-          dto.getGrantTypes()
-          .stream()
-          .map(AuthorizationGrantType::getGrantType)
-          .collect(toSet()));
+          dto.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).collect(toSet()));
     }
 
     if (dto.getScope().contains("offline_access")) {
@@ -228,10 +228,14 @@ public class ClientConverter {
     }
 
     // bypasses MitreID default setting to zero inside client's entity
-    client.setAccessTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
-    client.setRefreshTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
-    client.setIdTokenValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
-    client.setDeviceCodeValiditySeconds(clientRegistrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
+    client.setAccessTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultAccessTokenValiditySeconds());
+    client.setRefreshTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultRefreshTokenValiditySeconds());
+    client.setIdTokenValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultIdTokenValiditySeconds());
+    client.setDeviceCodeValiditySeconds(
+        clientRegistrationProperties.getClientDefaults().getDefaultDeviceCodeValiditySeconds());
 
     return client;
   }

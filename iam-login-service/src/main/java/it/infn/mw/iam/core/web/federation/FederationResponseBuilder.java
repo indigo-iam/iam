@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.web.federation;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +72,8 @@ public class FederationResponseBuilder {
 
     Instant now = Instant.now();
 
-    Instant exp = trustChain.resolveExpirationTime().toInstant();
+    // Instant exp = trustChain.resolveExpirationTime().toInstant();
+    Instant exp = registered.getExpiration().atStartOfDay(ZoneId.systemDefault()).toInstant();
 
     JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(opEntityId)
       .subject(trustChain.getLeafSelfStatement().getClaimsSet().getSubject().getValue())

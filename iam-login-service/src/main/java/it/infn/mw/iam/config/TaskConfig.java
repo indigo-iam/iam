@@ -15,9 +15,12 @@
  */
 package it.infn.mw.iam.config;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.DeviceCodeService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.service.ApprovedSiteService;
@@ -34,6 +37,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.config.lifecycle.LifecycleProperties;
 import it.infn.mw.iam.core.lifecycle.ExpiredAccountsHandler;
 import it.infn.mw.iam.core.user.IamAccountService;
@@ -42,6 +46,7 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 import it.infn.mw.iam.notification.NotificationDelivery;
 import it.infn.mw.iam.notification.NotificationDeliveryTask;
 import it.infn.mw.iam.notification.service.NotificationStoreService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @Configuration
 @EnableScheduling
@@ -94,6 +99,12 @@ public class TaskConfig implements SchedulingConfigurer {
   @Autowired
   ExecutorService taskScheduler;
 
+  @Autowired
+  IamClientRepository clientRepo;
+
+  @Autowired
+  ClientService clientService;
+
   @Value("${notification.disable}")
   boolean notificationDisabled;
 
@@ -135,6 +146,15 @@ public class TaskConfig implements SchedulingConfigurer {
       initialDelay = ONE_MINUTE_MSEC)
   public void scheduledAupRemindersTask() {
     aupReminderTask.sendAupReminders();
+  }
+
+  @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
+  public void disableExpiredClients() {
+    List<ClientDetailsEntity> clients = clientRepo.findByExpirationBefore(LocalDate.now());
+    for (ClientDetailsEntity client : clients) {
+      client.setActive(false);
+      clientService.updateClient(client);
+    }
   }
 
   public void schedulePendingNotificationsDelivery(final ScheduledTaskRegistrar taskRegistrar) {

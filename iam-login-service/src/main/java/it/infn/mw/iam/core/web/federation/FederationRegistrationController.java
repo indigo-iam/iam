@@ -16,6 +16,9 @@
 package it.infn.mw.iam.core.web.federation;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -106,10 +109,11 @@ public class FederationRegistrationController {
     } else {
       dtoClient.setScope(Set.of("openid"));
     }
+
     return dtoClient;
   }
 
-  @PostMapping(value = "openid-federation/client-registration",
+  @PostMapping(value = "/iam/openid-federation/client-registration",
       consumes = "application/entity-statement+jwt",
       produces = "application/explicit-registration-response+jwt")
   public ResponseEntity<String> register(@RequestBody String requestJwt)
@@ -128,6 +132,9 @@ public class FederationRegistrationController {
 
     // 4. Create RegisteredClientDTO from RP metadata
     RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
+    Date clientExpiration = trustChain.resolveExpirationTime();
+    dtoClient
+      .setExpiration(LocalDate.ofInstant(clientExpiration.toInstant(), ZoneId.systemDefault()));
 
     // 5. Register the client by using the already existing service
     RegisteredClientDTO registeredClient =

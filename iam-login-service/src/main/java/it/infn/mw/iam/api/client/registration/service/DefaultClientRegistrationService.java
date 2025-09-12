@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientExpirationEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -47,8 +48,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
+import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -85,7 +86,8 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_USER =
       EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE);
   private static final EnumSet<AuthorizationGrantType> FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS =
-      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE, AuthorizationGrantType.CLIENT_CREDENTIALS);
+      EnumSet.of(AuthorizationGrantType.PASSWORD, AuthorizationGrantType.TOKEN_EXCHANGE,
+          AuthorizationGrantType.CLIENT_CREDENTIALS);
 
   private final Clock clock;
   private final ClientService clientService;
@@ -144,16 +146,16 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-      .stream()
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+        .stream()
+        .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+        .findFirst()
+        .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
-      .stream()
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+        .stream()
+        .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+        .findFirst()
+        .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
@@ -165,18 +167,18 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
     if (accountUtils.isRegisteredUser(authentication)) {
       request.getGrantTypes()
-      .stream()
-      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+        .stream()
+        .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+        .filter(FORBIDDEN_GRANT_TYPES_FOR_USER::contains)
+        .findFirst()
+        .ifPresent(this::throwGrantTypeNotAllowed);
     } else {
       request.getGrantTypes()
-      .stream()
-      .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
-      .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
-      .findFirst()
-      .ifPresent(this::throwGrantTypeNotAllowed);
+        .stream()
+        .filter(s -> !oldClient.getGrantTypes().contains(s.getGrantType()))
+        .filter(FORBIDDEN_GRANT_TYPES_FOR_ANONYMOUS::contains)
+        .findFirst()
+        .ifPresent(this::throwGrantTypeNotAllowed);
     }
   }
 
@@ -321,11 +323,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     return Optional.empty();
   }
 
-  private void checkUserUpdatingSuspendedClient(Authentication authentication, ClientDetailsEntity oldClient) {
+  private void checkUserUpdatingSuspendedClient(Authentication authentication,
+      ClientDetailsEntity oldClient) {
     if (accountUtils.isAdmin(authentication)) {
       return;
     }
-    if(!oldClient.isActive()){
+    if (!oldClient.isActive()) {
       throw new ClientSuspended("Client " + oldClient.getClientId() + " is suspended!");
     }
   }
@@ -341,6 +344,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
     client.setActive(true);
+
+    if (federationRegistration) {
+      ClientExpirationEntity clientExpEntity =
+          new ClientExpirationEntity(client, request.getExpiration());
+      client.setClientExpiration(clientExpEntity);
+    }
 
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
@@ -406,10 +415,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     ClientDetailsEntity oldClient =
         lookupClient(clientId, authentication).orElseThrow(clientNotFound(clientId));
 
-    checkUserUpdatingSuspendedClient(authentication, oldClient);    
+    checkUserUpdatingSuspendedClient(authentication, oldClient);
     checkAllowedGrantTypesOnUpdate(request, authentication, oldClient);
     cleanupRequestedScopesOnUpdate(request, authentication, oldClient);
-       
+
     ClientDetailsEntity newClient = converter.entityFromRegistrationRequest(request);
     newClient.setId(oldClient.getId());
     newClient.setClientSecret(oldClient.getClientSecret());
@@ -434,7 +443,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       eventPublisher.publishEvent(new ClientRegistrationAccessTokenRotatedEvent(this, savedClient));
       response.setRegistrationAccessToken(t);
     });
-    return response;      
+    return response;
   }
 
   @Override
