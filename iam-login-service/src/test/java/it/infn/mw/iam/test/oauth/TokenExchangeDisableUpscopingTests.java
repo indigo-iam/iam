@@ -44,7 +44,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"iam.jwt-profile.token-exchange-upscoping-enabled=true",
+@TestPropertySource(properties = {"iam.jwt-profile.token-exchange-upscoping-enabled=false",
         "iam.access_token.include_scope=true"})
 public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
