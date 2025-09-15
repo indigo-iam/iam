@@ -140,7 +140,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-    if (properties.getJwtProfile().isTokenExchangeDisableUpscoping() && !subjectToken.isBlank()) {
+    if (properties.getJwtProfile().isTokenExchangeUpscopingEnabled() && !subjectToken.isBlank()) {
       scopeMatchers = extractScopesFromToken(subjectToken);
       invalidScopeMessage = "scope not allowed by subject token configuration";
       

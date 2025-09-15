@@ -401,7 +401,7 @@ public class IamProperties {
 
     Profile defaultProfile = Profile.IAM;
 
-    boolean tokenExchangeDisableUpscoping = false;
+    boolean tokenExchangeUpscopingEnabled = true;
 
     public Profile getDefaultProfile() {
       return defaultProfile;
@@ -411,12 +411,12 @@ public class IamProperties {
       this.defaultProfile = defaultProfile;
     }
 
-    public boolean isTokenExchangeDisableUpscoping() {
-      return tokenExchangeDisableUpscoping;
+    public boolean isTokenExchangeUpscopingEnabled() {
+      return tokenExchangeUpscopingEnabled;
     }
 
-    public void setTokenExchangeDisableUpscoping(boolean isDisableValue) {
-      this.tokenExchangeDisableUpscoping = isDisableValue;
+    public void setTokenExchangeUpscopingEnabled(boolean enabledValue) {
+      this.tokenExchangeUpscopingEnabled = enabledValue;
     }
   }
 
