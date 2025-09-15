@@ -40,6 +40,7 @@ import com.google.common.collect.Maps;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
+import org.springframework.security.oauth2.provider.TokenRequest;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -128,6 +129,21 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
+  private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token, Instant issueTime) {
+
+    OAuth2Request originalRequest = authentication.getOAuth2Request();
+    if (originalRequest.isRefresh()) {
+      TokenRequest refreshRequest = originalRequest.getRefreshTokenRequest();
+      if (refreshRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+        return Math.min(Integer.valueOf(refreshRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
+      }
+    }
+    if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+      return Math.min(Integer.valueOf(originalRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
+    }
+    return token.getClient().getAccessTokenValiditySeconds();
+  }
+
   protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
     final String expiration =
         authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
@@ -142,7 +158,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
     String subject = null;
-    String expiry = null;
+    Integer expiry = null;
     Date expTime = token.getExpiration();
 
     if (userInfo == null) {
@@ -164,14 +180,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       audience = authentication.getOAuth2Request().getRequestParameters().get(AUD_KEY);
     }
 
-    if (hasCustomValidityRequest(authentication)) {
-      expiry = authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
-    }
-
-    if(hasCustomValidityRefreshFlow(authentication)){
-      expiry = authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().get(EXPIRES_IN_KEY);
-    }
-
     if (hasRefreshTokenAudienceRequest(authentication)) {
       audience = authentication.getOAuth2Request()
         .getRefreshTokenRequest()
@@ -182,23 +190,19 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     if (!isNullOrEmpty(audience)) {
       builder.audience(splitter.splitToList(audience));
     }
-
-    if (!isNullOrEmpty(expiry)) {
-      Integer maxValidity = token.getClient().getAccessTokenValiditySeconds();
-      try {
-        Integer desiredValidity = Integer.valueOf(expiry);
-        if (desiredValidity <= maxValidity && desiredValidity > 0) {
-          Date newValidity = Date.from(issueTime.plus(desiredValidity, ChronoUnit.SECONDS));
-          expTime = newValidity;
-          token.setExpiration(newValidity);
-        } else if (desiredValidity <= 0) {
-          throw new InvalidRequestException(INVALID_PARAMETER);
-        }
-      } catch (NumberFormatException e) {
+    
+    try {
+      expiry = computeExpTime(authentication, token, issueTime);
+      if (expiry > 0 ){
+        expTime = Date.from(issueTime.plus(expiry, ChronoUnit.SECONDS));
+        token.setExpiration(expTime);
+      } else {
         throw new InvalidRequestException(INVALID_PARAMETER);
       }
-
+    } catch (NumberFormatException e) {
+        throw new InvalidRequestException(INVALID_PARAMETER);
     }
+
     builder.expirationTime(expTime);
 
 
