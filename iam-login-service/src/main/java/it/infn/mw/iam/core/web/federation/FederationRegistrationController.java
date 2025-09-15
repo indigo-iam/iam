@@ -74,7 +74,7 @@ public class FederationRegistrationController {
     dtoClient.setClientName(metadata.getName());
     // Contacts
     if (metadata.getEmailContacts() != null) {
-      dtoClient.setContacts(new HashSet<String>(metadata.getEmailContacts()));
+      dtoClient.setContacts(new HashSet<>(metadata.getEmailContacts()));
     }
     // Grant types
     if (metadata.getGrantTypes() != null) {

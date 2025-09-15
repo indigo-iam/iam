@@ -72,7 +72,6 @@ public class FederationResponseBuilder {
 
     Instant now = Instant.now();
 
-    // Instant exp = trustChain.resolveExpirationTime().toInstant();
     Instant exp = registered.getExpiration().atStartOfDay(ZoneId.systemDefault()).toInstant();
 
     JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(opEntityId)
