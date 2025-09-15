@@ -536,7 +536,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, userAuth);
+      response = service.registerClient(request, userAuth, false);
       assertThat(response.getScope(), hasItem("openid"));
       assertThat(response.getScope(), hasSize(1));
     } catch (ParseException e) {
@@ -561,7 +561,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, userAuth);
+      response = service.registerClient(request, userAuth, false);
       assertThat(response.getScope(), hasItem("openid"));
       assertThat(response.getScope(), hasSize(2));
       assertThat(response.getScope(), hasItem("customscope"));
@@ -587,7 +587,7 @@ class ClientRegistrationServiceTests {
     // maybe assert that customscope is not in system scopes
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, adminAuth);
+      response = service.registerClient(request, adminAuth, false);
       assertThat(response.getScope(), hasItem("openid"));
       assertThat(response.getScope(), hasSize(2));
       assertThat(response.getScope(), hasItem("customscope"));
@@ -613,7 +613,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, adminAuth);
+      response = service.registerClient(request, adminAuth, false);
       assertThat(response.getScope(), hasItem("openid"));
       assertThat(response.getScope(), hasSize(2));
       assertThat(response.getScope(), hasItem("customscope"));
@@ -639,7 +639,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, userAuth);
+      response = service.registerClient(request, userAuth, false);
       RegisteredClientDTO updateReq = response;
       scopes.add("customscope");
       assertFalse(defaultScopes.contains("customscope"));
@@ -672,7 +672,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, userAuth);
+      response = service.registerClient(request, userAuth, false);
       RegisteredClientDTO updateReq = response;
       scopes.add("customscope");
       assertFalse(defaultScopes.contains("customscope"));
@@ -705,7 +705,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, adminAuth);
+      response = service.registerClient(request, adminAuth, false);
       RegisteredClientDTO updateReq = response;
       scopes.add("customscope");
       assertFalse(defaultScopes.contains("customscope"));
@@ -739,7 +739,7 @@ class ClientRegistrationServiceTests {
 
     RegisteredClientDTO response = null;
     try {
-      response = service.registerClient(request, adminAuth);
+      response = service.registerClient(request, adminAuth, false);
       RegisteredClientDTO updateReq = response;
       scopes.add("customscope");
       assertFalse(defaultScopes.contains("customscope"));
