@@ -129,7 +129,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
-  private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token, Instant issueTime) {
+  private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
 
     OAuth2Request originalRequest = authentication.getOAuth2Request();
     if (originalRequest.isRefresh()) {
@@ -138,7 +138,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
         return Math.min(Integer.valueOf(refreshRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
       }
       // don't use custom value from original request
-      return Integer.valueOf(token.getClient().getAccessTokenValiditySeconds());
+      return token.getClient().getAccessTokenValiditySeconds();
     }
     if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
       return Math.min(Integer.valueOf(originalRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
@@ -184,7 +184,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     }
 
     try {
-      expiry = computeExpTime(authentication, token, issueTime);
+      expiry = computeExpTime(authentication, token);
       if (expiry >= 0){
         expTime = Date.from(issueTime.plus(expiry, ChronoUnit.SECONDS));
         token.setExpiration(expTime);
