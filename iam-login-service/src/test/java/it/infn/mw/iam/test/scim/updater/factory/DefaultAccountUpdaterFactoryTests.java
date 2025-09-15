@@ -83,6 +83,7 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
 
@@ -112,6 +113,9 @@ public class DefaultAccountUpdaterFactoryTests {
   IamAccountRepository repo;
 
   @Mock
+  IamGroupRepository groupRepo;
+
+  @Mock
   IamAccountService accountService;
 
   @Mock
@@ -131,7 +135,7 @@ public class DefaultAccountUpdaterFactoryTests {
   public void init() {
 
     factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, tokenService,
-        oidcConverter, samlConverter, sshKeyConverter, x509Converter, usernameValidator);
+        oidcConverter, samlConverter, sshKeyConverter, x509Converter, usernameValidator, groupRepo);
   }
 
   @Test

@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,13 +39,16 @@ public class IamProperties {
     NAME, SURNAME, EMAIL, PICTURE
   }
 
+  public enum RegistrationField {
+    EMAIL, NAME, SURNAME, USERNAME, AFFILIATION, NOTES
+  }
+
   public enum LocalAuthenticationAllowedUsers {
     ALL, VO_ADMINS, NONE
   }
 
   public enum LoginPageLayoutOptions {
-    LOGIN_FORM,
-    LOGIN_EXTERNAL_AUTHN
+    LOGIN_FORM, LOGIN_EXTERNAL_AUTHN
   }
 
   public enum LocalAuthenticationLoginPageMode {
@@ -53,9 +56,7 @@ public class IamProperties {
   }
 
   public enum ExternalAuthAttributeSectionBehaviour {
-    MANDATORY,
-    OPTIONAL,
-    HIDDEN
+    MANDATORY, OPTIONAL, HIDDEN
   }
 
   public static class AccountLinkingProperties {
@@ -196,9 +197,9 @@ public class IamProperties {
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationFieldProperties {
-    boolean readOnly = false;
+    boolean readOnly;
     String externalAuthAttribute;
-    ExternalAuthAttributeSectionBehaviour fieldBehaviour = ExternalAuthAttributeSectionBehaviour.MANDATORY;
+    ExternalAuthAttributeSectionBehaviour fieldBehaviour;
 
     public boolean isReadOnly() {
       return readOnly;
@@ -228,11 +229,11 @@ public class IamProperties {
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public static class RegistrationProperties {
 
-    boolean showRegistrationButtonInLoginPage = true;
+    boolean showRegistrationButtonInLoginPage;
 
-    boolean requireExternalAuthentication = false;
-    
-    boolean addNicknameAsAttribute = false;
+    boolean requireExternalAuthentication;
+
+    boolean addNicknameAsAttribute;
 
     ExternalAuthenticationType authenticationType;
 
@@ -240,7 +241,10 @@ public class IamProperties {
 
     String samlEntityId;
 
-    Map<String, RegistrationFieldProperties> fields = new HashMap<>();
+    String registrationButtonText;
+
+    Map<RegistrationField, RegistrationFieldProperties> fields =
+        new EnumMap<>(RegistrationField.class);
 
     List<DefaultGroup> defaultGroups;
 
@@ -252,6 +256,14 @@ public class IamProperties {
       this.showRegistrationButtonInLoginPage = showRegistrationButtonInLoginPage;
     }
 
+    public String getRegistrationButtonText() {
+      return registrationButtonText;
+    }
+
+    public void setRegistrationButtonText(String registrationButtonText) {
+      this.registrationButtonText = registrationButtonText;
+    }
+
     public boolean isRequireExternalAuthentication() {
       return requireExternalAuthentication;
     }
@@ -259,7 +271,7 @@ public class IamProperties {
     public void setRequireExternalAuthentication(boolean requireExternalAuthentication) {
       this.requireExternalAuthentication = requireExternalAuthentication;
     }
-    
+
     public boolean isAddNicknameAsAttribute() {
       return addNicknameAsAttribute;
     }
@@ -292,11 +304,11 @@ public class IamProperties {
       this.samlEntityId = samlEntityId;
     }
 
-    public Map<String, RegistrationFieldProperties> getFields() {
+    public Map<RegistrationField, RegistrationFieldProperties> getFields() {
       return fields;
     }
 
-    public void setFields(Map<String, RegistrationFieldProperties> fields) {
+    public void setFields(Map<RegistrationField, RegistrationFieldProperties> fields) {
       this.fields = fields;
     }
 
@@ -384,10 +396,7 @@ public class IamProperties {
   public static class JWTProfile {
 
     public enum Profile {
-      IAM,
-      WLCG,
-      AARC,
-      KC
+      IAM, WLCG, AARC, KC
     }
 
     Profile defaultProfile = Profile.IAM;
@@ -401,9 +410,9 @@ public class IamProperties {
     }
   }
 
-  public static class PrivacyPolicy {
+  public static class LoginLink {
     String url;
-    String text = "Privacy policy";
+    String text;
 
     public String getUrl() {
       return url;
@@ -425,9 +434,7 @@ public class IamProperties {
   public static class LoginPageLayout {
 
     public enum ExternalAuthnOptions {
-      X509,
-      OIDC,
-      SAML
+      X509, OIDC, SAML
     }
 
     LoginPageLayoutOptions sectionToBeDisplayedFirst;
@@ -467,6 +474,7 @@ public class IamProperties {
     boolean includeAuthnInfo = false;
     boolean includeScope = false;
     boolean includeNbf = false;
+    int nbfOffsetSeconds = 60;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -490,6 +498,18 @@ public class IamProperties {
 
     public void setIncludeNbf(boolean includeNbf) {
       this.includeNbf = includeNbf;
+    }
+
+    public int getNbfOffsetSeconds() {
+      return nbfOffsetSeconds;
+    }
+
+    public void setNbfOffsetSeconds(int nbfTime) {
+      if (nbfTime < 0) {
+        this.nbfOffsetSeconds = 0;
+      } else {
+        this.nbfOffsetSeconds = nbfTime;
+      }
     }
   }
 
@@ -626,7 +646,9 @@ public class IamProperties {
 
   private RegistractionAccessToken token = new RegistractionAccessToken();
 
-  private PrivacyPolicy privacyPolicy = new PrivacyPolicy();
+  private LoginLink privacyPolicy = new LoginLink();
+
+  private LoginLink support = new LoginLink();
 
   private LoginPageLayout loginPageLayout = new LoginPageLayout();
 
@@ -650,9 +672,11 @@ public class IamProperties {
 
   private CustomizationProperties customization = new CustomizationProperties();
 
-  private VersionedStaticResourcesProperties versionedStaticResources = new VersionedStaticResourcesProperties();
+  private VersionedStaticResourcesProperties versionedStaticResources =
+      new VersionedStaticResourcesProperties();
 
-  private ExternalConnectivityProbeProperties externalConnectivityProbe = new ExternalConnectivityProbeProperties();
+  private ExternalConnectivityProbeProperties externalConnectivityProbe =
+      new ExternalConnectivityProbeProperties();
 
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
 
@@ -738,12 +762,20 @@ public class IamProperties {
     this.verifyButton = verifyButton;
   }
 
-  public void setPrivacyPolicy(PrivacyPolicy privacyPolicy) {
+  public void setPrivacyPolicy(LoginLink privacyPolicy) {
     this.privacyPolicy = privacyPolicy;
   }
 
-  public PrivacyPolicy getPrivacyPolicy() {
+  public LoginLink getPrivacyPolicy() {
     return privacyPolicy;
+  }
+
+  public void setSupport(LoginLink newSupport) {
+    this.support = newSupport;
+  }
+
+  public LoginLink getSupport() {
+    return support;
   }
 
   public LoginPageLayout getLoginPageLayout() {
@@ -888,8 +920,8 @@ public class IamProperties {
     this.client = client;
   }
 
-  public ClientProperties getClient(){
-    return client;    
+  public ClientProperties getClient() {
+    return client;
   }
 
 }

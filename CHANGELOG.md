@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.12.2 (2025-08-05)
+
+### What's Changed
+
+* Upgrade CANL to 2.8.3 and Bouncy Castle to 1.81 by moving to latest VOMS API Java v3.3.6
+
+### Note
+
+This update fixes a problem we observed with VOMS API Java v3.3.5,
+firstly added to the release candidates of IAM v1.12.0 and later downgraded to v3.3.4 before
+the official release.
+
+## 1.12.1 (2025-08-04)
+
+### What's Fixed
+
+* Fix link/unlink x509 personal certificate issue due to runtime bouncy-castle conflict
+* Consider both subject DN and issuer DN when unlinking x509 personal certificate
+* Send acr_values only when mfa is included within the active profiles
+* Ensure access tokens are not issued before totp verification
+* Add validation when registration fields are read-only
+
+### Note
+
+The Multi-Factor Authentication feature is still considered as experimental.
+It will be enhanced and expanded in future releases, based also on users feedback.
+
 ## 1.12.0 (2025-05-29)
 
 ### What's Changed

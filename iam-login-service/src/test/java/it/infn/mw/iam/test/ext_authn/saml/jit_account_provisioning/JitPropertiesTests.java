@@ -33,7 +33,6 @@ import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties;
 
 public class JitPropertiesTests {
 
-
   @Test
   public void testTrustedIdpsListIsByDefaultEmpty() {
     IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
@@ -44,8 +43,7 @@ public class JitPropertiesTests {
     
     assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent()); 
   }
-  
-  
+
   @Test
   public void testTrustedIdpsListParsing() {
     IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
@@ -61,8 +59,7 @@ public class JitPropertiesTests {
     assertThat("idp2", is(in(trustedIdps.get())));
     assertThat("idp3", is(in(trustedIdps.get())));
   }
-  
-  
+
   @Test
   public void testTrustedIdpsEmptyListYeldsEmptyOptional() {
     IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
@@ -72,5 +69,4 @@ public class JitPropertiesTests {
     assertFalse(trustedIdps.isPresent());
     
   }
-
 }

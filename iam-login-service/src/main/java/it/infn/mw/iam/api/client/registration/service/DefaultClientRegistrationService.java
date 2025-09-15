@@ -101,7 +101,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   private final ScopeMatcherRegistry scopeMatcherRegistry;
   private final ApplicationEventPublisher eventPublisher;
 
-
   public DefaultClientRegistrationService(Clock clock, ClientService clientService,
       AccountUtils accountUtils, ClientConverter converter, ClientDefaultsService defaultsService,
       OIDCTokenService clientTokenService, IamTokenService tokenService,
@@ -137,7 +136,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
     return isNull(authentication) || (authentication instanceof AnonymousAuthenticationToken);
   }
-
 
   private void checkAllowedGrantTypes(RegisteredClientDTO request, Authentication authentication) {
 
@@ -204,7 +202,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
   }
 
-
   private void removeRestrictedScopes(ClientDetailsEntity entity) {
     Set<ScopeMatcher> matchers = systemScopeService.getRestricted()
       .stream()
@@ -219,12 +216,30 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     entity.setScope(filteredClientScopes);
   }
 
+  private void removeCustomScopes(ClientDetailsEntity entity) {
+    Set<ScopeMatcher> matchers = systemScopeService.getAll()
+      .stream()
+      .map(s -> scopeMatcherRegistry.findMatcherForScope(s.getValue()))
+      .collect(toSet());
+
+    Set<String> filteredClientScopes = entity.getScope()
+      .stream()
+      .filter(s -> matchers.stream().anyMatch(m -> m.matches(s)))
+      .collect(toSet());
+
+    entity.setScope(filteredClientScopes);
+  }
+
   private void cleanupRequestedScopes(ClientDetailsEntity entity, Authentication authentication) {
 
     if (entity.getScope().isEmpty()) {
       entity.getScope().addAll(systemScopeService.toStrings(systemScopeService.getDefaults()));
     } else {
       systemScopeService.getReserved().forEach(s -> entity.getScope().remove(s.getValue()));
+      if (registrationProperties.isAdminOnlyCustomScopes()
+          && !accountUtils.isAdmin(authentication)) {
+        removeCustomScopes(entity);
+      }
       if (!accountUtils.isAdmin(authentication)) {
         removeRestrictedScopes(entity);
       }
@@ -405,7 +420,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
       .orElseThrow(clientNotFound(clientId));
   }
 
-
   @Validated(OnDynamicClientUpdate.class)
   @Override
   public RegisteredClientDTO updateClient(String clientId, RegisteredClientDTO request,
@@ -433,6 +447,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
 
+    if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
+      removeCustomScopes(newClient);
+    }
+
     ClientDetailsEntity savedClient = clientService.updateClient(newClient);
 
     eventPublisher.publishEvent(new ClientUpdatedEvent(this, savedClient));
@@ -457,7 +475,6 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     eventPublisher.publishEvent(new ClientRemovedEvent(this, client));
   }
-
 
   @Override
   public RegisteredClientDTO redeemClient(@NotBlank String clientId,

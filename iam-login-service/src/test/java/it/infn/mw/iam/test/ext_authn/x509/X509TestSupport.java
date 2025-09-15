@@ -340,6 +340,25 @@ public class X509TestSupport {
     account.getX509Certificates().add(test0Cert);
   }
 
+  protected void linkCertificateToAccount(IamAccount account, String subjectDN, String issuerDN,
+      String label) {
+    IamX509Certificate cert = new IamX509Certificate();
+    cert.setPrimary(false);
+
+    cert.setSubjectDn(subjectDN);
+    cert.setIssuerDn(issuerDN);
+
+    cert.setLabel(label);
+
+    Date now = new Date();
+
+    cert.setCreationTime(now);
+    cert.setLastUpdateTime(now);
+
+    cert.setAccount(account);
+    account.getX509Certificates().add(cert);
+  }
+
   protected HttpHeaders test0SSLHeadersVerificationSuccess() {
     return test0SSLHeaders(true, null);
   }

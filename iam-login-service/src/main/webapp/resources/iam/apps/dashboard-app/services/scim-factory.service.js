@@ -32,6 +32,7 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		deleteUser: deleteUser,
 		addUserToGroup: addUserToGroup,
 		removeUserFromGroup: removeUserFromGroup,
+		removeMyselfFromGroup: removeMyselfFromGroup,
 		removeMemberFromGroup: removeMemberFromGroup,
 		addOpenIDAccount: addOpenIDAccount,
 		removeOpenIDAccount: removeOpenIDAccount,
@@ -251,6 +252,31 @@ angular.module('dashboardApp').factory("scimFactory", ['$q', '$http', '$httpPara
 		var url = urlGroups + '/' + groupId;
 
 		return $http.patch(url, data, config);
+	}
+
+	function removeMyselfFromGroup(groupId, groupName) {
+
+		console.info("Patch scim/Me, remove group", groupId);
+
+		var config = {
+			headers: {
+				'Content-Type': 'application/scim+json'
+			}
+		};
+		var data = {
+			schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+			operations: [{
+				op: "remove",
+				value: {
+					groups: [{
+						display: groupName,
+						value: groupId
+					}]
+				}
+			}]
+		};
+
+		return $http.patch(urlMe, data, config);
 	}
 
 	function removeMemberFromGroup(groupId, memberId, memberLocation, memberDisplayName) {

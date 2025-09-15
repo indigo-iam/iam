@@ -21,14 +21,18 @@ import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 import java.text.ParseException;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +53,8 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.error.InvalidPaginationRequest;
 import it.infn.mw.iam.api.client.error.NoSuchClient;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.api.client.util.ClientSuppliers;
 import it.infn.mw.iam.api.common.ClientViews;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.ListResponseDTO;
@@ -66,10 +72,19 @@ public class ClientManagementAPIController {
   private final ClientManagementService managementService;
   private final AccountUtils accountUtils;
 
+  private final OAuth2TokenEntityService tokenService;
+
+  private final ClientService clientService;
+
+  DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
   public ClientManagementAPIController(ClientManagementService managementService,
-      AccountUtils accountUtils) {
+      AccountUtils accountUtils, OAuth2TokenEntityService tokenService,
+      ClientService clientService) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
+    this.tokenService = tokenService;
+    this.clientService = clientService;
   }
 
   @PostMapping
@@ -155,6 +170,35 @@ public class ClientManagementAPIController {
   public void disableClient(@PathVariable String clientId) {
     Optional<IamAccount> account = accountUtils.getAuthenticatedUserAccount();
     account.ifPresent(a -> managementService.updateClientStatus(clientId, false, a.getUuid()));
+  }
+
+  @PatchMapping("/{clientId}/revoke-refresh-tokens")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void revokeRefreshTokens(@PathVariable String clientId) {
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
+  }
+
+  @PatchMapping("/{clientId}/revoke-access-tokens")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public void revokeAccessTokens(@PathVariable String clientId) {
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+  }
+
+  @PatchMapping("/{clientId}/reset-client")
+  @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
+  public MappingJacksonValue resetClient(@PathVariable String clientId) {
+    disableClient(clientId);
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+      .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
+    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    RegisteredClientDTO resetClient = rotateClientSecret(clientId);
+    enableClient(clientId);
+    return new MappingJacksonValue(resetClient.getClientSecret());
   }
 
   @PostMapping("/{clientId}/secret")

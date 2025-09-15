@@ -135,6 +135,27 @@
         </div>
 
         <div class="form-group">
+            <label class="control-label col-sm-2" for="affiliation">Affiliation</label>
+            <div
+                ng-class="{'has-error': userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$invalid, 'has-success': userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$valid}">
+                <div class="col-sm-10">
+                    <input class="form-control" id="affiliation" name="affiliation" placeholder="Affiliation" type="text"
+                        ng-maxlength="200" ng-model="$ctrl.eUser.affiliation" ng-pattern="$ctrl.pattern"
+                        ng-disabled="!$ctrl.isAdmin()" />
+                    <span class="glyphicon form-control-feedback"
+                        ng-class="{'glyphicon-remove': userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$invalid, 'glyphicon-ok': userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$valid}"
+                        style="right: 15px"></span>
+                    <span class="help-block"
+                        ng-show="userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$error.maxlength"> Maximum
+                        length is 200 </span>
+                    <span class="help-block"
+                        ng-show="userUpdateForm.affiliation.$dirty && userUpdateForm.affiliation.$error.pattern"> Invalid
+                        characters </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label class="control-label col-sm-2" for="picture">Picture</label>
             <div
                 ng-class="{'has-error': userUpdateForm.picture.$dirty && userUpdateForm.picture.$invalid, 'has-success': userUpdateForm.picture.$dirty && userUpdateForm.picture.$valid}">

@@ -97,7 +97,7 @@ public class RegistrationApiController {
   @PreAuthorize("#iam.hasScope('registration:read') or hasRole('ADMIN')")
   @GetMapping(value = "/registration/list")
   public List<RegistrationRequestDto> listRequests(
-      @RequestParam(value = "status", required = false) IamRegistrationRequestStatus status) {
+      @RequestParam(required = false) IamRegistrationRequestStatus status) {
 
     return service.listRequests(status);
   }
@@ -120,27 +120,27 @@ public class RegistrationApiController {
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @PostMapping(value = "/registration/approve/{uuid}")
-  public RegistrationRequestDto approveRequest(@PathVariable("uuid") String uuid) {
+  public RegistrationRequestDto approveRequest(@PathVariable String uuid) {
     return service.approveRequest(uuid);
   }
 
   @PreAuthorize("#iam.hasScope('registration:write') or hasRole('ADMIN')")
   @PostMapping(value = "/registration/reject/{uuid}")
-  public RegistrationRequestDto rejectRequest(@PathVariable("uuid") String uuid,
+  public RegistrationRequestDto rejectRequest(@PathVariable String uuid,
       @RequestParam(required = false) String motivation, @RequestParam(required = false) boolean doNotSendEmail) {
 
     return service.rejectRequest(uuid, Optional.ofNullable(motivation), doNotSendEmail);
   }
 
   @GetMapping(value = "/registration/verify/{token}")
-  public ModelAndView openConfirmRequestPage(final Model model, @PathVariable("token") String token) {
+  public ModelAndView openConfirmRequestPage(final Model model, @PathVariable String token) {
 
     model.addAttribute("token", token);
     return new ModelAndView("iam/confirmRequest");
   }
 
   @PostMapping(value = "/registration/verify")
-  public ModelAndView verifyRequest(final Model model, @RequestParam("token") String token) {
+  public ModelAndView verifyRequest(final Model model, @RequestParam String token) {
     try {
       service.confirmRequest(token);
       model.addAttribute("verificationSuccess", true);

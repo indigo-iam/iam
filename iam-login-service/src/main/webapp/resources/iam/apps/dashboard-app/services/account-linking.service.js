@@ -54,7 +54,8 @@
             return $http.delete(
                 X509_RESOURCE, {
                     params: {
-                        certificateSubject: cert.subjectDn
+                        certificateSubject: cert.subjectDn,
+                        certificateIssuer: cert.issuerDn
                     }
                 });
         }

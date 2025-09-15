@@ -42,6 +42,8 @@ public interface LoginPageConfiguration {
 
   boolean isRegistrationEnabled();
 
+  boolean isAdminOnlyCustomScopes();
+
   boolean isAccountLinkingEnabled();
 
   boolean isIncludeCustomContent();
@@ -52,7 +54,13 @@ public interface LoginPageConfiguration {
 
   String getPrivacyPolicyText();
 
+  Optional<String> getSupportUrl();
+
+  String getSupportText();
+
   String getLoginButtonText();
+
+  String getRegistrationButtonText();
 
   List<OidcProvider> getOidcProviders();
 

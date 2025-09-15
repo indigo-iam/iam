@@ -391,6 +391,59 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_0_ISSUER)
+        .with(csrf().asHeader()))
+      .andDo(print())
+      .andExpect(status().isNoContent());
+
+    iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT).ifPresent(a -> {
+      throw new AssertionError(
+          "Found unexpected user linked with certificate subject " + TEST_0_SUBJECT);
+    });
+
+  }
+
+  @Test
+  @WithMockUser(username = "test")
+  public void x509AccountUnlinkCertificateWithSameSubjectAndDifferentIssuerWorks()
+      throws Exception {
+
+    IamAccount user = iamAccountRepo.findByUsername("test")
+      .orElseThrow(() -> new AssertionError("Expected test user not found"));
+
+    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_0_ISSUER, "test0");
+    linkCertificateToAccount(user, TEST_0_SUBJECT, TEST_NEW_ISSUER, "test1");
+
+    iamAccountRepo.save(user);
+
+    IamAccount linkedAccount = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(() -> new AssertionError(
+          "Expected test user linked with certificate subject " + TEST_0_SUBJECT));
+
+    assertThat(linkedAccount.getUsername(), equalTo("test"));
+
+    mvc
+      .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .with(csrf().asHeader()))
+      .andDo(print())
+      .andExpect(status().isBadRequest());
+
+    mvc
+      .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_0_ISSUER)
+        .with(csrf().asHeader()))
+      .andDo(print())
+      .andExpect(status().isNoContent());
+
+    IamAccount linkedAccount2 = iamAccountRepo.findByCertificateSubject(TEST_0_SUBJECT)
+      .orElseThrow(() -> new AssertionError(
+          "Expected test user linked with certificate subject " + TEST_0_SUBJECT));
+
+    assertThat(linkedAccount2.getUsername(), equalTo("test"));
+
+    mvc
+      .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_NEW_ISSUER)
         .with(csrf().asHeader()))
       .andDo(print())
       .andExpect(status().isNoContent());
@@ -415,6 +468,7 @@ public class X509AuthenticationIntegrationTests extends X509TestSupport {
 
     mvc
       .perform(delete("/iam/account-linking/X509").param("certificateSubject", TEST_0_SUBJECT)
+        .param("certificateIssuer", TEST_0_ISSUER)
         .with(csrf().asHeader()))
       .andExpect(status().isNoContent());
 

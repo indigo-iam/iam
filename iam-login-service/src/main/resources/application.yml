@@ -126,6 +126,10 @@ iam:
   privacyPolicy:
     url: ${IAM_PRIVACY_POLICY_URL:}
     text: ${IAM_PRIVACY_POLICY_TEXT:Privacy policy}
+
+  support:
+    url: ${IAM_SUPPORT_URL:}
+    text: ${IAM_SUPPORT_TEXT:Support}
   
   loginButton:
     text: ${IAM_LOGIN_BUTTON_TEXT:Sign in}
@@ -136,6 +140,7 @@ iam:
     include_authn_info: ${IAM_ACCESS_TOKEN_INCLUDE_AUTHN_INFO:false}
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
+    nbf-offset-seconds: ${IAM_ACCESS_TOKEN_NBF_OFFSET_SECONDS:60}
 
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}
@@ -147,15 +152,7 @@ iam:
   
   device-code:
     allow-complete-verification-uri: ${IAM_DEVICE_CODE_ALLOW_COMPLETE_VERIFICATION_URI:true}
-  
-  registration:
-    show-registration-button-in-login-page: ${IAM_REGISTRATION_SHOW_REGISTRATION_BUTTON_IN_LOGIN_PAGE:true}
-    require-external-authentication: ${IAM_REGISTRATION_REQUIRE_EXTERNAL_AUTHENTICATION:false}
-    authentication-type: ${IAM_REGISTRATION_AUTHENTICATION_TYPE:oidc}
-    oidc-issuer: ${IAM_REGISTRATION_OIDC_ISSUER:https://example.org}
-    saml-entity-id: ${IAM_REGISTRATION_SAML_ENTITY_ID:urn:example}
-    add-nickname-as-attribute: ${IAM_ADD_NICKNAME_AS_ATTRIBUTE:false}
-    
+
   local-authn:
     login-page-visibility: ${IAM_LOCAL_AUTHN_LOGIN_PAGE_VISIBILITY:visible}
     enabled-for: ${IAM_LOCAL_AUTHN_ENABLED_FOR:all}
@@ -201,7 +198,7 @@ x509:
   trustAnchorsDir: ${IAM_X509_TRUST_ANCHORS_DIR:/etc/grid-security/certificates}
   trustAnchorsRefreshMsec: ${IAM_X509_TRUST_ANCHORS_REFRESH:14400}
   tlsVersion: ${IAM_X509_TLS_VERSION:TLSv1}
-    
+   
 notification:
   disable: ${IAM_NOTIFICATION_DISABLE:false}
   mailFrom: ${IAM_NOTIFICATION_FROM:indigo@localhost}
@@ -209,6 +206,7 @@ notification:
   cleanupAge: ${IAM_NOTIFICATION_CLEANUP_AGE:30}
   adminAddress: ${IAM_NOTIFICATION_ADMIN_ADDRESS:indigo-alerts@localhost}
   admin-notification-policy: ${IAM_NOTIFICATION_ADMIN_NOTIFICATION_POLICY:notify-address}
+  certificateUpdate: ${IAM_NOTIFICATION_CERTIFICATE:false}
   group-manager-notification-policy: ${IAM_NOTIFICATION_GROUP_MANAGER_NOTIFICATION_POLICY:notify-gms-and-admins}
   subject-prefix: "[${iam.organisation.name} IAM]"
   subject:
@@ -227,6 +225,7 @@ task:
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}
   enable: ${IAM_CLIENT_REGISTRATION_ENABLE:true}
+  admin-only-custom-scopes: ${IAM_CLIENT_ADMIN_ONLY_CUSTOM_SCOPES:false}
   client-defaults:
     default-access-token-validity-seconds: ${IAM_DEFAULT_ACCESS_TOKEN_VALIDITY_SECONDS:3600}
     default-device-code-validity-seconds: ${IAM_DEFAULT_DEVICE_CODE_VALIDITY_SECONDS:600}
