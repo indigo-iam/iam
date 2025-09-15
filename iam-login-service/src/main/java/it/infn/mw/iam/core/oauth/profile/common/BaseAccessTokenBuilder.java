@@ -137,6 +137,8 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       if (refreshRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
         return Math.min(Integer.valueOf(refreshRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
       }
+      // don't use custom value from original request
+      return Integer.valueOf(token.getClient().getAccessTokenValiditySeconds());
     }
     if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
       return Math.min(Integer.valueOf(originalRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
