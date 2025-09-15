@@ -144,16 +144,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return token.getClient().getAccessTokenValiditySeconds();
   }
 
-  protected boolean hasCustomValidityRequest(OAuth2Authentication authentication) {
-    final String expiration =
-        authentication.getOAuth2Request().getRequestParameters().get(EXPIRES_IN_KEY);
-    return !isNullOrEmpty(expiration);
-  }
-
-  protected boolean hasCustomValidityRefreshFlow(OAuth2Authentication authentication) {
-    return authentication.getOAuth2Request().isRefresh() && authentication.getOAuth2Request().getRefreshTokenRequest().getRequestParameters().containsKey(EXPIRES_IN_KEY);
-  }
-
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
@@ -190,7 +180,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     if (!isNullOrEmpty(audience)) {
       builder.audience(splitter.splitToList(audience));
     }
-    
+
     try {
       expiry = computeExpTime(authentication, token, issueTime);
       if (expiry > 0 ){
