@@ -36,10 +36,13 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 @SuppressWarnings("deprecation")
 public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
+  private IamProperties properties;
+
   public AarcJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
       ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
       IamProperties properties) {
     super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
+    this.properties = properties;
   }
 
   @Override
@@ -57,7 +60,9 @@ public class AarcJWTProfileIdTokenCustomizer extends IamJWTProfileIdTokenCustomi
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
 
     includeLabelsInIdToken(idClaims, account);
+    properties.getBaseUrl();
 
-    idClaims.claim("voperson_id", account.getUserInfo().getSub());
+    idClaims.claim("voperson_id",
+        account.getUserInfo().getSub() + '@' + properties.getOrganisation().getName());
   }
 }

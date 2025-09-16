@@ -18,12 +18,14 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -46,6 +48,9 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
   @Value("${iam.aarc-profile.urn-subnamespaces}")
   String urnSubnamespaces;
 
+  @Autowired
+  private IamProperties iamProperties;
+
   static final String DEFAULT_AFFILIATION_TYPE = "member";
 
   @Override
@@ -66,7 +71,7 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
         return resolveLOA();
 
       case "voperson_id":
-        return String.format("%s", info.getSub());
+        return String.format("%s@%s", info.getSub(), iamProperties.getOrganisation().getName());
 
       default:
         return null;
