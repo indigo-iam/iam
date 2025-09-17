@@ -48,10 +48,14 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
   @Value("${iam.aarc-profile.urn-subnamespaces}")
   String urnSubnamespaces;
 
-  @Autowired
   private IamProperties iamProperties;
 
   static final String DEFAULT_AFFILIATION_TYPE = "member";
+
+  @Autowired
+  public AarcClaimValueHelper(IamProperties iamProperties) {
+    this.iamProperties = iamProperties;
+  }
 
   @Override
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
