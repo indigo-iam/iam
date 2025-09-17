@@ -65,6 +65,9 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     ClientDetailsEntity client = accessToken.getClient();
     JWTClaimsSet claims = accessToken.getJwt().getJWTClaimsSet();
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.ACCESS_TOKEN);
+    result.put(SUB, claims.getSubject());
+    result.put(IAT, claims.getIssueTime());
+    result.put(ISS, claims.getIssuer());
     includeIfNotNull(result, SCOPE, accessToken.getScope().stream().collect(joining(" ")));
     return result;
   }
@@ -89,11 +92,8 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
 
     Map<String, Object> result = new HashMap<>();
     result.put(TOKEN_TYPE, tokenType);
-    result.put(SUB, claims.getSubject());
     result.put(CLIENT_ID, client.getClientId());
     includeIfNotNull(result, EXP, claims.getExpirationTime());
-    result.put(IAT, claims.getIssueTime());
-    result.put(ISS, claims.getIssuer());
     result.put(JTI, claims.getJWTID());
     Optional<IamAccount> account = loadUserFrom(claims.getSubject());
     if (account.isPresent()) {

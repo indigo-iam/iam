@@ -46,7 +46,8 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
   // Password Flow
 
   protected DefaultOAuth2AccessToken getPasswordTokenResponse(String clientId, String clientSecret,
-      String username, String password, String scope) throws Exception {
+      String username, String password, String scope, String audience)
+      throws Exception {
 
     return new AccessTokenGetter().grantType("password")
       .clientId(clientId)
@@ -54,6 +55,7 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
       .username(username)
       .password(password)
       .scope(scope)
+      .audience(audience)
       .getTokenResponseObject();
   }
 
@@ -75,13 +77,13 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
   protected TokenEndpointResponse getPasswordToken(String scopes) throws Exception {
 
     return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
-        TEST_USERNAME, TEST_PASSWORD, scopes));
+        TEST_USERNAME, TEST_PASSWORD, scopes, PASSWORD_CLIENT_ID));
   }
 
   protected TokenEndpointResponse getPasswordToken(Set<String> scopes) throws Exception {
 
     return parseTokens(getPasswordTokenResponse(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
-        TEST_USERNAME, TEST_PASSWORD, StringUtils.join(scopes, ' ')));
+        TEST_USERNAME, TEST_PASSWORD, StringUtils.join(scopes, ' '), PASSWORD_CLIENT_ID));
   }
 
   // Client Credentials Flow
