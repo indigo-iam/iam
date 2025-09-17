@@ -181,13 +181,33 @@ public class TokenLifetimeConfigurableTests {
 
         @Test
         public void testTokenLifetimeNegative() throws Exception {
-                mvc.perform(post("/token").param("grant_type", "client_credentials")
-                        .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
-                        .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
-                        .param("expires_in", String.valueOf(-5)))
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.error_description", equalTo(INVALID_PARAMETER)));
+                RegisteredClientDTO clientInfDto = managementService
+                        .retrieveClientByClientId(CLIENT_CRED_GRANT_CLIENT_ID)
+                        .orElseThrow(clientNotFound(CLIENT_CRED_GRANT_CLIENT_ID));
+                int maxValidity = clientInfDto.getAccessTokenValiditySeconds();
+
+                String tokenResponseJson = mvc
+                        .perform(post("/token").param("grant_type", "client_credentials")
+                                .param("client_id", CLIENT_CRED_GRANT_CLIENT_ID)
+                                .param("client_secret", CLIENT_CRED_GRANT_CLIENT_SECRET)
+                                .param("expires_in", String.valueOf(-5)))
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+
+                String accessToken =
+                                mapper.readTree(tokenResponseJson).get("access_token").asText();
+                JWT token = JWTParser.parse(accessToken);
+
+                JWTClaimsSet claims = token.getJWTClaimsSet();
+
+                assertNotNull(claims.getIssueTime());
+                assertNotNull(claims.getExpirationTime());
+                assertThat((int) (claims.getExpirationTime().getTime()
+                                - claims.getIssueTime().getTime()) / 1000, equalTo(maxValidity));
         }
+
 
         @Test
         public void testTokenLifetimeNotInteger() throws Exception {

@@ -129,7 +129,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
-  private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
+ protected Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
 
     OAuth2Request originalRequest = authentication.getOAuth2Request();
     if (originalRequest.isRefresh()) {
@@ -143,7 +143,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
       return Math.min(Integer.valueOf(originalRequest.getRequestParameters().get(EXPIRES_IN_KEY)), token.getClient().getAccessTokenValiditySeconds());
     }
-    return token.getClient().getAccessTokenValiditySeconds();
+    return null;
   }
 
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
@@ -185,14 +185,13 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     try {
       expiry = computeExpTime(authentication, token);
-      if (expiry >= 0){
-        expTime = Date.from(issueTime.plus(expiry, ChronoUnit.SECONDS));
-        token.setExpiration(expTime);
-      } else if (!isNull(expiry)){
-        throw new InvalidRequestException(INVALID_PARAMETER);
-      }
     } catch (NumberFormatException e) {
-        throw new InvalidRequestException(INVALID_PARAMETER);
+      throw new InvalidRequestException(INVALID_PARAMETER);
+    }
+
+    if (!isNull(expiry) && expiry >= 0){
+      expTime = Date.from(issueTime.plus(expiry, ChronoUnit.SECONDS));
+      token.setExpiration(expTime);
     }
 
     builder.expirationTime(expTime);
