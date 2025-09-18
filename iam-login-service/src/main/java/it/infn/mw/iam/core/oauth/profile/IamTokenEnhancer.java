@@ -73,21 +73,23 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     return signedJWT;
 
   }
-  
-    private Integer ensureValidExpiration(Map<String, String> requestParameters, OAuth2AccessTokenEntity token){
-      try {
-        Integer expiresIn = Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY));
-        if (expiresIn >= 0){
-          return Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
-        } else {
-          return token.getClient().getAccessTokenValiditySeconds();
-        }
-      } catch (NumberFormatException e) {
-      throw new InvalidRequestException(INVALID_PARAMETER);
-      }
-    }
 
-   private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
+  private Integer ensureValidExpiration(Map<String, String> requestParameters,
+      OAuth2AccessTokenEntity token) {
+    try {
+      Integer expiresIn = Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY));
+      if (expiresIn >= 0) {
+        return Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
+      } else {
+        return token.getClient().getAccessTokenValiditySeconds();
+      }
+    } catch (NumberFormatException e) {
+      throw new InvalidRequestException(INVALID_PARAMETER);
+    }
+  }
+
+  private Integer computeExpTime(OAuth2Authentication authentication,
+      OAuth2AccessTokenEntity token) {
 
     OAuth2Request originalRequest = authentication.getOAuth2Request();
     if (originalRequest.isRefresh()) {
@@ -122,18 +124,17 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
 
-    Integer configuredExpiration = computeExpTime(authentication, accessTokenEntity);    
-    
-    if (!isNull(configuredExpiration)){
-      accessTokenEntity.setExpiration(Date.from(tokenIssueInstant.plus(configuredExpiration, ChronoUnit.SECONDS)));
+    Integer configuredExpiration = computeExpTime(authentication, accessTokenEntity);
+
+    if (!isNull(configuredExpiration)) {
+      accessTokenEntity
+        .setExpiration(Date.from(tokenIssueInstant.plus(configuredExpiration, ChronoUnit.SECONDS)));
     }
-    
+
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
 
-    
 
-    
 
     accessTokenEntity.setJwt(signClaims(atClaims));
     accessTokenEntity.hashMe();
@@ -153,8 +154,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
       ClientDetailsEntity client = getClientService().loadClientByClientId(clientId);
 
       JWT idToken = connectTokenService.createIdToken(client, originalAuthRequest,
-          Date.from(tokenIssueInstant),
-          userInfo.getSub(), accessTokenEntity);
+          Date.from(tokenIssueInstant), userInfo.getSub(), accessTokenEntity);
 
       accessTokenEntity.setIdToken(idToken);
     }

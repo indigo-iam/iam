@@ -50,7 +50,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
   public static final String SCOPE_CLAIM_NAME = "scope";
-
   public static final String ACT_CLAIM_NAME = "act";
   public static final String CLIENT_ID_CLAIM_NAME = "client_id";
   public static final String SPACE = " ";
@@ -64,6 +63,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
   public BaseAccessTokenBuilder(IamProperties properties) {
     this.properties = properties;
   }
+
 
   protected boolean isTokenExchangeRequest(OAuth2Authentication authentication) {
     return TOKEN_EXCHANGE_GRANT_TYPE.equals(authentication.getOAuth2Request().getGrantType());
@@ -82,6 +82,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       throw new InvalidRequestException("Error parsing subject token: " + e.getMessage(), e);
     }
   }
+
 
   protected void handleClientTokenExchange(JWTClaimsSet.Builder builder,
       OAuth2AccessTokenEntity token, OAuth2Authentication authentication, UserInfo userInfo) {
@@ -142,6 +143,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       .subject(subject)
       .jwtID(UUID.randomUUID().toString());
 
+      
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
     String audience = null;
