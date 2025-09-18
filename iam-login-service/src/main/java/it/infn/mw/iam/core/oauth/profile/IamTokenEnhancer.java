@@ -17,7 +17,9 @@ package it.infn.mw.iam.core.oauth.profile;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -28,8 +30,10 @@ import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -37,8 +41,14 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import static java.util.Objects.isNull;
+
 @SuppressWarnings("deprecation")
 public class IamTokenEnhancer extends ConnectTokenEnhancer {
+
+  public static final String EXPIRES_IN_KEY = "expires_in";
+
+  public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
   @Autowired
   private UserInfoService userInfoService;
@@ -63,6 +73,36 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     return signedJWT;
 
   }
+  
+    private Integer ensureValidExpiration(Map<String, String> requestParameters, OAuth2AccessTokenEntity token){
+      try {
+        Integer expiresIn = Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY));
+        if (expiresIn >= 0){
+          return Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
+        } else {
+          return token.getClient().getAccessTokenValiditySeconds();
+        }
+      } catch (NumberFormatException e) {
+      throw new InvalidRequestException(INVALID_PARAMETER);
+      }
+    }
+
+   private Integer computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token) {
+
+    OAuth2Request originalRequest = authentication.getOAuth2Request();
+    if (originalRequest.isRefresh()) {
+      TokenRequest refreshRequest = originalRequest.getRefreshTokenRequest();
+      if (refreshRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+        return ensureValidExpiration(refreshRequest.getRequestParameters(), token);
+      }
+      // don't use custom value from original request
+      return token.getClient().getAccessTokenValiditySeconds();
+    }
+    if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+      return ensureValidExpiration(originalRequest.getRequestParameters(), token);
+    }
+    return null;
+  }
 
   @Override
   public OAuth2AccessToken enhance(OAuth2AccessToken accessToken,
@@ -81,9 +121,19 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
+
+    Integer configuredExpiration = computeExpTime(authentication, accessTokenEntity);    
+    
+    if (!isNull(configuredExpiration)){
+      accessTokenEntity.setExpiration(Date.from(tokenIssueInstant.plus(configuredExpiration, ChronoUnit.SECONDS)));
+    }
     
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
+
+    
+
+    
 
     accessTokenEntity.setJwt(signClaims(atClaims));
     accessTokenEntity.hashMe();

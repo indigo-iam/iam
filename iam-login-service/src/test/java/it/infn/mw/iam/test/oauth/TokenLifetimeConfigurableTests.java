@@ -49,7 +49,7 @@ import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
@@ -67,7 +67,7 @@ public class TokenLifetimeConfigurableTests {
 
         private static final String SCOPE = "openid profile offline_access";
         private static final String CUSTOM_LIFETIME = "300";
-        private static final String INVALID_PARAMETER = BaseAccessTokenBuilder.INVALID_PARAMETER;
+        private static final String INVALID_PARAMETER = IamTokenEnhancer.INVALID_PARAMETER;
 
         private static final long TOLERANCE = 5;
         private static final long DEFAULT_ACCESS_TOKEN_LIFETIME = 3600L;
