@@ -143,7 +143,7 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
       .subject(subject)
       .jwtID(UUID.randomUUID().toString());
 
-      
+
     builder.claim(CLIENT_ID_CLAIM_NAME, token.getClient().getClientId());
 
     String audience = null;
