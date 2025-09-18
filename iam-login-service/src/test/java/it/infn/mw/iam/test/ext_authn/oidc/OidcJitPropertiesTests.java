@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
-
+package it.infn.mw.iam.test.ext_authn.oidc;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,6 +21,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.in;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Optional;
 import java.util.Set;
@@ -29,31 +29,32 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import it.infn.mw.iam.config.saml.IamSamlJITAccountProvisioningProperties;
+import it.infn.mw.iam.config.oidc.IamOidcJITAccountProvisioningProperties;
 
-public class JitPropertiesTests {
+public class OidcJitPropertiesTests {
 
   @Test
   public void testTrustedIdpsListIsByDefaultEmpty() {
-    IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
+    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
 
     Assert.assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
-    
+    assertEquals("all", props.getTrustedIdps());
+
     props.setTrustedIdps("all");
-    
-    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent()); 
+
+    assertFalse(props.getTrustedIdpsAsOptionalSet().isPresent());
   }
 
   @Test
   public void testTrustedIdpsListParsing() {
-    IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
-    
+    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
+
     props.setTrustedIdps("idp1,idp2,idp3,,,    ");
-    
-    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet(); 
-    
+
+    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet();
+
     assertTrue(trustedIdps.isPresent());
-    
+
     assertThat(trustedIdps.get(), hasSize(3));
     assertThat("idp1", is(in(trustedIdps.get())));
     assertThat("idp2", is(in(trustedIdps.get())));
@@ -62,11 +63,10 @@ public class JitPropertiesTests {
 
   @Test
   public void testTrustedIdpsEmptyListYeldsEmptyOptional() {
-    IamSamlJITAccountProvisioningProperties props = new IamSamlJITAccountProvisioningProperties();
-    
+    IamOidcJITAccountProvisioningProperties props = new IamOidcJITAccountProvisioningProperties();
+
     props.setTrustedIdps("");
-    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet(); 
+    Optional<Set<String>> trustedIdps = props.getTrustedIdpsAsOptionalSet();
     assertFalse(trustedIdps.isPresent());
-    
   }
 }

@@ -283,7 +283,6 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
       .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
   }
 
-
   @Test
   public void testAuthzCodeFlowWithExtAuthnHintWorksForJitProvisionedAccount() throws Throwable {
 
@@ -380,5 +379,4 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
       .andExpect(jsonPath("$.name", equalTo(format("%s %s", JIT1_GIVEN_NAME, JIT1_FAMILY_NAME))))
       .andExpect(jsonPath("$.external_authn.type", equalTo("saml")));
   }
-
 }

@@ -55,4 +55,6 @@ public interface StructuredScopeTestSupportConstants {
   static final String ADMIN_PASSWORD = "password";
 
   static final String EMPTY_SCOPES = "";
+
+  static final String ORGANISATION_NAME = "indigo-dc";
 }

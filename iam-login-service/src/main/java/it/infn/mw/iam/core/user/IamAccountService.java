@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.user;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -90,15 +89,6 @@ public interface IamAccountService {
    * @return the deleted {@link IamAccount}
    */
   IamAccount deleteAccount(IamAccount account);
-
-  /**
-   * Deletes provisioned accounts whose last login time is before than the timestamp passed as
-   * argument
-   * 
-   * @param timestamp the timestamp
-   * @return the possibly empty {@link List} of {@link IamAccount} that have been removed
-   */
-  List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp);
 
   /**
    * Add a label for a given account or replace the value of an existent one

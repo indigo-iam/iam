@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
@@ -47,7 +48,13 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
   @Value("${iam.aarc-profile.urn-subnamespaces}")
   String urnSubnamespaces;
 
+  private IamProperties iamProperties;
+
   static final String DEFAULT_AFFILIATION_TYPE = "member";
+
+  public AarcClaimValueHelper(IamProperties iamProperties) {
+    this.iamProperties = iamProperties;
+  }
 
   @Override
   public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
@@ -67,7 +74,7 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
         return resolveLOA();
 
       case AarcOidcScopes.VO_PERSON_ID:
-        return String.format("%s", info.getSub());
+        return String.format("%s@%s", info.getSub(), iamProperties.getOrganisation().getName());
 
       default:
         return null;

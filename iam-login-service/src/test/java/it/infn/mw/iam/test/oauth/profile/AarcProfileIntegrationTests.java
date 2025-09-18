@@ -185,7 +185,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     SignedJWT token = SignedJWT.parse(getPasswordToken(scopes).accessToken());
 
     assertThat(token.getJWTClaimsSet().getClaim("sub"), equalTo(TEST_UUID));
-    assertThat(token.getJWTClaimsSet().getClaim(VO_PERSON_ID), equalTo(TEST_UUID));
+    assertThat(token.getJWTClaimsSet().getClaim(VO_PERSON_ID),
+        equalTo(TEST_UUID + "@" + ORGANISATION_NAME));
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ASSURANCE), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS), nullValue());
@@ -210,7 +211,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$." + VO_PERSON_ID, equalTo(TEST_UUID)));
+      .andExpect(jsonPath("$." + VO_PERSON_ID, equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
     // @formatter:on
 
   }
@@ -299,7 +300,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
-      .andExpect(jsonPath("$." + VO_PERSON_ID, equalTo(TEST_UUID)));
+      .andExpect(jsonPath("$." + VO_PERSON_ID, equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
     // @formatter:on
   }
 
@@ -341,6 +342,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + VO_PERSON_ID).isNotEmpty())
+      .andExpect(jsonPath("$." + VO_PERSON_ID, equalTo(TEST_UUID + "@" + ORGANISATION_NAME)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
@@ -380,7 +382,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotNull(token.getJWTClaimsSet().getClaim("aud"));
     assertThat(token.getJWTClaimsSet().getClaim("aud"), is(List.of(PASSWORD_CLIENT_ID)));
     assertNotNull(token.getJWTClaimsSet().getClaim(VO_PERSON_ID));
-    assertThat(valueOf(token.getJWTClaimsSet().getClaim(VO_PERSON_ID)), is(TEST_UUID));
+    assertThat(valueOf(token.getJWTClaimsSet().getClaim(VO_PERSON_ID)),
+        is(TEST_UUID + "@" + ORGANISATION_NAME));
     assertNotNull(token.getJWTClaimsSet().getClaim(ENTITLEMENTS));
     assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) token.getJWTClaimsSet().getClaim(ENTITLEMENTS),

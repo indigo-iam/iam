@@ -505,18 +505,6 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp) {
-    checkNotNull(timestamp, "null timestamp");
-
-    List<IamAccount> accounts =
-        accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(timestamp);
-
-    accounts.forEach(this::deleteAccount);
-
-    return accounts;
-  }
-
-  @Override
   public Optional<IamAccount> findByUuid(String uuid) {
     return accountRepo.findByUuid(uuid);
   }
