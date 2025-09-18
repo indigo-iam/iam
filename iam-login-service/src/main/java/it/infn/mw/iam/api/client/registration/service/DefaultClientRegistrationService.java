@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientExpirationEntity;
+import org.mitre.oauth2.model.ClientFederationMetadataEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -361,9 +361,9 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     client.setActive(true);
 
     if (federationRegistration) {
-      ClientExpirationEntity clientExpEntity =
-          new ClientExpirationEntity(client, request.getExpiration());
-      client.setClientExpiration(clientExpEntity);
+      ClientFederationMetadataEntity clientExpEntity = new ClientFederationMetadataEntity(client,
+          request.getExpiration(), request.getEntityId());
+      client.setFederationMetadata(clientExpEntity);
     }
 
     checkAllowedGrantTypes(request, authentication);

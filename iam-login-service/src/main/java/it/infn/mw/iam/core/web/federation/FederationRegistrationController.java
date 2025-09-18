@@ -20,9 +20,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
@@ -47,6 +49,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @RestController
 @Profile("openid-federation")
@@ -58,13 +61,15 @@ public class FederationRegistrationController {
   private final TrustChainService trustChainService;
   private final ClientRegistrationService clientRegistrationService;
   private final FederationResponseBuilder federationResponseBuilder;
+  private final IamClientRepository clientRepo;
 
   public FederationRegistrationController(TrustChainService trustChainService,
       ClientRegistrationService clientRegistrationService,
-      FederationResponseBuilder federationResponseBuilder) {
+      FederationResponseBuilder federationResponseBuilder, IamClientRepository clientRepo) {
     this.trustChainService = trustChainService;
     this.clientRegistrationService = clientRegistrationService;
     this.federationResponseBuilder = federationResponseBuilder;
+    this.clientRepo = clientRepo;
   }
 
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest) {
@@ -122,6 +127,12 @@ public class FederationRegistrationController {
     // 1. Parse request Entity Statement (self-signed EC of the RP)
     EntityStatement rpRequest = EntityStatement.parse(requestJwt);
 
+    Optional<ClientDetailsEntity> existingClient =
+        clientRepo.findByEntityId(rpRequest.getEntityID().getValue());
+    if (existingClient.isPresent()) {
+      clientRepo.delete(existingClient.get());
+    }
+
     // 2. Verify that aud == issuer (OP)
     if (!issuer.equals(rpRequest.getClaimsSet().getAudience().get(0).getValue())) {
       throw new InvalidTrustChainException("invalid_request", "Invalid audience");
@@ -135,6 +146,7 @@ public class FederationRegistrationController {
     Date clientExpiration = trustChain.resolveExpirationTime();
     dtoClient
       .setExpiration(LocalDate.ofInstant(clientExpiration.toInstant(), ZoneId.systemDefault()));
+    dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
     // 5. Register the client by using the already existing service
     RegisteredClientDTO registeredClient =

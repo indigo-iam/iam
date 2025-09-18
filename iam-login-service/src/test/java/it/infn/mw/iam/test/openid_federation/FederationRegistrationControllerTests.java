@@ -32,7 +32,7 @@ import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientExpirationEntity;
+import org.mitre.oauth2.model.ClientFederationMetadataEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
@@ -85,12 +85,14 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testClientDisabledWhenExpired() throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain();
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId("client-cred");
     assertTrue(client.isPresent());
 
     LocalDate today = LocalDate.now();
-    ClientExpirationEntity entity = new ClientExpirationEntity(client.get(), today.minusDays(1));
-    client.get().setClientExpiration(entity);
+    ClientFederationMetadataEntity entity = new ClientFederationMetadataEntity(client.get(),
+        today.minusDays(1), fakeChain.getLeafSelfStatement().getEntityID().getValue());
+    client.get().setFederationMetadata(entity);
 
     taskConfig.disableExpiredClients();
     assertFalse(client.get().isActive());
@@ -104,5 +106,38 @@ public class FederationRegistrationControllerTests {
       .andExpect(jsonPath("$.error_description", equalTo("Client is suspended: client-cred")));
 
     client.get().setActive(true);
+  }
+
+  @Test
+  public void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain();
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
+
+    mvc
+      .perform(post("/iam/openid-federation/client-registration")
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+
+    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(rpEC.getEntityID().getValue());
+    assertTrue(client.isPresent());
+
+    mvc
+      .perform(post("/iam/openid-federation/client-registration")
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+
+    Optional<ClientDetailsEntity> newClient =
+        clientRepo.findByEntityId(rpEC.getEntityID().getValue());
+    assertTrue(newClient.isPresent());
+    assertFalse(client.get().getClientId().equals(newClient.get().getClientId()));
   }
 }

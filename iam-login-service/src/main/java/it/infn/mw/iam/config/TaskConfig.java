@@ -188,5 +188,4 @@ public class TaskConfig implements SchedulingConfigurer {
     schedulePendingNotificationsDelivery(taskRegistrar);
     scheduledExpiredAccountsTask(taskRegistrar);
   }
-
 }

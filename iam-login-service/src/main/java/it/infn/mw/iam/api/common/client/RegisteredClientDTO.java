@@ -248,6 +248,11 @@ public class RegisteredClientDTO {
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private LocalDate expiration;
 
+  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+      ClientViews.DynamicRegistration.class})
+  @JsonFormat(shape = JsonFormat.Shape.STRING)
+  private String entityId;
+
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   @Size(max = 2048, groups = {OnClientCreation.class, OnClientUpdate.class})
@@ -512,6 +517,14 @@ public class RegisteredClientDTO {
 
   public void setExpiration(LocalDate expiration) {
     this.expiration = expiration;
+  }
+
+  public String getEntityId() {
+    return entityId;
+  }
+
+  public void setEntityId(String entityId) {
+    this.entityId = entityId;
   }
 
   public String getJwk() {
