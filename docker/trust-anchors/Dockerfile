@@ -1,3 +1,12 @@
-FROM indigoiam/egi-trustanchors:latest
-COPY igi-test-ca.repo /etc/yum.repos.d/
-RUN yum -y install igi-test-ca
+FROM almalinux:9
+
+COPY ./x509 /
+COPY ./helper-scripts /
+
+ENV PATH=/helper-scripts/x509-scripts/scripts:$PATH
+
+RUN dnf install -y epel-release && \
+      dnf -y update && \
+      dnf -y install voms-clients-cpp faketime
+
+RUN sh setup-trust.sh
