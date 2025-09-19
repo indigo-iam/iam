@@ -24,7 +24,7 @@ export X509_CERT_DIR="${ta_dir}"
 make_ca.sh
 
 # Create server certificates
-for c in star_test_esample iam_local_io; do
+for c in star_test_example iam_local_io; do
   make_cert.sh ${c}
   cp igi_test_ca/certs/${c}.* "${hostcerts_dir}"
 done
