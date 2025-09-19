@@ -17,38 +17,39 @@ package it.infn.mw.iam.core.web.federation;
 
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.util.JSONObjectUtils;
 
 import it.infn.mw.iam.core.oidc.EntityConfigurationBuilder;
-import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 
 @RestController
 @Profile("openid-federation")
 public class EntityConfigurationEndpoint {
 
-  private final IamJWKSetPublishingEndpoint jwkController;
-  private final EntityConfigurationBuilder builder;
+  @Value("${openid-federation.entity-configuration.expiration-seconds}")
+  private int maxAge;
 
-  public EntityConfigurationEndpoint(IamJWKSetPublishingEndpoint jwkController,
-      EntityConfigurationBuilder builder) {
-    this.jwkController = jwkController;
-    this.builder = builder;
+
+  private final EntityConfigurationBuilder entityConfigurationBuilder;
+
+  public EntityConfigurationEndpoint(EntityConfigurationBuilder entityConfigurationBuilder) {
+    this.entityConfigurationBuilder = entityConfigurationBuilder;
   }
 
   @GetMapping(value = "/.well-known/openid-federation",
       produces = "application/entity-statement+jwt")
   public ResponseEntity<byte[]> getEntityConfiguration() throws ParseException, JOSEException {
-    String jsonKeys = jwkController.getJwk().getBody();
-    Map<String, Object> jwks = JSONObjectUtils.parse(jsonKeys);
-    String ecJwt = builder.buildEntityConfiguration(jwks);
-    return ResponseEntity.ok().body(ecJwt.getBytes(StandardCharsets.US_ASCII));
+    String ecJwt = entityConfigurationBuilder.build();
+    return ResponseEntity.ok()
+      .cacheControl(CacheControl.maxAge(maxAge, TimeUnit.SECONDS).noTransform().mustRevalidate())
+      .body(ecJwt.getBytes(StandardCharsets.US_ASCII));
   }
 }

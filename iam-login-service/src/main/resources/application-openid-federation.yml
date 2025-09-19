@@ -15,7 +15,13 @@
 #
 
 openid-federation:
+  trust-anchors:
+    - https://trust-anchor.sandbox.eosc.grnet.gr
   entity-configuration:
     expiration-seconds: 86400
     authority-hints:
       - https://trust-anchor.sandbox.eosc.grnet.gr
+    federation-entity:
+      organization-name:
+      contacts:
+      logo-uri:

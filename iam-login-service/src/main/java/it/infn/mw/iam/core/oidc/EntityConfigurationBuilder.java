@@ -37,6 +37,8 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
+import it.infn.mw.iam.config.oidc.OpenidFederationProperties.EntityConfigurationProperties;
+import it.infn.mw.iam.config.oidc.OpenidFederationProperties.EntityConfigurationProperties.FederationEntityProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
@@ -48,22 +50,34 @@ public class EntityConfigurationBuilder {
 
   private final JWSSigner signer;
   private final RSAKey signingKey;
+  private final String keyId;
+  private final Map<String, Object> jwks;
+  private final List<String> authorityHints;
+  private final String baseUrl;
+  private final EntityConfigurationProperties entityConfigurationProperties;
+  private final FederationEntityProperties fedEntityProperties;
   private final IamWellKnownInfoProvider wellKnownInfoProvider;
-  private final OpenidFederationProperties openidFedProperties;
-  private final IamProperties iamProperties;
 
   public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider,
       OpenidFederationProperties openidFedProperties, IamProperties iamProperties) {
     this.wellKnownInfoProvider = wellKnownInfoProvider;
-    this.openidFedProperties = openidFedProperties;
-    this.iamProperties = iamProperties;
     this.signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
       .map(k -> (RSAKey) k)
       .findFirst()
       .orElseThrow(() -> new IllegalStateException("No private RSA key found"));
+    this.jwks = signingKey.toPublicJWK().toJSONObject();
+    this.keyId = signingKey.getKeyID();
+    this.entityConfigurationProperties = openidFedProperties.getEntityConfiguration();
+    this.fedEntityProperties = entityConfigurationProperties.getFederationEntity();
+    this.authorityHints = entityConfigurationProperties.getAuthorityHints();
+    this.baseUrl = iamProperties.getBaseUrl();
+
+    if (authorityHints == null || authorityHints.isEmpty()) {
+      throw new IllegalStateException("authority_hints must be present!");
+    }
 
     try {
       this.signer = JWKUtils.buildSigner(signingKey)
@@ -73,34 +87,46 @@ public class EntityConfigurationBuilder {
     }
   }
 
-  public String buildEntityConfiguration(Map<String, Object> jwks) throws JOSEException {
-    String issuer = iamProperties.getIssuer();
+  public String build() throws JOSEException {
 
     Map<String, Object> opMetadata = new HashMap<>(wellKnownInfoProvider.getWellKnownInfo());
-    opMetadata.putIfAbsent("client_registration_types_supported", List.of("explicit"));
+    opMetadata.put("client_registration_types_supported", List.of("explicit"));
     opMetadata.put("federation_registration_endpoint",
-        URI.create(issuer).resolve("/iam/openid-federation/client-registration"));
+        URI.create(baseUrl).resolve("/iam/openid-federation/client-registration"));
 
     Map<String, Object> feMetadata = new HashMap<>();
-    feMetadata.put("contacts", List.of("iam-support@lists.infn.it"));
-    feMetadata.put("organization_name", iamProperties.getOrganisation().getName());
-    feMetadata.put("logo_uri", iamProperties.getLogo().getUrl());
+    String organizationName = fedEntityProperties.getOrganizationName();
+    List<String> contacts = fedEntityProperties.getContacts();
+    String logoUri = fedEntityProperties.getLogoUri();
+    if (organizationName != null && !organizationName.isBlank()) {
+      feMetadata.put("organization_name", organizationName);
+    }
+    if (contacts != null && !contacts.isEmpty()) {
+      feMetadata.put("contacts", contacts);
+    }
+    if (logoUri != null && !logoUri.isBlank()) {
+      if (URI.create(logoUri).isAbsolute()) {
+        feMetadata.put("logo_uri", logoUri);
+      }
+    }
 
     Map<String, Object> metadata = new HashMap<>();
     metadata.put("openid_provider", opMetadata);
-    metadata.put("federation_entity", feMetadata);
+    if (!feMetadata.isEmpty()) {
+      metadata.put("federation_entity", feMetadata);
+    }
 
-    JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(issuer)
-      .subject(issuer)
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(baseUrl)
+      .subject(baseUrl)
       .issueTime(new Date())
-      .expirationTime(Date.from(Instant.now()
-        .plusSeconds(openidFedProperties.getEntityConfiguration().getExpirationSeconds())))
+      .expirationTime(Date
+        .from(Instant.now().plusSeconds(entityConfigurationProperties.getExpirationSeconds())))
       .claim("jwks", jwks)
       .claim("metadata", metadata)
-      .claim("authority_hints", openidFedProperties.getEntityConfiguration().getAuthorityHints())
+      .claim("authority_hints", authorityHints)
       .build();
 
-    JWSHeader header = new JWSHeader.Builder(alg).keyID(signingKey.getKeyID())
+    JWSHeader header = new JWSHeader.Builder(alg).keyID(keyId)
       .type(new JOSEObjectType("entity-statement+jwt"))
       .build();
 
