@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.web.federation;
 
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +45,7 @@ public class EntityConfigurationEndpoint {
 
   @GetMapping(value = "/.well-known/openid-federation",
       produces = "application/entity-statement+jwt")
-  public ResponseEntity<byte[]> getEntityConfiguration() throws ParseException, JOSEException {
+  public ResponseEntity<byte[]> getEntityConfiguration() throws JOSEException {
     String ecJwt = entityConfigurationBuilder.build();
     return ResponseEntity.ok()
       .cacheControl(CacheControl.maxAge(maxAge, TimeUnit.SECONDS).noTransform().mustRevalidate())

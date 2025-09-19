@@ -92,7 +92,7 @@ public class EntityConfigurationBuilder {
     Map<String, Object> opMetadata = new HashMap<>(wellKnownInfoProvider.getWellKnownInfo());
     opMetadata.put("client_registration_types_supported", List.of("explicit"));
     opMetadata.put("federation_registration_endpoint",
-        URI.create(baseUrl).resolve("/iam/openid-federation/client-registration"));
+        URI.create(baseUrl).resolve("/iam/api/oid-fed/client-registration"));
 
     Map<String, Object> feMetadata = new HashMap<>();
     String organizationName = fedEntityProperties.getOrganizationName();
@@ -104,10 +104,8 @@ public class EntityConfigurationBuilder {
     if (contacts != null && !contacts.isEmpty()) {
       feMetadata.put("contacts", contacts);
     }
-    if (logoUri != null && !logoUri.isBlank()) {
-      if (URI.create(logoUri).isAbsolute()) {
-        feMetadata.put("logo_uri", logoUri);
-      }
+    if (logoUri != null && !logoUri.isBlank() && URI.create(logoUri).isAbsolute()) {
+      feMetadata.put("logo_uri", logoUri);
     }
 
     Map<String, Object> metadata = new HashMap<>();
