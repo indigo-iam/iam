@@ -12,7 +12,7 @@ oidc:
         text: Sign in with Google
         style: google
     - name: iam-test
-      issuer: https://iam-test.indigo-datacloud.eu/
+      issuer: https://iam-dev.cloud.cnaf.infn.it/
       client:
         clientId: ${IAM_IAM_TEST_CLIENT_ID:define_me_please}
         clientSecret: ${IAM_IAM_TEST_CLIENT_SECRET:define_me_please}
