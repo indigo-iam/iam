@@ -24,8 +24,10 @@ export X509_CERT_DIR="${ta_dir}"
 make_ca.sh
 
 # Create server certificates
-make_cert.sh star_test_esample
-cp igi_test_ca/certs/star_test_esample.* "${hostcerts_dir}"
+for c in star_test_esample iam_local_io; do
+  make_cert.sh ${c}
+  cp igi_test_ca/certs/${c}.* "${hostcerts_dir}"
+done
 
 chmod 600 "${hostcerts_dir}"/*.cert.pem
 chmod 400 "${hostcerts_dir}"/*.key.pem
@@ -48,7 +50,6 @@ revoke_cert.sh revoked
 chmod 600 "${usercerts_dir}"/*.cert.pem
 chmod 400 "${usercerts_dir}"/*.key.pem
 chmod 600 "${usercerts_dir}"/*.p12
-
 chown 1000:1000 "${usercerts_dir}"/*
 
 make_crl.sh
