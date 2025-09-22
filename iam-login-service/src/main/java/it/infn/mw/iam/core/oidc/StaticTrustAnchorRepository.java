@@ -28,7 +28,7 @@ public class StaticTrustAnchorRepository implements TrustAnchorRepository {
   private final Set<String> trustedAnchors;
 
   public StaticTrustAnchorRepository(
-      @Value("${openid-federation.entity-configuration.authority_hints}") List<String> anchors) {
+      @Value("${openid-federation.trust-anchors}") List<String> anchors) {
     this.trustedAnchors = new HashSet<>(anchors);
   }
 

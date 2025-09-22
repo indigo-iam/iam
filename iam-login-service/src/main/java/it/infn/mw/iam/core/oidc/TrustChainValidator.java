@@ -16,9 +16,12 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -31,12 +34,49 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 @Service
 public class TrustChainValidator {
 
+  public static final Logger LOG = LoggerFactory.getLogger(TrustChainValidator.class);
   private final TrustAnchorRepository trustAnchorRepository;
 
   public TrustChainValidator(TrustAnchorRepository trustAnchorRepository) {
     this.trustAnchorRepository = trustAnchorRepository;
   }
 
+  /**
+   * Validate all chains and select the shortest among the valid ones
+   */
+  public TrustChain validateAll(List<List<EntityStatement>> chains)
+      throws InvalidTrustChainException, BadJOSEException, JOSEException {
+
+    if (chains == null || chains.isEmpty()) {
+      throw new InvalidTrustChainException("invalid_trust_chain", "No chains provided");
+    }
+
+    List<TrustChain> validChains = new ArrayList<>();
+
+    for (List<EntityStatement> chain : chains) {
+      try {
+        TrustChain tc = validate(chain);
+        validChains.add(tc);
+      } catch (InvalidTrustChainException | BadJOSEException | JOSEException e) {
+        LOG.warn("Invalid chain discarded: {}", e.getMessage());
+      }
+    }
+
+    if (validChains.isEmpty()) {
+      throw new InvalidTrustChainException("invalid_trust_chain", "No valid trust chains found");
+    }
+
+    // Choose the TrustChain with fewer steps
+    return validChains.stream()
+      .min(Comparator.comparingInt(tc -> tc.getSuperiorStatements().size()))
+      .orElseThrow(() -> new InvalidTrustChainException("invalid_trust_chain",
+          "Unexpected selection failure"));
+  }
+
+
+  /**
+   * Validate a single chain of EntityStatements
+   */
   public TrustChain validate(List<EntityStatement> chain)
       throws InvalidTrustChainException, BadJOSEException, JOSEException {
 
@@ -46,14 +86,16 @@ public class TrustChainValidator {
       validateClaims(es);
     }
 
+    // RP Entity Configuration must be self-issued
     EntityStatement rpEC = cleanedChain.get(0);
     if (!rpEC.getClaimsSet().isSelfStatement()) {
       throw new InvalidTrustChainException("invalid_trust_chain",
           "Entity Configuration of RP must be self-issued (iss == sub)");
     }
 
-    TrustChain trustChain;
+    // Build a TrustChain without leaf
     List<EntityStatement> withoutLeaf = cleanedChain.subList(1, cleanedChain.size());
+    TrustChain trustChain;
     try {
       trustChain = new TrustChain(rpEC, withoutLeaf);
     } catch (IllegalArgumentException e) {
@@ -61,12 +103,14 @@ public class TrustChainValidator {
           "Invalid trust chain structure: " + e.getMessage(), e);
     }
 
+    // Verify the Trust Anchor is known
     EntityID taId = trustChain.getTrustAnchorEntityID();
     if (!trustAnchorRepository.isTrusted(taId.getValue())) {
       throw new InvalidTrustChainException("invalid_trust_chain",
           "No trusted Trust Anchor found: " + taId.getValue());
     }
 
+    // Verify signatures using TA public key
     EntityStatement ta = cleanedChain.get(cleanedChain.size() - 1);
     trustChain.verifySignatures(ta.getClaimsSet().getJWKSet());
 

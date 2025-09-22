@@ -48,16 +48,16 @@ public class TrustChainService {
     if (!cachedChain.isEmpty()) {
       return cachedChain.get();
     }
-    List<EntityStatement> chain = resolver.resolveFromEntityId(entityId);
-    TrustChain validated = validator.validate(chain);
+    List<List<EntityStatement>> chain = resolver.resolveFromEntityId(entityId);
+    TrustChain validated = validator.validateAll(chain);
     trustChainCache.put(entityId, validated);
     return validated;
   }
 
   public TrustChain validateFromEntityConfiguration(EntityStatement ec)
       throws BadJOSEException, JOSEException {
-    List<EntityStatement> chain = resolver.resolveFromEntityConfiguration(ec);
-    return validator.validate(chain);
+    List<List<EntityStatement>> chain = resolver.resolveFromEntityConfiguration(ec);
+    return validator.validateAll(chain);
   }
 
   public TrustChain validateFromProvidedChain(List<EntityStatement> providedChain)
