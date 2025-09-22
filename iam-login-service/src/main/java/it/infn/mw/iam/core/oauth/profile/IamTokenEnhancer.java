@@ -74,36 +74,36 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   }
 
-  private Integer ensureValidExpiration(Map<String, String> requestParameters,
-      OAuth2AccessTokenEntity token) {
+  private Date ensureValidExpiration(Map<String, String> requestParameters,
+      OAuth2AccessTokenEntity token, Instant tokenIssueInstant) {
     try {
       Integer expiresIn = Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY));
+      Integer validExp = token.getClient().getAccessTokenValiditySeconds();
       if (expiresIn >= 0) {
-        return Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
-      } else {
-        return token.getClient().getAccessTokenValiditySeconds();
+        validExp =  Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
       }
+      return Date.from(tokenIssueInstant.plus(validExp, ChronoUnit.SECONDS));
     } catch (NumberFormatException e) {
       throw new InvalidRequestException(INVALID_PARAMETER);
     }
   }
 
-  private Integer computeExpTime(OAuth2Authentication authentication,
-      OAuth2AccessTokenEntity token) {
+  private Date computeExpTime(OAuth2Authentication authentication,
+      OAuth2AccessTokenEntity token, Instant tokenIssueInstant) {
 
     OAuth2Request originalRequest = authentication.getOAuth2Request();
     if (originalRequest.isRefresh()) {
       TokenRequest refreshRequest = originalRequest.getRefreshTokenRequest();
       if (refreshRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
-        return ensureValidExpiration(refreshRequest.getRequestParameters(), token);
+        return ensureValidExpiration(refreshRequest.getRequestParameters(), token, tokenIssueInstant);
       }
       // don't use custom value from original request
-      return token.getClient().getAccessTokenValiditySeconds();
+      return Date.from(tokenIssueInstant.plus(token.getClient().getAccessTokenValiditySeconds(), ChronoUnit.SECONDS));
     }
     if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
-      return ensureValidExpiration(originalRequest.getRequestParameters(), token);
+      return ensureValidExpiration(originalRequest.getRequestParameters(), token, tokenIssueInstant);
     }
-    return token.getClient().getAccessTokenValiditySeconds();
+    return token.getExpiration();
   }
 
   @Override
@@ -124,8 +124,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
 
-    Integer configuredExpiration = computeExpTime(authentication, accessTokenEntity);
-    accessTokenEntity.setExpiration(Date.from(tokenIssueInstant.plus(configuredExpiration, ChronoUnit.SECONDS)));
+    accessTokenEntity.setExpiration(computeExpTime(authentication, accessTokenEntity, tokenIssueInstant));
 
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
