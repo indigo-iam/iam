@@ -149,11 +149,4 @@ public class TrustChainResolver {
 
     return chains;
   }
-
-  // Entry point: builds chains starting from the entity ID
-  public List<List<EntityStatement>> buildChains(String entityId)
-      throws InvalidTrustChainException {
-    EntityStatement ec = fetchEntityConfiguration(entityId);
-    return buildChain(ec, new HashSet<>());
-  }
 }
