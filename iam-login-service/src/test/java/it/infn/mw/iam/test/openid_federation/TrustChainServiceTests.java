@@ -41,6 +41,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
@@ -53,7 +54,7 @@ import it.infn.mw.iam.core.oidc.TrustChainExceptionHandler;
 import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
-
+import net.minidev.json.JSONObject;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(MockitoJUnitRunner.class)
@@ -146,7 +147,7 @@ public class TrustChainServiceTests {
 
   @Test
   public void testResolveTrustChainFromRpToIntermediateToTa() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToIntermediateToTaChain();
+    fakeChain = TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
 
     // RP EC (leaf)
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
@@ -196,7 +197,161 @@ public class TrustChainServiceTests {
     TrustChain resolved = service.getOrResolve("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
+    // Superior Statements include also the TA EC
     assertEquals(3, resolved.getSuperiorStatements().size());
+  }
+
+  @Test
+  public void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
+      throws JOSEException, BadJOSEException {
+    JSONObject rpMetadata = new JSONObject();
+    rpMetadata.put("openid_relying_party", true);
+
+    // Entity Configuration of RP
+    EntityStatement rpEC =
+        TrustChainTestFactory.selfEC("https://rp.example", new Date(),
+            new Date(System.currentTimeMillis() + 600000), List
+              .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
+            null, rpMetadata);
+    String rpEcJwt = rpEC.getSignedStatement().serialize();
+
+    // Entity Configuration of IA
+    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta.example")),
+        URI.create("https://intermediate.example/fetch"), null);
+    String iaEcJwt = iaEC.getSignedStatement().serialize();
+
+    // Entity Configuration of TA
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
+        null);
+    String taEcJwt = taEC.getSignedStatement().serialize();
+
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain();
+    TrustChain longerChain =
+        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
+
+    // Intermediate ES → RP
+    EntityStatement intermToRp = longerChain.getSuperiorStatements().get(0);
+    String intermToRpJwt = intermToRp.getSignedStatement().serialize();
+
+    // TA ES → Intermediate
+    EntityStatement taToInterm = longerChain.getSuperiorStatements().get(1);
+    String taToIntermJwt = taToInterm.getSignedStatement().serialize();
+
+    // TA ES → RP
+    EntityStatement taToRp = shorterChain.getSuperiorStatements().get(0);
+    String taToRpJwt = taToRp.getSignedStatement().serialize();
+
+    when(
+        restTemplate.getForObject("https://rp.example/.well-known/openid-federation", String.class))
+          .thenReturn(rpEcJwt);
+
+    when(restTemplate.getForObject("https://intermediate.example/.well-known/openid-federation",
+        String.class)).thenReturn(iaEcJwt);
+
+    when(restTemplate.getForObject(
+        "https://intermediate.example/fetch?sub=https%3A%2F%2Frp.example", String.class))
+          .thenReturn(intermToRpJwt);
+
+    when(restTemplate.getForObject(
+        "https://ta.example/fetch?sub=https%3A%2F%2Fintermediate.example", String.class))
+          .thenReturn(taToIntermJwt);
+
+    when(restTemplate.getForObject("https://ta.example/fetch?sub=https%3A%2F%2Frp.example",
+        String.class)).thenReturn(taToRpJwt);
+
+    when(
+        restTemplate.getForObject("https://ta.example/.well-known/openid-federation", String.class))
+          .thenReturn(taEcJwt);
+
+    when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
+
+    TrustChain resolved = service.getOrResolve("https://rp.example");
+
+    assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
+    assertEquals(2, resolved.getSuperiorStatements().size());
+  }
+
+  @Test
+  public void testValidatorReturnsValidChain() throws JOSEException, BadJOSEException {
+    JSONObject rpMetadata = new JSONObject();
+    rpMetadata.put("openid_relying_party", true);
+
+    // Entity Configuration of RP
+    EntityStatement rpEC =
+        TrustChainTestFactory.selfEC("https://rp.example", new Date(),
+            new Date(System.currentTimeMillis() + 600000), List
+              .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
+            null, rpMetadata);
+    String rpEcJwt = rpEC.getSignedStatement().serialize();
+
+    // Entity Configuration of IA
+    EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta1.example")),
+        URI.create("https://intermediate.example/fetch"), null);
+    String iaEcJwt = iaEC.getSignedStatement().serialize();
+
+    // Entity Configuration of trusted TA
+    EntityStatement trustedTaEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
+        null);
+    String trustedTaEcJwt = trustedTaEC.getSignedStatement().serialize();
+
+    // Entity Configuration of untrusted TA
+    EntityStatement untrustedTaEC = TrustChainTestFactory.selfEC("https://ta1.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null,
+        URI.create("https://ta1.example/fetch"), null);
+    String untrustedTaEcJwt = untrustedTaEC.getSignedStatement().serialize();
+
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain();
+    TrustChain longerChain =
+        TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example");
+
+    // Intermediate ES → RP
+    EntityStatement intermToRp = longerChain.getSuperiorStatements().get(0);
+    String intermToRpJwt = intermToRp.getSignedStatement().serialize();
+
+    // Untrusted TA ES → Intermediate
+    EntityStatement taToInterm = longerChain.getSuperiorStatements().get(1);
+    String taToIntermJwt = taToInterm.getSignedStatement().serialize();
+
+    // Trusted TA ES → RP
+    EntityStatement taToRp = shorterChain.getSuperiorStatements().get(0);
+    String taToRpJwt = taToRp.getSignedStatement().serialize();
+
+    when(
+        restTemplate.getForObject("https://rp.example/.well-known/openid-federation", String.class))
+          .thenReturn(rpEcJwt);
+
+    when(restTemplate.getForObject("https://intermediate.example/.well-known/openid-federation",
+        String.class)).thenReturn(iaEcJwt);
+
+    when(restTemplate.getForObject(
+        "https://intermediate.example/fetch?sub=https%3A%2F%2Frp.example", String.class))
+          .thenReturn(intermToRpJwt);
+
+    when(restTemplate.getForObject(
+        "https://ta1.example/fetch?sub=https%3A%2F%2Fintermediate.example", String.class))
+          .thenReturn(taToIntermJwt);
+
+    when(restTemplate.getForObject("https://ta.example/fetch?sub=https%3A%2F%2Frp.example",
+        String.class)).thenReturn(taToRpJwt);
+
+    when(
+        restTemplate.getForObject("https://ta.example/.well-known/openid-federation", String.class))
+          .thenReturn(trustedTaEcJwt);
+
+    when(restTemplate.getForObject("https://ta1.example/.well-known/openid-federation",
+        String.class)).thenReturn(untrustedTaEcJwt);
+
+    when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
+    when(trustAnchorRepository.isTrusted("https://ta1.example")).thenReturn(false);
+
+    TrustChain resolved = service.getOrResolve("https://rp.example");
+
+    assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
+    assertEquals(2, resolved.getSuperiorStatements().size());
   }
 
   @Test

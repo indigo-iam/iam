@@ -94,7 +94,6 @@ public class TrustChainTestFactory {
     // RP self EC with authority_hint = TA
     JSONObject rpMetadata = new JSONObject();
     rpMetadata.put("openid_relying_party", true);
-
     EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, rpMetadata);
 
     // TA → RP ES
@@ -103,15 +102,14 @@ public class TrustChainTestFactory {
     // Build the TrustChain
     return new TrustChain(rpEC, List.of(taToRp));
   }
-  
+
   /** Trust Chain: RP → Intermediate → TA */
-  public static TrustChain createRpToIntermediateToTaChain() throws JOSEException {
+  public static TrustChain createRpToIntermediateToTaChain(String ta) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
     String rp = "https://rp.example";
     String ia = "https://intermediate.example";
-    String ta = "https://ta.example";
 
     // RP self EC with authority_hint = Intermediate
     JSONObject rpMetadata = new JSONObject();
@@ -124,7 +122,7 @@ public class TrustChainTestFactory {
     // TA → Intermediate ES
     EntityStatement taToInterm = superiorES(ta, ia, now, exp);
 
-    // Build the TrustChain: RP EC, intermediate→RP, TA→intermediate
+    // Build the TrustChain: RP EC, intermediate → RP, TA → intermediate
     return new TrustChain(rpEC, List.of(intermToRp, taToInterm));
   }
 }

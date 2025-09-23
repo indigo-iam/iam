@@ -73,7 +73,6 @@ public class TrustChainValidator {
           "Unexpected selection failure"));
   }
 
-
   /**
    * Validate a single chain of EntityStatements
    */
