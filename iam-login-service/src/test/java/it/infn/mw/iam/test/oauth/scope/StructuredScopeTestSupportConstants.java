@@ -50,6 +50,8 @@ public interface StructuredScopeTestSupportConstants {
   static final String TEST_USERNAME = "test";
   static final String TEST_PASSWORD = "password";
   static final String TEST_UUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+  static final String TEST_NAME = "Test User";
+  static final String TEST_EMAIL = "test@iam.test";
 
   static final String ADMIN_USERNAME = "admin";
   static final String ADMIN_PASSWORD = "password";

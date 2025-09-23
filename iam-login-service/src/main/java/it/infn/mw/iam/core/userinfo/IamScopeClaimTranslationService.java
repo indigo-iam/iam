@@ -33,9 +33,11 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 
+@SuppressWarnings("deprecation")
 @Service
 @Primary
 public class IamScopeClaimTranslationService implements ScopeClaimTranslationService {
@@ -47,9 +49,7 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
       StandardClaimNames.FAMILY_NAME, StandardClaimNames.MIDDLE_NAME, StandardClaimNames.NICKNAME,
       StandardClaimNames.PROFILE, StandardClaimNames.PICTURE, StandardClaimNames.WEBSITE,
       StandardClaimNames.GENDER, StandardClaimNames.ZONEINFO, StandardClaimNames.LOCALE,
-      StandardClaimNames.UPDATED_AT, StandardClaimNames.BIRTHDATE,
-      IamExtraClaimNames.ORGANISATION_NAME, IamExtraClaimNames.GROUPS,
-      IamExtraClaimNames.EXTERNAL_AUTHN, KeycloakExtraClaimNames.ROLES);
+      StandardClaimNames.UPDATED_AT, StandardClaimNames.BIRTHDATE);
 
   protected static final Set<String> EMAIL_CLAIMS =
       Set.of(StandardClaimNames.EMAIL, StandardClaimNames.EMAIL_VERIFIED);
@@ -57,8 +57,25 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
   protected static final Set<String> PHONE_CLAIMS =
       Set.of(StandardClaimNames.PHONE_NUMBER, StandardClaimNames.PHONE_NUMBER_VERIFIED);
 
+  protected static final Set<String> ALL_SCOPED_AFFILIATION_CLAIMS =
+      Set.of(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
+          AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION);
+
   protected static final Set<String> ALL_ENTITLEMENT_CLAIMS =
       Set.of(AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS);
+
+  protected static final Set<String> AARC_CLAIMS = Set.of(AarcExtraClaimNames.VOPERSON_ID,
+      AarcExtraClaimNames.ENTITLEMENTS, AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION,
+      AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION, AarcExtraClaimNames.EDUPERSON_ASSURANCE);
+
+  protected static final Set<String> IAM_CLAIMS = Set.of(IamExtraClaimNames.ATTR,
+      IamExtraClaimNames.SSH_KEYS, IamExtraClaimNames.ORGANISATION_NAME, IamExtraClaimNames.GROUPS,
+      IamExtraClaimNames.LAST_LOGIN_AT, IamExtraClaimNames.AFFILIATION,
+      IamExtraClaimNames.EXTERNAL_AUTHN);
+
+  protected static final Set<String> WLCG_CLAIMS =
+      Set.of(WlcgExtraClaimNames.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_VER,
+          WlcgExtraClaimNames.EDUPERSON_ASSURANCE, WlcgExtraClaimNames.AUTH_TIME);
 
   public IamScopeClaimTranslationService() {
 
@@ -67,15 +84,27 @@ public class IamScopeClaimTranslationService implements ScopeClaimTranslationSer
     mapScopeToClaim(OidcScopes.EMAIL, EMAIL_CLAIMS);
     mapScopeToClaim(OidcScopes.PHONE, PHONE_CLAIMS);
     mapScopeToClaim(OidcScopes.ADDRESS, StandardClaimNames.ADDRESS);
-    mapScopeToClaim(AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION,
-        AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION);
-    mapScopeToClaim(AarcOidcScopes.ENTITLEMENTS, AarcExtraClaimNames.ENTITLEMENTS);
-    mapScopeToClaim(AarcOidcScopes.EDUPERSON_ENTITLEMENT, ALL_ENTITLEMENT_CLAIMS);
+    // AARC scopes
+    mapScopeToClaim(AarcOidcScopes.AARC, AARC_CLAIMS);
     mapScopeToClaim(AarcOidcScopes.EDUPERSON_ASSURANCE, AarcExtraClaimNames.EDUPERSON_ASSURANCE);
-    mapScopeToClaim(AarcOidcScopes.VO_PERSON_ID, AarcExtraClaimNames.VO_PERSON_ID);
+    mapScopeToClaim(AarcOidcScopes.ENTITLEMENTS, AarcExtraClaimNames.ENTITLEMENTS);
+    mapScopeToClaim(AarcOidcScopes.VOPERSON_ID, AarcExtraClaimNames.VOPERSON_ID);
+    mapScopeToClaim(AarcOidcScopes.VOPERSON_EXTERNAL_AFFILIATION,
+        AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
+    mapScopeToClaim(AarcOidcScopes.VOPERSON_SCOPED_AFFILIATION,
+        AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION);
+    mapScopeToClaim(AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, ALL_SCOPED_AFFILIATION_CLAIMS);
+    mapScopeToClaim(AarcOidcScopes.EDUPERSON_ENTITLEMENT, ALL_ENTITLEMENT_CLAIMS);
+    // IAM scopes
+    mapScopeToClaim(IamOidcScopes.IAM, IAM_CLAIMS);
     mapScopeToClaim(IamOidcScopes.ATTR, IamExtraClaimNames.ATTR);
     mapScopeToClaim(IamOidcScopes.SSH_KEYS, IamExtraClaimNames.SSH_KEYS);
-    mapScopeToClaim(WlcgOidcScopes.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_GROUPS);
+    mapScopeToClaim(IamOidcScopes.ORGANISATION_NAME, IamExtraClaimNames.ORGANISATION_NAME);
+    // KC scopes
+    mapScopeToClaim(KeycloakOidcScopes.KEYCLOAK, KeycloakExtraClaimNames.ROLES);
+    // WLCG
+    mapScopeToClaim(WlcgOidcScopes.WLCG, WLCG_CLAIMS);
+    mapScopeToClaim(WlcgOidcScopes.WLCG_GROUPS, WLCG_CLAIMS);
   }
 
   private void mapScopeToClaim(String scope, String claim) {

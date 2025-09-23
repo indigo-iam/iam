@@ -15,10 +15,42 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import it.infn.mw.iam.persistence.model.IamUserInfo;
+import java.util.Map;
+import java.util.Set;
 
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
+
+@SuppressWarnings("deprecation")
 public interface ClaimValueHelper {
 
-  Object getClaimValueFromUserInfo(String claim, IamUserInfo info);
+  /**
+   * Map scope names to claim names
+   * 
+   * @param scopes The collection of scopes from which computing the related claims
+   * @return the names of the expected claims for the received collection of scopes
+   */
+  Set<String> resolveScopes(Set<String> scopes);
+
+  /**
+   * Resolve claim names to a value (if available)
+   * 
+   * @param claimName The claim name from which computing the related value
+   * @param account The user account info
+   * @param auth The current Authentication info that can contain also the external provider additionalInfo
+   * @return the value of claim name
+   */
+  Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth);
+
+  /**
+   * Resolve claim names to a value (if available)
+   * 
+   * @param claimNames The collection of claim names from which computing the related values
+   * @param account The user account info
+   * @param auth The current Authentication info that can contain also the external provider additionalInfo
+   * @return the map of claim names and values
+   */
+  Map<String, Object> resolveClaims(Set<String> claimNames, IamAccount account, OAuth2Authentication auth);
 
 }

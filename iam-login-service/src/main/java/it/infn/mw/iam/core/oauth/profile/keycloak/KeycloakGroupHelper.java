@@ -18,15 +18,13 @@ package it.infn.mw.iam.core.oauth.profile.keycloak;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import it.infn.mw.iam.persistence.model.IamUserInfo;
+import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class KeycloakGroupHelper {
 
-  public static final String KEYCLOAK_ROLES_CLAIM = "roles";
+  public static Set<String> resolveGroupNames(Set<IamGroup> groups) {
 
-  public Set<String> resolveGroupNames(IamUserInfo userInfo) {
-
-    return userInfo.getGroups().stream().map(g -> g.getName()).collect(Collectors.toSet());
+    return groups.stream().map(g -> g.getName()).collect(Collectors.toSet());
   }
 
 }

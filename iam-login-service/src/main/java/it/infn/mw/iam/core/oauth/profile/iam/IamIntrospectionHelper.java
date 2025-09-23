@@ -33,9 +33,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
 import it.infn.mw.iam.persistence.model.IamGroup;
 
-public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
+public class IamIntrospectionHelper extends BaseIntrospectionHelper {
 
-  public IamJWTProfileTokenIntrospectionHelper(IamAccountService accountService) {
+  public IamIntrospectionHelper(IamAccountService accountService) {
     super(accountService);
   }
 
@@ -52,9 +52,8 @@ public class IamJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelp
   private void addGroups(Map<String, Object> claims) {
 
     if (claims.containsKey(USERNAME)) {
-      IamAccount account = loadUserFrom(claims.get(SUB).toString())
-        .orElseThrow(
-            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+      IamAccount account = loadUserFrom(claims.get(SUB).toString()).orElseThrow(
+          () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
       Set<String> groupNames = account.getGroups()
         .stream()
         .map(IamAccountGroupMembership::getGroup)

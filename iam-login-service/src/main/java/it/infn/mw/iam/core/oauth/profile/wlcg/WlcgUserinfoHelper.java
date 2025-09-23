@@ -18,36 +18,30 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.stereotype.Component;
 
-import it.infn.mw.iam.authn.ExternalAuthenticationInfoProcessor;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-public class WLCGJWTUserinfoHelper extends IamJWTProfileUserinfoHelper {
+@Component
+public class WlcgUserinfoHelper extends IamUserinfoHelper {
 
-  public static final Logger LOG = LoggerFactory.getLogger(WLCGJWTUserinfoHelper.class);
-
-  private final WLCGGroupHelper groupHelper;
-
-  public WLCGJWTUserinfoHelper(IamProperties props, ExternalAuthenticationInfoProcessor proc,
-      WLCGGroupHelper groupHelper) {
-    super(props, proc);
-    this.groupHelper = groupHelper;
+  public WlcgUserinfoHelper(IamProperties properties, IamClaimValueHelper claimValueHelper) {
+    super(properties, claimValueHelper);
   }
 
   @Override
-  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes,
-      IamAccount account) {
+  public Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
+      OAuth2Authentication auth) {
 
-    Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
+    Map<String, Object> claims = super.resolveScopeClaims(scopes, account, auth);
     claims.remove("groups");
-    claims.remove("organisation_name");
-    Set<String> resolvedGroups = groupHelper.resolveGroupNames(scopes, account.getUserInfo());
+    Set<String> resolvedGroups =
+        WlcgGroupHelper.resolveGroupNames(scopes, account.getUserInfo().getGroups());
     if (!resolvedGroups.isEmpty()) {
       claims.put(WlcgExtraClaimNames.WLCG_GROUPS, resolvedGroups);
     }

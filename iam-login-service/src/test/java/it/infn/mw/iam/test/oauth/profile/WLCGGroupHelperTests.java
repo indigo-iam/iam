@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.oauth.profile;
 
 import static com.google.common.collect.Sets.newLinkedHashSet;
-import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGGroupHelper.OPTIONAL_GROUP_LABEL;
+import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgGroupHelper.OPTIONAL_GROUP_LABEL;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -42,7 +42,7 @@ import org.springframework.security.oauth2.common.exceptions.InvalidScopeExcepti
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGGroupHelper;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgGroupHelper;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
@@ -55,8 +55,6 @@ public class WLCGGroupHelperTests {
 
   @Mock
   IamUserInfo userInfo;
-
-  WLCGGroupHelper helper = new WLCGGroupHelper();
 
   @Before
   public void setup() {
@@ -83,19 +81,19 @@ public class WLCGGroupHelperTests {
 
   @Test
   public void testNoWLCGGroupScope() {
-    assertThat(helper.resolveGroups(token, userInfo), empty());
+    assertThat(WlcgGroupHelper.resolveGroups(token, userInfo), empty());
   }
 
   @Test
   public void testWLCGGroupScopeNoGroups() {
     when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups")));
-    assertThat(helper.resolveGroups(token, userInfo), empty());
+    assertThat(WlcgGroupHelper.resolveGroups(token, userInfo), empty());
   }
 
   @Test
   public void testNoWLCGGroupScopeNoGroups() {
     when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "profile")));
-    assertThat(helper.resolveGroups(token, userInfo), empty());
+    assertThat(WlcgGroupHelper.resolveGroups(token, userInfo), empty());
   }
 
   @Test
@@ -109,7 +107,7 @@ public class WLCGGroupHelperTests {
 
     when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups")));
 
-    Set<IamGroup> groups = helper.resolveGroups(token, userInfo);
+    Set<IamGroup> groups = WlcgGroupHelper.resolveGroups(token, userInfo);
     assertThat(groups, hasSize(2));
     assertThat(groups, hasItem(g1));
     assertThat(groups, hasItem(g2));
@@ -126,7 +124,7 @@ public class WLCGGroupHelperTests {
 
     when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups")));
 
-    Set<IamGroup> groups = helper.resolveGroups(token, userInfo);
+    Set<IamGroup> groups = WlcgGroupHelper.resolveGroups(token, userInfo);
     assertThat(groups, empty());
   }
 
@@ -142,7 +140,7 @@ public class WLCGGroupHelperTests {
     when(token.getScope())
       .thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups:/g3", "wlcg.groups")));
 
-    List<IamGroup> groupList = Lists.newArrayList(helper.resolveGroups(token, userInfo));
+    List<IamGroup> groupList = Lists.newArrayList(WlcgGroupHelper.resolveGroups(token, userInfo));
 
     assertThat(groupList, hasSize(3));
     assertThat(groupList.get(0), is(g3));
@@ -163,7 +161,7 @@ public class WLCGGroupHelperTests {
     when(token.getScope())
       .thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups", "wlcg.groups:/g3")));
 
-    List<IamGroup> groupList = Lists.newArrayList(helper.resolveGroups(token, userInfo));
+    List<IamGroup> groupList = Lists.newArrayList(WlcgGroupHelper.resolveGroups(token, userInfo));
 
     assertThat(groupList, hasSize(3));
     assertThat(groupList.get(0), is(g1));
@@ -184,7 +182,7 @@ public class WLCGGroupHelperTests {
 
     when(token.getScope()).thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups:/g3")));
 
-    List<IamGroup> groupList = Lists.newArrayList(helper.resolveGroups(token, userInfo));
+    List<IamGroup> groupList = Lists.newArrayList(WlcgGroupHelper.resolveGroups(token, userInfo));
 
     assertThat(groupList, hasSize(3));
     assertThat(groupList.get(0), is(g3));
@@ -207,7 +205,7 @@ public class WLCGGroupHelperTests {
     when(token.getScope())
       .thenReturn(newLinkedHashSet(asList("openid", "wlcg.groups:/g4", "wlcg.groups:/g2")));
 
-    List<IamGroup> groupList = Lists.newArrayList(helper.resolveGroups(token, userInfo));
+    List<IamGroup> groupList = Lists.newArrayList(WlcgGroupHelper.resolveGroups(token, userInfo));
 
     assertThat(groupList, hasSize(3));
     assertThat(groupList.get(0), is(g4));
@@ -221,7 +219,7 @@ public class WLCGGroupHelperTests {
     Stream<String> validGroupScopes = Stream.of("wlcg.groups", "wlcg.groups:/example",
         "wlcg.groups:/test.vo/what-ever/happens_to_you");
 
-    validGroupScopes.forEach(helper::validateGroupScope);
+    validGroupScopes.forEach(WlcgGroupHelper::validateGroupScope);
   }
 
   @Test
@@ -231,7 +229,7 @@ public class WLCGGroupHelperTests {
 
     invalidGroupScopes.forEach(s -> {
       try {
-        helper.validateGroupScope(s);
+        WlcgGroupHelper.validateGroupScope(s);
         throw new AssertionError("Invalid scope not detected: " + s);
       } catch (InvalidScopeException e) {
         // expected

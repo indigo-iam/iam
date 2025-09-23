@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,11 +43,13 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
@@ -62,10 +65,16 @@ class KeycloakAccessTokenBuilderTests {
   IamTotpMfaRepository totpMfaRepository;
 
   @Mock
+  IamAccountRepository accountRepository;
+
+  @Mock
+  IamAccount account;
+
+  @Mock
   ScopeClaimTranslationService scService;
 
   @Mock
-  IamClaimValueHelper claimValueHelper;
+  ClaimValueHelper claimValueHelper;
 
   @Mock
   OAuth2AccessTokenEntity tokenEntity;
@@ -90,19 +99,20 @@ class KeycloakAccessTokenBuilderTests {
 
   final KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
-  KeycloakProfileAccessTokenBuilder tokenBuilder;
+  KeycloakAccessTokenBuilder tokenBuilder;
 
   @BeforeEach
   void setup() {
 
-    tokenBuilder = new KeycloakProfileAccessTokenBuilder(properties, totpMfaRepository,
-        accountUtils, groupHelper, scopeFilter);
+    tokenBuilder = new KeycloakAccessTokenBuilder(properties, accountRepository, totpMfaRepository,
+        accountUtils, scopeFilter, claimValueHelper);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");
     when(authentication.getOAuth2Request()).thenReturn(oauth2Request);
     when(userInfo.getSub()).thenReturn("userinfo-sub");
     when(oauth2Request.getGrantType()).thenReturn(TOKEN_EXCHANGE_GRANT_TYPE);
+    when(accountRepository.findByUuid("userinfo-sub")).thenReturn(Optional.of(account));
   }
 
   @Test

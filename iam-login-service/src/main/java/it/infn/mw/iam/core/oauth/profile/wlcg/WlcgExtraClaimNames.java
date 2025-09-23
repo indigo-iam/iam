@@ -22,4 +22,7 @@ public interface WlcgExtraClaimNames extends IamExtraClaimNames {
   String WLCG_GROUPS = "wlcg.groups";
   String WLCG_VER = "wlcg.ver";
 
+  String AUTH_TIME = "auth_time";
+  String EDUPERSON_ASSURANCE = "eduperson_assurance";
+
 }

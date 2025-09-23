@@ -13,58 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile.aarc;
+package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper.ADDITIONAL_CLAIMS;
-import static java.util.Objects.isNull;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ATTR;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.GROUPS;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ORGANISATION_NAME;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
 import java.time.Instant;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
-public class AarcJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
+public class IamAccessTokenBuilder extends BaseAccessTokenBuilder {
 
-  protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final AarcClaimValueHelper claimValueHelper;
-
-  public AarcJWTProfileAccessTokenBuilder(IamProperties properties,
+  public IamAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ScopeClaimTranslationService scopeClaimConverter, AarcClaimValueHelper claimValueHelper) {
-    super(properties, totpMfaRepository, accountUtils, scopeFilter);
-    this.scopeClaimConverter = scopeClaimConverter;
-    this.claimValueHelper = claimValueHelper;
+      ClaimValueHelper claimValueHelper) {
+    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
+        claimValueHelper);
   }
 
   @Override
   public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
-    Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
+    return baseJWTSetup(token, authentication, userInfo, issueTime).build();
+  }
 
-    if (!isNull(userInfo)) {
-      Set<String> requiredClaims = scopeClaimConverter.getClaimsForScopeSet(token.getScope());
+  @Override
+  protected Set<String> getAdditionalAuthnInfoClaims() {
 
-      requiredClaims.stream()
-        .filter(ADDITIONAL_CLAIMS::contains)
-        .forEach(c -> builder.claim(c, claimValueHelper.getClaimValueFromUserInfo(c,
-            ((UserInfoAdapter) userInfo).getUserinfo())));
-    }
-
-    return builder.build();
+    return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, GROUPS, ATTR);
   }
 }

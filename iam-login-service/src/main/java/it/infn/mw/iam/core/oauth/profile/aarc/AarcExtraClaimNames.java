@@ -20,9 +20,25 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 public interface AarcExtraClaimNames extends IamExtraClaimNames {
 
   String EDUPERSON_ASSURANCE = "eduperson_assurance";
+
+  /**
+   * Legacy name for {@link AarcExtraClaimNames#ENTITLEMENTS}
+   */
+  @Deprecated(since="1.13.0")
   String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
+
+  /**
+   * Legacy name for {@link AarcExtraClaimNames#VOPERSON_SCOPED_AFFILIATION}
+   */
+  @Deprecated(since="1.13.0")
   String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
+
   String ENTITLEMENTS = "entitlements";
-  String VO_PERSON_ID = "vo_person_id";
+
+  String VOPERSON_ID = "voperson_id";
+
+  String VOPERSON_EXTERNAL_AFFILIATION = "voperson_external_affiliation";
+
+  String VOPERSON_SCOPED_AFFILIATION = "voperson_scoped_affiliation";
 
 }

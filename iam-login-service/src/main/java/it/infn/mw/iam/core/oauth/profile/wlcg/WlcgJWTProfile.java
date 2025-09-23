@@ -13,31 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile.iam;
+package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import org.springframework.security.oauth2.provider.OAuth2Request;
+
+import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseJWTProfile;
 
-public class IamJWTProfile extends BaseJWTProfile {
+@SuppressWarnings("deprecation")
+public class WlcgJWTProfile extends BaseJWTProfile {
 
-  public static final String PROFILE_NAME = "IAM JWT profile";
+  public static final String PROFILE_VERSION = "1.0";
+  public static final String PROFILE_NAME = "WLCG JWT profile " + PROFILE_VERSION;
 
-  public IamJWTProfile(IamClaimValueHelper claimValueHelper,
-      IamAccessTokenBuilder accessTokenBuilder, IamIdTokenCustomizer idTokenCustomizer,
-      UserInfoHelper userInfoHelper, IntrospectionResultHelper introspectionHelper) {
-
+  public WlcgJWTProfile(ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
+      IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
+      IntrospectionResultHelper introspectionHelper) {
     super(claimValueHelper, accessTokenBuilder, idTokenCustomizer, userInfoHelper,
         introspectionHelper);
-  }
-
-  @Override
-  public String id() {
-    return IamOidcScopes.IAM;
   }
 
   @Override
   public String name() {
     return PROFILE_NAME;
   }
+
+  @Override
+  public void validateRequest(OAuth2Request request) {
+    WlcgGroupHelper.validateGroupScopes(request);
+  }
+
+  @Override
+  public String id() {
+    return WlcgOidcScopes.WLCG;
+  }
+
 }

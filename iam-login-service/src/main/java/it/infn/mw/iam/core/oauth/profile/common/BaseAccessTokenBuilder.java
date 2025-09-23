@@ -25,11 +25,16 @@ import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
 import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.joining;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
 import java.text.ParseException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -51,36 +56,64 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
-public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
+public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
-  public static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BaseAccessTokenBuilder.class);
 
-  public static final String SPACE = " ";
+  protected static final String SPACE = " ";
+  protected static final String SUBJECT_TOKEN = "subject_token";
 
-  public static final String SUBJECT_TOKEN = "subject_token";
+  private final IamProperties properties;
+  private final ScopeFilter scopeFilter;
+  private final IamAccountRepository accountRepository;
+  private final IamTotpMfaRepository totpMfaRepository;
+  private final AccountUtils accountUtils;
+  private final ClaimValueHelper claimValueHelper;
+  private final Splitter splitter;
 
-  protected final IamProperties properties;
-  protected final ScopeFilter scopeFilter;
-
-  protected final Splitter splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
-
-  protected final IamTotpMfaRepository totpMfaRepository;
-
-  protected final AccountUtils accountUtils;
-
-  protected BaseAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, ScopeFilter scopeFilter) {
+  protected BaseAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
+      ClaimValueHelper claimValueHelper) {
     this.properties = properties;
+    this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.accountUtils = accountUtils;
     this.scopeFilter = scopeFilter;
+    this.claimValueHelper = claimValueHelper;
+    this.splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
   }
 
+  protected IamProperties getProperties() {
+    return properties;
+  }
+
+  protected ScopeFilter getScopeFilter() {
+    return scopeFilter;
+  }
+
+  protected IamTotpMfaRepository getTotpMfaRepository() {
+    return totpMfaRepository;
+  }
+
+  protected AccountUtils getAccountUtils() {
+    return accountUtils;
+  }
+
+  protected ClaimValueHelper getClaimValueHelper() {
+    return claimValueHelper;
+  }
+
+  protected Splitter getSplitter() {
+    return splitter;
+  }
 
   protected boolean isTokenExchangeRequest(OAuth2Authentication authentication) {
     return TOKEN_EXCHANGE_GRANT_TYPE.equals(authentication.getOAuth2Request().getGrantType());
@@ -143,18 +176,26 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
+  protected Set<String> getAdditionalAuthnInfoClaims() {
+    return Set.of(NAME, EMAIL, PREFERRED_USERNAME);
+  }
+
   protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
     String subject = null;
+    Object owner = null;
 
     if (userInfo == null) {
       subject = authentication.getName();
     } else {
       subject = userInfo.getSub();
+      owner = accountRepository.findByUuid(subject)
+        .orElseThrow(() -> new IllegalStateException(
+            "Creating a token for a user which is not present on database!"));
     }
 
-    Builder builder = new JWTClaimsSet.Builder().issuer(properties.getIssuer())
+    Builder builder = new JWTClaimsSet.Builder().issuer(getProperties().getIssuer())
       .issueTime(Date.from(issueTime))
       .expirationTime(token.getExpiration())
       .subject(subject)
@@ -188,8 +229,22 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
 
     filterAndSetScopes(token, authentication);
 
-    if (properties.getAccessToken().isIncludeScope()) {
+    if (getProperties().getAccessToken().isIncludeScope() && !token.getScope().isEmpty()) {
       builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
+    }
+
+    if (getProperties().getAccessToken().isIncludeAuthnInfo() && owner != null) {
+      Set<String> requiredClaims = getClaimValueHelper().resolveScopes(token.getScope());
+      requiredClaims.retainAll(getAdditionalAuthnInfoClaims());
+      for (String claim : requiredClaims) {
+        builder.claim(claim,
+            getClaimValueHelper().resolveClaim(claim, (IamAccount) owner, authentication));
+      }
+    }
+
+    if (getProperties().getAccessToken().isIncludeNbf()) {
+      builder.notBeforeTime(Date.from(issueTime
+        .minus(Duration.ofSeconds(getProperties().getAccessToken().getNbfOffsetSeconds()))));
     }
 
     return builder;
@@ -207,7 +262,6 @@ public abstract class BaseAccessTokenBuilder implements JWTAccessTokenBuilder {
           scopeFilter.filterScopes(token.getAuthenticationHolder().getScope(), authentication));
     }
   }
-
 
   protected void addAcrClaimIfNeeded(Builder builder, OAuth2Authentication authentication) {
     if (authentication.getUserAuthentication() instanceof SavedUserAuthentication savedAuth

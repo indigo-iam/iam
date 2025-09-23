@@ -31,9 +31,9 @@ import it.infn.mw.iam.config.scim.ScimProperties.LabelDescriptor;
 public class IamTokenEnhancerProperties {
 
   // To be expanded in the future to include also
-  // access_token and userinfo endpoint responses
+  // access_token responses
   public enum TokenContext {
-    ID_TOKEN
+    ID_TOKEN, USERINFO
   }
 
   public static class IncludeLabelProperties {

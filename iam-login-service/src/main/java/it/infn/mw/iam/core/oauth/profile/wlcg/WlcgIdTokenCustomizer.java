@@ -15,35 +15,29 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import static it.infn.mw.iam.core.oauth.profile.wlcg.WLCGProfileAccessTokenBuilder.PROFILE_VERSION;
+import static java.util.Objects.isNull;
 
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
-public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
+@Component
+public class WlcgIdTokenCustomizer extends IamIdTokenCustomizer {
 
-  private final WLCGGroupHelper groupHelper;
-
-  public WLCGIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
-      WLCGGroupHelper groupHelper, IamProperties properties) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
-    this.groupHelper = groupHelper;
+  public WlcgIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
+    super(properties, claimValueHelper);
   }
 
   @Override
@@ -52,20 +46,18 @@ public class WLCGIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
 
     super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
 
-    IamUserInfo info = account.getUserInfo();
-    Set<String> groupNames = groupHelper.resolveGroupNames(accessToken, info);
+    idClaims.claim(WlcgExtraClaimNames.WLCG_VER, WlcgJWTProfile.PROFILE_VERSION);
 
-    if (!groupNames.isEmpty()) {
+    idClaims.claim(IamExtraClaimNames.GROUPS, null);
+
+    if (!isNull(account)) {
+      Set<String> groupNames =
+          WlcgGroupHelper.resolveGroupNames(accessToken, account.getUserInfo());
+      if (groupNames.isEmpty()) {
+        return;
+      }
       idClaims.claim(WlcgExtraClaimNames.WLCG_GROUPS, groupNames);
     }
-
-    // Drop group claims as set by IAM JWT profile
-    idClaims.claim(IamExtraClaimNames.GROUPS, null);
-    idClaims.claim(WlcgExtraClaimNames.WLCG_VER, PROFILE_VERSION);
-
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
-
-    includeLabelsInIdToken(idClaims, account);
   }
 
 }

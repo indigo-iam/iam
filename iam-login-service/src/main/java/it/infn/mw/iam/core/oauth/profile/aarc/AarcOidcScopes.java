@@ -21,13 +21,26 @@ public interface AarcOidcScopes extends IamOidcScopes {
 
   String AARC = "aarc";
 
-  String EDUPERSON_SCOPED_AFFILIATION = "eduperson_scoped_affiliation";
+  /**
+   * Legacy name for {@link AarcOidcScopes#VOPERSON_SCOPED_AFFILIATION}
+   */
+  @Deprecated(since="1.13.0")
+  String EDUPERSON_SCOPED_AFFILIATION = AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION;
 
-  String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
+  /**
+   * Legacy name for {@link AarcOidcScopes#ENTITLEMENTS}
+   */
+  @Deprecated(since="1.13.0")
+  String EDUPERSON_ENTITLEMENT = AarcExtraClaimNames.EDUPERSON_ENTITLEMENT;
 
-  String ENTITLEMENTS = "entitlements";
+  String ENTITLEMENTS = AarcExtraClaimNames.ENTITLEMENTS;
 
-  String EDUPERSON_ASSURANCE = "eduperson_assurance";
+  String EDUPERSON_ASSURANCE = AarcExtraClaimNames.EDUPERSON_ASSURANCE;
 
-  String VO_PERSON_ID = "vo_person_id";
+  String VOPERSON_ID = AarcExtraClaimNames.VOPERSON_ID;
+
+  String VOPERSON_SCOPED_AFFILIATION = AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION;
+
+  String VOPERSON_EXTERNAL_AFFILIATION = AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION;
+
 }

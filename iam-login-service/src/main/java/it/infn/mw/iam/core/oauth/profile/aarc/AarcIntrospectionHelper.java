@@ -25,14 +25,11 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 
-public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
+public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
 
-  protected final AarcClaimValueHelper claimValueHelper;
 
-  public AarcJWTProfileTokenIntrospectionHelper(IamAccountService accountService,
-      AarcClaimValueHelper claimValueHelper) {
+  public AarcIntrospectionHelper(IamAccountService accountService) {
     super(accountService);
-    this.claimValueHelper = claimValueHelper;
   }
 
   @Override

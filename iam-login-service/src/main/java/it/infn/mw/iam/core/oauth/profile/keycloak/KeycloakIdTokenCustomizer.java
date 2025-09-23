@@ -15,32 +15,24 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import java.util.Set;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfileIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
-public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
+@Component
+public class KeycloakIdTokenCustomizer extends IamIdTokenCustomizer {
 
-  private final KeycloakGroupHelper groupHelper;
-
-  public KeycloakIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
-      KeycloakGroupHelper groupHelper, IamProperties properties) {
-    super(accountRepo, scopeClaimConverter, claimValueHelper, properties);
-    this.groupHelper = groupHelper;
+  public KeycloakIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
+    super(properties, claimValueHelper);
   }
 
   @Override
@@ -48,20 +40,6 @@ public class KeycloakIdTokenCustomizer extends IamJWTProfileIdTokenCustomizer {
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
 
     super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
-
-    IamUserInfo info = account.getUserInfo();
-    Set<String> groupNames = groupHelper.resolveGroupNames(info);
-
-    if (!groupNames.isEmpty()) {
-      idClaims.claim(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groupNames);
-    }
-
-    // Drop group claims as set by IAM JWT profile
-    idClaims.claim("groups", null);
-
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
-
-    includeLabelsInIdToken(idClaims, account);
   }
 
 }

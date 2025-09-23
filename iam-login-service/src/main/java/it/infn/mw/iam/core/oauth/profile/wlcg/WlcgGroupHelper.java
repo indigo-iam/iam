@@ -27,97 +27,102 @@ import java.util.stream.Stream;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
 @SuppressWarnings("deprecation")
-@Component
-public class WLCGGroupHelper {
+public class WlcgGroupHelper {
 
-  public static final String WLCG_GROUP_REGEXP_STR = "wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$";
+  public static final String WLCG_GROUP_REGEXP_STR =
+      "wlcg\\.groups(?::((?:\\/[a-zA-Z0-9][a-zA-Z0-9_.-]*)+))?$";
   public static final Pattern WLCG_GROUP_REGEXP = Pattern.compile(WLCG_GROUP_REGEXP_STR);
-  
+
   public static final String QUALIFIED_WLCG_GROUPS_SCOPE = "wlcg.groups:/";
   public static final IamLabel OPTIONAL_GROUP_LABEL =
       IamLabel.builder().name("wlcg.optional-group").build();
 
 
-  private String prependSlashToGroupName(IamGroup g) {
+  private static String prependSlashToGroupName(IamGroup g) {
     return format("/%s", g.getName());
   }
 
-  private boolean wantsImplicitGroups(Set<String> scopes) {
-    return scopes.stream().anyMatch(this::isWlcgGroupScope)
-        && !scopes.contains(WlcgOidcScopes.WLCG_GROUPS);
+  private static boolean wantsImplicitGroups(Set<String> scopes) {
+    return scopes.contains(WlcgOidcScopes.WLCG)
+        || (scopes.stream().anyMatch(WlcgGroupHelper::isWlcgGroupScope)
+            && !scopes.contains(WlcgOidcScopes.WLCG_GROUPS));
   }
 
-  private boolean isWlcgGroupScope(String scope) {
+  private static boolean isWlcgGroupScope(String scope) {
     return scope.startsWith(WlcgOidcScopes.WLCG_GROUPS);
   }
 
-  private Stream<IamGroup> addCatchallGroupScope(IamUserInfo userInfo) {
-    return userInfo.getGroups()
-      .stream()
+  private static Stream<IamGroup> addCatchallGroupScope(Set<IamGroup> groups) {
+    return groups.stream()
       .filter(g -> !g.getLabels().contains(OPTIONAL_GROUP_LABEL))
       .sorted((g1, g2) -> g1.getName().compareTo(g2.getName()));
   }
 
-  private Stream<IamGroup> handleGroupScope(String scope, IamUserInfo userInfo) {
+  private static Stream<IamGroup> handleGroupScope(String scope, Set<IamGroup> groups) {
     if (scope.startsWith(QUALIFIED_WLCG_GROUPS_SCOPE)) {
       final String groupName = scope.substring(QUALIFIED_WLCG_GROUPS_SCOPE.length());
-      return userInfo.getGroups().stream().filter(g -> g.getName().equals(groupName));
-    } else {
-      return addCatchallGroupScope(userInfo);
+      return groups.stream().filter(g -> g.getName().equals(groupName));
     }
+    return addCatchallGroupScope(groups);
   }
 
-  private Stream<IamGroup> resolveGroupStream(Set<String> scopes, IamUserInfo userInfo) {
-    Stream<IamGroup> groupStream = scopes
-      .stream()
-      .filter(this::isWlcgGroupScope)
-      .flatMap(s -> handleGroupScope(s, userInfo));
+  private static Stream<IamGroup> resolveGroupStream(Set<String> scopes, Set<IamGroup> groups) {
+    Stream<IamGroup> groupStream = scopes.stream()
+      .filter(WlcgGroupHelper::isWlcgGroupScope)
+      .flatMap(s -> handleGroupScope(s, groups));
 
     if (wantsImplicitGroups(scopes)) {
-      groupStream = Stream.concat(groupStream, addCatchallGroupScope(userInfo));
+      groupStream = Stream.concat(groupStream, addCatchallGroupScope(groups));
     }
 
     return groupStream;
   }
 
-  public Set<IamGroup> resolveGroups(Set<String> scopes, IamUserInfo userInfo) {
+  public static Set<IamGroup> resolveGroups(Set<String> scopes, IamUserInfo userInfo) {
 
-    return resolveGroupStream(scopes, userInfo).collect(toCollection(LinkedHashSet::new));
+    return resolveGroups(scopes, userInfo.getGroups());
   }
 
-  public Set<IamGroup> resolveGroups(OAuth2AccessTokenEntity token, IamUserInfo userInfo) {
+  public static Set<IamGroup> resolveGroups(Set<String> scopes, Set<IamGroup> groups) {
+
+    return resolveGroupStream(scopes, groups).collect(toCollection(LinkedHashSet::new));
+  }
+
+  public static Set<IamGroup> resolveGroups(OAuth2AccessTokenEntity token, IamUserInfo userInfo) {
 
     return resolveGroups(token.getScope(), userInfo);
   }
 
-  public Set<String> resolveGroupNames(OAuth2AccessTokenEntity token, IamUserInfo userInfo) {
+  public static Set<String> resolveGroupNames(OAuth2AccessTokenEntity token, IamUserInfo userInfo) {
 
-    return resolveGroupNames(token.getScope(), userInfo);
+    return resolveGroupNames(token.getScope(), userInfo.getGroups());
   }
 
-  public Set<String> resolveGroupNames(Set<String> scopes, IamUserInfo userInfo) {
+  public static Set<String> resolveGroupNames(Set<String> scopes, Set<IamGroup> groups) {
 
-    return resolveGroupStream(scopes, userInfo).map(this::prependSlashToGroupName)
+    return resolveGroupStream(scopes, groups).map(WlcgGroupHelper::prependSlashToGroupName)
       .collect(toCollection(LinkedHashSet::new));
   }
 
-  public void validateGroupScope(String scope) {
+  public static void validateGroupScope(String scope) {
     Matcher m = WLCG_GROUP_REGEXP.matcher(scope);
-    
+
     if (!m.matches()) {
-      throw new InvalidScopeException("Invalid WLCG group scope: "+scope);
+      throw new InvalidScopeException("Invalid WLCG group scope: " + scope);
     }
   }
 
-  public void validateGroupScopes(OAuth2Request request) {
-    request.getScope().stream().filter(this::isWlcgGroupScope).forEach(this::validateGroupScope);
+  public static void validateGroupScopes(OAuth2Request request) {
+    request.getScope()
+      .stream()
+      .filter(WlcgGroupHelper::isWlcgGroupScope)
+      .forEach(WlcgGroupHelper::validateGroupScope);
   }
 
 }

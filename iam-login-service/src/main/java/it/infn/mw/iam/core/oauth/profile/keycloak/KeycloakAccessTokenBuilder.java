@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.oauth.profile.iam;
+package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
+import static java.util.Objects.isNull;
+import static java.util.stream.Collectors.joining;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -24,32 +26,30 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
-public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
+@Component
+public class KeycloakAccessTokenBuilder extends BaseAccessTokenBuilder {
 
-  protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final IamClaimValueHelper claimValueHelper;
-
-  public IamJWTProfileAccessTokenBuilder(IamProperties properties,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils,
-      ScopeClaimTranslationService scopeClaimConverter, IamClaimValueHelper claimValueHelper,
-      ScopeFilter scopeFilter) {
-    super(properties, totpMfaRepository, accountUtils, scopeFilter);
-    this.scopeClaimConverter = scopeClaimConverter;
-    this.claimValueHelper = claimValueHelper;
+  public KeycloakAccessTokenBuilder(IamProperties properties,
+      IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper) {
+    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
+        claimValueHelper);
   }
 
   @Override
@@ -58,18 +58,19 @@ public class IamJWTProfileAccessTokenBuilder extends BaseAccessTokenBuilder {
 
     Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
 
-    if (properties.getAccessToken().isIncludeAuthnInfo() && userInfo != null) {
-      Set<String> requiredClaims = scopeClaimConverter.getClaimsForScopeSet(token.getScope());
+    builder.notBeforeTime(Date.from(issueTime
+      .minus(Duration.ofSeconds(getProperties().getAccessToken().getNbfOffsetSeconds()))));
 
-      requiredClaims.stream()
-        .filter(ADDITIONAL_CLAIMS::contains)
-        .forEach(c -> builder.claim(c, claimValueHelper.getClaimValueFromUserInfo(c,
-            ((UserInfoAdapter) userInfo).getUserinfo())));
+    if (!token.getScope().isEmpty()) {
+      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
     }
 
-    if (properties.getAccessToken().isIncludeNbf()) {
-      builder.notBeforeTime(Date
-        .from(issueTime.minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds()))));
+    if (!isNull(userInfo)) {
+      Set<String> groupNames = KeycloakGroupHelper
+        .resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo().getGroups());
+      if (!groupNames.isEmpty()) {
+        builder.claim(KeycloakExtraClaimNames.ROLES, groupNames);
+      }
     }
 
     return builder.build();

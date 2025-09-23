@@ -15,51 +15,50 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper.ADDITIONAL_CLAIMS;
+import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
 
-import java.util.Set;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamUserInfo;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.model.IamLabel;
 
 @SuppressWarnings("deprecation")
-public class IamJWTProfileIdTokenCustomizer extends BaseIdTokenCustomizer {
+public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
 
-  protected final ScopeClaimTranslationService scopeClaimConverter;
-  protected final ClaimValueHelper claimValueHelper;
+  public IamIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
+    super(properties, claimValueHelper);
+  }
 
-  public IamJWTProfileIdTokenCustomizer(IamAccountRepository accountRepo,
-      ScopeClaimTranslationService scopeClaimConverter, ClaimValueHelper claimValueHelper,
-      IamProperties properties) {
-    super(accountRepo, properties);
-    this.scopeClaimConverter = scopeClaimConverter;
-    this.claimValueHelper = claimValueHelper;
+  protected final void includeLabelsInIdToken(Builder idClaims, IamAccount account) {
+
+    for (IncludeLabelProperties includeLabel : getIamProperties().getTokenEnhancer()
+      .getIncludeLabels()) {
+      if (includeLabel.getContext().contains(ID_TOKEN)) {
+        Optional<IamLabel> label = account.getLabelByPrefixAndName(
+            includeLabel.getLabel().getPrefix(), includeLabel.getLabel().getName());
+
+        if (label.isPresent()) {
+          idClaims.claim(includeLabel.getClaimName(), label.get().getValue());
+        }
+      }
+    }
   }
 
   @Override
   public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
 
-    IamUserInfo info = account.getUserInfo();
-
-    Set<String> requiredClaims = scopeClaimConverter.getClaimsForScopeSet(request.getScope());
-
-    requiredClaims.stream()
-      .filter(ADDITIONAL_CLAIMS::contains)
-      .forEach(c -> idClaims.claim(c, claimValueHelper.getClaimValueFromUserInfo(c, info)));
-
-    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
+    super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
 
     includeLabelsInIdToken(idClaims, account);
   }

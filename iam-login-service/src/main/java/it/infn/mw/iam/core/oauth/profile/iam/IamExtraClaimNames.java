@@ -28,7 +28,7 @@ public interface IamExtraClaimNames extends StandardClaimNames {
   String EXTERNAL_AUTHN = "external_authn";
   String GROUPS = "groups";
   String LAST_LOGIN_AT = "last_login_at";
-  String ORGANISATION_NAME = "organisation_name";
   String SCOPE = "scope";
   String SSH_KEYS = "ssh_keys";
+  String ORGANISATION_NAME = "organisation_name";
 }

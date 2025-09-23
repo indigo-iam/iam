@@ -85,11 +85,13 @@ public class IamUserInfoEndpoint {
       LOG.error(errorMsg);
       throw new AuthException(errorMsg);
     }
-    LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId, username);
+    LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
+        username);
 
     JWTProfile profile = profileResolver.resolveProfile(client.get().getScope());
     Set<String> scopes = scopeResolver.resolveScope(auth);
-    Map<String, Object> claims = profile.getUserinfoHelper().resolveScopeClaims(auth, scopes, account.get());
+    Map<String, Object> claims =
+        profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
 
     UserInfoResponse.Builder builder = new UserInfoResponse.Builder(valueOf(claims.get(SUB)));
     claims.forEach(builder::addField);

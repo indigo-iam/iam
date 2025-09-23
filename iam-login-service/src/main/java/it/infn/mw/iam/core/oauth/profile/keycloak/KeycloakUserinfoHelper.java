@@ -15,37 +15,13 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public class KeycloakUserinfoHelper extends BaseUserinfoHelper {
 
-  public static final Logger LOG = LoggerFactory.getLogger(KeycloakUserinfoHelper.class);
-
-  private KeycloakGroupHelper groupHelper;
-
-  public KeycloakUserinfoHelper(IamProperties props, KeycloakGroupHelper groupHelper) {
-    super(props);
-    this.groupHelper = groupHelper;
+  public KeycloakUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper) {
+    super(props, claimValueHelper);
   }
-
-  @Override
-  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes, IamAccount account) {
-
-    Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
-    claims.remove("groups");
-    Set<String> resolvedGroups = groupHelper.resolveGroupNames(account.getUserInfo());
-    includeIfNotEmpty(claims, KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, resolvedGroups);
-    return claims;
-  }
-
 }

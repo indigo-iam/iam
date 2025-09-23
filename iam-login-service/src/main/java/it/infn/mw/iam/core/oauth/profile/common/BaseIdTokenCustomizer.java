@@ -15,15 +15,19 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import static it.infn.mw.iam.config.IamTokenEnhancerProperties.TokenContext.ID_TOKEN;
+import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AMR;
-import static java.util.Objects.isNull;
 
 import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,50 +37,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.config.IamTokenEnhancerProperties.IncludeLabelProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.model.IamLabel;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   public static final Logger LOG = LoggerFactory.getLogger(BaseIdTokenCustomizer.class);
 
-  private final IamAccountRepository accountRepo;
   private final IamProperties properties;
+  private final ClaimValueHelper claimValueHelper;
 
-  protected BaseIdTokenCustomizer(IamAccountRepository accountRepo, IamProperties properties) {
-    this.accountRepo = accountRepo;
+  protected BaseIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
     this.properties = properties;
+    this.claimValueHelper = claimValueHelper;
   }
 
-  public IamAccountRepository getAccountRepo() {
-    return accountRepo;
+  public IamProperties getIamProperties() {
+    return properties;
   }
 
-  protected final void includeLabelsInIdToken(Builder idClaims, IamAccount account) {
-
-    if (isNull(account)) {
-      return;
-    }
-
-    if (isNull(properties.getTokenEnhancer())
-        || isNull(properties.getTokenEnhancer().getIncludeLabels())) {
-      return;
-    }
-
-    for (IncludeLabelProperties includeLabel : properties.getTokenEnhancer().getIncludeLabels()) {
-      if (includeLabel.getContext().contains(ID_TOKEN)) {
-        Optional<IamLabel> label = account.getLabelByPrefixAndName(
-            includeLabel.getLabel().getPrefix(), includeLabel.getLabel().getName());
-
-        if (label.isPresent()) {
-          idClaims.claim(includeLabel.getClaimName(), label.get().getValue());
-        }
-      }
-    }
+  public ClaimValueHelper getClaimValueHelper() {
+    return claimValueHelper;
   }
 
   protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
@@ -105,4 +88,23 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       LOG.error("Error parsing JWT claims: {}", e.getMessage());
     }
   }
+
+  @Override
+  public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
+      OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
+
+    Objects.requireNonNull(account, "Account must not be null");
+
+    Set<String> requiredClaims = getClaimValueHelper().resolveScopes(request.getScope());
+    for (String claim : requiredClaims) {
+      idClaims.claim(claim, getClaimValueHelper().resolveClaim(claim, account,
+          accessToken.getAuthenticationHolder().getAuthentication()));
+    }
+
+    includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
+
+    idClaims.claim(NOT_BEFORE, Date.from(Instant.now()
+      .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds()))));
+  }
+
 }

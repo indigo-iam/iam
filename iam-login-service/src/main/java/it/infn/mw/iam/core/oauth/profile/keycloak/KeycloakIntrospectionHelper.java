@@ -24,20 +24,17 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-
+@Component
 public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
-  private final KeycloakGroupHelper groupHelper;
-
-  public KeycloakIntrospectionHelper(IamAccountService accountService, KeycloakGroupHelper helper) {
+  public KeycloakIntrospectionHelper(IamAccountService accountService) {
     super(accountService);
-    this.groupHelper = helper;
   }
 
   @Override
@@ -50,27 +47,16 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
     return claims;
   }
 
-  @Override
-  public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
-
-    Map<String, Object> claims =
-        super.assembleIntrospectionResult(refreshToken, authenticatedClient);
-    addRoles(claims);
-    return claims;
-  }
-
   private void addRoles(Map<String, Object> claims) {
 
     if (claims.containsKey(USERNAME)) {
-      IamAccount account = loadUserFrom(claims.get(SUB).toString())
-        .orElseThrow(
-            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+      IamAccount account = loadUserFrom(claims.get(SUB).toString()).orElseThrow(
+          () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
 
-      Set<String> groups = groupHelper.resolveGroupNames(account.getUserInfo());
+      Set<String> groups = KeycloakGroupHelper.resolveGroupNames(account.getUserInfo().getGroups());
 
       if (!groups.isEmpty()) {
-        claims.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
+        claims.put(KeycloakExtraClaimNames.ROLES, groups);
       }
     }
   }

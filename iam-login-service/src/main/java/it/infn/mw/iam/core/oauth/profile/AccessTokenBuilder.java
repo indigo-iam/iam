@@ -25,7 +25,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 @FunctionalInterface
 @SuppressWarnings("deprecation")
-public interface JWTAccessTokenBuilder {
+public interface AccessTokenBuilder {
 
   JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token, OAuth2Authentication authentication,
       UserInfo userInfo, Instant issueTime);

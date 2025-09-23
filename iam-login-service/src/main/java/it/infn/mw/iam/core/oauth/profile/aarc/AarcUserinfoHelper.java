@@ -21,28 +21,24 @@ import java.util.Set;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-public class AarcJWTProfileUserinfoHelper extends BaseUserinfoHelper {
+public class AarcUserinfoHelper extends IamUserinfoHelper {
 
-  protected final AarcClaimValueHelper claimValueHelper;
-
-  public AarcJWTProfileUserinfoHelper(IamProperties props,
-      AarcClaimValueHelper claimValueHelper) {
-    super(props);
-    this.claimValueHelper = claimValueHelper;
+  public AarcUserinfoHelper(IamProperties properties, IamClaimValueHelper claimValueHelper) {
+    super(properties, claimValueHelper);
   }
 
   @Override
-  public Map<String, Object> resolveScopeClaims(OAuth2Authentication auth, Set<String> scopes, IamAccount account) {
+  public Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
+      OAuth2Authentication auth) {
 
-    Map<String, Object> claims = super.resolveScopeClaims(auth, scopes, account);
-    claims.remove("groups");
-    scopes.forEach(scope -> includeIfNotNull(claims, scope,
-        claimValueHelper.getClaimValueFromUserInfo(scope, account.getUserInfo())));
+    Map<String, Object> claims = super.resolveScopeClaims(scopes, account, auth);
+    claims.remove(IamExtraClaimNames.GROUPS);
     return claims;
   }
-
 }

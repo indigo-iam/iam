@@ -21,7 +21,9 @@ public interface JWTProfile {
 
   String name();
 
-  JWTAccessTokenBuilder getAccessTokenBuilder();
+  ClaimValueHelper getClaimValueHelper();
+
+  AccessTokenBuilder getAccessTokenBuilder();
 
   IDTokenCustomizer getIDTokenCustomizer();
 
@@ -30,4 +32,5 @@ public interface JWTProfile {
   UserInfoHelper getUserinfoHelper();
 
   RequestValidator getRequestValidator();
+
 }

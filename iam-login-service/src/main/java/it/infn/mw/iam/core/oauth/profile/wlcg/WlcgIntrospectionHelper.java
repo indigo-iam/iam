@@ -30,13 +30,10 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 
-public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
+public class WlcgIntrospectionHelper extends BaseIntrospectionHelper {
 
-  private final WLCGGroupHelper groupHelper;
-
-  public WLCGIntrospectionHelper(IamAccountService accountService, WLCGGroupHelper helper) {
+  public WlcgIntrospectionHelper(IamAccountService accountService) {
     super(accountService);
-    this.groupHelper = helper;
   }
 
   @Override
@@ -52,11 +49,10 @@ public class WLCGIntrospectionHelper extends BaseIntrospectionHelper {
   private void addWlcgGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {
 
     if (claims.containsKey(USERNAME)) {
-      IamAccount account = loadUserFrom(claims.get(SUB).toString())
-        .orElseThrow(
-            () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+      IamAccount account = loadUserFrom(claims.get(SUB).toString()).orElseThrow(
+          () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
 
-      Set<String> groups = groupHelper.resolveGroupNames(accessToken, account.getUserInfo());
+      Set<String> groups = WlcgGroupHelper.resolveGroupNames(accessToken, account.getUserInfo());
 
       if (!groups.isEmpty()) {
         claims.put(WlcgExtraClaimNames.WLCG_GROUPS, groups);
