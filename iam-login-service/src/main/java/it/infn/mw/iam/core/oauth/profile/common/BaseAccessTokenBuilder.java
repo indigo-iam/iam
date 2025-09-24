@@ -84,7 +84,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
   private final ScopeClaimTranslationService scopeClaimTranslationService;
   private final Splitter splitter;
 
-  public BaseAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
+  protected BaseAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
       ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {

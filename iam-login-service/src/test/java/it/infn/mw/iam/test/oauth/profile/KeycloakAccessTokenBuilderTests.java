@@ -45,7 +45,6 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -96,8 +95,6 @@ class KeycloakAccessTokenBuilderTests {
   UserInfo userInfo;
 
   final Instant now = Clock.systemDefaultZone().instant();
-
-  final KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
 
   KeycloakAccessTokenBuilder tokenBuilder;
 

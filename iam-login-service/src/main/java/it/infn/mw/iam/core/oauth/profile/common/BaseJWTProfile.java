@@ -35,7 +35,7 @@ public abstract class BaseJWTProfile implements JWTProfile, RequestValidator {
   private final UserInfoHelper userInfoHelper;
   private final IntrospectionResultHelper introspectionHelper;
 
-  public BaseJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
+  protected BaseJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
       ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
       IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
       IntrospectionResultHelper introspectionHelper) {

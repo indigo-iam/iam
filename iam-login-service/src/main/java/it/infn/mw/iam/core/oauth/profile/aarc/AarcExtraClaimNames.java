@@ -22,12 +22,14 @@ public interface AarcExtraClaimNames extends IamExtraClaimNames {
   String EDUPERSON_ASSURANCE = "eduperson_assurance";
 
   /**
+   * @deprecated
    * Legacy name for {@link AarcExtraClaimNames#ENTITLEMENTS}
    */
   @Deprecated(since="1.13.0")
   String EDUPERSON_ENTITLEMENT = "eduperson_entitlement";
 
   /**
+   * @deprecated
    * Legacy name for {@link AarcExtraClaimNames#VOPERSON_SCOPED_AFFILIATION}
    */
   @Deprecated(since="1.13.0")

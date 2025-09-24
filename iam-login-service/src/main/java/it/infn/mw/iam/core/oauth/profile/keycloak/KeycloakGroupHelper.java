@@ -22,6 +22,10 @@ import it.infn.mw.iam.persistence.model.IamGroup;
 
 public class KeycloakGroupHelper {
 
+  private KeycloakGroupHelper() {
+    // empty constructor
+  }
+
   public static Set<String> resolveGroupNames(Set<IamGroup> groups) {
 
     return groups.stream().map(g -> g.getName()).collect(Collectors.toSet());

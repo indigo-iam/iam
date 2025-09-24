@@ -51,7 +51,7 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
   private final ClaimValueHelper claimValueHelper;
   private final ScopeClaimTranslationService scopeClaimTranslationService;
 
-  public BaseIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+  protected BaseIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
     this.properties = properties;
     this.claimValueHelper = claimValueHelper;

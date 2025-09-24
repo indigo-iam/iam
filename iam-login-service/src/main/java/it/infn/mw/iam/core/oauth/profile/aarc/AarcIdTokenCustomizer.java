@@ -39,7 +39,7 @@ public class AarcIdTokenCustomizer extends IamIdTokenCustomizer {
   public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
 
-    super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);;
+    super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
   }
 
 }

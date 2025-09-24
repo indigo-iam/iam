@@ -36,10 +36,9 @@ public class AuthenticationUtils {
   public static Optional<SavedUserAuthentication> getExternalAuthenticationInfo(
       Authentication authn) {
 
-    if (authn instanceof SavedUserAuthentication savedAuth) {
-      if (isExternalOidcAuthentication(savedAuth) || isExternalSamlAuthentication(savedAuth)) {
-        return Optional.ofNullable(savedAuth);
-      }
+    if (authn instanceof SavedUserAuthentication savedAuth
+        && (isExternalOidcAuthentication(savedAuth) || isExternalSamlAuthentication(savedAuth))) {
+      return Optional.ofNullable(savedAuth);
     }
     return Optional.empty();
   }

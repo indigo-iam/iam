@@ -15,31 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
-import org.springframework.security.oauth2.provider.OAuth2Request;
-
-import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
-import it.infn.mw.iam.persistence.model.IamAccount;
 
-@SuppressWarnings("deprecation")
 public class WlcgIdTokenCustomizer extends IamIdTokenCustomizer {
 
   public WlcgIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
     super(properties, claimValueHelper, scopeClaimTranslationService);
   }
-
-  @Override
-  public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
-      OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
-
-    super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
-  }
-
 }

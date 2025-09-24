@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import static java.lang.String.format;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +25,6 @@ import java.util.Set;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.authn.util.AuthenticationUtils;
@@ -81,26 +81,21 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         encodedGroupName);
   }
 
-  public Set<String> resolveLOA() {
-
-    return Sets.newHashSet("https://refeds.org/assurance", "https://refeds.org/assurance/IAP/low");
-  }
-
   @Override
   public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
 
+    final String SCOPED_FORMAT = "%s@%s";
+
     switch (claimName) {
       case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
-        return resolveLOA();
-      case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT:
-      case AarcExtraClaimNames.ENTITLEMENTS:
+        return DEFAULT_LOA;
+      case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
         return resolveGroups(account.getUserInfo());
       case AarcExtraClaimNames.VOPERSON_ID:
-        return String.format("%s@%s", account.getUserInfo().getSub(),
+        return format(SCOPED_FORMAT, account.getUserInfo().getSub(),
             getProperties().getOrganisation().getName());
-      case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
-      case AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION:
-        return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE,
+      case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION:
+        return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
             getProperties().getAarcProfile().getAffiliationScope());
       case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
         Optional<SavedUserAuthentication> userAuth =
@@ -108,15 +103,13 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
         if (userAuth.isPresent()) {
           Set<String> scopedAffiliations = new HashSet<>();
           if (account.getUserInfo().getAffiliation() != null) {
-            scopedAffiliations.add(String.format("%s@%s", account.getUserInfo().getAffiliation(),
+            scopedAffiliations.add(format(SCOPED_FORMAT, account.getUserInfo().getAffiliation(),
                 getProperties().getOrganisation().getName()));
           }
-          if (userAuth.isPresent()) {
-            String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
-                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
-            if (externalScopedAffiliation != null) {
-              scopedAffiliations.add(externalScopedAffiliation);
-            }
+          String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
+              Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+          if (externalScopedAffiliation != null) {
+            scopedAffiliations.add(externalScopedAffiliation);
           }
           return scopedAffiliations;
         }

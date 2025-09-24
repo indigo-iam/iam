@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.introspection.model;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +24,9 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class IntrospectionResponse {
+public class IntrospectionResponse implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   private boolean active;
 

@@ -22,12 +22,14 @@ public interface AarcOidcScopes extends IamOidcScopes {
   String AARC = "aarc";
 
   /**
+   * @deprecated
    * Legacy name for {@link AarcOidcScopes#VOPERSON_SCOPED_AFFILIATION}
    */
   @Deprecated(since="1.13.0")
   String EDUPERSON_SCOPED_AFFILIATION = AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION;
 
   /**
+   * @deprecated
    * Legacy name for {@link AarcOidcScopes#ENTITLEMENTS}
    */
   @Deprecated(since="1.13.0")

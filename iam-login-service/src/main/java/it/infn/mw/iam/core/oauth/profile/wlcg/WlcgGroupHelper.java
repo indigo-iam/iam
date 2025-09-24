@@ -43,6 +43,9 @@ public class WlcgGroupHelper {
   public static final IamLabel OPTIONAL_GROUP_LABEL =
       IamLabel.builder().name("wlcg.optional-group").build();
 
+  private WlcgGroupHelper() {
+    // empty constructor
+  }
 
   private static String prependSlashToGroupName(IamGroup g) {
     return format("/%s", g.getName());

@@ -35,13 +35,12 @@ public class KeycloakClaimValueHelper extends IamClaimValueHelper {
   @Override
   public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
 
-    switch (claimName) {
-      case KeycloakExtraClaimNames.ROLES:
-        return account != null
-            ? KeycloakGroupHelper.resolveGroupNames(account.getUserInfo().getGroups())
-            : null;
-      default:
-        return super.resolveClaim(claimName, account, auth);
+    if (KeycloakExtraClaimNames.ROLES.equals(claimName)) {
+      if (account != null) {
+        return KeycloakGroupHelper.resolveGroupNames(account.getUserInfo().getGroups());
+      }
+      return null;
     }
+    return super.resolveClaim(claimName, account, auth);
   }
 }
