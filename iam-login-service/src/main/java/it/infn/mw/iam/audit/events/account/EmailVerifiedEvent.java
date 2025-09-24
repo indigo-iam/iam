@@ -15,28 +15,13 @@
  */
 package it.infn.mw.iam.audit.events.account;
 
-import static it.infn.mw.iam.audit.events.utils.EventUtils.sanitize;
-
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-public class X509CertificateUnlinkedEvent extends AccountEvent {
+public class EmailVerifiedEvent extends AccountEvent {
 
-  /**
-   * 
-   */
   private static final long serialVersionUID = 1L;
 
-
-  private final String certificateSubject;
-
-  public X509CertificateUnlinkedEvent(Object source, IamAccount account, String message,
-      String certificateSubject) {
+  public EmailVerifiedEvent(Object source, IamAccount account, String message) {
     super(source, account, message);
-    this.certificateSubject = sanitize(certificateSubject);
   }
-
-  public String getCertificateSubject() {
-    return certificateSubject;
-  }
-
 }

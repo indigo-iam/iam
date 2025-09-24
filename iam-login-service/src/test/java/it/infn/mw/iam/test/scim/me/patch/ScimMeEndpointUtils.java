@@ -52,6 +52,8 @@ public class ScimMeEndpointUtils {
   protected final ScimX509Certificate TESTUSER_X509CERT = ScimX509Certificate.builder()
     .display(x509Certs.get(0).display)
     .pemEncodedCertificate(x509Certs.get(0).certificate)
+    .issuerDn(x509Certs.get(0).issuerDn)
+    .subjectDn(x509Certs.get(0).subjectDn)
     .primary(true)
     .build();
 }

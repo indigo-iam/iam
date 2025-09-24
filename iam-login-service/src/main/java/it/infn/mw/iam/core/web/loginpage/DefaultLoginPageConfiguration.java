@@ -39,6 +39,7 @@ import it.infn.mw.iam.config.oidc.OidcValidatedProviders;
 public class DefaultLoginPageConfiguration implements LoginPageConfiguration, EnvironmentAware {
 
   public static final String DEFAULT_PRIVACY_POLICY_TEXT = "Privacy policy";
+  public static final String DEFAULT_SUPPORT_TEXT = "Support";
   public static final String DEFAULT_LOGIN_BUTTON_TEXT = "Sign in";
 
   private Environment env;
@@ -47,10 +48,14 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private boolean githubEnabled;
   private boolean samlEnabled;
   private boolean registrationEnabled;
+  private boolean adminOnlyCustomScopes;
   private boolean localAuthenticationVisible;
   private boolean showLinkToLocalAuthn;
   private boolean defaultLoginPageLayout;
   private boolean mfaSettingsBtnEnabled;
+
+  @Value("${iam.registration.registration-button-text}")
+  private String registrationButtonText;
 
   @Value("${iam.account-linking.enable}")
   private Boolean accountLinkingEnabled;
@@ -60,15 +65,12 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   private final IamProperties iamProperties;
   private final IamTotpMfaProperties iamTotpMfaProperties;
 
-  public DefaultLoginPageConfiguration(
-    OidcValidatedProviders providers,
-    IamProperties properties,
-    IamTotpMfaProperties iamTotpMfaProperties) {
+  public DefaultLoginPageConfiguration(OidcValidatedProviders providers, IamProperties properties,
+      IamTotpMfaProperties iamTotpMfaProperties) {
     this.providers = providers;
     this.iamProperties = properties;
     this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
-
 
   @PostConstruct
   public void init() {
@@ -77,12 +79,13 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     githubEnabled = env.acceptsProfiles(Profiles.of("github"));
     samlEnabled = env.acceptsProfiles(Profiles.of("saml"));
     registrationEnabled = env.acceptsProfiles(Profiles.of("registration"));
+    adminOnlyCustomScopes = env.acceptsProfiles(Profiles.of("registration"));
     localAuthenticationVisible = IamProperties.LocalAuthenticationLoginPageMode.VISIBLE
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     showLinkToLocalAuthn = IamProperties.LocalAuthenticationLoginPageMode.HIDDEN_WITH_LINK
-      .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
+        .equals(iamProperties.getLocalAuthn().getLoginPageVisibility());
     defaultLoginPageLayout = IamProperties.LoginPageLayoutOptions.LOGIN_FORM
-        .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
+      .equals(iamProperties.getLoginPageLayout().getSectionToBeDisplayedFirst());
     mfaSettingsBtnEnabled = iamTotpMfaProperties.hasMultiFactorSettingsBtnEnabled();
   }
 
@@ -118,6 +121,12 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   }
 
   @Override
+  public boolean isAdminOnlyCustomScopes() {
+
+    return adminOnlyCustomScopes;
+  }
+
+  @Override
   public boolean isAccountLinkingEnabled() {
     return accountLinkingEnabled.booleanValue();
   }
@@ -141,11 +150,32 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   }
 
   @Override
+  public Optional<String> getSupportUrl() {
+    if (Strings.isNullOrEmpty(iamProperties.getSupport().getUrl())) {
+      return Optional.empty();
+    }
+    return Optional.of(iamProperties.getSupport().getUrl());
+  }
+
+  @Override
+  public String getSupportText() {
+    if (Strings.isNullOrEmpty(iamProperties.getSupport().getText())) {
+      return DEFAULT_SUPPORT_TEXT;
+    }
+    return iamProperties.getSupport().getText();
+  }
+
+  @Override
   public String getLoginButtonText() {
     if (Strings.isNullOrEmpty(iamProperties.getLoginButton().getText())) {
       return DEFAULT_LOGIN_BUTTON_TEXT;
     }
     return iamProperties.getLoginButton().getText();
+  }
+
+  @Override
+  public String getRegistrationButtonText() {
+    return registrationButtonText;
   }
 
   @Override
@@ -158,7 +188,6 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
     return iamProperties.getLogo();
   }
 
-
   @Override
   public boolean isExternalAuthenticationEnabled() {
     return isOidcEnabled() || isSamlEnabled();
@@ -168,7 +197,6 @@ public class DefaultLoginPageConfiguration implements LoginPageConfiguration, En
   public boolean isLocalAuthenticationVisible() {
     return localAuthenticationVisible;
   }
-
 
   @Override
   public boolean isShowLinkToLocalAuthenticationPage() {

@@ -26,6 +26,8 @@ public class X509Utils {
 
     X509Cert x509Cert = new X509Cert();
     x509Cert.display = "Personal Certificate (Test 0)";
+    x509Cert.subjectDn = "CN=Enrico Vianello, OU=Personal Certificate, O=INFN, C=IT, L=CNFA";
+    x509Cert.issuerDn = "CN=INFN CA, O=INFN, C=IT";
     x509Cert.certificate = new StringBuilder("-----BEGIN CERTIFICATE-----\n")
       .append("MIIEWDCCA0CgAwIBAgIDAII4MA0GCSqGSIb3DQEBCwUAMC4xCzAJBgNVBAYTAklU\n")
       .append("MQ0wCwYDVQQKEwRJTkZOMRAwDgYDVQQDEwdJTkZOIENBMB4XDTE1MDUxODEzNTQx\n")
@@ -80,6 +82,8 @@ public class X509Utils {
       .append("ymIkb8nxCPnxCcT2I2NvDxcPMc/wmnMa+smNal0sJ6m\n")
       .append("-----END CERTIFICATE-----")
       .toString();
+    x509Cert.subjectDn = "CN=test00, O=IGI, C=IT";
+    x509Cert.issuerDn = "CN=Test CA, O=IGI, C=IT";
     x509Certs.add(x509Cert);
   }
 

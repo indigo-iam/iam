@@ -25,6 +25,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SAML_ID
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_SSH_KEY;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REMOVE_X509_CERTIFICATE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_ACTIVE;
+import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_AFFILIATION;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_EMAIL;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_FAMILY_NAME;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_GIVEN_NAME;
@@ -36,6 +37,8 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNA
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -51,13 +54,18 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.api.scim.converter.UserConverter;
 import it.infn.mw.iam.api.scim.converter.X509CertificateConverter;
 import it.infn.mw.iam.api.scim.exception.IllegalArgumentException;
+import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
+import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
+import it.infn.mw.iam.api.scim.model.ScimFilter;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterAttributes;
+import it.infn.mw.iam.api.scim.provisioning.model.ScimFilterOperators;
 import it.infn.mw.iam.api.scim.provisioning.paging.ScimPageRequest;
 import it.infn.mw.iam.api.scim.updater.AccountUpdater;
 import it.infn.mw.iam.api.scim.updater.UpdaterType;
@@ -67,27 +75,32 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
+import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @Service
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES = EnumSet.of(
-      ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID, ACCOUNT_REMOVE_SAML_ID,
-      ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY, ACCOUNT_ADD_X509_CERTIFICATE,
-      ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE, ACCOUNT_REPLACE_EMAIL,
-      ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME, ACCOUNT_REPLACE_PASSWORD,
-      ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME, ACCOUNT_REMOVE_PICTURE, 
-      ACCOUNT_REPLACE_SERVICE_ACCOUNT);
+
+  protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
+      EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
+          ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
+          ACCOUNT_ADD_X509_CERTIFICATE, ACCOUNT_REMOVE_X509_CERTIFICATE, ACCOUNT_REPLACE_ACTIVE,
+          ACCOUNT_REPLACE_EMAIL, ACCOUNT_REPLACE_FAMILY_NAME, ACCOUNT_REPLACE_GIVEN_NAME,
+          ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
+          ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
+
 
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
+  private final NotificationProperties notificationProperties;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -96,15 +109,194 @@ public class ScimUserProvisioning
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
-      NotificationFactory notificationFactory) {
+      NotificationFactory notificationFactory, NotificationProperties notificationProperties,
+      IamGroupRepository groupRepository) {
 
+    this.notificationProperties = notificationProperties;
     this.accountService = accountService;
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.notificationFactory = notificationFactory;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator);
+        x509CertificateConverter, usernameValidator, groupRepository);
+  }
+
+
+
+  private ScimFilter parseFilters(final String filtersParameter) {
+
+
+    StringBuilder regex = new StringBuilder();
+
+    regex.append("(");
+
+    // Ensuring that the attribute given is defined within the ScimFilterAttributes
+    for (ScimFilterAttributes attribute : ScimFilterAttributes.values()) {
+      regex.append(attribute.type + '|');
+    }
+
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s(");
+
+    // Ensuring that the operator given is defined within the ScimFilterOperators
+    for (ScimFilterOperators operator : ScimFilterOperators.values()) {
+      regex.append(operator.type + '|');
+    }
+
+    regex.deleteCharAt(regex.length() - 1);
+
+    regex.append(")\\s([\\w@\\.]+)");
+
+    // Case insensitive according to the RFC rules
+    Pattern pattern = Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE);
+    Matcher matcher = pattern.matcher(filtersParameter);
+
+    if (!matcher.matches() || matcher.groupCount() != 3) {
+      throw invalidFilter(filtersParameter);
+    }
+
+    String attributeStr = matcher.group(1);
+    String operatorStr = matcher.group(2);
+    String value = matcher.group(3);
+
+    ScimFilterAttributes attribute =
+        ScimFilterAttributes.parseAttribute(attributeStr.toLowerCase());
+    ScimFilterOperators operator = ScimFilterOperators.parseOperator(operatorStr.toLowerCase());
+
+    return new ScimFilter(attribute, operator, value);
+  }
+
+  private Page<IamAccount> filterSearch(OffsetPageable op, ScimFilter parsedFilters) {
+
+    Page<IamAccount> result = null;
+
+    // Figuring out the operator
+    switch (parsedFilters.getOperator()) {
+
+      case EQUALS -> {
+
+        switch (parsedFilters.getAttribute()) {
+
+          case GIVENNAME -> // retrieving the results
+              result = accountRepository.findByGivenName(parsedFilters.getValue(), op);
+
+          case ACTIVE -> {
+            if ((parsedFilters.getValue().equalsIgnoreCase("false")
+                || parsedFilters.getValue().equalsIgnoreCase("true"))) {
+
+              result =
+                  accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()), op);
+
+            } else {
+              throw invalidValue(parsedFilters.getValue());
+            }
+          }
+
+          case EMAILS -> result = accountRepository.findByEmail(parsedFilters.getValue(), op);
+
+          case USERNAME -> result = accountRepository.findByUsername(parsedFilters.getValue(), op);
+
+          case FAMILYNAME -> result =
+              accountRepository.findByFamilyName(parsedFilters.getValue(), op);
+
+        }
+      }
+
+      case CONTAINS -> {
+
+        switch (parsedFilters.getAttribute()) {
+
+          case GIVENNAME -> result =
+              accountRepository.containsGivenName(parsedFilters.getValue(), op);
+
+          case ACTIVE -> // Contains on a boolean value makes no sense, gonna throw an error
+              throw invalidOperator(parsedFilters.getOperator().type);
+
+          case EMAILS -> result = accountRepository.containsEmail(parsedFilters.getValue(), op);
+
+          case USERNAME -> result =
+              accountRepository.containsUsername(parsedFilters.getValue(), op);
+
+          case FAMILYNAME -> result =
+              accountRepository.containsFamilyName(parsedFilters.getValue(), op);
+
+        }
+      }
+    }
+
+    if (result != null && result.getContent().isEmpty()) {
+      throw noUsersMappedToValue(parsedFilters);
+    } else if (result == null) {
+      throw missingSupport(parsedFilters);
+    }
+    return result;
+  }
+
+  private Long filterSearch(ScimFilter parsedFilters) {
+
+    List<IamAccount> result = null;
+
+
+    switch (parsedFilters.getOperator()) {
+
+      // Figuring out the operator
+      case EQUALS -> {
+
+        switch (parsedFilters.getAttribute()) {
+
+          case GIVENNAME -> // retrieving the results
+              result = accountRepository.findByGivenName(parsedFilters.getValue());
+
+          case ACTIVE -> {
+            if (parsedFilters.getValue().equalsIgnoreCase("false")
+                || parsedFilters.getValue().equalsIgnoreCase("true")) {
+              result = accountRepository.findByActive(Boolean.valueOf(parsedFilters.getValue()));
+            } else {
+              throw invalidValue(parsedFilters.getValue());
+            }
+          }
+
+          case EMAILS -> result = accountRepository.findMultipleByEmail(parsedFilters.getValue());
+
+          case USERNAME -> {
+            result = new ArrayList<>();
+            result.add(accountRepository.findAccountByUsername(parsedFilters.getValue()));
+          }
+
+          case FAMILYNAME -> result = accountRepository.findByFamilyName(parsedFilters.getValue());
+
+        }
+      }
+
+      case CONTAINS -> {
+        switch (parsedFilters.getAttribute()) {
+
+          case GIVENNAME -> result = accountRepository.containsGivenName(parsedFilters.getValue());
+
+          case ACTIVE -> // Contains on a boolean value makes no sense, gonna throw an error
+              throw invalidOperator(parsedFilters.getOperator().type);
+
+          case EMAILS -> result = accountRepository.containsEmail(parsedFilters.getValue());
+
+          case USERNAME -> result = accountRepository.containsUsername(parsedFilters.getValue());
+
+          case FAMILYNAME -> result =
+              accountRepository.containsFamilyName(parsedFilters.getValue());
+
+        }
+      }
+    }
+
+    // Throwing a noUsersMapped error if the result is present, but
+    // the contents is not
+    if (result != null && (result.isEmpty() || result.get(0) == null)) {
+      throw noUsersMappedToValue(parsedFilters);
+    } else if (result == null) {
+      throw missingSupport(parsedFilters);
+    }
+    return (long) result.size();
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -124,6 +316,34 @@ public class ScimUserProvisioning
 
   private ScimResourceNotFoundException noUserMappedToId(String id) {
     return new ScimResourceNotFoundException(String.format("No user mapped to id '%s'", id));
+  }
+
+  private ScimResourceNotFoundException noUsersMappedToValue(ScimFilter filter) {
+    return new ScimResourceNotFoundException(String.format(
+        "the filter \"%s,%s,%s\" produced no results as no data fulfilled the criteria.",
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
+  }
+
+  private IllegalArgumentException invalidValue(String value) {
+    return new IllegalArgumentException(
+        String.format("the value \"%s\" does not fulfill the filtering convention", value));
+  }
+
+
+  private IllegalArgumentException invalidFilter(String filter) {
+    return new IllegalArgumentException(
+        String.format("the filter \"%s\" does not fulfill the filtering convention", filter));
+  }
+
+  private IllegalArgumentException invalidOperator(String operator) {
+    return new IllegalArgumentException(String
+      .format("the operator \"%s\" can not be used with the given filtering attribute", operator));
+  }
+
+  private ScimFilterUnsupportedException missingSupport(ScimFilter filter) {
+    return new ScimFilterUnsupportedException(String.format(
+        "the filter \"%s,%s,%s\" is within the documentation, but is missing current support.",
+        filter.getAttribute().type, filter.getOperator().type, filter.getValue()));
   }
 
   private ScimResourceExistsException usernameAlreadyAssigned(String username) {
@@ -177,27 +397,57 @@ public class ScimUserProvisioning
 
   @Override
   public ScimListResponse<ScimUser> list(final ScimPageRequest params) {
+    throw new UnsupportedOperationException("Unsupported list method");
+  }
+
+  // Method to fetch users according to a filter
+  @Override
+  public ScimListResponse<ScimUser> list(final ScimPageRequest params, String filter) {
 
     ScimListResponseBuilder<ScimUser> builder = ScimListResponse.builder();
 
-    if (params.getCount() == 0) {
+    OffsetPageable op;
+    Page<IamAccount> results;
 
-      long totalResults = accountRepository.count();
-      builder.totalResults(totalResults);
+    // Do the filtersearch
+    if (filter != null) {
+      ScimFilter parsedFilters = parseFilters(filter);
+
+      if (params.getCount() == 0) {
+        long totalResults = filterSearch(parsedFilters);
+        builder.totalResults(totalResults);
+        return builder.build();
+
+      } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+
+        results = filterSearch(op, parsedFilters);
+      }
+
 
     } else {
+      // Don't do a filtersearch
 
-      OffsetPageable op = new OffsetPageable(params.getStartIndex(), params.getCount());
+      if (params.getCount() == 0) {
 
-      Page<IamAccount> results = accountRepository.findAll(op);
+        long totalResults = accountRepository.count();
+        builder.totalResults(totalResults);
+        return builder.build();
 
-      List<ScimUser> resources = new ArrayList<>();
+      } else {
+        op = new OffsetPageable(params.getStartIndex(), params.getCount());
+        results = accountRepository.findAll(op);
+      }
 
-      results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
 
-      builder.resources(resources);
-      builder.fromPage(results, op);
     }
+
+    List<ScimUser> resources = new ArrayList<>();
+
+    results.getContent().forEach(a -> resources.add(userConverter.dtoFromEntity(a)));
+
+    builder.resources(resources);
+    builder.fromPage(results, op);
 
     return builder.build();
   }
@@ -271,13 +521,13 @@ public class ScimUserProvisioning
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
         u.publishUpdateEvent(this, eventPublisher);
-        handleSpecificUpdateType(account, u);
+        handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
       }
-
     }
   }
 
-  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u) {
+  private void handleSpecificUpdateType(IamAccount account, AccountUpdater u,
+      ScimIndigoUser indigoUser) {
     if (ACCOUNT_REPLACE_ACTIVE.equals(u.getType())) {
       if (account.isActive()) {
         notificationFactory.createAccountRestoredMessage(account);
@@ -292,6 +542,22 @@ public class ScimUserProvisioning
         notificationFactory.createRevokeServiceAccountMessage(account);
       }
     }
+
+    // Checking if the certificate update is true and only then is it generating the
+    // notification/log update
+    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
+
+        notificationFactory.createLinkedCertificateMessage(account,
+            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
+      }
+
+      else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
+
+        notificationFactory.createUnlinkedCertificateMessage(account,
+            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
+      }
+    }
   }
 
   @Override
@@ -301,5 +567,4 @@ public class ScimUserProvisioning
 
     operations.forEach(op -> executePatchOperation(account, op));
   }
-
 }

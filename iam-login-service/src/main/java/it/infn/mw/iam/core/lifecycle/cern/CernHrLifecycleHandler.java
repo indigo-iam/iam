@@ -127,6 +127,8 @@ public class CernHrLifecycleHandler implements Runnable, SchedulingConfigurer {
       }
       return;
     }
+    a.getUserInfo().setAffiliation(ep.get().getInstitute().getName());
+    
 
     if (CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate()) && !a.isActive()
         && accountWasSuspendedByIamLifecycleJob(a)) {
