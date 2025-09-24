@@ -37,7 +37,7 @@ public class TrustChainService {
     this.validator = validator;
   }
 
-  public TrustChain getOrResolve(String entityId) throws BadJOSEException, JOSEException {
+  public TrustChain validateFromEntityId(String entityId) throws BadJOSEException, JOSEException {
     List<List<EntityStatement>> chain = resolver.resolveFromEntityId(entityId);
     return validator.validateAll(chain);
   }

@@ -113,7 +113,7 @@ public class TrustChainServiceTests {
   public void testResolveTrustChainFromRpToTa() throws Exception {
     mockRpToTaChain(true);
 
-    TrustChain result = service.getOrResolve("https://rp.example");
+    TrustChain result = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", result.getTrustAnchorEntityID().getValue());
   }
@@ -122,7 +122,7 @@ public class TrustChainServiceTests {
   public void testUntrustedTrustAnchor() throws Exception {
     mockRpToTaChain(false);
 
-    service.getOrResolve("https://rp.example");
+    service.validateFromEntityId("https://rp.example");
   }
 
   @Test
@@ -174,7 +174,7 @@ public class TrustChainServiceTests {
 
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
 
-    TrustChain resolved = service.getOrResolve("https://rp.example");
+    TrustChain resolved = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
     // Superior Statements include also the TA EC
@@ -247,7 +247,7 @@ public class TrustChainServiceTests {
 
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
 
-    TrustChain resolved = service.getOrResolve("https://rp.example");
+    TrustChain resolved = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
     assertEquals(2, resolved.getSuperiorStatements().size());
@@ -328,7 +328,7 @@ public class TrustChainServiceTests {
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(true);
     when(trustAnchorRepository.isTrusted("https://ta1.example")).thenReturn(false);
 
-    TrustChain resolved = service.getOrResolve("https://rp.example");
+    TrustChain resolved = service.validateFromEntityId("https://rp.example");
 
     assertEquals("https://ta.example", resolved.getTrustAnchorEntityID().getValue());
     assertEquals(2, resolved.getSuperiorStatements().size());
