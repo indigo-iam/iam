@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
@@ -27,13 +28,15 @@ import it.infn.mw.iam.core.oauth.profile.common.BaseJWTProfile;
 @SuppressWarnings("deprecation")
 public class AarcJWTProfile extends BaseJWTProfile {
 
-  public AarcJWTProfile(ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
+  public static final String PROFILE_NAME = "AARC JWT profile";
+
+  public AarcJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
+      ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
       IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
       IntrospectionResultHelper introspectionHelper) {
-    super(claimValueHelper, accessTokenBuilder, idTokenCustomizer, userInfoHelper, introspectionHelper);
+    super(scopeClaimTranslationService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
   }
-
-  public static final String PROFILE_NAME = "AARC JWT profile";
 
   @Override
   public void validateRequest(OAuth2Request request) {

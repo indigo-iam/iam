@@ -18,20 +18,20 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-@Component
 public class WlcgUserinfoHelper extends IamUserinfoHelper {
 
-  public WlcgUserinfoHelper(IamProperties properties, IamClaimValueHelper claimValueHelper) {
-    super(properties, claimValueHelper);
+  public WlcgUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeTranslationService) {
+    super(props, claimValueHelper, scopeTranslationService);
   }
 
   @Override
@@ -47,4 +47,5 @@ public class WlcgUserinfoHelper extends IamUserinfoHelper {
     }
     return claims;
   }
+
 }

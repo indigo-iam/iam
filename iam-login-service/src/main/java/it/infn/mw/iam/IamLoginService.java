@@ -22,6 +22,7 @@ import org.mitre.oauth2.web.IntrospectionEndpoint;
 import org.mitre.oauth2.web.OAuthConfirmationController;
 import org.mitre.oauth2.web.RevocationEndpoint;
 import org.mitre.openid.connect.token.TofuUserApprovalHandler;
+import org.mitre.openid.connect.view.UserInfoView;
 import org.mitre.openid.connect.web.DynamicClientRegistrationEndpoint;
 import org.mitre.openid.connect.web.JWKSetPublishingEndpoint;
 import org.mitre.openid.connect.web.RootController;
@@ -86,7 +87,10 @@ excludeFilters = {
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
         value=IntrospectionEndpoint.class),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
-        value=RevocationEndpoint.class)
+        value=RevocationEndpoint.class),
+    @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,
+        value=UserInfoView.class)
+    
 })
 @EnableCaching
 @EnableAutoConfiguration(

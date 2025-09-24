@@ -34,20 +34,22 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
 
+import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+
 @Component
 public class IamUserApprovalUtils {
 
   private final SystemScopeService scopeService;
   private final StatsService statsService;
-  private final ScopeClaimTranslationService scopeClaimTranslationService;
   private final UserInfoService userInfoService;
+  private final JWTProfileResolver profileResolver;
 
   public IamUserApprovalUtils(SystemScopeService scopeService, StatsService statsService,
-      ScopeClaimTranslationService scopeClaimTranslationService, UserInfoService userInfoService) {
+      UserInfoService userInfoService, JWTProfileResolver profileResolver) {
     this.scopeService = scopeService;
     this.statsService = statsService;
-    this.scopeClaimTranslationService = scopeClaimTranslationService;
     this.userInfoService = userInfoService;
+    this.profileResolver = profileResolver;
   }
 
   public Set<String> sortScopes(Set<SystemScope> scopes) {
@@ -68,7 +70,12 @@ public class IamUserApprovalUtils {
 
   public Map<String, Map<String, String>> claimsForScopes(Authentication authUser,
       Set<SystemScope> scopes) {
+
     UserInfo user = userInfoService.getByUsername(authUser.getName());
+    ScopeClaimTranslationService scopeClaimTranslationService =
+        profileResolver.resolveProfile(scopeService.toStrings(scopes))
+          .getScopeClaimTranslationService();
+
     Map<String, Map<String, String>> claimsForScopes = new HashMap<>();
     if (user != null) {
       JsonObject userJson = user.toJson();

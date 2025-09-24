@@ -32,14 +32,17 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.P
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.SavedUserAuthentication;
 import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
@@ -62,6 +65,7 @@ import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
@@ -77,17 +81,20 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
   private final IamTotpMfaRepository totpMfaRepository;
   private final AccountUtils accountUtils;
   private final ClaimValueHelper claimValueHelper;
+  private final ScopeClaimTranslationService scopeClaimTranslationService;
   private final Splitter splitter;
 
-  protected BaseAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
+  public BaseAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper) {
+      ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
     this.properties = properties;
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
     this.accountUtils = accountUtils;
     this.scopeFilter = scopeFilter;
     this.claimValueHelper = claimValueHelper;
+    this.scopeClaimTranslationService = scopeClaimTranslationService;
     this.splitter = Splitter.on(' ').trimResults().omitEmptyStrings();
   }
 
@@ -111,8 +118,41 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     return claimValueHelper;
   }
 
+  public ScopeClaimTranslationService getScopeClaimTranslationService() {
+    return scopeClaimTranslationService;
+  }
+
   protected Splitter getSplitter() {
     return splitter;
+  }
+
+  @Override
+  public Set<String> getAdditionalAuthnInfoClaims() {
+    return Set.of(NAME, EMAIL, PREFERRED_USERNAME);
+  }
+
+  @Override
+  public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
+
+    JWTClaimsSet.Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
+
+    IamAccount account =
+        userInfo != null ? ((UserInfoAdapter) userInfo).getUserinfo().getIamAccount() : null;
+
+    scopeClaimTranslationService.getClaimsForScopeSet(token.getScope()).forEach(c -> {
+      Object value = this.getClaimValueHelper().resolveClaim(c, account, authentication);
+      if (!Objects.isNull(value)) {
+        if (value instanceof Collection<?> valueColl) {
+          if (!valueColl.isEmpty()) {
+            builder.claim(c, value);
+          }
+        } else {
+          builder.claim(c, value);
+        }
+      }
+    });
+    return builder.build();
   }
 
   protected boolean isTokenExchangeRequest(OAuth2Authentication authentication) {
@@ -132,7 +172,6 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       throw new InvalidRequestException("Error parsing subject token: " + e.getMessage(), e);
     }
   }
-
 
   protected void handleClientTokenExchange(JWTClaimsSet.Builder builder,
       OAuth2AccessTokenEntity token, OAuth2Authentication authentication, UserInfo userInfo) {
@@ -176,11 +215,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     return !isNullOrEmpty(audience);
   }
 
-  protected Set<String> getAdditionalAuthnInfoClaims() {
-    return Set.of(NAME, EMAIL, PREFERRED_USERNAME);
-  }
-
-  protected JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
+  private JWTClaimsSet.Builder baseJWTSetup(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
     String subject = null;
@@ -234,7 +269,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     }
 
     if (getProperties().getAccessToken().isIncludeAuthnInfo() && owner != null) {
-      Set<String> requiredClaims = getClaimValueHelper().resolveScopes(token.getScope());
+      Set<String> requiredClaims =
+          getScopeClaimTranslationService().getClaimsForScopeSet(token.getScope());
       requiredClaims.retainAll(getAdditionalAuthnInfoClaims());
       for (String claim : requiredClaims) {
         builder.claim(claim,

@@ -45,12 +45,12 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
       case WLCG_VER:
         return WlcgJWTProfile.PROFILE_VERSION;
       case WLCG_GROUPS:
-        return WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
-            account.getUserInfo().getGroups());
+        return account != null ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
+            account.getUserInfo().getGroups()) : null;
       case EDUPERSON_ASSURANCE:
         return AarcClaimValueHelper.DEFAULT_LOA;
       case AUTH_TIME:
-        return account.getLastLoginTime();
+        return account != null ? account.getLastLoginTime() : null;
       default:
         return super.resolveClaim(claimName, account, auth);
     }

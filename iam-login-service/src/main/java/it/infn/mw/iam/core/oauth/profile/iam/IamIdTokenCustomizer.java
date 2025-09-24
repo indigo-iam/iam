@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
@@ -35,8 +36,9 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 @SuppressWarnings("deprecation")
 public class IamIdTokenCustomizer extends BaseIdTokenCustomizer {
 
-  public IamIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
-    super(properties, claimValueHelper);
+  public IamIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, claimValueHelper, scopeClaimTranslationService);
   }
 
   protected final void includeLabelsInIdToken(Builder idClaims, IamAccount account) {

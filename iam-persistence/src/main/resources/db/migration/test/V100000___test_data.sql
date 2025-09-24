@@ -86,7 +86,6 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (5, 'storage.modify:/'),
   (5, 'storage.create:/'),
   (5, 'attr'),
-  (5, 'iam'),
   (5, 'aarc'),
   (5, 'eduperson_scoped_affiliation'),
   (5, 'eduperson_entitlement'),

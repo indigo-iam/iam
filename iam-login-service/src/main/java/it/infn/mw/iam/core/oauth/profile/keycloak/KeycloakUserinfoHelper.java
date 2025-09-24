@@ -15,13 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
 
 public class KeycloakUserinfoHelper extends BaseUserinfoHelper {
 
-  public KeycloakUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper) {
-    super(props, claimValueHelper);
+  public KeycloakUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeTranslationService) {
+    super(props, claimValueHelper, scopeTranslationService);
   }
 }

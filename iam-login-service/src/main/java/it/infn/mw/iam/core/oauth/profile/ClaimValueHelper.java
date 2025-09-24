@@ -26,14 +26,6 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 public interface ClaimValueHelper {
 
   /**
-   * Map scope names to claim names
-   * 
-   * @param scopes The collection of scopes from which computing the related claims
-   * @return the names of the expected claims for the received collection of scopes
-   */
-  Set<String> resolveScopes(Set<String> scopes);
-
-  /**
    * Resolve claim names to a value (if available)
    * 
    * @param claimName The claim name from which computing the related value

@@ -232,7 +232,7 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getClaim(StandardClaimNames.NAME), is(TEST_NAME));
     assertThat(claims.getClaim(StandardClaimNames.PREFERRED_USERNAME), is(USERNAME));
     assertThat(claims.getClaim(StandardClaimNames.EMAIL), is(TEST_EMAIL));
-    assertThat(claims.getClaim(IamExtraClaimNames.ORGANISATION_NAME), nullValue());
+    assertThat(claims.getClaim(IamExtraClaimNames.ORGANISATION_NAME), notNullValue());
   }
 
   @Test

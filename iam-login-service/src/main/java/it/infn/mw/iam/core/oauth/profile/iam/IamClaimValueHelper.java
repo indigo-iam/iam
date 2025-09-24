@@ -75,27 +75,21 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
   }
 
   @Override
-  public Set<String> resolveScopes(Set<String> scopes) {
-
-    return scopeClaimTranslationService.getClaimsForScopeSet(scopes);
-  }
-
-  @Override
   public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
 
     switch (claimName) {
       case ORGANISATION_NAME:
         return properties.getOrganisation().getName();
       case LAST_LOGIN_AT:
-        return account.getLastLoginTime();
+        return account != null ? account.getLastLoginTime() : null;
       case AFFILIATION:
-        return account.getAffiliation();
+        return account != null ? account.getAffiliation() : null;
       case GROUPS:
-        return getGroupNames(account.getUserInfo().getGroups());
+        return account != null ? getGroupNames(account.getUserInfo().getGroups()) : null;
       case SSH_KEYS:
-        return getSshKeysFilteredSet(account.getSshKeys());
+        return account != null ? getSshKeysFilteredSet(account.getSshKeys()) : null;
       case ATTR:
-        return attrHelper.getAttributeMapFromUserInfo(account.getUserInfo());
+        return account != null ? attrHelper.getAttributeMapFromUserInfo(account.getUserInfo()) : null;
       case EXTERNAL_AUTHN:
         Optional<SavedUserAuthentication> userAuth =
             AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());

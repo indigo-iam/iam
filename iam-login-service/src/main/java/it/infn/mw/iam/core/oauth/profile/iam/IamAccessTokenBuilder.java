@@ -22,14 +22,9 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.E
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
-import java.time.Instant;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
-import com.nimbusds.jwt.JWTClaimsSet;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
@@ -39,25 +34,18 @@ import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
-@SuppressWarnings("deprecation")
 public class IamAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public IamAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper) {
+      ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
     super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper);
+        claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override
-  public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
-      OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
-
-    return baseJWTSetup(token, authentication, userInfo, issueTime).build();
-  }
-
-  @Override
-  protected Set<String> getAdditionalAuthnInfoClaims() {
+  public Set<String> getAdditionalAuthnInfoClaims() {
 
     return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, GROUPS, ATTR);
   }

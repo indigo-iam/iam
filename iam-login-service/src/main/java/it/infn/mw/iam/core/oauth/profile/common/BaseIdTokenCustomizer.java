@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.provider.OAuth2Request;
@@ -48,10 +49,13 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   private final IamProperties properties;
   private final ClaimValueHelper claimValueHelper;
+  private final ScopeClaimTranslationService scopeClaimTranslationService;
 
-  protected BaseIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
+  public BaseIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
     this.properties = properties;
     this.claimValueHelper = claimValueHelper;
+    this.scopeClaimTranslationService = scopeClaimTranslationService;
   }
 
   public IamProperties getIamProperties() {
@@ -60,6 +64,10 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
   public ClaimValueHelper getClaimValueHelper() {
     return claimValueHelper;
+  }
+
+  public ScopeClaimTranslationService getScopeClaimTranslationService() {
+    return scopeClaimTranslationService;
   }
 
   protected final void includeAmrAndAcrClaimsIfNeeded(OAuth2Request request, Builder builder,
@@ -95,7 +103,9 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
     Objects.requireNonNull(account, "Account must not be null");
 
-    Set<String> requiredClaims = getClaimValueHelper().resolveScopes(request.getScope());
+    Set<String> requiredClaims =
+        getScopeClaimTranslationService().getClaimsForScopeSet(request.getScope());
+
     for (String claim : requiredClaims) {
       idClaims.claim(claim, getClaimValueHelper().resolveClaim(claim, account,
           accessToken.getAuthenticationHolder().getAuthentication()));

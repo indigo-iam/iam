@@ -25,6 +25,4 @@ public interface IamOidcScopes extends OidcScopes {
 
   String SSH_KEYS = "ssh-keys";
 
-  String ORGANISATION_NAME = "organisation_name";
-
 }

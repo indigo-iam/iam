@@ -21,14 +21,9 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.E
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
-import java.time.Instant;
 import java.util.Set;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-
-import com.nimbusds.jwt.JWTClaimsSet;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
@@ -43,13 +38,14 @@ public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public AarcAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper);
+      ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+        scopeClaimTranslationService);
   }
 
   @Override
-  protected Set<String> getAdditionalAuthnInfoClaims() {
+  public Set<String> getAdditionalAuthnInfoClaims() {
 
     return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, ATTR,
         AarcExtraClaimNames.EDUPERSON_ASSURANCE, AarcExtraClaimNames.ENTITLEMENTS,
@@ -58,10 +54,4 @@ public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
         AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
   }
 
-  @Override
-  public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
-      OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
-
-    return baseJWTSetup(token, authentication, userInfo, issueTime).build();
-  }
 }

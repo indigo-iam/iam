@@ -24,13 +24,11 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.springframework.stereotype.Component;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@Component
 public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
   public KeycloakIntrospectionHelper(IamAccountService accountService) {

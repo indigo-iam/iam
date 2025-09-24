@@ -29,7 +29,6 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,6 +41,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -67,13 +67,11 @@ public class AarcClaimValueHelperTests {
   private AttributeMapHelper attrHelper;
 
   @Autowired
-  private ScopeClaimTranslationService claimService;
-
-  @Autowired
   private IamGroupService groupService;
 
   private IamUserInfo userInfo = mock(IamUserInfo.class);
   private AarcClaimValueHelper helper;
+  private AarcScopeClaimTranslationService claimService = new AarcScopeClaimTranslationService();
 
   @Before
   public void setup() {

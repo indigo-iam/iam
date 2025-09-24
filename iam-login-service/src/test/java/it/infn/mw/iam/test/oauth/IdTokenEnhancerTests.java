@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
@@ -90,13 +91,12 @@ public class IdTokenEnhancerTests {
   @Test
   public void testEnhancedProfileClaimsOk() throws Exception {
 
-    JWT token = JWTParser.parse(getIdToken("openid profile"));
-    System.out.println(token.getJWTClaimsSet());
-    
-    assertThat(token.getJWTClaimsSet().getClaim("name"), is(notNullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("preferred_username"), is(notNullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("organisation_name"), is(notNullValue()));
-    assertThat(token.getJWTClaimsSet().getClaim("groups"), is(notNullValue()));
+    JWTClaimsSet claims = JWTParser.parse(getIdToken("openid profile")).getJWTClaimsSet();
+
+    assertThat(claims.getClaim("name"), is(notNullValue()));
+    assertThat(claims.getClaim("preferred_username"), is(notNullValue()));
+    assertThat(claims.getClaim("organisation_name"), is(notNullValue()));
+    assertThat(claims.getClaim("groups"), is(notNullValue()));
     
   }
 

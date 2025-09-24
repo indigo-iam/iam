@@ -15,19 +15,27 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+
+import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
+import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseJWTProfile;
 
 public class KeycloakJWTProfile extends BaseJWTProfile {
 
-  public KeycloakJWTProfile(KeycloakClaimValueHelper claimValueHelper,
-      KeycloakAccessTokenBuilder accessTokenBuilder, KeycloakIdTokenCustomizer idTokenCustomizer,
-      KeycloakUserinfoHelper userInfoHelper, KeycloakIntrospectionHelper introspectionHelper) {
-    super(claimValueHelper, accessTokenBuilder, idTokenCustomizer, userInfoHelper,
-        introspectionHelper);
-  }
-
   public static final String PROFILE_VERSION = "1.0";
   public static final String PROFILE_NAME = "Keycloak JWT profile " + PROFILE_VERSION;
+
+  public KeycloakJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
+      ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
+      IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
+      IntrospectionResultHelper introspectionHelper) {
+    super(scopeClaimTranslationService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
+  }
 
   @Override
   public String id() {

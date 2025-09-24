@@ -18,6 +18,7 @@ package it.infn.mw.iam.core.oauth.profile.common;
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -30,10 +31,13 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
 
   private final IamProperties properties;
   private final ClaimValueHelper claimValueHelper;
+  private final ScopeClaimTranslationService scopeTranslationService;
 
-  protected BaseUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper) {
+  protected BaseUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeTranslationService) {
     this.properties = props;
     this.claimValueHelper = claimValueHelper;
+    this.scopeTranslationService = scopeTranslationService;
   }
 
   public IamProperties getProperties() {
@@ -44,10 +48,15 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
     return claimValueHelper;
   }
 
+  public ScopeClaimTranslationService getScopeTranslationService() {
+    return scopeTranslationService;
+  }
+
   @Override
   public Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
       OAuth2Authentication auth) {
 
-    return claimValueHelper.resolveClaims(claimValueHelper.resolveScopes(scopes), account, auth);
+    Set<String> requiredClaims = scopeTranslationService.getClaimsForScopeSet(scopes);
+    return claimValueHelper.resolveClaims(requiredClaims, account, auth);
   }
 }

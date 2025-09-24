@@ -26,11 +26,10 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
@@ -42,21 +41,21 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
-@Component
 public class KeycloakAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public KeycloakAccessTokenBuilder(IamProperties properties,
       IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper);
+      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+        scopeClaimTranslationService);
   }
 
   @Override
   public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
-    Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
+    JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, userInfo, issueTime));
 
     builder.notBeforeTime(Date.from(issueTime
       .minus(Duration.ofSeconds(getProperties().getAccessToken().getNbfOffsetSeconds()))));

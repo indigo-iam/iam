@@ -15,29 +15,24 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import static java.util.Objects.isNull;
-
-import java.util.Set;
-
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-@Component
 public class WlcgIdTokenCustomizer extends IamIdTokenCustomizer {
 
-  public WlcgIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
-    super(properties, claimValueHelper);
+  public WlcgIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override
@@ -45,19 +40,6 @@ public class WlcgIdTokenCustomizer extends IamIdTokenCustomizer {
       OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
 
     super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
-
-    idClaims.claim(WlcgExtraClaimNames.WLCG_VER, WlcgJWTProfile.PROFILE_VERSION);
-
-    idClaims.claim(IamExtraClaimNames.GROUPS, null);
-
-    if (!isNull(account)) {
-      Set<String> groupNames =
-          WlcgGroupHelper.resolveGroupNames(accessToken, account.getUserInfo());
-      if (groupNames.isEmpty()) {
-        return;
-      }
-      idClaims.claim(WlcgExtraClaimNames.WLCG_GROUPS, groupNames);
-    }
   }
 
 }

@@ -28,6 +28,7 @@ import java.util.Objects;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -36,7 +37,7 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamAccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -45,23 +46,24 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
-public class WlcgAccessTokenBuilder extends IamAccessTokenBuilder {
+public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public static final String PROFILE_VERSION = "1.0";
   public static final String ALL_AUDIENCES_VALUE = "https://wlcg.cern.ch/jwt/v1/any";
 
   public WlcgAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper) {
+      ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
     super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper);
+        claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override
   public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
 
-    Builder builder = baseJWTSetup(token, authentication, userInfo, issueTime);
+    JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, userInfo, issueTime));
 
     addWlcgVerClaim(builder);
     addWlcgGroupsClaim(builder, authentication, userInfo);

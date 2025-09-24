@@ -105,7 +105,7 @@ class KeycloakAccessTokenBuilderTests {
   void setup() {
 
     tokenBuilder = new KeycloakAccessTokenBuilder(properties, accountRepository, totpMfaRepository,
-        accountUtils, scopeFilter, claimValueHelper);
+        accountUtils, scopeFilter, claimValueHelper, scService);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");

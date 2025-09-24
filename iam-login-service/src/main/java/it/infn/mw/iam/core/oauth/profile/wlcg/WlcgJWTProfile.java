@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
@@ -30,11 +31,12 @@ public class WlcgJWTProfile extends BaseJWTProfile {
   public static final String PROFILE_VERSION = "1.0";
   public static final String PROFILE_NAME = "WLCG JWT profile " + PROFILE_VERSION;
 
-  public WlcgJWTProfile(ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
+  public WlcgJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
+      ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
       IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
       IntrospectionResultHelper introspectionHelper) {
-    super(claimValueHelper, accessTokenBuilder, idTokenCustomizer, userInfoHelper,
-        introspectionHelper);
+    super(scopeClaimTranslationService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
   }
 
   @Override

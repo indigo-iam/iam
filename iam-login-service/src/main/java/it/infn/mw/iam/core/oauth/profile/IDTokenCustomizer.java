@@ -23,7 +23,6 @@ import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.persistence.model.IamAccount;
 
-@FunctionalInterface
 @SuppressWarnings("deprecation")
 public interface IDTokenCustomizer {
 

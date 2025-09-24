@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
@@ -29,8 +30,9 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 @SuppressWarnings("deprecation")
 public class AarcIdTokenCustomizer extends IamIdTokenCustomizer {
 
-  public AarcIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
-    super(properties, claimValueHelper);
+  public AarcIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override

@@ -39,6 +39,7 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.Z
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
@@ -86,6 +87,9 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
   @Override
   public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
 
+    if (Objects.isNull(claimName) || Objects.isNull(account)) {
+      return null;
+    }
     switch (claimName) {
       case SUB:
         return account.getUuid();
@@ -128,9 +132,8 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
       case PHONE_NUMBER_VERIFIED:
         return account.getUserInfo().getPhoneNumberVerified();
       default:
-        break;
+        return null;
     }
-    return null;
   }
 
   protected void includeIfNotNull(Map<String, Object> claims, String key, Object value) {

@@ -17,8 +17,8 @@ package it.infn.mw.iam.core.oauth.profile.keycloak;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.stereotype.Component;
 
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
@@ -28,11 +28,11 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-@Component
 public class KeycloakIdTokenCustomizer extends IamIdTokenCustomizer {
 
-  public KeycloakIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper) {
-    super(properties, claimValueHelper);
+  public KeycloakIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override
