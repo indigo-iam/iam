@@ -15,13 +15,11 @@
 #
 
 openid-federation:
-  trust-anchors:
-    - https://trust-anchor.sandbox.eosc.grnet.gr
+  trust-anchors: ${IAM_OIDFED_TRUST_ANCHORS:https://trust-anchor.sandbox.eosc.grnet.gr}
   entity-configuration:
-    expiration-seconds: 86400
-    authority-hints:
-      - https://trust-anchor.sandbox.eosc.grnet.gr
+    expiration-seconds: ${IAM_OIDFED_ENTITY_CONFIGURATION_EXPIRATION_SECONDS:86400}
+    authority-hints: ${IAM_OIDFED_ENTITY_CONFIGURATION_AUTHORITY_HINTS:https://trust-anchor.sandbox.eosc.grnet.gr}
     federation-entity:
-      organization-name:
-      contacts:
-      logo-uri:
+      organization-name: ${IAM_OIDFED_FEDERATION_ENTITY_ORGANIZATION_NAME:}
+      contacts: ${IAM_OIDFED_FEDERATION_ENTITY_CONTACTS:}
+      logo-uri: ${IAM_OIDFED_FEDERATION_ENTITY_LOGO_URI:}
