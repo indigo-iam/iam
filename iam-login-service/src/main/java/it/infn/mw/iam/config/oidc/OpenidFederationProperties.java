@@ -24,6 +24,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenidFederationProperties {
 
+  private List<String> trustAnchors;
+
+  public List<String> getTrustAnchors() {
+    return trustAnchors;
+  }
+
+  public void setTrustAnchors(List<String> trustAnchors) {
+    this.trustAnchors = trustAnchors;
+  }
+
   private EntityConfigurationProperties entityConfiguration = new EntityConfigurationProperties();
 
   public EntityConfigurationProperties getEntityConfiguration() {
@@ -54,6 +64,49 @@ public class OpenidFederationProperties {
 
     public void setAuthorityHints(Set<String> authorityHints) {
       this.authorityHints = authorityHints;
+    }
+
+    private FederationEntityProperties federationEntity = new FederationEntityProperties();
+
+    public FederationEntityProperties getFederationEntity() {
+      return federationEntity;
+    }
+
+    public void setFederationEntity(FederationEntityProperties federationEntity) {
+      this.federationEntity = federationEntity;
+    }
+
+    public static class FederationEntityProperties {
+
+      private String organizationName;
+
+      private List<String> contacts;
+
+      private String logoUri;
+
+      public String getOrganizationName() {
+        return organizationName;
+      }
+
+      public void setOrganizationName(String organizationName) {
+        this.organizationName = organizationName;
+      }
+
+      public List<String> getContacts() {
+        return contacts;
+      }
+
+      public void setContacts(List<String> contacts) {
+        this.contacts = contacts;
+      }
+
+      public String getLogoUri() {
+        return logoUri;
+      }
+
+      public void setLogoUri(String logoUri) {
+        this.logoUri = logoUri;
+      }
     }
   }
 }
