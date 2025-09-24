@@ -21,24 +21,20 @@ import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
-import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 
-public class IntrospectionEvent extends IamAuditApplicationEvent {
+public class RevocationEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -1843180591267883819L;
 
-  private final IntrospectionResponse response;
   private final String tokenValue;
   private final TokenTypeHint tokenTypeHint;
 
-  public IntrospectionEvent(Object source, String tokenValue, TokenTypeHint tokenTypeHint,
-      IntrospectionResponse response) {
+  public RevocationEvent(Object source, String tokenValue, TokenTypeHint tokenTypeHint) {
 
-    super(IamEventCategory.TOKEN, source, "Introspection request");
+    super(IamEventCategory.TOKEN, source, "Token revocation request");
     this.tokenValue = reduce(tokenValue);
     this.tokenTypeHint = tokenTypeHint;
-    this.response = response;
   }
 
   private String reduce(String s) {
@@ -56,10 +52,6 @@ public class IntrospectionEvent extends IamAuditApplicationEvent {
 
   public TokenTypeHint getTokenTypeHint() {
     return tokenTypeHint;
-  }
-
-  public IntrospectionResponse getResponse() {
-    return response;
   }
 
 }

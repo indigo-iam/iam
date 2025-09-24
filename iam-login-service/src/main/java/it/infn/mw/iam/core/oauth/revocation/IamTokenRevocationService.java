@@ -21,26 +21,38 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @Service
-public class IamTokenRevocationService implements TokenRevocationService {
+public class IamTokenRevocationService
+    implements TokenRevocationService, ApplicationEventPublisherAware {
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private ApplicationEventPublisher eventPublisher;
 
   public IamTokenRevocationService(IamOAuthAccessTokenRepository accessTokenRepo,
       IamOAuthRefreshTokenRepository refreshTokenRepo) {
 
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
+  }
+
+  @Override
+  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+    this.eventPublisher = applicationEventPublisher;
   }
 
   private boolean isTokenExpired(JWT jwt) throws ParseException {
@@ -67,7 +79,13 @@ public class IamTokenRevocationService implements TokenRevocationService {
     if (isTokenExpired(token)) {
       return;
     }
-    accessTokenRepo.findByTokenValue(sha256(token.serialize())).ifPresent(accessTokenRepo::delete);
+    Optional<OAuth2AccessTokenEntity> at =
+        accessTokenRepo.findByTokenValue(sha256(token.serialize()));
+    if (at.isPresent()) {
+      accessTokenRepo.delete(at.get());
+      eventPublisher.publishEvent(
+          new RevocationEvent(this, at.get().getJwt().serialize(), TokenTypeHint.ACCESS_TOKEN));
+    }
   }
 
   @Override
@@ -76,7 +94,11 @@ public class IamTokenRevocationService implements TokenRevocationService {
     if (isTokenExpired(token)) {
       return;
     }
-    refreshTokenRepo.findByTokenValue(token).ifPresent(refreshTokenRepo::delete);
+    refreshTokenRepo.findByTokenValue(token).ifPresent(rt -> {
+      refreshTokenRepo.delete(rt);
+      eventPublisher.publishEvent(
+          new RevocationEvent(this, rt.getJwt().serialize(), TokenTypeHint.REFRESH_TOKEN));
+    });
   }
 
 }

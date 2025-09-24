@@ -27,6 +27,7 @@ import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -48,7 +49,7 @@ import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 
 @SuppressWarnings("deprecation")
 @Service
-public class IamIntrospectionService implements IntrospectionService {
+public class IamIntrospectionService implements IntrospectionService, ApplicationEventPublisherAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
@@ -61,17 +62,21 @@ public class IamIntrospectionService implements IntrospectionService {
   private final OAuth2TokenEntityService tokenService;
   private final ClientDetailsEntityService clientService;
   private final TokenRevocationService revocationService;
-  private final ApplicationEventPublisher eventPublisher;
+  private ApplicationEventPublisher eventPublisher;
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
       OAuth2TokenEntityService tokenService, ClientDetailsEntityService clientService,
-      TokenRevocationService revocationService, ApplicationEventPublisher eventPublisher) {
+      TokenRevocationService revocationService) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
     this.revocationService = revocationService;
-    this.eventPublisher = eventPublisher;
+  }
+
+  @Override
+  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+    this.eventPublisher = applicationEventPublisher;
   }
 
   @Override
