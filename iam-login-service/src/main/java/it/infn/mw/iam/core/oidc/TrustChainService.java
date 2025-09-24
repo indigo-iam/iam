@@ -16,7 +16,6 @@
 package it.infn.mw.iam.core.oidc;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -26,32 +25,21 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
-import it.infn.mw.iam.config.TrustChainCache;
-
 @Service
 @Profile("openid-federation")
 public class TrustChainService {
 
   private final TrustChainResolver resolver;
   private final TrustChainValidator validator;
-  private final TrustChainCache trustChainCache;
 
-  public TrustChainService(TrustChainResolver resolver, TrustChainValidator validator,
-      TrustChainCache trustChainCache) {
+  public TrustChainService(TrustChainResolver resolver, TrustChainValidator validator) {
     this.resolver = resolver;
     this.validator = validator;
-    this.trustChainCache = trustChainCache;
   }
 
   public TrustChain getOrResolve(String entityId) throws BadJOSEException, JOSEException {
-    Optional<TrustChain> cachedChain = trustChainCache.get(entityId);
-    if (!cachedChain.isEmpty()) {
-      return cachedChain.get();
-    }
     List<List<EntityStatement>> chain = resolver.resolveFromEntityId(entityId);
-    TrustChain validated = validator.validateAll(chain);
-    trustChainCache.put(entityId, validated);
-    return validated;
+    return validator.validateAll(chain);
   }
 
   public TrustChain validateFromEntityConfiguration(EntityStatement ec)

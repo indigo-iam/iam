@@ -18,17 +18,12 @@ package it.infn.mw.iam.test.openid_federation;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +41,6 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
-import it.infn.mw.iam.config.TrustChainCache;
 import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
@@ -62,9 +56,6 @@ public class TrustChainServiceTests {
 
   @Mock
   TrustAnchorRepository trustAnchorRepository;
-
-  @Mock
-  private TrustChainCache trustChainCache;
 
   @Mock
   RestTemplate restTemplate;
@@ -116,17 +107,6 @@ public class TrustChainServiceTests {
 
     // TA trusted?
     when(trustAnchorRepository.isTrusted("https://ta.example")).thenReturn(taTrusted);
-  }
-
-  @Test
-  public void testGetOrResolveReturnsCachedChain() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain();
-    when(trustChainCache.get("entityA")).thenReturn(Optional.of(fakeChain));
-
-    TrustChain result = service.getOrResolve("entityA");
-
-    assertEquals(fakeChain, result);
-    verify(trustChainCache, never()).put(anyString(), any());
   }
 
   @Test
