@@ -15,9 +15,8 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import java.text.ParseException;
-
-import com.nimbusds.jwt.JWTParser;
+import static it.infn.mw.iam.util.AuditLogUtils.getPayload;
+import static it.infn.mw.iam.util.AuditLogUtils.reduce;
 
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
@@ -36,18 +35,9 @@ public class IntrospectionEvent extends IamAuditApplicationEvent {
       IntrospectionResponse response) {
 
     super(IamEventCategory.TOKEN, source, "Introspection request");
-    this.tokenValue = reduce(tokenValue);
+    this.tokenValue = reduce(getPayload(tokenValue), 0.2) + "...";
     this.tokenTypeHint = tokenTypeHint;
     this.response = response;
-  }
-
-  private String reduce(String s) {
-    try {
-      String payloadStr = JWTParser.parse(s).getParsedString();
-      return payloadStr.substring(0, (int) Math.ceil(payloadStr.length() * 0.2)) + "...";
-    } catch (ParseException e) {
-      return "";
-    }
   }
 
   public String getTokenValue() {

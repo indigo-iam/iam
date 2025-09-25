@@ -55,7 +55,6 @@ import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamAccessTokenBuilder;
@@ -63,7 +62,6 @@ import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.iam.IamIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.iam.IamScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.iam.IamUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakAccessTokenBuilder;
@@ -71,7 +69,6 @@ import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserinfoHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgAccessTokenBuilder;
@@ -79,7 +76,6 @@ import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIdTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgIntrospectionHelper;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgJWTProfile;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgScopeClaimTranslationService;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgUserinfoHelper;
 import it.infn.mw.iam.core.oauth.scope.matchers.DefaultScopeMatcherRegistry;
@@ -279,10 +275,10 @@ public class IamConfig {
     }
 
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
-    profileMap.put(IamOidcScopes.IAM, iamProfile);
-    profileMap.put(WlcgOidcScopes.WLCG, wlcgProfile);
-    profileMap.put(AarcOidcScopes.AARC, aarcProfile);
-    profileMap.put(KeycloakOidcScopes.KEYCLOAK, kcProfile);
+    profileMap.put(iamProfile.id(), iamProfile);
+    profileMap.put(wlcgProfile.id(), wlcgProfile);
+    profileMap.put(aarcProfile.id(), aarcProfile);
+    profileMap.put(kcProfile.id(), kcProfile);
 
     LOG.info("Default JWT profile: {}", defaultProfile.name());
     return new ScopeAwareProfileResolver(defaultProfile, profileMap);

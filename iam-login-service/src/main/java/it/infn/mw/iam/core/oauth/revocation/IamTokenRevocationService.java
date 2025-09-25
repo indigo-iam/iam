@@ -21,7 +21,6 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Optional;
 
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
@@ -79,13 +78,11 @@ public class IamTokenRevocationService
     if (isTokenExpired(token)) {
       return;
     }
-    Optional<OAuth2AccessTokenEntity> at =
-        accessTokenRepo.findByTokenValue(sha256(token.serialize()));
-    if (at.isPresent()) {
-      accessTokenRepo.delete(at.get());
+    accessTokenRepo.findByTokenValue(sha256(token.serialize())).ifPresent(at -> {
+      accessTokenRepo.delete(at);
       eventPublisher.publishEvent(
-          new RevocationEvent(this, at.get().getJwt().serialize(), TokenTypeHint.ACCESS_TOKEN));
-    }
+          new RevocationEvent(this, at.getJwt().serialize(), TokenTypeHint.ACCESS_TOKEN));
+    });
   }
 
   @Override
