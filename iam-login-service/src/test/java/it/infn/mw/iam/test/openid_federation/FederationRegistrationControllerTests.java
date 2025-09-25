@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.openid_federation;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,6 +53,9 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 public class FederationRegistrationControllerTests {
 
+  private static final String IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT =
+      "/iam/api/oid-fed/client-registration";
+
   @Autowired
   private MockMvc mvc;
 
@@ -75,7 +79,7 @@ public class FederationRegistrationControllerTests {
     when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
 
     mvc
-      .perform(post("/iam/openid-federation/client-registration")
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
         .contentType("application/entity-statement+jwt")
         .content(rpJwt))
       .andDo(print())
@@ -117,7 +121,7 @@ public class FederationRegistrationControllerTests {
     when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
 
     mvc
-      .perform(post("/iam/openid-federation/client-registration")
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
         .contentType("application/entity-statement+jwt")
         .content(rpJwt))
       .andDo(print())
@@ -128,7 +132,7 @@ public class FederationRegistrationControllerTests {
     assertTrue(client.isPresent());
 
     mvc
-      .perform(post("/iam/openid-federation/client-registration")
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
         .contentType("application/entity-statement+jwt")
         .content(rpJwt))
       .andDo(print())
@@ -138,6 +142,6 @@ public class FederationRegistrationControllerTests {
     Optional<ClientDetailsEntity> newClient =
         clientRepo.findByEntityId(rpEC.getEntityID().getValue());
     assertTrue(newClient.isPresent());
-    assertFalse(client.get().getClientId().equals(newClient.get().getClientId()));
+    assertNotEquals(client.get().getClientId(), newClient.get().getClientId());
   }
 }

@@ -174,7 +174,7 @@ public class MitreSecurityConfig {
   @Order(14)
   public static class FederationRegistrationSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    public static final String FED_REG_ENDPOINT = "/iam/openid-federation/client-registration/**";
+    public static final String FED_REG_ENDPOINT = "/iam/api/oid-fed/client-registration/**";
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {

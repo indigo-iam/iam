@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.web.federation;
+package it.infn.mw.iam.api.openid_federation;
 
 import java.time.Instant;
 import java.time.ZoneId;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.infn.mw.iam.core.web.federation;
+package it.infn.mw.iam.api.openid_federation;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -118,7 +118,7 @@ public class FederationRegistrationController {
     return dtoClient;
   }
 
-  @PostMapping(value = "/iam/openid-federation/client-registration",
+  @PostMapping(value = "/iam/api/oid-fed/client-registration",
       consumes = "application/entity-statement+jwt",
       produces = "application/explicit-registration-response+jwt")
   public ResponseEntity<String> register(@RequestBody String requestJwt)
