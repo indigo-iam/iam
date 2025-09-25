@@ -39,7 +39,9 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
+import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
+import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
@@ -48,8 +50,6 @@ import it.infn.mw.iam.core.oidc.TrustChainExceptionHandler;
 import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
-
-import net.minidev.json.JSONObject;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(MockitoJUnitRunner.class)
@@ -185,8 +185,8 @@ public class TrustChainServiceTests {
   @Test
   public void testValidatorReturnsTheShortestChainBetweenTheTwoValidOnes()
       throws JOSEException, BadJOSEException {
-    JSONObject rpMetadata = new JSONObject();
-    rpMetadata.put("openid_relying_party", true);
+    OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
+    rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
     // Entity Configuration of RP
     EntityStatement rpEC =
@@ -256,8 +256,8 @@ public class TrustChainServiceTests {
 
   @Test
   public void testValidatorReturnsValidChain() throws JOSEException, BadJOSEException {
-    JSONObject rpMetadata = new JSONObject();
-    rpMetadata.put("openid_relying_party", true);
+    OIDCClientMetadata rpMetadata = new OIDCClientMetadata();
+    rpMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
 
     // Entity Configuration of RP
     EntityStatement rpEC =
