@@ -36,12 +36,6 @@ services:
       - hostcerts:/hostcerts
       - usercerts:/usercerts
 
-  redis:
-    image: ${REDIS_IMAGE}
-    container_name: redis
-    ports:
-      - "6379:6379"
-
   iam-be:
     container_name: iam-be
     build:
@@ -50,7 +44,7 @@ services:
 
     environment:
       TZ: Europe/Rome
-      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test -Dspring.devtools.restart.enabled=false
+      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
       IAM_FORWARD_HEADERS_STRATEGY: native
@@ -64,11 +58,6 @@ services:
       IAM_JWT_DEFAULT_PROFILE: wlcg
       IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
       IAM_ACCESS_TOKEN_INCLUDE_NBF: "true"
- 
-      IAM_SPRING_REDIS_HOST: redis
-      IAM_SPRING_SESSION_STORE_TYPE: redis
-      IAM_CACHE_ENABLED: "true"
-      IAM_CACHE_REDIS_ENABLED: "true"
       
       # IAM_RCAUTH_ENABLED: "true"
       # IAM_RCAUTH_CLIENT_ID: ${IAM_RCAUTH_CLIENT_ID}
