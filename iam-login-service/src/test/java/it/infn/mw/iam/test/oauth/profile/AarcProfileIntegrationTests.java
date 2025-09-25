@@ -25,11 +25,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -76,6 +77,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   private static final String USERNAME = "test";
   private static final String PASSWORD = "password";
   private static final String GRANT_TYPE = "password";
+  private static final String ORGANISATION_NAME = "indigo-dc";
 
   private static final String URN_GROUP_ANALYSIS = "urn:geant:iam.example:group:Analysis";
   private static final String URN_GROUP_PRODUCTION = "urn:geant:iam.example:group:Production";
@@ -360,7 +362,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.sub").exists())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
+      .andExpect(jsonPath("$.voperson_id", containsString("@"+ORGANISATION_NAME)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
@@ -380,14 +382,17 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     Set<String> scopes = Sets.newHashSet("openid", "profile", "email");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
+    assertTrue(token.getJWTClaimsSet()
+      .getClaim("voperson_id")
+      .toString()
+      .contains("@" + ORGANISATION_NAME));
 
     // @formatter:off
     mvc.perform(post("/introspect")
         .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
+      .andExpect(jsonPath("$.voperson_id",containsString("@"+ORGANISATION_NAME)))
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM).doesNotExist())
@@ -407,7 +412,10 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
+    assertTrue(token.getJWTClaimsSet()
+      .getClaim("voperson_id")
+      .toString()
+      .contains("@" + ORGANISATION_NAME));
 
     // @formatter:off
     mvc.perform(post("/introspect")
@@ -415,7 +423,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
+      .andExpect(jsonPath("$.voperson_id", containsString("@"+ORGANISATION_NAME)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
       .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
@@ -438,7 +446,10 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         "eduperson_scoped_affiliation", "entitlements", "eduperson_assurance");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
+    assertTrue(token.getJWTClaimsSet()
+      .getClaim("voperson_id")
+      .toString()
+      .contains("@" + ORGANISATION_NAME));
 
     // @formatter:off
     mvc.perform(post("/introspect")
@@ -446,7 +457,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$.voperson_id").isNotEmpty())
+      .andExpect(jsonPath("$.voperson_id", containsString("@"+ORGANISATION_NAME)))
       .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION_CLAIM, equalTo("member@iam.example")))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS_CLAIM, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
@@ -466,8 +477,10 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWT token = JWTParser.parse(getIdToken("openid email"));
     System.out.println(token.getJWTClaimsSet());
     assertNotNull(token.getJWTClaimsSet().getClaim("sub"));
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
+    assertTrue(token.getJWTClaimsSet()
+      .getClaim("voperson_id")
+      .toString()
+      .contains("@" + ORGANISATION_NAME));
   }
 
   @Test
@@ -477,8 +490,10 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         "eduperson_scoped_affiliation", "eduperson_entitlement", "eduperson_assurance");
     JWT token = JWTParser.parse(getAccessTokenForUser(scopes));
 
-    assertNotNull(token.getJWTClaimsSet().getClaim("voperson_id"));
-    assertNotEquals(null, token.getJWTClaimsSet().getClaim("voperson_id"));
+    assertTrue(token.getJWTClaimsSet()
+      .getClaim("voperson_id")
+      .toString()
+      .contains("@" + ORGANISATION_NAME));
   }
 
 

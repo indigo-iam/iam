@@ -17,7 +17,9 @@ package it.infn.mw.iam.core.oauth.profile;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -28,8 +30,10 @@ import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
+import org.springframework.security.oauth2.provider.TokenRequest;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -39,6 +43,10 @@ import com.nimbusds.jwt.SignedJWT;
 
 @SuppressWarnings("deprecation")
 public class IamTokenEnhancer extends ConnectTokenEnhancer {
+
+  public static final String EXPIRES_IN_KEY = "expires_in";
+
+  public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
   @Autowired
   private UserInfoService userInfoService;
@@ -64,6 +72,41 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   }
 
+  private Date ensureValidExpiration(Map<String, String> requestParameters,
+      OAuth2AccessTokenEntity token, Instant tokenIssueInstant) {
+    try {
+      Integer expiresIn = Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY));
+      Integer validExp = token.getClient().getAccessTokenValiditySeconds();
+      if (expiresIn >= 0) {
+        validExp = Math.min(expiresIn, token.getClient().getAccessTokenValiditySeconds());
+      }
+      return Date.from(tokenIssueInstant.plus(validExp, ChronoUnit.SECONDS));
+    } catch (NumberFormatException e) {
+      throw new InvalidRequestException(INVALID_PARAMETER);
+    }
+  }
+
+  private Date computeExpTime(OAuth2Authentication authentication, OAuth2AccessTokenEntity token,
+      Instant tokenIssueInstant) {
+
+    OAuth2Request originalRequest = authentication.getOAuth2Request();
+    if (originalRequest.isRefresh()) {
+      TokenRequest refreshRequest = originalRequest.getRefreshTokenRequest();
+      if (refreshRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+        return ensureValidExpiration(refreshRequest.getRequestParameters(), token,
+            tokenIssueInstant);
+      }
+      // don't use custom value from original request
+      return Date.from(tokenIssueInstant.plus(token.getClient().getAccessTokenValiditySeconds(),
+          ChronoUnit.SECONDS));
+    }
+    if (originalRequest.getRequestParameters().containsKey(EXPIRES_IN_KEY)) {
+      return ensureValidExpiration(originalRequest.getRequestParameters(), token,
+          tokenIssueInstant);
+    }
+    return token.getExpiration();
+  }
+
   @Override
   public OAuth2AccessToken enhance(OAuth2AccessToken accessToken,
       OAuth2Authentication authentication) {
@@ -81,9 +124,14 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
     JWTProfile profile =
         profileResolver.resolveProfile(authentication.getOAuth2Request().getClientId());
-    
+
+    accessTokenEntity
+      .setExpiration(computeExpTime(authentication, accessTokenEntity, tokenIssueInstant));
+
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
+
+
 
     accessTokenEntity.setJwt(signClaims(atClaims));
     accessTokenEntity.hashMe();
@@ -103,8 +151,7 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
       ClientDetailsEntity client = getClientService().loadClientByClientId(clientId);
 
       JWT idToken = connectTokenService.createIdToken(client, originalAuthRequest,
-          Date.from(tokenIssueInstant),
-          userInfo.getSub(), accessTokenEntity);
+          Date.from(tokenIssueInstant), userInfo.getSub(), accessTokenEntity);
 
       accessTokenEntity.setIdToken(idToken);
     }

@@ -17,7 +17,6 @@ package it.infn.mw.iam.core.oidc;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,7 +72,7 @@ public class TrustChainResolver {
   /**
    * Resolve the Trust Chain starting from an entity_id
    */
-  public List<EntityStatement> resolveFromEntityId(String entityId)
+  public List<List<EntityStatement>> resolveFromEntityId(String entityId)
       throws InvalidTrustChainException {
     EntityStatement ec = fetchEntityConfiguration(entityId);
     return buildChain(ec, new HashSet<>());
@@ -82,7 +81,7 @@ public class TrustChainResolver {
   /**
    * Resolve the Trust Chain starting from an EntityConfiguration already provided
    */
-  public List<EntityStatement> resolveFromEntityConfiguration(EntityStatement ec)
+  public List<List<EntityStatement>> resolveFromEntityConfiguration(EntityStatement ec)
       throws InvalidTrustChainException {
     return buildChain(ec, new HashSet<>());
   }
@@ -90,24 +89,26 @@ public class TrustChainResolver {
   /**
    * Recursion to build the Trust Chain up to a Trust Anchor
    */
-  private List<EntityStatement> buildChain(EntityStatement current, Set<String> seenEntityIds)
-      throws InvalidTrustChainException {
+  private List<List<EntityStatement>> buildChain(EntityStatement subordinateEC,
+      Set<String> seenEntityIds) throws InvalidTrustChainException {
 
-    String currentId = current.getEntityID().getValue();
+    String subId = subordinateEC.getEntityID().getValue();
 
-    if (seenEntityIds.contains(currentId)) {
-      throw new InvalidTrustChainException("invalid_trust_chain", "Loop detected at " + currentId);
+    if (!seenEntityIds.add(subId)) {
+      throw new InvalidTrustChainException("invalid_trust_chain", "Loop detected at " + subId);
     }
-    seenEntityIds.add(currentId);
 
     // If it is a Trust Anchor (self-signed) it ends the chain
-    if (current.isTrustAnchor()) {
-      return List.of(current);
+    if (subordinateEC.isTrustAnchor()) {
+      List<List<EntityStatement>> chain = new ArrayList<>();
+      chain.add(List.of(subordinateEC));
+      return chain;
     }
 
-    List<List<EntityStatement>> candidateChains = new ArrayList<>();
+    List<List<EntityStatement>> chains = new ArrayList<>();
+    int invalidChains = 0;
 
-    for (EntityID superior : current.getClaimsSet().getAuthorityHints()) {
+    for (EntityID superior : subordinateEC.getClaimsSet().getAuthorityHints()) {
       try {
         // 1. Download EC of superior
         EntityStatement superiorEC = fetchEntityConfiguration(superior.getValue());
@@ -121,26 +122,31 @@ public class TrustChainResolver {
         String fetchEndpoint = fedMeta.getFederationAPIEndpointURI().toASCIIString();
 
         // 3. Make the request fetch?sub=...
-        EntityStatement es = fetchEntityStatement(fetchEndpoint, superior.getValue(), currentId);
+        EntityStatement subordinateES =
+            fetchEntityStatement(fetchEndpoint, superior.getValue(), subId);
 
         // 4. Recourse to the trust anchor
-        List<EntityStatement> upperChain = buildChain(superiorEC, seenEntityIds);
+        List<List<EntityStatement>> forwardChains =
+            buildChain(superiorEC, new HashSet<>(seenEntityIds));
 
-        List<EntityStatement> fullChain = new ArrayList<>();
-        fullChain.add(current);
-        fullChain.add(es);
-        fullChain.addAll(upperChain);
-        candidateChains.add(fullChain);
-
+        for (List<EntityStatement> chain : forwardChains) {
+          List<EntityStatement> newChain = new ArrayList<>();
+          newChain.add(subordinateEC);
+          newChain.add(subordinateES);
+          newChain.addAll(chain);
+          chains.add(newChain);
+        }
       } catch (InvalidTrustChainException e) {
-        LOG.warn("Failed to resolve authority hint {} for entity {}: {}", superior.getValue(),
-            current.getEntityID().getValue(), e.getMessage());
+        invalidChains++;
+        LOG.warn("Failed to resolve authority {} for entity {}: {}", superior.getValue(), subId,
+            e.getMessage());
       }
     }
 
-    return candidateChains.stream()
-      .min(Comparator.comparingInt(List::size))
-      .orElseThrow(() -> new InvalidTrustChainException("invalid_trust_chain",
-          "No valid authority for: " + currentId));
+    if (invalidChains == subordinateEC.getClaimsSet().getAuthorityHints().size()) {
+      throw new InvalidTrustChainException("invalid_trust_chain", "No valid chains for " + subId);
+    }
+
+    return chains;
   }
 }

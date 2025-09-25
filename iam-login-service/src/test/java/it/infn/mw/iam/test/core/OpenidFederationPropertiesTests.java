@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -30,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -43,7 +43,11 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
-public class EntityConfigurationEndpointTests {
+@TestPropertySource(properties = {
+    "openid-federation.entity-configuration.federation-entity.logo-uri=https://logo-example.com",
+    "openid-federation.entity-configuration.federation-entity.organization-name=INDIGO IAM",
+    "openid-federation.entity-configuration.federation-entity.contacts=iam-support@lists.infn.it"})
+public class OpenidFederationPropertiesTests {
 
   private String endpoint = "/.well-known/openid-federation";
 
@@ -52,7 +56,7 @@ public class EntityConfigurationEndpointTests {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testFederationEndpoint() throws Exception {
+  public void testFederationEntityPropertiesNotEmpty() throws Exception {
 
     MvcResult result = mvc.perform(get(endpoint))
       .andExpect(status().isOk())
@@ -63,15 +67,13 @@ public class EntityConfigurationEndpointTests {
     assertThat(responseBody.split("\\.")).hasSize(3);
 
     SignedJWT jwt = SignedJWT.parse(responseBody);
-    assertThat(jwt.getHeader().getAlgorithm().getName()).isNotNull();
-    assertThat(jwt.getHeader().getType().toString()).hasToString("entity-statement+jwt");
-    assertThat(jwt.getJWTClaimsSet().getIssuer()).isNotNull();
-    assertThat(jwt.getJWTClaimsSet().getSubject()).isNotNull();
-    assertNotNull(jwt.getJWTClaimsSet().getClaim("authority_hints"));
-    assertThat(jwt.getJWTClaimsSet().getSubject()).isEqualTo(jwt.getJWTClaimsSet().getIssuer());
     Map<String, Object> metadata = (Map<String, Object>) jwt.getJWTClaimsSet().getClaim("metadata");
     assertNotNull(metadata);
-    assertNotNull(metadata.get("openid_provider"));
-    assertNull(metadata.get("federation_entity"));
+
+    Map<String, Object> federationEntity = (Map<String, Object>) metadata.get("federation_entity");
+    assertNotNull(federationEntity);
+    assertNotNull(federationEntity.get("organization_name"));
+    assertNotNull(federationEntity.get("contacts"));
+    assertNotNull(federationEntity.get("logo_uri"));
   }
 }

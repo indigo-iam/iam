@@ -26,14 +26,14 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
-import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
 import com.nimbusds.openid.connect.sdk.federation.entities.FederationEntityMetadata;
-import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
+import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+
+import net.minidev.json.JSONObject;
 
 public class TrustChainTestFactory {
 
@@ -51,8 +51,7 @@ public class TrustChainTestFactory {
 
   // self-issued EC: iss == sub, jwks = own key
   public static EntityStatement selfEC(String entity, Date iat, Date exp,
-      List<EntityID> authorityHints, URI fetchEndpoint, OIDCClientMetadata metadata)
-      throws JOSEException {
+      List<EntityID> authorityHints, URI fetchEndpoint, JSONObject metadata) throws JOSEException {
     RSAKey key = keyFor(entity);
     EntityID eid = new EntityID(entity);
 
@@ -60,7 +59,7 @@ public class TrustChainTestFactory {
         new EntityStatementClaimsSet(eid, eid, iat, exp, new JWKSet(key.toPublicJWK()));
 
     if (metadata != null) {
-      claims.setRPMetadata(metadata);
+      claims.setMetadata(FederationMetadataType.OPENID_RELYING_PARTY, metadata);
     }
     if (fetchEndpoint != null) {
       claims.setFederationEntityMetadata(new FederationEntityMetadata(fetchEndpoint));
@@ -68,8 +67,6 @@ public class TrustChainTestFactory {
     if (authorityHints != null && !authorityHints.isEmpty()) {
       claims.setAuthorityHints(authorityHints);
     }
-
-    claims.setAudience(new Audience("http://localhost:8080"));
 
     return EntityStatement.sign(claims, key);
   }
@@ -95,11 +92,9 @@ public class TrustChainTestFactory {
     String ta = "https://ta.example";
 
     // RP self EC with authority_hint = TA
-    OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
-    clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
-    clientMetadata.setName("Relying Party");
-    clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata);
+    JSONObject rpMetadata = new JSONObject();
+    rpMetadata.put("openid_relying_party", true);
+    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, rpMetadata);
 
     // TA → RP ES
     EntityStatement taToRp = superiorES(ta, rp, now, exp);
@@ -109,18 +104,17 @@ public class TrustChainTestFactory {
   }
 
   /** Trust Chain: RP → Intermediate → TA */
-  public static TrustChain createRpToIntermediateToTaChain() throws JOSEException {
+  public static TrustChain createRpToIntermediateToTaChain(String ta) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
     String rp = "https://rp.example";
     String ia = "https://intermediate.example";
-    String ta = "https://ta.example";
 
     // RP self EC with authority_hint = Intermediate
-    OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
-    clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, clientMetadata);
+    JSONObject rpMetadata = new JSONObject();
+    rpMetadata.put("openid_relying_party", true);
+    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, rpMetadata);
 
     // Intermediate → RP ES
     EntityStatement intermToRp = superiorES(ia, rp, now, exp);
@@ -128,7 +122,7 @@ public class TrustChainTestFactory {
     // TA → Intermediate ES
     EntityStatement taToInterm = superiorES(ta, ia, now, exp);
 
-    // Build the TrustChain: RP EC, intermediate→RP, TA→intermediate
+    // Build the TrustChain: RP EC, intermediate → RP, TA → intermediate
     return new TrustChain(rpEC, List.of(intermToRp, taToInterm));
   }
 }

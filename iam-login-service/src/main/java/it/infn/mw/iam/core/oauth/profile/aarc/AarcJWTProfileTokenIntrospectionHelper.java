@@ -31,12 +31,14 @@ import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHelper {
 
   protected final AarcClaimValueHelper claimValueHelper;
+  private IamProperties properties;
 
   public AarcJWTProfileTokenIntrospectionHelper(IamProperties props,
       IntrospectionResultAssembler assembler, ScopeMatcherRegistry scopeMatchersRegistry,
       AarcClaimValueHelper claimValueHelper) {
     super(props, assembler, scopeMatchersRegistry);
     this.claimValueHelper = claimValueHelper;
+    this.properties = props;
   }
 
   @Override
@@ -85,7 +87,7 @@ public class AarcJWTProfileTokenIntrospectionHelper extends BaseIntrospectionHel
             claimValueHelper.getClaimValueFromUserInfo(EDUPERSON_ASSURANCE, iamUserInfo));
       }
 
-      result.put("voperson_id", userInfo.getSub());
+      result.put("voperson_id", userInfo.getSub() + '@' + properties.getOrganisation().getName());
 
     }
 

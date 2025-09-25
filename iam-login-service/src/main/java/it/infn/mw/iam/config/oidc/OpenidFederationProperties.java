@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config.oidc;
 
-import java.util.Set;
+import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +23,16 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("openid-federation")
 @Configuration
 public class OpenidFederationProperties {
+
+  private List<String> trustAnchors;
+
+  public List<String> getTrustAnchors() {
+    return trustAnchors;
+  }
+
+  public void setTrustAnchors(List<String> trustAnchors) {
+    this.trustAnchors = trustAnchors;
+  }
 
   private EntityConfigurationProperties entityConfiguration = new EntityConfigurationProperties();
 
@@ -38,7 +48,7 @@ public class OpenidFederationProperties {
 
     private long expirationSeconds = 86400;
 
-    private Set<String> authorityHints;
+    private List<String> authorityHints;
 
     public long getExpirationSeconds() {
       return expirationSeconds;
@@ -48,12 +58,55 @@ public class OpenidFederationProperties {
       this.expirationSeconds = expirationSeconds;
     }
 
-    public Set<String> getAuthorityHints() {
+    public List<String> getAuthorityHints() {
       return authorityHints;
     }
 
-    public void setAuthorityHints(Set<String> authorityHints) {
+    public void setAuthorityHints(List<String> authorityHints) {
       this.authorityHints = authorityHints;
+    }
+
+    private FederationEntityProperties federationEntity = new FederationEntityProperties();
+
+    public FederationEntityProperties getFederationEntity() {
+      return federationEntity;
+    }
+
+    public void setFederationEntity(FederationEntityProperties federationEntity) {
+      this.federationEntity = federationEntity;
+    }
+
+    public static class FederationEntityProperties {
+
+      private String organizationName;
+
+      private List<String> contacts;
+
+      private String logoUri;
+
+      public String getOrganizationName() {
+        return organizationName;
+      }
+
+      public void setOrganizationName(String organizationName) {
+        this.organizationName = organizationName;
+      }
+
+      public List<String> getContacts() {
+        return contacts;
+      }
+
+      public void setContacts(List<String> contacts) {
+        this.contacts = contacts;
+      }
+
+      public String getLogoUri() {
+        return logoUri;
+      }
+
+      public void setLogoUri(String logoUri) {
+        this.logoUri = logoUri;
+      }
     }
   }
 }
