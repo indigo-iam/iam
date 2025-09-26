@@ -1,16 +1,14 @@
-version: '2'
-
 services:
   http_proxy:
     container_name: idptestbed
     build: 
-      context: ../docker/saml-idp/httpd-proxy/
+      context: ./httpd-proxy/
     ports:
       - "443:443"
   idp:
     container_name: idp
     build: 
-      context: ../docker/saml-idp/idp/
+      context: ./idp/
     environment:
       - JETTY_MAX_HEAP=64m
       - JETTY_BROWSER_SSL_KEYSTORE_PASSWORD=password
@@ -24,9 +22,9 @@ services:
   ldap:
     container_name: ldap
     build: 
-      context: ../docker/saml-idp/ldap/
+      context: ./ldap/
 
   sp:
     container_name: sp
     build: 
-      context: ../docker/saml-idp/sp/
+      context: ./sp/
