@@ -1,5 +1,3 @@
-version: '2.0'
-
 services:
   spid:
     image:  italia/spid-testenv2:latest
