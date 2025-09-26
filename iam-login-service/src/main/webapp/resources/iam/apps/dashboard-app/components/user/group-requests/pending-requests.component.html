@@ -37,7 +37,7 @@
             </div>
         </div>
     </div>
-    <div class="box-footer" ng-if="$ctrl.groupsCount > 0 && !$ctrl.voAdmin" >
+    <div class="box-footer" ng-if="$ctrl.groupsCount > 0 && $ctrl.isMe">
         <join-group user="$ctrl.user" group-requests="$ctrl.groupRequests"/>
     </div>
 </div>

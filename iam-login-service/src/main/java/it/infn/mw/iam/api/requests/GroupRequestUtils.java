@@ -54,6 +54,7 @@ public class GroupRequestUtils {
   private AccountUtils accountUtils;
 
   private static final IamAuthority ROLE_ADMIN = new IamAuthority("ROLE_ADMIN");
+  private static final IamAuthority ROLE_READER = new IamAuthority("ROLE_READER");
 
   public Optional<IamGroupRequest> getOptionalGroupRequest(String uuid) {
     return groupRequestRepository.findByUuid(uuid);
@@ -124,7 +125,9 @@ public class GroupRequestUtils {
   }
 
   public boolean isPrivilegedUser() {
-    Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
-    return userAccount.isPresent() && userAccount.get().getAuthorities().contains(ROLE_ADMIN);
+    return accountUtils.getAuthenticatedUserAccount()
+        .map(IamAccount::getAuthorities)
+        .map(authorities -> authorities.contains(ROLE_ADMIN) || authorities.contains(ROLE_READER))
+        .orElse(false);
   }
 }

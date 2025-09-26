@@ -67,6 +67,7 @@
 
         function $onInit() {
             self.voAdmin = Utils.isAdmin();
+            self.isMe = Utils.isMe(self.user.id);
             loadGroupRequests();
             loadGroupCount();
         }
