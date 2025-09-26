@@ -10,10 +10,16 @@ The services defined here are:
 * `vomsaa`: it is the main voms-aa microservice
 * `client`: it is an image containing GRID clients (in particular `voms-proxy-init`) used to query the `vomsaa` service.
 
+Build the trust container with
+
+```
+$ docker compose build --no-cache trust
+```
+
 Run the docker-compose with
 
 ```
-$ docker-compose up -d
+$ docker compose up -d
 ```
 
 and wait for the `trust` service to finish; `ngx` will be available afterwards.
@@ -23,7 +29,7 @@ and wait for the `trust` service to finish; `ngx` will be available afterwards.
 To test `vomsaa` using VOMS clients, enter in the container with
 
 ```
-$ docker-compose exec client bash
+$ docker compose exec client bash
 ```
 
 Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc` with

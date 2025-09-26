@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<voms>
-  <error>
-    <code>1006</code>
-    <message>Internal server error: the VOMS server is not really working as it should...</message>
-  </error>
-</voms>
