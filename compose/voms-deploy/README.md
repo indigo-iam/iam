@@ -4,7 +4,7 @@ This folder contains docker compose files for the voms-aa microservice.
 
 This folder contains a docker-compose file that could be useful for deployment.
 The services defined here are:
-* `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` used in this deployment for test certificates
+* `trust`: docker image for the GRID CA certificates plus the `igi-test-ca` (created on-the-fly) used in this deployment for test certificates
 * `db`: is a dump of the IAM db for test environment. In addition to the db populated with the iam `mysql-dev` profile, the user `test` has a certificate with DN `/C=IT/O=IGI/CN=test0` linked to his account and he also is part of the `indigo-dc` group (necessary to obtain VOMS proxies)
 * `ngx`: is an extension to NGINX, used for TLS termination, reverse proxy and possibly VOMS proxies validation. It sends requests to the `vomsaa` service
 * `vomsaa`: it is the main voms-aa microservice
@@ -26,10 +26,10 @@ To test `vomsaa` using VOMS clients, enter in the container with
 $ docker-compose exec client bash
 ```
 
-Here a p12 file for the test user encrypted with the `pass` password is present in the well-known directory (`/home/test/.globus/usercred.p12`). It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc` with
+Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc` with
 
 ```
-$ voms-proxy-init -voms indigo-dc
+$ voms-proxy-init -voms indigo-dc -cert /certs/test0.p12
 Enter GRID pass phrase for this identity: <***>
 Contacting voms.test.example:443 [/C=IT/O=IGI/CN=*.test.example] "indigo-dc"...
 Remote VOMS server contacted succesfully.
@@ -56,7 +56,7 @@ key usage : Digital Signature, Non Repudiation, Key Encipherment
 VO        : indigo-dc
 subject   : /C=IT/O=IGI/CN=test0
 issuer    : /C=IT/O=IGI/CN=*.test.example
-attribute : /indigo-dc
+attribute : /indigo-dc/Role=NULL/Capability=NULL
 timeleft  : 11:59:35
 uri       : voms.test.example:8080
 ```
