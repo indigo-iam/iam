@@ -34,10 +34,13 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.oidc.OpenidFederationProperties;
 import it.infn.mw.iam.core.jwk.JWKUtils;
+import it.infn.mw.iam.core.web.jwk.IamJWKSetPublishingEndpoint;
 import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 
 @Component
@@ -48,6 +51,7 @@ public class EntityConfigurationBuilder {
 
   private final JWSSigner signer;
   private final RSAKey signingKey;
+  private final Map<String, Object> jwks;
   private final List<String> authorityHints;
   private final String issuer;
   private final long expirationSec;
@@ -55,13 +59,19 @@ public class EntityConfigurationBuilder {
 
   public EntityConfigurationBuilder(JWKSetKeyStore keyStore,
       IamWellKnownInfoProvider wellKnownInfoProvider, OpenidFederationProperties fedProperties,
-      IamProperties iamProperties) {
+      IamProperties iamProperties, IamJWKSetPublishingEndpoint iamJwkEndpoint) {
     signingKey = keyStore.getKeys()
       .stream()
       .filter(k -> k instanceof RSAKey && k.isPrivate())
       .map(k -> (RSAKey) k)
       .findFirst()
       .orElseThrow(() -> new IllegalStateException("No private RSA key found"));
+    String jsonKeys = iamJwkEndpoint.getJwk().getBody();
+    try {
+      jwks = JSONObjectUtils.parse(jsonKeys);
+    } catch (ParseException e) {
+      throw new IllegalArgumentException("Invalid JWK JSON");
+    }
     authorityHints = fedProperties.getEntityConfiguration().getAuthorityHints();
     if (iamProperties.getIssuer().endsWith("/")) {
       issuer = iamProperties.getIssuer();
@@ -70,45 +80,14 @@ public class EntityConfigurationBuilder {
     }
     expirationSec = fedProperties.getEntityConfiguration().getExpirationSeconds();
 
-    Map<String, Object> wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
     if (authorityHints == null || authorityHints.isEmpty()) {
       throw new IllegalStateException("authority_hints must be present!");
     }
 
-    Map<String, Object> opMetadata = new HashMap<>();
-    opMetadata.put("issuer", wellKnownInfo.get("issuer"));
-    opMetadata.put("authorization_endpoint", wellKnownInfo.get("authorization_endpoint"));
-    opMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
-    opMetadata.put("response_types_supported", wellKnownInfo.get("response_types_supported"));
-    opMetadata.put("subject_types_supported", wellKnownInfo.get("subject_types_supported"));
-    opMetadata.put("id_token_signing_alg_values_supported",
-        wellKnownInfo.get("id_token_signing_alg_values_supported"));
-    opMetadata.put("client_registration_types_supported", List.of("explicit"));
-    opMetadata.put("federation_registration_endpoint",
-        URI.create(iamProperties.getBaseUrl()).resolve("/iam/api/oid-fed/client-registration"));
-
-    Map<String, Object> feMetadata = new HashMap<>();
-    String organizationName =
-        fedProperties.getEntityConfiguration().getFederationEntity().getOrganizationName();
-    List<String> contacts =
-        fedProperties.getEntityConfiguration().getFederationEntity().getContacts();
-    String logoUri = fedProperties.getEntityConfiguration().getFederationEntity().getLogoUri();
-    if (organizationName != null && !organizationName.isBlank()) {
-      feMetadata.put("organization_name", organizationName);
-    }
-    if (contacts != null && !contacts.isEmpty()) {
-      feMetadata.put("contacts", contacts);
-    }
-    if (logoUri != null && !logoUri.isBlank()) {
-      if (URI.create(logoUri).isAbsolute()) {
-        feMetadata.put("logo_uri", logoUri);
-      } else {
-        throw new IllegalStateException("Logo URI must be absolute.");
-      }
-    }
-
+    Map<String, Object> wellKnownInfo = wellKnownInfoProvider.getWellKnownInfo();
     metadata = new HashMap<>();
-    metadata.put("openid_provider", opMetadata);
+    metadata.put("openid_provider", buildOpMetadata(wellKnownInfo, iamProperties));
+    Map<String, Object> feMetadata = buildFeMetadata(fedProperties);
     if (!feMetadata.isEmpty()) {
       metadata.put("federation_entity", feMetadata);
     }
@@ -127,7 +106,7 @@ public class EntityConfigurationBuilder {
       .subject(issuer)
       .issueTime(new Date())
       .expirationTime(Date.from(Instant.now().plusSeconds(expirationSec)))
-      .claim("jwks", signingKey.toPublicJWK().toJSONObject())
+      .claim("jwks", jwks)
       .claim("metadata", metadata)
       .claim("authority_hints", authorityHints)
       .build();
@@ -139,5 +118,51 @@ public class EntityConfigurationBuilder {
     SignedJWT jwt = new SignedJWT(header, claims);
     jwt.sign(signer);
     return jwt.serialize();
+  }
+
+  private Map<String, Object> buildOpMetadata(Map<String, Object> wellKnownInfo,
+      IamProperties iamProperties) {
+
+    Map<String, Object> opMetadata = new HashMap<>();
+    opMetadata.put("issuer", wellKnownInfo.get("issuer"));
+    opMetadata.put("authorization_endpoint", wellKnownInfo.get("authorization_endpoint"));
+    opMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    opMetadata.put("response_types_supported", wellKnownInfo.get("response_types_supported"));
+    opMetadata.put("subject_types_supported", wellKnownInfo.get("subject_types_supported"));
+    opMetadata.put("id_token_signing_alg_values_supported",
+        wellKnownInfo.get("id_token_signing_alg_values_supported"));
+    opMetadata.put("token_endpoint", wellKnownInfo.get("token_endpoint"));
+    opMetadata.put("userinfo_endpoint", wellKnownInfo.get("userinfo_endpoint"));
+    opMetadata.put("registration_endpoint", wellKnownInfo.get("registration_endpoint"));
+    opMetadata.put("scopes_supported", wellKnownInfo.get("scopes_supported"));
+    opMetadata.put("claims_supported", wellKnownInfo.get("claims_supported"));
+    opMetadata.put("client_registration_types_supported", List.of("explicit"));
+    opMetadata.put("federation_registration_endpoint",
+        URI.create(iamProperties.getBaseUrl()).resolve("/iam/api/oid-fed/client-registration"));
+    return opMetadata;
+  }
+
+  private Map<String, Object> buildFeMetadata(OpenidFederationProperties fedProperties) {
+    Map<String, Object> feMetadata = new HashMap<>();
+    var entity = fedProperties.getEntityConfiguration().getFederationEntity();
+
+    String organizationName = entity.getOrganizationName();
+    List<String> contacts = entity.getContacts();
+    String logoUri = entity.getLogoUri();
+
+    if (organizationName != null && !organizationName.isBlank()) {
+      feMetadata.put("organization_name", organizationName);
+    }
+    if (contacts != null && !contacts.isEmpty()) {
+      feMetadata.put("contacts", contacts);
+    }
+    if (logoUri != null && !logoUri.isBlank()) {
+      if (URI.create(logoUri).isAbsolute()) {
+        feMetadata.put("logo_uri", logoUri);
+      } else {
+        throw new IllegalStateException("Logo URI must be absolute.");
+      }
+    }
+    return feMetadata;
   }
 }
