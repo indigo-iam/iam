@@ -351,7 +351,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
-      Authentication authentication, boolean federationRegistration) throws ParseException {
+      Authentication authentication) throws ParseException {
 
     authzChecks(authentication);
 
@@ -360,10 +360,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     client.setDynamicallyRegistered(true);
     client.setActive(true);
 
-    if (federationRegistration) {
-      ClientFederationMetadataEntity clientExpEntity = new ClientFederationMetadataEntity(client,
-          request.getExpiration(), request.getEntityId());
-      client.setFederationMetadata(clientExpEntity);
+    if (request.getEntityId() != null) {
+      ClientFederationMetadataEntity clientFedMetadataEntity = new ClientFederationMetadataEntity(
+          client, request.getExpiration(), request.getEntityId());
+      client.setFederationMetadata(clientFedMetadataEntity);
     }
 
     checkAllowedGrantTypes(request, authentication);
@@ -373,7 +373,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
-    if (!federationRegistration && isAnonymous(authentication)) {
+    if (request.getEntityId() == null && isAnonymous(authentication)) {
 
       OAuth2AccessTokenEntity ratEntity = clientTokenService.createRegistrationAccessToken(client);
       tokenService.saveAccessToken(ratEntity);

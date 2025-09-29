@@ -244,7 +244,7 @@ class ClientManagementServiceTests {
     RegisteredClientDTO request = new RegisteredClientDTO();
     request.setClientName("example");
     request.setGrantTypes(Sets.newHashSet(AuthorizationGrantType.CLIENT_CREDENTIALS));
-    RegisteredClientDTO response = registrationService.registerClient(request, userAuth, false);
+    RegisteredClientDTO response = registrationService.registerClient(request, userAuth);
 
 
     String clientId = response.getClientId();

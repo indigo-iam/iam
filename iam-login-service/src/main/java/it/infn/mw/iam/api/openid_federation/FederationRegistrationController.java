@@ -114,6 +114,8 @@ public class FederationRegistrationController {
     } else {
       dtoClient.setScope(Set.of("openid"));
     }
+    // Entity ID
+    dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
     return dtoClient;
   }
@@ -146,11 +148,10 @@ public class FederationRegistrationController {
     Date clientExpiration = trustChain.resolveExpirationTime();
     dtoClient
       .setExpiration(LocalDate.ofInstant(clientExpiration.toInstant(), ZoneId.systemDefault()));
-    dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
     // 5. Register the client by using the already existing service
     RegisteredClientDTO registeredClient =
-        clientRegistrationService.registerClient(dtoClient, null, true);
+        clientRegistrationService.registerClient(dtoClient, null);
 
     // 6. Build the response (Entity Statement)
     String responseEs = federationResponseBuilder.build(registeredClient, trustChain);

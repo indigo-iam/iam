@@ -27,7 +27,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 public interface ClientRegistrationService {
 
   RegisteredClientDTO registerClient(@Valid RegisteredClientDTO request,
-      Authentication authentication, boolean federationRegistration) throws ParseException;
+      Authentication authentication) throws ParseException;
 
   RegisteredClientDTO retrieveClient(@NotBlank String clientId,
       Authentication authentication);

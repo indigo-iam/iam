@@ -65,7 +65,7 @@ public class ClientRegistrationApiController {
   @JsonView({ClientViews.DynamicRegistration.class})
   public RegisteredClientDTO registerClient(@RequestBody RegisteredClientDTO request,
       Authentication authentication) throws ParseException {
-    return service.registerClient(request, authentication, false);
+    return service.registerClient(request, authentication);
 
   }
 
