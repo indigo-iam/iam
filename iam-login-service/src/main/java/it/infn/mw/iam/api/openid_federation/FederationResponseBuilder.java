@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,15 +94,9 @@ public class FederationResponseBuilder {
     rpMetadata.put("redirect_uris", registered.getRedirectUris());
     rpMetadata.put("token_endpoint_auth_method", registered.getTokenEndpointAuthMethod());
     rpMetadata.put("response_types",
-        registered.getResponseTypes()
-          .stream()
-          .map(OAuthResponseType::getResponseType)
-          .collect(Collectors.toList()));
+        registered.getResponseTypes().stream().map(OAuthResponseType::getResponseType).toList());
     rpMetadata.put("grant_types",
-        registered.getGrantTypes()
-          .stream()
-          .map(AuthorizationGrantType::getGrantType)
-          .collect(Collectors.toList()));
+        registered.getGrantTypes().stream().map(AuthorizationGrantType::getGrantType).toList());
     rpMetadata.put("scope", String.join(" ", registered.getScope()));
     rpMetadata.put("client_registration_types",
         trustChain.getLeafSelfStatement()
@@ -112,7 +105,7 @@ public class FederationResponseBuilder {
           .getClientRegistrationTypes()
           .stream()
           .map(ClientRegistrationType::toString)
-          .collect(Collectors.toList()));
+          .toList());
 
     if (registered.getClientSecret() != null) {
       rpMetadata.put("client_secret", registered.getClientSecret());
