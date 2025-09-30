@@ -82,7 +82,7 @@ public class TrustChainServiceTests {
   }
 
   private void mockRpToTaChain(boolean taTrusted) throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain();
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -92,7 +92,7 @@ public class TrustChainServiceTests {
     // Build TA EC (self-issued)
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
-        null);
+        null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
     when(
@@ -137,7 +137,7 @@ public class TrustChainServiceTests {
     // Intermediate EC (self-signed)
     EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta.example")),
-        URI.create("https://intermediate.example/fetch"), null);
+        URI.create("https://intermediate.example/fetch"), null, null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Intermediate ES → RP
@@ -151,7 +151,7 @@ public class TrustChainServiceTests {
     // TA EC (self-signed)
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
-        null);
+        null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
     when(
@@ -193,22 +193,22 @@ public class TrustChainServiceTests {
         TrustChainTestFactory.selfEC("https://rp.example", new Date(),
             new Date(System.currentTimeMillis() + 600000), List
               .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
-            null, rpMetadata);
+            null, rpMetadata, null);
     String rpEcJwt = rpEC.getSignedStatement().serialize();
 
     // Entity Configuration of IA
     EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta.example")),
-        URI.create("https://intermediate.example/fetch"), null);
+        URI.create("https://intermediate.example/fetch"), null, null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Entity Configuration of TA
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
-        null);
+        null, null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain();
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
 
@@ -264,28 +264,28 @@ public class TrustChainServiceTests {
         TrustChainTestFactory.selfEC("https://rp.example", new Date(),
             new Date(System.currentTimeMillis() + 600000), List
               .of(new EntityID("https://ta.example"), new EntityID("https://intermediate.example")),
-            null, rpMetadata);
+            null, rpMetadata, null);
     String rpEcJwt = rpEC.getSignedStatement().serialize();
 
     // Entity Configuration of IA
     EntityStatement iaEC = TrustChainTestFactory.selfEC("https://intermediate.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), List.of(new EntityID("https://ta1.example")),
-        URI.create("https://intermediate.example/fetch"), null);
+        URI.create("https://intermediate.example/fetch"), null, null);
     String iaEcJwt = iaEC.getSignedStatement().serialize();
 
     // Entity Configuration of trusted TA
     EntityStatement trustedTaEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
-        null);
+        null, null);
     String trustedTaEcJwt = trustedTaEC.getSignedStatement().serialize();
 
     // Entity Configuration of untrusted TA
     EntityStatement untrustedTaEC = TrustChainTestFactory.selfEC("https://ta1.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null,
-        URI.create("https://ta1.example/fetch"), null);
+        URI.create("https://ta1.example/fetch"), null, null);
     String untrustedTaEcJwt = untrustedTaEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain();
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example");
 
@@ -341,7 +341,7 @@ public class TrustChainServiceTests {
     Date exp = new Date(System.currentTimeMillis() + 600000);
 
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", futureIat, exp, null,
-        URI.create("https://rp.example/fetch"), null);
+        URI.create("https://rp.example/fetch"), null, null);
 
     InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
@@ -355,7 +355,7 @@ public class TrustChainServiceTests {
     Date exp = new Date(System.currentTimeMillis() - 60000);
 
     EntityStatement es = TrustChainTestFactory.selfEC("https://rp.example", iat, exp, null,
-        URI.create("https://rp.example/fetch"), null);
+        URI.create("https://rp.example/fetch"), null, null);
 
     InvalidTrustChainException ex = assertThrows(InvalidTrustChainException.class,
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
@@ -392,7 +392,7 @@ public class TrustChainServiceTests {
     List<EntityStatement> superiors = fakeChain.getSuperiorStatements();
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, URI.create("https://ta.example/fetch"),
-        null);
+        null, null);
     List<EntityStatement> chain = new ArrayList<>();
     chain.add(rpEC);
     chain.addAll(superiors);

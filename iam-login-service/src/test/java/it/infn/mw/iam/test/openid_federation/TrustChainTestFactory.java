@@ -51,8 +51,8 @@ public class TrustChainTestFactory {
 
   // self-issued EC: iss == sub, jwks = own key
   public static EntityStatement selfEC(String entity, Date iat, Date exp,
-      List<EntityID> authorityHints, URI fetchEndpoint, OIDCClientMetadata metadata)
-      throws JOSEException {
+      List<EntityID> authorityHints, URI fetchEndpoint, OIDCClientMetadata metadata,
+      String audience) throws JOSEException {
     RSAKey key = keyFor(entity);
     EntityID eid = new EntityID(entity);
 
@@ -68,8 +68,9 @@ public class TrustChainTestFactory {
     if (authorityHints != null && !authorityHints.isEmpty()) {
       claims.setAuthorityHints(authorityHints);
     }
-
-    claims.setAudience(Audience.create(List.of("http://localhost:8080")));
+    if (audience != null) {
+      claims.setAudience(Audience.create(List.of(audience)));
+    }
     return EntityStatement.sign(claims, key);
   }
 
@@ -86,7 +87,7 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: RP → TA */
-  public static TrustChain createRpToTaChain() throws JOSEException {
+  public static TrustChain createRpToTaChain(String aud) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
@@ -98,7 +99,8 @@ public class TrustChainTestFactory {
     clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
     clientMetadata.setName("Relying Party");
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata);
+    EntityStatement rpEC =
+        selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 
     // TA → RP ES
     EntityStatement taToRp = superiorES(ta, rp, now, exp);
@@ -118,7 +120,8 @@ public class TrustChainTestFactory {
     // RP self EC with authority_hint = Intermediate
     OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
     clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
-    EntityStatement rpEC = selfEC(rp, now, exp, List.of(new EntityID(ia)), null, clientMetadata);
+    EntityStatement rpEC =
+        selfEC(rp, now, exp, List.of(new EntityID(ia)), null, clientMetadata, null);
 
     // Intermediate → RP ES
     EntityStatement intermToRp = superiorES(ia, rp, now, exp);

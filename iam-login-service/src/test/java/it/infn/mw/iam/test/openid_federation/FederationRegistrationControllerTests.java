@@ -72,7 +72,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testSuccessfullExplicitClientRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain();
+    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -88,8 +88,26 @@ public class FederationRegistrationControllerTests {
   }
 
   @Test
+  public void testInvalidAudienceDuringRegistration() throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain("http://wrong-audience");
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
+
+    mvc
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_request")))
+      .andExpect(jsonPath("$.error_description", equalTo("Invalid audience")));
+  }
+
+  @Test
   public void testClientDisabledWhenExpired() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain();
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null);
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId("client-cred");
     assertTrue(client.isPresent());
 
@@ -114,7 +132,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain();
+    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
