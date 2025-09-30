@@ -75,13 +75,14 @@ public class FederationRegistrationController {
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest) {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
-    // Client name
-    dtoClient.setClientName(metadata.getName());
-    // Contacts
+    if (metadata.getName() != null) {
+      dtoClient.setClientName(metadata.getName());
+    } else {
+      dtoClient.setClientName("OIDFed client");
+    }
     if (metadata.getEmailContacts() != null) {
       dtoClient.setContacts(new HashSet<>(metadata.getEmailContacts()));
     }
-    // Grant types
     if (metadata.getGrantTypes() != null) {
       dtoClient.setGrantTypes(metadata.getGrantTypes()
         .stream()
@@ -91,30 +92,28 @@ public class FederationRegistrationController {
     } else {
       dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     }
-    // Redirect Uris
     dtoClient.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
-    // Response types
     if (metadata.getResponseTypes() != null) {
       dtoClient.setResponseTypes(metadata.getResponseTypes()
         .stream()
         .map(ResponseType::toString)
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet()));
+    } else {
+      dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
     }
-    // Token endpoint auth method
-    dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
-    // Logo / Client URI
-    if (metadata.getLogoURI() != null) {
-      dtoClient.setClientUri(metadata.getLogoURI().toString());
+    if (metadata.getTokenEndpointAuthMethod() != null) {
+      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
+        .valueOf(metadata.getTokenEndpointAuthMethod().getValue()));
+    } else {
+      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     }
-    // Scopes
     if (metadata.getScope() != null) {
-      dtoClient.setScope(Set.of(metadata.getScope().toString()));
+      dtoClient.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
     } else {
       dtoClient.setScope(Set.of("openid"));
     }
-    // Entity ID
     dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
     return dtoClient;

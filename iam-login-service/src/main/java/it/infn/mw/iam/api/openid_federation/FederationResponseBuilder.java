@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +37,11 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
+import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
+import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.core.jwk.JWKUtils;
 
@@ -80,31 +84,38 @@ public class FederationResponseBuilder {
       .expirationTime(Date.from(exp))
       .audience(trustChain.getLeafSelfStatement().getClaimsSet().getSubject().getValue());
 
-    // trust_anchor_id (REQUIRED)
-    claims.claim("trust_anchor_id", trustChain.getTrustAnchorEntityID().getValue());
+    claims.claim("trust_anchor", trustChain.getTrustAnchorEntityID().getValue());
 
-    // authority_hitns (REQUIRED)
     List<EntityStatement> statements = trustChain.getSuperiorStatements();
     String immediateSuperior = statements.get(0).getClaimsSet().getIssuer().getValue();
     claims.claim("authority_hints", List.of(immediateSuperior));
 
-    // resulting metadata from registered client
     Map<String, Object> rpMetadata = new HashMap<>();
     rpMetadata.put("client_id", registered.getClientId());
     rpMetadata.put("redirect_uris", registered.getRedirectUris());
     rpMetadata.put("token_endpoint_auth_method", registered.getTokenEndpointAuthMethod());
+    rpMetadata.put("response_types",
+        registered.getResponseTypes()
+          .stream()
+          .map(OAuthResponseType::getResponseType)
+          .collect(Collectors.toList()));
+    rpMetadata.put("grant_types",
+        registered.getGrantTypes()
+          .stream()
+          .map(AuthorizationGrantType::getGrantType)
+          .collect(Collectors.toList()));
+    rpMetadata.put("scope", String.join(" ", registered.getScope()));
     rpMetadata.put("client_registration_types",
         trustChain.getLeafSelfStatement()
           .getClaimsSet()
           .getRPMetadata()
-          .getClientRegistrationTypes());
+          .getClientRegistrationTypes()
+          .stream()
+          .map(ClientRegistrationType::toString)
+          .collect(Collectors.toList()));
 
     if (registered.getClientSecret() != null) {
       rpMetadata.put("client_secret", registered.getClientSecret());
-    }
-
-    if (registered.getScope() != null) {
-      rpMetadata.put("scope", registered.getScope());
     }
 
     claims.claim("metadata", Map.of("openid_relying_party", rpMetadata));
