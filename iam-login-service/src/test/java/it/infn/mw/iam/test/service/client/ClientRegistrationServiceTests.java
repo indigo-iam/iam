@@ -301,15 +301,14 @@ class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
 
-    exception =
-        Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
-          RegisteredClientDTO request = new RegisteredClientDTO();
-          request.setClientName("example");
-          request.setGrantTypes(
-              Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
-          request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-          service.registerClient(request, noAuth);
-        });
+    exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+      RegisteredClientDTO request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request.setGrantTypes(
+          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      service.registerClient(request, noAuth);
+    });
 
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));

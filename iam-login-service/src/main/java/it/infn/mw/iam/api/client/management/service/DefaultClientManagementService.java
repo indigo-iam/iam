@@ -35,6 +35,7 @@ import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -167,6 +168,10 @@ public class DefaultClientManagementService implements ClientManagementService {
 
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
+
+    if (oldClient.getClientRelyingParty() != null) {
+      throw new InvalidRequestException("Federated clients cannot be updated");
+    }
 
     ClientDetailsEntity newClient = converter.entityFromClientManagementRequest(client);
 

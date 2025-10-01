@@ -263,7 +263,7 @@ public class MitreSecurityConfig {
       // @formatter:on
     }
   }
-  
+
   @Configuration
   @Order(28)
   public static class WellKnownEndpointConfig extends WebSecurityConfigurerAdapter {

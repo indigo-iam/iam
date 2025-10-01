@@ -15,12 +15,17 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FederationError {
 
   private final String error;
+  @JsonProperty("error_description")
   private final String errorDescription;
 
-  public FederationError(String error, String errorDescription) {
+  @JsonCreator
+  public FederationError(String error, @JsonProperty("error_description") String errorDescription) {
     this.error = error;
     this.errorDescription = errorDescription;
   }

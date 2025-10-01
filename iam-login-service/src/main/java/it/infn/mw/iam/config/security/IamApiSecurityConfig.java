@@ -167,6 +167,7 @@ public class IamApiSecurityConfig {
             .antMatchers(GET, "/registration/submitted").permitAll()
             .antMatchers(GET, "/iam/config/**").permitAll()
             .antMatchers(GET, AUP_PATH).permitAll()
+            .antMatchers(POST, "/iam/api/oid-fed/client-registration").permitAll()
             .anyRequest().authenticated()
         .and()
           .csrf().disable();

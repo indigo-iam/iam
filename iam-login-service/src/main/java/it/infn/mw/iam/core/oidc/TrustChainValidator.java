@@ -45,7 +45,7 @@ public class TrustChainValidator {
    * Validate all chains and select the shortest among the valid ones
    */
   public TrustChain validateAll(List<List<EntityStatement>> chains)
-      throws InvalidTrustChainException, BadJOSEException, JOSEException {
+      throws InvalidTrustChainException {
 
     if (chains == null || chains.isEmpty()) {
       throw new InvalidTrustChainException("invalid_trust_chain", "No chains provided");
