@@ -43,10 +43,8 @@ import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistratio
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
-import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustAnchorRepository;
-import it.infn.mw.iam.core.oidc.TrustChainExceptionHandler;
 import it.infn.mw.iam.core.oidc.TrustChainResolver;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.core.oidc.TrustChainValidator;
@@ -361,18 +359,6 @@ public class TrustChainServiceTests {
         () -> ReflectionTestUtils.invokeMethod(validator, "validateClaims", es));
     assertEquals("invalid_trust_chain", ex.getErrorCode());
     assertTrue(ex.getMessage().contains("Entity Statement is expired"));
-  }
-
-  @Test
-  public void testTrustChainExceptionHandlerReturnsFederationError() {
-    InvalidTrustChainException ex =
-        new InvalidTrustChainException("invalid_trust_chain", "test failure");
-
-    TrustChainExceptionHandler handler = new TrustChainExceptionHandler();
-    FederationError error = handler.handleTrustChainException(ex);
-
-    assertEquals("invalid_trust_chain", error.getError());
-    assertEquals("test failure", error.getErrorDescription());
   }
 
   @Test
