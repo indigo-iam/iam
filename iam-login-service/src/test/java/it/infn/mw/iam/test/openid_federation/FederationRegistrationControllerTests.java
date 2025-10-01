@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,12 +42,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.config.TaskConfig;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
@@ -55,9 +60,13 @@ public class FederationRegistrationControllerTests {
 
   private static final String IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT =
       "/iam/api/oid-fed/client-registration";
+  private static final String IAM_CLIENT_API_URL = "/iam/api/clients/";
 
   @Autowired
   private MockMvc mvc;
+
+  @Autowired
+  private ObjectMapper mapper;
 
   @Autowired
   private IamClientRepository clientRepo;
@@ -85,6 +94,35 @@ public class FederationRegistrationControllerTests {
       .andDo(print())
       .andExpect(status().isOk())
       .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+  }
+
+  @Test
+  @WithMockOAuthUser(user = "admin", scopes = "iam:admin.write")
+  public void testRelyingPartyClientUpdateThroughApiClientsEndpointReturnsException()
+      throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
+
+    mvc
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+
+    Optional<ClientDetailsEntity> client = clientRepo.findByEntityId(rpEC.getEntityID().getValue());
+    assertTrue(client.isPresent());
+
+    RegisteredClientDTO clientDto = new RegisteredClientDTO();
+    clientDto.setClientName("test-relying_party");
+    clientDto.setScope(Set.of("openid"));
+
+    mvc.perform(put(IAM_CLIENT_API_URL + client.get().getClientId()).contentType("application/json")
+      .content(mapper.writeValueAsString(clientDto))).andExpect(status().isBadRequest());
   }
 
   @Test
