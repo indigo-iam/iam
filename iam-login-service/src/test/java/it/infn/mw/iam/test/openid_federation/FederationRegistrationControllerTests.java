@@ -37,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -74,6 +75,9 @@ public class FederationRegistrationControllerTests {
   @Autowired
   private TaskConfig taskConfig;
 
+  @Value("${iam.issuer}")
+  private String issuer;
+
   @MockBean
   TrustChainService trustChainService;
 
@@ -81,7 +85,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testSuccessfullExplicitClientRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -100,7 +104,7 @@ public class FederationRegistrationControllerTests {
   @WithMockOAuthUser(user = "admin", scopes = "iam:admin.write")
   public void testRelyingPartyClientUpdateThroughApiClientsEndpointReturnsException()
       throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -172,7 +176,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain("http://localhost:8080");
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
