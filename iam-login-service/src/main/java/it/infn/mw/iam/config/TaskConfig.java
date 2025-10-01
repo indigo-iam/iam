@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.config;
 
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -150,10 +150,9 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void disableExpiredClients() {
-    List<ClientDetailsEntity> clients = clientRepo.findByExpirationBefore(LocalDate.now());
+    List<ClientDetailsEntity> clients = clientRepo.findByExpirationBefore(new Date());
     for (ClientDetailsEntity client : clients) {
-      client.setActive(false);
-      clientService.updateClient(client);
+      clientService.updateClientStatus(client, false, "expired_client_task");
     }
   }
 

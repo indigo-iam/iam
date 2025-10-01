@@ -171,29 +171,6 @@ public class MitreSecurityConfig {
   }
 
   @Configuration
-  @Order(14)
-  public static class FederationRegistrationSecurityConfig extends WebSecurityConfigurerAdapter {
-
-    public static final String FED_REG_ENDPOINT = "/iam/api/oid-fed/client-registration/**";
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-      http.requestMatchers()
-        .antMatchers(FED_REG_ENDPOINT)
-        .and()
-        .authorizeRequests()
-        .antMatchers(FED_REG_ENDPOINT)
-        .permitAll()
-        .and()
-        .sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.NEVER)
-        .and()
-        .csrf()
-        .disable();
-    }
-  }
-
-  @Configuration
   @Order(15)
   public static class IntrospectEndpointAuthorizationConfig extends WebSecurityConfigurerAdapter {
 

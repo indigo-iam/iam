@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientFederationMetadataEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -348,6 +348,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
   }
 
+  private boolean hasRelyingParty(RegisteredClientDTO request) {
+    return request.getEntityId() != null;
+  }
+
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
@@ -360,10 +364,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     client.setDynamicallyRegistered(true);
     client.setActive(true);
 
-    if (request.getEntityId() != null) {
-      ClientFederationMetadataEntity clientFedMetadataEntity = new ClientFederationMetadataEntity(
-          client, request.getExpiration(), request.getEntityId());
-      client.setFederationMetadata(clientFedMetadataEntity);
+    if (hasRelyingParty(request)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(client, request.getExpiration(), request.getEntityId());
+      client.setClientRelyingParty(clientRelyingParty);
     }
 
     checkAllowedGrantTypes(request, authentication);
@@ -373,7 +377,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
-    if (request.getEntityId() == null && isAnonymous(authentication)) {
+    if (!hasRelyingParty(request) && isAnonymous(authentication)) {
 
       OAuth2AccessTokenEntity ratEntity = clientTokenService.createRegistrationAccessToken(client);
       tokenService.saveAccessToken(ratEntity);

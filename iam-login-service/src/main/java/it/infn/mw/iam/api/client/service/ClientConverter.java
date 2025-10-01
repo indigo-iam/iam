@@ -130,8 +130,9 @@ public class ClientConverter {
     if (entity.getClientLastUsed() != null) {
       clientDTO.setLastUsed(entity.getClientLastUsed().getLastUsed());
     }
-    if (entity.getFederationMetadata() != null) {
-      clientDTO.setExpiration(entity.getFederationMetadata().getExpiration());
+    if (entity.getClientRelyingParty() != null) {
+      clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
+      clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
     }
     clientDTO.setAccessTokenValiditySeconds(entity.getAccessTokenValiditySeconds());
     clientDTO.setAllowIntrospection(entity.isAllowIntrospection());

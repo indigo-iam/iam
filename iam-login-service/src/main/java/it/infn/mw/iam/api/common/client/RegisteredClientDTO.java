@@ -246,7 +246,7 @@ public class RegisteredClientDTO {
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
   @JsonFormat(shape = JsonFormat.Shape.STRING)
-  private LocalDate expiration;
+  private Date expiration;
 
   @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
@@ -511,11 +511,11 @@ public class RegisteredClientDTO {
     this.lastUsed = lastUsed;
   }
 
-  public LocalDate getExpiration() {
+  public Date getExpiration() {
     return expiration;
   }
 
-  public void setExpiration(LocalDate expiration) {
+  public void setExpiration(Date expiration) {
     this.expiration = expiration;
   }
 

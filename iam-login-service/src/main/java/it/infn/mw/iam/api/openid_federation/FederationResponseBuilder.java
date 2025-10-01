@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -73,14 +71,14 @@ public class FederationResponseBuilder {
 
   public String build(RegisteredClientDTO registered, TrustChain trustChain) throws JOSEException {
 
-    Instant now = Instant.now();
+    Date iat = new Date();
 
-    Instant exp = registered.getExpiration().atStartOfDay(ZoneId.systemDefault()).toInstant();
+    Date exp = registered.getExpiration();
 
     JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder().issuer(opEntityId)
       .subject(trustChain.getLeafSelfStatement().getClaimsSet().getSubject().getValue())
-      .issueTime(Date.from(now))
-      .expirationTime(Date.from(exp))
+      .issueTime(iat)
+      .expirationTime(exp)
       .audience(trustChain.getLeafSelfStatement().getClaimsSet().getSubject().getValue());
 
     claims.claim("trust_anchor", trustChain.getTrustAnchorEntityID().getValue());

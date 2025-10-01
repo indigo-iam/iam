@@ -27,13 +27,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.Optional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientFederationMetadataEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
@@ -111,10 +111,12 @@ public class FederationRegistrationControllerTests {
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId("client-cred");
     assertTrue(client.isPresent());
 
-    LocalDate today = LocalDate.now();
-    ClientFederationMetadataEntity entity = new ClientFederationMetadataEntity(client.get(),
-        today.minusDays(1), fakeChain.getLeafSelfStatement().getEntityID().getValue());
-    client.get().setFederationMetadata(entity);
+    Date now = new Date();
+    long oneDayInMillis = 24 * 60 * 60 * 1000;
+    Date yesterday = new Date(now.getTime() - oneDayInMillis);
+    ClientRelyingPartyEntity entity = new ClientRelyingPartyEntity(client.get(), yesterday,
+        fakeChain.getLeafSelfStatement().getEntityID().getValue());
+    client.get().setClientRelyingParty(entity);
 
     taskConfig.disableExpiredClients();
     assertFalse(client.get().isActive());
