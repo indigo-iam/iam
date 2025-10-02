@@ -21,18 +21,12 @@ public interface AarcOidcScopes extends IamOidcScopes {
 
   String AARC = "aarc";
 
-  /**
-   * @deprecated
-   * Legacy name for {@link AarcOidcScopes#VOPERSON_SCOPED_AFFILIATION}
-   */
-  @Deprecated(since="1.13.0")
   String EDUPERSON_SCOPED_AFFILIATION = AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION;
 
   /**
-   * @deprecated
-   * Legacy name for {@link AarcOidcScopes#ENTITLEMENTS}
+   * @deprecated Legacy name for {@link AarcOidcScopes#ENTITLEMENTS}
    */
-  @Deprecated(since="1.13.0")
+  @Deprecated(since = "1.13.0")
   String EDUPERSON_ENTITLEMENT = AarcExtraClaimNames.EDUPERSON_ENTITLEMENT;
 
   String ENTITLEMENTS = AarcExtraClaimNames.ENTITLEMENTS;
@@ -40,8 +34,6 @@ public interface AarcOidcScopes extends IamOidcScopes {
   String EDUPERSON_ASSURANCE = AarcExtraClaimNames.EDUPERSON_ASSURANCE;
 
   String VOPERSON_ID = AarcExtraClaimNames.VOPERSON_ID;
-
-  String VOPERSON_SCOPED_AFFILIATION = AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION;
 
   String VOPERSON_EXTERNAL_AFFILIATION = AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION;
 

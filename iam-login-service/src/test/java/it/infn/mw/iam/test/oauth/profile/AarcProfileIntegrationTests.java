@@ -21,7 +21,7 @@ import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.EDUPERSON_AS
 import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.EDUPERSON_ENTITLEMENT;
 import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.ENTITLEMENTS;
 import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.VOPERSON_ID;
-import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.VOPERSON_SCOPED_AFFILIATION;
+import static it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -87,6 +87,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   private static final String ASSURANCE = "https://refeds.org/assurance";
   private static final String ASSURANCE_VALUE = "https://refeds.org/assurance/IAP/low";
 
+  private static final String EDUPERSON_SCOPED_VALUE = "member@indigo-dc";
+
   @Autowired
   private MockOAuth2Filter oauth2Filter;
 
@@ -128,7 +130,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     JWTClaimsSet claims = SignedJWT.parse(getPasswordToken(scopes).accessToken()).getJWTClaimsSet();
 
     assertThat(claims.getClaim(SUBJECT), equalTo(TEST_UUID));
-    assertThat(claims.getClaim(VOPERSON_SCOPED_AFFILIATION), nullValue());
+    assertThat(claims.getClaim(EDUPERSON_SCOPED_AFFILIATION), nullValue());
     assertThat(claims.getClaim(EDUPERSON_ENTITLEMENT), nullValue());
 
     List<String> groups = Lists.newArrayList(claims.getStringArrayClaim(ENTITLEMENTS));
@@ -161,9 +163,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ASSURANCE), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_ID), nullValue());
-
-    assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_SCOPED_AFFILIATION),
-        equalTo("member@iam.example"));
+    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION),
+        equalTo(EDUPERSON_SCOPED_VALUE));
   }
 
   @Test
@@ -173,7 +174,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     SignedJWT token = SignedJWT.parse(getPasswordToken(scopes).accessToken());
 
     assertThat(token.getJWTClaimsSet().getClaim("sub"), equalTo(TEST_UUID));
-    assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_SCOPED_AFFILIATION), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_ID), nullValue());
 
@@ -195,7 +196,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_ID),
         equalTo(TEST_UUID + "@" + ORGANISATION_NAME));
     assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_ASSURANCE), nullValue());
-    assertThat(token.getJWTClaimsSet().getClaim(VOPERSON_SCOPED_AFFILIATION), nullValue());
+    assertThat(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION), nullValue());
     assertThat(token.getJWTClaimsSet().getClaim(ENTITLEMENTS), nullValue());
   }
 
@@ -203,7 +204,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   public void testAarcProfileIntrospect() throws Exception {
 
     Set<String> scopes = Sets.newHashSet(OidcScopes.OPENID, OidcScopes.PROFILE, OidcScopes.EMAIL,
-        AarcOidcScopes.VOPERSON_SCOPED_AFFILIATION, AarcOidcScopes.ENTITLEMENTS,
+        AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.ENTITLEMENTS,
         AarcOidcScopes.EDUPERSON_ASSURANCE, AarcOidcScopes.VOPERSON_ID);
     String accessToken = getPasswordToken(scopes).accessToken();
 
@@ -214,7 +215,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo(EDUPERSON_SCOPED_VALUE)))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
@@ -238,7 +239,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo(EDUPERSON_SCOPED_VALUE)))
       .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + EDUPERSON_ENTITLEMENT, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
@@ -262,7 +263,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION).doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS).doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE).doesNotExist())
       .andExpect(jsonPath("$." + VOPERSON_ID).doesNotExist());
@@ -282,7 +283,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION).doesNotExist())
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION).doesNotExist())
       .andExpect(jsonPath("$." + ENTITLEMENTS).doesNotExist())
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE).doesNotExist())
       .andExpect(jsonPath("$." + VOPERSON_ID).doesNotExist());
@@ -301,8 +302,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.sub").exists())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo(EDUPERSON_SCOPED_VALUE)))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
@@ -323,7 +323,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.sub").exists())
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo(EDUPERSON_SCOPED_VALUE)))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
@@ -350,7 +350,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + VOPERSON_ID).isNotEmpty())
       .andExpect(jsonPath("$." + VOPERSON_ID, equalTo(TEST_UUID + "@" + ORGANISATION_NAME)))
-      .andExpect(jsonPath("$." + VOPERSON_SCOPED_AFFILIATION, equalTo("member@iam.example")))
+      .andExpect(jsonPath("$." + EDUPERSON_SCOPED_AFFILIATION, equalTo(EDUPERSON_SCOPED_VALUE)))
       .andExpect(jsonPath("$." + ENTITLEMENTS, hasSize(equalTo(2))))
       .andExpect(jsonPath("$." + ENTITLEMENTS, containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$." + EDUPERSON_ASSURANCE, hasSize(equalTo(2))))
@@ -370,7 +370,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotNull(claims.getClaim(SUBJECT));
     assertNull(claims.getClaim(VOPERSON_ID));
     assertNull(claims.getClaim(ENTITLEMENTS));
-    assertNull(claims.getClaim(VOPERSON_SCOPED_AFFILIATION));
+    assertNull(claims.getClaim(EDUPERSON_SCOPED_AFFILIATION));
     assertNull(claims.getClaim(EDUPERSON_ASSURANCE));
   }
 
@@ -381,13 +381,12 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotNull(claims.getClaim(SUBJECT));
     assertNotNull(claims.getClaim(AarcExtraClaimNames.VOPERSON_ID));
     assertNotNull(claims.getClaim(AarcExtraClaimNames.ENTITLEMENTS));
-    assertNotNull(claims.getClaim(AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION));
+    assertNotNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION));
     assertNotNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_ASSURANCE));
     // no external authentication, expected null
     assertNull(claims.getClaim(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION));
     // null legacy claims
     assertNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_ENTITLEMENT));
-    assertNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION));
   }
 
   @SuppressWarnings("unchecked")
@@ -408,8 +407,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getClaim(ENTITLEMENTS), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim(ENTITLEMENTS),
         containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
-    assertNotNull(claims.getClaim(VOPERSON_SCOPED_AFFILIATION));
-    assertThat(claims.getClaim(VOPERSON_SCOPED_AFFILIATION), is("member@iam.example"));
+    assertNotNull(claims.getClaim(EDUPERSON_SCOPED_AFFILIATION));
+    assertThat(claims.getClaim(EDUPERSON_SCOPED_AFFILIATION), is(EDUPERSON_SCOPED_VALUE));
     assertNotNull(claims.getClaim(EDUPERSON_ASSURANCE));
     assertThat(claims.getClaim(EDUPERSON_ASSURANCE), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim(EDUPERSON_ASSURANCE),
@@ -420,8 +419,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
   @Test
   public void testAarcProfileIdTokenWithLegacyAarcScopes() throws Exception {
 
-    Set<String> scopes = Set.of(OidcScopes.OPENID, AarcOidcScopes.EDUPERSON_ENTITLEMENT,
-        AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION);
+    Set<String> scopes = Set.of(OidcScopes.OPENID, AarcOidcScopes.EDUPERSON_ENTITLEMENT);
     JWTClaimsSet claims = JWTParser.parse(getPasswordToken(scopes).idToken()).getJWTClaimsSet();
 
     assertThat(claims.getClaim(SUBJECT), is(TEST_UUID));
@@ -435,13 +433,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getClaim(ENTITLEMENTS), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim(ENTITLEMENTS),
         containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
-    // legacy scoped affiliation
-    assertThat(claims.getClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION),
-        is("member@iam.example"));
-    // voperson scoped affiliation
-    assertThat(claims.getClaim(AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION),
-        is("member@iam.example"));
     // no other aarc claims
+    assertNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION));
     assertNull(claims.getClaim(AarcExtraClaimNames.EDUPERSON_ASSURANCE));
     assertNull(claims.getClaim(AarcExtraClaimNames.VOPERSON_ID));
     assertNull(claims.getClaim(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION));
@@ -457,6 +450,6 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotNull(token.getJWTClaimsSet().getClaim(VOPERSON_ID));
     assertNotNull(token.getJWTClaimsSet().getClaim(ENTITLEMENTS));
     assertNotNull(token.getJWTClaimsSet().getClaim(EDUPERSON_ASSURANCE));
-    assertNotNull(token.getJWTClaimsSet().getClaim(VOPERSON_SCOPED_AFFILIATION));
+    assertNotNull(token.getJWTClaimsSet().getClaim(EDUPERSON_SCOPED_AFFILIATION));
   }
 }

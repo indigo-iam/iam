@@ -30,7 +30,7 @@ public class AarcScopeClaimTranslationService extends BaseScopeClaimTranslationS
     switch (scope) {
       case AarcOidcScopes.AARC:
         return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.ENTITLEMENTS,
-            AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION,
+            AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
             AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION,
             AarcExtraClaimNames.EDUPERSON_ASSURANCE);
       case AarcOidcScopes.EDUPERSON_ASSURANCE:
@@ -41,11 +41,8 @@ public class AarcScopeClaimTranslationService extends BaseScopeClaimTranslationS
         return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_ID);
       case AarcOidcScopes.VOPERSON_EXTERNAL_AFFILIATION:
         return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
-      case AarcOidcScopes.VOPERSON_SCOPED_AFFILIATION:
-        return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION);
       case AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION:
-        return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
-            AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION);
+        return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION);
       case AarcOidcScopes.EDUPERSON_ENTITLEMENT:
         return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_ENTITLEMENT,
             AarcExtraClaimNames.ENTITLEMENTS);

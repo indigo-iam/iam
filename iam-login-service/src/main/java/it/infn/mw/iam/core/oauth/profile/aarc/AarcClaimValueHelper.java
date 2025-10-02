@@ -44,10 +44,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
   public static final Set<String> DEFAULT_LOA =
       Set.of(REFEDS_ASSURANCE_URI, REFEDS_ASSURANCE_IAP_LOW_URI);
 
-  public static final Set<String> ADDITIONAL_CLAIMS =
-      Set.of(AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.EDUPERSON_ENTITLEMENT,
-          AarcOidcScopes.EDUPERSON_ASSURANCE, AarcOidcScopes.ENTITLEMENTS,
-          AarcOidcScopes.VOPERSON_ID, AarcOidcScopes.VOPERSON_SCOPED_AFFILIATION);
+  public static final Set<String> ADDITIONAL_CLAIMS = Set.of(
+      AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.EDUPERSON_ENTITLEMENT,
+      AarcOidcScopes.EDUPERSON_ASSURANCE, AarcOidcScopes.ENTITLEMENTS, AarcOidcScopes.VOPERSON_ID);
 
   static final String DEFAULT_AFFILIATION_TYPE = "member";
 
@@ -94,9 +93,9 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
       case AarcExtraClaimNames.VOPERSON_ID:
         return format(SCOPED_FORMAT, account.getUserInfo().getSub(),
             getProperties().getOrganisation().getName());
-      case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION, AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION:
+      case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
         return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
-            getProperties().getAarcProfile().getAffiliationScope());
+            getProperties().getOrganisation().getName());
       case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
         Optional<SavedUserAuthentication> userAuth =
             AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());

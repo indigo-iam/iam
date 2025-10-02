@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.joining;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.AUD;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.CLIENT_ID;
@@ -29,7 +30,6 @@ import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionC
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
 import java.text.ParseException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -68,7 +68,9 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     result.put(SUB, claims.getSubject());
     result.put(IAT, claims.getIssueTime());
     result.put(ISS, claims.getIssuer());
-    includeIfNotNull(result, SCOPE, accessToken.getScope().stream().collect(joining(" ")));
+    if (nonNull(accessToken.getScope())) {
+      result.put(SCOPE, accessToken.getScope().stream().map(String::valueOf).collect(joining(" ")));
+    }
     return result;
   }
 
@@ -79,7 +81,14 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     ClientDetailsEntity client = refreshToken.getClient();
     JWTClaimsSet claims = refreshToken.getJwt().getJWTClaimsSet();
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.REFRESH_TOKEN);
-    includeIfNotEmpty(result, SCOPE, refreshToken.getAuthenticationHolder().getScope());
+    if (nonNull(refreshToken.getAuthenticationHolder().getScope())) {
+      result.put(SCOPE,
+          refreshToken.getAuthenticationHolder()
+            .getScope()
+            .stream()
+            .map(String::valueOf)
+            .collect(joining(" ")));
+    }
     return result;
   }
 
@@ -93,29 +102,29 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     Map<String, Object> result = new HashMap<>();
     result.put(TOKEN_TYPE, tokenType);
     result.put(CLIENT_ID, client.getClientId());
-    includeIfNotNull(result, EXP, claims.getExpirationTime());
+    if (nonNull(claims.getExpirationTime())) {
+      result.put(EXP, claims.getExpirationTime().getTime());
+    }
     result.put(JTI, claims.getJWTID());
     Optional<IamAccount> account = loadUserFrom(claims.getSubject());
     if (account.isPresent()) {
       result.put(USERNAME, account.get().getUsername());
     }
-    includeIfNotNull(result, NBF, claims.getNotBeforeTime());
-    includeIfNotEmpty(result, AUD, claims.getAudience());
+    if (nonNull(claims.getNotBeforeTime())) {
+      result.put(NBF, claims.getNotBeforeTime().getTime());
+    }
+    /*
+     * For OAuth 2.0 Token Introspection (RFC 7662), the AUD claim follows the same rules as in JWT
+     * (RFC 7519, section 4.1.3) so it can be either a string (single audience), or an array of
+     * strings (multiple audiences).
+     */
+    if (nonNull(claims.getAudience()) && !claims.getAudience().isEmpty()) {
+      if (claims.getAudience().size() == 1) {
+        result.put(AUD, claims.getAudience().get(0));
+      } else {
+        result.put(AUD, claims.getAudience());
+      }
+    }
     return result;
   }
-
-  protected void includeIfNotNull(Map<String, Object> result, String key, Object value) {
-
-    if (value != null) {
-      result.put(key, String.valueOf(value));
-    }
-  }
-
-  protected void includeIfNotEmpty(Map<String, Object> result, String key, Collection<?> value) {
-
-    if (!value.isEmpty()) {
-      result.put(key, value.stream().map(String::valueOf).collect(joining(" ")));
-    }
-  }
-
 }

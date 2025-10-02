@@ -40,8 +40,8 @@ public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
       IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
       ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
-        scopeClaimTranslationService);
+    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
+        claimValueHelper, scopeClaimTranslationService);
   }
 
   @Override
@@ -50,8 +50,7 @@ public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
     return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, ATTR,
         AarcExtraClaimNames.EDUPERSON_ASSURANCE, AarcExtraClaimNames.ENTITLEMENTS,
         AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
-        AarcExtraClaimNames.VOPERSON_SCOPED_AFFILIATION, AarcExtraClaimNames.VOPERSON_ID,
-        AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
+        AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
   }
 
 }
