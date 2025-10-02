@@ -1248,7 +1248,7 @@ class ClientRegistrationServiceTests {
       service.registerClient(client, userAuth);
     });
 
-    assertTrue(e.getMessage().contains("Invalid JSON:"));
+    assertTrue(e.getMessage().contains("Invalid JSON object"));
 
     RegisteredClientDTO savedClient = null;
     client.setJwk(VALID_JSON_VALUE);

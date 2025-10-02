@@ -160,7 +160,7 @@ class ClientRegistrationAPIControllerTests {
       .perform(post(IAM_CLIENT_REGISTRATION_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
-      .andExpect(jsonPath("$.error", startsWith("Invalid JSON:")));
+      .andExpect(jsonPath("$.error", startsWith("Invalid JSON object")));
 
   }
 

@@ -168,7 +168,7 @@ class ClientManagementServiceTests {
       managementService.saveNewClient(client);
     });
 
-    assertTrue(e.getMessage().contains("Invalid JSON:"));
+    assertTrue(e.getMessage().contains("Invalid JSON object"));
 
     client.setJwk(VALID_JSON_VALUE);
     try {
