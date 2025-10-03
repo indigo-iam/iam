@@ -73,5 +73,6 @@ public class EntityConfigurationEndpointTests {
     assertNotNull(metadata);
     assertNotNull(metadata.get("openid_provider"));
     assertNull(metadata.get("federation_entity"));
+    assertNotNull(metadata.get("openid_relying_party"));
   }
 }

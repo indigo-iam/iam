@@ -91,6 +91,7 @@ public class EntityConfigurationBuilder {
     if (!feMetadata.isEmpty()) {
       metadata.put("federation_entity", feMetadata);
     }
+    metadata.put("openid_relying_party", buildRpMetadata(wellKnownInfo, iamProperties));
 
     try {
       signer = JWKUtils.buildSigner(signingKey)
@@ -164,5 +165,16 @@ public class EntityConfigurationBuilder {
       }
     }
     return feMetadata;
+  }
+
+  private Map<String, Object> buildRpMetadata(Map<String, Object> wellKnownInfo,
+      IamProperties iamProperties) {
+    Map<String, Object> rpMetadata = new HashMap<>();
+    rpMetadata.put("application_type", "web");
+    rpMetadata.put("client_registration_types", List.of("explicit"));
+    rpMetadata.put("redirect_uris",
+        List.of(URI.create(iamProperties.getBaseUrl()).resolve("/openid_connect_login")));
+    rpMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    return rpMetadata;
   }
 }
