@@ -48,6 +48,7 @@ import it.infn.mw.iam.core.web.wellknown.IamWellKnownInfoProvider;
 public class EntityConfigurationBuilder {
 
   private static final JWSAlgorithm alg = JWSAlgorithm.RS256;
+  public static final String JWKS_URI = "jwks_uri";
 
   private final JWSSigner signer;
   private final RSAKey signingKey;
@@ -127,7 +128,7 @@ public class EntityConfigurationBuilder {
     Map<String, Object> opMetadata = new HashMap<>();
     opMetadata.put("issuer", wellKnownInfo.get("issuer"));
     opMetadata.put("authorization_endpoint", wellKnownInfo.get("authorization_endpoint"));
-    opMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    opMetadata.put(JWKS_URI, wellKnownInfo.get(JWKS_URI));
     opMetadata.put("response_types_supported", wellKnownInfo.get("response_types_supported"));
     opMetadata.put("subject_types_supported", wellKnownInfo.get("subject_types_supported"));
     opMetadata.put("id_token_signing_alg_values_supported",
@@ -174,7 +175,7 @@ public class EntityConfigurationBuilder {
     rpMetadata.put("client_registration_types", List.of("explicit"));
     rpMetadata.put("redirect_uris",
         List.of(URI.create(iamProperties.getBaseUrl()).resolve("/openid_connect_login")));
-    rpMetadata.put("jwks_uri", wellKnownInfo.get("jwks_uri"));
+    rpMetadata.put(JWKS_URI, wellKnownInfo.get(JWKS_URI));
     return rpMetadata;
   }
 }
