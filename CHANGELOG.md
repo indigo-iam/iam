@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.3 (2025-10-08)
+
+### What's Fixed
+
+* Fix for [Advisory-EGI-SVG-2025-18](https://advisories.egi.eu/Advisory-EGI-SVG-2025-18)
+* Fix for [Advisory-EGI-SVG-2025-19](https://advisories.egi.eu/Advisory-EGI-SVG-2025-19)
+
 ## 1.12.2 (2025-08-05)
 
 ### What's Changed
