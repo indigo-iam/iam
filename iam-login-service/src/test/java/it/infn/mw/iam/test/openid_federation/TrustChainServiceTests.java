@@ -412,4 +412,25 @@ public class TrustChainServiceTests {
     assertEquals("invalid_trust_chain", ex.getErrorCode());
     assertTrue(ex.getMessage().contains("Failed to fetch entity statement"));
   }
+
+  @Test(expected = InvalidTrustChainException.class)
+  public void testMissingFetchEndpoint() throws JOSEException {
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null);
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, null, null, null);
+    String taEcJwt = taEC.getSignedStatement().serialize();
+
+    when(
+        restTemplate.getForObject("https://rp.example/.well-known/openid-federation", String.class))
+          .thenReturn(rpJwt);
+
+    when(
+        restTemplate.getForObject("https://ta.example/.well-known/openid-federation", String.class))
+          .thenReturn(taEcJwt);
+
+    service.validateFromEntityId("https://rp.example");
+  }
 }

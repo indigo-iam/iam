@@ -64,12 +64,12 @@ public class TrustChainTestFactory {
     if (metadata != null) {
       claims.setRPMetadata(metadata);
     }
-
+    JSONObject federationMetadata = new JSONObject();
+    federationMetadata.put("organization_name", "Org");
     if (fetchEndpoint != null) {
-      JSONObject federationMetadata = new JSONObject();
       federationMetadata.put("federation_fetch_endpoint", fetchEndpoint);
-      claims.setMetadata(FederationMetadataType.FEDERATION_ENTITY, federationMetadata);
     }
+    claims.setMetadata(FederationMetadataType.FEDERATION_ENTITY, federationMetadata);
     if (authorityHints != null && !authorityHints.isEmpty()) {
       claims.setAuthorityHints(authorityHints);
     }
