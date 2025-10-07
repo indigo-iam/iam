@@ -29,6 +29,7 @@ import org.springframework.web.util.UriUtils;
 
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
+import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 
 @Service
 public class TrustChainResolver {
@@ -114,12 +115,13 @@ public class TrustChainResolver {
         EntityStatement superiorEC = fetchEntityConfiguration(superior.getValue());
 
         // 2. Extract fetch_endpoint from the metadata
-        var fedMeta = superiorEC.getClaimsSet().getFederationEntityMetadata();
-        if (fedMeta == null || fedMeta.getFederationAPIEndpointURI() == null) {
+        var fedMeta =
+            superiorEC.getClaimsSet().getMetadata(FederationMetadataType.FEDERATION_ENTITY);
+        if (fedMeta == null || fedMeta.get("federation_fetch_endpoint") == null) {
           throw new InvalidTrustChainException("invalid_trust_chain",
               "No fetch_endpoint for " + superior.getValue());
         }
-        String fetchEndpoint = fedMeta.getFederationAPIEndpointURI().toASCIIString();
+        String fetchEndpoint = fedMeta.get("federation_fetch_endpoint").toString();
 
         // 3. Make the request fetch?sub=...
         EntityStatement subordinateES =

@@ -30,10 +30,12 @@ import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaimsSet;
-import com.nimbusds.openid.connect.sdk.federation.entities.FederationEntityMetadata;
+import com.nimbusds.openid.connect.sdk.federation.entities.FederationMetadataType;
 import com.nimbusds.openid.connect.sdk.federation.registration.ClientRegistrationType;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
+
+import net.minidev.json.JSONObject;
 
 public class TrustChainTestFactory {
 
@@ -51,7 +53,7 @@ public class TrustChainTestFactory {
 
   // self-issued EC: iss == sub, jwks = own key
   public static EntityStatement selfEC(String entity, Date iat, Date exp,
-      List<EntityID> authorityHints, URI fetchEndpoint, OIDCClientMetadata metadata,
+      List<EntityID> authorityHints, String fetchEndpoint, OIDCClientMetadata metadata,
       String audience) throws JOSEException {
     RSAKey key = keyFor(entity);
     EntityID eid = new EntityID(entity);
@@ -62,8 +64,11 @@ public class TrustChainTestFactory {
     if (metadata != null) {
       claims.setRPMetadata(metadata);
     }
+
     if (fetchEndpoint != null) {
-      claims.setFederationEntityMetadata(new FederationEntityMetadata(fetchEndpoint));
+      JSONObject federationMetadata = new JSONObject();
+      federationMetadata.put("federation_fetch_endpoint", fetchEndpoint);
+      claims.setMetadata(FederationMetadataType.FEDERATION_ENTITY, federationMetadata);
     }
     if (authorityHints != null && !authorityHints.isEmpty()) {
       claims.setAuthorityHints(authorityHints);
