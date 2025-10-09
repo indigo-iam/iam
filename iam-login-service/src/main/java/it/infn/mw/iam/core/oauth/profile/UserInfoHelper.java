@@ -26,6 +26,13 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 public interface UserInfoHelper {
 
   /**
+   * Returns the list of claim names required to be added to the UserInfo response
+   * 
+   * @return the list of required claims
+   */
+  Set<String> getRequiredClaims();
+
+  /**
    * Resolve scope to claim names and their value (if available)
    * 
    * @param scopes The collection of scopes from which computing the related claims
@@ -33,7 +40,6 @@ public interface UserInfoHelper {
    * @param auth The current Authentication info that can contain also the external provider additionalInfo
    * @return the map of claim names and values
    */
-
   Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
       OAuth2Authentication auth);
 

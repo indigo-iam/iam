@@ -92,7 +92,6 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamOidcId;
 import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
-import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
@@ -370,8 +369,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   private void deleteTotpMfa(IamAccount account) {
-    iamTotpMfaRepository.findByAccount(account)
-        .ifPresent(iamTotpMfaRepository::delete);
+    iamTotpMfaRepository.findByAccount(account).ifPresent(iamTotpMfaRepository::delete);
   }
 
   @Override
@@ -507,6 +505,11 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   @Override
   public Optional<IamAccount> findByUuid(String uuid) {
     return accountRepo.findByUuid(uuid);
+  }
+
+  @Override
+  public Optional<IamAccount> findByUsername(String username) {
+    return accountRepo.findByUsername(username);
   }
 
   @Override
@@ -701,34 +704,30 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   @Override
   public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
-    List<RegisteredGroupDTO> groupDTOs = account.getGroups().stream()
-        .sorted(Comparator.comparing(m -> m.getGroup().getName()))
-        .map(membership -> {
-          IamGroup group = membership.getGroup();
-          return new RegisteredGroupDTO.Builder()
-              .id(group.getId())
-              .uuid(group.getUuid())
-              .name(group.getName())
-              .description(group.getDescription())
-              .parentGroup(group.getParentGroup())
-              .childrenGroups(group.getChildrenGroups())
-              .labels(group.getLabels())
-              .joiningDate(membership.getCreationTime())
-              .scopePoliciesDescription(group.getScopePolicies())
-              .build();
-        })
-        .toList();
-    
+    List<RegisteredGroupDTO> groupDTOs = account.getGroups()
+      .stream()
+      .sorted(Comparator.comparing(m -> m.getGroup().getName()))
+      .map(membership -> {
+        IamGroup group = membership.getGroup();
+        return new RegisteredGroupDTO.Builder().id(group.getId())
+          .uuid(group.getUuid())
+          .name(group.getName())
+          .description(group.getDescription())
+          .parentGroup(group.getParentGroup())
+          .childrenGroups(group.getChildrenGroups())
+          .labels(group.getLabels())
+          .joiningDate(membership.getCreationTime())
+          .scopePoliciesDescription(group.getScopePolicies())
+          .build();
+      })
+      .toList();
+
     long total = groupDTOs.size();
     int start = Math.max(0, (int) pageable.getOffset() - 1);
     int end = Math.min((start + pageable.getPageSize()), groupDTOs.size());
     List<RegisteredGroupDTO> pagedGroups = start <= end ? groupDTOs.subList(start, end) : List.of();
 
-    return new ListResponseDTO<>(
-        total,
-        pageable.getPageSize(),
-        start,
-        pagedGroups);
+    return new ListResponseDTO<>(total, pageable.getPageSize(), start, pagedGroups);
   }
 
   @Override

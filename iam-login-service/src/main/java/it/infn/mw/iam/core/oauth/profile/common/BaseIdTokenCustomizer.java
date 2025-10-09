@@ -16,15 +16,17 @@
 package it.infn.mw.iam.core.oauth.profile.common;
 
 import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
-import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ACR;
+import static it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames.ACR;
 import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.AMR;
 
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -32,6 +34,7 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,12 +106,16 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
 
     Objects.requireNonNull(account, "Account must not be null");
 
-    Set<String> requiredClaims =
+    Set<String> requestedClaims =
         getScopeClaimTranslationService().getClaimsForScopeSet(request.getScope());
 
-    for (String claim : requiredClaims) {
-      idClaims.claim(claim, getClaimValueHelper().resolveClaim(claim, account,
-          accessToken.getAuthenticationHolder().getAuthentication()));
+    Optional<IamAccount> optAccount = Optional.of(account);
+    OAuth2Authentication oauth2auth = accessToken.getAuthenticationHolder().getAuthentication();
+    for (String claim : requestedClaims) {
+      Object claimValue = getClaimValueHelper().resolveClaim(claim, oauth2auth, optAccount);
+      if (isValidClaimValue(claimValue)) {
+        idClaims.claim(claim, claimValue);
+      }
     }
 
     includeAmrAndAcrClaimsIfNeeded(request, idClaims, accessToken);
@@ -117,4 +124,11 @@ public abstract class BaseIdTokenCustomizer implements IDTokenCustomizer {
       .minus(Duration.ofSeconds(properties.getAccessToken().getNbfOffsetSeconds()))));
   }
 
+  protected boolean isValidClaimValue(Object value) {
+
+    if (value instanceof Collection<?> coll) {
+      return !coll.isEmpty();
+    }
+    return value != null;
+  }
 }

@@ -17,6 +17,9 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import java.util.Set;
 
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+
 import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.profile.common.BaseScopeClaimTranslationService;
@@ -27,28 +30,55 @@ public class AarcScopeClaimTranslationService extends BaseScopeClaimTranslationS
   @Override
   public Set<String> getClaimsForScope(String scope) {
 
+    // @formatter:off
     switch (scope) {
       case AarcOidcScopes.AARC:
-        return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.ENTITLEMENTS,
+        return Sets.newHashSet(
+            AarcExtraClaimNames.AARC_VER,
+            AarcExtraClaimNames.EDUPERSON_ASSURANCE,
             AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
+            AarcExtraClaimNames.ENTITLEMENTS,
+            AarcExtraClaimNames.ORGANIZATION_NAME,
             AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION,
-            AarcExtraClaimNames.EDUPERSON_ASSURANCE);
+            StandardClaimNames.NAME,
+            StandardClaimNames.GIVEN_NAME,
+            StandardClaimNames.FAMILY_NAME,
+            StandardClaimNames.EMAIL
+            );
       case AarcOidcScopes.EDUPERSON_ASSURANCE:
-        return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_ASSURANCE);
+        return Sets.newHashSet(
+            AarcExtraClaimNames.EDUPERSON_ASSURANCE
+            );
       case AarcOidcScopes.ENTITLEMENTS:
-        return Sets.newHashSet(AarcExtraClaimNames.ENTITLEMENTS);
-      case AarcOidcScopes.VOPERSON_ID:
-        return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_ID);
+        return Sets.newHashSet(
+            AarcExtraClaimNames.ENTITLEMENTS
+            );
       case AarcOidcScopes.VOPERSON_EXTERNAL_AFFILIATION:
-        return Sets.newHashSet(AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
+        return Sets.newHashSet(
+            AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION
+            );
       case AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION:
-        return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION);
+        return Sets.newHashSet(
+            AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION
+            );
       case AarcOidcScopes.EDUPERSON_ENTITLEMENT:
-        return Sets.newHashSet(AarcExtraClaimNames.EDUPERSON_ENTITLEMENT,
+        return Sets.newHashSet(
+            AarcExtraClaimNames.EDUPERSON_ENTITLEMENT,
             AarcExtraClaimNames.ENTITLEMENTS);
+      case OidcScopes.PROFILE:
+        return merge(scope, Sets.newHashSet(
+            AarcExtraClaimNames.AARC_VER,
+            AarcExtraClaimNames.VOPERSON_ID));
       default:
         return super.getClaimsForScope(scope);
     }
+    // @formatter:on
   }
 
+  protected Set<String> merge(String scope, Set<String> extraClaims) {
+
+    Set<String> merged = super.getClaimsForScope(scope);
+    merged.addAll(extraClaims);
+    return merged;
+  }
 }

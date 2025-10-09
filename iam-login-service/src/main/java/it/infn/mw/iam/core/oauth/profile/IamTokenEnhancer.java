@@ -20,17 +20,17 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.mitre.openid.connect.service.UserInfoService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
@@ -41,6 +41,10 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
+
 @SuppressWarnings("deprecation")
 public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
@@ -49,7 +53,10 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
   public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
   @Autowired
-  private UserInfoService userInfoService;
+  private IamAccountService accountService;
+
+  @Autowired
+  private ClientService clientService;
 
   @Autowired
   private OIDCTokenService connectTokenService;
@@ -111,27 +118,31 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
   public OAuth2AccessToken enhance(OAuth2AccessToken accessToken,
       OAuth2Authentication authentication) {
 
-    OAuth2Request originalAuthRequest = authentication.getOAuth2Request();
-
-    String username = authentication.getName();
-    String clientId = originalAuthRequest.getClientId();
-
-    UserInfo userInfo = userInfoService.getByUsernameAndClientId(username, clientId);
-
-    Instant tokenIssueInstant = clock.instant();
-
     OAuth2AccessTokenEntity accessTokenEntity = (OAuth2AccessTokenEntity) accessToken;
 
-    ClientDetailsEntity client =
-        getClientService().loadClientByClientId(authentication.getOAuth2Request().getClientId());
+    OAuth2Request originalAuthRequest = authentication.getOAuth2Request();
+
+    String clientId = originalAuthRequest.getClientId();
+
+    ClientDetailsEntity client = clientService.findClientByClientId(clientId)
+        .orElseThrow(() -> OAuth2Exception.create(OAuth2Exception.INVALID_CLIENT,
+            "Invalid client id " + clientId));
+
+    Instant tokenIssueInstant = clock.instant();
 
     JWTProfile profile = profileResolver.resolveProfile(client.getScope());
 
     accessTokenEntity
       .setExpiration(computeExpTime(authentication, accessTokenEntity, tokenIssueInstant));
 
+    Optional<IamAccount> account = Optional.empty();
+    if (!authentication.isClientOnly()) {
+      String username = authentication.getName();
+      account = accountService.findByUsername(username);
+    }
+
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
-      .buildAccessToken(accessTokenEntity, authentication, userInfo, tokenIssueInstant);
+      .buildAccessToken(accessTokenEntity, authentication, account, tokenIssueInstant);
 
     accessTokenEntity.setJwt(signClaims(atClaims));
     accessTokenEntity.hashMe();
@@ -146,10 +157,10 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
      * OIDC and not OAuth, so we check for that as well.
      */
     if (originalAuthRequest.getScope().contains(SystemScopeService.OPENID_SCOPE)
-        && !authentication.isClientOnly()) {
+        && account.isPresent()) {
 
       JWT idToken = connectTokenService.createIdToken(client, originalAuthRequest,
-          Date.from(tokenIssueInstant), userInfo.getSub(), accessTokenEntity);
+          Date.from(tokenIssueInstant), account.get().getUuid(), accessTokenEntity);
 
       accessTokenEntity.setIdToken(idToken);
     }

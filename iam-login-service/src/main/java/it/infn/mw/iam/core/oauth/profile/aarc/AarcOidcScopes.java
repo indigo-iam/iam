@@ -33,8 +33,6 @@ public interface AarcOidcScopes extends IamOidcScopes {
 
   String EDUPERSON_ASSURANCE = AarcExtraClaimNames.EDUPERSON_ASSURANCE;
 
-  String VOPERSON_ID = AarcExtraClaimNames.VOPERSON_ID;
-
   String VOPERSON_EXTERNAL_AFFILIATION = AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION;
 
 }

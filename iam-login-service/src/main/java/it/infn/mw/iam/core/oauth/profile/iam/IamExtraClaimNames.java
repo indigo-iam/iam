@@ -15,20 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.profile.iam;
 
-import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+import it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames;
 
-public interface IamExtraClaimNames extends StandardClaimNames {
+public interface IamExtraClaimNames extends BaseExtraClaimNames {
 
-  String ACR = "acr";
-  String ACT = "act";
   String AFFILIATION = "affiliation";
   String AMR = "amr";
   String ATTR = "attr";
-  String CLIENT_ID = "client_id";
   String EXTERNAL_AUTHN = "external_authn";
   String GROUPS = "groups";
   String LAST_LOGIN_AT = "last_login_at";
-  String SCOPE = "scope";
   String SSH_KEYS = "ssh_keys";
   String ORGANISATION_NAME = "organisation_name";
 }

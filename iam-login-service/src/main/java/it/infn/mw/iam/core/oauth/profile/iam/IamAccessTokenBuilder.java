@@ -31,17 +31,15 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 public class IamAccessTokenBuilder extends BaseAccessTokenBuilder {
 
-  public IamAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper,
+  public IamAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper, scopeClaimTranslationService);
+    super(properties, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+        scopeClaimTranslationService);
   }
 
   @Override

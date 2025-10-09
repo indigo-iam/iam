@@ -75,21 +75,23 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
+  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+      Optional<IamAccount> account) {
 
     switch (claimName) {
       case ORGANISATION_NAME:
         return properties.getOrganisation().getName();
       case LAST_LOGIN_AT:
-        return account != null ? account.getLastLoginTime() : null;
+        return account.isPresent() ? account.get().getLastLoginTime() : null;
       case AFFILIATION:
-        return account != null ? account.getAffiliation() : null;
+        return account.isPresent() ? account.get().getUserInfo().getAffiliation() : null;
       case GROUPS:
-        return account != null ? getGroupNames(account.getUserInfo().getGroups()) : null;
+        return account.isPresent() ? getGroupNames(account.get().getUserInfo().getGroups()) : null;
       case SSH_KEYS:
-        return account != null ? getSshKeysFilteredSet(account.getSshKeys()) : null;
+        return account.isPresent() ? getSshKeysFilteredSet(account.get().getSshKeys()) : null;
       case ATTR:
-        return account != null ? attrHelper.getAttributeMapFromUserInfo(account.getUserInfo()) : null;
+        return account != null ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
+            : null;
       case EXTERNAL_AUTHN:
         Optional<SavedUserAuthentication> userAuth =
             AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
@@ -98,7 +100,7 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
         }
         return null;
       default:
-        return super.resolveClaim(claimName, account, auth);
+        return super.resolveClaim(claimName, auth, account);
     }
   }
 

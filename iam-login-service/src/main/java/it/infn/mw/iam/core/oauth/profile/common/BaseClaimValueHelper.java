@@ -15,35 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.ADDRESS;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.BIRTHDATE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL_VERIFIED;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.FAMILY_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.GENDER;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.GIVEN_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.LOCALE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.MIDDLE_NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NICKNAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PHONE_NUMBER;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PHONE_NUMBER_VERIFIED;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PICTURE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PROFILE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.SUB;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.UPDATED_AT;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.WEBSITE;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.ZONEINFO;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import com.nimbusds.jwt.JWTClaimNames;
 
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -69,83 +50,78 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
       Set.of(StandardClaimNames.PHONE_NUMBER, StandardClaimNames.PHONE_NUMBER_VERIFIED);
 
   @Override
-  public Map<String, Object> resolveClaims(Set<String> claimNames, IamAccount account,
-      OAuth2Authentication auth) {
+  public Map<String, Object> resolveClaims(Set<String> claimNames,
+      OAuth2Authentication auth, Optional<IamAccount> account) {
 
     Map<String, Object> claims = new HashMap<>();
-    for (String claim : claimNames) {
-      Object value = resolveClaim(claim, account, auth);
-      if (value instanceof Collection<?> valueAsCollection) {
-        includeIfNotEmpty(claims, claim, valueAsCollection);
-      } else {
-        includeIfNotNull(claims, claim, value);
-      }
-    }
+    claimNames.forEach(
+        claimName -> includeIfValid(claims, claimName, resolveClaim(claimName, auth, account)));
     return claims;
   }
 
   @Override
-  public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
+  public Object resolveClaim(String claimName, OAuth2Authentication auth, Optional<IamAccount> account) {
 
-    if (Objects.isNull(claimName) || Objects.isNull(account)) {
+    if (account.isEmpty()) {
       return null;
     }
     switch (claimName) {
-      case SUB:
-        return account.getUuid();
-      case NAME:
-        return account.getUserInfo().getName();
-      case EMAIL:
-        return account.getUserInfo().getEmail();
-      case EMAIL_VERIFIED:
-        return account.getUserInfo().getEmailVerified();
-      case PREFERRED_USERNAME:
-        return account.getUsername();
-      case GIVEN_NAME:
-        return account.getUserInfo().getGivenName();
-      case MIDDLE_NAME:
-        return account.getUserInfo().getMiddleName();
-      case FAMILY_NAME:
-        return account.getUserInfo().getFamilyName();
-      case NICKNAME:
-        return account.getUserInfo().getNickname();
-      case PROFILE:
-        return account.getUserInfo().getProfile();
-      case PICTURE:
-        return account.getUserInfo().getPicture();
-      case WEBSITE:
-        return account.getUserInfo().getWebsite();
-      case GENDER:
-        return account.getUserInfo().getGender();
-      case BIRTHDATE:
-        return account.getUserInfo().getBirthdate();
-      case ZONEINFO:
-        return account.getUserInfo().getZoneinfo();
-      case LOCALE:
-        return account.getUserInfo().getLocale();
-      case UPDATED_AT:
-        return account.getLastUpdateTime().getTime();
-      case ADDRESS:
-        return account.getUserInfo().getAddress();
-      case PHONE_NUMBER:
-        return account.getUserInfo().getPhoneNumber();
-      case PHONE_NUMBER_VERIFIED:
-        return account.getUserInfo().getPhoneNumberVerified();
+      case JWTClaimNames.SUBJECT:
+        return account.get().getUuid();
+      case StandardClaimNames.NAME:
+        return account.get().getUserInfo().getName();
+      case StandardClaimNames.EMAIL:
+        return account.get().getUserInfo().getEmail();
+      case StandardClaimNames.EMAIL_VERIFIED:
+        return account.get().getUserInfo().getEmailVerified();
+      case StandardClaimNames.PREFERRED_USERNAME:
+        return account.get().getUsername();
+      case StandardClaimNames.GIVEN_NAME:
+        return account.get().getUserInfo().getGivenName();
+      case StandardClaimNames.MIDDLE_NAME:
+        return account.get().getUserInfo().getMiddleName();
+      case StandardClaimNames.FAMILY_NAME:
+        return account.get().getUserInfo().getFamilyName();
+      case StandardClaimNames.NICKNAME:
+        return account.get().getUserInfo().getNickname();
+      case StandardClaimNames.PROFILE:
+        return account.get().getUserInfo().getProfile();
+      case StandardClaimNames.PICTURE:
+        return account.get().getUserInfo().getPicture();
+      case StandardClaimNames.WEBSITE:
+        return account.get().getUserInfo().getWebsite();
+      case StandardClaimNames.GENDER:
+        return account.get().getUserInfo().getGender();
+      case StandardClaimNames.BIRTHDATE:
+        return account.get().getUserInfo().getBirthdate();
+      case StandardClaimNames.ZONEINFO:
+        return account.get().getUserInfo().getZoneinfo();
+      case StandardClaimNames.LOCALE:
+        return account.get().getUserInfo().getLocale();
+      case StandardClaimNames.UPDATED_AT:
+        return account.get().getLastUpdateTime().getTime();
+      case StandardClaimNames.ADDRESS:
+        return account.get().getUserInfo().getAddress();
+      case StandardClaimNames.PHONE_NUMBER:
+        return account.get().getUserInfo().getPhoneNumber();
+      case StandardClaimNames.PHONE_NUMBER_VERIFIED:
+        return account.get().getUserInfo().getPhoneNumberVerified();
       default:
         return null;
     }
   }
 
-  protected void includeIfNotNull(Map<String, Object> claims, String key, Object value) {
+  public boolean isValidClaimValue(Object value) {
 
-    if (value != null) {
-      claims.putIfAbsent(key, value);
+    if (value instanceof Collection<?> coll) {
+      return !coll.isEmpty();
     }
+    return value != null;
   }
 
-  protected void includeIfNotEmpty(Map<String, Object> claims, String key, Collection<?> value) {
+  protected void includeIfValid(Map<String, Object> claims, String key, Object value) {
 
-    if (!value.isEmpty()) {
+    if (isValidClaimValue(value)) {
       claims.put(key, value);
     }
   }

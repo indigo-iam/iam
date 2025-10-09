@@ -15,17 +15,40 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import java.util.Optional;
+
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.oauth2.provider.OAuth2Request;
+
+import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
-import it.infn.mw.iam.core.oauth.profile.iam.IamIdTokenCustomizer;
+import it.infn.mw.iam.core.oauth.profile.common.BaseIdTokenCustomizer;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
-public class AarcIdTokenCustomizer extends IamIdTokenCustomizer {
+@SuppressWarnings("deprecation")
+public class AarcIdTokenCustomizer extends BaseIdTokenCustomizer {
 
   public AarcIdTokenCustomizer(IamProperties properties, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
     super(properties, claimValueHelper, scopeClaimTranslationService);
   }
 
+  @Override
+  public void customizeIdTokenClaims(Builder idClaims, ClientDetailsEntity client,
+      OAuth2Request request, String sub, OAuth2AccessTokenEntity accessToken, IamAccount account) {
+
+    super.customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);
+
+    AarcExtraClaimNames.ID_TOKEN_REQUIRED_CLAIMS.forEach(claimName -> {
+      Object claimValue = getClaimValueHelper().resolveClaim(claimName,
+          accessToken.getAuthenticationHolder().getAuthentication(), Optional.of(account));
+      if (getClaimValueHelper().isValidClaimValue(claimValue)) {
+        idClaims.claim(claimName, claimValue);
+      }
+    });
+  }
 }

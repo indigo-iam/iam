@@ -38,15 +38,12 @@ import it.infn.mw.iam.persistence.model.IamUserInfo;
 @SuppressWarnings("deprecation")
 public class AarcClaimValueHelper extends IamClaimValueHelper {
 
+  public static final String AARC_VERSION_URI = "https://aarc-community.org/attribute/profile/version/1.0";
   public static final String REFEDS_ASSURANCE_URI = "https://refeds.org/assurance";
   public static final String REFEDS_ASSURANCE_IAP_LOW_URI = "https://refeds.org/assurance/IAP/low";
 
   public static final Set<String> DEFAULT_LOA =
       Set.of(REFEDS_ASSURANCE_URI, REFEDS_ASSURANCE_IAP_LOW_URI);
-
-  public static final Set<String> ADDITIONAL_CLAIMS = Set.of(
-      AarcOidcScopes.EDUPERSON_SCOPED_AFFILIATION, AarcOidcScopes.EDUPERSON_ENTITLEMENT,
-      AarcOidcScopes.EDUPERSON_ASSURANCE, AarcOidcScopes.ENTITLEMENTS, AarcOidcScopes.VOPERSON_ID);
 
   static final String DEFAULT_AFFILIATION_TYPE = "member";
 
@@ -81,40 +78,48 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
+  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+      Optional<IamAccount> account) {
 
     final String SCOPED_FORMAT = "%s@%s";
 
-    switch (claimName) {
-      case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
-        return DEFAULT_LOA;
-      case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
-        return resolveGroups(account.getUserInfo());
-      case AarcExtraClaimNames.VOPERSON_ID:
-        return format(SCOPED_FORMAT, account.getUserInfo().getSub(),
-            getProperties().getOrganisation().getName());
-      case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
-        return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
-            getProperties().getOrganisation().getName());
-      case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
-        Optional<SavedUserAuthentication> userAuth =
-            AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
-        if (userAuth.isPresent()) {
-          Set<String> scopedAffiliations = new HashSet<>();
-          if (account.getUserInfo().getAffiliation() != null) {
-            scopedAffiliations.add(format(SCOPED_FORMAT, account.getUserInfo().getAffiliation(),
-                getProperties().getOrganisation().getName()));
+    if (account.isPresent()) {
+      switch (claimName) {
+        case AarcExtraClaimNames.AARC_VER:
+          return AARC_VERSION_URI;
+        case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
+          return DEFAULT_LOA;
+        case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
+          return resolveGroups(account.get().getUserInfo());
+        case AarcExtraClaimNames.VOPERSON_ID:
+          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(),
+              getProperties().getOrganisation().getName());
+        case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
+          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
+              getProperties().getOrganisation().getName());
+        case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
+          Optional<SavedUserAuthentication> userAuth =
+              AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
+          if (userAuth.isPresent()) {
+            Set<String> scopedAffiliations = new HashSet<>();
+            if (account.get().getUserInfo().getAffiliation() != null) {
+              scopedAffiliations
+                .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
+                    getProperties().getOrganisation().getName()));
+            }
+            String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
+                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+            if (externalScopedAffiliation != null) {
+              scopedAffiliations.add(externalScopedAffiliation);
+            }
+            return scopedAffiliations;
           }
-          String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
-              Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
-          if (externalScopedAffiliation != null) {
-            scopedAffiliations.add(externalScopedAffiliation);
-          }
-          return scopedAffiliations;
-        }
-        return null;
-      default:
-        return super.resolveClaim(claimName, account, auth);
+          return null;
+        default:
+          return super.resolveClaim(claimName, auth, account);
+      }
+    } else {
+      return super.resolveClaim(claimName, auth, account);
     }
   }
 

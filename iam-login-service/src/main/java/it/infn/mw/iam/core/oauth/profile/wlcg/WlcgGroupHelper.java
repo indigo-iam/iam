@@ -53,12 +53,8 @@ public class WlcgGroupHelper {
 
   private static boolean wantsImplicitGroups(Set<String> scopes) {
     return scopes.contains(WlcgOidcScopes.WLCG)
-        || (scopes.stream().anyMatch(WlcgGroupHelper::isWlcgGroupScope)
+        || (scopes.stream().anyMatch(WlcgOidcScopes::isWlcgGroupScope)
             && !scopes.contains(WlcgOidcScopes.WLCG_GROUPS));
-  }
-
-  private static boolean isWlcgGroupScope(String scope) {
-    return scope.startsWith(WlcgOidcScopes.WLCG_GROUPS);
   }
 
   private static Stream<IamGroup> addCatchallGroupScope(Set<IamGroup> groups) {
@@ -77,7 +73,7 @@ public class WlcgGroupHelper {
 
   private static Stream<IamGroup> resolveGroupStream(Set<String> scopes, Set<IamGroup> groups) {
     Stream<IamGroup> groupStream = scopes.stream()
-      .filter(WlcgGroupHelper::isWlcgGroupScope)
+      .filter(WlcgOidcScopes::isWlcgGroupScope)
       .flatMap(s -> handleGroupScope(s, groups));
 
     if (wantsImplicitGroups(scopes)) {
@@ -124,7 +120,7 @@ public class WlcgGroupHelper {
   public static void validateGroupScopes(OAuth2Request request) {
     request.getScope()
       .stream()
-      .filter(WlcgGroupHelper::isWlcgGroupScope)
+      .filter(WlcgOidcScopes::isWlcgGroupScope)
       .forEach(WlcgGroupHelper::validateGroupScope);
   }
 

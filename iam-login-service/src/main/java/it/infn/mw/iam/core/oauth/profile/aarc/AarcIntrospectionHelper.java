@@ -17,19 +17,24 @@ package it.infn.mw.iam.core.oauth.profile.aarc;
 
 import java.text.ParseException;
 import java.util.Map;
+import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
 
+  private final ClaimValueHelper claimValueHelper;
 
-  public AarcIntrospectionHelper(IamAccountService accountService) {
+  public AarcIntrospectionHelper(ClaimValueHelper claimValueHelper, IamAccountService accountService) {
     super(accountService);
+    this.claimValueHelper = claimValueHelper;
   }
 
   @Override
@@ -38,6 +43,23 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
 
     Map<String, Object> claims =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
+
+    final Optional<IamAccount> account;
+    if (accessToken.getAuthenticationHolder().getUserAuth() != null) {
+      String subject = accessToken.getJwt().getJWTClaimsSet().getSubject();
+      account = getAccountService().findByUuid(subject);
+    } else {
+      account = Optional.empty();
+    }
+
+    AarcExtraClaimNames.INTROSPECTION_REQUIRED_CLAIMS.forEach(claimName -> {
+      Object claimValue = claimValueHelper.resolveClaim(claimName,
+          accessToken.getAuthenticationHolder().getAuthentication(), account);
+      if (claimValueHelper.isValidClaimValue(claimValue)) {
+        claims.putIfAbsent(claimName, claimValue);
+      }
+    });
+
     // add all the others avoiding duplicates/override
     accessToken.getJwt().getJWTClaimsSet().getClaims().forEach(claims::putIfAbsent);
     return claims;

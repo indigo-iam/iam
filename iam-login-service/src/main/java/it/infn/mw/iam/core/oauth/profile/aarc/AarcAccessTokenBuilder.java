@@ -21,36 +21,47 @@ import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.E
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
 import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 
 @SuppressWarnings("deprecation")
 public class AarcAccessTokenBuilder extends BaseAccessTokenBuilder {
 
-  public AarcAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper,
+  public AarcAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper, scopeClaimTranslationService);
+    super(properties, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+        scopeClaimTranslationService);
   }
 
   @Override
   public Set<String> getAdditionalAuthnInfoClaims() {
 
-    return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, ATTR,
+    return Set.of(EMAIL, PREFERRED_USERNAME, ORGANISATION_NAME, ATTR,
         AarcExtraClaimNames.EDUPERSON_ASSURANCE, AarcExtraClaimNames.ENTITLEMENTS,
         AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION,
         AarcExtraClaimNames.VOPERSON_ID, AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION);
+  }
+
+  @Override
+  public Set<String> getRequiredClaims() {
+
+    return AarcExtraClaimNames.ACCESS_TOKEN_REQUIRED_CLAIMS;
   }
 
 }

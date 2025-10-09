@@ -15,9 +15,17 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
+import java.util.Set;
 
-public interface AarcExtraClaimNames extends IamExtraClaimNames {
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+
+import com.nimbusds.jwt.JWTClaimNames;
+
+import it.infn.mw.iam.core.oauth.profile.common.BaseExtraClaimNames;
+
+public interface AarcExtraClaimNames extends BaseExtraClaimNames {
+
+  String AARC_VER = "aarc_ver";
 
   String EDUPERSON_ASSURANCE = "eduperson_assurance";
 
@@ -31,8 +39,23 @@ public interface AarcExtraClaimNames extends IamExtraClaimNames {
 
   String ENTITLEMENTS = "entitlements";
 
+  String ORGANIZATION_NAME = "organization_name";
+
   String VOPERSON_ID = "voperson_id";
 
   String VOPERSON_EXTERNAL_AFFILIATION = "voperson_external_affiliation";
 
+  public static final Set<String> ACCESS_TOKEN_REQUIRED_CLAIMS =
+      Set.of(VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS);
+
+  public static final Set<String> ID_TOKEN_REQUIRED_CLAIMS =
+      Set.of(VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS);
+
+  public static final Set<String> INTROSPECTION_REQUIRED_CLAIMS =
+      Set.of(AARC_VER, VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS, VOPERSON_EXTERNAL_AFFILIATION);
+
+  public static final Set<String> USERINFO_REQUIRED_CLAIMS =
+      Set.of(AARC_VER, VOPERSON_ID, EDUPERSON_ASSURANCE, ENTITLEMENTS, ORGANIZATION_NAME,
+          VOPERSON_EXTERNAL_AFFILIATION, JWTClaimNames.SUBJECT, StandardClaimNames.NAME, StandardClaimNames.GIVEN_NAME,
+          StandardClaimNames.FAMILY_NAME, StandardClaimNames.EMAIL);
 }

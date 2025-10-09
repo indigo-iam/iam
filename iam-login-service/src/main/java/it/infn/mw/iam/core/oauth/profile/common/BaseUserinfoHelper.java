@@ -15,11 +15,15 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+
+import com.nimbusds.jwt.JWTClaimNames;
 
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
@@ -53,10 +57,17 @@ public abstract class BaseUserinfoHelper implements UserInfoHelper {
   }
 
   @Override
+  public Set<String> getRequiredClaims() {
+    return Set.of(JWTClaimNames.SUBJECT);
+  }
+
+  @Override
   public Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
       OAuth2Authentication auth) {
 
-    Set<String> requiredClaims = scopeTranslationService.getClaimsForScopeSet(scopes);
-    return claimValueHelper.resolveClaims(requiredClaims, account, auth);
+    Set<String> claimNames = new HashSet<>();
+    claimNames.addAll(getRequiredClaims());
+    claimNames.addAll(scopeTranslationService.getClaimsForScopeSet(scopes));
+    return claimValueHelper.resolveClaims(claimNames, auth, Optional.of(account));
   }
 }

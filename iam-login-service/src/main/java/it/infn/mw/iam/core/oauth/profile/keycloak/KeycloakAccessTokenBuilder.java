@@ -15,17 +15,11 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
-import static java.util.Objects.isNull;
-import static java.util.stream.Collectors.joining;
-
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -36,42 +30,47 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
 public class KeycloakAccessTokenBuilder extends BaseAccessTokenBuilder {
 
   public KeycloakAccessTokenBuilder(IamProperties properties,
-      IamAccountRepository accountRepository, IamTotpMfaRepository totpMfaRepository,
-      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper,
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
+      ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+    super(properties, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
         scopeClaimTranslationService);
   }
 
   @Override
   public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
-      OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
+      OAuth2Authentication authentication, Optional<IamAccount> account, Instant issueTime) {
 
-    JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, userInfo, issueTime));
+    JWTClaimsSet.Builder builder =
+        new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, account, issueTime));
 
-    builder.notBeforeTime(Date.from(issueTime
-      .minus(Duration.ofSeconds(getProperties().getAccessToken().getNbfOffsetSeconds()))));
-
-    if (!token.getScope().isEmpty()) {
-      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
-    }
-
-    if (!isNull(userInfo)) {
-      Set<String> groupNames = KeycloakGroupHelper
-        .resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo().getGroups());
+    if (account.isPresent()) {
+      Set<String> groupNames =
+          KeycloakGroupHelper.resolveGroupNames(account.get().getUserInfo().getGroups());
       if (!groupNames.isEmpty()) {
         builder.claim(KeycloakExtraClaimNames.ROLES, groupNames);
       }
     }
 
     return builder.build();
+  }
+
+  @Override
+  protected boolean isIncludeNbf() {
+
+    return true;
+  }
+
+  @Override
+  protected boolean isIncludeScope() {
+
+    return true;
   }
 }

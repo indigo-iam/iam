@@ -16,13 +16,15 @@
 package it.infn.mw.iam.core.oauth.profile;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
 import com.nimbusds.jwt.JWTClaimsSet;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 public interface AccessTokenBuilder {
@@ -37,6 +39,13 @@ public interface AccessTokenBuilder {
   Set<String> getAdditionalAuthnInfoClaims();
 
   /**
+   * Returns the list of claim names required to be added to the access token
+   *  
+   * @return the list of required claims
+   */
+  Set<String> getRequiredClaims();
+
+  /**
    * Return the claim Set of the access token
    * 
    * @param token
@@ -46,5 +55,6 @@ public interface AccessTokenBuilder {
    * @return the claim Set of the access token
    */
   JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token, OAuth2Authentication authentication,
-      UserInfo userInfo, Instant issueTime);
+      Optional<IamAccount> account, Instant issueTime);
+
 }

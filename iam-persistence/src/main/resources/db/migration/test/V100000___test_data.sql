@@ -92,7 +92,6 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (5, 'eduperson_assurance'),
   (5, 'entitlements'),
   (5, 'voperson_scoped_affiliation'),
-  (5, 'voperson_id'),
   (6, 'openid'),
   (6, 'profile'),
   (6, 'email'),

@@ -17,11 +17,8 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 
 import java.util.Set;
 
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
-
 import com.google.common.collect.Sets;
 
-import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.profile.iam.IamScopeClaimTranslationService;
 
 public class WlcgScopeClaimTranslationService extends IamScopeClaimTranslationService {
@@ -29,21 +26,14 @@ public class WlcgScopeClaimTranslationService extends IamScopeClaimTranslationSe
   @Override
   public Set<String> getClaimsForScope(String scope) {
 
-    switch (scope) {
-      case WlcgOidcScopes.WLCG:
-        return Sets.newHashSet(WlcgExtraClaimNames.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_VER,
-            WlcgExtraClaimNames.EDUPERSON_ASSURANCE, WlcgExtraClaimNames.AUTH_TIME);
-      case OidcScopes.PROFILE:
-        Set<String> profileClaims = super.getClaimsForScope(scope);
-        profileClaims.add(WlcgExtraClaimNames.WLCG_VER);
-        profileClaims.add(WlcgExtraClaimNames.WLCG_GROUPS);
-        profileClaims.add(WlcgExtraClaimNames.EDUPERSON_ASSURANCE);
-        profileClaims.add(WlcgExtraClaimNames.AUTH_TIME);
-        profileClaims.remove(IamExtraClaimNames.GROUPS);
-        return profileClaims;
-      default:
-        return super.getClaimsForScope(scope);
+    if (WlcgOidcScopes.isWlcgScope(scope)) {
+      return Sets.newHashSet(WlcgExtraClaimNames.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_VER,
+          WlcgExtraClaimNames.AUTH_TIME);
     }
+    if (WlcgOidcScopes.isWlcgGroupScope(scope)) {
+      return Sets.newHashSet(WlcgExtraClaimNames.WLCG_GROUPS, WlcgExtraClaimNames.WLCG_VER);
+    }
+    return super.getClaimsForScope(scope);
   }
 
 }

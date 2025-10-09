@@ -42,10 +42,18 @@ public interface IamAccountService {
   /**
    * Finds an account by UUID
    * 
-   * @param uuid
-   * @return an {@link Optional} iam account
+   * @param account UUID
+   * @return an {@link Optional} IAM account
    */
   Optional<IamAccount> findByUuid(String uuid);
+
+  /**
+   * Finds an account by username
+   * 
+   * @param account username
+   * @return an {@link Optional} IAM account
+   */
+  Optional<IamAccount> findByUsername(String username);
 
   /**
    * Creates a new {@link IamAccount} from a registration request.

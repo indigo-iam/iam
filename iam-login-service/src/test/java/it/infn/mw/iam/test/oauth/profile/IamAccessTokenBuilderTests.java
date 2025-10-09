@@ -31,10 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
@@ -48,7 +46,6 @@ import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
@@ -60,9 +57,6 @@ class IamAccessTokenBuilderTests {
 
   @Mock
   AccountUtils accountUtils;
-
-  @Mock
-  IamAccountRepository accountRepository;
 
   @Mock
   IamTotpMfaRepository totpMfaRepository;
@@ -90,9 +84,6 @@ class IamAccessTokenBuilderTests {
       new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
 
   @Mock
-  UserInfo userInfo;
-
-  @Mock
   IamAccount account;
 
   final Instant now = Clock.systemDefaultZone().instant();
@@ -102,23 +93,22 @@ class IamAccessTokenBuilderTests {
   @BeforeEach
   void setup() {
 
-    tokenBuilder = new IamAccessTokenBuilder(properties, accountRepository, totpMfaRepository,
+    tokenBuilder = new IamAccessTokenBuilder(properties, totpMfaRepository,
         accountUtils, scopeFilter, claimValueHelper, scService);
 
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");
     when(authentication.getOAuth2Request()).thenReturn(oauth2Request);
-    when(userInfo.getSub()).thenReturn("userinfo-sub");
+    when(account.getUuid()).thenReturn("userinfo-sub");
     when(oauth2Request.getGrantType()).thenReturn(TOKEN_EXCHANGE_GRANT_TYPE);
-    when(accountRepository.findByUuid(Mockito.anyString())).thenReturn(Optional.ofNullable(account));
   }
 
 
   @Test
   void testMissingSubjectTokenTokenExchangeErrors() {
     InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
-        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, Optional.ofNullable(account), now));
     assertThat(thrown.getMessage(), containsString("subject_token not found"));
   }
 
@@ -128,7 +118,7 @@ class IamAccessTokenBuilderTests {
     paramsMap.put("subject_token", "3427thjdfhgejt73ja");
     oauth2Request.setRequestParameters(paramsMap);
     InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
-        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, Optional.ofNullable(account), now));
     assertThat(thrown.getMessage(), containsString("Error parsing subject token"));
   }
 

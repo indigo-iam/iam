@@ -15,11 +15,21 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 
-public interface WlcgOidcScopes extends IamOidcScopes {
+public interface WlcgOidcScopes extends OidcScopes {
 
   String WLCG = "wlcg";
 
   String WLCG_GROUPS = "wlcg.groups";
+
+  public static boolean isWlcgGroupScope(String scope) {
+    return WlcgOidcScopes.WLCG_GROUPS.equals(scope)
+        || scope.startsWith(WlcgOidcScopes.WLCG_GROUPS + ":/");
+  }
+
+  public static boolean isWlcgScope(String scope) {
+    return WlcgOidcScopes.WLCG.equals(scope)
+        || scope.startsWith(WlcgOidcScopes.WLCG + ":/");
+  }
 }

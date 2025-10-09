@@ -94,7 +94,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
   }
 
   @Test
-  public void testKeycloakProfileAccessTokenForUserNotInGroups() throws Exception {
+  public void testKeycloakProfileAccessTokenForClientWithNoRoles() throws Exception {
     String accessTokenString = (String) new AccessTokenGetter().grantType("password")
       .clientId(CLIENT_ID)
       .clientSecret(CLIENT_SECRET)
@@ -103,8 +103,8 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
       .scope("openid profile")
       .getAccessTokenValue();
 
-    assertThat(!accessTokenString.contains("roles"), is(true));
-
+    JWT jwt = JWTParser.parse(accessTokenString);
+    assertThat(jwt.getJWTClaimsSet().getClaim("roles"), nullValue());
   }
 
   @Test
@@ -131,6 +131,7 @@ public class KeycloakProfileIntegrationTests extends EndpointsTestUtils {
         .param("token", token.getParsedString()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
+      .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$." + KC_GROUP_CLAIM, containsInAnyOrder("Analysis", "Production")))
       .andExpect(jsonPath("$." + KC_GROUP_CLAIM, hasSize(equalTo(2))))
       .andExpect(jsonPath("$.iss", equalTo("http://localhost:8080/")))

@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import java.util.Optional;
+
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
@@ -22,6 +24,7 @@ import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
@@ -33,14 +36,19 @@ public class KeycloakClaimValueHelper extends IamClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
+  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+      Optional<IamAccount> account) {
 
     if (KeycloakExtraClaimNames.ROLES.equals(claimName)) {
-      if (account != null) {
-        return KeycloakGroupHelper.resolveGroupNames(account.getUserInfo().getGroups());
+      if (account.isPresent()) {
+        return KeycloakGroupHelper.resolveGroupNames(account.get().getUserInfo().getGroups());
       }
       return null;
     }
-    return super.resolveClaim(claimName, account, auth);
+    if (IamExtraClaimNames.GROUPS.equals(claimName)) {
+      /* remove inherited groups claim */
+      return null;
+    }
+    return super.resolveClaim(claimName, auth, account);
   }
 }

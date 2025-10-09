@@ -16,6 +16,7 @@
 package it.infn.mw.iam.core.oauth.profile;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -29,20 +30,21 @@ public interface ClaimValueHelper {
    * Resolve claim names to a value (if available)
    * 
    * @param claimName The claim name from which computing the related value
-   * @param account The user account info
    * @param auth The current Authentication info that can contain also the external provider additionalInfo
+   * @param account The user account info
    * @return the value of claim name
    */
-  Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth);
+  Object resolveClaim(String claimName, OAuth2Authentication auth, Optional<IamAccount> account);
 
   /**
    * Resolve claim names to a value (if available)
    * 
    * @param claimNames The collection of claim names from which computing the related values
-   * @param account The user account info
    * @param auth The current Authentication info that can contain also the external provider additionalInfo
+   * @param account The user account info
    * @return the map of claim names and values
    */
-  Map<String, Object> resolveClaims(Set<String> claimNames, IamAccount account, OAuth2Authentication auth);
+  Map<String, Object> resolveClaims(Set<String> claimNames, OAuth2Authentication auth, Optional<IamAccount> account);
 
+  boolean isValidClaimValue(Object claimValue);
 }

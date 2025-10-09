@@ -15,22 +15,24 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
-import static com.nimbusds.jwt.JWTClaimNames.AUDIENCE;
-import static com.nimbusds.jwt.JWTClaimNames.NOT_BEFORE;
-import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SCOPE;
-import static java.util.stream.Collectors.joining;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.ATTR;
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.SSH_KEYS;
+import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.AUTH_TIME;
+import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.WLCG_GROUPS;
+import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.WLCG_VER;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.EMAIL;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.NAME;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.PREFERRED_USERNAME;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import com.nimbusds.jwt.JWTClaimNames;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTClaimsSet.Builder;
 
@@ -38,12 +40,9 @@ import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.persistence.model.IamAccount;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
 
 @SuppressWarnings("deprecation")
 public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
@@ -51,73 +50,73 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
   public static final String PROFILE_VERSION = "1.0";
   public static final String ALL_AUDIENCES_VALUE = "https://wlcg.cern.ch/jwt/v1/any";
 
-  public WlcgAccessTokenBuilder(IamProperties properties, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      ClaimValueHelper claimValueHelper,
+  public WlcgAccessTokenBuilder(IamProperties properties, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeClaimTranslationService) {
-    super(properties, accountRepository, totpMfaRepository, accountUtils, scopeFilter,
-        claimValueHelper, scopeClaimTranslationService);
+    super(properties, totpMfaRepository, accountUtils, scopeFilter, claimValueHelper,
+        scopeClaimTranslationService);
+  }
+
+  @Override
+  public Set<String> getAdditionalAuthnInfoClaims() {
+
+    return Set.of(NAME, EMAIL, PREFERRED_USERNAME, ATTR, SSH_KEYS);
   }
 
   @Override
   public JWTClaimsSet buildAccessToken(OAuth2AccessTokenEntity token,
-      OAuth2Authentication authentication, UserInfo userInfo, Instant issueTime) {
+      OAuth2Authentication authentication, Optional<IamAccount> account, Instant issueTime) {
 
-    JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, userInfo, issueTime));
+    JWTClaimsSet.Builder builder =
+        new JWTClaimsSet.Builder(super.buildAccessToken(token, authentication, account, issueTime));
 
-    addWlcgVerClaim(builder);
-    addWlcgGroupsClaim(builder, authentication, userInfo);
-    addScopeClaimIfNotPresent(builder, token);
-    addNotBeforeClaimIfNotPresent(builder, issueTime);
-    addAudienceClaimIfNotPresent(builder);
-    addAuthTimeClaim(builder, userInfo);
+    /* wlcg.ver required claim */
+    builder.claim(WLCG_VER, WlcgJWTProfile.PROFILE_VERSION);
+
+    if (account.isPresent()) {
+
+      /* add wlcg.groups */
+      Set<String> groups = WlcgGroupHelper.resolveGroupNames(
+          authentication.getOAuth2Request().getScope(), account.get().getUserInfo().getGroups());
+      if (isValidClaimValue(groups)) {
+        builder.claim(WLCG_GROUPS, groups);
+      }
+      /* add auth_time claim */
+      Object authTime = getClaimValueHelper().resolveClaim(AUTH_TIME, authentication, account);
+      if (isValidClaimValue(authTime)) {
+        builder.claim(AUTH_TIME, authTime);
+      }
+    }
 
     return builder.build();
   }
 
-  private void addAuthTimeClaim(Builder builder, UserInfo userInfo) {
+  @Override
+  protected boolean isIncludeScope() {
 
-    if (!Objects.isNull(userInfo)) {
-      IamAccount account = ((UserInfoAdapter) userInfo).getUserinfo().getIamAccount();
-      builder.claim(WlcgExtraClaimNames.AUTH_TIME,
-          this.getClaimValueHelper().resolveClaim(WlcgExtraClaimNames.AUTH_TIME, account, null));
-    }
+    /* scope claim is required */
+    return true;
   }
 
-  private void addScopeClaimIfNotPresent(Builder builder, OAuth2AccessTokenEntity token) {
-    if (!builder.getClaims().containsKey(SCOPE) && !token.getScope().isEmpty()) {
-      builder.claim(SCOPE, token.getScope().stream().collect(joining(SPACE)));
-    }
+  @Override
+  protected boolean isIncludeNbf() {
+
+    return true;
   }
 
-  private void addWlcgVerClaim(Builder builder) {
-    builder.claim(WlcgExtraClaimNames.WLCG_VER, WlcgJWTProfile.PROFILE_VERSION);
+  @Override
+  protected boolean hasAudience(OAuth2Authentication authentication) {
+
+    /* always triggers audience inclusion because it's required */
+    return true;
   }
 
-  private void addNotBeforeClaimIfNotPresent(Builder builder, Instant issueTime) {
-    if (!builder.getClaims().containsKey(NOT_BEFORE)) {
-      builder.notBeforeTime(Date.from(issueTime
-        .minus(Duration.ofSeconds(getProperties().getAccessToken().getNbfOffsetSeconds()))));
-    }
-  }
+  @Override
+  protected void addAudience(Builder builder, OAuth2Authentication authentication) {
 
-  private void addWlcgGroupsClaim(Builder builder, OAuth2Authentication authentication,
-      UserInfo userInfo) {
-
-    builder.claim(IamExtraClaimNames.GROUPS, null);
-    if (!Objects.isNull(userInfo)) {
-      IamAccount account = ((UserInfoAdapter) userInfo).getUserinfo().getIamAccount();
-      Object value = getClaimValueHelper().resolveClaim(WlcgExtraClaimNames.WLCG_GROUPS, account,
-          authentication);
-      if (value instanceof Collection<?> valueColl && !valueColl.isEmpty()) {
-        builder.claim(WlcgExtraClaimNames.WLCG_GROUPS, valueColl);
-      }
-    }
-  }
-
-  private void addAudienceClaimIfNotPresent(Builder builder) {
-    if (!builder.getClaims().containsKey(AUDIENCE)) {
-      builder.audience(ALL_AUDIENCES_VALUE);
+    super.addAudience(builder, authentication);
+    if (!builder.getClaims().containsKey(JWTClaimNames.AUDIENCE)) {
+      builder.claim(JWTClaimNames.AUDIENCE, ALL_AUDIENCES_VALUE);
     }
   }
 

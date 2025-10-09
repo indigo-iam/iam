@@ -94,7 +94,6 @@ import it.infn.mw.iam.notification.service.resolver.NotifyAdminAddressStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyAdminsStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmStrategy;
 import it.infn.mw.iam.notification.service.resolver.NotifyGmsAndAdminsStrategy;
-import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
@@ -144,18 +143,16 @@ public class IamConfig {
 
   @Bean(name = "aarcJwtProfile")
   JWTProfile aarcJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
-      AttributeMapHelper attrHelper, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      IamAccountService accountService) {
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
     AarcScopeClaimTranslationService claimService = new AarcScopeClaimTranslationService();
 
     AarcClaimValueHelper claimValueHelper =
         new AarcClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    AarcAccessTokenBuilder accessTokenBuilder =
-        new AarcAccessTokenBuilder(properties, accountRepository, totpMfaRepository, accountUtils,
-            scopeFilter, claimValueHelper, claimService);
+    AarcAccessTokenBuilder accessTokenBuilder = new AarcAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
     AarcIdTokenCustomizer idTokenCustomizer =
         new AarcIdTokenCustomizer(properties, claimValueHelper, claimService);
@@ -163,7 +160,8 @@ public class IamConfig {
     AarcUserinfoHelper userInfoHelper =
         new AarcUserinfoHelper(properties, claimValueHelper, claimService);
 
-    AarcIntrospectionHelper introspectionHelper = new AarcIntrospectionHelper(accountService);
+    AarcIntrospectionHelper introspectionHelper =
+        new AarcIntrospectionHelper(claimValueHelper, accountService);
 
     return new AarcJWTProfile(claimService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
         userInfoHelper, introspectionHelper);
@@ -171,18 +169,16 @@ public class IamConfig {
 
   @Bean(name = "kcJwtProfile")
   JWTProfile kcJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
-      AttributeMapHelper attrHelper, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      IamAccountService accountService) {
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
     KeycloakScopeClaimTranslationService claimService = new KeycloakScopeClaimTranslationService();
 
     KeycloakClaimValueHelper claimValueHelper =
         new KeycloakClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    KeycloakAccessTokenBuilder accessTokenBuilder =
-        new KeycloakAccessTokenBuilder(properties, accountRepository, totpMfaRepository,
-            accountUtils, scopeFilter, claimValueHelper, claimService);
+    KeycloakAccessTokenBuilder accessTokenBuilder = new KeycloakAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
     KeycloakIdTokenCustomizer idTokenCustomizer =
         new KeycloakIdTokenCustomizer(properties, claimValueHelper, claimService);
@@ -199,18 +195,16 @@ public class IamConfig {
 
   @Bean(name = "iamJwtProfile")
   JWTProfile iamJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
-      AttributeMapHelper attrHelper, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      IamAccountService accountService) {
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
     IamScopeClaimTranslationService scopeClaimService = new IamScopeClaimTranslationService();
 
     IamClaimValueHelper claimValueHelper =
         new IamClaimValueHelper(properties, sshConverter, attrHelper, scopeClaimService);
 
-    IamAccessTokenBuilder accessTokenBuilder =
-        new IamAccessTokenBuilder(properties, accountRepository, totpMfaRepository, accountUtils,
-            scopeFilter, claimValueHelper, scopeClaimService);
+    IamAccessTokenBuilder accessTokenBuilder = new IamAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, scopeClaimService);
 
     IamIdTokenCustomizer idTokenCustomizer =
         new IamIdTokenCustomizer(properties, claimValueHelper, scopeClaimService);
@@ -226,18 +220,16 @@ public class IamConfig {
 
   @Bean(name = "wlcgJwtProfile")
   JWTProfile wlcgJwtProfile(IamProperties properties, SshKeyConverter sshConverter,
-      AttributeMapHelper attrHelper, IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, ScopeFilter scopeFilter,
-      IamAccountService accountService) {
+      AttributeMapHelper attrHelper, IamTotpMfaRepository totpMfaRepository,
+      AccountUtils accountUtils, ScopeFilter scopeFilter, IamAccountService accountService) {
 
     WlcgScopeClaimTranslationService claimService = new WlcgScopeClaimTranslationService();
 
     WlcgClaimValueHelper claimValueHelper =
         new WlcgClaimValueHelper(properties, sshConverter, attrHelper, claimService);
 
-    WlcgAccessTokenBuilder accessTokenBuilder =
-        new WlcgAccessTokenBuilder(properties, accountRepository, totpMfaRepository, accountUtils,
-            scopeFilter, claimValueHelper, claimService);
+    WlcgAccessTokenBuilder accessTokenBuilder = new WlcgAccessTokenBuilder(properties,
+        totpMfaRepository, accountUtils, scopeFilter, claimValueHelper, claimService);
 
     WlcgIdTokenCustomizer idTokenCustomizer =
         new WlcgIdTokenCustomizer(properties, claimValueHelper, claimService);

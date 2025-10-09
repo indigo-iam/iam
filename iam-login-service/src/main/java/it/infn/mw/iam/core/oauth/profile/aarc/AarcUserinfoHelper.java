@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import java.util.Set;
+
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 
 import it.infn.mw.iam.config.IamProperties;
@@ -26,5 +28,10 @@ public class AarcUserinfoHelper extends BaseUserinfoHelper {
   public AarcUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
       ScopeClaimTranslationService scopeTranslationService) {
     super(props, claimValueHelper, scopeTranslationService);
+  }
+
+  @Override
+  public Set<String> getRequiredClaims() {
+    return AarcExtraClaimNames.USERINFO_REQUIRED_CLAIMS;
   }
 }

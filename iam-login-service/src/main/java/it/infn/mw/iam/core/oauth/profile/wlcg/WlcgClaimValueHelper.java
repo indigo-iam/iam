@@ -15,10 +15,12 @@
  */
 package it.infn.mw.iam.core.oauth.profile.wlcg;
 
+import static it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames.GROUPS;
 import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.AUTH_TIME;
-import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.EDUPERSON_ASSURANCE;
 import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.WLCG_GROUPS;
 import static it.infn.mw.iam.core.oauth.profile.wlcg.WlcgExtraClaimNames.WLCG_VER;
+
+import java.util.Optional;
 
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
@@ -26,7 +28,6 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
-import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
@@ -39,20 +40,22 @@ public class WlcgClaimValueHelper extends IamClaimValueHelper {
   }
 
   @Override
-  public Object resolveClaim(String claimName, IamAccount account, OAuth2Authentication auth) {
+  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+      Optional<IamAccount> account) {
 
     switch (claimName) {
       case WLCG_VER:
         return WlcgJWTProfile.PROFILE_VERSION;
       case WLCG_GROUPS:
-        return account != null ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
-            account.getUserInfo().getGroups()) : null;
-      case EDUPERSON_ASSURANCE:
-        return AarcClaimValueHelper.DEFAULT_LOA;
+        return account.isPresent() ? WlcgGroupHelper.resolveGroupNames(auth.getOAuth2Request().getScope(),
+            account.get().getUserInfo().getGroups()) : null;
       case AUTH_TIME:
-        return account != null ? account.getLastLoginTime() : null;
+        return account.isPresent() ? account.get().getLastLoginTime() : null;
+      case GROUPS:
+        /* remove inherited groups from allowed claims */
+        return null;
       default:
-        return super.resolveClaim(claimName, account, auth);
+        return super.resolveClaim(claimName, auth, account);
     }
   }
 }

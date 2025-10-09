@@ -58,6 +58,11 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     this.accountService = accountService;
   }
 
+  protected IamAccountService getAccountService() {
+
+    return accountService;
+  }
+
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
       ClientDetailsEntity authenticatedClient) throws ParseException {
