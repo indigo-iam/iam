@@ -143,7 +143,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* token request management */
     if (isTokenExchangeRequest(authentication)) {
-      handleClientTokenExchange(builder, token, authentication, account);
+      handleClientTokenExchange(builder, authentication);
     }
 
     /* add ACR claim if present */
@@ -153,13 +153,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     }
 
     /* update token scopes filtering the requested ones */
-    Set<String> requestedScopes = new HashSet<>();
-    if (authentication.getOAuth2Request().isRefresh()
-        && !authentication.getOAuth2Request().getRefreshTokenRequest().getScope().isEmpty()) {
-      requestedScopes.addAll(authentication.getOAuth2Request().getRefreshTokenRequest().getScope());
-    } else {
-      requestedScopes.addAll(token.getAuthenticationHolder().getScope());
-    }
+    Set<String> requestedScopes = getRequestedScopes(token, authentication);
     token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
 
     /* include scope claim if configured */
@@ -175,20 +169,31 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
     /* include the additional authentication claims if configured */
     if (isIncludeAuthnInfo() && account.isPresent()) {
-      Set<String> requiredClaims =
-          getScopeClaimTranslationService().getClaimsForScopeSet(token.getScope());
-      /* filter only the authentication claims that are required by the requested scopes */
-      getAdditionalAuthnInfoClaims().stream().filter(requiredClaims::contains).flatMap(claim -> {
-        Object value = getClaimValueHelper().resolveClaim(claim, authentication, account);
-        if (getClaimValueHelper().isValidClaimValue(value)) {
-          return Stream.of(Map.entry(claim, value));
-        } else {
-          return Stream.<Map.Entry<String, Object>>empty();
-        }
-      }).forEach(entry -> builder.claim(entry.getKey(), entry.getValue()));
+      includeAdditionalAuthnInfoClaims(builder, token, authentication, account.get());
     }
 
     /* include the required claims if set */
+    includeRequiredClaims(builder, authentication, account);
+
+    return builder.build();
+  }
+
+  private Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication) {
+
+    Set<String> requestedScopes = new HashSet<>();
+    if (authentication.getOAuth2Request().isRefresh()
+        && !authentication.getOAuth2Request().getRefreshTokenRequest().getScope().isEmpty()) {
+      requestedScopes.addAll(authentication.getOAuth2Request().getRefreshTokenRequest().getScope());
+    } else {
+      requestedScopes.addAll(token.getAuthenticationHolder().getScope());
+    }
+    return requestedScopes;
+  }
+
+  private void includeRequiredClaims(Builder builder, OAuth2Authentication authentication,
+      Optional<IamAccount> account) {
+
     getRequiredClaims().stream().flatMap(claim -> {
       Object value = getClaimValueHelper().resolveClaim(claim, authentication, account);
       if (getClaimValueHelper().isValidClaimValue(value)) {
@@ -197,8 +202,23 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
         return Stream.<Map.Entry<String, Object>>empty();
       }
     }).forEach(entry -> builder.claim(entry.getKey(), entry.getValue()));
+  }
 
-    return builder.build();
+  protected void includeAdditionalAuthnInfoClaims(Builder builder, OAuth2AccessTokenEntity token,
+      OAuth2Authentication authentication, IamAccount iamAccount) {
+
+    Set<String> requiredClaims =
+        getScopeClaimTranslationService().getClaimsForScopeSet(token.getScope());
+    /* filter only the authentication claims that are required by the requested scopes */
+    getAdditionalAuthnInfoClaims().stream().filter(requiredClaims::contains).flatMap(claim -> {
+      Object value =
+          getClaimValueHelper().resolveClaim(claim, authentication, Optional.of(iamAccount));
+      if (getClaimValueHelper().isValidClaimValue(value)) {
+        return Stream.of(Map.entry(claim, value));
+      } else {
+        return Stream.<Map.Entry<String, Object>>empty();
+      }
+    }).forEach(entry -> builder.claim(entry.getKey(), entry.getValue()));
   }
 
   protected boolean isIncludeScope() {
@@ -265,8 +285,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
   }
 
   protected void handleClientTokenExchange(JWTClaimsSet.Builder builder,
-      OAuth2AccessTokenEntity token, OAuth2Authentication authentication,
-      Optional<IamAccount> account) {
+      OAuth2Authentication authentication) {
 
     try {
       JWT subjectToken = resolveSubjectTokenFromRequest(authentication.getOAuth2Request());

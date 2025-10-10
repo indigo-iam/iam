@@ -27,7 +27,6 @@ import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.mitre.openid.connect.token.ConnectTokenEnhancer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
@@ -52,20 +51,21 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
   public static final String INVALID_PARAMETER = "Value of 'expires_in' parameter is not valid";
 
-  @Autowired
   private IamAccountService accountService;
-
-  @Autowired
   private ClientService clientService;
-
-  @Autowired
   private OIDCTokenService connectTokenService;
-
-  @Autowired
   private JWTProfileResolver profileResolver;
-
-  @Autowired
   private Clock clock;
+
+  public IamTokenEnhancer(Clock clock, IamAccountService accountService, ClientService clientService,
+      OIDCTokenService connectTokenService, JWTProfileResolver profileResolver) {
+
+    this.clock = clock;
+    this.accountService = accountService;
+    this.clientService = clientService;
+    this.connectTokenService = connectTokenService;
+    this.profileResolver = profileResolver;
+  }
 
   private SignedJWT signClaims(JWTClaimsSet claims) {
     JWSAlgorithm signingAlg = getJwtService().getDefaultSigningAlgorithm();

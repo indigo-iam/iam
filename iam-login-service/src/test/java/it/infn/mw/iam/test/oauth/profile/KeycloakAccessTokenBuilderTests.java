@@ -105,18 +105,22 @@ class KeycloakAccessTokenBuilderTests {
 
   @Test
   void testMissingSubjectTokenTokenExchangeErrors() {
+
+    Optional<IamAccount> optAccount = Optional.ofNullable(account);
     InvalidRequestException thrown = assertThrows(InvalidRequestException.class, () -> tokenBuilder
-      .buildAccessToken(tokenEntity, authentication, Optional.ofNullable(account), now));
+      .buildAccessToken(tokenEntity, authentication, optAccount, now));
     assertThat(thrown.getMessage(), containsString("subject_token not found"));
   }
 
   @Test
   void testSubjectTokenNotParsable() {
+
+    Optional<IamAccount> optAccount = Optional.ofNullable(account);
     Map<String, String> paramsMap = Maps.newHashMap();
     paramsMap.put("subject_token", "3427thjdfhgejt73ja");
     oauth2Request.setRequestParameters(paramsMap);
     InvalidRequestException thrown = assertThrows(InvalidRequestException.class, () -> tokenBuilder
-      .buildAccessToken(tokenEntity, authentication, Optional.ofNullable(account), now));
+      .buildAccessToken(tokenEntity, authentication, optAccount, now));
     assertThat(thrown.getMessage(), containsString("Error parsing subject token"));
   }
 

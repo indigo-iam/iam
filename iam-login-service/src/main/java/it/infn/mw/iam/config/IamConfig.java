@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.h2.server.web.WebServlet;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
+import org.mitre.openid.connect.service.OIDCTokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,6 +45,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
@@ -288,8 +290,12 @@ public class IamConfig {
 
   @Bean
   @Primary
-  TokenEnhancer iamTokenEnhancer() {
-    return new IamTokenEnhancer();
+  TokenEnhancer iamTokenEnhancer(Clock clock, IamAccountService accountService,
+      ClientService clientService, OIDCTokenService connectTokenService,
+      JWTProfileResolver profileResolver) {
+
+    return new IamTokenEnhancer(clock, accountService, clientService, connectTokenService,
+        profileResolver);
   }
 
   @Bean

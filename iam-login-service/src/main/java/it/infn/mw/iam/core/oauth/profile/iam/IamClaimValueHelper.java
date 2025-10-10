@@ -90,7 +90,7 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
       case SSH_KEYS:
         return account.isPresent() ? getSshKeysFilteredSet(account.get().getSshKeys()) : null;
       case ATTR:
-        return account != null ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
+        return account.isPresent() ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
             : null;
       case EXTERNAL_AUTHN:
         Optional<SavedUserAuthentication> userAuth =
