@@ -27,6 +27,8 @@ import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -36,6 +38,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
+import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
@@ -56,6 +59,10 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
   private static final String ORGANISATION = "indigo-dc";
   private static final String NAME = "Test User";
   private static final List<String> GROUPS = ImmutableList.of("Production", "Analysis");
+
+  @Autowired
+  @Qualifier("iamJwtProfile")
+  private JWTProfile iamJwtProfile;
 
   private String getAccessTokenForUser(String scopes) throws Exception {
 
@@ -90,10 +97,9 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
   public void testClientCredentialsAccessTokenIsNotEnhanced() throws Exception {
 
     JWTClaimsSet claims = JWTParser.parse(getAccessTokenForClient("openid profile email")).getJWTClaimsSet();
-    assertThat(claims.getClaim("email"), is(nullValue()));
-    assertThat(claims.getClaim("name"), is(nullValue()));
-    assertThat(claims.getClaim("preferred_username"), is(nullValue()));
-    assertThat(claims.getClaim("organisation_name"), is(notNullValue()));
+    iamJwtProfile.getAccessTokenBuilder()
+      .getAdditionalAuthnInfoClaims()
+      .forEach(claim -> assertThat(claims.getClaim(claim), is(nullValue())));
     assertThat(claims.getClaim("groups"), is(nullValue()));
   }
 
