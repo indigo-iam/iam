@@ -30,7 +30,12 @@
             </div>
             <div class="iam-user-group-actions col-xs-4 col-sm-4 text-right">
                 <div class="btn-group">
-                    <button class="btn btn-xs btn-danger" ng-click="$ctrl.abortRequest(req)">
+                    <button class="btn btn-xs btn-danger" ng-if="$root.loggedUser.isAdmin || $ctrl.isMe"
+                        ng-click="$ctrl.abortRequest(req)">
+                        <i class="fa fa-times"></i>
+                    </button>
+                    <button disabled class="btn btn-danger btn-xs" ng-if="!$root.loggedUser.isAdmin && !$ctrl.isMe"
+                        style="cursor: not-allowed;">
                         <i class="fa fa-times"></i>
                     </button>
                 </div>
