@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.openid.connect.service.OIDCTokenService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,6 +39,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+
+import com.nimbusds.jose.JWSAlgorithm;
 
 import it.infn.mw.iam.api.client.management.validation.OnClientCreation;
 import it.infn.mw.iam.api.client.management.validation.OnClientUpdate;
@@ -126,10 +129,21 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
 
+    if (hasRelyingParty(client)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(entity, client.getExpiration(), client.getEntityId());
+      entity.setClientRelyingParty(clientRelyingParty);
+      entity.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
+    }
+
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
 
     return converter.registeredClientDtoFromEntity(entity);
+  }
+
+  private boolean hasRelyingParty(RegisteredClientDTO request) {
+    return request.getEntityId() != null;
   }
 
   @Override
@@ -169,7 +183,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    if (oldClient.getClientRelyingParty() != null) {
+    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("http")) {
       throw new InvalidRequestException("Federated clients cannot be updated");
     }
 
@@ -186,6 +200,13 @@ public class DefaultClientManagementService implements ClientManagementService {
       newClient.setClientSecret(null);
     } else if (isNull(client.getClientSecret())) {
       client.setClientSecret(defaultsService.generateClientSecret());
+    }
+
+    if (hasRelyingParty(client)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(newClient, client.getExpiration(), client.getEntityId());
+      newClient.setClientRelyingParty(clientRelyingParty);
+      newClient.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
     }
 
     newClient = clientService.updateClient(newClient);

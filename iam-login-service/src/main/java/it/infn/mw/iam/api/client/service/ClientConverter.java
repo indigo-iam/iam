@@ -173,6 +173,10 @@ public class ClientConverter {
     clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
     clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
 
+    if (entity.getClientRelyingParty() != null) {
+      clientDTO.setExpiration(entity.getClientRelyingParty().getExpiration());
+      clientDTO.setEntityId(entity.getClientRelyingParty().getEntityId());
+    }
     return clientDTO;
   }
 

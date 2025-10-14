@@ -87,6 +87,7 @@ import it.infn.mw.iam.core.oauth.scope.IamSystemScopeService;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherOAuthRequestValidator;
 import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.core.oidc.IamAuthorizationRequestFilter;
 import it.infn.mw.iam.core.oidc.IamClientValidationService;
 import it.infn.mw.iam.core.userinfo.IamUserInfoInterceptor;
 
@@ -193,21 +194,6 @@ public class MitreServicesConfig {
   ServerConfigInterceptor serverConfigInterceptor() {
 
     return new ServerConfigInterceptor();
-  }
-
-  @Bean
-  FilterRegistrationBean<AuthorizationRequestFilter> disabledMitreFilterRegistration(
-      AuthorizationRequestFilter f) {
-
-    FilterRegistrationBean<AuthorizationRequestFilter> b = new FilterRegistrationBean<>(f);
-    b.setEnabled(false);
-    return b;
-  }
-
-  @Bean(name = "mitreAuthzRequestFilter")
-  AuthorizationRequestFilter authorizationRequestFilter() {
-
-    return new AuthorizationRequestFilter();
   }
 
   @Bean

@@ -107,6 +107,7 @@ public class TrustChainTestFactory {
     OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
     clientMetadata.setRedirectionURI(redirectUri);
     clientMetadata.setName("Relying Party");
+    clientMetadata.setJWKSetURI(URI.create(rp + "/jwk"));
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
     clientMetadata.setResponseTypes(responseTypes);
     clientMetadata.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE));

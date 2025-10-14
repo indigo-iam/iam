@@ -98,7 +98,7 @@ public class IamWebSecurityConfig {
     private OAuth2WebSecurityExpressionHandler oAuth2WebSecurityExpressionHandler;
 
     @Autowired
-    @Qualifier("mitreAuthzRequestFilter")
+    @Qualifier("iamAuthzRequestFilter")
     private GenericFilterBean authorizationRequestFilter;
 
     @Autowired

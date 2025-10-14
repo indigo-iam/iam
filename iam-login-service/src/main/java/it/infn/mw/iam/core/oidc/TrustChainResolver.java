@@ -35,8 +35,7 @@ public class TrustChainResolver {
   public static final Logger LOG = LoggerFactory.getLogger(TrustChainResolver.class);
   private final RestTemplate restTemplate = new RestTemplate();
 
-  private EntityStatement fetchEntityConfiguration(String entityId)
-      throws InvalidTrustChainException {
+  private EntityStatement fetchEntityConfiguration(String entityId) {
     String url = entityId + (entityId.endsWith("/") ? "" : "/") + ".well-known/openid-federation";
     try {
       String jwt = restTemplate.getForObject(url, String.class);
@@ -47,8 +46,8 @@ public class TrustChainResolver {
     }
   }
 
-  private EntityStatement fetchEntityStatement(String fetchEndpoint, String issuer, String subject)
-      throws InvalidTrustChainException {
+  private EntityStatement fetchEntityStatement(String fetchEndpoint, String issuer,
+      String subject) {
     try {
       String url = String.format("%s?sub=%s", fetchEndpoint, subject);
 
@@ -70,8 +69,7 @@ public class TrustChainResolver {
   /**
    * Resolve the Trust Chain starting from an entity_id
    */
-  public List<List<EntityStatement>> resolveFromEntityId(String entityId)
-      throws InvalidTrustChainException {
+  public List<List<EntityStatement>> resolveFromEntityId(String entityId) {
     EntityStatement ec = fetchEntityConfiguration(entityId);
     return buildChain(ec, new HashSet<>());
   }
@@ -79,8 +77,7 @@ public class TrustChainResolver {
   /**
    * Resolve the Trust Chain starting from an EntityConfiguration already provided
    */
-  public List<List<EntityStatement>> resolveFromEntityConfiguration(EntityStatement ec)
-      throws InvalidTrustChainException {
+  public List<List<EntityStatement>> resolveFromEntityConfiguration(EntityStatement ec) {
     return buildChain(ec, new HashSet<>());
   }
 
