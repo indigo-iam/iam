@@ -141,6 +141,7 @@ iam:
     include_scope: ${IAM_ACCESS_TOKEN_INCLUDE_SCOPE:false}
     include_nbf: ${IAM_ACCESS_TOKEN_INCLUDE_NBF:false}
     nbf-offset-seconds: ${IAM_ACCESS_TOKEN_NBF_OFFSET_SECONDS:60}
+    store-on-database: ${IAM_ACCESS_TOKEN_STORE_ON_DATABASE:true}
 
   actuator-user:
     username: ${IAM_ACTUATOR_USER_USERNAME:actuator-user}
@@ -221,6 +222,8 @@ task:
   approvalCleanupPeriodMsec: ${IAM_APPROVAL_CLEANUP_PERIOD_MSEC:300000}
   deviceCodeCleanupPeriodMsec: ${IAM_DEVICE_CODE_CLEANUP_PERIOD_MSEC:300000}
   wellKnownCacheCleanupPeriodSecs: ${IAM_WELL_KNOWN_CACHE_CLEANUP_PERIOD_SECS:300}
+  revokedTokenCleanupPeriodMsec: ${IAM_REVOKED_TOKEN_CLEANUP_PERIOD_MSEC:300000}
+  authzCodeCleanupPeriodMsec: ${IAM_AUTHZ_CODE_CLEANUP_PERIOD_MSEC:300000}
 
 client-registration:
   allow-for: ${IAM_CLIENT_REGISTRATION_ALLOW_FOR:ANYONE}

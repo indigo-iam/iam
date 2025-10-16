@@ -152,6 +152,7 @@ public interface IamOAuthAccessTokenRepository
       + " )"
       + ")")
   List<OAuth2AccessTokenEntity> findOrphanedTokens();
-  // @formatter:on
 
+  @Query("select t from OAuth2AccessTokenEntity t where t.expiration <= current_date")
+  Page<OAuth2AccessTokenEntity> findExpiredTokens(Pageable op);
 }
