@@ -38,7 +38,6 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
-import com.nimbusds.openid.connect.sdk.federation.trust.InvalidEntityMetadataException;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
@@ -50,6 +49,7 @@ import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.core.oidc.FederationError;
+import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -57,6 +57,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @RestController
 @Profile("openid-federation")
 public class FederationRegistrationController {
+
+  private static final String INVALID_CLIENT_METADATA = "invalid_client_metadata";
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -79,7 +81,7 @@ public class FederationRegistrationController {
   }
 
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
-      throws InvalidEntityMetadataException {
+      throws InvalidClientMetadataException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
     if (metadata.getName() != null) {
@@ -100,16 +102,23 @@ public class FederationRegistrationController {
       dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     }
     if (metadata.getRedirectionURIs() == null || metadata.getRedirectionURIs().isEmpty()) {
-      throw new InvalidEntityMetadataException("Missing redirect uris from RP Entity Statement");
+      throw new InvalidClientMetadataException("invalid_redirect_uri",
+          "Missing redirect uris from RP Entity Statement");
     }
     dtoClient.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
     if (metadata.getResponseTypes() != null) {
-      dtoClient.setResponseTypes(metadata.getResponseTypes()
+      Set<OAuthResponseType> responseTypes = metadata.getResponseTypes()
         .stream()
         .map(ResponseType::toString)
+        .filter(rt -> !rt.equals(ResponseType.IDTOKEN.toString()))
         .map(OAuthResponseType::fromResponseType)
-        .collect(Collectors.toSet()));
+        .collect(Collectors.toSet());
+      if (responseTypes.isEmpty()) {
+        throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA,
+            "Unsupported response type: id_token");
+      }
+      dtoClient.setResponseTypes(responseTypes);
     } else {
       dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
     }
@@ -125,7 +134,7 @@ public class FederationRegistrationController {
       dtoClient.setScope(Set.of("openid"));
     }
     if (rpRequest.getEntityID() == null) {
-      throw new InvalidEntityMetadataException("Missing RP Entity ID");
+      throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA, "Missing RP Entity ID");
     }
     dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
@@ -136,7 +145,7 @@ public class FederationRegistrationController {
       consumes = "application/entity-statement+jwt",
       produces = "application/explicit-registration-response+jwt")
   public ResponseEntity<String> register(@RequestBody String requestJwt)
-      throws ParseException, JOSEException, InvalidEntityMetadataException {
+      throws ParseException, JOSEException, InvalidClientMetadataException {
 
     // 1. Parse request Entity Statement (self-signed EC of the RP)
     EntityStatement rpRequest;
@@ -179,7 +188,7 @@ public class FederationRegistrationController {
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler({ParseException.class, InvalidEntityMetadataException.class})
+  @ExceptionHandler(ParseException.class)
   public ErrorDTO badRequestError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }
@@ -193,6 +202,12 @@ public class FederationRegistrationController {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InvalidTrustChainException.class)
   public FederationError handleTrustChainException(InvalidTrustChainException e) {
+    return new FederationError(e.getErrorCode(), e.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidClientMetadataException.class)
+  public FederationError handleClientMetadataException(InvalidClientMetadataException e) {
     return new FederationError(e.getErrorCode(), e.getMessage());
   }
 }

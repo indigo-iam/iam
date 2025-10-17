@@ -20,12 +20,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
@@ -104,6 +106,7 @@ public class TrustChainTestFactory {
     clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
     clientMetadata.setName("Relying Party");
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
+    clientMetadata.setResponseTypes(Set.of(ResponseType.IDTOKEN, ResponseType.CODE));
     EntityStatement rpEC =
         selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 
