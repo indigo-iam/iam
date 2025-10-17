@@ -44,6 +44,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
@@ -85,7 +86,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testSuccessfullExplicitClientRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -101,10 +102,46 @@ public class FederationRegistrationControllerTests {
   }
 
   @Test
+  public void testResponseTypesAreFiltered() throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer,
+        Set.of(ResponseType.CODE_IDTOKEN, ResponseType.CODE));
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
+
+    mvc
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isOk())
+      .andExpect(content().contentType("application/explicit-registration-response+jwt"));
+  }
+
+  @Test
+  public void testUnsupportedResponseTypeError() throws Exception {
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, Set.of(ResponseType.IDTOKEN));
+    EntityStatement rpEC = fakeChain.getLeafSelfStatement();
+    String rpJwt = rpEC.getSignedStatement().serialize();
+
+    when(trustChainService.validateFromEntityConfiguration(any())).thenReturn(fakeChain);
+
+    mvc
+      .perform(post(IAM_OIDFED_CLIENT_REGISTRATION_ENDPOINT)
+        .contentType("application/entity-statement+jwt")
+        .content(rpJwt))
+      .andDo(print())
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error", equalTo("invalid_client_metadata")))
+      .andExpect(jsonPath("$.error_description", equalTo("Unsupported response type")));
+  }
+
+  @Test
   @WithMockOAuthUser(user = "admin", scopes = "iam:admin.write")
   public void testRelyingPartyClientUpdateThroughApiClientsEndpointReturnsException()
       throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -131,7 +168,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testInvalidAudienceDuringRegistration() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain("http://wrong-audience");
+    fakeChain = TrustChainTestFactory.createRpToTaChain("http://wrong-audience", null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -149,7 +186,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testClientDisabledWhenExpired() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null);
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId("client-cred");
     assertTrue(client.isPresent());
 
@@ -176,7 +213,7 @@ public class FederationRegistrationControllerTests {
 
   @Test
   public void testClientDeletedAndRecreatedWhenAlreadyExists() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 

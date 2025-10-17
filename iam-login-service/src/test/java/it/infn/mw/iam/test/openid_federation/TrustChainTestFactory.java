@@ -94,7 +94,8 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: RP → TA */
-  public static TrustChain createRpToTaChain(String aud) throws JOSEException {
+  public static TrustChain createRpToTaChain(String aud, Set<ResponseType> responseTypes)
+      throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
@@ -106,7 +107,7 @@ public class TrustChainTestFactory {
     clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
     clientMetadata.setName("Relying Party");
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
-    clientMetadata.setResponseTypes(Set.of(ResponseType.IDTOKEN, ResponseType.CODE));
+    clientMetadata.setResponseTypes(responseTypes);
     EntityStatement rpEC =
         selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 

@@ -107,16 +107,18 @@ public class FederationRegistrationController {
     }
     dtoClient.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
+    Set<String> supportedResponseTypes =
+        Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
     if (metadata.getResponseTypes() != null) {
       Set<OAuthResponseType> responseTypes = metadata.getResponseTypes()
         .stream()
         .map(ResponseType::toString)
-        .filter(rt -> !rt.equals(ResponseType.IDTOKEN.toString()))
+        .filter(supportedResponseTypes::contains)
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet());
       if (responseTypes.isEmpty()) {
         throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA,
-            "Unsupported response type: id_token");
+            "Unsupported response type");
       }
       dtoClient.setResponseTypes(responseTypes);
     } else {
