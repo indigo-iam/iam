@@ -119,7 +119,7 @@ public class FederationRegistrationController {
   }
 
   private void setRedirectUris(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getRedirectionURIs() == null || metadata.getRedirectionURIs().isEmpty()) {
+    if (metadata.getRedirectionURIs() == null) {
       throw new InvalidClientMetadataException("invalid_redirect_uri",
           "Missing redirect uris from RP Entity Statement");
     }

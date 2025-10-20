@@ -95,8 +95,8 @@ public class TrustChainTestFactory {
   }
 
   /** Minimum Trust Chain: RP → TA */
-  public static TrustChain createRpToTaChain(String aud, Set<ResponseType> responseTypes)
-      throws JOSEException {
+  public static TrustChain createRpToTaChain(String aud, Set<ResponseType> responseTypes,
+      URI redirectUri) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
@@ -105,7 +105,7 @@ public class TrustChainTestFactory {
 
     // RP self EC with authority_hint = TA
     OIDCClientMetadata clientMetadata = new OIDCClientMetadata();
-    clientMetadata.setRedirectionURI(URI.create(rp + "/callback"));
+    clientMetadata.setRedirectionURI(redirectUri);
     clientMetadata.setName("Relying Party");
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
     clientMetadata.setResponseTypes(responseTypes);
