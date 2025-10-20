@@ -27,6 +27,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.id.Audience;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
@@ -108,6 +109,8 @@ public class TrustChainTestFactory {
     clientMetadata.setName("Relying Party");
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
     clientMetadata.setResponseTypes(responseTypes);
+    clientMetadata.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE));
+    clientMetadata.setEmailContacts(List.of("iam-support@example.it"));
     EntityStatement rpEC =
         selfEC(rp, now, exp, List.of(new EntityID(ta)), null, clientMetadata, aud);
 

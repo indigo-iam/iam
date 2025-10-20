@@ -80,33 +80,54 @@ public class FederationRegistrationController {
     this.clientService = clientService;
   }
 
-  private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
-      throws InvalidClientMetadataException {
+  private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest) {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
-    if (metadata.getName() != null) {
-      dtoClient.setClientName(metadata.getName());
-    } else {
-      dtoClient.setClientName("OIDFed client");
-    }
+
+    setClientName(dtoClient, metadata);
+    setContacts(dtoClient, metadata);
+    setGrantTypes(dtoClient, metadata);
+    setRedirectUris(dtoClient, metadata);
+    setResponseTypes(dtoClient, metadata);
+    setTokenEndpointAuthMethod(dtoClient, metadata);
+    setScope(dtoClient, metadata);
+    setEntityId(dtoClient, rpRequest);
+
+    return dtoClient;
+  }
+
+  private void setClientName(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
+    dto.setClientName(metadata.getName() != null ? metadata.getName() : "OIDFed client");
+  }
+
+  private void setContacts(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     if (metadata.getEmailContacts() != null) {
-      dtoClient.setContacts(new HashSet<>(metadata.getEmailContacts()));
+      dto.setContacts(new HashSet<>(metadata.getEmailContacts()));
     }
+  }
+
+  private void setGrantTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     if (metadata.getGrantTypes() != null) {
-      dtoClient.setGrantTypes(metadata.getGrantTypes()
+      dto.setGrantTypes(metadata.getGrantTypes()
         .stream()
         .map(GrantType::getValue)
         .map(AuthorizationGrantType::fromGrantType)
         .collect(Collectors.toSet()));
     } else {
-      dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
+      dto.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     }
+  }
+
+  private void setRedirectUris(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     if (metadata.getRedirectionURIs() == null || metadata.getRedirectionURIs().isEmpty()) {
       throw new InvalidClientMetadataException("invalid_redirect_uri",
           "Missing redirect uris from RP Entity Statement");
     }
-    dtoClient.setRedirectUris(
+    dto.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
+  }
+
+  private void setResponseTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     Set<String> supportedResponseTypes =
         Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
     if (metadata.getResponseTypes() != null) {
@@ -120,34 +141,41 @@ public class FederationRegistrationController {
         throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA,
             "Unsupported response type");
       }
-      dtoClient.setResponseTypes(responseTypes);
+      dto.setResponseTypes(responseTypes);
     } else {
-      dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
+      dto.setResponseTypes(Set.of(OAuthResponseType.CODE));
     }
+  }
+
+  private void setTokenEndpointAuthMethod(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     if (metadata.getTokenEndpointAuthMethod() != null) {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
+      dto.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
         .valueOf(metadata.getTokenEndpointAuthMethod().getValue()));
     } else {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
+      dto.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
     }
+  }
+
+  private void setScope(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     if (metadata.getScope() != null) {
-      dtoClient.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
+      dto.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
     } else {
-      dtoClient.setScope(Set.of("openid"));
+      dto.setScope(Set.of("openid"));
     }
+  }
+
+  private void setEntityId(RegisteredClientDTO dto, EntityStatement rpRequest) {
     if (rpRequest.getEntityID() == null) {
       throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA, "Missing RP Entity ID");
     }
-    dtoClient.setEntityId(rpRequest.getEntityID().getValue());
-
-    return dtoClient;
+    dto.setEntityId(rpRequest.getEntityID().getValue());
   }
 
   @PostMapping(value = "/iam/api/oid-fed/client-registration",
       consumes = "application/entity-statement+jwt",
       produces = "application/explicit-registration-response+jwt")
   public ResponseEntity<String> register(@RequestBody String requestJwt)
-      throws ParseException, JOSEException, InvalidClientMetadataException {
+      throws ParseException, JOSEException {
 
     // 1. Parse request Entity Statement (self-signed EC of the RP)
     EntityStatement rpRequest;

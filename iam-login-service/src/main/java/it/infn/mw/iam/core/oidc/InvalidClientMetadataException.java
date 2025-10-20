@@ -25,11 +25,6 @@ public class InvalidClientMetadataException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
-  public InvalidClientMetadataException(String errorCode, String message, Throwable cause) {
-    super(message, cause);
-    this.errorCode = errorCode;
-  }
-
   public String getErrorCode() {
     return errorCode;
   }
