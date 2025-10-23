@@ -58,6 +58,15 @@ import org.springframework.web.filter.GenericFilterBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.crypto.Ed25519Verifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.OctetKeyPair;
+import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -150,6 +159,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
             }
             // Build client from metadata
             EntityStatement rpRequest = validTrustChain.getLeafSelfStatement();
+            // Verify request JWT's signature
+            if (!verifyRequestObjectSignature(jwt, rpRequest, response, params)) {
+              return;
+            }
             RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
             dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
             // Client_id MUST be the RP's entity ID
@@ -297,6 +310,66 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     return Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals);
   }
 
+  private boolean isFederationClientId(String clientId) {
+    try {
+      new URL(clientId);
+      return true;
+    } catch (MalformedURLException e) {
+      return false;
+    }
+  }
+
+  private boolean verifyRequestObjectSignature(SignedJWT jwt, EntityStatement rpRequest,
+      HttpServletResponse response, Map<String, String> params) throws IOException, JOSEException {
+    var rpMetadata = rpRequest.getClaimsSet().getRPMetadata();
+    if (rpMetadata == null) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_client_metadata", "Missing openid_relying_party metadata");
+      return false;
+    }
+    var jwkSet = rpMetadata.getJWKSet();
+    if (jwkSet == null && rpMetadata.getJWKSetURI() != null) {
+      try {
+        var uri = rpMetadata.getJWKSetURI().toURL();
+        jwkSet = JWKSet.load(uri);
+      } catch (Exception e) {
+        sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+            "invalid_client_metadata", "Unable to fetch JWKS from RP's jwks_uri");
+        return false;
+      }
+    }
+    if (jwkSet == null) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_client_metadata", "No JWKS or jwks_uri provided by RP");
+      return false;
+    }
+    boolean verified = false;
+    for (var jwk : jwkSet.getKeys()) {
+      JWSVerifier verifier = switch (jwk.getKeyType().getValue()) {
+        case "RSA" -> new RSASSAVerifier((RSAKey) jwk.toPublicJWK());
+        case "EC" -> new ECDSAVerifier((ECKey) jwk.toPublicJWK());
+        case "OKP" -> new Ed25519Verifier((OctetKeyPair) jwk.toPublicJWK());
+        default -> null;
+      };
+      if (verifier == null)
+        continue;
+      try {
+        if (jwt.verify(verifier)) {
+          verified = true;
+          break;
+        }
+      } catch (JOSEException e) {
+        continue;
+      }
+    }
+    if (!verified) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_request_object", "Invalid signature on request object");
+      return false;
+    }
+    return true;
+  }
+
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
       throws InvalidEntityMetadataException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
@@ -318,7 +391,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     } else {
       dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     }
-    if (metadata.getRedirectionURIs() == null || metadata.getRedirectionURIs().isEmpty()) {
+    if (metadata.getRedirectionURIs() == null) {
       throw new InvalidEntityMetadataException("Missing redirect uris from RP Entity Statement");
     }
     dtoClient.setRedirectUris(
@@ -338,11 +411,15 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     } else {
       dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
     }
-    if (metadata.getJWKSetURI() == null) {
-      throw new InvalidEntityMetadataException("Missing jwks uri");
+    if (metadata.getJWKSetURI() == null && metadata.getJWKSet() == null) {
+      throw new InvalidEntityMetadataException("Missing jwks and jwks_uri");
     }
-    dtoClient.setJwksUri(metadata.getJWKSetURI().toASCIIString());
-
+    if (metadata.getJWKSetURI() != null) {
+      dtoClient.setJwksUri(metadata.getJWKSetURI().toASCIIString());
+    }
+    if (metadata.getJWKSet() != null) {
+      dtoClient.setJwk(metadata.getJWKSet().toString());
+    }
     if (metadata.getScope() != null) {
       dtoClient.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
     } else {
@@ -354,15 +431,6 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
     return dtoClient;
-  }
-
-  private boolean isFederationClientId(String clientId) {
-    try {
-      new URL(clientId);
-      return true;
-    } catch (MalformedURLException e) {
-      return false;
-    }
   }
 
   private void sendAuthenticationError(HttpServletResponse response, String redirectUri,

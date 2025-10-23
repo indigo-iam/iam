@@ -142,7 +142,6 @@ public class ClientConverter {
     clientDTO.setDeviceCodeValiditySeconds(entity.getDeviceCodeValiditySeconds());
     clientDTO.setDynamicallyRegistered(entity.isDynamicallyRegistered());
     clientDTO.setIdTokenValiditySeconds(entity.getIdTokenValiditySeconds());
-    clientDTO.setJwksUri(entity.getJwksUri());
 
     Optional.ofNullable(entity.getJwks()).ifPresent(k -> clientDTO.setJwk(k.toString()));
     clientDTO.setPolicyUri(entity.getPolicyUri());

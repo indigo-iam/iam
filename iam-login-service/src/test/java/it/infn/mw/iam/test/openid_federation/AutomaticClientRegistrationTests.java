@@ -16,10 +16,13 @@
 package it.infn.mw.iam.test.openid_federation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +30,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -36,13 +41,19 @@ import org.mitre.jose.keystore.JWKSetKeyStore;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -56,6 +67,7 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.core.oidc.TrustChainService;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
@@ -69,6 +81,9 @@ public class AutomaticClientRegistrationTests {
   @Autowired
   private MockMvc mvc;
 
+  @Autowired
+  private IamClientRepository clientRepo;
+
   @MockBean
   private TrustChainService trustChainService;
 
@@ -79,11 +94,13 @@ public class AutomaticClientRegistrationTests {
 
   private RSAKey rsaJWK;
 
+  private JWKSet jwkSet;
+
   @Before
   public void setup() throws Exception {
     rsaJWK = new RSAKeyGenerator(2048).keyID("rsa1").generate();
 
-    JWKSet jwkSet = new JWKSet(rsaJWK.toPublicJWK());
+    jwkSet = new JWKSet(rsaJWK.toPublicJWK());
     JWKSetKeyStore keyStore = new JWKSetKeyStore(jwkSet);
     JWTSigningAndValidationService validator = new DefaultJWTSigningAndValidationService(keyStore);
 
@@ -94,12 +111,12 @@ public class AutomaticClientRegistrationTests {
       throws Exception {
     JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(entityId)
       .audience(issuer)
-      .subject(entityId)
       .issueTime(new Date())
+      .jwtID(UUID.randomUUID().toString())
       .expirationTime(Date.from(Instant.now().plusSeconds(300)))
       .claim("client_id", entityId)
       .claim("redirect_uri", redirectUri)
-      .claim("trust_chain", trustChain)
+      .claim("trust_chain", trustChain) // optional
       .build();
 
     SignedJWT signedJWT =
@@ -112,12 +129,30 @@ public class AutomaticClientRegistrationTests {
     return signedJWT.serialize();
   }
 
+  private String generateClientAssertion(String clientId, String tokenEndpoint)
+      throws JOSEException {
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(clientId)
+      .subject(clientId)
+      .audience(tokenEndpoint)
+      .jwtID(UUID.randomUUID().toString())
+      .issueTime(new Date())
+      .expirationTime(Date.from(Instant.now().plusSeconds(300)))
+      .build();
+
+    SignedJWT signedJWT = new SignedJWT(
+        new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaJWK.getKeyID()).build(), claims);
+
+    signedJWT.sign(new RSASSASigner(rsaJWK.toPrivateKey()));
+
+    return signedJWT.serialize();
+  }
+
   @Test
   public void testAutomaticClientRegistrationWithEntityId() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, jwkSet);
 
     String rpEntityId = "https://rp.example";
-    String redirectUri = "https://rp.example/cb";
+    String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
@@ -132,13 +167,74 @@ public class AutomaticClientRegistrationTests {
       .andExpect(header().exists("Location"))
       .andReturn();
 
-    String location = result.getResponse().getHeader("Location");
-    assertEquals("http://localhost/login", location);
+    assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
+
+    MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+
+    var resultLogin = mvc
+      .perform(post("/login").session(session)
+        .param("username", "test")
+        .param("password", "password")
+        .param("submit", "Login"))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertTrue(
+        resultLogin.getResponse().getHeader("Location").startsWith("http://localhost/authorize"));
+
+    mvc
+      .perform(get("/authorize").session(session)
+        .param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isOk());
+
+    var approveResult = mvc
+      .perform(post("/authorize").session(session)
+        .param("scope.openid", "true")
+        .param("remember", "none")
+        .param("user_oauth_approval", "true")
+        .param("authorize", "Authorize"))
+      .andExpect(status().isSeeOther())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    String authorizeRedirect = approveResult.getResponse().getHeader("Location");
+    assertTrue(authorizeRedirect.startsWith(redirectUri));
+
+    String code = UriComponentsBuilder.fromUriString(authorizeRedirect)
+      .build()
+      .getQueryParams()
+      .getFirst("code");
+
+    String clientAssertion = generateClientAssertion(rpEntityId, "http://localhost:8080/token");
+    String tokenResponse =
+        mvc
+          .perform(post("/token").param("grant_type", "authorization_code")
+            .param("code", code)
+            .param("redirect_uri", redirectUri)
+            .param("client_assertion_type",
+                "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+            .param("client_assertion", clientAssertion))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+
+    JsonNode json = new ObjectMapper().readTree(tokenResponse);
+    assertNotNull(json.get("access_token"));
+
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(rpEntityId);
+    assertTrue(client.isPresent());
+    assertTrue(client.get().getClientId().equals(rpEntityId));
   }
 
   @Test
   public void testAutomaticClientRegistrationWithTrustChain() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, jwkSet);
 
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
@@ -168,7 +264,6 @@ public class AutomaticClientRegistrationTests {
       .andExpect(header().exists("Location"))
       .andReturn();
 
-    String location = result.getResponse().getHeader("Location");
-    assertEquals("http://localhost/login", location);
+    assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
   }
 }
