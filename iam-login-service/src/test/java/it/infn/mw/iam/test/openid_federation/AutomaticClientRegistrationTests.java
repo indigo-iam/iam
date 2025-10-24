@@ -33,7 +33,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -231,7 +230,7 @@ public class AutomaticClientRegistrationTests {
 
     Optional<ClientDetailsEntity> client = clientRepo.findByClientId(rpEntityId);
     assertTrue(client.isPresent());
-    assertTrue(client.get().getClientId().equals(rpEntityId));
+    assertEquals(rpEntityId, client.get().getClientId());
   }
 
   @Test
@@ -249,9 +248,8 @@ public class AutomaticClientRegistrationTests {
     statements.add(fakeChain.getLeafSelfStatement());
     statements.addAll(fakeChain.getSuperiorStatements());
     statements.add(taEC);
-    List<String> trustChainStrings = statements.stream()
-      .map(es -> es.getSignedStatement().serialize())
-      .collect(Collectors.toList());
+    List<String> trustChainStrings =
+        statements.stream().map(es -> es.getSignedStatement().serialize()).toList();
 
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, trustChainStrings);
 

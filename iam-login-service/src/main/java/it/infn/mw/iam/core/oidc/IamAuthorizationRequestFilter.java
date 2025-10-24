@@ -54,7 +54,6 @@ import javax.servlet.http.HttpSession;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.openid.connect.filter.AuthorizationRequestFilter;
 import org.mitre.openid.connect.service.LoginHintExtracter;
 import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
@@ -87,7 +86,6 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
-import com.nimbusds.openid.connect.sdk.federation.trust.InvalidEntityMetadataException;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
@@ -102,10 +100,10 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Component("iamAuthzRequestFilter")
 public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
-  private static final Logger logger = LoggerFactory.getLogger(AuthorizationRequestFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(IamAuthorizationRequestFilter.class);
 
-  public final static String PROMPTED = "PROMPT_FILTER_PROMPTED";
-  public final static String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
+  public static final String PROMPTED = "PROMPT_FILTER_PROMPTED";
+  public static final String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
 
   @Autowired
   private Environment env;
@@ -190,7 +188,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
             } else {
               clientManagementService.saveNewClient(dtoClient);
             }
-          } catch (InvalidEntityMetadataException e) {
+          } catch (InvalidClientMetadataException e) {
             sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
                 "invalid_client_metadata", "Invalid RP metadata");
             return;
@@ -366,15 +364,14 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
         case "OKP" -> new Ed25519Verifier((OctetKeyPair) jwk.toPublicJWK());
         default -> null;
       };
-      if (verifier == null)
-        continue;
-      try {
-        if (jwt.verify(verifier)) {
-          verified = true;
-          break;
+      if (verifier != null) {
+        try {
+          if (jwt.verify(verifier)) {
+            verified = true;
+            break;
+          }
+        } catch (JOSEException e) {
         }
-      } catch (JOSEException e) {
-        continue;
       }
     }
     if (!verified) {
@@ -386,7 +383,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   }
 
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
-      throws InvalidEntityMetadataException {
+      throws InvalidClientMetadataException {
     RegisteredClientDTO dtoClient = new RegisteredClientDTO();
     OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
     if (metadata.getName() != null) {
@@ -407,7 +404,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
     }
     if (metadata.getRedirectionURIs() == null) {
-      throw new InvalidEntityMetadataException("Missing redirect uris from RP Entity Statement");
+      throw new InvalidClientMetadataException("invalid_redirect_uri",
+          "Missing redirect uris from RP Entity Statement");
     }
     dtoClient.setRedirectUris(
         metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
@@ -427,7 +425,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
     }
     if (metadata.getJWKSetURI() == null && metadata.getJWKSet() == null) {
-      throw new InvalidEntityMetadataException("Missing jwks and jwks_uri");
+      throw new InvalidClientMetadataException("invalid_client_metadata",
+          "Missing jwks and jwks_uri");
     }
     if (metadata.getJWKSetURI() != null) {
       dtoClient.setJwksUri(metadata.getJWKSetURI().toASCIIString());
@@ -441,7 +440,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       dtoClient.setScope(Set.of("openid"));
     }
     if (rpRequest.getEntityID() == null) {
-      throw new InvalidEntityMetadataException("Missing RP Entity ID");
+      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
     }
     dtoClient.setEntityId(rpRequest.getEntityID().getValue());
 
@@ -480,10 +479,14 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
    */
   private Map<String, String> createRequestMap(Map<String, String[]> parameterMap) {
     Map<String, String> requestMap = new HashMap<>();
-    for (String key : parameterMap.keySet()) {
-      String[] val = parameterMap.get(key);
+
+    for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+      String key = entry.getKey();
+      String[] val = entry.getValue();
+
       if (val != null && val.length > 0) {
-        requestMap.put(key, val[0]); // add the first value only (which is what Spring seems to do)
+        // add the first value only (which is what Spring seems to do)
+        requestMap.put(key, val[0]);
       }
     }
 
