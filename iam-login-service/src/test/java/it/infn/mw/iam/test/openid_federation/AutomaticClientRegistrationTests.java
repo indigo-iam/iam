@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -149,11 +150,12 @@ public class AutomaticClientRegistrationTests {
 
   @Test
   public void testAutomaticClientRegistrationWithEntityId() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, jwkSet);
-
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
+
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -234,10 +236,11 @@ public class AutomaticClientRegistrationTests {
 
   @Test
   public void testAutomaticClientRegistrationWithTrustChain() throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, jwkSet);
-
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
+
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,

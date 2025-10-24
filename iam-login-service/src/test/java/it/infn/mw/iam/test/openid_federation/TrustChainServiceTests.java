@@ -79,7 +79,7 @@ public class TrustChainServiceTests {
   }
 
   private void mockRpToTaChain(boolean taTrusted) throws Exception {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
@@ -203,7 +203,7 @@ public class TrustChainServiceTests {
         null);
     String taEcJwt = taEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");
 
@@ -278,7 +278,7 @@ public class TrustChainServiceTests {
         null);
     String untrustedTaEcJwt = untrustedTaEC.getSignedStatement().serialize();
 
-    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    TrustChain shorterChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null);
     TrustChain longerChain =
         TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta1.example");
 
@@ -409,7 +409,7 @@ public class TrustChainServiceTests {
 
   @Test(expected = InvalidTrustChainException.class)
   public void testMissingFetchEndpoint() throws JOSEException {
-    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, null, null);
     EntityStatement rpEC = fakeChain.getLeafSelfStatement();
     String rpJwt = rpEC.getSignedStatement().serialize();
 
