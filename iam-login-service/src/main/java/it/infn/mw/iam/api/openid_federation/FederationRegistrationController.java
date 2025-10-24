@@ -58,8 +58,6 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Profile("openid-federation")
 public class FederationRegistrationController {
 
-  private static final String INVALID_CLIENT_METADATA = "invalid_client_metadata";
-
   @Value("${iam.issuer}")
   private String issuer;
 
@@ -138,7 +136,7 @@ public class FederationRegistrationController {
         .map(OAuthResponseType::fromResponseType)
         .collect(Collectors.toSet());
       if (responseTypes.isEmpty()) {
-        throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA,
+        throw new InvalidClientMetadataException("invalid_client_metadata",
             "Unsupported response type");
       }
       dto.setResponseTypes(responseTypes);
@@ -166,7 +164,7 @@ public class FederationRegistrationController {
 
   private void setEntityId(RegisteredClientDTO dto, EntityStatement rpRequest) {
     if (rpRequest.getEntityID() == null) {
-      throw new InvalidClientMetadataException(INVALID_CLIENT_METADATA, "Missing RP Entity ID");
+      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
     }
     dto.setEntityId(rpRequest.getEntityID().getValue());
   }
