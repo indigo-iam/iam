@@ -100,7 +100,7 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 @Component("iamAuthzRequestFilter")
 public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
-  private static final Logger logger = LoggerFactory.getLogger(IamAuthorizationRequestFilter.class);
+  private static final Logger log = LoggerFactory.getLogger(IamAuthorizationRequestFilter.class);
 
   public static final String PROMPTED = "PROMPT_FILTER_PROMPTED";
   public static final String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
@@ -193,7 +193,6 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
                 "invalid_client_metadata", "Invalid RP metadata");
             return;
           } catch (Exception e) {
-            e.printStackTrace();
             sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
                 "server_error", "Unexpected error during trust chain validation");
             return;
@@ -230,7 +229,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           // we're OK, continue without prompting
           chain.doFilter(req, res);
         } else {
-          logger.info("Client requested no prompt");
+          log.info("Client requested no prompt");
           // user hasn't been logged in, we need to "return an error"
           if (client != null && params.get(REDIRECT_URI) != null) {
 
@@ -249,14 +248,13 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
               return;
 
             } catch (URISyntaxException e) {
-              logger.error("Can't build redirect URI for prompt=none, sending error instead", e);
+              log.error("Can't build redirect URI for prompt=none, sending error instead", e);
               response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
               return;
             }
           }
 
           response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
-          return;
         }
       } else if (prompts.contains(PROMPT_LOGIN)) {
 
@@ -371,6 +369,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
             break;
           }
         } catch (JOSEException e) {
+          // Ignored: try the next key in the set
         }
       }
     }
