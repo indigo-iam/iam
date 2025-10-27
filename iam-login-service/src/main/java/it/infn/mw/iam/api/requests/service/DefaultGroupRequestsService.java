@@ -21,11 +21,13 @@ import static it.infn.mw.iam.core.IamGroupRequestStatus.REJECTED;
 
 import static java.util.Objects.isNull;
 
+import java.util.LinkedList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -172,12 +174,35 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   @Override
   public GroupRequestDto rejectGroupRequest(String requestId, String motivation) {
     IamGroupRequest request = groupRequestUtils.getGroupRequest(requestId);
+    IamAccount account = request.getAccount();
+    IamGroup group = request.getGroup();
+
     groupRequestUtils.validateRejectMotivation(motivation);
 
     request.setMotivation(motivation);
     request = updateGroupRequestStatus(request, REJECTED);
     notificationFactory.createGroupMembershipRejectedMessage(request);
     eventPublisher.publishEvent(new GroupRequestRejectedEvent(this, request));
+
+    // reject all PENDING requests in the subtree
+    Queue<IamGroup> queue = new LinkedList<>(group.getChildrenGroups());
+
+    while (!queue.isEmpty()) {
+      IamGroup child = queue.poll();
+
+      Optional<IamGroupRequest> hasPendingRequest = 
+          groupRequestRepository.findByGroupIdAndAccountIdAndStatus(child.getId(), account.getId(), PENDING);
+
+      if (hasPendingRequest.isPresent() && !hasPendingRequest.get().getId().equals(request.getId())) {
+        IamGroupRequest pendingRequest = hasPendingRequest.get();
+        pendingRequest.setMotivation(motivation);
+        updateGroupRequestStatus(pendingRequest, REJECTED);
+        notificationFactory.createGroupMembershipRejectedMessage(pendingRequest);
+        eventPublisher.publishEvent(new GroupRequestRejectedEvent(this, pendingRequest));
+      }
+
+      queue.addAll(child.getChildrenGroups());
+    }
 
     return converter.fromEntity(request);
   }

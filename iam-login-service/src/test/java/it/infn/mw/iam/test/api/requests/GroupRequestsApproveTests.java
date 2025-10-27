@@ -236,4 +236,46 @@ public class GroupRequestsApproveTests extends GroupRequestsTestUtils {
     assertThat(updatedParentRequest.getStatus(), equalTo(IamGroupRequestStatus.APPROVED));
     assertThat(updatedParentRequest.getAccount().getUsername(), equalTo(TEST_100_USERNAME));
   }
+
+  @Transactional
+  @Test
+  @WithMockUser(roles = {"ADMIN"})
+  public void autoRejectChildGroupRequest() throws Exception {
+    // Setup: parent-child relationship
+    IamGroup parentGroup = groupRepository.findByName(TEST_002_GROUPNAME).get();
+    IamGroup childGroup = groupRepository.findByName(TEST_001_GROUPNAME).get();
+    childGroup.setParentGroup(parentGroup);
+    groupRepository.save(childGroup);
+
+    IamAccount account = accountRepository.findByUsername(TEST_100_USERNAME).get();
+
+    // Parent request
+    IamGroupRequest parentRequest = new IamGroupRequest();
+    parentRequest.setUuid(UUID.randomUUID().toString());
+    parentRequest.setAccount(account);
+    parentRequest.setGroup(parentGroup);
+    parentRequest.setStatus(IamGroupRequestStatus.PENDING);
+    parentRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(parentRequest);
+
+    // Child request
+    IamGroupRequest childRequest = new IamGroupRequest();
+    childRequest.setUuid(UUID.randomUUID().toString());
+    childRequest.setAccount(account);
+    childRequest.setGroup(childGroup);
+    childRequest.setStatus(IamGroupRequestStatus.PENDING);
+    childRequest.setCreationTime(new java.util.Date());
+    groupRequestRepository.save(childRequest);
+
+    // Reject parent request -> should cascade to child
+    String motivation = "Parent group request rejected";
+    mvc.perform(post(REJECT_URL, parentRequest.getUuid()).param("motivation", motivation))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status", equalTo(IamGroupRequestStatus.REJECTED.name())));
+
+    Optional<IamGroupRequest> rejectedChild =
+        groupRequestRepository.findByGroupIdAndAccountIdAndStatus(childGroup.getId(), account.getId(),
+            IamGroupRequestStatus.REJECTED);
+    assertThat(rejectedChild.isPresent(), equalTo(true));
+  }
 }
