@@ -15,6 +15,8 @@
  */
 package it.infn.mw.iam.core.oidc;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,9 +38,28 @@ public class TrustChainResolver {
   private final RestTemplate restTemplate = new RestTemplate();
 
   private EntityStatement fetchEntityConfiguration(String entityId) {
-    String url = entityId + (entityId.endsWith("/") ? "" : "/") + ".well-known/openid-federation";
+    URL baseUrl;
     try {
-      String jwt = restTemplate.getForObject(url, String.class);
+      baseUrl = new URL(entityId);
+    } catch (MalformedURLException e) {
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Invalid entityId URL: " + entityId, e);
+    }
+    if (!"https".equalsIgnoreCase(baseUrl.getProtocol())) {
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Only HTTPS URLs are allowed: " + entityId);
+    }
+    URL metadataUrl;
+    try {
+      metadataUrl =
+          new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
+              : "/.well-known/openid-federation");
+    } catch (MalformedURLException e) {
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Failed to build metadata URL for entityId: " + entityId, e);
+    }
+    try {
+      String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
       return EntityStatement.parse(jwt);
     } catch (Exception e) {
       throw new InvalidTrustChainException("invalid_trust_chain",
