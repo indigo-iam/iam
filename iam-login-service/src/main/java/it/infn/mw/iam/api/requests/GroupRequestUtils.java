@@ -123,11 +123,4 @@ public class GroupRequestUtils {
       .collect(Collectors.toSet());
 
   }
-
-  public boolean isPrivilegedUser() {
-    return accountUtils.getAuthenticatedUserAccount()
-        .map(IamAccount::getAuthorities)
-        .map(authorities -> authorities.contains(ROLE_ADMIN) || authorities.contains(ROLE_READER))
-        .orElse(false);
-  }
 }
