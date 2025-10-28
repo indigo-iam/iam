@@ -32,6 +32,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -61,12 +62,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.filter.GenericFilterBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +85,7 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.OctetKeyPair;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -90,6 +95,7 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -149,61 +155,13 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     if (params.get(CLIENT_ID) != null) {
       String clientId = params.get(CLIENT_ID);
       if (isOidFedProfile() && isFederationClientId(clientId)) {
-        String requestObj = params.get("request");
-        if (requestObj != null) {
-          try {
-            SignedJWT jwt = SignedJWT.parse(requestObj);
-            JWTClaimsSet claims = jwt.getJWTClaimsSet();
-            Object trustChainObj = claims.getClaim("trust_chain");
-            TrustChain validTrustChain = null;
-            List<EntityStatement> trustChain = new ArrayList<>();
-            if (trustChainObj != null) {
-              ObjectMapper mapper = new ObjectMapper();
-              List<String> trustChainStrings = mapper.convertValue(trustChainObj,
-                  new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
-              for (String jwtString : trustChainStrings) {
-                SignedJWT signedJWT = SignedJWT.parse(jwtString);
-                EntityStatement entityStatement = EntityStatement.parse(signedJWT);
-                trustChain.add(entityStatement);
-              }
-              validTrustChain = trustChainService.validateFromProvidedChain(trustChain);
-            } else {
-              validTrustChain = trustChainService.validateFromEntityId(clientId);
-            }
-            // Build client from metadata
-            EntityStatement rpRequest = validTrustChain.getLeafSelfStatement();
-            // Verify request JWT's signature
-            if (!verifyRequestObjectSignature(jwt, rpRequest, response, params)) {
-              return;
-            }
-            RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
-            dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
-            // Client_id MUST be the RP's entity ID
-            dtoClient.setClientId(clientId);
-            // Check if client already registered and not expired
-            Optional<ClientDetailsEntity> maybeClient = clientRepo.findByClientId(clientId);
-            if (maybeClient.isPresent()
-                && maybeClient.get().getClientRelyingParty().getExpiration().after(new Date())) {
-              clientManagementService.updateClient(clientId, dtoClient);
-            } else {
-              clientManagementService.saveNewClient(dtoClient);
-            }
-          } catch (InvalidClientMetadataException e) {
-            sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-                "invalid_client_metadata", "Invalid RP metadata");
-            return;
-          } catch (Exception e) {
-            sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-                "server_error", "Unexpected error during trust chain validation");
-            return;
-          }
-        } else {
-          sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-              "invalid_request", "Missing request object");
+        client = handleFederationClient(request, response, params, clientId);
+        if (client == null) {
           return;
         }
+      } else {
+        client = clientService.loadClientByClientId(clientId);
       }
-      client = clientService.loadClientByClientId(clientId);
     }
 
     // save the login hint to the session
@@ -330,6 +288,76 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     }
   }
 
+  private ClientDetailsEntity handleFederationClient(HttpServletRequest request,
+      HttpServletResponse response, Map<String, String> params, String clientId)
+      throws IOException {
+    String requestObj = params.get("request");
+    if (requestObj == null) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_request", "Missing request object");
+      return null;
+    }
+
+    try {
+      SignedJWT jwt = SignedJWT.parse(requestObj);
+      JWTClaimsSet claims = jwt.getJWTClaimsSet();
+
+      TrustChain validTrustChain = extractAndValidateTrustChain(claims, clientId);
+      EntityStatement rpRequest = validTrustChain.getLeafSelfStatement();
+
+      if (!verifyRequestObjectSignature(jwt, rpRequest, response, params)) {
+        return null;
+      }
+
+      RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
+      dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
+      dtoClient.setClientId(clientId);
+
+      Optional<ClientDetailsEntity> maybeClient = clientRepo.findByClientId(clientId);
+      if (maybeClient.isPresent()
+          && maybeClient.get().getClientRelyingParty().getExpiration().after(new Date())) {
+        clientManagementService.updateClient(clientId, dtoClient);
+      } else {
+        clientManagementService.saveNewClient(dtoClient);
+      }
+
+      return clientService.loadClientByClientId(clientId);
+
+    } catch (InvalidClientMetadataException e) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_client_metadata", "Invalid RP metadata");
+    } catch (Exception e) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE), "server_error",
+          "Unexpected error during trust chain validation");
+    }
+
+    return null;
+  }
+
+  private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)
+      throws IOException, BadJOSEException, JOSEException, ParseException {
+    Object trustChainObj = claims.getClaim("trust_chain");
+    if (trustChainObj != null) {
+      ObjectMapper mapper = new ObjectMapper();
+      List<String> trustChainStrings = mapper.convertValue(trustChainObj,
+          new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+      List<EntityStatement> trustChain = new ArrayList<>();
+      for (String jwtString : trustChainStrings) {
+        SignedJWT signedJWT = SignedJWT.parse(jwtString);
+        EntityStatement entityStatement;
+        try {
+          entityStatement = EntityStatement.parse(signedJWT);
+        } catch (com.nimbusds.oauth2.sdk.ParseException e) {
+          throw (ParseException) e.getCause();
+        }
+        trustChain.add(entityStatement);
+      }
+      return trustChainService.validateFromProvidedChain(trustChain);
+    } else {
+      return trustChainService.validateFromEntityId(clientId);
+    }
+  }
+
   private boolean verifyRequestObjectSignature(SignedJWT jwt, EntityStatement rpRequest,
       HttpServletResponse response, Map<String, String> params) throws IOException, JOSEException {
     var rpMetadata = rpRequest.getClaimsSet().getRPMetadata();
@@ -338,20 +366,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           "invalid_client_metadata", "Missing openid_relying_party metadata");
       return false;
     }
-    var jwkSet = rpMetadata.getJWKSet();
-    if (jwkSet == null && rpMetadata.getJWKSetURI() != null) {
-      try {
-        var uri = rpMetadata.getJWKSetURI().toURL();
-        jwkSet = JWKSet.load(uri);
-      } catch (Exception e) {
-        sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-            "invalid_client_metadata", "Unable to fetch JWKS from RP's jwks_uri");
-        return false;
-      }
-    }
+    JWKSet jwkSet = loadJwkSet(rpMetadata, response, params);
     if (jwkSet == null) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_client_metadata", "No JWKS or jwks_uri provided by RP");
       return false;
     }
     boolean verified = false;
@@ -379,6 +395,26 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       return false;
     }
     return true;
+  }
+
+  private JWKSet loadJwkSet(OIDCClientMetadata rpMetadata, HttpServletResponse response,
+      Map<String, String> params) throws IOException {
+    var jwkSet = rpMetadata.getJWKSet();
+    if (jwkSet == null && rpMetadata.getJWKSetURI() != null) {
+      try {
+        var uri = rpMetadata.getJWKSetURI().toURL();
+        jwkSet = JWKSet.load(uri);
+      } catch (Exception e) {
+        sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+            "invalid_client_metadata", "Unable to fetch JWKS from RP's jwks_uri");
+        return null;
+      }
+    }
+    if (jwkSet == null) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_client_metadata", "No JWKS or jwks_uri provided by RP");
+    }
+    return jwkSet;
   }
 
   private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
@@ -506,4 +542,15 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     this.requestMatcher = requestMatcher;
   }
 
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(ParseException.class)
+  public ErrorDTO badRequestError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  @ExceptionHandler({JOSEException.class, BadJOSEException.class})
+  public ErrorDTO internalServerError(Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
+  }
 }
