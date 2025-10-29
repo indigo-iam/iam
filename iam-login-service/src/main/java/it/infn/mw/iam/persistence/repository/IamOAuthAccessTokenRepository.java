@@ -32,6 +32,9 @@ public interface IamOAuthAccessTokenRepository
   @Query("select t from OAuth2AccessTokenEntity t where t.tokenValueHash = :atHash")
   Optional<OAuth2AccessTokenEntity> findByTokenValue(@Param("atHash") String atHash);
 
+  @Query("select t from OAuth2AccessTokenEntity t where t.client.id = :clientId")
+  List<OAuth2AccessTokenEntity> findByClientId(@Param("clientId") Long id);
+
   @Query("select t from OAuth2AccessTokenEntity t where t.authenticationHolder.userAuth.name = :userId "
     + "and (t.expiration is NOT NULL and t.expiration > :timestamp)")
   List<OAuth2AccessTokenEntity> findValidAccessTokensForUser(

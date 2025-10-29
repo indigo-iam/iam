@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -62,8 +61,10 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.PagingUtils;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping(ClientManagementAPIController.ENDPOINT)
 public class ClientManagementAPIController {
@@ -73,19 +74,19 @@ public class ClientManagementAPIController {
   private final ClientManagementService managementService;
   private final AccountUtils accountUtils;
 
-  private final OAuth2TokenEntityService tokenService;
-
   private final ClientService clientService;
+
+  private final TokenRevocationService revocationService;
 
   DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public ClientManagementAPIController(ClientManagementService managementService,
-      AccountUtils accountUtils, OAuth2TokenEntityService tokenService,
-      ClientService clientService) {
+      AccountUtils accountUtils, ClientService clientService,
+      TokenRevocationService revocationService) {
     this.managementService = managementService;
     this.accountUtils = accountUtils;
-    this.tokenService = tokenService;
     this.clientService = clientService;
+    this.revocationService = revocationService;
   }
 
   @PostMapping
@@ -178,7 +179,7 @@ public class ClientManagementAPIController {
   public void revokeRefreshTokens(@PathVariable String clientId) {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
+    revocationService.revokeRefreshTokens(client);
   }
 
   @PatchMapping("/{clientId}/revoke-access-tokens")
@@ -186,7 +187,7 @@ public class ClientManagementAPIController {
   public void revokeAccessTokens(@PathVariable String clientId) {
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    revocationService.revokeAccessTokens(client);
   }
 
   @PatchMapping("/{clientId}/reset-client")
@@ -195,8 +196,8 @@ public class ClientManagementAPIController {
     disableClient(clientId);
     ClientDetailsEntity client = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
-    tokenService.getRefreshTokensForClient(client).forEach(tokenService::revokeRefreshToken);
-    tokenService.getAccessTokensForClient(client).forEach(tokenService::revokeAccessToken);
+    revocationService.revokeRefreshTokens(client);
+    revocationService.revokeAccessTokens(client);
     RegisteredClientDTO resetClient = rotateClientSecret(clientId);
     enableClient(clientId);
     return new MappingJacksonValue(resetClient.getClientSecret());

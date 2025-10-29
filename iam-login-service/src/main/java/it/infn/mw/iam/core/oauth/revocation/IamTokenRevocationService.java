@@ -21,6 +21,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Optional;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.stereotype.Service;
@@ -95,6 +96,30 @@ public class IamTokenRevocationService
       refreshTokenRepo.delete(rt);
       eventPublisher.publishEvent(
           new RevocationEvent(this, rt.getJwt().serialize(), TokenTypeHint.REFRESH_TOKEN));
+    });
+  }
+
+  @Override
+  public void revokeAccessTokens(ClientDetailsEntity client) {
+
+    accessTokenRepo.findByClientId(client.getId()).stream().forEach(rt -> {
+      try {
+        revokeAccessToken((SignedJWT) rt.getJwt());
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
+    });
+  }
+
+  @Override
+  public void revokeRefreshTokens(ClientDetailsEntity client) {
+
+    refreshTokenRepo.findByClientId(client.getId()).stream().forEach(rt -> {
+      try {
+        revokeRefreshToken((PlainJWT) rt.getJwt());
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
     });
   }
 

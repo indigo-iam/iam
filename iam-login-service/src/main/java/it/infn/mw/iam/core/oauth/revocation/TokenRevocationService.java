@@ -17,6 +17,8 @@ package it.infn.mw.iam.core.oauth.revocation;
 
 import java.text.ParseException;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -29,5 +31,9 @@ public interface TokenRevocationService {
   public void revokeAccessToken(SignedJWT token) throws ParseException;
 
   public void revokeRefreshToken(PlainJWT token) throws ParseException;
+
+  public void revokeAccessTokens(ClientDetailsEntity client);
+
+  public void revokeRefreshTokens(ClientDetailsEntity client);
 
 }

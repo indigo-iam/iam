@@ -34,6 +34,9 @@ public interface IamOAuthRefreshTokenRepository
   @Query("select r from OAuth2RefreshTokenEntity r where r.jwt = :value")
   Optional<OAuth2RefreshTokenEntity> findByTokenValue(@Param("value") JWT value);
 
+  @Query("select r from OAuth2RefreshTokenEntity r where r.client.id = :clientId")
+  List<OAuth2RefreshTokenEntity> findByClientId(@Param("clientId") Long id);
+
   @Query("select t from OAuth2RefreshTokenEntity t where t.authenticationHolder.userAuth.name = :userId "
       + "and (t.expiration is NULL or t.expiration > :timestamp)")
   List<OAuth2RefreshTokenEntity> findValidRefreshTokensForUser(@Param("userId") String userId,
