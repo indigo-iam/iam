@@ -33,6 +33,15 @@ public class IamRevokedAccessToken {
   @Column(nullable = false)
   private Date expiration;
 
+  @Column(nullable = false)
+  private Date revokedAt;
+
+  @Column(nullable = false)
+  private String clientId;
+
+  @Column(nullable = false)
+  private String sub;
+
   public String getJti() {
     return jti;
   }
@@ -41,11 +50,35 @@ public class IamRevokedAccessToken {
     this.jti = jti;
   }
 
-  public Date getExpirationp() {
+  public Date getExpiration() {
     return expiration;
   }
 
   public void setExpiration(Date expiration) {
     this.expiration = expiration;
+  }
+
+  public Date getRevokedAt() {
+    return revokedAt;
+  }
+
+  public void setRevokedAt(Date revokedAt) {
+    this.revokedAt = revokedAt;
+  }
+
+  public String getClientId() {
+    return clientId;
+  }
+
+  public void setClientId(String clientId) {
+    this.clientId = clientId;
+  }
+
+  public String getSub() {
+    return sub;
+  }
+
+  public void setSub(String sub) {
+    this.sub = sub;
   }
 }
