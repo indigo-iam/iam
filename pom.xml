@@ -95,7 +95,7 @@
 
     <jvm.test.args>-Xmx2500m</jvm.test.args>
     <!-- Default (used in Eclipse) -->
-    <surefireArgLine>${argLine} ${jvm.test.args}</surefireArgLine>
+    <surefireArgLine>@{argLine} ${jvm.test.args}</surefireArgLine>
 
     <code.coverage.project.folder>${basedir}/../</code.coverage.project.folder>
     <code.coverage.overall.data.folder>${basedir}/target/</code.coverage.overall.data.folder>
