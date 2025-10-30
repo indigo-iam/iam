@@ -117,10 +117,10 @@ public interface IamAccountRepository
     @Query("select a from IamAccount a join a.authorities auth where lower(auth.authority) = lower(:authority) order by a.username ASC")
     Page<IamAccount> findByAuthority(@Param("authority") String authority, Pageable op);
 
-    @Query("select a from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+    @Query("select distinct a from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
     Page<IamAccount> findByFilter(@Param("filter") String filter, Pageable op);
 
-    @Query("select count(a) from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
+    @Query("select count(distinct a) from IamAccount a join a.userInfo ui left outer join a.x509Certificates c where lower(ui.email) LIKE lower(concat('%', :filter, '%')) or lower(c.subjectDn) LIKE lower(concat('%', :filter, '%')) or lower(a.username) LIKE lower(concat('%', :filter, '%')) or lower(a.uuid) LIKE lower(concat('%', :filter, '%')) or lower(concat(ui.givenName, ' ', ui.familyName)) LIKE lower(concat('%', :filter, '%'))")
     long countByFilter(@Param("filter") String filter);
 
     @Query("select a from IamAccount a where a.endTime < :timestamp")
