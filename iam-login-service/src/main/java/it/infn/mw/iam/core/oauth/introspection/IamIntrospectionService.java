@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.oauth.introspection;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -26,13 +27,11 @@ import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Strings;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -50,7 +49,7 @@ import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
 @SuppressWarnings("deprecation")
 @Service
 public class IamIntrospectionService
-    implements IntrospectionService, ApplicationEventPublisherAware {
+    implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
@@ -62,24 +61,23 @@ public class IamIntrospectionService
   private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
   private final ClientService clientService;
-  private ApplicationEventPublisher eventPublisher;
+  private final ApplicationEventPublisher eventPublisher;
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
-      OAuth2TokenEntityService tokenService, ClientService clientService) {
+      OAuth2TokenEntityService tokenService, ClientService clientService,
+      ApplicationEventPublisher eventPublisher) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
-  }
-
-  @Override
-  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-    this.eventPublisher = applicationEventPublisher;
+    this.eventPublisher = eventPublisher;
   }
 
   @Override
   public IntrospectionResponse introspect(Authentication auth, String tokenValue,
       TokenTypeHint tokenTypeHint) {
+
+    Objects.requireNonNull(tokenValue, "Unexpected null tokenValue");
 
     ClientDetailsEntity authenticatedClient = loadClient(auth);
     clientService.useClient(authenticatedClient);
@@ -89,7 +87,7 @@ public class IamIntrospectionService
     try {
 
       info = getTokenInfo(tokenValue, tokenTypeHint);
-      validate(authenticatedClient, tokenValue);
+      validateClient(authenticatedClient);
 
       switch (info.tokenType) {
         case REFRESH_TOKEN:
@@ -103,9 +101,19 @@ public class IamIntrospectionService
           break;
       }
 
-    } catch (UnauthorizedClientException | InvalidTokenException | ParseException e) {
+    } catch (UnauthorizedClientException e) {
 
-      LOG.warn("Token introspection error: {}", e.getMessage());
+      LOG.info("Failed introspection of token, client validation error: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (InvalidTokenException e) {
+
+      LOG.info("Failed introspection of token, invalid token value: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (ParseException e) {
+
+      LOG.info("Failed introspection of token, malformed token: {}", e.getMessage());
       return IntrospectionResponse.inactive();
     }
 
@@ -136,7 +144,7 @@ public class IamIntrospectionService
         "Token introspection error: expected a SignedJWT or PlainJWT object");
   }
 
-  private void validate(ClientDetailsEntity c, String tokenValue)
+  private void validateClient(ClientDetailsEntity c)
       throws UnauthorizedClientException, InvalidTokenException {
 
     // check if client has been suspended
@@ -151,13 +159,6 @@ public class IamIntrospectionService
       String errorMsg = String.format(NOT_ALLOWED_CLIENT_ERROR, c.getClientId());
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
-    }
-
-    // invalid null token to introspect
-    if (Strings.isNullOrEmpty(tokenValue)) {
-      String errorMsg = "Verify failed; token value is null";
-      LOG.error(errorMsg);
-      throw new InvalidTokenException(errorMsg);
     }
   }
 
