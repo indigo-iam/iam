@@ -198,6 +198,7 @@ public class ClientManagementAPIController {
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
     revocationService.revokeRefreshTokens(client);
     revocationService.revokeAccessTokens(client);
+    revocationService.revokeRegistrationToken(client);
     RegisteredClientDTO resetClient = rotateClientSecret(clientId);
     enableClient(clientId);
     return new MappingJacksonValue(resetClient.getClientSecret());

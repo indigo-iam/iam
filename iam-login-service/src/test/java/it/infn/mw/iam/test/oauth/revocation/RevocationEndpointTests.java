@@ -43,6 +43,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Before
   public void setup() throws Exception {
+
     TokenEndpointResponse tokenResponse = getPasswordToken("openid profile offline_access");
     accessToken = tokenResponse.accessToken();
     refreshToken = tokenResponse.refreshToken();
@@ -50,6 +51,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Test
   public void testRevocationEnpointRequiresClientAuth() throws Exception {
+
     mvc
       .perform(post(REVOCATION_ENDPOINT).contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         .param(OAuth2ParameterNames.TOKEN, INVALID_TOKEN_VALUE))
@@ -58,6 +60,7 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
 
   @Test
   public void testRevokeInvalidTokenReturns200() throws Exception {
+
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -76,7 +79,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
             .param(OAuth2ParameterNames.TOKEN, accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(TEST_USERNAME, TEST_PASSWORD))
@@ -105,7 +107,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
-
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(TEST_USERNAME, TEST_PASSWORD))
         .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -132,7 +133,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
             .param(OAuth2ParameterNames.TOKEN, accessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
@@ -183,7 +183,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
-
     mvc
       .perform(post(REVOCATION_ENDPOINT)
         .with(httpBasic(CLIENT_CREDENTIALS_CLIENT_ID, CLIENT_CREDENTIALS_CLIENT_SECRET))
@@ -204,7 +203,6 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
             .param(OAuth2ParameterNames.TOKEN, refreshToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
-
 
     mvc
       .perform(post(REVOCATION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
@@ -265,12 +263,12 @@ public class RevocationEndpointTests extends EndpointsTestUtils {
       .andExpect(status().isForbidden());
 
     mvc
-    .perform(
-        post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
-          .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-          .param(OAuth2ParameterNames.TOKEN_TYPE_HINT, TokenTypeHint.REFRESH_TOKEN.name())
-          .param(OAuth2ParameterNames.TOKEN, refreshToken))
-    .andExpect(status().isOk())
-    .andExpect(jsonPath("$.active", equalTo(true)));
+      .perform(
+          post(INTROSPECTION_ENDPOINT).with(httpBasic(PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .param(OAuth2ParameterNames.TOKEN_TYPE_HINT, TokenTypeHint.REFRESH_TOKEN.name())
+            .param(OAuth2ParameterNames.TOKEN, refreshToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.active", equalTo(true)));
   }
 }

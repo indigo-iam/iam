@@ -15,14 +15,22 @@
  */
 package it.infn.mw.iam.core.oauth.introspection;
 
+import java.util.NoSuchElementException;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 
@@ -44,5 +52,11 @@ public class IamIntrospectionEndpoint {
       Authentication auth) {
 
     return introspectionService.introspect(auth, tokenValue, tokenTypeHint);
+  }
+
+  @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+  @ExceptionHandler(NoSuchElementException.class)
+  public ErrorDTO invalidClientError(HttpServletRequest req, Exception ex) {
+    return ErrorDTO.fromString(ex.getMessage());
   }
 }

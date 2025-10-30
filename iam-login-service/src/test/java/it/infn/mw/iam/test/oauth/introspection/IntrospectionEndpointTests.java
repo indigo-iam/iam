@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,8 +43,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.PlainJWT;
-import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.core.IamTokenService;
@@ -262,7 +261,8 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeAccessToken(SignedJWT.parse(accessToken));
+    OAuth2AccessTokenEntity at = tokenService.readAccessToken(accessToken);
+    revokeService.revokeAccessToken(at);
 
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
@@ -287,7 +287,8 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
+    OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(refreshToken);
+    revokeService.revokeRefreshToken(rt);
 
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken, ACCESS_TOKEN)
@@ -327,7 +328,8 @@ public class IntrospectionEndpointTests extends TestTokensUtils {
       .andExpect(jsonPath("$.active", equalTo(true)));
     // @formatter:on
 
-    revokeService.revokeRefreshToken(PlainJWT.parse(refreshToken));
+    OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(refreshToken);
+    revokeService.revokeRefreshToken(rt);
 
     // @formatter:off
     introspect(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET, accessToken)

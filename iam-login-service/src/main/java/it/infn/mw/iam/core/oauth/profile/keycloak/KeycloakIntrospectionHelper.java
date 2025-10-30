@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.oauth.profile.keycloak;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
-import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,12 +36,12 @@ public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> claims =
+    Map<String, Object> result =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
-    addRoles(claims);
-    return claims;
+    addRoles(result);
+    return result;
   }
 
   private void addRoles(Map<String, Object> claims) {

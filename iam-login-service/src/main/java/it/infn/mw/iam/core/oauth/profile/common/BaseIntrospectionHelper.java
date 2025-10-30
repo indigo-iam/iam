@@ -40,6 +40,7 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
@@ -63,12 +64,20 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     return accountService;
   }
 
+  protected JWTClaimsSet getClaimsSet(JWT jwt) {
+    try {
+      return jwt.getJWTClaimsSet();
+    } catch (ParseException e) {
+      throw new IllegalStateException("Unexpected error: " + e.getMessage());
+    }
+  }
+
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
     ClientDetailsEntity client = accessToken.getClient();
-    JWTClaimsSet claims = accessToken.getJwt().getJWTClaimsSet();
+    JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.ACCESS_TOKEN);
     result.put(SUB, claims.getSubject());
     result.put(IAT, claims.getIssueTime());
@@ -81,10 +90,10 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
     ClientDetailsEntity client = refreshToken.getClient();
-    JWTClaimsSet claims = refreshToken.getJwt().getJWTClaimsSet();
+    JWTClaimsSet claims = getClaimsSet(refreshToken.getJwt());
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.REFRESH_TOKEN);
     if (nonNull(refreshToken.getAuthenticationHolder().getScope())) {
       result.put(SCOPE,

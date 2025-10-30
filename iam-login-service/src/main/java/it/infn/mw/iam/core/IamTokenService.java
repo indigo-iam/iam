@@ -16,13 +16,11 @@
 package it.infn.mw.iam.core;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.Set;
 
 import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.ClientLastUsedEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
@@ -38,6 +36,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.AccessTokenIssuedEvent;
 import it.infn.mw.iam.audit.events.tokens.RefreshTokenIssuedEvent;
 import it.infn.mw.iam.authn.util.Authorities;
@@ -55,16 +54,18 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final ClientService clientService;
   private final ApplicationEventPublisher eventPublisher;
   private final IamProperties iamProperties;
   private final ScopeFilter scopeFilter;
 
   public IamTokenService(IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ApplicationEventPublisher eventPublisher,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientService clientService, ApplicationEventPublisher eventPublisher,
       IamProperties iamProperties, ScopeFilter scopeFilter) {
 
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
+    this.clientService = clientService;
     this.eventPublisher = eventPublisher;
     this.iamProperties = iamProperties;
     this.scopeFilter = scopeFilter;
@@ -109,7 +110,7 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     OAuth2AccessTokenEntity token = super.createAccessToken(scopeFilter.filterScopes(authentication));
 
     if (iamProperties.getClient().isTrackLastUsed()) {
-      updateClientLastUsed(token);
+      clientService.useClient(token.getClient());
     }
 
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
@@ -133,27 +134,11 @@ public class IamTokenService extends DefaultOAuth2ProviderTokenService {
     OAuth2AccessTokenEntity token = super.refreshAccessToken(refreshTokenValue, authRequest);
 
     if (iamProperties.getClient().isTrackLastUsed()) {
-      updateClientLastUsed(token);
+      clientService.useClient(token.getClient());
     }
 
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
-  }
-
-  private void updateClientLastUsed(OAuth2AccessTokenEntity token) {
-    ClientDetailsEntity client = token.getClient();
-    ClientLastUsedEntity clientLastUsed = client.getClientLastUsed();
-    LocalDate now = LocalDate.now();
-
-    if (clientLastUsed == null) {
-      clientLastUsed = new ClientLastUsedEntity(client, now);
-      client.setClientLastUsed(clientLastUsed);
-    } else {
-      LocalDate lastUsed = clientLastUsed.getLastUsed();
-      if (lastUsed.isBefore(now)) {
-        clientLastUsed.setLastUsed(now);
-      }
-    }
   }
 
   public static String sha256(String tokenString) {

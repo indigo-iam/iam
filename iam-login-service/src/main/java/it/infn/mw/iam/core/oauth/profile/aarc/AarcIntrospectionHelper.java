@@ -15,13 +15,14 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
-import java.text.ParseException;
 import java.util.Map;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
@@ -39,14 +40,15 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> claims =
+    Map<String, Object> result =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
 
+    JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
     final Optional<IamAccount> account;
     if (accessToken.getAuthenticationHolder().getUserAuth() != null) {
-      String subject = accessToken.getJwt().getJWTClaimsSet().getSubject();
+      String subject = claims.getSubject();
       account = getAccountService().findByUuid(subject);
     } else {
       account = Optional.empty();
@@ -56,23 +58,23 @@ public class AarcIntrospectionHelper extends BaseIntrospectionHelper {
       Object claimValue = claimValueHelper.resolveClaim(claimName,
           accessToken.getAuthenticationHolder().getAuthentication(), account);
       if (claimValueHelper.isValidClaimValue(claimValue)) {
-        claims.putIfAbsent(claimName, claimValue);
+        result.putIfAbsent(claimName, claimValue);
       }
     });
 
     // add all the others avoiding duplicates/override
-    accessToken.getJwt().getJWTClaimsSet().getClaims().forEach(claims::putIfAbsent);
-    return claims;
+    claims.getClaims().forEach(result::putIfAbsent);
+    return result;
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> claims =
+    Map<String, Object> result =
         super.assembleIntrospectionResult(refreshToken, authenticatedClient);
     // add all the others avoiding duplicates/override
-    refreshToken.getJwt().getJWTClaimsSet().getClaims().forEach(claims::putIfAbsent);
-    return claims;
+    getClaimsSet(refreshToken.getJwt()).getClaims().forEach(result::putIfAbsent);
+    return result;
   }
 }

@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.oauth.profile.wlcg;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
-import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,12 +37,12 @@ public class WlcgIntrospectionHelper extends BaseIntrospectionHelper {
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> claims =
+    Map<String, Object> result =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
-    addWlcgGroups(accessToken, claims);
-    return claims;
+    addWlcgGroups(accessToken, result);
+    return result;
   }
 
   private void addWlcgGroups(OAuth2AccessTokenEntity accessToken, Map<String, Object> claims) {

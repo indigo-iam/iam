@@ -15,7 +15,6 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
-import java.text.ParseException;
 import java.util.Map;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
@@ -25,9 +24,9 @@ import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 public interface IntrospectionResultHelper {
 
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException;
+      ClientDetailsEntity authenticatedClient);
 
   public Map<String, Object> assembleIntrospectionResult(OAuth2RefreshTokenEntity refreshToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException;
+      ClientDetailsEntity authenticatedClient);
 
 }
