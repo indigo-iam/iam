@@ -29,7 +29,6 @@ import static org.mitre.openid.connect.request.ConnectRequestParameters.STATE;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
@@ -37,12 +36,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -88,18 +84,13 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
-import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
@@ -111,28 +102,41 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   public static final String PROMPTED = "PROMPT_FILTER_PROMPTED";
   public static final String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
 
-  @Autowired
-  private Environment env;
+  private final Environment env;
+  private final ClientDetailsEntityService clientService;
+  private final IamClientRepository clientRepo;
+  private final DefaultClientManagementService clientManagementService;
+  private final RedirectResolver redirectResolver;
+  private final TrustChainService trustChainService;
+  private final AutomaticClientRegistrationMapper clientMapper;
+  
+  private LoginHintExtracter loginHintExtracter = new RemoveLoginHintsWithHTTP();
+  private RequestMatcher requestMatcher = new AntPathRequestMatcher("/authorize");
 
-  @Autowired
-  private ClientDetailsEntityService clientService;
+  public IamAuthorizationRequestFilter(
+      Environment env,
+      ClientDetailsEntityService clientService,
+      IamClientRepository clientRepo,
+      DefaultClientManagementService clientManagementService,
+      RedirectResolver redirectResolver,
+      TrustChainService trustChainService,
+      AutomaticClientRegistrationMapper clientMapper) {
 
-  @Autowired
-  private IamClientRepository clientRepo;
-
-  @Autowired
-  private DefaultClientManagementService clientManagementService;
-
-  @Autowired
-  private RedirectResolver redirectResolver;
-
-  @Autowired
-  private TrustChainService trustChainService;
+    this.env = env;
+    this.clientService = clientService;
+    this.clientRepo = clientRepo;
+    this.clientManagementService = clientManagementService;
+    this.redirectResolver = redirectResolver;
+    this.trustChainService = trustChainService;
+    this.clientMapper = clientMapper;
+  }
 
   @Autowired(required = false)
-  private LoginHintExtracter loginHintExtracter = new RemoveLoginHintsWithHTTP();
-
-  private RequestMatcher requestMatcher = new AntPathRequestMatcher("/authorize");
+  public void setLoginHintExtracter(LoginHintExtracter loginHintExtracter) {
+    if (loginHintExtracter != null) {
+      this.loginHintExtracter = loginHintExtracter;
+    }
+  }
 
   @Override
   public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -309,7 +313,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
         return null;
       }
 
-      RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
+      RegisteredClientDTO dtoClient = clientMapper.createClientDtoFromRpMetadata(rpRequest);
       dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
       dtoClient.setClientId(clientId);
 
@@ -335,7 +339,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   }
 
   private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)
-      throws IOException, BadJOSEException, JOSEException, ParseException {
+      throws BadJOSEException, JOSEException, ParseException {
     Object trustChainObj = claims.getClaim("trust_chain");
     if (trustChainObj != null) {
       ObjectMapper mapper = new ObjectMapper();
@@ -415,71 +419,6 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           "invalid_client_metadata", "No JWKS or jwks_uri provided by RP");
     }
     return jwkSet;
-  }
-
-  private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest)
-      throws InvalidClientMetadataException {
-    RegisteredClientDTO dtoClient = new RegisteredClientDTO();
-    OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
-    if (metadata.getName() != null) {
-      dtoClient.setClientName(metadata.getName());
-    } else {
-      dtoClient.setClientName("OIDFed automatic client");
-    }
-    if (metadata.getEmailContacts() != null) {
-      dtoClient.setContacts(new HashSet<>(metadata.getEmailContacts()));
-    }
-    if (metadata.getGrantTypes() != null) {
-      dtoClient.setGrantTypes(metadata.getGrantTypes()
-        .stream()
-        .map(GrantType::getValue)
-        .map(AuthorizationGrantType::fromGrantType)
-        .collect(Collectors.toSet()));
-    } else {
-      dtoClient.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
-    }
-    if (metadata.getRedirectionURIs() == null) {
-      throw new InvalidClientMetadataException("invalid_redirect_uri",
-          "Missing redirect uris from RP Entity Statement");
-    }
-    dtoClient.setRedirectUris(
-        metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
-    if (metadata.getResponseTypes() != null) {
-      dtoClient.setResponseTypes(metadata.getResponseTypes()
-        .stream()
-        .map(ResponseType::toString)
-        .map(OAuthResponseType::fromResponseType)
-        .collect(Collectors.toSet()));
-    } else {
-      dtoClient.setResponseTypes(Set.of(OAuthResponseType.CODE));
-    }
-    if (metadata.getTokenEndpointAuthMethod() != null) {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
-        .valueOf(metadata.getTokenEndpointAuthMethod().getValue()));
-    } else {
-      dtoClient.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.private_key_jwt);
-    }
-    if (metadata.getJWKSetURI() == null && metadata.getJWKSet() == null) {
-      throw new InvalidClientMetadataException("invalid_client_metadata",
-          "Missing jwks and jwks_uri");
-    }
-    if (metadata.getJWKSetURI() != null) {
-      dtoClient.setJwksUri(metadata.getJWKSetURI().toASCIIString());
-    }
-    if (metadata.getJWKSet() != null) {
-      dtoClient.setJwk(metadata.getJWKSet().toString());
-    }
-    if (metadata.getScope() != null) {
-      dtoClient.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
-    } else {
-      dtoClient.setScope(Set.of("openid"));
-    }
-    if (rpRequest.getEntityID() == null) {
-      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
-    }
-    dtoClient.setEntityId(rpRequest.getEntityID().getValue());
-
-    return dtoClient;
   }
 
   private void sendAuthenticationError(HttpServletResponse response, String redirectUri,

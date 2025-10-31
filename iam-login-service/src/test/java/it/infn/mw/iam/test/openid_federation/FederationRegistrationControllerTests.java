@@ -155,8 +155,7 @@ public class FederationRegistrationControllerTests {
       .andDo(print())
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("invalid_redirect_uri")))
-      .andExpect(jsonPath("$.error_description",
-          equalTo("Missing redirect uris from RP Entity Statement")));
+      .andExpect(jsonPath("$.error_description", equalTo("Missing redirect URIs")));
   }
 
   @Test

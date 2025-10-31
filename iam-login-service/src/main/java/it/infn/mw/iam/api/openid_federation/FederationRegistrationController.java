@@ -15,12 +15,8 @@
  */
 package it.infn.mw.iam.api.openid_federation;
 
-import java.net.URI;
 import java.text.ParseException;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,19 +31,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.api.client.registration.service.ClientRegistrationService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.ErrorDTO;
-import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
-import it.infn.mw.iam.api.common.client.OAuthResponseType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
+import it.infn.mw.iam.core.oidc.ExplicitClientRegistrationMapper;
 import it.infn.mw.iam.core.oidc.FederationError;
 import it.infn.mw.iam.core.oidc.InvalidClientMetadataException;
 import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
@@ -66,107 +57,18 @@ public class FederationRegistrationController {
   private final FederationResponseBuilder federationResponseBuilder;
   private final IamClientRepository clientRepo;
   private final ClientService clientService;
+  private final ExplicitClientRegistrationMapper clientMapper;
 
   public FederationRegistrationController(TrustChainService trustChainService,
       ClientRegistrationService clientRegistrationService,
       FederationResponseBuilder federationResponseBuilder, IamClientRepository clientRepo,
-      ClientService clientService) {
+      ClientService clientService, ExplicitClientRegistrationMapper clientMapper) {
     this.trustChainService = trustChainService;
     this.clientRegistrationService = clientRegistrationService;
     this.federationResponseBuilder = federationResponseBuilder;
     this.clientRepo = clientRepo;
     this.clientService = clientService;
-  }
-
-  private RegisteredClientDTO createClientDtoFromRpMetadata(EntityStatement rpRequest) {
-    RegisteredClientDTO dtoClient = new RegisteredClientDTO();
-    OIDCClientMetadata metadata = rpRequest.getClaimsSet().getRPMetadata();
-
-    setClientName(dtoClient, metadata);
-    setContacts(dtoClient, metadata);
-    setGrantTypes(dtoClient, metadata);
-    setRedirectUris(dtoClient, metadata);
-    setResponseTypes(dtoClient, metadata);
-    setTokenEndpointAuthMethod(dtoClient, metadata);
-    setScope(dtoClient, metadata);
-    setEntityId(dtoClient, rpRequest);
-
-    return dtoClient;
-  }
-
-  private void setClientName(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    dto.setClientName(metadata.getName() != null ? metadata.getName() : "OIDFed client");
-  }
-
-  private void setContacts(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getEmailContacts() != null) {
-      dto.setContacts(new HashSet<>(metadata.getEmailContacts()));
-    }
-  }
-
-  private void setGrantTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getGrantTypes() != null) {
-      dto.setGrantTypes(metadata.getGrantTypes()
-        .stream()
-        .map(GrantType::getValue)
-        .map(AuthorizationGrantType::fromGrantType)
-        .collect(Collectors.toSet()));
-    } else {
-      dto.setGrantTypes(Set.of(AuthorizationGrantType.CODE));
-    }
-  }
-
-  private void setRedirectUris(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getRedirectionURIs() == null) {
-      throw new InvalidClientMetadataException("invalid_redirect_uri",
-          "Missing redirect uris from RP Entity Statement");
-    }
-    dto.setRedirectUris(
-        metadata.getRedirectionURIs().stream().map(URI::toString).collect(Collectors.toSet()));
-  }
-
-  private void setResponseTypes(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    Set<String> supportedResponseTypes =
-        Set.of(ResponseType.CODE.toString(), ResponseType.TOKEN.toString());
-    if (metadata.getResponseTypes() != null) {
-      Set<OAuthResponseType> responseTypes = metadata.getResponseTypes()
-        .stream()
-        .map(ResponseType::toString)
-        .filter(supportedResponseTypes::contains)
-        .map(OAuthResponseType::fromResponseType)
-        .collect(Collectors.toSet());
-      if (responseTypes.isEmpty()) {
-        throw new InvalidClientMetadataException("invalid_client_metadata",
-            "Unsupported response type");
-      }
-      dto.setResponseTypes(responseTypes);
-    } else {
-      dto.setResponseTypes(Set.of(OAuthResponseType.CODE));
-    }
-  }
-
-  private void setTokenEndpointAuthMethod(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getTokenEndpointAuthMethod() != null) {
-      dto.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod
-        .valueOf(metadata.getTokenEndpointAuthMethod().getValue()));
-    } else {
-      dto.setTokenEndpointAuthMethod(TokenEndpointAuthenticationMethod.client_secret_basic);
-    }
-  }
-
-  private void setScope(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getScope() != null) {
-      dto.setScope(metadata.getScope().toStringList().stream().collect(Collectors.toSet()));
-    } else {
-      dto.setScope(Set.of("openid"));
-    }
-  }
-
-  private void setEntityId(RegisteredClientDTO dto, EntityStatement rpRequest) {
-    if (rpRequest.getEntityID() == null) {
-      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
-    }
-    dto.setEntityId(rpRequest.getEntityID().getValue());
+    this.clientMapper = clientMapper;
   }
 
   @PostMapping(value = "/iam/api/oid-fed/client-registration",
@@ -195,7 +97,7 @@ public class FederationRegistrationController {
     TrustChain trustChain = trustChainService.validateFromEntityConfiguration(rpRequest);
 
     // 4. Create RegisteredClientDTO from RP metadata
-    RegisteredClientDTO dtoClient = createClientDtoFromRpMetadata(rpRequest);
+    RegisteredClientDTO dtoClient = clientMapper.createClientDtoFromRpMetadata(rpRequest);
     dtoClient.setExpiration(trustChain.resolveExpirationTime());
 
     // 5. Register the client by using the already existing service
