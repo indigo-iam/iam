@@ -267,4 +267,35 @@ public class AutomaticClientRegistrationTests {
 
     assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
   }
+
+  @Test
+  public void testRegistrationWithoutRequestObject() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
+
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
+        null);
+    List<EntityStatement> statements = new ArrayList<>();
+    statements.add(fakeChain.getLeafSelfStatement());
+    statements.addAll(fakeChain.getSuperiorStatements());
+    statements.add(taEC);
+
+    when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals(redirectUri + "?error=invalid_request&error_description=Missing+request+object",
+        result.getResponse().getHeader("Location"));
+  }
 }
