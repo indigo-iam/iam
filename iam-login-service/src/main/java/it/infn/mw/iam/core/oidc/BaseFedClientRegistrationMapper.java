@@ -23,9 +23,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -125,11 +122,5 @@ public abstract class BaseFedClientRegistrationMapper {
       throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
     }
     dto.setEntityId(rpRequest.getEntityID().getValue());
-  }
-
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidClientMetadataException.class)
-  public FederationError handleClientMetadataException(InvalidClientMetadataException e) {
-    return new FederationError(e.getErrorCode(), e.getMessage());
   }
 }

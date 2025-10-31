@@ -109,17 +109,13 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   private final RedirectResolver redirectResolver;
   private final TrustChainService trustChainService;
   private final AutomaticClientRegistrationMapper clientMapper;
-  
+
   private LoginHintExtracter loginHintExtracter = new RemoveLoginHintsWithHTTP();
   private RequestMatcher requestMatcher = new AntPathRequestMatcher("/authorize");
 
-  public IamAuthorizationRequestFilter(
-      Environment env,
-      ClientDetailsEntityService clientService,
-      IamClientRepository clientRepo,
-      DefaultClientManagementService clientManagementService,
-      RedirectResolver redirectResolver,
-      TrustChainService trustChainService,
+  public IamAuthorizationRequestFilter(Environment env, ClientDetailsEntityService clientService,
+      IamClientRepository clientRepo, DefaultClientManagementService clientManagementService,
+      RedirectResolver redirectResolver, TrustChainService trustChainService,
       AutomaticClientRegistrationMapper clientMapper) {
 
     this.env = env;
@@ -159,7 +155,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     if (params.get(CLIENT_ID) != null) {
       String clientId = params.get(CLIENT_ID);
       if (isOidFedProfile() && isFederationClientId(clientId)) {
-        client = handleFederationClient(request, response, params, clientId);
+        client = handleFederationClient(response, params, clientId);
         if (client == null) {
           return;
         }
@@ -292,9 +288,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     }
   }
 
-  private ClientDetailsEntity handleFederationClient(HttpServletRequest request,
-      HttpServletResponse response, Map<String, String> params, String clientId)
-      throws IOException {
+  private ClientDetailsEntity handleFederationClient(HttpServletResponse response,
+      Map<String, String> params, String clientId) throws IOException {
     String requestObj = params.get("request");
     if (requestObj == null) {
       sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
@@ -491,5 +486,11 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   @ExceptionHandler({JOSEException.class, BadJOSEException.class})
   public ErrorDTO internalServerError(Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(InvalidClientMetadataException.class)
+  public FederationError handleClientMetadataException(InvalidClientMetadataException e) {
+    return new FederationError(e.getErrorCode(), e.getMessage());
   }
 }
