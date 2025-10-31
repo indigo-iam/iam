@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS iam_revoked_at
 (
   jti CHAR(36) NOT NULL,
-  expiration TIMESTAMP NOT NULL,
-  revoked_at TIMESTAMP NOT NULL,
+  expiration TIMESTAMP,
+  revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   client_id VARCHAR(256) NOT NULL,
   sub VARCHAR(256) NOT NULL,
   CONSTRAINT iam_revoked_at_PK PRIMARY KEY (jti)
