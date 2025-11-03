@@ -153,8 +153,8 @@ public class AutomaticClientRegistrationTests {
     String redirectUri = "https://rp.example/callback";
     String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
 
-    fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
 
     when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
 
@@ -238,8 +238,8 @@ public class AutomaticClientRegistrationTests {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
-    fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
 
     EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
         new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
@@ -273,16 +273,8 @@ public class AutomaticClientRegistrationTests {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
 
-    fakeChain =
-        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), jwkSet);
-
-    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
-        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
-        null);
-    List<EntityStatement> statements = new ArrayList<>();
-    statements.add(fakeChain.getLeafSelfStatement());
-    statements.addAll(fakeChain.getSuperiorStatements());
-    statements.add(taEC);
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
 
     when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
 
@@ -296,6 +288,81 @@ public class AutomaticClientRegistrationTests {
       .andReturn();
 
     assertEquals(redirectUri + "?error=invalid_request&error_description=Missing+request+object",
+        result.getResponse().getHeader("Location"));
+  }
+
+  @Test
+  public void testMissingJwksAndJwksUriInRpMetadata() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    fakeChain =
+        TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null, null);
+
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
+        null);
+    List<EntityStatement> statements = new ArrayList<>();
+    statements.add(fakeChain.getLeafSelfStatement());
+    statements.addAll(fakeChain.getSuperiorStatements());
+    statements.add(taEC);
+    List<String> trustChainStrings =
+        statements.stream().map(es -> es.getSignedStatement().serialize()).toList();
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, trustChainStrings);
+
+    when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals(
+        redirectUri
+            + "?error=invalid_client_metadata&error_description=No+JWKS+or+jwks_uri+provided+by+RP",
+        result.getResponse().getHeader("Location"));
+  }
+
+  @Test
+  public void testUnknownJwksUriInRpMetadata() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri), null,
+        new URI(rpEntityId + "/jwk"));
+
+    EntityStatement taEC = TrustChainTestFactory.selfEC("https://ta.example", new Date(),
+        new Date(System.currentTimeMillis() + 600000), null, "https://ta.example/fetch", null,
+        null);
+    List<EntityStatement> statements = new ArrayList<>();
+    statements.add(fakeChain.getLeafSelfStatement());
+    statements.addAll(fakeChain.getSuperiorStatements());
+    statements.add(taEC);
+    List<String> trustChainStrings =
+        statements.stream().map(es -> es.getSignedStatement().serialize()).toList();
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, trustChainStrings);
+
+    when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals(redirectUri
+        + "?error=invalid_client_metadata&error_description=Unable+to+fetch+JWKS+from+RP%27s+jwks_uri",
         result.getResponse().getHeader("Location"));
   }
 }

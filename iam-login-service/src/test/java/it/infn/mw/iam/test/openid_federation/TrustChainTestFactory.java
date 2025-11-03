@@ -96,7 +96,7 @@ public class TrustChainTestFactory {
 
   /** Minimum Trust Chain: RP → TA */
   public static TrustChain createRpToTaChain(String aud, Set<ResponseType> responseTypes,
-      URI redirectUri, JWKSet jwkSet) throws JOSEException {
+      URI redirectUri, JWKSet jwkSet, URI jwksUri) throws JOSEException {
     Date now = new Date();
     Date exp = new Date(now.getTime() + 600000);
 
@@ -108,6 +108,7 @@ public class TrustChainTestFactory {
     clientMetadata.setRedirectionURI(redirectUri);
     clientMetadata.setName("Relying Party");
     clientMetadata.setJWKSet(jwkSet);
+    clientMetadata.setJWKSetURI(jwksUri);
     clientMetadata.setClientRegistrationTypes(List.of(ClientRegistrationType.EXPLICIT));
     clientMetadata.setResponseTypes(responseTypes);
     clientMetadata.setGrantTypes(Set.of(GrantType.AUTHORIZATION_CODE));
