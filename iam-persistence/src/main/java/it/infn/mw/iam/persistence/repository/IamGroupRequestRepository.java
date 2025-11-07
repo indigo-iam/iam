@@ -35,5 +35,5 @@ public interface IamGroupRequestRepository
   List<IamGroupRequest> findByUsernameAndGroup(@Param("username") String username,
       @Param("groupName") String groupName);
 
-      Optional<IamGroupRequest> findByGroupIdAndAccountIdAndStatus(Long groupID, Long accountID, IamGroupRequestStatus status);
+  Optional<IamGroupRequest> findByGroupIdAndAccountIdAndStatus(Long groupID, Long accountID, IamGroupRequestStatus status);
 }
