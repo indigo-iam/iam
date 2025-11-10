@@ -51,7 +51,6 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.service.LoginHintExtracter;
 import org.mitre.openid.connect.service.impl.RemoveLoginHintsWithHTTP;
 import org.mitre.openid.connect.web.AuthenticationTimeStamper;
@@ -100,7 +99,6 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   public static final String PROMPT_REQUESTED = "PROMPT_FILTER_REQUESTED";
 
   private final Environment env;
-  private final ClientDetailsEntityService clientService;
   private final IamClientRepository clientRepo;
   private final DefaultClientManagementService clientManagementService;
   private final RedirectResolver redirectResolver;
@@ -110,13 +108,11 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
   private LoginHintExtracter loginHintExtracter = new RemoveLoginHintsWithHTTP();
   private RequestMatcher requestMatcher = new AntPathRequestMatcher("/authorize");
 
-  public IamAuthorizationRequestFilter(Environment env, ClientDetailsEntityService clientService,
-      IamClientRepository clientRepo, DefaultClientManagementService clientManagementService,
-      RedirectResolver redirectResolver, TrustChainService trustChainService,
-      AutomaticClientRegistrationMapper clientMapper) {
+  public IamAuthorizationRequestFilter(Environment env, IamClientRepository clientRepo,
+      DefaultClientManagementService clientManagementService, RedirectResolver redirectResolver,
+      TrustChainService trustChainService, AutomaticClientRegistrationMapper clientMapper) {
 
     this.env = env;
-    this.clientService = clientService;
     this.clientRepo = clientRepo;
     this.clientManagementService = clientManagementService;
     this.redirectResolver = redirectResolver;
@@ -147,7 +143,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
     Map<String, String> params = createRequestMap(request.getParameterMap());
 
-    ClientDetailsEntity client = null;
+    Optional<ClientDetailsEntity> client = null;
 
     if (params.get(CLIENT_ID) != null) {
       String clientId = params.get(CLIENT_ID);
@@ -158,11 +154,12 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           return;
         }
         client = handleFederationClient(response, params, clientId);
-        if (client == null) {
-          return;
-        }
       } else {
-        client = clientService.loadClientByClientId(clientId);
+        client = clientRepo.findByClientId(clientId);
+      }
+      if (client.isEmpty()) {
+        sendAuthenticationError(response, null, null, "invalid_client", "Unknown client");
+        return;
       }
     }
 
@@ -194,24 +191,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           if (client != null && params.get(REDIRECT_URI) != null) {
 
             // if we've got a redirect URI then we'll send it
-            String url = redirectResolver.resolveRedirect(params.get(REDIRECT_URI), client);
+            String url = redirectResolver.resolveRedirect(params.get(REDIRECT_URI), client.get());
 
-            try {
-              URIBuilder uriBuilder = new URIBuilder(url);
-
-              uriBuilder.addParameter(ERROR, LOGIN_REQUIRED);
-              if (!Strings.isNullOrEmpty(params.get(STATE))) {
-                uriBuilder.addParameter(STATE, params.get(STATE));
-              }
-
-              response.sendRedirect(uriBuilder.toString());
-              return;
-
-            } catch (URISyntaxException e) {
-              log.error("Can't build redirect URI for prompt=none, sending error instead", e);
-              response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
-              return;
-            }
+            sendAuthenticationError(response, url, params.get(STATE), LOGIN_REQUIRED, null);
+            return;
           }
 
           response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
@@ -248,10 +231,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       }
 
     } else if (params.get(MAX_AGE) != null
-        || (client != null && client.getDefaultMaxAge() != null)) {
+        || (client != null && client.get().getDefaultMaxAge() != null)) {
 
       // default to the client's stored value, check the string parameter
-      Integer max = (client != null ? client.getDefaultMaxAge() : null);
+      Integer max = (client != null ? client.get().getDefaultMaxAge() : null);
       String maxAge = params.get(MAX_AGE);
       if (maxAge != null) {
         max = Integer.parseInt(maxAge);
@@ -284,24 +267,24 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       if (!"https".equalsIgnoreCase(url.getProtocol()) || url.getHost() == null
           || url.getHost().isEmpty() || url.getQuery() != null || url.getRef() != null) {
         sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-            "invalid_request", "Entity ID URL is not compliant: " + clientId);
+            "invalid_request", "Entity ID URL is not compliant");
         return false;
       }
       return true;
     } catch (MalformedURLException e) {
       sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_request", "Malformed Entity ID URL: " + clientId);
+          "invalid_request", "Malformed Entity ID URL");
       return false;
     }
   }
 
-  private ClientDetailsEntity handleFederationClient(HttpServletResponse response,
+  private Optional<ClientDetailsEntity> handleFederationClient(HttpServletResponse response,
       Map<String, String> params, String clientId) throws IOException {
     String requestObj = params.get("request");
     if (requestObj == null) {
       sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
           "invalid_request", "Missing request object");
-      return null;
+      return Optional.empty();
     }
 
     try {
@@ -312,7 +295,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       EntityStatement rpRequest = validTrustChain.getLeafSelfStatement();
 
       if (!verifyRequestObjectSignature(jwt, rpRequest, response, params)) {
-        return null;
+        return Optional.empty();
       }
 
       RegisteredClientDTO dtoClient = clientMapper.createClientDtoFromRpMetadata(rpRequest);
@@ -327,19 +310,19 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
         clientManagementService.saveNewClient(dtoClient);
       }
 
-      return clientService.loadClientByClientId(clientId);
+      return clientRepo.findByClientId(clientId);
 
     } catch (InvalidClientMetadataException e) {
       // If we reach here, maybe the response has not been committed yet
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
       }
-      return null;
+      return Optional.empty();
     } catch (Exception e) {
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, "server_error", e.getMessage());
       }
-      return null;
+      return Optional.empty();
     }
   }
 
@@ -373,6 +356,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     if (rpMetadata == null) {
       sendAuthenticationError(response, null, null, "invalid_client_metadata",
           "Missing openid_relying_party metadata");
+      return false;
     }
     JWKSet jwkSet = loadJwkSet(rpMetadata, response, params);
     if (jwkSet == null) {
@@ -426,19 +410,19 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
   private void sendAuthenticationError(HttpServletResponse response, String redirectUri,
       String state, String error, String description) throws IOException {
-    if (redirectUri != null) {
+    if (!Strings.isNullOrEmpty(redirectUri)) {
       try {
         URIBuilder uriBuilder = new URIBuilder(redirectUri);
-        uriBuilder.addParameter("error", error);
-        if (description != null) {
+        uriBuilder.addParameter(ERROR, error);
+        if (!Strings.isNullOrEmpty(description)) {
           uriBuilder.addParameter("error_description", description);
         }
-        if (state != null) {
-          uriBuilder.addParameter("state", state);
+        if (!Strings.isNullOrEmpty(state)) {
+          uriBuilder.addParameter(STATE, state);
         }
         response.sendRedirect(uriBuilder.build().toString());
       } catch (URISyntaxException e) {
-        // invalid redirect_uri
+        log.error("Can't build redirect URI, sending error instead", e);
         response.sendError(HttpServletResponse.SC_BAD_REQUEST, "invalid_redirect_uri");
       }
     } else {
@@ -446,8 +430,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentType("text/html;charset=UTF-8");
       response.getWriter()
-        .write("<html><body><h2>Error</h2><p>" + StringEscapeUtils.escapeHtml(error) + "</p><p>"
-            + StringEscapeUtils.escapeHtml(description) + "</p></body></html>");
+        .write("<html><head><title>OAuth Error</title></head><body>"
+            + "<h2>Authorization Error</h2>" + "<p><strong>Error:</strong>"
+            + StringEscapeUtils.escapeHtml(error) + "</p>" + "<p><strong>Description:</strong>"
+            + StringEscapeUtils.escapeHtml(description) + "</p>" + "</body></html>");
     }
   }
 

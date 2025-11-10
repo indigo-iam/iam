@@ -48,7 +48,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -73,7 +72,6 @@ import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-@SuppressWarnings("deprecation")
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -377,8 +375,8 @@ public class AutomaticClientRegistrationTests {
       .andExpect(header().exists("Location"))
       .andReturn();
 
-    assertEquals(redirectUri
-        + "?error=invalid_request&error_description=Entity+ID+URL+is+not+compliant%3A+https%3A%2F%2Frp.example%3Ffoo%3Dx",
+    assertEquals(
+        redirectUri + "?error=invalid_request&error_description=Entity+ID+URL+is+not+compliant",
         result.getResponse().getHeader("Location"));
   }
 
@@ -396,19 +394,23 @@ public class AutomaticClientRegistrationTests {
       .andExpect(header().exists("Location"))
       .andReturn();
 
-    assertEquals(redirectUri
-        + "?error=invalid_request&error_description=Malformed+Entity+ID+URL%3A+https%3A%2F%2Frp.example%3AABC",
+    assertEquals(redirectUri + "?error=invalid_request&error_description=Malformed+Entity+ID+URL",
         result.getResponse().getHeader("Location"));
   }
 
-  @Test(expected = InvalidClientException.class)
+  @Test
   public void testRequestWithClientIdNotFound() throws Exception {
     String rpEntityId = "ht!tps://rp.example";
     String redirectUri = "https://rp.example/cb";
 
-    mvc.perform(get("/authorize").param("client_id", rpEntityId)
-      .param("response_type", "code")
-      .param("scope", "openid")
-      .param("redirect_uri", redirectUri));
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("invalid_client")))
+      .andExpect(content().string(containsString("Unknown client")));
   }
 }
