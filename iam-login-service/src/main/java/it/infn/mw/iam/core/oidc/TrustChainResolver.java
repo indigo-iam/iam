@@ -48,16 +48,15 @@ public class TrustChainResolver {
       URL metadataUrl =
           new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
               : "/.well-known/openid-federation");
-      try {
-        String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
-        return EntityStatement.parse(jwt);
-      } catch (Exception e) {
-        throw new InvalidTrustChainException("invalid_trust_chain",
-            "Failed to fetch EC: " + e.getMessage(), e);
-      }
+
+      String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
+      return EntityStatement.parse(jwt);
     } catch (MalformedURLException e) {
       throw new InvalidTrustChainException("invalid_trust_chain",
           "Invalid entityId URL: " + entityId, e);
+    } catch (Exception e) {
+      throw new InvalidTrustChainException("invalid_trust_chain",
+          "Failed to fetch EC: " + e.getMessage(), e);
     }
   }
 
