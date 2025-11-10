@@ -66,6 +66,7 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountClient;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 
+@SuppressWarnings("deprecation")
 @Service
 @Validated
 public class DefaultClientManagementService implements ClientManagementService {
@@ -183,7 +184,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     ClientDetailsEntity oldClient = clientService.findClientByClientId(clientId)
       .orElseThrow(ClientSuppliers.clientNotFound(clientId));
 
-    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("http")) {
+    if (oldClient.getClientRelyingParty() != null && !oldClient.getClientId().startsWith("https")) {
       throw new InvalidRequestException("Federated clients cannot be updated");
     }
 

@@ -123,6 +123,20 @@ public class TrustChainServiceTests {
     service.validateFromEntityId("https://rp.example");
   }
 
+  @Test(expected = InvalidTrustChainException.class)
+  public void testFetchEntityIdWithUnsupportedProtocol() throws Exception {
+    mockRpToTaChain(true);
+
+    service.validateFromEntityId("http://rp.example");
+  }
+
+  @Test(expected = InvalidTrustChainException.class)
+  public void testFetchMalformedEntityId() throws Exception {
+    mockRpToTaChain(true);
+
+    service.validateFromEntityId("ht!tps://rp.example");
+  }
+
   @Test
   public void testResolveTrustChainFromRpToIntermediateToTa() throws Exception {
     fakeChain = TrustChainTestFactory.createRpToIntermediateToTaChain("https://ta.example");

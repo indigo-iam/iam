@@ -64,6 +64,7 @@ import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.scim.model.ScimUser;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
+@SuppressWarnings("deprecation")
 @RestController
 @RequestMapping(ClientManagementAPIController.ENDPOINT)
 public class ClientManagementAPIController {

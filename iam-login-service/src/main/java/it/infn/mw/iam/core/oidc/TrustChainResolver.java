@@ -41,29 +41,23 @@ public class TrustChainResolver {
     URL baseUrl;
     try {
       baseUrl = new URL(entityId);
+      if (!"https".equalsIgnoreCase(baseUrl.getProtocol())) {
+        throw new InvalidTrustChainException("invalid_trust_chain",
+            "Only HTTPS URLs are allowed: " + entityId);
+      }
+      URL metadataUrl =
+          new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
+              : "/.well-known/openid-federation");
+      try {
+        String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
+        return EntityStatement.parse(jwt);
+      } catch (Exception e) {
+        throw new InvalidTrustChainException("invalid_trust_chain",
+            "Failed to fetch EC: " + e.getMessage(), e);
+      }
     } catch (MalformedURLException e) {
       throw new InvalidTrustChainException("invalid_trust_chain",
           "Invalid entityId URL: " + entityId, e);
-    }
-    if (!"https".equalsIgnoreCase(baseUrl.getProtocol())) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Only HTTPS URLs are allowed: " + entityId);
-    }
-    URL metadataUrl;
-    try {
-      metadataUrl =
-          new URL(baseUrl, baseUrl.getPath().endsWith("/") ? ".well-known/openid-federation"
-              : "/.well-known/openid-federation");
-    } catch (MalformedURLException e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Failed to build metadata URL for entityId: " + entityId, e);
-    }
-    try {
-      String jwt = restTemplate.getForObject(metadataUrl.toString(), String.class);
-      return EntityStatement.parse(jwt);
-    } catch (Exception e) {
-      throw new InvalidTrustChainException("invalid_trust_chain",
-          "Failed to fetch EC: " + e.getMessage(), e);
     }
   }
 
