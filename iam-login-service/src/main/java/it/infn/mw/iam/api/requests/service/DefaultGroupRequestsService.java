@@ -19,6 +19,7 @@ import static it.infn.mw.iam.core.IamGroupRequestStatus.APPROVED;
 import static it.infn.mw.iam.core.IamGroupRequestStatus.PENDING;
 import static it.infn.mw.iam.core.IamGroupRequestStatus.REJECTED;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -26,6 +27,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Path;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -203,6 +207,39 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     return builder.resources(results).fromPage(pagedResults, pageRequest).build();
   }
 
+  @Override
+  public ListResponseDTO<GroupRequestDto> searchGroupRequests(String username, String userFullName, String groupName,
+      String notes, String status, OffsetPageable pageRequest) {
+    Optional<String> usernameFilter = Optional.ofNullable(username);
+    Optional<String> userFullNameFilter = Optional.ofNullable(userFullName);
+    Optional<String> groupNameFilter = Optional.ofNullable(groupName);
+    Optional<String> notesFilter = Optional.ofNullable(notes);
+    Optional<String> statusFilter = Optional.ofNullable(status);
+
+    Set<String> managedGroups = Collections.emptySet();
+
+    if (!accountUtils.hasAnyOfAuthorities("ROLE_ADMIN", "ROLE_READER")) {
+      Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
+
+      if (userAccount.isPresent()) {
+        managedGroups = groupRequestUtils.getManagedGroups();
+        if (managedGroups.isEmpty()) {
+          usernameFilter = Optional.of(userAccount.get().getUsername());
+        }
+      }
+    }
+
+    List<GroupRequestDto> results = Lists.newArrayList();
+
+    Page<IamGroupRequest> pagedResults = lookupGroupRequests(usernameFilter, userFullNameFilter, groupNameFilter, notesFilter,
+        statusFilter, managedGroups, pageRequest);
+
+    pagedResults.getContent().forEach(request -> results.add(converter.fromEntity(request)));
+
+    ListResponseDTO.Builder<GroupRequestDto> builder = ListResponseDTO.builder();
+    return builder.resources(results).fromPage(pagedResults, pageRequest).build();
+  }
+
   private IamGroupRequest updateGroupRequestStatus(IamGroupRequest request,
       IamGroupRequestStatus status) {
 
@@ -223,8 +260,49 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     return (req, cq, cb) -> cb.equal(req.get("account").get("username"), username);
   }
 
+  static Specification<IamGroupRequest> forUserNameLike(String username) {
+    return (req, cq, cb) -> cb.like(cb.lower(req.get("account").get("username")), "%" + username.toLowerCase() + "%");
+  }
+
+  static Specification<IamGroupRequest> forUserFullNameLike(String userFullName) {
+    return (root, query, cb) -> {
+      String searchTerm = "%" + userFullName.toLowerCase() + "%";
+
+      Path<?> userInfoPath = root.get("account").get("userInfo");
+      Path<String> givenNamePath = userInfoPath.get("givenName");
+      Path<String> middleNamePath = userInfoPath.get("middleName");
+      Path<String> familyNamePath = userInfoPath.get("familyName");
+
+      Expression<String> givenName = cb.lower(givenNamePath);
+      Expression<String> familyName = cb.lower(familyNamePath);
+
+      Expression<String> middleName = cb.selectCase()
+          .when(cb.isNotNull(middleNamePath), cb.concat(" ", cb.lower(middleNamePath)))
+          .otherwise("")
+          .as(String.class);
+
+      Expression<String> fullName = cb.concat(
+          cb.concat(cb.coalesce(cb.lower(givenNamePath), ""), middleName),
+          cb.concat(" ", cb.coalesce(cb.lower(familyNamePath), "")));
+
+      return cb.or(
+          cb.like(givenName, searchTerm),
+          cb.like(middleName, searchTerm),
+          cb.like(familyName, searchTerm),
+          cb.like(fullName, searchTerm));
+    };
+  }
+
   static Specification<IamGroupRequest> forGroupName(String groupName) {
     return (req, cq, cb) -> cb.equal(req.get("group").get("name"), groupName);
+  }
+
+  static Specification<IamGroupRequest> forGroupNameLike(String groupName) {
+    return (req, cq, cb) -> cb.like(cb.lower(req.get("group").get("name")), "%" + groupName.toLowerCase() + "%");
+  }
+
+  static Specification<IamGroupRequest> forNotesLike(String notes) {
+    return (req, cq, cb) -> cb.like(cb.lower(req.get("notes")), "%" + notes.toLowerCase() + "%");
   }
 
   static Specification<IamGroupRequest> forGroupIds(Collection<String> groupIds) {
@@ -251,6 +329,40 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
 
     if (groupNameFilter.isPresent()) {
       spec = spec.and(forGroupName(groupNameFilter.get()));
+    }
+
+    if (statusFilter.isPresent()) {
+      spec = spec.and(withStatus(statusFilter.get()));
+    }
+
+    return groupRequestRepository.findAll(spec, pageRequest);
+  }
+
+  private Page<IamGroupRequest> lookupGroupRequests(Optional<String> usernameFilter,
+      Optional<String> userFullnameFilter,
+      Optional<String> groupNameFilter, Optional<String> notesFilter, Optional<String> statusFilter,
+      Set<String> managedGroups,
+      OffsetPageable pageRequest) {
+
+    Specification<IamGroupRequest> spec = baseSpec();
+
+    if (!managedGroups.isEmpty()) {
+      spec = spec.and(forGroupIds(managedGroups));
+    }
+
+    List<Specification<IamGroupRequest>> orSpecs = new ArrayList<>();
+
+    usernameFilter.ifPresent(u -> orSpecs.add(forUserNameLike(u)));
+    userFullnameFilter.ifPresent(f -> orSpecs.add(forUserFullNameLike(f)));
+    groupNameFilter.ifPresent(g -> orSpecs.add(forGroupNameLike(g)));
+    notesFilter.ifPresent(n -> orSpecs.add(forNotesLike(n)));
+
+    if (!orSpecs.isEmpty()) {
+      Specification<IamGroupRequest> combinedOrSpec = orSpecs.get(0);
+      for (int i = 1; i < orSpecs.size(); i++) {
+        combinedOrSpec = combinedOrSpec.or(orSpecs.get(i));
+      }
+      spec = spec.and(combinedOrSpec);
     }
 
     if (statusFilter.isPresent()) {
