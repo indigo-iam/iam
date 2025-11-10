@@ -143,7 +143,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
     Map<String, String> params = createRequestMap(request.getParameterMap());
 
-    Optional<ClientDetailsEntity> client = null;
+    Optional<ClientDetailsEntity> client = Optional.empty();
 
     if (params.get(CLIENT_ID) != null) {
       String clientId = params.get(CLIENT_ID);
@@ -188,7 +188,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
         } else {
           log.info("Client requested no prompt");
           // user hasn't been logged in, we need to "return an error"
-          if (client != null && params.get(REDIRECT_URI) != null) {
+          if (!client.isEmpty() && params.get(REDIRECT_URI) != null) {
 
             // if we've got a redirect URI then we'll send it
             String url = redirectResolver.resolveRedirect(params.get(REDIRECT_URI), client.get());
@@ -231,10 +231,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       }
 
     } else if (params.get(MAX_AGE) != null
-        || (client != null && client.get().getDefaultMaxAge() != null)) {
+        || (!client.isEmpty() && client.get().getDefaultMaxAge() != null)) {
 
       // default to the client's stored value, check the string parameter
-      Integer max = (client != null ? client.get().getDefaultMaxAge() : null);
+      Integer max = (!client.isEmpty() ? client.get().getDefaultMaxAge() : null);
       String maxAge = params.get(MAX_AGE);
       if (maxAge != null) {
         max = Integer.parseInt(maxAge);
@@ -358,7 +358,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           "Missing openid_relying_party metadata");
       return false;
     }
-    JWKSet jwkSet = loadJwkSet(rpMetadata, response, params);
+    JWKSet jwkSet = loadJwkSet(rpMetadata, response);
     if (jwkSet == null) {
       return false;
     }
@@ -389,8 +389,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     return true;
   }
 
-  private JWKSet loadJwkSet(OIDCClientMetadata rpMetadata, HttpServletResponse response,
-      Map<String, String> params) throws IOException {
+  private JWKSet loadJwkSet(OIDCClientMetadata rpMetadata, HttpServletResponse response)
+      throws IOException {
     var jwkSet = rpMetadata.getJWKSet();
     if (jwkSet == null && rpMetadata.getJWKSetURI() != null) {
       try {
