@@ -48,6 +48,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
@@ -58,15 +59,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.provider.endpoint.RedirectResolver;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.filter.GenericFilterBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -89,7 +87,6 @@ import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 
 import it.infn.mw.iam.api.client.management.service.DefaultClientManagementService;
-import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
@@ -154,7 +151,12 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
     if (params.get(CLIENT_ID) != null) {
       String clientId = params.get(CLIENT_ID);
-      if (isOidFedProfile() && isFederationClientId(clientId)) {
+      boolean federationEnabled =
+          Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals);
+      if (federationEnabled && clientId.startsWith("https://")) {
+        if (!validateUrl(clientId, response, params)) {
+          return;
+        }
         client = handleFederationClient(response, params, clientId);
         if (client == null) {
           return;
@@ -275,15 +277,20 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     }
   }
 
-  private boolean isOidFedProfile() {
-    return Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals);
-  }
-
-  private boolean isFederationClientId(String clientId) {
+  private boolean validateUrl(String clientId, HttpServletResponse response,
+      Map<String, String> params) throws IOException {
     try {
-      new URL(clientId);
+      URL url = new URL(clientId);
+      if (!"https".equalsIgnoreCase(url.getProtocol()) || url.getHost() == null
+          || url.getHost().isEmpty() || url.getQuery() != null || url.getRef() != null) {
+        sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+            "invalid_request", "Entity ID URL is not compliant: " + clientId);
+        return false;
+      }
       return true;
     } catch (MalformedURLException e) {
+      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+          "invalid_request", "Malformed Entity ID URL: " + clientId);
       return false;
     }
   }
@@ -323,14 +330,17 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       return clientService.loadClientByClientId(clientId);
 
     } catch (InvalidClientMetadataException e) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_client_metadata", "Invalid RP metadata");
+      // If we reach here, maybe the response has not been committed yet
+      if (!response.isCommitted()) {
+        sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
+      }
+      return null;
     } catch (Exception e) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE), "server_error",
-          "Unexpected error during trust chain validation");
+      if (!response.isCommitted()) {
+        sendAuthenticationError(response, null, null, "server_error", e.getMessage());
+      }
+      return null;
     }
-
-    return null;
   }
 
   private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)
@@ -361,9 +371,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       HttpServletResponse response, Map<String, String> params) throws IOException, JOSEException {
     var rpMetadata = rpRequest.getClaimsSet().getRPMetadata();
     if (rpMetadata == null) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_client_metadata", "Missing openid_relying_party metadata");
-      return false;
+      sendAuthenticationError(response, null, null, "invalid_client_metadata",
+          "Missing openid_relying_party metadata");
     }
     JWKSet jwkSet = loadJwkSet(rpMetadata, response, params);
     if (jwkSet == null) {
@@ -404,14 +413,13 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
         var uri = rpMetadata.getJWKSetURI().toURL();
         jwkSet = JWKSet.load(uri);
       } catch (Exception e) {
-        sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-            "invalid_client_metadata", "Unable to fetch JWKS from RP's jwks_uri");
-        return null;
+        sendAuthenticationError(response, null, null, "invalid_client_metadata",
+            "Unable to fetch JWKS from RP's jwks_uri");
       }
     }
     if (jwkSet == null) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_client_metadata", "No JWKS or jwks_uri provided by RP");
+      sendAuthenticationError(response, null, null, "invalid_client_metadata",
+          "No JWKS or jwks_uri provided by RP");
     }
     return jwkSet;
   }
@@ -436,9 +444,10 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
     } else {
       // no redirect_uri
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      response.setContentType("application/json");
+      response.setContentType("text/html;charset=UTF-8");
       response.getWriter()
-        .write("{\"error\":\"" + error + "\",\"error_description\":\"" + description + "\"}");
+        .write("<html><body><h2>Error</h2><p>" + StringEscapeUtils.escapeHtml(error) + "</p><p>"
+            + StringEscapeUtils.escapeHtml(description) + "</p></body></html>");
     }
   }
 
@@ -474,23 +483,5 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
    */
   public void setRequestMatcher(RequestMatcher requestMatcher) {
     this.requestMatcher = requestMatcher;
-  }
-
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(ParseException.class)
-  public ErrorDTO badRequestError(Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
-  }
-
-  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler({JOSEException.class, BadJOSEException.class})
-  public ErrorDTO internalServerError(Exception ex) {
-    return ErrorDTO.fromString(ex.getMessage());
-  }
-
-  @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InvalidClientMetadataException.class)
-  public FederationError handleClientMetadataException(InvalidClientMetadataException e) {
-    return new FederationError(e.getErrorCode(), e.getMessage());
   }
 }

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.openid_federation;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,6 +73,7 @@ import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
+@SuppressWarnings("deprecation")
 @ActiveProfiles({"h2-test", "dev", "openid-federation"})
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
@@ -313,20 +317,16 @@ public class AutomaticClientRegistrationTests {
 
     when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
 
-    var result = mvc
+    mvc
       .perform(get("/authorize").param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
         .param("redirect_uri", redirectUri)
         .param("request", requestJwt))
-      .andExpect(status().isFound())
-      .andExpect(header().exists("Location"))
-      .andReturn();
-
-    assertEquals(
-        redirectUri
-            + "?error=invalid_client_metadata&error_description=No+JWKS+or+jwks_uri+provided+by+RP",
-        result.getResponse().getHeader("Location"));
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("invalid_client_metadata")))
+      .andExpect(content().string(containsString("No JWKS or jwks_uri provided by RP")));
   }
 
   @Test
@@ -351,18 +351,64 @@ public class AutomaticClientRegistrationTests {
 
     when(trustChainService.validateFromProvidedChain(any())).thenReturn(fakeChain);
 
-    var result = mvc
+    mvc
       .perform(get("/authorize").param("client_id", rpEntityId)
         .param("response_type", "code")
         .param("scope", "openid")
         .param("redirect_uri", redirectUri)
         .param("request", requestJwt))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("invalid_client_metadata")))
+      .andExpect(content().string(containsString("Unable to fetch JWKS from RP's jwks_uri")));
+  }
+
+  @Test
+  public void testRequestWithClientIdNotCompliant() throws Exception {
+    String rpEntityId = "https://rp.example?foo=x";
+    String redirectUri = "https://rp.example/cb";
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri))
       .andExpect(status().isFound())
       .andExpect(header().exists("Location"))
       .andReturn();
 
     assertEquals(redirectUri
-        + "?error=invalid_client_metadata&error_description=Unable+to+fetch+JWKS+from+RP%27s+jwks_uri",
+        + "?error=invalid_request&error_description=Entity+ID+URL+is+not+compliant%3A+https%3A%2F%2Frp.example%3Ffoo%3Dx",
         result.getResponse().getHeader("Location"));
+  }
+
+  @Test
+  public void testRequestWithMalformedClientId() throws Exception {
+    String rpEntityId = "https://rp.example:ABC";
+    String redirectUri = "https://rp.example/cb";
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri))
+      .andExpect(status().isFound())
+      .andExpect(header().exists("Location"))
+      .andReturn();
+
+    assertEquals(redirectUri
+        + "?error=invalid_request&error_description=Malformed+Entity+ID+URL%3A+https%3A%2F%2Frp.example%3AABC",
+        result.getResponse().getHeader("Location"));
+  }
+
+  @Test(expected = InvalidClientException.class)
+  public void testRequestWithClientIdNotFound() throws Exception {
+    String rpEntityId = "ht!tps://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    mvc.perform(get("/authorize").param("client_id", rpEntityId)
+      .param("response_type", "code")
+      .param("scope", "openid")
+      .param("redirect_uri", redirectUri));
   }
 }
