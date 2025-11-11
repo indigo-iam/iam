@@ -44,6 +44,7 @@ import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.DefaultJWTSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetCacheService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.openid.connect.web.AuthenticationTimeStamper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -412,5 +413,116 @@ public class AutomaticClientRegistrationTests {
       .andExpect(content().contentType("text/html;charset=UTF-8"))
       .andExpect(content().string(containsString("invalid_client")))
       .andExpect(content().string(containsString("Unknown client")));
+  }
+
+  @Test
+  public void testPromptNoneUnauthenticated() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
+
+    when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
+
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("prompt", "none")
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().string("Location", containsString("error=login_required")));
+  }
+
+  @Test
+  public void testPromptLoginClearsAuth() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
+
+    when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("prompt", "login")
+        .param("request", requestJwt))
+      .andReturn();
+
+    MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+
+    mvc
+      .perform(post("/login").session(session)
+        .param("username", "test")
+        .param("password", "password")
+        .param("submit", "Login"))
+      .andExpect(status().isFound());
+
+    // Second request should log user out again because prompt=login ALWAYS forces re-auth
+    mvc
+      .perform(get("/authorize").session(session)
+        .param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("prompt", "login")
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().string("Location", "http://localhost/login"));
+  }
+
+  @Test
+  public void testMaxAgeForcesLogout() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/cb";
+
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, URI.create(redirectUri),
+        jwkSet, null);
+
+    when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
+
+    var result = mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andReturn();
+
+    MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+
+    mvc
+      .perform(post("/login").session(session)
+        .param("username", "test")
+        .param("password", "password")
+        .param("submit", "Login"))
+      .andExpect(status().isFound());
+
+    // Simulate "old" authentication timestamp
+    session.setAttribute(AuthenticationTimeStamper.AUTH_TIMESTAMP,
+        new Date(System.currentTimeMillis() - 10000)); // > 5 seconds ago
+
+    mvc
+      .perform(get("/authorize").session(session)
+        .param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("max_age", "5")
+        .param("request", requestJwt))
+      .andExpect(status().isFound())
+      .andExpect(header().string("Location", containsString("/login")));
   }
 }
