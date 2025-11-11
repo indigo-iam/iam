@@ -145,8 +145,8 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
 
     Optional<ClientDetailsEntity> client = Optional.empty();
 
-    if (params.get(CLIENT_ID) != null) {
-      String clientId = params.get(CLIENT_ID);
+    String clientId = params.get(CLIENT_ID);
+    if (clientId != null) {
       boolean federationEnabled =
           Arrays.stream(env.getActiveProfiles()).anyMatch("openid-federation"::equals);
       if (federationEnabled && clientId.startsWith("https://")) {
@@ -154,12 +154,16 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           return;
         }
         client = handleFederationClient(response, params, clientId);
+        if (client.isEmpty()) {
+          return;
+        }
       } else {
         client = clientRepo.findByClientId(clientId);
-      }
-      if (client.isEmpty()) {
-        sendAuthenticationError(response, null, null, "invalid_client", "Unknown client");
-        return;
+        if (client.isEmpty()) {
+          log.error("Client with client_id " + clientId + " was not found");
+          sendAuthenticationError(response, null, null, "invalid_client", "Unknown client");
+          return;
+        }
       }
     }
 
@@ -319,6 +323,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       }
       return Optional.empty();
     } catch (Exception e) {
+      log.error("Unexpected federation error", e);
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, "server_error", e.getMessage());
       }
@@ -358,38 +363,31 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
           "Missing openid_relying_party metadata");
       return false;
     }
-    JWKSet jwkSet = loadJwkSet(rpMetadata, response);
-    if (jwkSet == null) {
+    Optional<JWKSet> jwkSet = loadJwkSet(rpMetadata, response);
+    if (jwkSet.isEmpty()) {
       return false;
     }
-    boolean verified = false;
-    for (var jwk : jwkSet.getKeys()) {
-      JWSVerifier verifier = switch (jwk.getKeyType().getValue()) {
-        case "RSA" -> new RSASSAVerifier((RSAKey) jwk.toPublicJWK());
-        case "EC" -> new ECDSAVerifier((ECKey) jwk.toPublicJWK());
-        case "OKP" -> new Ed25519Verifier((OctetKeyPair) jwk.toPublicJWK());
-        default -> null;
-      };
-      if (verifier != null) {
-        try {
-          if (jwt.verify(verifier)) {
-            verified = true;
-            break;
-          }
-        } catch (JOSEException e) {
-          // Ignored: try the next key in the set
+    for (var jwk : jwkSet.get().getKeys()) {
+      try {
+        JWSVerifier verifier = switch (jwk.getKeyType().getValue()) {
+          case "RSA" -> new RSASSAVerifier((RSAKey) jwk.toPublicJWK());
+          case "EC" -> new ECDSAVerifier((ECKey) jwk.toPublicJWK());
+          case "OKP" -> new Ed25519Verifier((OctetKeyPair) jwk.toPublicJWK());
+          default -> null;
+        };
+        if (verifier != null && jwt.verify(verifier)) {
+          return true;
         }
+      } catch (JOSEException e) {
+        // Ignored: try the next key in the set
       }
     }
-    if (!verified) {
-      sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
-          "invalid_request_object", "Invalid signature on request object");
-      return false;
-    }
-    return true;
+    sendAuthenticationError(response, params.get(REDIRECT_URI), params.get(STATE),
+        "invalid_request_object", "Invalid signature on request object");
+    return false;
   }
 
-  private JWKSet loadJwkSet(OIDCClientMetadata rpMetadata, HttpServletResponse response)
+  private Optional<JWKSet> loadJwkSet(OIDCClientMetadata rpMetadata, HttpServletResponse response)
       throws IOException {
     var jwkSet = rpMetadata.getJWKSet();
     if (jwkSet == null && rpMetadata.getJWKSetURI() != null) {
@@ -399,13 +397,15 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       } catch (Exception e) {
         sendAuthenticationError(response, null, null, "invalid_client_metadata",
             "Unable to fetch JWKS from RP's jwks_uri");
+        return Optional.empty();
       }
     }
     if (jwkSet == null) {
       sendAuthenticationError(response, null, null, "invalid_client_metadata",
           "No JWKS or jwks_uri provided by RP");
+      return Optional.empty();
     }
-    return jwkSet;
+    return Optional.of(jwkSet);
   }
 
   private void sendAuthenticationError(HttpServletResponse response, String redirectUri,
