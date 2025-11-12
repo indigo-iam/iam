@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.api.requests;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -119,6 +120,16 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = { "USER" }, username = USER_101)
+  public void searchGroupRequestAsUserIsForbidden() throws Exception {
+
+    mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   @WithMockUser(roles = {"USER"}, username = USER_101)
   public void filterByOwnUsernameAsUser() throws Exception {
 
@@ -192,6 +203,82 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   }
 
   @Test
+  @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_ADMIN)
+  public void searchByUsernameAsAdmin() throws Exception {
+
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(3)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(3)))
+        .andExpect(jsonPath("$.Resources", hasSize(3)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+    }
+  }
+
+  @Test
+  @WithMockUser(roles = { "ADMIN", "USER" }, username = TEST_ADMIN)
+  public void searchByUserFullNameAsAdmin() throws Exception {
+    String middleName = "middlename-101";
+
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("userFullName", middleName))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(3)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(3)))
+        .andExpect(jsonPath("$.Resources", hasSize(3)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+      assertThat(elem.getUserFullName(), containsString(middleName));
+    }
+  }
+
+  @Test
+  @WithMockUser(roles = { "GM:" + TEST_001_GROUP_UUID, "USER" }, username = USER_100)
+  public void searchByUsernameAsGroupManager() throws Exception {
+    String response = mvc.perform(get(SEARCH_ALL_REQUESTS_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .param("username", USER_101))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalResults", equalTo(1)))
+        .andExpect(jsonPath("$.startIndex", equalTo(1)))
+        .andExpect(jsonPath("$.itemsPerPage", equalTo(1)))
+        .andExpect(jsonPath("$.Resources", hasSize(1)))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    ListResponseDTO<GroupRequestDto> result = mapper.readValue(response,
+        new TypeReference<ListResponseDTO<GroupRequestDto>>() {
+        });
+
+    for (GroupRequestDto elem : result.getResources()) {
+      assertThat(elem.getUsername(), equalTo(USER_101));
+    }
+  }
+
+  @Test
   @WithMockUser(roles = {"USER"}, username = USER_100)
   public void listMyGroupRequestAsUser() throws Exception {
 
@@ -218,6 +305,14 @@ public class GroupRequestsListTests extends GroupRequestsTestUtils {
   public void listGroupRequestAsAnonymous() throws Exception {
 
     mvc.perform(get(LIST_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithAnonymousUser
+  public void filterGroupRequestAsAnonymous() throws Exception {
+
+    mvc.perform(get(SEARCH_ALL_REQUESTS_URL).contentType(MediaType.APPLICATION_JSON))
       .andExpect(status().isUnauthorized());
   }
 

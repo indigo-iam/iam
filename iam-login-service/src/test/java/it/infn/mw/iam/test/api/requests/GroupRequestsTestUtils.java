@@ -39,6 +39,7 @@ public class GroupRequestsTestUtils {
   protected static final String BASE_URL = "/iam/group_requests";
   protected static final String CREATE_URL = BASE_URL;
   protected static final String LIST_ALL_REQUESTS_URL = BASE_URL;
+  protected static final String SEARCH_ALL_REQUESTS_URL = BASE_URL + "/search";
   protected static final String GET_DETAILS_URL = BASE_URL + "/{uuid}";
   protected static final String DELETE_URL = GET_DETAILS_URL;
   protected static final String APPROVE_URL = GET_DETAILS_URL + "/approve";

@@ -68,7 +68,7 @@ public class GroupRequestsController {
     return groupRequestService.listGroupRequests(username, groupName, status, pageRequest);
   }
 
-  @PreAuthorize("hasRole('USER')")
+  @PreAuthorize("#iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER')")
   @GetMapping(value = BASE_RESOURCE + "/search")
   public ListResponseDTO<GroupRequestDto> searchGroupRequests(
       @RequestParam(required = false) String username,

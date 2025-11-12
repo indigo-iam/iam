@@ -223,9 +223,6 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
 
       if (userAccount.isPresent()) {
         managedGroups = groupRequestUtils.getManagedGroups();
-        if (managedGroups.isEmpty()) {
-          usernameFilter = Optional.of(userAccount.get().getUsername());
-        }
       }
     }
 
@@ -339,10 +336,8 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   private Page<IamGroupRequest> lookupGroupRequests(Optional<String> usernameFilter,
-      Optional<String> userFullnameFilter,
-      Optional<String> groupNameFilter, Optional<String> notesFilter, Optional<String> statusFilter,
-      Set<String> managedGroups,
-      OffsetPageable pageRequest) {
+      Optional<String> userFullnameFilter, Optional<String> groupNameFilter, Optional<String> notesFilter,
+      Optional<String> statusFilter, Set<String> managedGroups, OffsetPageable pageRequest) {
 
     Specification<IamGroupRequest> spec = baseSpec();
 
