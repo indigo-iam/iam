@@ -315,6 +315,23 @@ public class AutomaticClientRegistrationTests {
   }
 
   @Test
+  public void testRegistrationWithInvalidJwt() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/callback";
+    String requestJwt = "invalid-jwt";
+
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("server_error")));
+  }
+
+  @Test
   public void testRegistrationWithoutRequestObject() throws Exception {
     String rpEntityId = "https://rp.example";
     String redirectUri = "https://rp.example/cb";
