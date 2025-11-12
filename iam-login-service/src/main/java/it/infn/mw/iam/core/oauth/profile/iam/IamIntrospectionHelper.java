@@ -18,7 +18,6 @@ package it.infn.mw.iam.core.oauth.profile.iam;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
 import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
 
-import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,12 +40,12 @@ public class IamIntrospectionHelper extends BaseIntrospectionHelper {
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      ClientDetailsEntity authenticatedClient) throws ParseException {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> claims =
+    Map<String, Object> result =
         super.assembleIntrospectionResult(accessToken, authenticatedClient);
-    addGroups(claims);
-    return claims;
+    addGroups(result);
+    return result;
   }
 
   private void addGroups(Map<String, Object> claims) {

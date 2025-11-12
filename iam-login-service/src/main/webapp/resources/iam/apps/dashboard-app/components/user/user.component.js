@@ -34,6 +34,10 @@
             return Utils.isAdmin();
         };
 
+        self.isReader = function () {
+            return Utils.isReader();
+        };
+
         self.isMfaSettingsBtnEnabled = function () {
             return Utils.isMfaSettingsBtnEnabled();
         };

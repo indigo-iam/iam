@@ -31,6 +31,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.test.oauth.scope.StructuredScopeTestSupportConstants;
 
@@ -45,9 +46,19 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
 
   // Password Flow
 
+  protected TokenEndpointResponse getPasswordTokenResponse(String scopes) throws Exception {
+
+    return parseTokens(new AccessTokenGetter().grantType("password")
+      .clientId(PASSWORD_CLIENT_ID)
+      .clientSecret(PASSWORD_CLIENT_SECRET)
+      .username(TEST_USERNAME)
+      .password(TEST_PASSWORD)
+      .scope(scopes)
+      .getTokenResponseObject());
+  }
+
   protected DefaultOAuth2AccessToken getPasswordTokenResponse(String clientId, String clientSecret,
-      String username, String password, String scope, String audience)
-      throws Exception {
+      String username, String password, String scope, String audience) throws Exception {
 
     return new AccessTokenGetter().grantType("password")
       .clientId(clientId)
@@ -91,7 +102,7 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
   public DefaultOAuth2AccessToken getClientCredentialsTokenResponse(String clientId,
       String clientSecret, String scopes) throws Exception {
 
-    return new AccessTokenGetter().grantType(CLIENT_CREDENTIALS_GRANT_TYPE)
+    return new AccessTokenGetter().grantType(GrantType.CLIENT_CREDENTIALS.getValue())
       .clientId(clientId)
       .clientSecret(clientSecret)
       .scope(scopes)
@@ -109,6 +120,46 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
         CLIENT_CREDENTIALS_CLIENT_SECRET, scopes));
   }
 
+  // Refresh Flow
+
+  protected TokenEndpointResponse getRefreshTokenResponse(String refreshToken, String scopes)
+      throws Exception {
+
+    return getRefreshTokenResponse(refreshToken, PASSWORD_CLIENT_ID, PASSWORD_CLIENT_SECRET,
+        scopes);
+  }
+
+  // Exchange Flow
+
+  protected TokenEndpointResponse getExchangeTokenResponse(String subjectToken, String clientId,
+      String clientSecret, String scope, String audience) throws Exception {
+
+    return parseTokens(new AccessTokenGetter().grantType(GrantType.TOKEN_EXCHANGE.getValue())
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .subjectToken(subjectToken)
+      .scope(scope)
+      .audience(audience)
+      .getTokenResponseObject());
+  }
+
+  protected TokenEndpointResponse getExchangeTokenResponse(String subjectToken, String scope, String audience) throws Exception {
+
+    return getExchangeTokenResponse(subjectToken, EXCHANGE_CLIENT_ID, EXCHANGE_CLIENT_SECRET, scope,
+        audience);
+  }
+
+  protected TokenEndpointResponse getRefreshTokenResponse(String refreshToken, String clientId,
+      String clientSecret, String scopes) throws Exception {
+
+    return parseTokens(new AccessTokenGetter().grantType("refresh_token")
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .refreshToken(refreshToken)
+      .scope(scopes)
+      .getTokenResponseObject());
+  }
+
   public record TokenEndpointResponse(String accessToken, String refreshToken, String idToken) {
   }
 
@@ -122,6 +173,8 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
     private String audience;
     private String resource;
     private String claims;
+    private String refreshToken;
+    private String subjectToken;
 
     public AccessTokenGetter clientId(String clientId) {
       this.clientId = clientId;
@@ -168,6 +221,16 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
       return this;
     }
 
+    public AccessTokenGetter refreshToken(String refreshToken) {
+      this.refreshToken = refreshToken;
+      return this;
+    }
+
+    public AccessTokenGetter subjectToken(String subjectToken) {
+      this.subjectToken = subjectToken;
+      return this;
+    }
+
     public String performSuccessfulTokenRequest() throws Exception {
 
       return performTokenRequest(200).getResponse().getContentAsString();
@@ -181,9 +244,18 @@ public class EndpointsTestUtils implements StructuredScopeTestSupportConstants {
       if (!isNullOrEmpty(scope)) {
         req.param("scope", scope);
       }
+      final GrantType GRANT_TYPE = GrantType.parse(grantType);
 
-      if ("password".equals(grantType)) {
+      if (GrantType.PASSWORD.equals(GRANT_TYPE)) {
         req.param("username", username).param("password", password);
+      }
+
+      if (GrantType.REFRESH_TOKEN.equals(GRANT_TYPE)) {
+        req.param("refresh_token", refreshToken);
+      }
+
+      if (GrantType.TOKEN_EXCHANGE.equals(GRANT_TYPE)) {
+        req.param("subject_token", subjectToken);
       }
 
       if (audience != null) {

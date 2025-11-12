@@ -20,6 +20,8 @@ import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,15 +78,18 @@ public class IamRevocationEndpoint {
     ClientDetailsEntity authenticatedClient = loadClient(auth);
     JWT jwt = JWTParser.parse(tokenValue);
 
-    if (jwt instanceof PlainJWT refreshToken) {
-      // It's a RefreshToken
-      ClientDetailsEntity tokenClient = tokenService.getRefreshToken(tokenValue).getClient();
+    /*
+     * Currently IAM issues access tokens as a Signed JWT while refresh tokens are Plain JWT
+     */
+    if (jwt instanceof PlainJWT) {
+      OAuth2RefreshTokenEntity refreshToken = tokenService.getRefreshToken(tokenValue);
+      ClientDetailsEntity tokenClient = refreshToken.getClient();
       verifyClient(tokenClient, authenticatedClient);
       revocationService.revokeRefreshToken(refreshToken);
     }
-    if (jwt instanceof SignedJWT accessToken) {
-      // It's an AccessToken
-      ClientDetailsEntity tokenClient = tokenService.readAccessToken(tokenValue).getClient();
+    if (jwt instanceof SignedJWT) {
+      OAuth2AccessTokenEntity accessToken = tokenService.readAccessToken(tokenValue);
+      ClientDetailsEntity tokenClient = accessToken.getClient();
       verifyClient(tokenClient, authenticatedClient);
       revocationService.revokeAccessToken(accessToken);
     }

@@ -345,7 +345,7 @@ public class ScimUserProvisioningFilteringTests {
   public void testFilteringActivesEqPositive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("active eq true").build())
-      .andExpect(jsonPath("$.totalResults", equalTo(255)))
+      .andExpect(jsonPath("$.totalResults", equalTo(256)))
       .andExpect(jsonPath("$.itemsPerPage", equalTo(100)))
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(100))))
@@ -766,7 +766,7 @@ public class ScimUserProvisioningFilteringTests {
   public void testFilteringActivesEqCoun0Positive() throws Exception {
 
     scimUtils.getUsers(ParamsBuilder.builder().filters("active eq true").count(0).build())
-      .andExpect(jsonPath("$.totalResults", equalTo(255)))
+      .andExpect(jsonPath("$.totalResults", equalTo(256)))
       .andExpect(jsonPath("$.itemsPerPage").doesNotExist())
       .andExpect(jsonPath("$.schemas", contains(SCHEMA)))
       .andExpect(jsonPath("$.Resources", hasSize(equalTo(0))))

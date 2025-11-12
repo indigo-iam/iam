@@ -178,7 +178,7 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     return builder.build();
   }
 
-  private Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
+  protected Set<String> getRequestedScopes(OAuth2AccessTokenEntity token,
       OAuth2Authentication authentication) {
 
     Set<String> requestedScopes = new HashSet<>();

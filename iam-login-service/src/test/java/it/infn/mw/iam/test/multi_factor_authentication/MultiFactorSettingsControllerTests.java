@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +80,6 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
   }
 
-  @Ignore
   @Test
   @WithMockUser(username = "group-manager", roles = "GM:6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1")
   public void testGetMfaAccountSettingWorksForGroupManager() throws Exception {
@@ -91,10 +89,33 @@ public class MultiFactorSettingsControllerTests extends MultiFactorTestSupport {
   }
 
   @Test
+  @WithMockUser(username = "reader", roles = "READER")
+  public void testGetMfaAccountSettingWorksForReader() throws Exception {
+    mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
+      .andExpect(status().isOk())
+      .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
+  }
+
+  @Test
   @WithMockUser(username = "test-mfa-user", roles = "USER")
-  public void testGetMfaAccountSettingWorksForAuthenticatedUser() throws Exception {
+  public void testGetMfaAccountSettingWorksForUser() throws Exception {
+    mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
+      .andExpect(status().isOk())
+      .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
+  }
+
+  @Test
+  @WithMockUser(username = "test-mfa-user", roles = "USER")
+  public void testGetMfaSettingWorksForAuthenticatedUser() throws Exception {
     mvc.perform(get(MULTI_FACTOR_SETTINGS_URL))
       .andExpect(status().isOk())
       .andExpect((jsonPath("$.authenticatorAppActive", equalTo(true))));
+  }
+
+  @Test
+  @WithMockUser(username = "test", roles = "USER")
+  public void testGetMfaAccountSettingOfAnotherUserFails() throws Exception {
+    mvc.perform(get(MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, TOTP_UUID))
+      .andExpect(status().isForbidden());
   }
 }

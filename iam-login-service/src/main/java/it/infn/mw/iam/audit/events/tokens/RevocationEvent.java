@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.audit.events.tokens;
 
-import static it.infn.mw.iam.util.AuditLogUtils.getPayload;
-import static it.infn.mw.iam.util.AuditLogUtils.reduce;
-
 import it.infn.mw.iam.audit.events.IamAuditApplicationEvent;
 import it.infn.mw.iam.audit.events.IamEventCategory;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
@@ -26,18 +23,18 @@ public class RevocationEvent extends IamAuditApplicationEvent {
 
   private static final long serialVersionUID = -1843180591267883819L;
 
-  private final String tokenValue;
+  private final String jwtId;
   private final TokenTypeHint tokenTypeHint;
 
-  public RevocationEvent(Object source, String tokenValue, TokenTypeHint tokenTypeHint) {
+  public RevocationEvent(Object source, String jwtId, TokenTypeHint tokenTypeHint) {
 
     super(IamEventCategory.TOKEN, source, "Token revocation request");
-    this.tokenValue = reduce(getPayload(tokenValue), 0.2) + "...";
+    this.jwtId = jwtId;
     this.tokenTypeHint = tokenTypeHint;
   }
 
-  public String getTokenValue() {
-    return tokenValue;
+  public String getJwtId() {
+    return jwtId;
   }
 
   public TokenTypeHint getTokenTypeHint() {

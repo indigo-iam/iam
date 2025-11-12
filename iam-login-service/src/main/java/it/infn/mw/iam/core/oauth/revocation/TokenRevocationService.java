@@ -17,17 +17,29 @@ package it.infn.mw.iam.core.oauth.revocation;
 
 import java.text.ParseException;
 
-import com.nimbusds.jwt.PlainJWT;
-import com.nimbusds.jwt.SignedJWT;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 public interface TokenRevocationService {
 
-  public boolean isAccessTokenRevoked(SignedJWT token) throws ParseException;
+  public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token) throws ParseException;
 
-  public boolean isRefreshTokenRevoked(PlainJWT token) throws ParseException;
+  public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) throws ParseException;
 
-  public void revokeAccessToken(SignedJWT token) throws ParseException;
+  public void revokeAccessToken(OAuth2AccessTokenEntity token);
 
-  public void revokeRefreshToken(PlainJWT token) throws ParseException;
+  public void revokeRefreshToken(OAuth2RefreshTokenEntity token);
 
+  public void revokeAccessTokens(ClientDetailsEntity client);
+
+  public void revokeRegistrationToken(ClientDetailsEntity client);
+
+  public void revokeRefreshTokens(ClientDetailsEntity client);
+
+  public void revokeAccessTokens(IamAccount account);
+
+  public void revokeRefreshTokens(IamAccount account);
 }

@@ -76,8 +76,8 @@ public class WlcgAccessTokenBuilder extends BaseAccessTokenBuilder {
     if (account.isPresent()) {
 
       /* add wlcg.groups */
-      Set<String> groups = WlcgGroupHelper.resolveGroupNames(
-          authentication.getOAuth2Request().getScope(), account.get().getUserInfo().getGroups());
+      Set<String> groups = WlcgGroupHelper.resolveGroupNames(token.getScope(),
+          account.get().getUserInfo().getGroups());
       if (isValidClaimValue(groups)) {
         builder.claim(WLCG_GROUPS, groups);
       }

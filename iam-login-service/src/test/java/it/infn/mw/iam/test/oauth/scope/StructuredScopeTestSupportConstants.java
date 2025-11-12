@@ -16,14 +16,15 @@
 package it.infn.mw.iam.test.oauth.scope;
 
 public interface StructuredScopeTestSupportConstants {
-  
-  static final String PASSWORD_GRANT_TYPE = "password";
+
   static final String PASSWORD_CLIENT_ID = "password-grant";
   static final String PASSWORD_CLIENT_SECRET = "secret";
-  
-  static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
+
   static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
+
+  static final String EXCHANGE_CLIENT_ID = "token-exchange-actor";
+  static final String EXCHANGE_CLIENT_SECRET = "secret";
 
   static final String DEVICE_CODE_ENDPOINT = "/devicecode";
   static final String DEVICE_CODE_USER_ENDPOINT = "/device";
@@ -37,7 +38,6 @@ public interface StructuredScopeTestSupportConstants {
 
   static final String DEVICE_CODE_CLIENT_ID = "device-code-client";
   static final String DEVICE_CODE_CLIENT_SECRET = "secret";
-  static final String DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
   static final String DEVICE_USER_URL = "http://localhost:8080/device";
   static final String DEVICE_USER_VERIFY_URL = "http://localhost:8080/device/verify";

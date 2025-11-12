@@ -29,13 +29,11 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
-import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.requests.exception.GroupRequestValidationError;
 import it.infn.mw.iam.api.requests.model.GroupRequestDto;
 import it.infn.mw.iam.core.IamGroupRequestStatus;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAccountGroupMembership;
-import it.infn.mw.iam.persistence.model.IamAuthority;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -49,11 +47,6 @@ public class GroupRequestUtils {
 
   @Autowired
   private IamAccountRepository accoutRepository;
-
-  @Autowired
-  private AccountUtils accountUtils;
-
-  private static final IamAuthority ROLE_ADMIN = new IamAuthority("ROLE_ADMIN");
 
   public Optional<IamGroupRequest> getOptionalGroupRequest(String uuid) {
     return groupRequestRepository.findByUuid(uuid);
@@ -121,10 +114,5 @@ public class GroupRequestUtils {
       .map(a -> a.getAuthority().substring(8))
       .collect(Collectors.toSet());
 
-  }
-
-  public boolean isPrivilegedUser() {
-    Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
-    return userAccount.isPresent() && userAccount.get().getAuthorities().contains(ROLE_ADMIN);
   }
 }

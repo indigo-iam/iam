@@ -27,7 +27,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,9 +43,6 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -56,8 +52,6 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.google.common.collect.Sets;
-
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -65,6 +59,7 @@ import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
@@ -119,7 +114,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private TimeProvider timeProvider;
 
   @Mock
-  private OAuth2TokenEntityService tokenService;
+  private TokenRevocationService tokenRevocationService;
 
   @Mock
   private NotificationFactory notificationFactory;
@@ -165,7 +160,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory,
+        passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo, notificationFactory,
         iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo, iamTotpMfaRepository);
   }
 
@@ -800,22 +795,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     accountService.deleteAccount(CICCIO_ACCOUNT);
     verify(accountRepo, times(1)).delete(CICCIO_ACCOUNT);
     verify(eventPublisher, times(1)).publishEvent(any());
-  }
-
-  @Test
-  public void testTokensAreRemovedWhenAccountIsRemoved() {
-    OAuth2AccessTokenEntity accessToken = mock(OAuth2AccessTokenEntity.class);
-    OAuth2RefreshTokenEntity refreshToken = mock(OAuth2RefreshTokenEntity.class);
-
-    when(tokenService.getAllAccessTokensForUser(CICCIO_USERNAME))
-      .thenReturn(Sets.newHashSet(accessToken));
-    when(tokenService.getAllRefreshTokensForUser(CICCIO_USERNAME))
-      .thenReturn(Sets.newHashSet(refreshToken));
-
-
-    accountService.deleteAccount(CICCIO_ACCOUNT);
-    verify(tokenService).revokeAccessToken(Mockito.eq(accessToken));
-    verify(tokenService).revokeRefreshToken(Mockito.eq(refreshToken));
   }
 
   @Test

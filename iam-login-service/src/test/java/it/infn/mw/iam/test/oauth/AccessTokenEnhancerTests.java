@@ -16,7 +16,7 @@
 package it.infn.mw.iam.test.oauth;
 
 
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -58,7 +58,7 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
   private static final String EMAIL = "test@iam.test";
   private static final String ORGANISATION = "indigo-dc";
   private static final String NAME = "Test User";
-  private static final List<String> GROUPS = ImmutableList.of("Production", "Analysis");
+  private static final List<String> GROUPS = ImmutableList.of("Production", "Analysis", "Optional");
 
   @Autowired
   @Qualifier("iamJwtProfile")
@@ -125,10 +125,9 @@ public class AccessTokenEnhancerTests extends EndpointsTestUtils {
     List<String> groups =
         (List<String>) claims.getClaim(IamExtraClaimNames.GROUPS);
     assertThat(groups, is(notNullValue()));
-    assertThat(groups, hasSize(2));
+    assertThat(groups, hasSize(3));
 
-    assertThat(groups, hasItem(GROUPS.get(0)));
-    assertThat(groups, hasItem(GROUPS.get(1)));
+    assertThat(groups, hasItems(GROUPS.get(0), GROUPS.get(1), GROUPS.get(2)));
   }
 
   @Test

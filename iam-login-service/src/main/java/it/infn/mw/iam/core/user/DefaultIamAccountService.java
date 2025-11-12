@@ -41,9 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -76,6 +73,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
@@ -112,7 +110,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAuthoritiesRepository authoritiesRepo;
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
-  private final OAuth2TokenEntityService tokenService;
+  private final TokenRevocationService tokenRevocationService;
   private final IamAccountClientRepository accountClientRepo;
   private final NotificationFactory notificationFactory;
   private final IamProperties iamProperties;
@@ -124,7 +122,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      TokenRevocationService tokenRevocationService, IamAccountClientRepository accountClientRepo,
       NotificationFactory notificationFactory, IamProperties iamProperties,
       DefaultIamGroupService iamGroupService, TokenGenerator tokenGenerator,
       IamAupSignatureRepository iamAupSignatureRepo, IamTotpMfaRepository iamTotpMfaRepository) {
@@ -135,7 +133,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.authoritiesRepo = authoritiesRepo;
     this.passwordEncoder = passwordEncoder;
     this.eventPublisher = eventPublisher;
-    this.tokenService = tokenService;
+    this.tokenRevocationService = tokenRevocationService;
     this.accountClientRepo = accountClientRepo;
     this.notificationFactory = notificationFactory;
     this.iamProperties = iamProperties;
@@ -353,19 +351,9 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   protected void deleteTokensForAccount(IamAccount account) {
 
-    Set<OAuth2AccessTokenEntity> accessTokens =
-        tokenService.getAllAccessTokensForUser(account.getUsername());
+    tokenRevocationService.revokeAccessTokens(account);
+    tokenRevocationService.revokeRefreshTokens(account);
 
-    Set<OAuth2RefreshTokenEntity> refreshTokens =
-        tokenService.getAllRefreshTokensForUser(account.getUsername());
-
-    for (OAuth2AccessTokenEntity t : accessTokens) {
-      tokenService.revokeAccessToken(t);
-    }
-
-    for (OAuth2RefreshTokenEntity t : refreshTokens) {
-      tokenService.revokeRefreshToken(t);
-    }
   }
 
   private void deleteTotpMfa(IamAccount account) {

@@ -118,6 +118,7 @@ INSERT INTO client_scope (owner_id, scope) VALUES
   (8, 'read-tasks'),
   (8, 'storage.read:/'),
   (8, 'storage.write:/'),
+  (8, 'wlcg.groups'),
   (9, 'openid'),
   (9, 'profile'),
   (9, 'offline_access'),
@@ -241,12 +242,13 @@ INSERT INTO client_contact (owner_id, contact) VALUES
     
 INSERT INTO iam_user_info(ID, GIVENNAME, FAMILYNAME, EMAIL, EMAILVERIFIED, BIRTHDATE, GENDER, NICKNAME, AFFILIATION) VALUES
   (2, 'Test', 'User', 'test@iam.test', true, '1950-01-01','M','test','indigo'),
-  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa','indigo');
+  (1000, 'Test', 'MFA', 'testwithmfa@iam.test', true, '2000-01-01','F','testwithmfa','indigo'),
+  (2000, 'User', 'Unverified', 'unverified@another.test', false, null, null, 'unverified', 'unknown affiliation');
 
 INSERT INTO iam_account(id, uuid, username, password, user_info_id, creationtime, lastupdatetime, active, service_account) VALUES
   (2, '80e5fb8d-b7c8-451a-89ba-346ae278a66f', 'test', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
-  (1000, '467c882e-90da-11ec-b909-0242ac120002', 'test-with-mfa', '$2a$12$S3lUZw/ESq9lULn5he6bBu9KNGCvs7C2rWo0XdVC6t65ITwAc22w2', 1000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
-
+  (1000, '467c882e-90da-11ec-b909-0242ac120002', 'test-with-mfa', '$2a$12$S3lUZw/ESq9lULn5he6bBu9KNGCvs7C2rWo0XdVC6t65ITwAc22w2', 1000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false),
+  (2000, '37d205e3-df24-4171-a9a4-07b427055782', 'unverified-user', '$2a$10$UZeOZKD1.dj5oiTsZKD03OETA9FXCKGqBuuijhsxYygZpOPtWMUni', 2000, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), true, false);
 
 INSERT INTO iam_oidc_id(issuer, subject, account_id) VALUES
 ('https://accounts.google.com', '105440632287425289613', 2),
@@ -285,11 +287,16 @@ CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),1);
 
 INSERT INTO iam_group(id, name, uuid, description, creationtime, lastupdatetime) VALUES
 (1, 'Production', 'c617d586-54e6-411d-8e38-64967798fa8a', 'The production group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
-(2, 'Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+(2, 'Analysis', '6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1', 'The analysis group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(3, 'Optional', '31d9230c-90ae-4457-a990-0c443ab4aacc', 'The optional group', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
 
 INSERT INTO iam_account_group(account_id, group_id) VALUES
 (2,1),
-(2,2);
+(2,2),
+(2,3);
+
+INSERT INTO iam_group_labels(name, prefix, val, group_id) VALUES
+('wlcg.optional-group', null, null, 3);
 
 INSERT INTO iam_account_authority(account_id, authority_id) VALUES
 (2,2),

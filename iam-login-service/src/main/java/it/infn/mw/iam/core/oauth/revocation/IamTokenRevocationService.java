@@ -15,87 +15,124 @@
  */
 package it.infn.mw.iam.core.oauth.revocation;
 
-import static it.infn.mw.iam.core.IamTokenService.sha256;
-
 import java.text.ParseException;
-import java.util.Date;
-import java.util.Optional;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.PlainJWT;
-import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 @Service
-public class IamTokenRevocationService
-    implements TokenRevocationService, ApplicationEventPublisherAware {
+@Primary
+public class IamTokenRevocationService implements TokenRevocationService {
+
+  public static final Logger LOG = LoggerFactory.getLogger(IamTokenRevocationService.class);
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
-  private ApplicationEventPublisher eventPublisher;
+  private final ClientService clientService;
+  private final ApplicationEventPublisher eventPublisher;
 
   public IamTokenRevocationService(IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientService clientService,
+      ApplicationEventPublisher eventPublisher) {
 
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
+    this.clientService = clientService;
+    this.eventPublisher = eventPublisher;
   }
 
   @Override
-  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-    this.eventPublisher = applicationEventPublisher;
-  }
+  public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token) {
 
-  private boolean isTokenExpired(JWT jwt) throws ParseException {
-
-    Optional<Date> expClaim = Optional.ofNullable(jwt.getJWTClaimsSet().getDateClaim("exp"));
-    return expClaim.isPresent() && expClaim.get().before(new Date());
+    return accessTokenRepo.findByTokenValue(token.getTokenValueHash()).isEmpty();
   }
 
   @Override
-  public boolean isAccessTokenRevoked(SignedJWT token) {
+  public boolean isRefreshTokenRevoked(OAuth2RefreshTokenEntity token) {
 
-    return accessTokenRepo.findByTokenValue(sha256(token.serialize())).isEmpty();
+    return refreshTokenRepo.findByTokenValue(token.getJwt()).isEmpty();
   }
 
   @Override
-  public boolean isRefreshTokenRevoked(PlainJWT token) {
+  public void revokeAccessTokens(ClientDetailsEntity client) {
 
-    return refreshTokenRepo.findByTokenValue(token).isEmpty();
+    accessTokenRepo.findAccessTokens(client.getId()).stream().forEach(this::revokeAccessToken);
   }
 
   @Override
-  public void revokeAccessToken(SignedJWT token) throws ParseException {
+  public void revokeRefreshTokens(ClientDetailsEntity client) {
 
-    if (isTokenExpired(token)) {
-      return;
-    }
-    accessTokenRepo.findByTokenValue(sha256(token.serialize())).ifPresent(at -> {
+    refreshTokenRepo.findByClientId(client.getId()).stream().forEach(this::revokeRefreshToken);
+  }
+
+  @Override
+  public void revokeRegistrationToken(ClientDetailsEntity client) {
+
+    accessTokenRepo.findRegistrationToken(client.getId()).ifPresent(this::revokeAccessToken);
+  }
+
+  @Override
+  public void revokeAccessToken(OAuth2AccessTokenEntity at) {
+
+    String jwtId = getJwtId(at.getJwt());
+    if (at.isExpired()) {
+      LOG.info("Refresh token (jti = {}) has expired. Revocation not necessary.", jwtId);
       accessTokenRepo.delete(at);
-      eventPublisher.publishEvent(
-          new RevocationEvent(this, at.getJwt().serialize(), TokenTypeHint.ACCESS_TOKEN));
-    });
+      return;
+    }
+    clientService.useClient(at.getClient());
+    accessTokenRepo.delete(at);
+    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.ACCESS_TOKEN));
   }
 
   @Override
-  public void revokeRefreshToken(PlainJWT token) throws ParseException {
+  public void revokeRefreshToken(OAuth2RefreshTokenEntity rt) {
 
-    if (isTokenExpired(token)) {
+    /* Revoke all related Access Tokens */
+    accessTokenRepo.findAccessTokensForRefreshToken(rt.getId()).forEach(this::revokeAccessToken);
+    String jwtId = getJwtId(rt.getJwt());
+    if (rt.isExpired()) {
+      LOG.info("Refresh token (jti = {}) has expired. Revocation not necessary.", jwtId);
+      refreshTokenRepo.delete(rt);
       return;
     }
-    refreshTokenRepo.findByTokenValue(token).ifPresent(rt -> {
-      refreshTokenRepo.delete(rt);
-      eventPublisher.publishEvent(
-          new RevocationEvent(this, rt.getJwt().serialize(), TokenTypeHint.REFRESH_TOKEN));
-    });
+    refreshTokenRepo.delete(rt);
+    clientService.useClient(rt.getClient());
+    eventPublisher.publishEvent(new RevocationEvent(this, jwtId, TokenTypeHint.REFRESH_TOKEN));
   }
 
+  private String getJwtId(JWT jwt) {
+    try {
+      return jwt.getJWTClaimsSet().getJWTID();
+    } catch (ParseException e) {
+      throw new IllegalStateException("Unexpected JWT ParseException error: " + e.getMessage());
+    }
+  }
+
+  @Override
+  public void revokeAccessTokens(IamAccount account) {
+
+    accessTokenRepo.findAccessTokensForUser(account.getUsername()).forEach(this::revokeAccessToken);
+  }
+
+  @Override
+  public void revokeRefreshTokens(IamAccount account) {
+
+    refreshTokenRepo.findRefreshTokensForUser(account.getUsername()).forEach(this::revokeRefreshToken);
+  }
 }

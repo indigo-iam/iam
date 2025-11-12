@@ -1,8 +1,6 @@
-# Turn off meaningless jar repackaging
-%define __jar_repack 0
-
-%define source_date_epoch_from_changelog 0
-%define user iam
+%define user  iam
+%define jdk_version  17
+%define mvn_version  3.8.0
 
 %{!?_unitdir: %global _unitdir %{_prefix}/lib/systemd/system}
 %{!?base_version: %global base_version 0.0.0}
@@ -18,13 +16,10 @@ URL:       https://github.com/indigoiam/iam
 
 BuildArch: noarch
 
-%if 0%{?rhel} && 0%{?rhel} < 10
-BuildRequires: maven-openjdk17
-Requires: java-17-openjdk-headless
-%else
-BuildRequires: maven-openjdk21
-Requires: java-21-openjdk-headless
-%endif
+BuildRequires: java-%{jdk_version}-openjdk-devel
+BuildRequires: maven >= %{mvn_version}
+
+Requires:      java-%{jdk_version}-openjdk
 
 %description
 The INDIGO IAM (Identity and Access Management service) provides 
@@ -43,8 +38,8 @@ install -d %{buildroot}%{_sysconfdir}/sysconfig
 install -d %{buildroot}/%{_unitdir}
 
 install -m 644 "%{name}/target/%{name}.war" %{buildroot}/var/lib/indigo/%{name}/
-install -m 644 "%{name}/rpm/SOURCES/%{name}.service" %{buildroot}%{_unitdir}/
-install -m 644 "%{name}/rpm/SOURCES/%{name}" %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+install -m 644 "rpm/SOURCES/%{name}.service" %{buildroot}%{_unitdir}/
+install -m 644 "rpm/SOURCES/%{name}" %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 
 %post
 # Create service user if not exists
@@ -73,6 +68,9 @@ chown -R %{user}:%{user} /var/lib/indigo/%{name}
 %{_unitdir}/%{name}.service
 
 %changelog
+* Mon Nov 3 2025 Enrico Vianello <enrico.vianello@cnaf.infn.it> 1.13.0
+- Release 1.13.0
+
 * Wed Oct 8 2025 Enrico Vianello <enrico.vianello@cnaf.infn.it> 1.12.3
 - Release 1.12.3
 

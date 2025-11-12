@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static it.infn.mw.iam.core.oauth.profile.aarc.AarcExtraClaimNames.ID_TOKEN_REQUIRED_CLAIMS;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -74,6 +75,7 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 public class AarcProfileIntegrationTests extends EndpointsTestUtils {
 
   private static final String URN_GROUP_ANALYSIS = "urn:geant:iam.example:group:Analysis";
+  private static final String URN_GROUP_OPTIONAL = "urn:geant:iam.example:group:Optional";
   private static final String URN_GROUP_PRODUCTION = "urn:geant:iam.example:group:Production";
 
   private static final String ASSURANCE = "https://refeds.org/assurance";
@@ -126,9 +128,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertThat(claims.getClaim("eduperson_entitlement"), nullValue());
 
     List<String> groups = Lists.newArrayList(claims.getStringArrayClaim("entitlements"));
-    assertThat(groups, hasSize(2));
-    assertThat(groups, hasItem(URN_GROUP_ANALYSIS));
-    assertThat(groups, hasItem(URN_GROUP_PRODUCTION));
+    assertThat(groups, hasSize(3));
+    assertThat(groups, hasItems(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION));
 
     Set<String> scopes2 = Sets.newHashSet("openid", "entitlements", "eduperson_entitlement");
     JWTClaimsSet claims2 =
@@ -195,7 +196,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
         containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE));
     assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim("entitlements"),
-        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
     // not required by default
     assertThat(claims.getClaim("aarc_ver"), nullValue());
     assertThat(claims.getClaim("organization_name"), nullValue());
@@ -219,8 +220,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
-      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
       .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
@@ -243,10 +244,10 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
-      .andExpect(jsonPath("$.eduperson_entitlement", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.eduperson_entitlement", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
-      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.eduperson_entitlement", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.eduperson_entitlement", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
       .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)));
     // @formatter:on
@@ -306,8 +307,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
-      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
       .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)));
@@ -327,8 +328,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.organisation_name").doesNotExist())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
-      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
       .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.name", equalTo("Test User")))
@@ -354,8 +355,8 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.voperson_id").isNotEmpty())
       .andExpect(jsonPath("$.voperson_id", equalTo(TEST_UUID + "@" + ORGANISATION_NAME)))
       .andExpect(jsonPath("$.eduperson_scoped_affiliation", equalTo(EDUPERSON_SCOPED_VALUE)))
-      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(2))))
-      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_PRODUCTION)))
+      .andExpect(jsonPath("$.entitlements", hasSize(equalTo(3))))
+      .andExpect(jsonPath("$.entitlements", containsInAnyOrder(URN_GROUP_ANALYSIS, URN_GROUP_OPTIONAL, URN_GROUP_PRODUCTION)))
       .andExpect(jsonPath("$.eduperson_assurance", hasSize(equalTo(2))))
       .andExpect(jsonPath("$.eduperson_assurance", containsInAnyOrder(ASSURANCE, ASSURANCE_VALUE)))
       .andExpect(jsonPath("$.name", equalTo("Test User")))
@@ -406,7 +407,7 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     assertNotNull(claims.getClaim("entitlements"));
     assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim("entitlements"),
-        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
     assertNotNull(claims.getClaim("eduperson_scoped_affiliation"));
     assertThat(claims.getClaim("eduperson_scoped_affiliation"), is(EDUPERSON_SCOPED_VALUE));
     assertNotNull(claims.getClaim("eduperson_assurance"));
@@ -427,11 +428,11 @@ public class AarcProfileIntegrationTests extends EndpointsTestUtils {
     // legacy entitlements
     assertThat(claims.getClaim("eduperson_entitlement"), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim("eduperson_entitlement"),
-        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
     // entitlements
     assertThat(claims.getClaim("entitlements"), instanceOf(ArrayList.class));
     assertThat((ArrayList<String>) claims.getClaim("entitlements"),
-        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_ANALYSIS));
+        containsInAnyOrder(URN_GROUP_PRODUCTION, URN_GROUP_OPTIONAL, URN_GROUP_ANALYSIS));
     assertNull(claims.getClaim("eduperson_scoped_affiliation"));
     assertNotNull(claims.getClaim("eduperson_assurance"));
     assertNotNull(claims.getClaim("voperson_id"));

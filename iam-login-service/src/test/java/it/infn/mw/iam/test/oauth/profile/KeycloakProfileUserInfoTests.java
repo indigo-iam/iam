@@ -67,8 +67,8 @@ public class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
       .andExpect(jsonPath("$.sub").exists())
       .andExpect(jsonPath("$.groups").doesNotExist())
       .andExpect(jsonPath("$.roles").exists())
-      .andExpect(jsonPath("$.roles", hasSize(2)))
-      .andExpect(jsonPath("$.roles", hasItems("Analysis", "Production")));
+      .andExpect(jsonPath("$.roles", hasSize(3)))
+      .andExpect(jsonPath("$.roles", hasItems("Analysis", "Production", "Optional")));
     // @formatter:on
   }
 

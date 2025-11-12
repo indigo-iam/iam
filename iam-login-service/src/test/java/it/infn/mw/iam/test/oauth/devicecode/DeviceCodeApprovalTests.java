@@ -53,6 +53,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
@@ -1005,7 +1006,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("openid")))
@@ -1036,7 +1037,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("openid")))
@@ -1100,7 +1101,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("authorization_pending")))
@@ -1175,7 +1176,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.scope", containsString("openid")))
@@ -1209,7 +1210,7 @@ class DeviceCodeApprovalTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("authorization_pending")))

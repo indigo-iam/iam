@@ -176,7 +176,7 @@ public class IamCoreControllerTests {
     mvc.perform(get("/userinfo").param("claims", userInfoClaimsRequest))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.groups", hasSize(2)));
+      .andExpect(jsonPath("$.groups", hasSize(3)));
   }
 
   @Test

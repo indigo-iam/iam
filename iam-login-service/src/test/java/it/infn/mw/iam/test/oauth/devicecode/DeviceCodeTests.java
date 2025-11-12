@@ -56,6 +56,7 @@ import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.oauth2.sdk.GrantType;
 
 import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
@@ -149,7 +150,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
     return mvc
       .perform(post(TOKEN_ENDPOINT).with(httpBasic(clientId, clientSecret))
-        .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode))
       .andReturn()
       .getResponse()
@@ -172,7 +173,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
       .andExpect(jsonPath("$.error_description",
-          equalTo("Unauthorized grant type: " + DEVICE_CODE_GRANT_TYPE)));
+          equalTo("Unauthorized grant type: " + GrantType.DEVICE_CODE.getValue())));
 
   }
 
@@ -216,7 +217,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
     mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.error", equalTo("authorization_pending")))
@@ -377,7 +378,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode)
             .param("aud", "example-audience"))
       .andExpect(status().isOk())
@@ -482,14 +483,14 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
     mvc
       .perform(post(TOKEN_ENDPOINT).with(httpBasic("client", "secret"))
-        .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+        .param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode))
       .andExpect(status().isUnauthorized());
 
     String tokenResponse = mvc
       .perform(
           post(TOKEN_ENDPOINT).with(httpBasic(DEVICE_CODE_CLIENT_ID, DEVICE_CODE_CLIENT_SECRET))
-            .param("grant_type", DEVICE_CODE_GRANT_TYPE)
+            .param("grant_type", GrantType.DEVICE_CODE.getValue())
             .param("device_code", deviceCode))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.access_token").exists())
@@ -657,7 +658,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
     String deviceCode = responseJson.get("device_code").asText();
 
     mvc
-      .perform(post(TOKEN_ENDPOINT).param("grant_type", DEVICE_CODE_GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode)
         .param("client_id", PUBLIC_DEVICE_CODE_CLIENT_ID))
       .andExpect(status().isBadRequest())
@@ -717,7 +718,7 @@ public class DeviceCodeTests extends EndpointsTestUtils {
 
 
     String tokenResponse = mvc
-      .perform(post(TOKEN_ENDPOINT).param("grant_type", DEVICE_CODE_GRANT_TYPE)
+      .perform(post(TOKEN_ENDPOINT).param("grant_type", GrantType.DEVICE_CODE.getValue())
         .param("device_code", deviceCode)
         .param("client_id", PUBLIC_DEVICE_CODE_CLIENT_ID))
       .andExpect(status().isOk())

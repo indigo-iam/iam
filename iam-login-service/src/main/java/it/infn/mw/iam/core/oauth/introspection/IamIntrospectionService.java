@@ -17,39 +17,39 @@ package it.infn.mw.iam.core.oauth.introspection;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Strings;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.IntrospectionEvent;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
-import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 
 @SuppressWarnings("deprecation")
 @Service
-public class IamIntrospectionService implements IntrospectionService, ApplicationEventPublisherAware {
+public class IamIntrospectionService
+    implements IntrospectionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
@@ -60,60 +60,91 @@ public class IamIntrospectionService implements IntrospectionService, Applicatio
 
   private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
-  private final ClientDetailsEntityService clientService;
-  private final TokenRevocationService revocationService;
-  private ApplicationEventPublisher eventPublisher;
+  private final ClientService clientService;
+  private final ApplicationEventPublisher eventPublisher;
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
-      OAuth2TokenEntityService tokenService, ClientDetailsEntityService clientService,
-      TokenRevocationService revocationService) {
+      OAuth2TokenEntityService tokenService, ClientService clientService,
+      ApplicationEventPublisher eventPublisher) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
-    this.revocationService = revocationService;
-  }
-
-  @Override
-  public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-    this.eventPublisher = applicationEventPublisher;
+    this.eventPublisher = eventPublisher;
   }
 
   @Override
   public IntrospectionResponse introspect(Authentication auth, String tokenValue,
       TokenTypeHint tokenTypeHint) {
 
-    IntrospectionResponse response = null;
+    Objects.requireNonNull(tokenValue, "Unexpected null tokenValue");
+
     ClientDetailsEntity authenticatedClient = loadClient(auth);
+    clientService.useClient(authenticatedClient);
 
+    IntrospectionResponse response = null;
+    TokenInfo info = null;
     try {
-      validate(authenticatedClient, tokenValue);
-      JWT jwt = JWTParser.parse(tokenValue);
 
-      if (jwt instanceof PlainJWT plainJwt) {
-        // It's a RefreshToken
-        OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(plainJwt.serialize());
-        response = introspectRefreshToken(authenticatedClient, rt);
-      } else if (jwt instanceof SignedJWT) {
-        // It's an AccessToken
-        OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
-        response = introspectAccessToken(authenticatedClient, at);
-      } else {
-        LOG.warn("Token introspection error: expected a SignedJWT or PlainJWT object");
-        response = IntrospectionResponse.inactive();
+      info = getTokenInfo(tokenValue, tokenTypeHint);
+      validateClient(authenticatedClient);
+
+      switch (info.tokenType) {
+        case REFRESH_TOKEN:
+          OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(tokenValue);
+          response = introspectRefreshToken(authenticatedClient, rt, info);
+          break;
+        case ACCESS_TOKEN:
+        default:
+          OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
+          response = introspectAccessToken(authenticatedClient, at, info);
+          break;
       }
 
-    } catch (UnauthorizedClientException | InvalidTokenException | ParseException e) {
+    } catch (UnauthorizedClientException e) {
 
-      LOG.warn("Token introspection error: {}", e.getMessage());
-      response = IntrospectionResponse.inactive();
+      LOG.info("Failed introspection of token, client validation error: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (InvalidTokenException e) {
+
+      LOG.info("Failed introspection of token, invalid token value: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (ParseException e) {
+
+      LOG.info("Failed introspection of token, malformed token: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
     }
 
-    eventPublisher.publishEvent(new IntrospectionEvent(this, tokenValue, tokenTypeHint, response));
+    eventPublisher.publishEvent(new IntrospectionEvent(this, info.jti, info.tokenType, response));
     return response;
   }
 
-  private void validate(ClientDetailsEntity c, String tokenValue)
+  private TokenInfo getTokenInfo(String tokenValue, TokenTypeHint tokenTypeHint)
+      throws ParseException {
+
+    JWT jwt = JWTParser.parse(tokenValue);
+    if (tokenTypeHint == null) {
+      tokenTypeHint = getTokenType(jwt);
+    }
+    JWTClaimsSet claims = jwt.getJWTClaimsSet();
+    return new TokenInfo(tokenValue, tokenTypeHint, claims, claims.getJWTID());
+  }
+
+  private TokenTypeHint getTokenType(JWT jwt) {
+
+    if (jwt instanceof PlainJWT) {
+      return TokenTypeHint.REFRESH_TOKEN;
+    }
+    if (jwt instanceof SignedJWT) {
+      return TokenTypeHint.ACCESS_TOKEN;
+    }
+    throw new InvalidTokenException(
+        "Token introspection error: expected a SignedJWT or PlainJWT object");
+  }
+
+  private void validateClient(ClientDetailsEntity c)
       throws UnauthorizedClientException, InvalidTokenException {
 
     // check if client has been suspended
@@ -129,19 +160,12 @@ public class IamIntrospectionService implements IntrospectionService, Applicatio
       LOG.error(errorMsg);
       throw new UnauthorizedClientException(errorMsg);
     }
-
-    // invalid null token to introspect
-    if (Strings.isNullOrEmpty(tokenValue)) {
-      String errorMsg = "Verify failed; token value is null";
-      LOG.error(errorMsg);
-      throw new InvalidTokenException(errorMsg);
-    }
   }
 
   private IntrospectionResponse introspectRefreshToken(ClientDetailsEntity authenticatedClient,
-      OAuth2RefreshTokenEntity rt) throws ParseException, InvalidTokenException {
+      OAuth2RefreshTokenEntity rt, TokenInfo info) throws InvalidTokenException {
 
-    if (rt.isExpired() || isRevoked(rt) || notYetValid(rt.getJwt())) {
+    if (rt.isExpired() || notYetValid(info.claims)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
@@ -150,14 +174,14 @@ public class IamIntrospectionService implements IntrospectionService, Applicatio
       .assembleIntrospectionResult(rt, authenticatedClient)
       .forEach(builder::addField);
     // add all the others avoiding duplicates/override
-    rt.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
+    info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
 
   private IntrospectionResponse introspectAccessToken(ClientDetailsEntity authenticatedClient,
-      OAuth2AccessTokenEntity at) throws InvalidTokenException, ParseException {
+      OAuth2AccessTokenEntity at, TokenInfo info) throws InvalidTokenException {
 
-    if (at.isExpired() || isRevoked(at) || notYetValid(at.getJwt())) {
+    if (at.isExpired() || notYetValid(info.claims)) {
       return IntrospectionResponse.inactive();
     }
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
@@ -166,32 +190,26 @@ public class IamIntrospectionService implements IntrospectionService, Applicatio
       .assembleIntrospectionResult(at, authenticatedClient)
       .forEach(builder::addField);
     // add all the others avoiding duplicates/override
-    at.getJwt().getJWTClaimsSet().getClaims().forEach(builder::addFieldIfAbsent);
+    info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
   }
 
-  private boolean notYetValid(JWT jwt) throws ParseException {
+  private boolean notYetValid(JWTClaimsSet claims) {
 
-    Optional<Date> notBefore = Optional.ofNullable(jwt.getJWTClaimsSet().getNotBeforeTime());
+    Optional<Date> notBefore = Optional.ofNullable(claims.getNotBeforeTime());
     return notBefore.isPresent() && notBefore.get().after(new Date());
-  }
-
-  private boolean isRevoked(OAuth2AccessTokenEntity at)
-      throws InvalidTokenException, ParseException {
-
-    return revocationService.isAccessTokenRevoked((SignedJWT) at.getJwt());
-  }
-
-  private boolean isRevoked(OAuth2RefreshTokenEntity rt)
-      throws InvalidTokenException, ParseException {
-
-    return revocationService.isRefreshTokenRevoked((PlainJWT) rt.getJwt());
   }
 
   private ClientDetailsEntity loadClient(Authentication auth) {
 
-    return clientService.loadClientByClientId(
-        auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
-            : auth.getName());
+    return clientService
+      .findClientByClientId(
+          auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
+              : auth.getName())
+      .orElseThrow();
+  }
+
+  public record TokenInfo(String tokenValue, TokenTypeHint tokenType, JWTClaimsSet claims,
+      String jti) {
   }
 }
