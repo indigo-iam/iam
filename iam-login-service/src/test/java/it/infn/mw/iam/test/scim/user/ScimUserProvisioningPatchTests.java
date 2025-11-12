@@ -25,6 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -453,12 +454,21 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   public void testUserCanChangeEmail() throws Exception {
     ScimUser updates = ScimUser.builder()
         .addEmail(ScimEmail.builder()
-            .type(ScimEmailType.home)
             .email("TestUser@example.com")
+            .type(ScimEmailType.home)
             .primary(false).build())
         .build();
 
     scimUtils.patchUser(lennon.getId(), replace, updates, HttpStatus.NO_CONTENT)
         .andExpect(status().isNoContent());
+
+    ScimUser updatedUser = scimUtils.getUser(lennon.getId());
+    ScimEmail updatedEmail = updatedUser.getEmails().stream()
+        .filter(e -> "TestUser@example.com".equals(e.getValue()))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("Email not found"));
+    // Values of Type and Primary are unchanged
+    assertThat(updatedEmail.getPrimary(), is(true));
+    assertThat(updatedEmail.getType(), is(ScimEmailType.work));
   }
 }
