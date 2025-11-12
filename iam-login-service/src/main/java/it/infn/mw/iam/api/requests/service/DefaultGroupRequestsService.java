@@ -98,6 +98,9 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
         .put(PENDING, REJECTED, true)
         .build();
 
+  private static String GROUP = "group";
+  private static String ACCOUNT = "account";
+
   @Override
   public GroupRequestDto createGroupRequest(GroupRequestDto groupRequest) {
 
@@ -254,18 +257,18 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> forUser(String username) {
-    return (req, cq, cb) -> cb.equal(req.get("account").get("username"), username);
+    return (req, cq, cb) -> cb.equal(req.get(ACCOUNT).get("username"), username);
   }
 
   static Specification<IamGroupRequest> forUserNameLike(String username) {
-    return (req, cq, cb) -> cb.like(cb.lower(req.get("account").get("username")), "%" + username.toLowerCase() + "%");
+    return (req, cq, cb) -> cb.like(cb.lower(req.get(ACCOUNT).get("username")), "%" + username.toLowerCase() + "%");
   }
 
   static Specification<IamGroupRequest> forUserFullNameLike(String userFullName) {
     return (root, query, cb) -> {
       String searchTerm = "%" + userFullName.toLowerCase() + "%";
 
-      Path<?> userInfoPath = root.get("account").get("userInfo");
+      Path<?> userInfoPath = root.get(ACCOUNT).get("userInfo");
       Path<String> givenNamePath = userInfoPath.get("givenName");
       Path<String> middleNamePath = userInfoPath.get("middleName");
       Path<String> familyNamePath = userInfoPath.get("familyName");
@@ -291,11 +294,11 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> forGroupName(String groupName) {
-    return (req, cq, cb) -> cb.equal(req.get("group").get("name"), groupName);
+    return (req, cq, cb) -> cb.equal(req.get(GROUP).get("name"), groupName);
   }
 
   static Specification<IamGroupRequest> forGroupNameLike(String groupName) {
-    return (req, cq, cb) -> cb.like(cb.lower(req.get("group").get("name")), "%" + groupName.toLowerCase() + "%");
+    return (req, cq, cb) -> cb.like(cb.lower(req.get(GROUP).get("name")), "%" + groupName.toLowerCase() + "%");
   }
 
   static Specification<IamGroupRequest> forNotesLike(String notes) {
@@ -303,7 +306,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
   }
 
   static Specification<IamGroupRequest> forGroupIds(Collection<String> groupIds) {
-    return (req, cq, cb) -> req.get("group").get("uuid").in(groupIds);
+    return (req, cq, cb) -> req.get(GROUP).get("uuid").in(groupIds);
   }
 
   static Specification<IamGroupRequest> withStatus(String status) {
@@ -340,12 +343,11 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
       Optional<String> statusFilter, Set<String> managedGroups, OffsetPageable pageRequest) {
 
     Specification<IamGroupRequest> spec = baseSpec();
+    List<Specification<IamGroupRequest>> orSpecs = new ArrayList<>();
 
     if (!managedGroups.isEmpty()) {
       spec = spec.and(forGroupIds(managedGroups));
     }
-
-    List<Specification<IamGroupRequest>> orSpecs = new ArrayList<>();
 
     usernameFilter.ifPresent(u -> orSpecs.add(forUserNameLike(u)));
     userFullnameFilter.ifPresent(f -> orSpecs.add(forUserFullNameLike(f)));
@@ -353,11 +355,13 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
     notesFilter.ifPresent(n -> orSpecs.add(forNotesLike(n)));
 
     if (!orSpecs.isEmpty()) {
-      Specification<IamGroupRequest> combinedOrSpec = orSpecs.get(0);
-      for (int i = 1; i < orSpecs.size(); i++) {
-        combinedOrSpec = combinedOrSpec.or(orSpecs.get(i));
+      Specification<IamGroupRequest> combinedOrSpec = orSpecs.stream()
+          .reduce(Specification::or)
+          .orElse(null);
+
+      if (combinedOrSpec != null) {
+        spec = spec.and(combinedOrSpec);
       }
-      spec = spec.and(combinedOrSpec);
     }
 
     if (statusFilter.isPresent()) {
