@@ -59,8 +59,6 @@ public abstract class BaseFedClientRegistrationMapper {
   protected abstract void setTokenEndpointAuthMethod(RegisteredClientDTO dto,
       OIDCClientMetadata metadata);
 
-  protected abstract void setJwks(RegisteredClientDTO dto, OIDCClientMetadata metadata);
-
   protected void setClientName(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
     dto.setClientName(Optional.ofNullable(metadata.getName()).orElse("OIDFed client"));
   }
@@ -118,9 +116,13 @@ public abstract class BaseFedClientRegistrationMapper {
   }
 
   protected void setEntityId(RegisteredClientDTO dto, EntityStatement rpRequest) {
-    if (rpRequest.getEntityID() == null) {
-      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing RP Entity ID");
-    }
     dto.setEntityId(rpRequest.getEntityID().getValue());
+  }
+
+  protected void setJwks(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
+    Optional.ofNullable(metadata.getJWKSetURI())
+      .ifPresent(uri -> dto.setJwksUri(uri.toASCIIString()));
+
+    Optional.ofNullable(metadata.getJWKSet()).ifPresent(jwk -> dto.setJwk(jwk.toString()));
   }
 }

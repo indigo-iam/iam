@@ -33,12 +33,4 @@ public class ExplicitClientRegistrationMapper extends BaseFedClientRegistrationM
       .map(v -> TokenEndpointAuthenticationMethod.valueOf(v.getValue()))
       .orElse(TokenEndpointAuthenticationMethod.client_secret_basic));
   }
-
-  @Override
-  protected void setJwks(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    Optional.ofNullable(metadata.getJWKSetURI())
-      .ifPresent(uri -> dto.setJwksUri(uri.toASCIIString()));
-
-    Optional.ofNullable(metadata.getJWKSet()).ifPresent(jwk -> dto.setJwk(jwk.toString()));
-  }
 }

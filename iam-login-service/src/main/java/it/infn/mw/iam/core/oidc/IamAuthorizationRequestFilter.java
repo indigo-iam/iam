@@ -236,14 +236,17 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
       }
-      return Optional.empty();
+    } catch (InvalidTrustChainException e) {
+      if (!response.isCommitted()) {
+        sendAuthenticationError(response, null, null, e.getErrorCode(), e.getMessage());
+      }
     } catch (Exception e) {
       log.error("Unexpected federation error", e);
       if (!response.isCommitted()) {
         sendAuthenticationError(response, null, null, "server_error", e.getMessage());
       }
-      return Optional.empty();
     }
+    return Optional.empty();
   }
 
   private TrustChain extractAndValidateTrustChain(JWTClaimsSet claims, String clientId)

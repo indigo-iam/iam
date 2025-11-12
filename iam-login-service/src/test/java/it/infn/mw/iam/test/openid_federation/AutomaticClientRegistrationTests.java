@@ -69,6 +69,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
+import it.infn.mw.iam.core.oidc.InvalidTrustChainException;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -269,6 +270,48 @@ public class AutomaticClientRegistrationTests {
       .andReturn();
 
     assertEquals("http://localhost/login", result.getResponse().getHeader("Location"));
+  }
+
+  @Test
+  public void testRegistrationWithoutRedirectUri() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String requestJwt = generateRequestJWT(rpEntityId, null, null);
+
+    fakeChain = TrustChainTestFactory.createRpToTaChain(issuer, null, null, jwkSet, null);
+
+    when(trustChainService.validateFromEntityId(rpEntityId)).thenReturn(fakeChain);
+
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("request", requestJwt))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("invalid_redirect_uri")))
+      .andExpect(content().string(containsString("Missing redirect URIs")));
+  }
+
+  @Test
+  public void testInvalidTrustChainError() throws Exception {
+    String rpEntityId = "https://rp.example";
+    String redirectUri = "https://rp.example/callback";
+    String requestJwt = generateRequestJWT(rpEntityId, redirectUri, null);
+
+    InvalidTrustChainException ex =
+        new InvalidTrustChainException("invalid_trust_chain", "Error description");
+
+    when(trustChainService.validateFromEntityId(rpEntityId)).thenThrow(ex);
+
+    mvc
+      .perform(get("/authorize").param("client_id", rpEntityId)
+        .param("response_type", "code")
+        .param("scope", "openid")
+        .param("redirect_uri", redirectUri)
+        .param("request", requestJwt))
+      .andExpect(status().isBadRequest())
+      .andExpect(content().contentType("text/html;charset=UTF-8"))
+      .andExpect(content().string(containsString("invalid_trust_chain")));
   }
 
   @Test

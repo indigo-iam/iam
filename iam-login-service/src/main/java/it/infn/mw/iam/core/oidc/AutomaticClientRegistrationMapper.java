@@ -33,16 +33,4 @@ public class AutomaticClientRegistrationMapper extends BaseFedClientRegistration
       .map(v -> TokenEndpointAuthenticationMethod.valueOf(v.getValue()))
       .orElse(TokenEndpointAuthenticationMethod.private_key_jwt));
   }
-
-  @Override
-  protected void setJwks(RegisteredClientDTO dto, OIDCClientMetadata metadata) {
-    if (metadata.getJWKSetURI() == null && metadata.getJWKSet() == null) {
-      throw new InvalidClientMetadataException("invalid_client_metadata", "Missing jwks/jwks_uri");
-    }
-
-    Optional.ofNullable(metadata.getJWKSetURI())
-      .ifPresent(uri -> dto.setJwksUri(uri.toASCIIString()));
-
-    Optional.ofNullable(metadata.getJWKSet()).ifPresent(jwk -> dto.setJwk(jwk.toString()));
-  }
 }
