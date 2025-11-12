@@ -36,6 +36,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
+import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.test.scim.ScimUtils;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -53,6 +54,9 @@ public class ScimGroupProvisioningAttributeFilterTests {
   @Autowired
   private MockMvc mvc;
 
+  @Autowired
+  private IamGroupRepository groupRepo;
+
   private final static String GROUPS_URI = ScimUtils.getGroupsLocation();
 
   @Before
@@ -67,13 +71,14 @@ public class ScimGroupProvisioningAttributeFilterTests {
 
   @Test
   public void testReuturnOnlyDisplayNameRequest() throws Exception {
+    final int SIZE = (int) groupRepo.count();
     //@formatter:off
     mvc.perform(get(GROUPS_URI)
         .contentType(SCIM_CONTENT_TYPE)
         .param("count", "1")
         .param("attributes", "displayName"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.totalResults", equalTo(22)))
+      .andExpect(jsonPath("$.totalResults", equalTo(SIZE)))
       .andExpect(jsonPath("$.itemsPerPage", equalTo(1)))
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
       .andExpect(jsonPath("$.schemas", contains(ScimListResponse.SCHEMA)))
@@ -86,13 +91,14 @@ public class ScimGroupProvisioningAttributeFilterTests {
 
   @Test
   public void testMultipleAttrsRequest() throws Exception {
+    final int SIZE = (int) groupRepo.count();
     //@formatter:off
     mvc.perform(get(GROUPS_URI)
         .contentType(SCIM_CONTENT_TYPE)
         .param("count", "2")
         .param("attributes", "displayName"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.totalResults", equalTo(22)))
+      .andExpect(jsonPath("$.totalResults", equalTo(SIZE)))
       .andExpect(jsonPath("$.itemsPerPage", equalTo(2)))
       .andExpect(jsonPath("$.startIndex", equalTo(1)))
       .andExpect(jsonPath("$.schemas", contains(ScimListResponse.SCHEMA)))

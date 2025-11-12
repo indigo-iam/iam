@@ -1,9 +1,13 @@
 name: Build RPM
-on: push
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
 
 jobs:
   build-rpm:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
     strategy:
       fail-fast: false
       matrix:
@@ -32,18 +36,23 @@ jobs:
       - name: Calculate version and repo
         id: info
         run: |
-          cd rpmbuild/BUILD/iam-login-service
+          cd rpmbuild/BUILD
+          VERSION_POM=$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Version POM: '${VERSION_POM}'" | cat -A
           if [[ ${{ github.ref_type }} = 'tag' ]]; then
+            echo "Raw tag: '${GITHUB_REF_NAME}'" | cat -A
+            # Clean up any stray carriage returns or spaces
+            GITHUB_REF_NAME=$(echo "${GITHUB_REF_NAME}" | tr -d '\r' | tr -d '\n' | xargs)
+            echo "Sanitized tag: '${GITHUB_REF_NAME}'" | cat -A
             # In case is a tag, check if the tag matches v<x>.<y>.<z>(-[0-9A-Za-z-]+)?
             if [[ ${GITHUB_REF_NAME} =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-[[:alnum:]-]+)?$ ]]; then
               if [[ -z ${BASH_REMATCH[2]} ]]; then
-                REPO='stable'
                 VERSION="${BASH_REMATCH[1]}"
-                VERSION_POM=$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=project.version -q -DforceStdout)
                 if [[ ${VERSION} != ${VERSION_POM} ]]; then
                   echo "Version mismatch between tag (${VERSION}) and POM file (${VERSION_POM})"
                   exit 1
                 fi
+                REPO='stable'
               else
                 # If the tag includes a "-" is a beta, substitute the first "-" with "~" and any other ones with "_"
                 REPO='beta'

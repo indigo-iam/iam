@@ -135,7 +135,7 @@ public class ScimGroupProvisioningListTests {
 
   @Test
   public void testInvalidStartIndex() throws Exception {
-    Integer startIndex = 23;
+    Integer startIndex = 24;
 
     //@formatter:off
     mvc.perform(get(GROUP_URI)

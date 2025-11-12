@@ -15,13 +15,17 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
-import java.util.List;
+import static java.lang.String.valueOf;
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.SUB;
+
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import javax.security.auth.login.AccountNotFoundException;
+import javax.security.auth.message.AuthException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.mitre.openid.connect.model.UserInfo;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -36,54 +40,66 @@ import org.springframework.web.bind.annotation.RestController;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.JWTProfileResolver;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
 @RestController
 public class IamUserInfoEndpoint {
 
-  public static final String URL = "userinfo";
-
   private static final Logger LOG = LoggerFactory.getLogger(IamUserInfoEndpoint.class);
   private static final String ACCOUNT_NOT_FOUND_ERROR = "User '%s' not found";
+  private static final String CLIENT_NOT_FOUND_ERROR = "Client '%s' not found";
 
   private final JWTProfileResolver profileResolver;
   private final OAuth2AuthenticationScopeResolver scopeResolver;
+  private final IamAccountRepository accountRepo;
+  private final IamClientRepository clientRepo;
 
   public IamUserInfoEndpoint(JWTProfileResolver profileResolver,
-      OAuth2AuthenticationScopeResolver scopeResolver) {
+      OAuth2AuthenticationScopeResolver scopeResolver, IamAccountRepository accountRepo,
+      IamClientRepository clientRepo) {
     this.profileResolver = profileResolver;
     this.scopeResolver = scopeResolver;
+    this.accountRepo = accountRepo;
+    this.clientRepo = clientRepo;
   }
 
   @PreAuthorize("hasRole('ROLE_USER') and #iam.hasScope('openid')")
-  @GetMapping(path = "/" + URL, produces = {MediaType.APPLICATION_JSON_VALUE})
-  public UserInfoResponse getInfo(OAuth2Authentication auth) throws AccountNotFoundException {
+  @GetMapping(path = "/userinfo", produces = {MediaType.APPLICATION_JSON_VALUE})
+  public UserInfoResponse getInfo(OAuth2Authentication auth) throws AuthException {
 
-    JWTProfile profile = profileResolver.resolveProfile(auth.getOAuth2Request().getClientId());
-
-    UserInfo userInfo = profile.getUserinfoHelper().resolveUserInfo(auth);
-
-    if (userInfo == null) {
+    String username = auth.getName();
+    Optional<IamAccount> account = accountRepo.findByUsername(username);
+    if (account.isEmpty()) {
       String errorMsg = String.format(ACCOUNT_NOT_FOUND_ERROR, auth.getName());
       LOG.error(errorMsg);
-      throw new AccountNotFoundException(errorMsg);
+      throw new AuthException(errorMsg);
     }
+    String clientId = auth.getOAuth2Request().getClientId();
+    Optional<ClientDetailsEntity> client = clientRepo.findByClientId(clientId);
+    if (client.isEmpty()) {
+      String errorMsg =
+          String.format(CLIENT_NOT_FOUND_ERROR, auth.getOAuth2Request().getClientId());
+      LOG.error(errorMsg);
+      throw new AuthException(errorMsg);
+    }
+    LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
+        username);
 
+    JWTProfile profile = profileResolver.resolveProfile(client.get().getScope());
     Set<String> scopes = scopeResolver.resolveScope(auth);
-    UserInfoResponse.Builder builder = new UserInfoResponse.Builder(userInfo.getSub());
-    if (scopes.contains("profile")) {
-      builder.addField("scope", scopes);
-      if (scopes.contains("ssh-keys")) {
-        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope"));
-      } else {
-        builder.addFieldsFromJson(userInfo.toJson(), List.of("sub", "scope", "ssh_keys"));
-      }
-    }
+    Map<String, Object> claims =
+        profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
+
+    UserInfoResponse.Builder builder = new UserInfoResponse.Builder(valueOf(claims.get(SUB)));
+    claims.forEach(builder::addField);
     return builder.build();
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)
-  @ExceptionHandler(AccountNotFoundException.class)
+  @ExceptionHandler({AuthException.class})
   public ErrorDTO accountNotFound(HttpServletRequest req, Exception ex) {
     return ErrorDTO.fromString(ex.getMessage());
   }

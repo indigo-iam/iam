@@ -43,14 +43,20 @@ public class IamStatisticalEndpointTests {
 
   @Test
   public void anonymousIsAcceptedAtStatEndpoint() throws Exception {
+
+    final int TOTAL_USERS = (int) accountRepo.count();
+
     IamAccount account = accountRepo.findByUsername("test")
       .orElseThrow(() -> new AssertionError("Expected test account not found"));
+
     account.setActive(false);
+
     mvc.perform(get("/stats"))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.totalUsers", equalTo(255)))
-      .andExpect(jsonPath("$.activeUsers", equalTo(254)));
+      .andExpect(jsonPath("$.totalUsers", equalTo(TOTAL_USERS)))
+      .andExpect(jsonPath("$.activeUsers", equalTo(TOTAL_USERS - 1)));
+
     account.setActive(true);
   }
 }

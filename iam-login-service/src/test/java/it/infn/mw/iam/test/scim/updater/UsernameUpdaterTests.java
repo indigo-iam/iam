@@ -96,7 +96,7 @@ public class UsernameUpdaterTests extends TestTokensUtils {
 
   private Replacers accountReplacers() {
     return AccountUpdaters.replacers(accountRepository, accountService, encoder, account,
-        tokenService, usernameValidator);
+        accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   @Test

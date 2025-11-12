@@ -125,10 +125,7 @@ public class AccountAttributesTests {
 
     mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID)).andExpect(UNAUTHORIZED);
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -159,10 +156,7 @@ public class AccountAttributesTests {
 
     mvc.perform(get(ACCOUNT_ATTR_URL_TEMPLATE, UUID)).andExpect(FORBIDDEN);
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -209,10 +203,7 @@ public class AccountAttributesTests {
 
     final String UUID = testAccount.getUuid();
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -225,7 +216,7 @@ public class AccountAttributesTests {
       .andExpect(jsonPath("$[0].name", is(ATTR_NAME)))
       .andExpect(jsonPath("$[0].value", is(ATTR_VALUE)));
 
-    attr.setValue(null);
+    attr = new AttributeDTO(ATTR_NAME, null);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -249,10 +240,7 @@ public class AccountAttributesTests {
 
     final String UUID = testAccount.getUuid();
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -271,10 +259,7 @@ public class AccountAttributesTests {
 
     final String UUID = testAccount.getUuid();
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -290,10 +275,7 @@ public class AccountAttributesTests {
 
     final String UUID = testAccount.getUuid();
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -316,10 +298,7 @@ public class AccountAttributesTests {
 
     final String UUID = testAccount.getUuid();
 
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     mvc
       .perform(delete(ACCOUNT_ATTR_URL_TEMPLATE, UUID).contentType(APPLICATION_JSON)
@@ -333,10 +312,7 @@ public class AccountAttributesTests {
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void nonExistingAccountIsHandledCorrectly() throws Exception {
     String randomUuid = UUID.randomUUID().toString();
-    AttributeDTO attr = new AttributeDTO();
-
-    attr.setName(ATTR_NAME);
-    attr.setValue(ATTR_VALUE);
+    AttributeDTO attr = new AttributeDTO(ATTR_NAME, ATTR_VALUE);
 
     final ResultMatcher accountNotFound = jsonPath("$.error", containsString(ACCOUNT_NOT_FOUND));
 
@@ -372,8 +348,7 @@ public class AccountAttributesTests {
     List<AttributeDTO> attrs = Lists.newArrayList();
 
     for (int i = 0; i < 10; i++) {
-      attrs.add(
-          AttributeDTO.newInstance(format(ATTR_NAME_TEMPLATE, i), format(ATTR_VALUE_TEMPLATE, i)));
+      attrs.add(new AttributeDTO(format(ATTR_NAME_TEMPLATE, i), format(ATTR_VALUE_TEMPLATE, i)));
     }
 
     for (AttributeDTO a : attrs) {
@@ -406,11 +381,16 @@ public class AccountAttributesTests {
   @Test
   @WithMockUser(username = "admin", roles = "ADMIN")
   public void attributeValidationTests() throws Exception {
+    
+    IamAccount testAccount =
+        repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    AttributeDTO noNameAttribute = AttributeDTO.newInstance(null, ATTR_VALUE);
+    final String TEST_UUID = testAccount.getUuid();
+
+    AttributeDTO noNameAttribute = new AttributeDTO(null, ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, noNameAttribute).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(noNameAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("must not be blank")));
@@ -419,9 +399,9 @@ public class AccountAttributesTests {
         {"-pippo", "/ciccio/paglia", ".starts-with-dot", "carriage\nreturn", "another\rreturn"};
 
     for (String name : SOME_INVALID_NAMES) {
-      AttributeDTO invalidAttribute = AttributeDTO.newInstance(name, ATTR_VALUE);
+      AttributeDTO invalidAttribute = new AttributeDTO(name, ATTR_VALUE);
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, invalidAttribute).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidAttribute)))
         .andExpect(BAD_REQUEST)
         .andExpect(jsonPath("$.error", containsString("invalid name (does not match with regexp")));
@@ -430,28 +410,28 @@ public class AccountAttributesTests {
     final String SOME_INVALID_VALES[] = {"carriage\nreturn", "another\rreturn"};
 
     for (String value : SOME_INVALID_VALES) {
-      AttributeDTO invalidAttribute = AttributeDTO.newInstance(ATTR_NAME, value);
+      AttributeDTO invalidAttribute = new AttributeDTO(ATTR_NAME, value);
       mvc
-        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, invalidAttribute).contentType(APPLICATION_JSON)
+        .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
           .content(mapper.writeValueAsString(invalidAttribute)))
         .andExpect(BAD_REQUEST)
         .andExpect(jsonPath("$.error",
             containsString("The string must not contain any new line or carriage return")));
     }
 
-    AttributeDTO longNameAttribute = AttributeDTO.newInstance(randomAlphabetic(65), ATTR_VALUE);
+    AttributeDTO longNameAttribute = new AttributeDTO(randomAlphabetic(65), ATTR_VALUE);
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, longNameAttribute).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longNameAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("name cannot be longer than 64 chars")));
 
 
-    AttributeDTO longValueAttribute = AttributeDTO.newInstance(ATTR_NAME, randomAlphabetic(257));
+    AttributeDTO longValueAttribute = new AttributeDTO(ATTR_NAME, randomAlphabetic(257));
 
     mvc
-      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, longValueAttribute).contentType(APPLICATION_JSON)
+      .perform(put(ACCOUNT_ATTR_URL_TEMPLATE, TEST_UUID).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(longValueAttribute)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", containsString("value cannot be longer than 256 chars")));

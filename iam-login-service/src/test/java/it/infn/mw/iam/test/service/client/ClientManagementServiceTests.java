@@ -98,7 +98,7 @@ class ClientManagementServiceTests {
 
     ListResponseDTO<RegisteredClientDTO> clients = managementService.retrieveAllClients(pageable);
 
-    assertThat(clients.getTotalResults(), is(20L));
+    assertThat(clients.getTotalResults(), is(21L));
     assertThat(clients.getItemsPerPage(), is(10));
     assertThat(clients.getStartIndex(), is(1));
     assertThat(clients.getResources().get(0).getClientId(), is("admin-client-ro"));
@@ -168,7 +168,7 @@ class ClientManagementServiceTests {
       managementService.saveNewClient(client);
     });
 
-    assertTrue(e.getMessage().contains("Invalid JSON:"));
+    assertTrue(e.getMessage().contains("Invalid JSON object"));
 
     client.setJwk(VALID_JSON_VALUE);
     try {

@@ -15,6 +15,7 @@
  */
 package it.infn.mw.iam.test.oauth.userinfo;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,6 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
+import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamSshKey;
@@ -70,7 +72,7 @@ public class UserInfoEndpointTests {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"})
+  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
   public void testUserInfoEndpointReturs404ForClientCredentialsToken() throws Exception {
     mvc.perform(get("/userinfo")).andExpect(status().isForbidden());
   }
@@ -97,7 +99,8 @@ public class UserInfoEndpointTests {
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.sub").exists())
-      .andExpect(jsonPath("$.organisation_name", is("indigo-dc")));
+      .andExpect(jsonPath("$." + IamExtraClaimNames.ORGANISATION_NAME, is("indigo-dc")))
+      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")));
     // @formatter:on
   }
 
@@ -110,20 +113,10 @@ public class UserInfoEndpointTests {
     // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.external_authn").exists());
+      .andExpect(jsonPath("$.external_authn").exists())
+      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")));  
     // @formatter:on
   }
-
-  @Test
-  @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
-      scopes = {"openid", "profile"})
-  public void userinfoEndpointReturnsUpdatedAtClaimAsANumber() throws Exception {
-
-    mvc.perform(get("/userinfo"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.updated_at").isNumber());
-  }
-
 
   @Test
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},

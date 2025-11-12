@@ -15,31 +15,27 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 
+import it.infn.mw.iam.core.oauth.profile.AccessTokenBuilder;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.IDTokenCustomizer;
 import it.infn.mw.iam.core.oauth.profile.IntrospectionResultHelper;
-import it.infn.mw.iam.core.oauth.profile.JWTAccessTokenBuilder;
-import it.infn.mw.iam.core.oauth.profile.JWTProfile;
-import it.infn.mw.iam.core.oauth.profile.RequestValidator;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
+import it.infn.mw.iam.core.oauth.profile.common.BaseJWTProfile;
 
 @SuppressWarnings("deprecation")
-public class AarcJWTProfile implements JWTProfile, RequestValidator {
+public class AarcJWTProfile extends BaseJWTProfile {
 
   public static final String PROFILE_NAME = "AARC JWT profile";
 
-  private final JWTAccessTokenBuilder accessTokenBuilder;
-  private final IDTokenCustomizer idTokenCustomizer;
-  private final UserInfoHelper userInfoHelper;
-  private final IntrospectionResultHelper introspectionHelper;
-
-  public AarcJWTProfile(JWTAccessTokenBuilder accessTokenBuilder, IDTokenCustomizer idTokenBuilder,
-      UserInfoHelper userInfoHelper, IntrospectionResultHelper introspectionHelper) {
-    this.accessTokenBuilder = accessTokenBuilder;
-    this.idTokenCustomizer = idTokenBuilder;
-    this.userInfoHelper = userInfoHelper;
-    this.introspectionHelper = introspectionHelper;
+  public AarcJWTProfile(ScopeClaimTranslationService scopeClaimTranslationService,
+      ClaimValueHelper claimValueHelper, AccessTokenBuilder accessTokenBuilder,
+      IDTokenCustomizer idTokenCustomizer, UserInfoHelper userInfoHelper,
+      IntrospectionResultHelper introspectionHelper) {
+    super(scopeClaimTranslationService, claimValueHelper, accessTokenBuilder, idTokenCustomizer,
+        userInfoHelper, introspectionHelper);
   }
 
   @Override
@@ -53,28 +49,8 @@ public class AarcJWTProfile implements JWTProfile, RequestValidator {
   }
 
   @Override
-  public JWTAccessTokenBuilder getAccessTokenBuilder() {
-    return accessTokenBuilder;
-  }
-
-  @Override
-  public IDTokenCustomizer getIDTokenCustomizer() {
-    return idTokenCustomizer;
-  }
-
-  @Override
-  public IntrospectionResultHelper getIntrospectionResultHelper() {
-    return introspectionHelper;
-  }
-
-  @Override
-  public UserInfoHelper getUserinfoHelper() {
-    return userInfoHelper;
-  }
-
-  @Override
-  public RequestValidator getRequestValidator() {
-    return this;
+  public String id() {
+    return AarcOidcScopes.AARC;
   }
 
 }

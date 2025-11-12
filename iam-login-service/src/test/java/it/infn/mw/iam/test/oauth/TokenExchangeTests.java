@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.fail;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,6 +53,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.IamLoginService;
+import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.repository.IamAupRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -137,12 +139,14 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     // Introspect token
     mvc.perform(post("/introspect")
         .with(httpBasic(actorClientId, actorClientSecret))
-        .param("token", actorAccessToken))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", actorAccessToken)
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud", equalTo("tasks-app")))
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", equalTo("openid")))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo("test")))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
   }
@@ -247,23 +251,23 @@ public class TokenExchangeTests extends EndpointsTestUtils {
 
     // Introspect token
     // @formatter:off
-    mvc.perform(post("/introspect")
-        .with(httpBasic(actorClientId, actorClientSecret))
+    mvc.perform(post(INTROSPECTION_ENDPOINT)
+        .with(httpBasic(PROTECTED_RESOURCE_ID, PROTECTED_RESOURCE_SECRET))
+        .contentType(APPLICATION_FORM_URLENCODED)
         .param("token", actorAccessToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.aud").doesNotExist())
       .andExpect(jsonPath("$.active", equalTo(true)))
       .andExpect(jsonPath("$.scope", allOf(containsString("openid"), containsString("profile"))))
-      .andExpect(jsonPath("$.user_id", equalTo("test")))
+      .andExpect(jsonPath("$.username", equalTo(TEST_USERNAME)))
       .andExpect(jsonPath("$.client_id", equalTo(actorClientId)));
     // @formatter:on
 
-
- // @formatter:off
+    // @formatter:off
     mvc.perform(get("/userinfo")
         .header("Authorization", "Bearer " + actorAccessToken))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.sub", equalTo("80e5fb8d-b7c8-451a-89ba-346ae278a66f")));
+      .andExpect(jsonPath("$.sub", equalTo(TEST_UUID)));
     // @formatter:on
   }
 
@@ -377,7 +381,9 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
-        .param("token", refreshedToken.getValue()))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", refreshedToken.getValue())
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
 
@@ -611,7 +617,9 @@ public class TokenExchangeTests extends EndpointsTestUtils {
     
     mvc
       .perform(post("/introspect").with(httpBasic("password-grant", "secret"))
-        .param("token", refreshedToken.getValue()))
+        .contentType(APPLICATION_FORM_URLENCODED)
+        .param("token", refreshedToken.getValue())
+        .param("token_type_hint", TokenTypeHint.ACCESS_TOKEN.name()))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.active", equalTo(true)));
     

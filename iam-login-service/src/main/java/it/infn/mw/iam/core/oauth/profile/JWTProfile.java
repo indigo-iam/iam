@@ -15,17 +15,26 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+
 public interface JWTProfile {
-  
+
+  String id();
+
   String name();
-  
-  JWTAccessTokenBuilder getAccessTokenBuilder();
-  
+
+  ScopeClaimTranslationService getScopeClaimTranslationService();
+
+  ClaimValueHelper getClaimValueHelper();
+
+  AccessTokenBuilder getAccessTokenBuilder();
+
   IDTokenCustomizer getIDTokenCustomizer();
-  
+
   IntrospectionResultHelper getIntrospectionResultHelper();
 
   UserInfoHelper getUserinfoHelper();
-  
+
   RequestValidator getRequestValidator();
+
 }

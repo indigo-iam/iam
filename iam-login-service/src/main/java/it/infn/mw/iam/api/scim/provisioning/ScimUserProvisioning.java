@@ -43,7 +43,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Optional;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -62,8 +61,8 @@ import it.infn.mw.iam.api.scim.exception.ScimFilterUnsupportedException;
 import it.infn.mw.iam.api.scim.exception.ScimPatchOperationNotSupported;
 import it.infn.mw.iam.api.scim.exception.ScimResourceExistsException;
 import it.infn.mw.iam.api.scim.exception.ScimResourceNotFoundException;
-import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimFilter;
+import it.infn.mw.iam.api.scim.model.ScimIndigoUser;
 import it.infn.mw.iam.api.scim.model.ScimListResponse;
 import it.infn.mw.iam.api.scim.model.ScimListResponse.ScimListResponseBuilder;
 import it.infn.mw.iam.api.scim.model.ScimPatchOperation;
@@ -85,6 +84,8 @@ import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @Service
@@ -114,7 +115,8 @@ public class ScimUserProvisioning
   private ApplicationEventPublisher eventPublisher;
 
   public ScimUserProvisioning(IamAccountService accountService,
-      OAuth2TokenEntityService tokenService, IamAccountRepository accountRepository,
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, IamAccountRepository accountRepository,
       PasswordEncoder passwordEncoder, UserConverter userConverter, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
@@ -127,10 +129,10 @@ public class ScimUserProvisioning
     this.userConverter = userConverter;
     this.notificationFactory = notificationFactory;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
-        accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator, groupRepository);
+        accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
+        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
     this.iamProperties = iamProperties;    
-    this.accountUtils = accountUtils;  
+    this.accountUtils = accountUtils;
   }
 
 
@@ -397,6 +399,11 @@ public class ScimUserProvisioning
   public ScimUser create(final ScimUser user) {
 
     IamAccount newAccount = userConverter.entityFromDto(user);
+    /*
+     * It sets the new created user as a verified user TODO fix this work-around
+     */
+    newAccount.getUserInfo().setEmailVerified(true);
+    newAccount.setConfirmationKey(null);
 
     try {
       IamAccount account = accountService.createAccount(newAccount);

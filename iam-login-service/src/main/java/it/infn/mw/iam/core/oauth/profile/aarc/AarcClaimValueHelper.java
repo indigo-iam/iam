@@ -15,62 +15,41 @@
  */
 package it.infn.mw.iam.core.oauth.profile.aarc;
 
+import static java.lang.String.format;
+
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.mitre.oauth2.model.SavedUserAuthentication;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
-
-import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.authn.util.AuthenticationUtils;
+import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
+import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
+import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 
-@Component
-public class AarcClaimValueHelper implements ClaimValueHelper {
+@SuppressWarnings("deprecation")
+public class AarcClaimValueHelper extends IamClaimValueHelper {
 
-  public static final Set<String> ADDITIONAL_CLAIMS = Set.of("eduperson_scoped_affiliation",
-      "eduperson_entitlement", "eduperson_assurance", "entitlements");
+  public static final String AARC_VERSION_URI = "https://aarc-community.org/attribute/profile/version/1.0";
+  public static final String REFEDS_ASSURANCE_URI = "https://refeds.org/assurance";
+  public static final String REFEDS_ASSURANCE_IAP_LOW_URI = "https://refeds.org/assurance/IAP/low";
 
-  @Value("${iam.aarc-profile.affiliation-scope}")
-  String affiliationScope;
-
-  @Value("${iam.aarc-profile.urn-delegated-namespace}")
-  String urnDelegatedNamespace;
-
-  @Value("${iam.aarc-profile.urn-nid}")
-  String urnNid;
-
-  @Value("${iam.aarc-profile.urn-subnamespaces}")
-  String urnSubnamespaces;
+  public static final Set<String> DEFAULT_LOA =
+      Set.of(REFEDS_ASSURANCE_URI, REFEDS_ASSURANCE_IAP_LOW_URI);
 
   static final String DEFAULT_AFFILIATION_TYPE = "member";
 
-  @Override
-  public Object getClaimValueFromUserInfo(String claim, IamUserInfo info) {
-
-    switch (claim) {
-
-      case "eduperson_scoped_affiliation":
-        return String.format("%s@%s", DEFAULT_AFFILIATION_TYPE, affiliationScope);
-
-      case "eduperson_entitlement":
-        return resolveGroups(info);
-
-      case "entitlements":
-        return resolveGroups(info);
-
-      case "eduperson_assurance":
-        return resolveLOA();
-
-      case "voperson_id":
-        return String.format("%s", info.getSub());
-
-      default:
-        return null;
-    }
+  public AarcClaimValueHelper(IamProperties properties, SshKeyConverter sshConverter,
+      AttributeMapHelper attrHelper, ScopeClaimTranslationService scopeClaimTranslationService) {
+    super(properties, sshConverter, attrHelper, scopeClaimTranslationService);
   }
 
   public Set<String> resolveGroups(IamUserInfo userInfo) {
@@ -81,19 +60,75 @@ public class AarcClaimValueHelper implements ClaimValueHelper {
   }
 
   private String encodeGroup(IamGroup group) {
-    String encodedGroupName = group.getName().replaceAll("/", ":");
+
+    var aarcConfig = getProperties().getAarcProfile();
+
+    String urnNid = aarcConfig.getUrnNid();
+    String urnDelegatedNamespace = aarcConfig.getUrnDelegatedNamespace();
+    String encodedGroupName = group.getName().replace("/", ":");
+
     String encodedSubnamespace = "";
-    if (!Strings.isNullOrEmpty(urnSubnamespaces)) {
-      encodedSubnamespace =
-          String.format(":%s", String.join(":", urnSubnamespaces.trim().split(" ")));
+    String urnSubnamespaces = aarcConfig.getUrnSubnamespaces();
+    if (urnSubnamespaces != null && !urnSubnamespaces.isBlank()) {
+      encodedSubnamespace = ":" + String.join(":", urnSubnamespaces.trim().split("\\s+"));
     }
+
     return String.format("urn:%s:%s%s:group:%s", urnNid, urnDelegatedNamespace, encodedSubnamespace,
         encodedGroupName);
   }
 
-  public Set<String> resolveLOA() {
+  @Override
+  public Object resolveClaim(String claimName, OAuth2Authentication auth,
+      Optional<IamAccount> account) {
 
-    return Sets.newHashSet("https://refeds.org/assurance", "https://refeds.org/assurance/IAP/low");
+    final String SCOPED_FORMAT = "%s@%s";
+
+    if (account.isPresent()) {
+      switch (claimName) {
+        case AarcExtraClaimNames.AARC_VER:
+          return AARC_VERSION_URI;
+        case AarcExtraClaimNames.EDUPERSON_ASSURANCE:
+          return DEFAULT_LOA;
+        case AarcExtraClaimNames.EDUPERSON_ENTITLEMENT, AarcExtraClaimNames.ENTITLEMENTS:
+          return resolveGroups(account.get().getUserInfo());
+        case AarcExtraClaimNames.VOPERSON_ID:
+          return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(),
+              getProperties().getOrganisation().getName());
+        case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
+          return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
+              getProperties().getOrganisation().getName());
+        case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
+          Optional<SavedUserAuthentication> userAuth =
+              AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
+          if (userAuth.isPresent()) {
+            Set<String> scopedAffiliations = new HashSet<>();
+            if (account.get().getUserInfo().getAffiliation() != null) {
+              scopedAffiliations
+                .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
+                    getProperties().getOrganisation().getName()));
+            }
+            String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
+                Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));
+            if (externalScopedAffiliation != null) {
+              scopedAffiliations.add(externalScopedAffiliation);
+            }
+            return scopedAffiliations;
+          }
+          return null;
+        default:
+          return super.resolveClaim(claimName, auth, account);
+      }
+    } else {
+      return super.resolveClaim(claimName, auth, account);
+    }
   }
 
+  private String firstOf(Map<String, String> additionalInfo, Set<String> keys) {
+    for (String key : keys) {
+      if (additionalInfo.containsKey(key)) {
+        return additionalInfo.get(key);
+      }
+    }
+    return null;
+  }
 }

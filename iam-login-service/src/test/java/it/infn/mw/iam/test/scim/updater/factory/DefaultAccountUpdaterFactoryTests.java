@@ -48,7 +48,6 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -84,6 +83,8 @@ import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.util.RestAssuredJacksonUtils;
 
@@ -119,7 +120,10 @@ public class DefaultAccountUpdaterFactoryTests {
   IamAccountService accountService;
 
   @Mock
-  OAuth2TokenEntityService tokenService;
+  IamOAuthAccessTokenRepository accessTokenRepo;
+
+  @Mock
+  IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   OidcIdConverter oidcConverter = new OidcIdConverter();
   SamlIdConverter samlConverter = new SamlIdConverter();
@@ -134,8 +138,9 @@ public class DefaultAccountUpdaterFactoryTests {
   @Before
   public void init() {
 
-    factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, tokenService,
-        oidcConverter, samlConverter, sshKeyConverter, x509Converter, usernameValidator, groupRepo);
+    factory = new DefaultAccountUpdaterFactory(encoder, repo, accountService, accessTokenRepo,
+        refreshTokenRepo, oidcConverter, samlConverter, sshKeyConverter, x509Converter,
+        usernameValidator, groupRepo);
   }
 
   @Test

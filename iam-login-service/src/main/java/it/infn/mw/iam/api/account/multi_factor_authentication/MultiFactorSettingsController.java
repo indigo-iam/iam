@@ -41,7 +41,8 @@ import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 public class MultiFactorSettingsController {
 
   public static final String MULTI_FACTOR_SETTINGS_URL = "/iam/multi-factor-settings";
-  public static final String MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL = "/iam/multi-factor-settings/{accountId}";
+  public static final String MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL =
+      "/iam/multi-factor-settings/{accountId}";
   private final IamAccountRepository accountRepository;
   private final IamTotpMfaRepository totpMfaRepository;
 
@@ -56,15 +57,16 @@ public class MultiFactorSettingsController {
    * 
    * @return MultiFactorSettingsDTO the MFA settings for the account
    */
-  @PreAuthorize("hasRole('ADMIN')")
-  @GetMapping(value = MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PreAuthorize("#iam.hasAnyDashboardRole('ROLE_ADMIN', 'ROLE_GM', 'ROLE_READER') or #iam.isUser(#accountId)")
+  @GetMapping(value = MULTI_FACTOR_SETTINGS_FOR_ACCOUNT_URL,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public MultiFactorSettingsDTO getMultiFactorSettingsForAccount(@PathVariable String accountId) {
-    IamAccount account = accountRepository.findByUuid(accountId).orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
+    IamAccount account = accountRepository.findByUuid(accountId)
+      .orElseThrow(() -> NoSuchAccountError.forUuid(accountId));
 
-    boolean isActive = totpMfaRepository.findByAccount(account)
-        .map(IamTotpMfa::isActive)
-        .orElse(false);
+    boolean isActive =
+        totpMfaRepository.findByAccount(account).map(IamTotpMfa::isActive).orElse(false);
 
     MultiFactorSettingsDTO dto = new MultiFactorSettingsDTO();
     dto.setAuthenticatorAppActive(isActive);
@@ -78,8 +80,7 @@ public class MultiFactorSettingsController {
    * @return MultiFactorSettingsDTO the MFA settings for the account
    */
   @PreAuthorize("hasRole('USER')")
-  @GetMapping(value = MULTI_FACTOR_SETTINGS_URL,
-      produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = MULTI_FACTOR_SETTINGS_URL, produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public MultiFactorSettingsDTO getMultiFactorSettings() {
 

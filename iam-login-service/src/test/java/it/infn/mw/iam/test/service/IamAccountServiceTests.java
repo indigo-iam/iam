@@ -16,7 +16,6 @@
 package it.infn.mw.iam.test.service;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,7 +27,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,14 +40,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import com.google.common.collect.Sets;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -59,8 +52,6 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.google.common.collect.Sets;
-
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
 import it.infn.mw.iam.audit.events.account.EmailReplacedEvent;
 import it.infn.mw.iam.audit.events.account.FamilyNameReplacedEvent;
@@ -68,6 +59,7 @@ import it.infn.mw.iam.audit.events.account.GivenNameReplacedEvent;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.time.TimeProvider;
 import it.infn.mw.iam.core.user.DefaultIamAccountService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
@@ -122,7 +114,7 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   private TimeProvider timeProvider;
 
   @Mock
-  private OAuth2TokenEntityService tokenService;
+  private TokenRevocationService tokenRevocationService;
 
   @Mock
   private NotificationFactory notificationFactory;
@@ -143,7 +135,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Mock
   private IamProperties iamProperties;
 
-  private IamProperties.RegistrationProperties registrationProperties = new IamProperties.RegistrationProperties();
+  private IamProperties.RegistrationProperties registrationProperties =
+      new IamProperties.RegistrationProperties();
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -151,8 +144,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   @Before
   public void setup() {
 
-    when(accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(any()))
-      .thenReturn(emptyList());
     when(accountRepo.findByCertificateSubject(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySshKeyValue(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findBySamlId(any())).thenReturn(Optional.empty());
@@ -161,15 +152,15 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     when(accountRepo.findByEmail(anyString())).thenReturn(Optional.empty());
     when(accountRepo.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(TEST_ACCOUNT));
     when(accountRepo.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(TEST_ACCOUNT));
-    when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID)).thenThrow(EmailAlreadyBoundException.class);
+    when(accountRepo.findByEmailWithDifferentUUID(TEST_EMAIL, CICCIO_UUID))
+      .thenThrow(EmailAlreadyBoundException.class);
     when(authoritiesRepo.findByAuthority(anyString())).thenReturn(Optional.empty());
     when(authoritiesRepo.findByAuthority("ROLE_USER")).thenReturn(Optional.of(ROLE_USER_AUTHORITY));
     when(passwordEncoder.encode(any())).thenReturn(PASSWORD);
     when(iamProperties.getRegistration()).thenReturn(registrationProperties);
 
     accountService = new DefaultIamAccountService(clock, accountRepo, groupRepo, authoritiesRepo,
-        passwordEncoder, eventPublisher, tokenService, accountClientRepo, notificationFactory,
-        
+        passwordEncoder, eventPublisher, tokenRevocationService, accountClientRepo, notificationFactory,
         iamProperties, iamGroupService, tokenGenerator, aupSignatureRepo, iamTotpMfaRepository);
   }
 
@@ -806,45 +797,6 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
     verify(eventPublisher, times(1)).publishEvent(any());
   }
 
-  @Test(expected = NullPointerException.class)
-  public void testDeleteInactiveProvisionedAccountFailsWithNullTimestamp() {
-    try {
-      accountService.deleteInactiveProvisionedUsersSinceTime(null);
-    } catch (NullPointerException e) {
-      assertThat(e.getMessage(), equalTo("null timestamp"));
-      throw e;
-    }
-  }
-
-  @Test
-  public void testDeleteInactiveProvisionedAccountWorks() {
-
-    when(accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(any()))
-      .thenReturn(Arrays.asList(CICCIO_ACCOUNT, TEST_ACCOUNT));
-
-    accountService.deleteInactiveProvisionedUsersSinceTime(new Date());
-
-    verify(accountRepo, times(1)).delete(CICCIO_ACCOUNT);
-    verify(accountRepo, times(1)).delete(TEST_ACCOUNT);
-    verify(eventPublisher, times(2)).publishEvent(any());
-  }
-
-  @Test
-  public void testTokensAreRemovedWhenAccountIsRemoved() {
-    OAuth2AccessTokenEntity accessToken = mock(OAuth2AccessTokenEntity.class);
-    OAuth2RefreshTokenEntity refreshToken = mock(OAuth2RefreshTokenEntity.class);
-
-    when(tokenService.getAllAccessTokensForUser(CICCIO_USERNAME))
-      .thenReturn(Sets.newHashSet(accessToken));
-    when(tokenService.getAllRefreshTokensForUser(CICCIO_USERNAME))
-      .thenReturn(Sets.newHashSet(refreshToken));
-
-
-    accountService.deleteAccount(CICCIO_ACCOUNT);
-    verify(tokenService).revokeAccessToken(Mockito.eq(accessToken));
-    verify(tokenService).revokeRefreshToken(Mockito.eq(refreshToken));
-  }
-
   @Test
   public void testMfaRemovedWhenAccountRemoved() {
     when(iamTotpMfaRepository.findByAccount(TOTP_MFA_ACCOUNT)).thenReturn(Optional.of(TOTP_MFA));
@@ -1065,7 +1017,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
   }
 
   private IamGroup getGroup(IamAccount account) {
-    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    Optional<IamAccountGroupMembership> groupMembershipOptional =
+        account.getGroups().stream().findFirst();
     if (groupMembershipOptional.isPresent()) {
       return groupMembershipOptional.get().getGroup();
     }
@@ -1078,7 +1031,8 @@ public class IamAccountServiceTests extends IamAccountServiceTestSupport {
 
     account = accountService.createAccount(account);
 
-    Optional<IamAccountGroupMembership> groupMembershipOptional = account.getGroups().stream().findFirst();
+    Optional<IamAccountGroupMembership> groupMembershipOptional =
+        account.getGroups().stream().findFirst();
     assertFalse(groupMembershipOptional.isPresent());
   }
 }

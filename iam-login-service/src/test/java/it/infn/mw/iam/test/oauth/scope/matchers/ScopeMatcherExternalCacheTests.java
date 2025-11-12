@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.text.ParseException;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,6 +117,7 @@ public class ScopeMatcherExternalCacheTests extends EndpointsTestUtils {
     client.setClientId(CLIENT_ID);
     client.setClientSecret(CLIENT_SECRET);
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
+    client.setGrantTypes(Set.of("client_credentials"));
     client = clientService.saveNewClient(client);
 
     try {

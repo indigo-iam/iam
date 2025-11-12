@@ -51,7 +51,7 @@
                     </div>
                     <div ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" class="box-footer">
                         <!-- Edit details button -->
-                        <user-edit user="$ctrl.user"></user-edit>
+                        <user-edit ng-hide="$ctrl.isReader() && !$ctrl.isMe()" user="$ctrl.user"></user-edit>
 
                         <div ng-if="$ctrl.isVoAdmin()">
                             <!-- Enable/disable user buttons -->
@@ -80,7 +80,7 @@
                         </div>
 
                         <!-- Send reset password email or change password-->
-                        <user-password user="$ctrl.user"></user-password>
+                        <user-password ng-hide="$ctrl.isReader() && !$ctrl.isMe()" user="$ctrl.user"></user-password>
                         <aup-resign user="$ctrl.user" ng-if="$ctrl.isMe()"></aup-resign>
 
                         <!-- Change multi-factor authentication settings -->
@@ -89,13 +89,13 @@
                     </div>
                 </div>
             </section>
-            <section ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin() && !$ctrl.userIsReader()" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
+            <section ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin() && !$ctrl.isReader()" id="user-profile-right" class="col-sm-12 col-md-7 col-lg-8" ng-cloak>
                 <user-groups user="$ctrl.user"></user-groups>
-                <user-pending-requests ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-pending-requests>
+                <user-pending-requests user="$ctrl.user"></user-pending-requests>
                 <user-linked-accounts user="$ctrl.user"></user-linked-accounts>
                 <user-x509 user="$ctrl.user"></user-x509>
                 <user-cert-link-pending-requests user="$ctrl.user"></user-cert-link-pending-requests>
-                <user-ssh-keys ng-hide="$ctrl.isGroupManager() && !$ctrl.isMe() && !$ctrl.isVoAdmin()" user="$ctrl.user"></user-ssh-keys>
+                <user-ssh-keys user="$ctrl.user"></user-ssh-keys>
                 <user-attributes user="$ctrl.user" attributes="$ctrl.attrs"></user-attributes>
             </section>
         </div>

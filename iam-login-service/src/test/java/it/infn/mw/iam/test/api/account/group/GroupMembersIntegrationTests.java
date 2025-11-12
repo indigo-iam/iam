@@ -16,20 +16,21 @@
 package it.infn.mw.iam.test.api.account.group;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.contains;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -44,6 +45,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.group.IamGroupService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -94,6 +100,9 @@ public class GroupMembersIntegrationTests {
 
   @Autowired
   private IamScopePolicyRepository scopePolicyRepo;
+
+  @Autowired
+  private ObjectMapper mapper;
 
   @Before
   public void setup() {
@@ -511,7 +520,7 @@ public class GroupMembersIntegrationTests {
     IamAccount testAccount = accountRepo.findByUsername("test").orElseThrow();
     mvc.perform(get("/iam/account/{id}/groups", testAccount.getUuid()))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.totalResults", is(2)))
+          .andExpect(jsonPath("$.totalResults", is(3)))
           .andExpect(jsonPath("$.Resources", not(empty())))
           .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
@@ -546,7 +555,7 @@ public class GroupMembersIntegrationTests {
     mvc.perform(get("/iam/account/me/groups"))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(2)))
+        .andExpect(jsonPath("$.totalResults", is(3)))
         .andExpect(jsonPath("$.Resources", not(empty())))
         .andExpect(jsonPath("$.Resources[0].name", is("Analysis")));
   }
@@ -569,14 +578,21 @@ public class GroupMembersIntegrationTests {
     mvc.perform(post("/iam/account/{account}/groups/{group}", account.getUuid(), subsubgroup.getUuid()))
         .andExpect(status().isCreated());
 
-    mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
+    final int groupsCount = account.getGroups().size();
+
+    String response = mvc.perform(get("/iam/account/{id}/groups", account.getUuid()))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalResults", is(5)))
+        .andExpect(jsonPath("$.totalResults", is(groupsCount)))
         .andExpect(jsonPath("$.Resources", not(empty())))
-        .andExpect(jsonPath("$.Resources[0].name", is("Analysis")))
-        .andExpect(jsonPath("$.Resources[2].scopePoliciesDescription",
-            contains("Scope policy description 1", "Scope policy description 2", "Scope policy description 3")));
+        .andReturn().getResponse().getContentAsString();
+
+    ListResponseDTO<RegisteredGroupDTO> groups =
+        mapper.readValue(response, new TypeReference<ListResponseDTO<RegisteredGroupDTO>>() {});
+
+    assertThat(groups.getResources().size(), is(groupsCount));
+    List<String> descriptions = groups.getResources().stream().filter(r -> r.getName().equals("root")).findFirst().get().getScopePoliciesDescription();
+    assertThat(descriptions, hasItems("Scope policy description 1", "Scope policy description 2", "Scope policy description 3"));
   }
 
   private IamGroup createGroup(String name, IamGroup parent) {

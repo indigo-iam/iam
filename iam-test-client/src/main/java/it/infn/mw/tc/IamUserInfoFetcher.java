@@ -36,11 +36,7 @@ public class IamUserInfoFetcher extends UserInfoFetcher {
 
   public IamUserInfoFetcher(ClientHttpRequestFactory rf) {
     requestFactory = rf;
-    cache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS) // expires
-                                                                          // 1
-                                                                          // hour
-                                                                          // after
-                                                                          // fetch
+    cache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS)
         .maximumSize(100).build(new Loader());
   }
 

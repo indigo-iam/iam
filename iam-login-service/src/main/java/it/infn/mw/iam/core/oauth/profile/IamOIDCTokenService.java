@@ -108,7 +108,7 @@ public class IamOIDCTokenService implements OIDCTokenService {
     IamAccount account =
         accountRepository.findByUuid(sub).orElseThrow(() -> NoSuchAccountError.forUuid(sub));
 
-    JWTProfile profile = profileResolver.resolveProfile(client.getClientId());
+    JWTProfile profile = profileResolver.resolveProfile(client.getScope());
 
     profile.getIDTokenCustomizer()
       .customizeIdTokenClaims(idClaims, client, request, sub, accessToken, account);

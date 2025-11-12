@@ -30,6 +30,9 @@ import it.infn.mw.iam.persistence.model.IamLabel;
 import it.infn.mw.iam.persistence.model.IamScopePolicy;
 
 public class RegisteredGroupDTO implements Serializable {
+
+  private static final long serialVersionUID = 1L;
+
   private Long id;
   private String uuid;
   private String name;
@@ -41,6 +44,10 @@ public class RegisteredGroupDTO implements Serializable {
   @JsonSerialize(using = JsonDateSerializer.class)
   private Date joiningDate;
   private List<String> scopePoliciesDescription;
+
+  public RegisteredGroupDTO() {
+    // empty contructor for JSON deserialization
+  }
 
   private RegisteredGroupDTO(Builder builder) {
     this.id = builder.id;

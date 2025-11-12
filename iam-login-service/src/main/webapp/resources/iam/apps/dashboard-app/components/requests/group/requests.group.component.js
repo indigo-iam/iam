@@ -39,7 +39,7 @@
         };
     }
 
-    function GroupRequestsController($scope, $rootScope, $uibModal, GroupRequestsService, $filter, filterFilter, toaster) {
+    function GroupRequestsController($scope, $rootScope, $uibModal, Utils, GroupRequestsService, $filter, filterFilter, toaster) {
         var self = this;
         self.loaded = false;
         self.filter = "";
@@ -47,10 +47,15 @@
         self.busy = false;
         self.itemsPerPage = 10;
         self.currentPage = 1;
+        self.voAdmin = Utils.isAdmin();
 
         $scope.$watch('$ctrl.filter', function() {
             filterRequests();
         });
+
+        self.groupManagerForGroup = function(req) {
+            return Utils.isGroupManagerForGroup(req.groupUuid);
+        };
 
         function updatePageCounters() {
             self.pageLeft = ((self.currentPage - 1) * self.itemsPerPage) + 1;
@@ -191,7 +196,7 @@
                 parentCb: '&'
             },
             templateUrl: '/resources/iam/apps/dashboard-app/components/requests/group/requests.group.component.html',
-            controller: ['$scope', '$rootScope', '$uibModal', 'GroupRequestsService', '$filter', 'filterFilter', 'toaster', GroupRequestsController],
+            controller: ['$scope', '$rootScope', '$uibModal', 'Utils', 'GroupRequestsService', '$filter', 'filterFilter', 'toaster', GroupRequestsController],
             controllerAs: '$ctrl'
         };
     }

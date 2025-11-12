@@ -15,12 +15,13 @@
  */
 package it.infn.mw.iam.api.scim.updater.builders;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public abstract class AccountBuilderSupport {
@@ -28,23 +29,27 @@ public abstract class AccountBuilderSupport {
   protected final IamAccountRepository repo;
   protected final IamAccountService accountService;
   protected final PasswordEncoder encoder;
+  protected final IamOAuthAccessTokenRepository accessTokenRepo;
+  protected final IamOAuthRefreshTokenRepository refreshTokenRepo;
   protected final IamAccount account;
-  protected final OAuth2TokenEntityService tokenService;
   protected final UsernameValidator usernameValidator;
 
   public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
-      OAuth2TokenEntityService tokenService, PasswordEncoder encoder, UsernameValidator usernameValidator, IamAccount account) {
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, PasswordEncoder encoder,
+      UsernameValidator usernameValidator, IamAccount account) {
     this.repo = repo;
     this.encoder = encoder;
     this.accountService = accountService;
-    this.tokenService = tokenService;
+    this.accessTokenRepo = accessTokenRepo;
+    this.refreshTokenRepo = refreshTokenRepo;
     this.usernameValidator = usernameValidator;
     this.account = account;
   }
 
   public AccountBuilderSupport(IamAccountRepository repo, IamAccountService accountService,
       IamAccount account) {
-    this(repo, accountService, null, null, new UsernameValidator(), account);
+    this(repo, accountService, null, null, null, new UsernameValidator(), account);
   }
 
 }

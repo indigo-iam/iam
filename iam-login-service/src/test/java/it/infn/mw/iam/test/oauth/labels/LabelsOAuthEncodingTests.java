@@ -84,8 +84,6 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
     mockOAuth2Filter.cleanupSecurityContext();
   }
 
-
-  @SuppressWarnings("deprecation")
   @Test
   public void labelsAreProperlyEncodedIfConfigurationAllows() throws Exception {
     IamAccount testAccount =
@@ -93,29 +91,22 @@ public class LabelsOAuthEncodingTests extends EndpointsTestUtils {
 
     accountService.addLabel(testAccount, TEST_LABEL);
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile");
+    String idTokenValue = getPasswordToken("openid profile").idToken();
 
-    JWT idToken = JWTParser
-      .parse((String) tg.getTokenResponseObject().getAdditionalInformation().get("id_token"));
+    JWT idToken = JWTParser.parse(idTokenValue);
 
     assertThat(idToken.getJWTClaimsSet().getStringClaim(CLAIM_NAME), is(TEST_LABEL_VALUE));
-
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void getTokenSucceedsForUserWithoutLabel() throws Exception {
 
     repo.findByUsername(TEST_USER).orElseThrow(assertionError(EXPECTED_USER_NOT_FOUND));
 
-    AccessTokenGetter tg = buildAccessTokenGetter();
-    tg.scope("openid profile");
+    String idTokenValue = getPasswordToken("openid profile").idToken();
 
-    JWT idToken = JWTParser
-      .parse((String) tg.getTokenResponseObject().getAdditionalInformation().get("id_token"));
+    JWT idToken = JWTParser.parse(idTokenValue);
 
     assertThat(idToken.getJWTClaimsSet().getStringClaim(CLAIM_NAME), nullValue());
-
   }
 }
