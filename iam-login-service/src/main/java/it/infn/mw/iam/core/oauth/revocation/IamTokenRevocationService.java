@@ -30,10 +30,12 @@ import com.nimbusds.jwt.JWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.RevocationEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamRevokedAccessTokenRepository;
 
 @Service
 @Primary
@@ -43,23 +45,31 @@ public class IamTokenRevocationService implements TokenRevocationService {
 
   private final IamOAuthAccessTokenRepository accessTokenRepo;
   private final IamOAuthRefreshTokenRepository refreshTokenRepo;
+  private final IamRevokedAccessTokenRepository revokedAccessTokenRepo;
   private final ClientService clientService;
+  private final IamProperties iamProperties;
   private final ApplicationEventPublisher eventPublisher;
 
   public IamTokenRevocationService(IamOAuthAccessTokenRepository accessTokenRepo,
-      IamOAuthRefreshTokenRepository refreshTokenRepo, ClientService clientService,
-      ApplicationEventPublisher eventPublisher) {
+      IamOAuthRefreshTokenRepository refreshTokenRepo,
+      IamRevokedAccessTokenRepository revokedAccessTokenRepo, ClientService clientService,
+      IamProperties iamProperties, ApplicationEventPublisher eventPublisher) {
 
     this.accessTokenRepo = accessTokenRepo;
     this.refreshTokenRepo = refreshTokenRepo;
+    this.revokedAccessTokenRepo = revokedAccessTokenRepo;
     this.clientService = clientService;
+    this.iamProperties = iamProperties;
     this.eventPublisher = eventPublisher;
   }
 
   @Override
   public boolean isAccessTokenRevoked(OAuth2AccessTokenEntity token) {
 
-    return accessTokenRepo.findByTokenValue(token.getTokenValueHash()).isEmpty();
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      return accessTokenRepo.findByTokenValue(token.getTokenValueHash()).isEmpty();
+    }
+    return revokedAccessTokenRepo.findByJwtId(getJwtId(token.getJwt())).isPresent();
   }
 
   @Override
@@ -71,7 +81,9 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public void revokeAccessTokens(ClientDetailsEntity client) {
 
-    accessTokenRepo.findAccessTokens(client.getId()).stream().forEach(this::revokeAccessToken);
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      accessTokenRepo.findAccessTokens(client.getId()).stream().forEach(this::revokeAccessToken);
+    }
   }
 
   @Override
@@ -127,12 +139,15 @@ public class IamTokenRevocationService implements TokenRevocationService {
   @Override
   public void revokeAccessTokens(IamAccount account) {
 
-    accessTokenRepo.findAccessTokensForUser(account.getUsername()).forEach(this::revokeAccessToken);
+    if (iamProperties.getAccessToken().isStoreOnDatabase()) {
+      accessTokenRepo.findAccessTokensForUser(account.getUsername()).forEach(this::revokeAccessToken);
+    }
   }
 
   @Override
   public void revokeRefreshTokens(IamAccount account) {
 
-    refreshTokenRepo.findRefreshTokensForUser(account.getUsername()).forEach(this::revokeRefreshToken);
+    refreshTokenRepo.findRefreshTokensForUser(account.getUsername())
+      .forEach(this::revokeRefreshToken);
   }
 }

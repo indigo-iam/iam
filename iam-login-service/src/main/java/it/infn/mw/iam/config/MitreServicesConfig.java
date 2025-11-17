@@ -176,11 +176,11 @@ public class MitreServicesConfig {
     return new DefaultOAuth2ClientDetailsEntityService();
   }
 
-  @Bean
-  OAuth2TokenEntityService tokenServices() {
-
-    return new DefaultOAuth2ProviderTokenService();
-  }
+//  @Bean
+//  OAuth2TokenEntityService tokenServices() {
+//
+//    return new DefaultOAuth2ProviderTokenService();
+//  }
 
 
   @Bean(name = "mitreUserInfoInterceptor")

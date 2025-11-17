@@ -28,7 +28,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,6 +46,7 @@ import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.tokens.Constants;
 import it.infn.mw.iam.api.tokens.model.AccessToken;
 import it.infn.mw.iam.api.tokens.model.RefreshToken;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.IamAccountException;
 import it.infn.mw.iam.persistence.model.IamAccount;
@@ -75,7 +75,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
   protected IamAccountRepository accountRepository;
 
   @Autowired
-  protected DefaultOAuth2ProviderTokenService tokenService;
+  protected IamTokenService tokenService;
 
   @Autowired
   protected IamAccountService accountService;
@@ -116,14 +116,14 @@ public class TestTokensUtils extends EndpointsTestUtils {
 
   public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
       String[] scopes) {
-    return tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
+    return (OAuth2AccessTokenEntity) tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
   }
 
   public OAuth2AccessTokenEntity buildExpiredAccessToken(ClientDetailsEntity client,
       String username, String[] scopes) {
 
     OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
+        (OAuth2AccessTokenEntity) tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
     cal.add(Calendar.DATE, -10);
@@ -136,7 +136,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
       String username, String[] scopes) {
 
     OAuth2AccessTokenEntity token =
-        tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
+        (OAuth2AccessTokenEntity) tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
     cal.add(Calendar.DATE, -10);
@@ -147,7 +147,7 @@ public class TestTokensUtils extends EndpointsTestUtils {
   }
 
   public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String[] scopes) {
-    return tokenService.createAccessToken(oauth2Authentication(client, null, scopes));
+    return (OAuth2AccessTokenEntity) tokenService.createAccessToken(oauth2Authentication(client, null, scopes));
   }
 
   public void clearAllTokens() {

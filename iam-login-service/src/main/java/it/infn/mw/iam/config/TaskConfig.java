@@ -154,7 +154,7 @@ public class TaskConfig implements SchedulingConfigurer {
     }
   }
 
-  @Scheduled(fixedDelayString = "${task.revoked-token-cleanup.period-msec}",
+  @Scheduled(fixedDelayString = "${task.revoked-token-cleanup-period-msec}",
       initialDelay = TEN_MINUTES_MSEC)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void clearRevokedAccessTokens() {

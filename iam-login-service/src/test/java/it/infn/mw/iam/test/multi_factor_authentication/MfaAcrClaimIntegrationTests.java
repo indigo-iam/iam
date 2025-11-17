@@ -77,7 +77,7 @@ public class MfaAcrClaimIntegrationTests extends TestTokensUtils {
 
     OAuth2Authentication auth = new OAuth2Authentication(req, savedAuth);
 
-    OAuth2AccessTokenEntity token = tokenService.createAccessToken(auth);
+    OAuth2AccessTokenEntity token = (OAuth2AccessTokenEntity) tokenService.createAccessToken(auth);
 
     JWTClaimsSet atClaims = JWTParser.parse(token.getValue()).getJWTClaimsSet();
     assertThat(atClaims.getClaim("acr")).isEqualTo("https://refeds.org/profile/mfa");

@@ -217,7 +217,7 @@ public class RefreshTokenGranterTests extends TestTokensUtils {
         .param("refresh_token", refreshToken))
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error").value("invalid_client"))
-      .andExpect(jsonPath("$.error_description").value("Client is suspended: " + clientId));
+      .andExpect(jsonPath("$.error_description").value("Suspended client '" + clientId + "'"));
     // @formatter:on
 
     client.setActive(true);

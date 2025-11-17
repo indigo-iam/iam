@@ -160,10 +160,12 @@ public class DefaultClientService implements ClientService {
     LocalDate now = LocalDate.now();
     if (client.getClientLastUsed() == null) {
       client.setClientLastUsed(new ClientLastUsedEntity(client, now));
+      clientRepo.save(client);
       return;
     }
     if (client.getClientLastUsed().getLastUsed().isBefore(now)) {
       client.getClientLastUsed().setLastUsed(now);
+      clientRepo.save(client);
     }
   }
 

@@ -20,18 +20,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.impl.DefaultOAuth2ProviderTokenService;
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.security.core.Authentication;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -49,8 +49,7 @@ public class TestSupport {
   public static final ResultMatcher CREATED = status().isCreated();
 
   @Autowired
-  protected DefaultOAuth2ProviderTokenService tokenService;
-
+  protected OAuth2TokenEntityService tokenService;
 
   public static final String RANDOM_UUID = UUID.randomUUID().toString();
 
@@ -123,7 +122,7 @@ public class TestSupport {
 
   public OAuth2AccessTokenEntity buildAccessToken(ClientDetailsEntity client, String username,
     String[] scopes) {
-    return tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
+    return (OAuth2AccessTokenEntity) tokenService.createAccessToken(oauth2Authentication(client, username, scopes));
   }      
 
 }

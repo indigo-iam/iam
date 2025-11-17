@@ -153,8 +153,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
     }
 
     /* update token scopes filtering the requested ones */
-    Set<String> requestedScopes = getRequestedScopes(token, authentication);
-    token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
+//    Set<String> requestedScopes = getRequestedScopes(token, authentication);
+//    token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
 
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
@@ -223,7 +223,8 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
 
   protected boolean isIncludeScope() {
 
-    return getProperties().getAccessToken().isIncludeScope();
+    return getProperties().getAccessToken().isIncludeScope()
+        || !getProperties().getAccessToken().isStoreOnDatabase();
   }
 
   protected boolean isIncludeNbf() {

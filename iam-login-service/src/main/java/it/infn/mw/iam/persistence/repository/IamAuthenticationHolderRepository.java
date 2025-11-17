@@ -15,22 +15,10 @@
  */
 package it.infn.mw.iam.persistence.repository;
 
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.repository.query.Param;
 
-import it.infn.mw.iam.persistence.model.IamRevokedAccessToken;
+public interface IamAuthenticationHolderRepository
+    extends PagingAndSortingRepository<AuthenticationHolderEntity, Long> {
 
-public interface IamRevokedAccessTokenRepository
-  extends PagingAndSortingRepository<IamRevokedAccessToken, String> {
-
-  @Query("select t from IamRevokedAccessToken t where t.expiration < current_date")
-  Page<IamRevokedAccessToken> findExpired(Pageable p);
-
-  @Query("select t from IamRevokedAccessToken t where t.jti = :jti")
-  Optional<IamRevokedAccessToken> findByJwtId(@Param("jti") String jti);
 }

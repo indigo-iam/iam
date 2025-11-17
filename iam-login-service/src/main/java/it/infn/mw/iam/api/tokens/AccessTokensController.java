@@ -24,7 +24,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -48,7 +50,7 @@ public class AccessTokensController extends TokensControllerSupport {
   @Autowired
   private TokenService<AccessToken> tokenService;
 
-  @RequestMapping(method = RequestMethod.GET, produces = APPLICATION_JSON_CONTENT_TYPE)
+  @GetMapping(produces = APPLICATION_JSON_CONTENT_TYPE)
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public MappingJacksonValue listAccessTokens(@RequestParam(required = false) Integer count,
       @RequestParam(required = false) Integer startIndex,
@@ -61,7 +63,7 @@ public class AccessTokensController extends TokensControllerSupport {
     return filterAttributes(results, attributes);
   }
   
-  @RequestMapping(method = RequestMethod.DELETE)
+  @DeleteMapping
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void deleteAllTokens() {
@@ -86,14 +88,14 @@ public class AccessTokensController extends TokensControllerSupport {
     return tokenService.getAllTokens(pageRequest);
   }
 
-  @RequestMapping(method = RequestMethod.GET, value = "/{id}", produces = APPLICATION_JSON_CONTENT_TYPE)
+  @GetMapping(value = "/{id}", produces = APPLICATION_JSON_CONTENT_TYPE)
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public AccessToken getAccessToken(@PathVariable("id") Long id) {
 
     return tokenService.getTokenById(id);
   }
 
-  @RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
+  @DeleteMapping(value = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize("#iam.hasScope('iam:admin.write') or #iam.hasDashboardRole('ROLE_ADMIN')")
   public void revokeAccessToken(@PathVariable("id") Long id) {

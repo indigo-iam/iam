@@ -22,17 +22,18 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
+import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
-import org.mitre.openid.connect.token.ConnectTokenEnhancer;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -45,7 +46,7 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
-public class IamTokenEnhancer extends ConnectTokenEnhancer {
+public class IamTokenEnhancer implements TokenEnhancer {
 
   public static final String EXPIRES_IN_KEY = "expires_in";
 
@@ -55,26 +56,29 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
   private ClientService clientService;
   private OIDCTokenService connectTokenService;
   private JWTProfileResolver profileResolver;
+  private JWTSigningAndValidationService jwtService;
   private Clock clock;
 
-  public IamTokenEnhancer(Clock clock, IamAccountService accountService, ClientService clientService,
-      OIDCTokenService connectTokenService, JWTProfileResolver profileResolver) {
+  public IamTokenEnhancer(Clock clock, IamAccountService accountService,
+      ClientService clientService, OIDCTokenService connectTokenService,
+      JWTProfileResolver profileResolver, JWTSigningAndValidationService jwtService) {
 
     this.clock = clock;
     this.accountService = accountService;
     this.clientService = clientService;
     this.connectTokenService = connectTokenService;
     this.profileResolver = profileResolver;
+    this.jwtService = jwtService;
   }
 
   private SignedJWT signClaims(JWTClaimsSet claims) {
-    JWSAlgorithm signingAlg = getJwtService().getDefaultSigningAlgorithm();
+    JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();
 
     JWSHeader header = new JWSHeader(signingAlg, null, null, null, null, null, null, null, null,
-        null, getJwtService().getDefaultSignerKeyId(), null, null);
+        null, jwtService.getDefaultSignerKeyId(), null, null);
     SignedJWT signedJWT = new SignedJWT(header, claims);
 
-    getJwtService().signJwt(signedJWT);
+    jwtService.signJwt(signedJWT);
     return signedJWT;
 
   }

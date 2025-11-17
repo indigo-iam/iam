@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.h2.server.web.WebServlet;
+import org.mitre.jwt.signer.service.JWTSigningAndValidationService;
 import org.mitre.oauth2.repository.SystemScopeRepository;
 import org.mitre.oauth2.service.impl.DefaultOAuth2AuthorizationCodeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -288,15 +289,15 @@ public class IamConfig {
     return new DefaultOAuth2AuthorizationCodeService();
   }
 
-  @Bean
-  @Primary
-  TokenEnhancer iamTokenEnhancer(Clock clock, IamAccountService accountService,
-      ClientService clientService, OIDCTokenService connectTokenService,
-      JWTProfileResolver profileResolver) {
-
-    return new IamTokenEnhancer(clock, accountService, clientService, connectTokenService,
-        profileResolver);
-  }
+//  @Bean
+//  @Primary
+//  TokenEnhancer iamTokenEnhancer(Clock clock, IamAccountService accountService,
+//      ClientService clientService, OIDCTokenService connectTokenService,
+//      JWTProfileResolver profileResolver, JWTSigningAndValidationService jwtService) {
+//
+//    return new IamTokenEnhancer(clock, accountService, clientService, connectTokenService,
+//        profileResolver, jwtService);
+//  }
 
   @Bean
   PasswordEncoder passwordEncoder() {
