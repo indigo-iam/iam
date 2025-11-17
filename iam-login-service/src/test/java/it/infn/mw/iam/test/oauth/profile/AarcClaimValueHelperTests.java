@@ -17,9 +17,9 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.Sets;
 
+import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.group.IamGroupService;
+import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.aarc.AarcClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcScopeClaimTranslationService;
 import it.infn.mw.iam.persistence.model.IamGroup;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
@@ -45,7 +49,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
-  // @formatter:off
+// @formatter:off
   "iam.aarc-profile.urn-delegated-namespace=projectescape.eu",
   "iam.aarc-profile.urn-subnamespaces=sub mission",
   // @formatter:on
@@ -53,17 +57,25 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 @Transactional
 public class AarcClaimValueHelperTests {
 
+  @Autowired
+  private IamProperties properties;
 
   @Autowired
-  private AarcClaimValueHelper helper;
+  private SshKeyConverter sshConverter;
+
+  @Autowired
+  private AttributeMapHelper attrHelper;
 
   @Autowired
   private IamGroupService groupService;
 
-  IamUserInfo userInfo = mock(IamUserInfo.class);
+  private IamUserInfo userInfo = mock(IamUserInfo.class);
+  private AarcClaimValueHelper helper;
+  private AarcScopeClaimTranslationService claimService = new AarcScopeClaimTranslationService();
 
   @Before
   public void setup() {
+    helper = new AarcClaimValueHelper(properties, sshConverter, attrHelper, claimService);
     when(userInfo.getGroups()).thenReturn(Collections.emptySet());
   }
 

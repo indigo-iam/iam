@@ -28,6 +28,7 @@ import static java.lang.String.format;
 import static java.util.Objects.isNull;
 
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,9 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.ObjectUtils;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.data.domain.Page;
@@ -51,6 +49,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.audit.events.account.AccountCreatedEvent;
 import it.infn.mw.iam.audit.events.account.AccountDisabledEvent;
 import it.infn.mw.iam.audit.events.account.AccountEndTimeUpdatedEvent;
@@ -73,6 +73,7 @@ import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.DefaultGroup;
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.group.DefaultIamGroupService;
+import it.infn.mw.iam.core.oauth.revocation.TokenRevocationService;
 import it.infn.mw.iam.core.user.exception.CredentialAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.core.user.exception.InvalidCredentialException;
@@ -94,6 +95,7 @@ import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamAupSignatureRepository;
 import it.infn.mw.iam.persistence.repository.IamAuthoritiesRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.persistence.repository.client.IamAccountClientRepository;
 import it.infn.mw.iam.registration.RegistrationRequestDto;
 import it.infn.mw.iam.registration.TokenGenerator;
@@ -108,21 +110,22 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   private final IamAuthoritiesRepository authoritiesRepo;
   private final PasswordEncoder passwordEncoder;
   private ApplicationEventPublisher eventPublisher;
-  private final OAuth2TokenEntityService tokenService;
+  private final TokenRevocationService tokenRevocationService;
   private final IamAccountClientRepository accountClientRepo;
   private final NotificationFactory notificationFactory;
   private final IamProperties iamProperties;
   private final DefaultIamGroupService iamGroupService;
   private final TokenGenerator tokenGenerator;
   private final IamAupSignatureRepository iamAupSignatureRepo;
+  private final IamTotpMfaRepository iamTotpMfaRepository;
 
   public DefaultIamAccountService(Clock clock, IamAccountRepository accountRepo,
       IamGroupRepository groupRepo, IamAuthoritiesRepository authoritiesRepo,
       PasswordEncoder passwordEncoder, ApplicationEventPublisher eventPublisher,
-      OAuth2TokenEntityService tokenService, IamAccountClientRepository accountClientRepo,
+      TokenRevocationService tokenRevocationService, IamAccountClientRepository accountClientRepo,
       NotificationFactory notificationFactory, IamProperties iamProperties,
       DefaultIamGroupService iamGroupService, TokenGenerator tokenGenerator,
-      IamAupSignatureRepository iamAupSignatureRepo) {
+      IamAupSignatureRepository iamAupSignatureRepo, IamTotpMfaRepository iamTotpMfaRepository) {
 
     this.clock = clock;
     this.accountRepo = accountRepo;
@@ -130,13 +133,14 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     this.authoritiesRepo = authoritiesRepo;
     this.passwordEncoder = passwordEncoder;
     this.eventPublisher = eventPublisher;
-    this.tokenService = tokenService;
+    this.tokenRevocationService = tokenRevocationService;
     this.accountClientRepo = accountClientRepo;
     this.notificationFactory = notificationFactory;
     this.iamProperties = iamProperties;
     this.iamGroupService = iamGroupService;
     this.tokenGenerator = tokenGenerator;
     this.iamAupSignatureRepo = iamAupSignatureRepo;
+    this.iamTotpMfaRepository = iamTotpMfaRepository;
   }
 
   private void labelSetEvent(IamAccount account, IamLabel label) {
@@ -347,19 +351,13 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
 
   protected void deleteTokensForAccount(IamAccount account) {
 
-    Set<OAuth2AccessTokenEntity> accessTokens =
-        tokenService.getAllAccessTokensForUser(account.getUsername());
+    tokenRevocationService.revokeAccessTokens(account);
+    tokenRevocationService.revokeRefreshTokens(account);
 
-    Set<OAuth2RefreshTokenEntity> refreshTokens =
-        tokenService.getAllRefreshTokensForUser(account.getUsername());
+  }
 
-    for (OAuth2AccessTokenEntity t : accessTokens) {
-      tokenService.revokeAccessToken(t);
-    }
-
-    for (OAuth2RefreshTokenEntity t : refreshTokens) {
-      tokenService.revokeRefreshToken(t);
-    }
+  private void deleteTotpMfa(IamAccount account) {
+    iamTotpMfaRepository.findByAccount(account).ifPresent(iamTotpMfaRepository::delete);
   }
 
   @Override
@@ -367,6 +365,7 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     checkNotNull(account, "cannot delete a null account");
     deleteTokensForAccount(account);
     removeClientLinks(account);
+    deleteTotpMfa(account);
     accountRepo.delete(account);
 
     eventPublisher.publishEvent(new AccountRemovedEvent(this, account,
@@ -492,20 +491,13 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
   }
 
   @Override
-  public List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp) {
-    checkNotNull(timestamp, "null timestamp");
-
-    List<IamAccount> accounts =
-        accountRepo.findProvisionedAccountsWithLastLoginTimeBeforeTimestamp(timestamp);
-
-    accounts.forEach(this::deleteAccount);
-
-    return accounts;
+  public Optional<IamAccount> findByUuid(String uuid) {
+    return accountRepo.findByUuid(uuid);
   }
 
   @Override
-  public Optional<IamAccount> findByUuid(String uuid) {
-    return accountRepo.findByUuid(uuid);
+  public Optional<IamAccount> findByUsername(String username) {
+    return accountRepo.findByUsername(username);
   }
 
   @Override
@@ -696,6 +688,34 @@ public class DefaultIamAccountService implements IamAccountService, ApplicationE
     }
 
     return account;
+  }
+
+  @Override
+  public ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable pageable) {
+    List<RegisteredGroupDTO> groupDTOs = account.getGroups()
+      .stream()
+      .sorted(Comparator.comparing(m -> m.getGroup().getName()))
+      .map(membership -> {
+        IamGroup group = membership.getGroup();
+        return new RegisteredGroupDTO.Builder().id(group.getId())
+          .uuid(group.getUuid())
+          .name(group.getName())
+          .description(group.getDescription())
+          .parentGroup(group.getParentGroup())
+          .childrenGroups(group.getChildrenGroups())
+          .labels(group.getLabels())
+          .joiningDate(membership.getCreationTime())
+          .scopePoliciesDescription(group.getScopePolicies())
+          .build();
+      })
+      .toList();
+
+    long total = groupDTOs.size();
+    int start = Math.max(0, (int) pageable.getOffset() - 1);
+    int end = Math.min((start + pageable.getPageSize()), groupDTOs.size());
+    List<RegisteredGroupDTO> pagedGroups = start <= end ? groupDTOs.subList(start, end) : List.of();
+
+    return new ListResponseDTO<>(total, pageable.getPageSize(), start, pagedGroups);
   }
 
   @Override

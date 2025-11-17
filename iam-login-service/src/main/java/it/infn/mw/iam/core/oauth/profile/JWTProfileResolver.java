@@ -15,7 +15,10 @@
  */
 package it.infn.mw.iam.core.oauth.profile;
 
+import java.util.Set;
+
 @FunctionalInterface
 public interface JWTProfileResolver {
-  JWTProfile resolveProfile(String clientId);
+
+  JWTProfile resolveProfile(Set<String> clientScopes);
 }

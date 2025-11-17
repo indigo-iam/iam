@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.repository.OAuth2TokenRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Component;
@@ -34,7 +33,6 @@ public class DefaultOAuth2AuthenticationScopeResolver implements OAuth2Authentic
 
   private final OAuth2TokenRepository tokenRepo;
 
-  @Autowired
   public DefaultOAuth2AuthenticationScopeResolver(OAuth2TokenRepository tokenRepo) {
     this.tokenRepo = tokenRepo;
   }

@@ -35,7 +35,6 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -62,6 +61,8 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamUserInfo;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 import it.infn.mw.iam.test.ext_authn.x509.X509TestSupport;
 import it.infn.mw.iam.test.util.annotation.IamNoMvcTest;
@@ -108,7 +109,10 @@ public class AccountUpdatersTests extends X509TestSupport {
   private IamAccountService accountService;
 
   @Autowired
-  private OAuth2TokenEntityService tokenService;
+  private IamOAuthAccessTokenRepository accessTokenRepository;
+
+  @Autowired
+  private IamOAuthRefreshTokenRepository refreshTokenRepository;
 
   @Autowired
   private PasswordEncoder encoder;
@@ -139,8 +143,8 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Adders accountAdders() {
-    return AccountUpdaters.adders(accountRepo, accountService, encoder, account, tokenService,
-        usernameValidator);
+    return AccountUpdaters.adders(accountRepo, accountService, encoder, account,
+        accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   private Removers accountRemovers() {
@@ -148,8 +152,8 @@ public class AccountUpdatersTests extends X509TestSupport {
   }
 
   private Replacers accountReplacers() {
-    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account, tokenService,
-        usernameValidator);
+    return AccountUpdaters.replacers(accountRepo, accountService, encoder, account,
+        accessTokenRepository, refreshTokenRepository, usernameValidator);
   }
 
   @Before
@@ -923,7 +927,7 @@ public class AccountUpdatersTests extends X509TestSupport {
 
     Updater u = accountReplacers().serviceAccount(true);
     assertThat(u.update(), is(true));
-    
+
     u.publishUpdateEvent(this, publisher);
     verify(publisher, times(1)).publishEvent(any(ServiceAccountReplacedEvent.class));
   }

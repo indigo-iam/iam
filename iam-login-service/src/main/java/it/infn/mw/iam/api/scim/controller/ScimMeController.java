@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -71,6 +70,8 @@ import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 @SuppressWarnings("deprecation")
@@ -95,7 +96,8 @@ public class ScimMeController implements ApplicationEventPublisherAware {
 
   public ScimMeController(IamAccountRepository accountRepository,
       IamGroupRepository groupRepository, IamAccountService accountService,
-      OAuth2TokenEntityService tokenService, UserConverter userConverter,
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UserConverter userConverter,
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, IamProperties properties,
@@ -104,8 +106,8 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     this.iamAccountRepository = accountRepository;
     this.userConverter = userConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
-        accountService, tokenService, oidcIdConverter, samlIdConverter, sshKeyConverter,
-        x509CertificateConverter, usernameValidator, groupRepository);
+        accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
+        sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
 
     enabledUpdaters = EnumSet.noneOf(UpdaterType.class);
 

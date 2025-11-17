@@ -296,6 +296,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
       .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .issuerDn(TEST_0_ISSUER)
+      .subjectDn(TEST_0_SUBJECT)
       .build();
 
     IamAccount testUser = iamAccountRepo.findByUsername(TEST_USERNAME)
@@ -393,6 +395,8 @@ public class ScimX509Tests extends X509TestSupport implements ScimConstants {
     ScimX509Certificate cert = ScimX509Certificate.builder()
       .display(TEST_0_CERT_LABEL)
       .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
       .build();
 
     ScimUser user = ScimUser.builder("user_with_x509_cert")

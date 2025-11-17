@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,7 +28,7 @@ public class IamAuthRequestOptionsService implements AuthRequestOptionsService {
 
   private String sanitizeScope(String scope, RegisteredClient client) {
     List<String> requestedScopes = Splitter.on(" ").splitToList(scope);
-    return requestedScopes.stream().filter(client.getScope()::contains).collect(joining(" "));
+    return requestedScopes.stream().collect(joining(" "));
   }
 
   @Override

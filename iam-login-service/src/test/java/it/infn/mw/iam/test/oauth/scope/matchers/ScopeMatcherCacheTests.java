@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 
 import java.text.ParseException;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,6 +94,7 @@ public class ScopeMatcherCacheTests extends EndpointsTestUtils {
     client.setClientId(CLIENT_ID);
     client.setClientSecret(CLIENT_SECRET);
     client.setScope(Sets.newHashSet("openid", "profile", "email"));
+    client.setGrantTypes(Set.of("client_credentials"));
     client = clientService.saveNewClient(client);
 
     try {

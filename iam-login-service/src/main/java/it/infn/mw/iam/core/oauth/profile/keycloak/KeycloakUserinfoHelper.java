@@ -15,47 +15,16 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
-import static it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakUserInfoAdapter.forUserInfo;
-import static java.util.Objects.isNull;
-
-import java.util.Optional;
-
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.UserInfoService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.wlcg.WLCGUserinfoHelper;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.common.BaseUserinfoHelper;
 
-@SuppressWarnings("deprecation")
-public class KeycloakUserinfoHelper extends WLCGUserinfoHelper {
+public class KeycloakUserinfoHelper extends BaseUserinfoHelper {
 
-  public static final Logger LOG = LoggerFactory.getLogger(KeycloakUserinfoHelper.class);
-
-  public KeycloakUserinfoHelper(IamProperties props, UserInfoService userInfoService) {
-    super(props, userInfoService);
+  public KeycloakUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeTranslationService) {
+    super(props, claimValueHelper, scopeTranslationService);
   }
-
-  @Override
-  public UserInfo resolveUserInfo(OAuth2Authentication authentication) {
-
-    UserInfo ui = lookupUserinfo(authentication);
-
-    if (isNull(ui)) {
-      return null;
-    }
-
-    Optional<String[]> resolvedGroups =
-        resolveGroupsFromToken(authentication, KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM);
-
-    if (resolvedGroups.isPresent()) {
-      return forUserInfo(ui, resolvedGroups.get());
-    } else {
-      return forUserInfo(ui);
-    }
-
-  }
-
 }

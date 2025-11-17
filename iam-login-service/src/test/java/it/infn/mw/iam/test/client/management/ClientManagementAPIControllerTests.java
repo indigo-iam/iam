@@ -156,7 +156,7 @@ class ClientManagementAPIControllerTests {
       .perform(post(IAM_CLIENTS_API_URL).contentType(APPLICATION_JSON)
         .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
-      .andExpect(jsonPath("$.error", startsWith("Invalid JSON:")));
+      .andExpect(jsonPath("$.error", startsWith("Invalid JSON object")));
 
   }
 

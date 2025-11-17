@@ -16,114 +16,84 @@
 package it.infn.mw.iam.test.oauth.profile;
 
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import io.restassured.RestAssured;
-import it.infn.mw.iam.test.TestUtils;
-import it.infn.mw.iam.test.util.annotation.IamRandomPortIntegrationTest;
+import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
+import it.infn.mw.iam.test.util.WithMockOAuthUser;
+import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
+import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
-@IamRandomPortIntegrationTest
+@IamMockMvcIntegrationTest
 @TestPropertySource(properties = {
 // @formatter:off
     "iam.jwt-profile.default-profile=kc",
     // @formatter:on
 })
-public class KeycloakProfileUserInfoTests {
+public class KeycloakProfileUserInfoTests extends EndpointsTestUtils {
 
-  @Value("${local.server.port}")
-  private Integer iamPort;
-
-  private static final String USERNAME = "test";
-  private static final String PASSWORD = "password";
-
-  private String userinfoUrl;
-  private static final String USERINFO_URL_TEMPLATE = "http://localhost:%d/userinfo";
-
-  @BeforeClass
-  public static void init() {
-    TestUtils.initRestAssured();
-  }
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
 
   @Before
   public void setup() {
-    RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-    RestAssured.port = iamPort;
-    userinfoUrl = String.format(USERINFO_URL_TEMPLATE, iamPort);
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @After
+  public void teardown() {
+    mockOAuth2Filter.cleanupSecurityContext();
   }
 
   @Test
-  public void testUserinfoResponseWithGroups() {
-    String accessToken = TestUtils.passwordTokenGetter()
-      .port(iamPort)
-      .username(USERNAME)
-      .password(PASSWORD)
-      .scope("openid profile")
-      .getAccessToken();
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = TEST_USERNAME,
+      authorities = {"ROLE_USER"}, scopes = {"openid profile"})
+  public void testUserinfoResponseWithGroups() throws Exception {
 
-    RestAssured.given()
-      .header("Authorization", String.format("Bearer %s", accessToken))
-      .when()
-      .get(userinfoUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value())
-      .body("\"roles\"", hasItems("Analysis", "Production"));
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.roles").exists())
+      .andExpect(jsonPath("$.roles", hasSize(3)))
+      .andExpect(jsonPath("$.roles", hasItems("Analysis", "Production", "Optional")));
+    // @formatter:on
   }
 
   @Test
-  public void testUserinfoResponseWithoutGroups() {
-    String accessToken = TestUtils.passwordTokenGetter()
-      .port(iamPort)
-      .username(USERNAME)
-      .password(PASSWORD)
-      .scope("openid")
-      .getAccessToken();
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, user = ADMIN_USERNAME,
+      authorities = {"ROLE_USER"}, scopes = {"openid profile"})
+  public void testUserinfoResponseForUserWithoutGroups() throws Exception {
 
-    RestAssured.given()
-      .header("Authorization", String.format("Bearer %s", accessToken))
-      .when()
-      .get(userinfoUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value())
-      .body("\"roles\"", nullValue());
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.groups").doesNotExist())
+      .andExpect(jsonPath("$.roles").doesNotExist());
+    // @formatter:on
   }
 
   @Test
-  public void testUserinfoResponseWithoutGroupsTwo() {
-    String accessToken = TestUtils.passwordTokenGetter()
-      .port(iamPort)
-      .username("admin")
-      .password(PASSWORD)
-      .scope("openid profile")
-      .getAccessToken();
+  @WithMockOAuthUser(clientId = PASSWORD_CLIENT_ID, authorities = {"ROLE_CLIENT"},
+      scopes = {"openid"})
+  public void testUserinfoResponseWithoutUser() throws Exception {
 
-    RestAssured.given()
-      .header("Authorization", String.format("Bearer %s", accessToken))
-      .when()
-      .get(userinfoUrl)
-      .then()
-      .statusCode(HttpStatus.OK.value())
-      .body("\"roles\"", nullValue());
-  }
-
-  @Test
-  public void testUserinfoResponseWithoutUser() {
-    String accessToken = TestUtils.clientCredentialsTokenGetter().port(iamPort).getAccessToken();
-
-    RestAssured.given()
-      .header("Authorization", String.format("Bearer %s", accessToken))
-      .when()
-      .get(userinfoUrl)
-      .then()
-      .statusCode(HttpStatus.FORBIDDEN.value());
+    // @formatter:off
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isForbidden());
+    // @formatter:on
   }
 }

@@ -15,37 +15,59 @@
  */
 package it.infn.mw.iam.core.oauth.profile.common;
 
-import org.mitre.openid.connect.model.UserInfo;
-import org.mitre.openid.connect.service.UserInfoService;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 
+import com.nimbusds.jwt.JWTClaimNames;
+
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
 import it.infn.mw.iam.core.oauth.profile.UserInfoHelper;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseUserinfoHelper implements UserInfoHelper {
 
   private final IamProperties properties;
-  private final UserInfoService userInfoService;
+  private final ClaimValueHelper claimValueHelper;
+  private final ScopeClaimTranslationService scopeTranslationService;
 
-  public BaseUserinfoHelper(IamProperties props, UserInfoService userInfoService) {
+  protected BaseUserinfoHelper(IamProperties props, ClaimValueHelper claimValueHelper,
+      ScopeClaimTranslationService scopeTranslationService) {
     this.properties = props;
-    this.userInfoService = userInfoService;
+    this.claimValueHelper = claimValueHelper;
+    this.scopeTranslationService = scopeTranslationService;
   }
 
   public IamProperties getProperties() {
     return properties;
   }
 
-  public UserInfoService getUserInfoService() {
-    return userInfoService;
+  public ClaimValueHelper getClaimValueHelper() {
+    return claimValueHelper;
   }
 
-  protected UserInfo lookupUserinfo(OAuth2Authentication authentication) {
-    final String username = authentication.getName();
-
-    return getUserInfoService().getByUsernameAndClientId(username,
-        authentication.getOAuth2Request().getClientId());
+  public ScopeClaimTranslationService getScopeTranslationService() {
+    return scopeTranslationService;
   }
 
+  @Override
+  public Set<String> getRequiredClaims() {
+    return Set.of(JWTClaimNames.SUBJECT);
+  }
+
+  @Override
+  public Map<String, Object> resolveScopeClaims(Set<String> scopes, IamAccount account,
+      OAuth2Authentication auth) {
+
+    Set<String> claimNames = new HashSet<>();
+    claimNames.addAll(getRequiredClaims());
+    claimNames.addAll(scopeTranslationService.getClaimsForScopeSet(scopes));
+    return claimValueHelper.resolveClaims(claimNames, auth, Optional.of(account));
+  }
 }

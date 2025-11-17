@@ -24,13 +24,13 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.openid.connect.model.UserInfo;
 import org.mitre.openid.connect.service.ScopeClaimTranslationService;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -42,11 +42,11 @@ import com.google.common.collect.Maps;
 
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.config.IamProperties;
-import it.infn.mw.iam.core.oauth.profile.iam.IamClaimValueHelper;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakGroupHelper;
-import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakProfileAccessTokenBuilder;
-import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.core.oauth.profile.ClaimValueHelper;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakAccessTokenBuilder;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.test.util.oauth.MockOAuth2Request;
 
 @SuppressWarnings("deprecation")
@@ -62,10 +62,13 @@ class KeycloakAccessTokenBuilderTests {
   IamTotpMfaRepository totpMfaRepository;
 
   @Mock
+  IamAccount account;
+
+  @Mock
   ScopeClaimTranslationService scService;
 
   @Mock
-  IamClaimValueHelper claimValueHelper;
+  ClaimValueHelper claimValueHelper;
 
   @Mock
   OAuth2AccessTokenEntity tokenEntity;
@@ -83,42 +86,41 @@ class KeycloakAccessTokenBuilderTests {
   MockOAuth2Request oauth2Request =
       new MockOAuth2Request("clientId", new String[] {"openid", "profile"});
 
-  @Mock
-  UserInfo userInfo;
-
   final Instant now = Clock.systemDefaultZone().instant();
 
-  final KeycloakGroupHelper groupHelper = new KeycloakGroupHelper();
-
-  KeycloakProfileAccessTokenBuilder tokenBuilder;
+  KeycloakAccessTokenBuilder tokenBuilder;
 
   @BeforeEach
   void setup() {
 
-    tokenBuilder = new KeycloakProfileAccessTokenBuilder(properties, totpMfaRepository,
-        accountUtils, groupHelper, scopeFilter);
+    tokenBuilder = new KeycloakAccessTokenBuilder(properties, totpMfaRepository, accountUtils,
+        scopeFilter, claimValueHelper, scService);
     when(tokenEntity.getExpiration()).thenReturn(null);
     when(tokenEntity.getClient()).thenReturn(client);
     when(client.getClientId()).thenReturn("client");
     when(authentication.getOAuth2Request()).thenReturn(oauth2Request);
-    when(userInfo.getSub()).thenReturn("userinfo-sub");
+    when(account.getUuid()).thenReturn("userinfo-sub");
     when(oauth2Request.getGrantType()).thenReturn(TOKEN_EXCHANGE_GRANT_TYPE);
   }
 
   @Test
   void testMissingSubjectTokenTokenExchangeErrors() {
-    InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
-        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+
+    Optional<IamAccount> optAccount = Optional.ofNullable(account);
+    InvalidRequestException thrown = assertThrows(InvalidRequestException.class, () -> tokenBuilder
+      .buildAccessToken(tokenEntity, authentication, optAccount, now));
     assertThat(thrown.getMessage(), containsString("subject_token not found"));
   }
 
   @Test
   void testSubjectTokenNotParsable() {
+
+    Optional<IamAccount> optAccount = Optional.ofNullable(account);
     Map<String, String> paramsMap = Maps.newHashMap();
     paramsMap.put("subject_token", "3427thjdfhgejt73ja");
     oauth2Request.setRequestParameters(paramsMap);
-    InvalidRequestException thrown = assertThrows(InvalidRequestException.class,
-        () -> tokenBuilder.buildAccessToken(tokenEntity, authentication, userInfo, now));
+    InvalidRequestException thrown = assertThrows(InvalidRequestException.class, () -> tokenBuilder
+      .buildAccessToken(tokenEntity, authentication, optAccount, now));
     assertThat(thrown.getMessage(), containsString("Error parsing subject token"));
   }
 

@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.common.collect.Lists;
@@ -59,6 +58,8 @@ import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAccount, ScimUser> {
@@ -68,7 +69,9 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final IamAccountRepository repo;
   final IamGroupRepository groupRepo;
   final IamAccountService accountService;
-  final OAuth2TokenEntityService tokenService;
+
+  final IamOAuthAccessTokenRepository accessTokenRepo;
+  final IamOAuthRefreshTokenRepository refreshTokenRepo;
 
   final UsernameValidator usernameValidator;
 
@@ -78,13 +81,15 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   final X509CertificateConverter x509CertificateConverter;
 
   public DefaultAccountUpdaterFactory(PasswordEncoder encoder, IamAccountRepository repo,
-      IamAccountService accountService, OAuth2TokenEntityService tokenService,
-      OidcIdConverter oidcIdConverter, SamlIdConverter samlIdConverter,
-      SshKeyConverter sshKeyConverter, X509CertificateConverter x509CertificateConverter,
-      UsernameValidator usernameValidator, IamGroupRepository groupRepo) {
+      IamAccountService accountService, IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, OidcIdConverter oidcIdConverter,
+      SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
+      X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
+      IamGroupRepository groupRepo) {
 
     this.accountService = accountService;
-    this.tokenService = tokenService;
+    this.accessTokenRepo = accessTokenRepo;
+    this.refreshTokenRepo = refreshTokenRepo;
     this.encoder = encoder;
     this.repo = repo;
     this.oidcIdConverter = oidcIdConverter;
@@ -137,8 +142,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
 
   private void prepareAdders(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
-    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, tokenService,
-        usernameValidator);
+    Adders add = AccountUpdaters.adders(repo, accountService, encoder, account, accessTokenRepo,
+        refreshTokenRepo, usernameValidator);
 
     if (user.hasName()) {
 
@@ -211,7 +216,7 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
   private void prepareReplacers(List<AccountUpdater> updaters, ScimUser user, IamAccount account) {
 
     Replacers replace = AccountUpdaters.replacers(repo, accountService, encoder, account,
-        tokenService, usernameValidator);
+        accessTokenRepo, refreshTokenRepo, usernameValidator);
 
     if (user.hasName()) {
       addUpdater(updaters, Objects::nonNull, user.getName()::getGivenName, replace::givenName);
@@ -236,7 +241,8 @@ public class DefaultAccountUpdaterFactory implements AccountUpdaterFactory<IamAc
     }
 
     if (user.hasAffiliation()) {
-      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getAffiliation, replace::affiliation);
+      addUpdater(updaters, Objects::nonNull, user.getIndigoUser()::getAffiliation,
+          replace::affiliation);
     }
   }
 

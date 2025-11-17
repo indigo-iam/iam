@@ -70,7 +70,7 @@
                                 {{r.notes}}
                             </blockquote>
                         </p>
-                        <div class="btn-group">
+                        <div class="btn-group" ng-show="$ctrl.groupManagerForGroup(r) || $ctrl.voAdmin">
                             <button class="btn btn-success btn-sm" ng-click="$ctrl.approve(r)" ng-disabled="$ctrl.busy">
                                 <i class="fa fa-check"></i> Approve
                             </button>

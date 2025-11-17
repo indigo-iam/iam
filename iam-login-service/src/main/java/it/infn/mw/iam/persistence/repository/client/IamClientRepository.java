@@ -15,19 +15,26 @@
  */
 package it.infn.mw.iam.persistence.repository.client;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
-public interface IamClientRepository
-    extends PagingAndSortingRepository<ClientDetailsEntity, Long>,
+public interface IamClientRepository extends PagingAndSortingRepository<ClientDetailsEntity, Long>,
     JpaSpecificationExecutor<ClientDetailsEntity> {
 
   Optional<ClientDetailsEntity> findByClientId(String clientId);
 
   List<ClientDetailsEntity> findByClientNameLike(String clientName);
 
+  @Query("select c from ClientDetailsEntity c join ClientRelyingPartyEntity e where e.expiration < :dateTime")
+  List<ClientDetailsEntity> findByExpirationBefore(@Param("dateTime") Date dateTime);
+
+  @Query("select e.client from ClientRelyingPartyEntity e where e.entityId = :entityId")
+  Optional<ClientDetailsEntity> findByEntityId(@Param("entityId") String entityId);
 }

@@ -15,48 +15,47 @@
  */
 package it.infn.mw.iam.core.oauth.profile.keycloak;
 
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.SUB;
+import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames.USERNAME;
+
 import java.util.Map;
 import java.util.Set;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
-import org.mitre.oauth2.service.IntrospectionResultAssembler;
-import org.mitre.openid.connect.model.UserInfo;
 
-import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.profile.common.BaseIntrospectionHelper;
-import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatcherRegistry;
-import it.infn.mw.iam.persistence.repository.UserInfoAdapter;
-
+import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class KeycloakIntrospectionHelper extends BaseIntrospectionHelper {
 
-  private final KeycloakGroupHelper groupHelper;
-
-  public KeycloakIntrospectionHelper(IamProperties props, IntrospectionResultAssembler assembler,
-      ScopeMatcherRegistry registry, KeycloakGroupHelper helper) {
-    super(props, assembler, registry);
-    this.groupHelper = helper;
+  public KeycloakIntrospectionHelper(IamAccountService accountService) {
+    super(accountService);
   }
 
   @Override
   public Map<String, Object> assembleIntrospectionResult(OAuth2AccessTokenEntity accessToken,
-      UserInfo userInfo, Set<String> authScopes) {
+      ClientDetailsEntity authenticatedClient) {
 
-    Map<String, Object> result = getAssembler().assembleFrom(accessToken, userInfo, authScopes);
-
-    addIssuerClaim(result);
-    addAudience(result, accessToken);
-    addScopeClaim(result, filterScopes(accessToken, authScopes));
-
-    Set<String> groups = groupHelper.resolveGroupNames(((UserInfoAdapter) userInfo).getUserinfo());
-
-    if (!groups.isEmpty()) {
-      result.put(KeycloakGroupHelper.KEYCLOAK_ROLES_CLAIM, groups);
-    }
-
-    addAcrClaimIfNeeded(accessToken, result);
-
+    Map<String, Object> result =
+        super.assembleIntrospectionResult(accessToken, authenticatedClient);
+    addRoles(result);
     return result;
+  }
+
+  private void addRoles(Map<String, Object> claims) {
+
+    if (claims.containsKey(USERNAME)) {
+      IamAccount account = loadUserFrom(claims.get(SUB).toString()).orElseThrow(
+          () -> new IllegalStateException("Token sub doesn't refer to any registered user"));
+
+      Set<String> groups = KeycloakGroupHelper.resolveGroupNames(account.getUserInfo().getGroups());
+
+      if (!groups.isEmpty()) {
+        claims.put(KeycloakExtraClaimNames.ROLES, groups);
+      }
+    }
   }
 
 }

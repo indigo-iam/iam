@@ -16,9 +16,9 @@
 package it.infn.mw.iam.test.api.account.search.service;
 
 import static it.infn.mw.iam.api.account.search.GroupSearchController.getSortByName;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +43,7 @@ import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 public class DefaultPagedGroupsServiceTests extends GroupServiceUtils {
 
   public final int ITEMS_PER_PAGE = 10;
-  public final long TOTAL_TEST_GROUPS = 22L;
+  public final long TOTAL_TEST_GROUPS = 23L;
   private final int LAST_PAGE_NUMBER = (int) Math.ceil(TOTAL_TEST_GROUPS / ITEMS_PER_PAGE);
   private final int LAST_PAGE_SIZE = (int) (long) TOTAL_TEST_GROUPS % ITEMS_PER_PAGE;
   private final int LAST_PAGE_OFFSET = (int) (long) Math.floorDiv(TOTAL_TEST_GROUPS, ITEMS_PER_PAGE) * ITEMS_PER_PAGE;
