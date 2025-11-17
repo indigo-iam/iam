@@ -15,16 +15,14 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
+import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.SUB;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserInfoResponse {
@@ -33,13 +31,13 @@ public class UserInfoResponse {
 
   private final Map<String, Object> additionalFields = new HashMap<>();
 
-  public UserInfoResponse() {
-    // Required for de-serialization
-  }
+  public UserInfoResponse(Map<String, Object> claims) {
 
-  private UserInfoResponse(Builder builder) {
-    this.sub = builder.sub;
-    this.additionalFields.putAll(builder.additionalFields);
+    if (!claims.containsKey(SUB)) {
+      throw new IllegalArgumentException("Missing sub key in UserInfoResponse claims");
+    }
+    setSub(String.valueOf(claims.get(SUB)));
+    claims.forEach(this::addAdditionalField);
   }
 
   public String getSub() {
@@ -57,56 +55,8 @@ public class UserInfoResponse {
 
   @JsonAnySetter
   public void addAdditionalField(String key, Object value) {
-    this.additionalFields.put(key, value);
-  }
-
-  public static class Builder {
-
-    private final String sub;
-    private final Map<String, Object> additionalFields = new HashMap<>();
-
-    public Builder(String sub) {
-      this.sub = sub;
-    }
-
-    public Builder addField(String key, Object value) {
+    if (!"sub".equalsIgnoreCase(key)) {
       this.additionalFields.put(key, value);
-      return this;
-    }
-
-    public Builder addFieldsFromJson(JsonObject json, List<String> excluded) {
-
-      ObjectMapper jacksonMapper = new ObjectMapper();
-      json.keySet()
-        .stream()
-        .filter(key -> !excluded.contains(key))
-        .filter(key -> isValidField(json.get(key)))
-        .forEach(key -> {
-          try {
-            this.additionalFields.put(key,
-                jacksonMapper.readValue(json.get(key).toString(), Object.class));
-          } catch (Exception e) {
-            // Skip on exception
-          }
-        });
-      return this;
-    }
-
-    private boolean isValidField(JsonElement element) {
-      if (element.isJsonNull()) {
-        return false;
-      }
-      if (element.isJsonPrimitive() && element.getAsString().isBlank()) {
-        return false;
-      }
-      if (element.isJsonArray() && element.getAsJsonArray().size() == 0) {
-        return false;
-      }
-      return true;
-    }
-
-    public UserInfoResponse build() {
-      return new UserInfoResponse(this);
     }
   }
 }

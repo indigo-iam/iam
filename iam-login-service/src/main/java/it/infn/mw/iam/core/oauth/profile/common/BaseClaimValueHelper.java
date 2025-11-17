@@ -116,6 +116,9 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
     if (value instanceof Collection<?> coll) {
       return !coll.isEmpty();
     }
+    if (value instanceof String s) {
+      return !s.trim().isEmpty();
+    }
     return value != null;
   }
 

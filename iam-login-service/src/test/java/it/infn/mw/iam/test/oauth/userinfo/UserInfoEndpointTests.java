@@ -16,11 +16,16 @@
 package it.infn.mw.iam.test.oauth.userinfo;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -30,6 +35,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
@@ -74,6 +85,7 @@ public class UserInfoEndpointTests {
   @Test
   @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
   public void testUserInfoEndpointReturs404ForClientCredentialsToken() throws Exception {
+
     mvc.perform(get("/userinfo")).andExpect(status().isForbidden());
   }
 
@@ -82,12 +94,14 @@ public class UserInfoEndpointTests {
       scopes = {"openid"})
   public void testUserInfoEndpointRetursOk() throws Exception {
 
-    // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.*", Matchers.hasSize(1)))
-      .andExpect(jsonPath("$.sub").exists());
-    // @formatter:on
+      .andExpect(jsonPath("$.*", Matchers.hasSize(2)))
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(1)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid")));
+
   }
 
   @Test
@@ -95,13 +109,15 @@ public class UserInfoEndpointTests {
       scopes = {"openid", "profile"})
   public void testUserInfoEndpointRetursAllExpectedInfo() throws Exception {
 
-    // @formatter:off
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
       .andExpect(jsonPath("$." + IamExtraClaimNames.ORGANISATION_NAME, is("indigo-dc")))
-      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")));
-    // @formatter:on
+      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")))
+      .andReturn();
   }
 
   @Test
@@ -110,12 +126,17 @@ public class UserInfoEndpointTests {
       externalAuthenticationType = ExternalAuthenticationType.OIDC)
   public void testUserInfoEndpointRetursExtAuthnClaim() throws Exception {
 
-    // @formatter:off
-    mvc.perform(get("/userinfo"))
+    MvcResult result = mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
       .andExpect(jsonPath("$.external_authn").exists())
-      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")));  
-    // @formatter:on
+      .andExpect(jsonPath("$.external_authn.type", equalTo("oidc")))
+      .andReturn();
+
+    checkNoRootKeyDuplicates(result.getResponse().getContentAsString());
   }
 
   @Test
@@ -134,6 +155,10 @@ public class UserInfoEndpointTests {
     accountService.addSshKey(test, key);
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
       .andExpect(jsonPath("$.ssh_keys").doesNotExist());
 
   }
@@ -153,12 +178,56 @@ public class UserInfoEndpointTests {
     accountService.addSshKey(test, key);
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(3)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile", "ssh-keys")))
       .andExpect(jsonPath("$.ssh_keys").isArray())
-      .andExpect(jsonPath("$.ssh_keys", hasSize(1)))
+      .andExpect(jsonPath("$.ssh_keys", Matchers.hasSize(1)))
       .andExpect(
           jsonPath("$.ssh_keys[0].fingerprint", is(RSAPublicKeyUtils.getSHA256Fingerprint("test"))))
       .andExpect(jsonPath("$.ssh_keys[0].value", is("test")));
-
   }
 
+  @Test
+  @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
+      scopes = {"openid", "profile"})
+  @Transactional
+  public void testUserInfoEndpointRetursNoEmptyClaims() throws Exception {
+
+    IamAccount test = accountRepo.findByUsername("test")
+        .orElseThrow(() -> new AssertionError("Expected account not found"));
+    test.getUserInfo().setPicture("  ");
+    accountRepo.save(test);
+
+    mvc.perform(get("/userinfo"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.picture").doesNotExist())
+      .andExpect(jsonPath("$.scope").exists())
+      .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
+      .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
+      .andExpect(jsonPath("$." + IamExtraClaimNames.ORGANISATION_NAME, is("indigo-dc")))
+      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")))
+      .andReturn();
+  }
+
+
+  private void checkNoRootKeyDuplicates(String content) throws IOException {
+
+    JsonParser parser = (new JsonFactory()).createParser(content);
+
+    Set<String> rootKeys = new HashSet<>();
+    parser.nextToken();
+
+    while (parser.nextToken() != JsonToken.END_OBJECT) {
+      String fieldName = parser.getCurrentName();
+      parser.nextToken();
+      if (!rootKeys.add(fieldName)) {
+        fail("Duplicate root key detected: " + fieldName);
+      }
+      parser.skipChildren();
+    }
+    parser.close();
+  }
 }
