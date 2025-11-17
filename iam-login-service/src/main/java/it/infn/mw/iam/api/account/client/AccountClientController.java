@@ -15,8 +15,6 @@
  */
 package it.infn.mw.iam.api.account.client;
 
-import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -31,6 +29,7 @@ import it.infn.mw.iam.api.common.ClientViews;
 import it.infn.mw.iam.api.common.ListResponseDTO;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.form.PaginatedRequestForm;
+import static it.infn.mw.iam.api.utils.ValidationErrorUtils.handleValidationError;
 
 @RestController
 public class AccountClientController {
@@ -43,7 +42,7 @@ public class AccountClientController {
     this.clientSearchService = clientSearchService;
   }
 
-  @JsonView(ClientViews.Limited.class)
+  @JsonView(ClientViews.NoSecretManagementRegistration.class)
   @PreAuthorize("hasRole('USER')")
   @GetMapping("/iam/account/me/clients")
   public ListResponseDTO<RegisteredClientDTO> getOwnedClients(@Validated PaginatedRequestForm form,
@@ -53,7 +52,7 @@ public class AccountClientController {
     return clientSearchService.findOwnedClients(form);
   }
 
-  @JsonView(ClientViews.Limited.class)
+  @JsonView(ClientViews.NoSecretManagementRegistration.class)
   @PreAuthorize("#iam.hasScope('iam:admin.read') or #iam.hasDashboardRole('ROLE_ADMIN') or #iam.isUser(#id)")
   @GetMapping("/iam/account/{id}/clients")
   public ListResponseDTO<RegisteredClientDTO> getClientsOwnedByAccount(@PathVariable("id") String id,

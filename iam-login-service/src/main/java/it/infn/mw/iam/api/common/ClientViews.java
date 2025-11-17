@@ -39,4 +39,9 @@ public class ClientViews {
 
   }
 
+  public static class NoSecretDynamicRegistration {
+  }
+
+  public static class NoSecretManagementRegistration extends NoSecretDynamicRegistration{
+  }
 }
