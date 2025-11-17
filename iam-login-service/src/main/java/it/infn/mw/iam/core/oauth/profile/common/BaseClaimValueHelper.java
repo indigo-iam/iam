@@ -99,7 +99,9 @@ public abstract class BaseClaimValueHelper implements ClaimValueHelper {
       case StandardClaimNames.LOCALE:
         return account.get().getUserInfo().getLocale();
       case StandardClaimNames.UPDATED_AT:
-        return account.get().getLastUpdateTime().getTime();
+        return account.get().getLastUpdateTime() != null
+            ? account.get().getLastUpdateTime().getTime() / 1000
+            : null;
       case StandardClaimNames.ADDRESS:
         return account.get().getUserInfo().getAddress();
       case StandardClaimNames.PHONE_NUMBER:

@@ -193,7 +193,7 @@ public class UserInfoEndpointTests {
   @WithMockOAuthUser(clientId = "password-grant", user = "test", authorities = {"ROLE_USER"},
       scopes = {"openid", "profile"})
   @Transactional
-  public void testUserInfoEndpointRetursNoEmptyClaims() throws Exception {
+  public void testUserInfoEndpointReturnsNoEmptyClaims() throws Exception {
 
     IamAccount test = accountRepo.findByUsername("test")
         .orElseThrow(() -> new AssertionError("Expected account not found"));
@@ -208,8 +208,7 @@ public class UserInfoEndpointTests {
       .andExpect(jsonPath("$.scope", Matchers.hasSize(2)))
       .andExpect(jsonPath("$.scope", containsInAnyOrder("openid", "profile")))
       .andExpect(jsonPath("$." + IamExtraClaimNames.ORGANISATION_NAME, is("indigo-dc")))
-      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")))
-      .andReturn();
+      .andExpect(jsonPath("$." + IamExtraClaimNames.AFFILIATION, is("indigo")));
   }
 
 

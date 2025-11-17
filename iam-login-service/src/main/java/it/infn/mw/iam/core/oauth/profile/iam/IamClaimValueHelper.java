@@ -82,7 +82,9 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
       case ORGANISATION_NAME:
         return properties.getOrganisation().getName();
       case LAST_LOGIN_AT:
-        return account.isPresent() ? account.get().getLastLoginTime() : null;
+        return account.isPresent() && account.get().getLastLoginTime() != null
+            ? account.get().getLastLoginTime().getTime() / 1000
+            : null;
       case AFFILIATION:
         return account.isPresent() ? account.get().getUserInfo().getAffiliation() : null;
       case GROUPS:
@@ -90,7 +92,8 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
       case SSH_KEYS:
         return account.isPresent() ? getSshKeysFilteredSet(account.get().getSshKeys()) : null;
       case ATTR:
-        return account.isPresent() ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
+        return account.isPresent()
+            ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
             : null;
       case EXTERNAL_AUTHN:
         Optional<SavedUserAuthentication> userAuth =
