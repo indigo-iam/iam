@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.google.common.base.Strings;
@@ -49,6 +48,8 @@ import it.infn.mw.iam.persistence.model.IamSamlId;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.registration.validation.UsernameValidator;
 
 public class Adders extends Replacers {
@@ -67,9 +68,10 @@ public class Adders extends Replacers {
   final Consumer<Collection<IamSshKey>> linkSshKeys;
 
   public Adders(IamAccountRepository repo, IamAccountService accountService,
-      PasswordEncoder encoder, IamAccount account, OAuth2TokenEntityService tokenService,
-      UsernameValidator usernameValidator) {
-    super(repo, accountService, encoder, account, tokenService, usernameValidator);
+      PasswordEncoder encoder, IamAccount account, IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo, UsernameValidator usernameValidator) {
+    super(repo, accountService, encoder, account, accessTokenRepo, refreshTokenRepo,
+        usernameValidator);
 
     findByOidcId = id -> repo.findByOidcId(id.getIssuer(), id.getSubject());
     findBySamlId = repo::findBySamlId;
@@ -200,10 +202,9 @@ public class Adders extends Replacers {
   }
 
   public AccountUpdater sshKey(Collection<IamSshKey> newSshKeys) {
-    
+
     return new DefaultAccountUpdater<Collection<IamSshKey>, SshKeyAddedEvent>(account,
-        ACCOUNT_ADD_SSH_KEY, linkSshKeys, newSshKeys, sshKeyAddChecks,
-        SshKeyAddedEvent::new);
+        ACCOUNT_ADD_SSH_KEY, linkSshKeys, newSshKeys, sshKeyAddChecks, SshKeyAddedEvent::new);
   }
 
   public AccountUpdater x509Certificate(Collection<IamX509Certificate> newX509Certificates) {

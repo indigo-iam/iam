@@ -143,7 +143,7 @@ public class IamCoreControllerTests {
   }
 
   @Test
-  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"})
+  @WithMockOAuthUser(clientId = "client-cred", scopes = {"openid"}, authorities = {"ROLE_CLIENT"})
   public void userinfoDeniesAccessForClientCredentialsClient() throws Exception {
 
     mvc.perform(get("/userinfo")).andDo(print()).andExpect(status().isForbidden());
@@ -176,7 +176,7 @@ public class IamCoreControllerTests {
     mvc.perform(get("/userinfo").param("claims", userInfoClaimsRequest))
       .andDo(print())
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.groups", hasSize(2)));
+      .andExpect(jsonPath("$.groups", hasSize(3)));
   }
 
   @Test

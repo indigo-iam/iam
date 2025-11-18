@@ -16,13 +16,14 @@
 package it.infn.mw.iam.core.user;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo;
+import it.infn.mw.iam.api.common.ListResponseDTO;
+import it.infn.mw.iam.api.common.RegisteredGroupDTO;
 import it.infn.mw.iam.core.user.exception.EmailAlreadyBoundException;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAttribute;
@@ -41,10 +42,18 @@ public interface IamAccountService {
   /**
    * Finds an account by UUID
    * 
-   * @param uuid
-   * @return an {@link Optional} iam account
+   * @param account UUID
+   * @return an {@link Optional} IAM account
    */
   Optional<IamAccount> findByUuid(String uuid);
+
+  /**
+   * Finds an account by username
+   * 
+   * @param account username
+   * @return an {@link Optional} IAM account
+   */
+  Optional<IamAccount> findByUsername(String username);
 
   /**
    * Creates a new {@link IamAccount} from a registration request.
@@ -88,15 +97,6 @@ public interface IamAccountService {
    * @return the deleted {@link IamAccount}
    */
   IamAccount deleteAccount(IamAccount account);
-
-  /**
-   * Deletes provisioned accounts whose last login time is before than the timestamp passed as
-   * argument
-   * 
-   * @param timestamp the timestamp
-   * @return the possibly empty {@link List} of {@link IamAccount} that have been removed
-   */
-  List<IamAccount> deleteInactiveProvisionedUsersSinceTime(Date timestamp);
 
   /**
    * Add a label for a given account or replace the value of an existent one
@@ -201,6 +201,15 @@ public interface IamAccountService {
    * @return the updated account
    */
   IamAccount removeFromGroup(IamAccount account, IamGroup group);
+
+  /**
+   * Get the list of groups for the account
+   * 
+   * @param account
+   * @param page pagination params
+   * @return the groups of the account
+   */
+   ListResponseDTO<RegisteredGroupDTO> getGroups(IamAccount account, Pageable page);
 
   /**
    * Returns group members

@@ -37,7 +37,6 @@ import com.nimbusds.jwt.SignedJWT;
 import it.infn.mw.iam.test.oauth.EndpointsTestUtils;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
-
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.jwk.default-key-id=iam",
@@ -60,7 +59,6 @@ public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport 
 
     SignedJWT token = (SignedJWT) JWTParser.parse(getAccessTokenForUser());
     assertThat(token.getHeader().getKeyID(), is("iam"));
-
   }
 
   @Test
@@ -71,7 +69,5 @@ public class JWKECKeyTests extends EndpointsTestUtils implements JWKTestSupport 
       .andExpect(content().contentType(APPLICATION_JSON))
       .andExpect(jsonPath("$.keys", hasSize(1)))
       .andExpect(jsonPath("$.keys[0].kid", is("iam")));
-
   }
-
 }

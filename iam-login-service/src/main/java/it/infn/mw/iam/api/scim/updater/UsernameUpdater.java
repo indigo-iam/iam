@@ -15,28 +15,32 @@
  */
 package it.infn.mw.iam.api.scim.updater;
 
-import java.util.Set;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.OAuth2RefreshTokenEntity;
-import org.mitre.oauth2.service.OAuth2TokenEntityService;
 
 import it.infn.mw.iam.audit.events.account.UsernameReplacedEvent;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
+import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 
 public class UsernameUpdater extends DefaultAccountUpdater<String, UsernameReplacedEvent> {
 
-  private OAuth2TokenEntityService tokenService;
+  private IamOAuthAccessTokenRepository accessTokenRepo;
+  private IamOAuthRefreshTokenRepository refreshTokenRepo;
   private String oldUsername;
 
   public UsernameUpdater(IamAccount account, UpdaterType type, Consumer<String> consumer,
       String newVal, Predicate<String> predicate,
       AccountEventBuilder<String, UsernameReplacedEvent> eventBuilder,
-      OAuth2TokenEntityService tokenService) {
+      IamOAuthAccessTokenRepository accessTokenRepo,
+      IamOAuthRefreshTokenRepository refreshTokenRepo) {
     super(account, type, consumer, newVal, predicate, eventBuilder);
-    this.tokenService = tokenService;
+    this.accessTokenRepo = accessTokenRepo;
+    this.refreshTokenRepo = refreshTokenRepo;
   }
 
   @Override
@@ -47,19 +51,20 @@ public class UsernameUpdater extends DefaultAccountUpdater<String, UsernameRepla
   @Override
   public void afterUpdate() {
 
-    Set<OAuth2AccessTokenEntity> accessTokens = tokenService.getAllAccessTokensForUser(oldUsername);
+    List<OAuth2AccessTokenEntity> accessTokens =
+        accessTokenRepo.findAccessTokensForUser(oldUsername);
 
-    Set<OAuth2RefreshTokenEntity> refreshTokens =
-        tokenService.getAllRefreshTokensForUser(oldUsername);
+    List<OAuth2RefreshTokenEntity> refreshTokens =
+        refreshTokenRepo.findRefreshTokensForUser(oldUsername);
 
     for (OAuth2AccessTokenEntity t : accessTokens) {
       t.getAuthenticationHolder().getUserAuth().setName(newValue);
-      tokenService.saveAccessToken(t);
+      accessTokenRepo.save(t);
     }
 
     for (OAuth2RefreshTokenEntity t : refreshTokens) {
       t.getAuthenticationHolder().getUserAuth().setName(newValue);
-      tokenService.saveRefreshToken(t);
+      refreshTokenRepo.save(t);
     }
   }
 

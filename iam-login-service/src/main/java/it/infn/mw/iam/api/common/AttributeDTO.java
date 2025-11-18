@@ -15,87 +15,22 @@
  */
 package it.infn.mw.iam.api.common;
 
-import javax.annotation.Generated;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import it.infn.mw.iam.api.common.validator.NoNewLineOrCarriageReturn;
 
+public record AttributeDTO(
 
+    @Size(max = 64, message = "name cannot be longer than 64 chars") @Pattern(
+        regexp = NAME_REGEXP,
+        message = "invalid name (does not match with regexp: '" + NAME_REGEXP
+            + "')") @NotBlank String name,
 
-public class AttributeDTO {
+    @Size(max = 256,
+        message = "value cannot be longer than 256 chars") @NoNewLineOrCarriageReturn String value
 
+) {
   public static final String NAME_REGEXP = "^[a-zA-Z][a-zA-Z0-9\\-_.]*$";
-
-  @Size(max = 64, message = "name cannot be longer than 64 chars")
-  @Pattern(regexp = NAME_REGEXP,
-      message = "invalid name (does not match with regexp: '" + NAME_REGEXP + "')")
-  @NotBlank
-  private String name;
-
-  @Size(max = 256, message = "value cannot be longer than 256 chars")
-  @NoNewLineOrCarriageReturn
-  private String value;
-
-  public AttributeDTO() {
-    // empty constructor
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
-
-  
-  @Override
-  @Generated("eclipse")
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((value == null) ? 0 : value.hashCode());
-    return result;
-  }
-
-  @Override
-  @Generated("eclipse")
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    AttributeDTO other = (AttributeDTO) obj;
-    if (name == null) {
-      if (other.name != null)
-        return false;
-    } else if (!name.equals(other.name))
-      return false;
-    if (value == null) {
-      if (other.value != null)
-        return false;
-    } else if (!value.equals(other.value))
-      return false;
-    return true;
-  }
-
-  public static AttributeDTO newInstance(String name, String value) {
-    AttributeDTO dto = new AttributeDTO();
-    dto.setName(name);
-    dto.setValue(value);
-    return dto;
-  }
 }

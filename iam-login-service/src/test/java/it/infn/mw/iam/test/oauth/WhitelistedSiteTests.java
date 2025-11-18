@@ -41,14 +41,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import it.infn.mw.iam.IamLoginService;
-import it.infn.mw.iam.test.oauth.devicecode.DeviceCodeTestsConstants;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(classes = {IamLoginService.class}, webEnvironment = WebEnvironment.MOCK)
-public class WhitelistedSiteTests extends EndpointsTestUtils implements DeviceCodeTestsConstants {
+public class WhitelistedSiteTests extends EndpointsTestUtils {
 
   @Autowired
   private DefaultWhitelistedSiteService whitelistedSiteService;

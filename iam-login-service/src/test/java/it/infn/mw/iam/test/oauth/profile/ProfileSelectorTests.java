@@ -15,13 +15,11 @@
  */
 package it.infn.mw.iam.test.oauth.profile;
 
-import static com.google.common.collect.Sets.newLinkedHashSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,10 +30,13 @@ import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
 import it.infn.mw.iam.core.oauth.profile.ScopeAwareProfileResolver;
+import it.infn.mw.iam.core.oauth.profile.aarc.AarcOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.iam.IamOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakOidcScopes;
+import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 
 @SuppressWarnings("deprecation")
 @RunWith(MockitoJUnitRunner.class)
@@ -67,12 +68,12 @@ public class ProfileSelectorTests {
   public void setup() {
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
 
-    profileMap.put(ScopeAwareProfileResolver.AARC_PROFILE_ID, aarcProfile);
-    profileMap.put(ScopeAwareProfileResolver.IAM_PROFILE_ID, iamProfile);
-    profileMap.put(ScopeAwareProfileResolver.WLCG_PROFILE_ID, wlcgProfile);
-    profileMap.put(ScopeAwareProfileResolver.KC_PROFILE_ID, kcProfile);
+    profileMap.put(AarcOidcScopes.AARC, aarcProfile);
+    profileMap.put(IamOidcScopes.IAM, iamProfile);
+    profileMap.put(WlcgOidcScopes.WLCG, wlcgProfile);
+    profileMap.put(KeycloakOidcScopes.KEYCLOAK, kcProfile);
 
-    profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap, clientsService);
+    profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -80,80 +81,41 @@ public class ProfileSelectorTests {
     profileResolver.resolveProfile(null);
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void emptyClientIdThrowsException() throws Exception {
-    profileResolver.resolveProfile("");
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void clientNotFoundThrowsException() throws Exception {
-    profileResolver.resolveProfile(CLIENT_ID);
-  }
-
   @Test
-  public void profileNotFoundLeadsToDefaultProfile() throws Exception {
-    when(clientsService.loadClientByClientId(CLIENT_ID)).thenReturn(client);
-    when(client.getScope()).thenReturn(Sets.newHashSet("openid"));
-    JWTProfile profile = profileResolver.resolveProfile(CLIENT_ID);
+  public void profileNotFoundLeadsToDefaultProfile() {
 
+    JWTProfile profile = profileResolver.resolveProfile(Set.of("openid"));
     assertThat(profile, is(iamProfile));
   }
 
   @Test
-  public void multipleProfilesLeadToDefaultProfile() throws Exception {
-    when(clientsService.loadClientByClientId(CLIENT_ID)).thenReturn(client);
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "iam", "wlcg"}).iterator()));
-    JWTProfile profile = profileResolver.resolveProfile(CLIENT_ID);
+  public void multipleProfilesLeadToDefaultProfile() {
 
+    JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "iam", "wlcg"));
     assertThat(profile, is(iamProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "iam"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "iam"));
     assertThat(profile, is(iamProfile));
-    
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "wlcg"}).iterator()));
 
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "wlcg"));
     assertThat(profile, is(wlcgProfile));
-    
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "wlcg", "iam"}).iterator()));
 
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "wlcg", "iam"));
     assertThat(profile, is(iamProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "aarc"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "aarc"));
     assertThat(profile, is(aarcProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "wlcg", "aarc"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "wlcg", "aarc"));
     assertThat(profile, is(iamProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "kc"));
     assertThat(profile, is(kcProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc", "iam"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "kc", "iam"));
     assertThat(profile, is(iamProfile));
 
-    when(client.getScope()).thenReturn(
-        newLinkedHashSet(() -> Arrays.stream(new String[] {"openid", "kc", "wlcg"}).iterator()));
-
-    profile = profileResolver.resolveProfile(CLIENT_ID);
+    profile = profileResolver.resolveProfile(Set.of("openid", "kc", "wlcg"));
     assertThat(profile, is(iamProfile));
 
   }

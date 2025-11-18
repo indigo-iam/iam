@@ -125,6 +125,7 @@ public class CernHrDbRequestValidatorService extends RegistrationFieldsValidatio
       if (ep.isPresent() && CernHrLifecycleUtils.isActiveMembership(ep.get().getEndDate())) {
         addPersonIdLabel(registrationRequest, cernPersonId);
         synchronizeInfo(registrationRequest, voPersonDTO.get());
+        registrationRequest.setAffiliation(ep.get().getInstitute().getName());
         return ok();
       }
     } catch (CernHrDbApiError e) {

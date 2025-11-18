@@ -142,6 +142,12 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
       .value("6a384bcd-d4b3-4b7f-a2fe-7d897ada0dd1")
       .build();
 
+    ScimGroupRef optionalRef = ScimGroupRef.builder()
+      .display("Optional")
+      .ref("http://localhost:8080/scim/Groups/31d9230c-90ae-4457-a990-0c443ab4aacc")
+      .value("31d9230c-90ae-4457-a990-0c443ab4aacc")
+      .build();
+
     ScimUser user = scimUtils.getUser(uuid);
 
     assertThat(user.getId(), equalTo(uuid));
@@ -158,8 +164,8 @@ public class ScimUserProvisioningTests extends ScimUserTestSupport {
     assertThat(user.getEmails().get(0).getValue(), equalTo("test@iam.test"));
     assertThat(user.getEmails().get(0).getType(), equalTo(ScimEmailType.work));
     assertThat(user.getEmails().get(0).getPrimary(), equalTo(true));
-    assertThat(user.getGroups(), hasSize(equalTo(2)));
-    assertThat(user.getGroups(), hasItems(analysisRef, productionRef));
+    assertThat(user.getGroups(), hasSize(equalTo(3)));
+    assertThat(user.getGroups(), hasItems(analysisRef, productionRef, optionalRef));
     assertThat(user.getIndigoUser().getOidcIds(), hasSize(greaterThan(0)));
     assertThat(user.getIndigoUser().getOidcIds().get(0).getIssuer(),
         equalTo("https://accounts.google.com"));

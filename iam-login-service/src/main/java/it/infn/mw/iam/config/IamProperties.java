@@ -484,6 +484,7 @@ public class IamProperties {
     boolean includeAuthnInfo = false;
     boolean includeScope = false;
     boolean includeNbf = false;
+    int nbfOffsetSeconds = 60;
 
     public boolean isIncludeAuthnInfo() {
       return includeAuthnInfo;
@@ -507,6 +508,18 @@ public class IamProperties {
 
     public void setIncludeNbf(boolean includeNbf) {
       this.includeNbf = includeNbf;
+    }
+
+    public int getNbfOffsetSeconds() {
+      return nbfOffsetSeconds;
+    }
+
+    public void setNbfOffsetSeconds(int nbfTime) {
+      if (nbfTime < 0) {
+        this.nbfOffsetSeconds = 0;
+      } else {
+        this.nbfOffsetSeconds = nbfTime;
+      }
     }
   }
 
@@ -617,6 +630,49 @@ public class IamProperties {
     }
   }
 
+  public static class AarcProfile {
+
+    private String affiliationScope;
+
+    private String urnDelegatedNamespace;
+
+    private String urnNid;
+
+    private String urnSubnamespaces;
+
+    public String getAffiliationScope() {
+      return affiliationScope;
+    }
+
+    public void setAffiliationScope(String affiliationScope) {
+      this.affiliationScope = affiliationScope;
+    }
+
+    public String getUrnDelegatedNamespace() {
+      return urnDelegatedNamespace;
+    }
+
+    public void setUrnDelegatedNamespace(String urnDelegatedNamespace) {
+      this.urnDelegatedNamespace = urnDelegatedNamespace;
+    }
+
+    public String getUrnNid() {
+      return urnNid;
+    }
+
+    public void setUrnNid(String urnNid) {
+      this.urnNid = urnNid;
+    }
+
+    public String getUrnSubnamespaces() {
+      return urnSubnamespaces;
+    }
+
+    public void setUrnSubnamespaces(String urnSubnamespaces) {
+      this.urnSubnamespaces = urnSubnamespaces;
+    }
+  }
+
   private String host;
 
   private String issuer;
@@ -678,6 +734,8 @@ public class IamProperties {
   private AccountLinkingProperties accountLinking = new AccountLinkingProperties();
 
   private ClientProperties client = new ClientProperties();
+
+  private AarcProfile aarcProfile = new AarcProfile();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -919,6 +977,14 @@ public class IamProperties {
 
   public ClientProperties getClient() {
     return client;
+  }
+
+  public AarcProfile getAarcProfile() {
+    return aarcProfile;
+  }
+
+  public void setAarcProfile(AarcProfile aarcProfile) {
+    this.aarcProfile = aarcProfile;
   }
 
 }

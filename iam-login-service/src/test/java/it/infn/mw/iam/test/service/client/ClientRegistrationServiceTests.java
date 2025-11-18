@@ -301,15 +301,14 @@ class ClientRegistrationServiceTests {
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
 
-    exception =
-        Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
-          RegisteredClientDTO request = new RegisteredClientDTO();
-          request.setClientName("example");
-          request.setGrantTypes(
-              Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
-          request.setRedirectUris(Sets.newHashSet("https://example/cb"));
-          service.registerClient(request, noAuth);
-        });
+    exception = Assertions.assertThrows(InvalidClientRegistrationRequest.class, () -> {
+      RegisteredClientDTO request = new RegisteredClientDTO();
+      request.setClientName("example");
+      request.setGrantTypes(
+          Sets.newHashSet(AuthorizationGrantType.CODE, AuthorizationGrantType.TOKEN_EXCHANGE));
+      request.setRedirectUris(Sets.newHashSet("https://example/cb"));
+      service.registerClient(request, noAuth);
+    });
 
     assertThat(exception.getMessage(), containsString(
         "Grant type not allowed: " + AuthorizationGrantType.TOKEN_EXCHANGE.getGrantType()));
@@ -1249,7 +1248,7 @@ class ClientRegistrationServiceTests {
       service.registerClient(client, userAuth);
     });
 
-    assertTrue(e.getMessage().contains("Invalid JSON:"));
+    assertTrue(e.getMessage().contains("Invalid JSON object"));
 
     RegisteredClientDTO savedClient = null;
     client.setJwk(VALID_JSON_VALUE);

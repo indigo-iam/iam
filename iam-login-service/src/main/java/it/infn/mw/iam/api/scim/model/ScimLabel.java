@@ -19,9 +19,12 @@ import javax.annotation.Generated;
 
 public class ScimLabel {
 
-  private final String prefix;
-  private final String name;
-  private final String value;
+  private String prefix;
+  private String name;
+  private String value;
+
+  public ScimLabel() {
+  }
 
   public String getPrefix() {
     return prefix;

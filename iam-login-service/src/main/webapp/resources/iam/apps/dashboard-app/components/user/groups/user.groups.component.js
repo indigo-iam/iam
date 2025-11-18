@@ -33,6 +33,7 @@
         };
 
         self.isVoAdmin = function () { return self.userCtrl.isVoAdmin(); };
+        self.isMe = function () { return self.userCtrl.isMe(); };
 
         self.handleSuccess = function (msg) {
             self.enabled = true;

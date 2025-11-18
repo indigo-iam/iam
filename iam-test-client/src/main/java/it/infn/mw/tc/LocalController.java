@@ -8,8 +8,8 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 public class LocalController implements ErrorController {
@@ -40,12 +40,12 @@ public class LocalController implements ErrorController {
     return properties.isHideTokens();
   }
 
-  @RequestMapping("/")
+  @GetMapping("/")
   public String index(Model model) {
     return "index";
   }
 
-  @RequestMapping("/error")
+  @GetMapping("/error")
   public String error(HttpServletRequest request, Model model) {
 
     AuthenticationException authException = (AuthenticationException) request.getAttribute("authnException");

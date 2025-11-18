@@ -1,5 +1,58 @@
 # Changelog
 
+## 1.13.0 (2025-11-03)
+
+## What's Changed
+
+* Search users by Subject DN
+* Store user affiliation into user info table
+* Return only FQANs with parent group equal to the VO name in the proxy
+* Add endpoint to retrieve clients owned by user
+* Option to limit custom scopes to admins only
+* Allow users to remove themselves from groups
+* SCIM API bulk operations
+* Configurable support button
+* Implement SCIM filtering
+* Enable command line execution for development
+* Configurable text in the registration button
+* Configurable 'nbf' duration for tokens
+* Restrict authZ on /iam/account/search endpoint
+* Add RPM build workflow on Continuous Integration
+* Ensure removal of configured MFA totp before account deletion
+* Add endpoint to retrieve the list of group memberships of a user
+* Synch affiliation with CERN HR DB
+* Notify VO Admins when a certificate is added
+* Revoke all refresh tokens for a client
+* Implement JIT account provisioning for OPs
+* Fix both H2 and MySQL devcontainers by
+* Scoped voPerson_id
+* Build and expose the OpenID Provider's OID Federation Entity Configuration
+* Implement OID Federation Trust Chain resolution and validation
+* Implement OID Federation Explicit Client Registration
+* Add openid_relying_party metadata
+* Token lifetime configurable in token request
+* Fix wrong information displayed when viewing other accounts with READER_ROLE
+* Update nimbus-jose-jwt dependency version to 9.37.4
+
+## 1.12.3 (2025-10-08)
+
+### What's Fixed
+
+* Fix for [Advisory-EGI-SVG-2025-18](https://advisories.egi.eu/Advisory-EGI-SVG-2025-18)
+* Fix for [Advisory-EGI-SVG-2025-19](https://advisories.egi.eu/Advisory-EGI-SVG-2025-19)
+
+## 1.12.2 (2025-08-05)
+
+### What's Changed
+
+* Upgrade CANL to 2.8.3 and Bouncy Castle to 1.81 by moving to latest VOMS API Java v3.3.6
+
+### Note
+
+This update fixes a problem we observed with VOMS API Java v3.3.5,
+firstly added to the release candidates of IAM v1.12.0 and later downgraded to v3.3.4 before
+the official release.
+
 ## 1.12.1 (2025-08-04)
 
 ### What's Fixed

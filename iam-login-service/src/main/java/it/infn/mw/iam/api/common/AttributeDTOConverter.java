@@ -29,21 +29,16 @@ public class AttributeDTOConverter implements Converter<AttributeDTO, IamAttribu
 
   @Override
   public IamAttribute entityFromDto(AttributeDTO dto) {
-    
+
     IamAttribute attribute = new IamAttribute();
-    attribute.setName(dto.getName());
-    attribute.setValue(dto.getValue());
+    attribute.setName(dto.name());
+    attribute.setValue(dto.value());
     return attribute;
   }
 
   @Override
   public AttributeDTO dtoFromEntity(IamAttribute entity) {
-    
-    AttributeDTO dto = new AttributeDTO();
-    dto.setName(entity.getName());
-    dto.setValue(entity.getValue());
-    return dto;
-    
-  }
 
+    return new AttributeDTO(entity.getName(), entity.getValue());
+  }
 }

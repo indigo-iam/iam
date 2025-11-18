@@ -16,7 +16,7 @@
 package it.infn.mw.iam.authn.util;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.mitre.oauth2.model.SavedUserAuthentication;
@@ -31,23 +31,24 @@ import it.infn.mw.iam.persistence.model.IamAccount;
 
 public class AuthenticationUtils {
 
-  private static final Set<String> SUPPORTED_EXTERNAL_AUTHN_TOKENS =
-      Set.of(SamlExternalAuthenticationToken.class.getName(),
-          OidcExternalAuthenticationToken.class.getName());
-
   private AuthenticationUtils() {}
-  
-  public static boolean isSupportedExternalAuthenticationToken(Authentication authn) {
 
-    if (authn instanceof SavedUserAuthentication) {
-      SavedUserAuthentication savedAuth = (SavedUserAuthentication) authn;
+  public static Optional<SavedUserAuthentication> getExternalAuthenticationInfo(
+      Authentication authn) {
 
-      if (savedAuth.getSourceClass() != null) {
-        return SUPPORTED_EXTERNAL_AUTHN_TOKENS.contains(savedAuth.getSourceClass());
-      }
-
+    if (authn instanceof SavedUserAuthentication savedAuth
+        && (isExternalOidcAuthentication(savedAuth) || isExternalSamlAuthentication(savedAuth))) {
+      return Optional.ofNullable(savedAuth);
     }
-    return false;
+    return Optional.empty();
+  }
+
+  public static boolean isExternalOidcAuthentication(SavedUserAuthentication userAuth) {
+    return OidcExternalAuthenticationToken.class.getName().equals(userAuth.getSourceClass());
+  }
+
+  public static boolean isExternalSamlAuthentication(SavedUserAuthentication userAuth) {
+    return SamlExternalAuthenticationToken.class.getName().equals(userAuth.getSourceClass());
   }
 
   public static List<GrantedAuthority> convertIamAccountAuthorities(IamAccount account) {
@@ -56,11 +57,12 @@ public class AuthenticationUtils {
       .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
       .collect(Collectors.toList());
   }
-  
-  public static User userFromIamAccount(IamAccount account){
-    return new User(account.getUsername(), account.getPassword(), convertIamAccountAuthorities(account));
+
+  public static User userFromIamAccount(IamAccount account) {
+    return new User(account.getUsername(), account.getPassword(),
+        convertIamAccountAuthorities(account));
   }
 
-  
+
 
 }

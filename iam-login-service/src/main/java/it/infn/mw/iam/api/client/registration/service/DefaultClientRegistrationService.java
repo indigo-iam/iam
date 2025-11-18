@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import javax.validation.constraints.NotBlank;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.mitre.oauth2.model.ClientRelyingPartyEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.service.SystemScopeService;
 import org.mitre.openid.connect.service.OIDCTokenService;
@@ -47,8 +48,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import it.infn.mw.iam.api.account.AccountUtils;
-import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.error.ClientSuspended;
+import it.infn.mw.iam.api.client.error.InvalidClientRegistrationRequest;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientRegistration;
 import it.infn.mw.iam.api.client.registration.validation.OnDynamicClientUpdate;
 import it.infn.mw.iam.api.client.service.ClientConverter;
@@ -347,6 +348,10 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     }
   }
 
+  private boolean hasRelyingParty(RegisteredClientDTO request) {
+    return request.getEntityId() != null;
+  }
+
   @Validated(OnDynamicClientRegistration.class)
   @Override
   public RegisteredClientDTO registerClient(RegisteredClientDTO request,
@@ -359,6 +364,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     client.setDynamicallyRegistered(true);
     client.setActive(true);
 
+    if (hasRelyingParty(request)) {
+      ClientRelyingPartyEntity clientRelyingParty =
+          new ClientRelyingPartyEntity(client, request.getExpiration(), request.getEntityId());
+      client.setClientRelyingParty(clientRelyingParty);
+    }
+
     checkAllowedGrantTypes(request, authentication);
     cleanupRequestedScopes(client, authentication);
 
@@ -366,13 +377,13 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
 
     RegisteredClientDTO response = converter.registrationResponseFromClient(client);
 
-    if (isAnonymous(authentication)) {
+    if (!hasRelyingParty(request) && isAnonymous(authentication)) {
 
       OAuth2AccessTokenEntity ratEntity = clientTokenService.createRegistrationAccessToken(client);
       tokenService.saveAccessToken(ratEntity);
       response.setRegistrationAccessToken(ratEntity.getValue());
 
-    } else {
+    } else if (!isAnonymous(authentication)) {
 
       IamAccount account =
           accountUtils.getAuthenticatedUserAccount(authentication).orElseThrow(noAuthUserError());

@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 
+import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
@@ -65,4 +66,10 @@ public interface NotificationFactory {
   IamEmailNotification createSetAsServiceAccountMessage(IamAccount account);
 
   IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
+
+  IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential);
+
+  IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509AuthenticationCredential x509Credential);
 }

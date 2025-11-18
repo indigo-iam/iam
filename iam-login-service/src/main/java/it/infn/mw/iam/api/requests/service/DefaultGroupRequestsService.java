@@ -181,7 +181,7 @@ public class DefaultGroupRequestsService implements GroupRequestsService {
 
     Set<String> managedGroups = Collections.emptySet();
 
-    if (!groupRequestUtils.isPrivilegedUser()) {
+    if (!accountUtils.hasAnyOfAuthorities("ROLE_ADMIN", "ROLE_READER")) {
       Optional<IamAccount> userAccount = accountUtils.getAuthenticatedUserAccount();
 
       if (userAccount.isPresent()) {

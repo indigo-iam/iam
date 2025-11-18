@@ -22,11 +22,12 @@
         self.$onInit = function() {
             self.voAdmin = Utils.isAdmin();
             self.groupManager = Utils.isGroupManager();
-            self.privileged = self.voAdmin || self.groupManager;
+            self.isReader = Utils.isReader();
+            self.privileged = self.voAdmin || self.groupManager || self.isReader;
 
             if (self.voAdmin) {
                 self.activeTab = 1;
-            } else if (self.groupManager) {
+            } else if (self.groupManager || self.isReader) {
                 self.activeTab = 2;
             }
         };

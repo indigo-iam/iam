@@ -1,10 +1,11 @@
 services:
   devcontainer:
-    image: mcr.microsoft.com/devcontainers/java:1-17-bookworm
+    container_name: iam-devcontainer
+    build:
+      context: ../
     volumes:
       - ../..:/workspaces/iam
     network_mode: service:db
-    user: vscode
     depends_on:
       - db
     environment:

@@ -15,32 +15,48 @@
  */
 package it.infn.mw.iam.test.oauth.scope;
 
-interface StructuredScopeTestSupportConstants {
-  
-  static final String PASSWORD_GRANT_TYPE = "password";
+public interface StructuredScopeTestSupportConstants {
+
   static final String PASSWORD_CLIENT_ID = "password-grant";
   static final String PASSWORD_CLIENT_SECRET = "secret";
-  
-  static final String CLIENT_CREDENTIALS_GRANT_TYPE = "client_credentials";
+
   static final String CLIENT_CREDENTIALS_CLIENT_ID = "client-cred";
   static final String CLIENT_CREDENTIALS_CLIENT_SECRET = "secret";
+
+  static final String EXCHANGE_CLIENT_ID = "token-exchange-actor";
+  static final String EXCHANGE_CLIENT_SECRET = "secret";
 
   static final String DEVICE_CODE_ENDPOINT = "/devicecode";
   static final String DEVICE_CODE_USER_ENDPOINT = "/device";
   static final String TOKEN_ENDPOINT = "/token";
   static final String USERINFO_ENDPOINT = "/userinfo";
   static final String INTROSPECTION_ENDPOINT = "/introspect";
-  static final String REGISTER_ENDPOINT = "/register";
+  static final String REVOCATION_ENDPOINT = "/revoke";
+  static final String REGISTER_ENDPOINT = "/iam/api/client-registration";
+
+  static final String PUBLIC_DEVICE_CODE_CLIENT_ID = "public-dc-client";
 
   static final String DEVICE_CODE_CLIENT_ID = "device-code-client";
   static final String DEVICE_CODE_CLIENT_SECRET = "secret";
-  static final String DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
   static final String DEVICE_USER_URL = "http://localhost:8080/device";
   static final String DEVICE_USER_VERIFY_URL = "http://localhost:8080/device/verify";
   static final String DEVICE_USER_APPROVE_URL = "http://localhost:8080/device/approve";
 
+  static final String PROTECTED_RESOURCE_ID = "protected-resource";
+  static final String PROTECTED_RESOURCE_SECRET = "secret";
+
   static final String LOGIN_URL = "/login";
   static final String TEST_USERNAME = "test";
   static final String TEST_PASSWORD = "password";
+  static final String TEST_UUID = "80e5fb8d-b7c8-451a-89ba-346ae278a66f";
+  static final String TEST_NAME = "Test User";
+  static final String TEST_EMAIL = "test@iam.test";
+
+  static final String ADMIN_USERNAME = "admin";
+  static final String ADMIN_PASSWORD = "password";
+
+  static final String EMPTY_SCOPES = "";
+
+  static final String ORGANISATION_NAME = "indigo-dc";
 }

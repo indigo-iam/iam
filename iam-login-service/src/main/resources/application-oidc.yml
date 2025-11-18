@@ -28,3 +28,7 @@ oidc:
       style: btn-social btn-google
       image:
         fa-icon: google
+
+  jit-account-provisioning:
+    enabled: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_ENABLED:false}
+    trusted-idps: ${IAM_OIDC_JIT_ACCOUNT_PROVISIONING_TRUSTED_IDPS:all}
