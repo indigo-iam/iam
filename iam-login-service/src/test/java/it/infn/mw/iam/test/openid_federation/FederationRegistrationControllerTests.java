@@ -237,6 +237,7 @@ public class FederationRegistrationControllerTests {
 
     taskConfig.disableExpiredClients();
     client = clientRepo.findByClientId("client-cred").orElseThrow();
+    Date lastUpdate = client.getStatusChangedOn();
 
     assertFalse(client.isActive());
     assertEquals(1, countInactiveClients());
@@ -248,6 +249,12 @@ public class FederationRegistrationControllerTests {
       .andExpect(status().isUnauthorized())
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
       .andExpect(jsonPath("$.error_description", equalTo("Client is suspended: client-cred")));
+
+    taskConfig.disableExpiredClients();
+    client = clientRepo.findByClientId("client-cred").orElseThrow();
+
+    // check that the client has been disabled only once
+    assertEquals(0, lastUpdate.compareTo(client.getStatusChangedOn()));
   }
 
   @Test
