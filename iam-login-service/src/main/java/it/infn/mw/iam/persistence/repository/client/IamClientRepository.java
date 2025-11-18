@@ -32,7 +32,7 @@ public interface IamClientRepository extends PagingAndSortingRepository<ClientDe
 
   List<ClientDetailsEntity> findByClientNameLike(String clientName);
 
-  @Query("select c from ClientDetailsEntity c join ClientRelyingPartyEntity e where e.expiration < :dateTime")
+  @Query("select c from ClientDetailsEntity c join c.clientRelyingParty e where e.expiration < :dateTime")
   List<ClientDetailsEntity> findByExpirationBefore(@Param("dateTime") Date dateTime);
 
   @Query("select e.client from ClientRelyingPartyEntity e where e.entityId = :entityId")
