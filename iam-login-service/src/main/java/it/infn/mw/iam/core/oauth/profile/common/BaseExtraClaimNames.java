@@ -29,4 +29,6 @@ public interface BaseExtraClaimNames extends StandardClaimNames {
 
   String EXTERNAL_AUTHN = "external_authn";
 
+  String CNF = "cnf";
+
 }
