@@ -16,10 +16,13 @@
 package it.infn.mw.iam.util.x509;
 
 import java.io.ByteArrayInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.Optional;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
 import it.infn.mw.iam.api.scim.exception.ScimValidationException;
@@ -66,6 +69,20 @@ public class X509Utils {
   public static String getCertificateSubject(String certValueAsString) {
 
     return getCertificateSubject(getX509CertificateFromString(certValueAsString));
+  }
+
+  public static Optional<String> getCertificateThumbprint(String cert) {
+    String sanitized = cert.replace("-----BEGIN CERTIFICATE-----", "")
+      .replace("-----END CERTIFICATE-----", "")
+      .replaceAll("\\s", "");
+    try {
+      byte[] der = Base64.getDecoder().decode(sanitized);
+      byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(der);
+      String hash = Base64.getUrlEncoder().withoutPadding().encodeToString(sha256);
+      return Optional.of(hash);
+    } catch (NoSuchAlgorithmException e) {
+      return Optional.empty();
+    }
   }
 
 }
