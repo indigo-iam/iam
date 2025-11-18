@@ -109,7 +109,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
    * @return a decision result
    */
 
-  private Set<ScopeMatcher> extractScopesFromToken(String subjectToken){
+  private Set<ScopeMatcher> extractScopesFromToken(String subjectToken) {
     if (properties.getAccessToken().isIncludeScope()) {
       try {
         JWT token = JWTParser.parse(subjectToken);
@@ -143,7 +143,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     if (!properties.getJwtProfile().isTokenExchangeUpscopingEnabled() && !subjectToken.isBlank()) {
       scopeMatchers = extractScopesFromToken(subjectToken);
       invalidScopeMessage = "scope not allowed by subject token configuration";
-      
+
     }
 
     for (String scope : request.getScope()) {

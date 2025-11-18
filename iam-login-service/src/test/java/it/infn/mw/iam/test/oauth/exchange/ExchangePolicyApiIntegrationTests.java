@@ -82,7 +82,8 @@ public class ExchangePolicyApiIntegrationTests {
     @Primary
     public TokenExchangePdp tokenExchangePdp(IamTokenExchangePolicyRepository repo,
         ScopeMatcherRegistry registry) {
-      DefaultTokenExchangePdp pdp = new DefaultTokenExchangePdp(repo, registry, properties, tokenService);
+      DefaultTokenExchangePdp pdp =
+          new DefaultTokenExchangePdp(repo, registry, properties, tokenService);
       return Mockito.spy(pdp);
     }
   }
