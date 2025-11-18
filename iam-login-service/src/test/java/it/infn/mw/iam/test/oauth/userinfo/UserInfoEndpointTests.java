@@ -18,6 +18,7 @@ package it.infn.mw.iam.test.oauth.userinfo;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.hamcrest.Matchers;
@@ -45,6 +47,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import it.infn.mw.iam.authn.ExternalAuthenticationRegistrationInfo.ExternalAuthenticationType;
 import it.infn.mw.iam.core.oauth.profile.iam.IamExtraClaimNames;
 import it.infn.mw.iam.core.user.IamAccountService;
+import it.infn.mw.iam.core.userinfo.UserInfoResponse;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamSshKey;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
@@ -80,6 +83,15 @@ public class UserInfoEndpointTests {
   @After
   public void teardown() {
     mockOAuth2Filter.cleanupSecurityContext();
+  }
+
+  @Test
+  public void testUserInfoResponseCreationWithoutSub() {
+
+    Map<String, Object> claims = Map.of("iss", "https://iam-example.org/");
+    assertThrows(IllegalArgumentException.class, () -> {
+      new UserInfoResponse(claims);
+    });
   }
 
   @Test

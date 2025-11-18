@@ -45,10 +45,10 @@ import it.infn.mw.iam.persistence.model.IamSshKey;
 @SuppressWarnings("deprecation")
 public class IamClaimValueHelper extends BaseClaimValueHelper {
 
-  private final IamProperties properties;
-  private final SshKeyConverter sshConverter;
-  private final AttributeMapHelper attrHelper;
-  private final ScopeClaimTranslationService scopeClaimTranslationService;
+  protected final IamProperties properties;
+  protected final SshKeyConverter sshConverter;
+  protected final AttributeMapHelper attrHelper;
+  protected final ScopeClaimTranslationService scopeClaimTranslationService;
 
   public IamClaimValueHelper(IamProperties properties, SshKeyConverter sshConverter,
       AttributeMapHelper attrHelper, ScopeClaimTranslationService scopeClaimTranslationService) {
@@ -56,22 +56,6 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
     this.sshConverter = sshConverter;
     this.attrHelper = attrHelper;
     this.scopeClaimTranslationService = scopeClaimTranslationService;
-  }
-
-  protected IamProperties getProperties() {
-    return properties;
-  }
-
-  protected SshKeyConverter getSshConverter() {
-    return sshConverter;
-  }
-
-  protected AttributeMapHelper getAttrHelper() {
-    return attrHelper;
-  }
-
-  public ScopeClaimTranslationService getScopeClaimTranslationService() {
-    return scopeClaimTranslationService;
   }
 
   @Override
