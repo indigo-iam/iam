@@ -231,7 +231,7 @@ public class FederationRegistrationControllerTests {
     ClientRelyingPartyEntity entity = new ClientRelyingPartyEntity(client, yesterday,
         fakeChain.getLeafSelfStatement().getEntityID().getValue());
     client.setClientRelyingParty(entity);
-    client = clientRepo.save(client);
+    clientRepo.save(client);
 
     assertEquals(0, countInactiveClients());
 
