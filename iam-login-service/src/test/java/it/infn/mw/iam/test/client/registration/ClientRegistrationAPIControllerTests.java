@@ -19,46 +19,40 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.mitre.oauth2.model.ClientDetailsEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import it.infn.mw.iam.api.client.service.ClientService;
+import it.infn.mw.iam.IamLoginService;
 import it.infn.mw.iam.api.common.client.AuthorizationGrantType;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
 import it.infn.mw.iam.api.common.client.TokenEndpointAuthenticationMethod;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.WithAnonymousUser;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
-
-@RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
+@SpringBootTest(classes = {IamLoginService.class})
 class ClientRegistrationAPIControllerTests {
 
   @Autowired
   private MockMvc mvc;
-
-  @Autowired
-  private MockOAuth2Filter mockOAuth2Filter;
 
   @Autowired
   private ObjectMapper mapper;
@@ -66,29 +60,16 @@ class ClientRegistrationAPIControllerTests {
   @Autowired
   private IamClientRepository clientRepository;
 
-  @Autowired
-  private ClientService clientService;
-
   public static final String IAM_CLIENT_REGISTRATION_API_URL = "/iam/api/client-registration/";
 
   public static final ResultMatcher UNAUTHORIZED = status().isUnauthorized();
   public static final ResultMatcher BAD_REQUEST = status().isBadRequest();
   public static final ResultMatcher CREATED = status().isCreated();
-
-  @BeforeEach
-  void setup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-  }
-
-  @AfterEach
-  void cleanup() {
-    mockOAuth2Filter.cleanupSecurityContext();
-    clientService.findClientByClientId("test-client-creation")
-      .ifPresent(c -> clientService.deleteClient(c));;
-  }
+  public static final ResultMatcher OK = status().isOk();
 
   @Test
   @WithAnonymousUser
+  @Transactional
   void registerClientWithNullValuesAndCheckDefaultValues()
       throws JsonProcessingException, Exception {
 
@@ -145,6 +126,7 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
+  @Transactional
   void registerClientRaiseParseException() throws JsonProcessingException, Exception {
 
     final String NOT_A_JSON_STRING = "This is not a JSON string";
@@ -166,8 +148,8 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  void registerClientRaiseJwkUriValidationException()
-      throws JsonProcessingException, Exception {
+  @Transactional
+  void registerClientRaiseJwkUriValidationException() throws JsonProcessingException, Exception {
 
     final String NOT_A_URI_STRING = "This is not a URI";
 
@@ -190,8 +172,8 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  void registerClientPrivateJwtValidationException()
-      throws JsonProcessingException, Exception {
+  @Transactional
+  void registerClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
 
     final String URI_STRING = "http://localhost:8080/jwk";
     final String NOT_A_JSON_STRING = "This is not a JSON string";
@@ -252,8 +234,8 @@ class ClientRegistrationAPIControllerTests {
 
   @Test
   @WithAnonymousUser
-  void updateClientPrivateJwtValidationException()
-      throws JsonProcessingException, Exception {
+  @Transactional
+  void updateClientPrivateJwtValidationException() throws JsonProcessingException, Exception {
 
     RegisteredClientDTO client = new RegisteredClientDTO();
     client.setClientName("test-client-creation");
@@ -276,8 +258,5 @@ class ClientRegistrationAPIControllerTests {
             .content(mapper.writeValueAsString(client)))
       .andExpect(BAD_REQUEST)
       .andExpect(jsonPath("$.error", is(expectedMessage)));
-
   }
-
-
 }
