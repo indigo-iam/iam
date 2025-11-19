@@ -19,7 +19,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -37,11 +36,14 @@ public class ExpiredFederationClientScheduler {
   public static final long ONE_HOUR_MSEC = 60 * ONE_MINUTE_MSEC;
   public static final long ONE_DAY_MSEC = 24 * ONE_HOUR_MSEC;
 
-  @Autowired
-  IamClientRepository clientRepo;
+  private final IamClientRepository clientRepo;
+  private final ClientService clientService;
 
-  @Autowired
-  ClientService clientService;
+  public ExpiredFederationClientScheduler(IamClientRepository clientRepo,
+      ClientService clientService) {
+    this.clientRepo = clientRepo;
+    this.clientService = clientService;
+  }
 
   @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void disableExpiredClients() {
