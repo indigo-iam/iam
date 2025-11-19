@@ -17,6 +17,8 @@ package it.infn.mw.iam.authn.saml.util;
 
 import static java.lang.String.format;
 
+import java.util.List;
+
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.persistence.model.IamSamlId;
@@ -38,8 +40,8 @@ public class AttributeUserIdentifierResolver extends AbstractSamlUserIdentifierR
 
     if (attributeValue == null) {
       return SamlUserIdentifierResolutionResult
-        .resolutionFailure(format("Attribute '%s:%s' not found in assertion", attribute.getAlias(),
-            attribute.getAttributeName()));
+        .failure(List.of(format("Attribute '%s:%s' not found in assertion", attribute.getAlias(),
+            attribute.getAttributeName())));
     }
 
     IamSamlId samlId = new IamSamlId();
@@ -47,7 +49,7 @@ public class AttributeUserIdentifierResolver extends AbstractSamlUserIdentifierR
     samlId.setAttributeId(attribute.getAttributeName());
     samlId.setUserId(attributeValue);
 
-    return SamlUserIdentifierResolutionResult.resolutionSuccess(samlId);
+    return SamlUserIdentifierResolutionResult.success(List.of(samlId));
 
   }
 }

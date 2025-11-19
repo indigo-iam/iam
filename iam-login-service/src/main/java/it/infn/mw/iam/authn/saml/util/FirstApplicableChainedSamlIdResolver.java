@@ -22,9 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.saml.SAMLCredential;
 
+import it.infn.mw.iam.persistence.model.IamSamlId;
+
 public class FirstApplicableChainedSamlIdResolver implements SamlUserIdentifierResolver {
 
-  public static final Logger LOG = LoggerFactory.getLogger(FirstApplicableChainedSamlIdResolver.class);
+  public static final Logger LOG =
+      LoggerFactory.getLogger(FirstApplicableChainedSamlIdResolver.class);
 
   private final List<SamlUserIdentifierResolver> resolvers;
 
@@ -33,36 +36,44 @@ public class FirstApplicableChainedSamlIdResolver implements SamlUserIdentifierR
   }
 
   @Override
-  public SamlUserIdentifierResolutionResult resolveSamlUserIdentifier(SAMLCredential samlCredential) {
+  public SamlUserIdentifierResolutionResult resolveSamlUserIdentifier(
+      SAMLCredential samlCredential) {
 
+    List<IamSamlId> collectedIds = new ArrayList<>();
     List<String> errorMessages = new ArrayList<>();
-    
+
     for (SamlUserIdentifierResolver resolver : resolvers) {
       LOG.debug("Attempting SAML user id resolution with resolver {}",
           resolver.getClass().getName());
 
-      SamlUserIdentifierResolutionResult result = resolver
-          .resolveSamlUserIdentifier(samlCredential);
-      
-      if (result.getResolvedId().isPresent()){
-        LOG.debug("Resolved SAML user id: {}", result.getResolvedId().get());
-        return result;
+      SamlUserIdentifierResolutionResult result =
+          resolver.resolveSamlUserIdentifier(samlCredential);
+
+      if (!result.getResolvedIds().isEmpty()) {
+        collectedIds.addAll(result.getResolvedIds());
+        LOG.debug("Resolved SAML user id: {}", result.getResolvedIds().get(0).getAttributeId());
       }
-      
-      result.getErrorMessages().ifPresent(messages -> {
-        errorMessages.addAll(messages);
+
+      if (!result.getErrorMessages().isEmpty()) {
+        errorMessages.addAll(result.getErrorMessages());
         if (LOG.isDebugEnabled()) {
           LOG.debug("SAML user id resolution with resolver {} failed with the following errors",
               resolver.getClass().getName());
-          messages.forEach(LOG::debug);
+          result.getErrorMessages().forEach(LOG::debug);
         }
-      });
+      }
     }
 
-    LOG.debug(
-        "All configured user id resolvers could not resolve the user id from SAML credential");
+    if (!collectedIds.isEmpty()) {
+      return SamlUserIdentifierResolutionResult.success(collectedIds);
+    }
 
-    return SamlUserIdentifierResolutionResult.resolutionFailure(errorMessages);
+    if (!collectedIds.isEmpty()) {
+      return SamlUserIdentifierResolutionResult.success(collectedIds);
+    }
+
+    LOG
+      .debug("All configured user id resolvers could not resolve the user id from SAML credential");
+    return SamlUserIdentifierResolutionResult.failure(errorMessages);
   }
-
 }
