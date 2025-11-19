@@ -4,7 +4,7 @@
 
 ## What's Changed
 
-* Fix expired client query to avoid suspension of all clients
+* Fix expired client query to avoid suspension of all clients when using openid-federation profile
 * Fix duplicated sub claim in UserInfo response
 * Restore scope claim in UserInfo response
 * Ignore empty strings when computing claim values
