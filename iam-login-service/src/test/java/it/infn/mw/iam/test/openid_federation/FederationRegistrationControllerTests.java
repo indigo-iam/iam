@@ -52,7 +52,7 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatement;
 import com.nimbusds.openid.connect.sdk.federation.trust.TrustChain;
 
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
-import it.infn.mw.iam.config.TaskConfig;
+import it.infn.mw.iam.core.client.ExpiredFederationClientScheduler;
 import it.infn.mw.iam.core.oidc.TrustChainService;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.WithMockOAuthUser;
@@ -78,7 +78,7 @@ public class FederationRegistrationControllerTests {
   private IamClientRepository clientRepo;
 
   @Autowired
-  private TaskConfig taskConfig;
+  private ExpiredFederationClientScheduler expiredClientScheduler;
 
   @Value("${iam.issuer}")
   private String issuer;
@@ -234,7 +234,7 @@ public class FederationRegistrationControllerTests {
 
     assertEquals(0, countInactiveClients());
 
-    taskConfig.disableExpiredClients();
+    expiredClientScheduler.disableExpiredClients();
     client = clientRepo.findByClientId("client-cred").orElseThrow();
     Date lastUpdate = client.getStatusChangedOn();
 
@@ -249,7 +249,7 @@ public class FederationRegistrationControllerTests {
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
       .andExpect(jsonPath("$.error_description", equalTo("Client is suspended: client-cred")));
 
-    taskConfig.disableExpiredClients();
+    expiredClientScheduler.disableExpiredClients();
     client = clientRepo.findByClientId("client-cred").orElseThrow();
 
     // check that the client has been disabled only once
