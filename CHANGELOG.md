@@ -8,7 +8,7 @@
 * Fix duplicated sub claim in UserInfo response
 * Restore scope claim in UserInfo response
 * Ignore empty strings when computing claim values
-* Fix epoch unit from milliseconds to seconds for both introspection and UserInfo responses
+* Fix epoch timestamps unit from milliseconds to seconds for both Introspection and UserInfo responses
 
 ## 1.13.0 (2025-11-03)
 
