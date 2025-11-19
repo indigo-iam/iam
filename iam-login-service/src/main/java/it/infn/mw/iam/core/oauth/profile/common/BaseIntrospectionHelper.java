@@ -80,7 +80,7 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     JWTClaimsSet claims = getClaimsSet(accessToken.getJwt());
     Map<String, Object> result = assembleCommonClaims(claims, client, TokenTypeHint.ACCESS_TOKEN);
     result.put(SUB, claims.getSubject());
-    result.put(IAT, claims.getIssueTime());
+    result.put(IAT, claims.getIssueTime().getTime() / 1000);
     result.put(ISS, claims.getIssuer());
     if (nonNull(accessToken.getScope())) {
       result.put(SCOPE, accessToken.getScope().stream().map(String::valueOf).collect(joining(" ")));
@@ -117,7 +117,7 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
     result.put(TOKEN_TYPE, tokenType);
     result.put(CLIENT_ID, client.getClientId());
     if (nonNull(claims.getExpirationTime())) {
-      result.put(EXP, claims.getExpirationTime().getTime());
+      result.put(EXP, claims.getExpirationTime().getTime() / 1000);
     }
     result.put(JTI, claims.getJWTID());
     Optional<IamAccount> account = loadUserFrom(claims.getSubject());
@@ -125,7 +125,7 @@ public abstract class BaseIntrospectionHelper implements IntrospectionResultHelp
       result.put(USERNAME, account.get().getUsername());
     }
     if (nonNull(claims.getNotBeforeTime())) {
-      result.put(NBF, claims.getNotBeforeTime().getTime());
+      result.put(NBF, claims.getNotBeforeTime().getTime() / 1000);
     }
     /*
      * For OAuth 2.0 Token Introspection (RFC 7662), the AUD claim follows the same rules as in JWT

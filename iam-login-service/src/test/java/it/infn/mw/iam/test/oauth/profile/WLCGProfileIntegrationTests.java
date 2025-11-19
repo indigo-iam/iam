@@ -911,8 +911,9 @@ public class WLCGProfileIntegrationTests extends EndpointsTestUtils {
 
     mvc.perform(get("/userinfo"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.*", hasSize(1)))
-      .andExpect(jsonPath("$.sub").exists());
+      .andExpect(jsonPath("$.*", hasSize(2)))
+      .andExpect(jsonPath("$.sub").exists())
+      .andExpect(jsonPath("$.scope").exists());
   }
 
   @Test

@@ -45,10 +45,10 @@ import it.infn.mw.iam.persistence.model.IamSshKey;
 @SuppressWarnings("deprecation")
 public class IamClaimValueHelper extends BaseClaimValueHelper {
 
-  private final IamProperties properties;
-  private final SshKeyConverter sshConverter;
-  private final AttributeMapHelper attrHelper;
-  private final ScopeClaimTranslationService scopeClaimTranslationService;
+  protected final IamProperties properties;
+  protected final SshKeyConverter sshConverter;
+  protected final AttributeMapHelper attrHelper;
+  protected final ScopeClaimTranslationService scopeClaimTranslationService;
 
   public IamClaimValueHelper(IamProperties properties, SshKeyConverter sshConverter,
       AttributeMapHelper attrHelper, ScopeClaimTranslationService scopeClaimTranslationService) {
@@ -56,22 +56,6 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
     this.sshConverter = sshConverter;
     this.attrHelper = attrHelper;
     this.scopeClaimTranslationService = scopeClaimTranslationService;
-  }
-
-  protected IamProperties getProperties() {
-    return properties;
-  }
-
-  protected SshKeyConverter getSshConverter() {
-    return sshConverter;
-  }
-
-  protected AttributeMapHelper getAttrHelper() {
-    return attrHelper;
-  }
-
-  public ScopeClaimTranslationService getScopeClaimTranslationService() {
-    return scopeClaimTranslationService;
   }
 
   @Override
@@ -82,7 +66,9 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
       case ORGANISATION_NAME:
         return properties.getOrganisation().getName();
       case LAST_LOGIN_AT:
-        return account.isPresent() ? account.get().getLastLoginTime() : null;
+        return account.isPresent() && account.get().getLastLoginTime() != null
+            ? account.get().getLastLoginTime().getTime() / 1000
+            : null;
       case AFFILIATION:
         return account.isPresent() ? account.get().getUserInfo().getAffiliation() : null;
       case GROUPS:
@@ -90,7 +76,8 @@ public class IamClaimValueHelper extends BaseClaimValueHelper {
       case SSH_KEYS:
         return account.isPresent() ? getSshKeysFilteredSet(account.get().getSshKeys()) : null;
       case ATTR:
-        return account.isPresent() ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
+        return account.isPresent()
+            ? attrHelper.getAttributeMapFromUserInfo(account.get().getUserInfo())
             : null;
       case EXTERNAL_AUTHN:
         Optional<SavedUserAuthentication> userAuth =
