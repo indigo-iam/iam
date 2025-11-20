@@ -61,7 +61,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
 
   private String encodeGroup(IamGroup group) {
 
-    var aarcConfig = getProperties().getAarcProfile();
+    var aarcConfig = properties.getAarcProfile();
 
     String urnNid = aarcConfig.getUrnNid();
     String urnDelegatedNamespace = aarcConfig.getUrnDelegatedNamespace();
@@ -93,10 +93,10 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
           return resolveGroups(account.get().getUserInfo());
         case AarcExtraClaimNames.VOPERSON_ID:
           return format(SCOPED_FORMAT, account.get().getUserInfo().getSub(),
-              getProperties().getOrganisation().getName());
+              properties.getOrganisation().getName());
         case AarcExtraClaimNames.EDUPERSON_SCOPED_AFFILIATION:
           return format(SCOPED_FORMAT, DEFAULT_AFFILIATION_TYPE,
-              getProperties().getOrganisation().getName());
+              properties.getOrganisation().getName());
         case AarcExtraClaimNames.VOPERSON_EXTERNAL_AFFILIATION:
           Optional<SavedUserAuthentication> userAuth =
               AuthenticationUtils.getExternalAuthenticationInfo(auth.getUserAuthentication());
@@ -105,7 +105,7 @@ public class AarcClaimValueHelper extends IamClaimValueHelper {
             if (account.get().getUserInfo().getAffiliation() != null) {
               scopedAffiliations
                 .add(format(SCOPED_FORMAT, account.get().getUserInfo().getAffiliation(),
-                    getProperties().getOrganisation().getName()));
+                    properties.getOrganisation().getName()));
             }
             String externalScopedAffiliation = firstOf(userAuth.get().getAdditionalInfo(),
                 Set.of("VPSA", "voPersonScopedAffiliation", "urn:oid:1.3.6.1.4.1.34998.3.3.1.12"));

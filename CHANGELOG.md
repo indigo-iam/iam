@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.13.1 (2025-11-20)
+
+## What's Changed
+
+* Fix expired client query to avoid suspension of all clients when using openid-federation profile
+* Fix duplicated sub claim in UserInfo response
+* Restore scope claim in UserInfo response
+* Ignore empty strings when computing claim values
+* Fix epoch timestamps unit from milliseconds to seconds for both Introspection and UserInfo responses
+
 ## 1.13.0 (2025-11-03)
 
 ## What's Changed
