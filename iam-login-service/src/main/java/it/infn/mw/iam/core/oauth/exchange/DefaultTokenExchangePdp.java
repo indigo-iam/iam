@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +92,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
    * the client that issued the token request. The scope verification at this stage checks that the
    * requested scopes are allowed. By default the scopes are verified against the origin client
    * configuration, as the destination client is impersonating the origin client - this allows for
-   * "upscoping". If the VO config disables "upscoping", then the scopes will be verified against
-   * the subject token scopes.
+   * "upscoping". If the client config disables "upscoping", then the scopes will be verified
+   * against the subject token scopes.
    * 
    * After this checks, the scope policies linked to the exchange policy are applied for each
    * requested scope. If there's a policy that does not allow one of the requested scope, an
@@ -131,7 +132,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   }
 
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
-      ClientDetails origin, ClientDetails destination) {
+      ClientDetailsEntity origin, ClientDetails destination) {
 
     if (p.isDeny() || request.getScope().isEmpty()) {
       return fromPolicy(p);
@@ -140,7 +141,10 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
     Set<ScopeMatcher> scopeMatchers = scopeMatcherRegistry.findMatchersForClient(origin);
     String invalidScopeMessage = "scope not allowed by origin client configuration";
     String subjectToken = request.getRequestParameters().get("subject_token");
-    if (!properties.getJwtProfile().isTokenExchangeUpscopingEnabled() && !subjectToken.isBlank()) {
+
+
+
+    if (!origin.isUpScopingAllowed() && !subjectToken.isBlank()) {
       scopeMatchers = extractScopesFromToken(subjectToken);
       invalidScopeMessage = "scope not allowed by subject token configuration";
 
@@ -167,8 +171,8 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
 
   @Override
-  public TokenExchangePdpResult validateTokenExchange(TokenRequest request, ClientDetails origin,
-      ClientDetails destination) {
+  public TokenExchangePdpResult validateTokenExchange(TokenRequest request,
+      ClientDetailsEntity origin, ClientDetails destination) {
 
     try {
       readLock.lock();

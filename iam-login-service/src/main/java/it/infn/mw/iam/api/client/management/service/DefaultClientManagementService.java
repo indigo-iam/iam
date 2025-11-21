@@ -125,6 +125,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     entity.setDynamicallyRegistered(false);
     entity.setCreatedAt(Date.from(clock.instant()));
     entity.setActive(true);
+    entity.setUpScopingAllowed(true);
 
     defaultsService.setupClientDefaults(entity);
     entity = clientService.saveNewClient(entity);
@@ -181,6 +182,7 @@ public class DefaultClientManagementService implements ClientManagementService {
     newClient.setAuthorities(oldClient.getAuthorities());
     newClient.setDynamicallyRegistered(oldClient.isDynamicallyRegistered());
     newClient.setActive(oldClient.isActive());
+    newClient.setUpScopingAllowed(oldClient.isUpScopingAllowed());
 
     if (NONE.equals(newClient.getTokenEndpointAuthMethod())) {
       newClient.setClientSecret(null);

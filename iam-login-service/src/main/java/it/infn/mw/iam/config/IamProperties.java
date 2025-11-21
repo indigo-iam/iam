@@ -401,22 +401,12 @@ public class IamProperties {
 
     Profile defaultProfile = Profile.IAM;
 
-    boolean tokenExchangeUpscopingEnabled = true;
-
     public Profile getDefaultProfile() {
       return defaultProfile;
     }
 
     public void setDefaultProfile(Profile defaultProfile) {
       this.defaultProfile = defaultProfile;
-    }
-
-    public boolean isTokenExchangeUpscopingEnabled() {
-      return tokenExchangeUpscopingEnabled;
-    }
-
-    public void setTokenExchangeUpscopingEnabled(boolean enabledValue) {
-      this.tokenExchangeUpscopingEnabled = enabledValue;
     }
   }
 

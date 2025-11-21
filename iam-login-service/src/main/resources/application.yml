@@ -109,7 +109,6 @@ iam:
 
   jwt-profile:
     default-profile: ${IAM_JWT_DEFAULT_PROFILE:iam}
-    token-exchange-upscoping-enabled: ${IAM_TOKEN_EXCHANGE_DISABLE_UPSCOPING:true}
   
   logo:
     url: ${IAM_LOGO_URL:resources/images/indigo-logo.png}

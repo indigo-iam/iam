@@ -29,16 +29,19 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -52,31 +55,28 @@ import it.infn.mw.iam.persistence.model.IamClientMatchingPolicy;
 import it.infn.mw.iam.persistence.model.IamTokenExchangePolicyEntity;
 import it.infn.mw.iam.persistence.repository.IamTokenExchangePolicyRepository;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
+
 @SuppressWarnings("deprecation")
+@RunWith(MockitoJUnitRunner.class)
 public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
 
   @Spy
   TokenRequest request = buildTokenRequest();
 
   @Mock
-  ClientDetails originClient;
+  ClientDetailsEntity originClient;
 
   @Mock
-  ClientDetails destinationClient;
+  ClientDetailsEntity destinationClient;
 
-  @MockBean
+  @Mock
   IamTokenExchangePolicyRepository repo;
 
-  @MockBean
+  @Mock
   ScopeMatcherRegistry scopeMatchersRegistry;
 
-  @Autowired
+  @InjectMocks
   DefaultTokenExchangePdp pdp;
-
-  @Autowired
-  IamProperties properties;
 
   private TokenRequest buildTokenRequest() {
     return new TokenRequest(emptyMap(), "destination", Collections.emptySet(),
@@ -98,6 +98,7 @@ public class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         .collect(toSet()));
     when(repo.findAll()).thenReturn(emptyList());
     pdp.reloadPolicies();
+    when(request.getRequestParameters()).thenReturn(Map.of("subject_token", ""));
   }
 
   @Test

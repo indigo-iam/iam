@@ -25,9 +25,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.NoSuchElementException;
+
 import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.TestPropertySource;
@@ -39,13 +43,13 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@TestPropertySource(properties = {"iam.jwt-profile.token-exchange-upscoping-enabled=false",
-        "iam.access_token.include_scope=true"})
+@TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
     private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
@@ -64,6 +68,9 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
     @Autowired
     private IamProperties properties;
 
+    @Autowired
+    private IamClientRepository clientRepository;
+
     @Before
     public void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
@@ -71,6 +78,20 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
             .clientSecret("secret")
             .scope("read-tasks")
             .getAccessTokenValue();
+
+        ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
+            .orElseThrow(NoSuchElementException::new);
+        client.setUpScopingAllowed(false);
+        clientRepository.save(client);
+    }
+
+
+    @After
+    public void cleanUp() {
+        ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
+            .orElseThrow(NoSuchElementException::new);
+        client.setUpScopingAllowed(true);
+        clientRepository.save(client);
     }
 
     @Test

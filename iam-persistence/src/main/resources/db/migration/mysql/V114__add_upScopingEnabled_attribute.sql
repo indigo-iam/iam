@@ -1,0 +1,1 @@
+ALTER TABLE client_details ADD COLUMN upScopingEnabled BOOLEAN NOT NULL DEFAULT TRUE;
