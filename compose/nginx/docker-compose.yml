@@ -11,6 +11,9 @@ services:
       - cabundle:/etc/pki
       - hostcerts:/hostcerts
 
+    environment:
+      TZ: Europe/Rome
+
   iam:
     image: nginx:stable-alpine
     dns_search: local.io
