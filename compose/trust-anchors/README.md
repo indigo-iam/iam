@@ -1,10 +1,10 @@
-# Trust-anchor container
+# Trust-anchors container
 
-This folder holds a trustanchor container which populates volumes
-that can be mounted in the other services such to establish a trust 
+This folder holds a container of trust anchors which populates volumes
+that can be mounted in the other services to establish a trust 
 framework based on X.509 certificates created on-the-fly.
 
-The trustanchor container populates the following volumes
+The trust-anchors container populates the following volumes
 
 * `/trust-anchors`: contains the `igi-test-ca` CA certificate, issuing X.509
   server/user certificates (created on-the-fly), which is usually mounted

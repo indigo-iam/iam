@@ -27,7 +27,7 @@ The actual VOMS services are virtually divided between three sites:
 * `ngx-remote`
 
 #### Site 3: Anywhere else
-* `client`: it is a single container containing GRID clients (in particular `voms-proxy-init`) used to query both the VOMS services. It connects in round-robin fashion to each endpoint and when one fails it falls back to the others. Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc`.
+* `client`: it is a single container containing Grid clients (in particular `voms-proxy-init`) used to query both the VOMS services. It connects in round-robin fashion to each endpoint and when one fails it falls back to the others. Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc`.
 
 ### Networking
 

@@ -34,11 +34,10 @@ To test `vomsaa` using VOMS clients, enter in the container with
 $ docker compose exec client bash
 ```
 
-Here a p12 file for the test user encrypted with the `pass` password is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc` with
+Here a p12 file for the test user is present in the `/certs` directory. It can be used to obtain a VOMS proxy by `voms-aa` serving a VO named `indigo-dc` with
 
 ```
 $ voms-proxy-init -voms indigo-dc -cert /certs/test0.p12
-Enter GRID pass phrase for this identity: <***>
 Contacting voms.test.example:443 [/C=IT/O=IGI/CN=*.test.example] "indigo-dc"...
 Remote VOMS server contacted succesfully.
 
