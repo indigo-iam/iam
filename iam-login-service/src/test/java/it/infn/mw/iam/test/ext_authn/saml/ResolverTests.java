@@ -42,7 +42,7 @@ import org.opensaml.xml.schema.XSAny;
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.authn.saml.util.EPTIDUserIdentifierResolver;
-import it.infn.mw.iam.authn.saml.util.FirstApplicableChainedSamlIdResolver;
+import it.infn.mw.iam.authn.saml.util.ChainedCollectingSamlIdResolver;
 import it.infn.mw.iam.authn.saml.util.NameIdUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.NamedSamlUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.PersistentNameIdUserIdentifierResolver;
@@ -216,7 +216,7 @@ public class ResolverTests {
       .thenReturn("test@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
 
-    SamlUserIdentifierResolver resolver = new FirstApplicableChainedSamlIdResolver(
+    SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
@@ -252,7 +252,7 @@ public class ResolverTests {
       .thenReturn("123456789@test.org");
     when(cred.getRemoteEntityID()).thenReturn("entityId");
 
-    SamlUserIdentifierResolver resolver = new FirstApplicableChainedSamlIdResolver(
+    SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);
@@ -278,7 +278,7 @@ public class ResolverTests {
     when(cred.getAttributeAsString(Saml2Attribute.SUBJECT_ID.getAttributeName()))
       .thenReturn("subject_id");
 
-    SamlUserIdentifierResolver resolver = new FirstApplicableChainedSamlIdResolver(
+    SamlUserIdentifierResolver resolver = new ChainedCollectingSamlIdResolver(
         asList(subjectIdResolver, uniqueIdResolver, persistentNameIdResolver));
 
     SamlUserIdentifierResolutionResult result = resolver.resolveSamlUserIdentifier(cred);

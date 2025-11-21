@@ -24,14 +24,13 @@ import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.persistence.model.IamSamlId;
 
-public class FirstApplicableChainedSamlIdResolver implements SamlUserIdentifierResolver {
+public class ChainedCollectingSamlIdResolver implements SamlUserIdentifierResolver {
 
-  public static final Logger LOG =
-      LoggerFactory.getLogger(FirstApplicableChainedSamlIdResolver.class);
+  public static final Logger LOG = LoggerFactory.getLogger(ChainedCollectingSamlIdResolver.class);
 
   private final List<SamlUserIdentifierResolver> resolvers;
 
-  public FirstApplicableChainedSamlIdResolver(List<SamlUserIdentifierResolver> resolvers) {
+  public ChainedCollectingSamlIdResolver(List<SamlUserIdentifierResolver> resolvers) {
     this.resolvers = resolvers;
   }
 
@@ -62,10 +61,6 @@ public class FirstApplicableChainedSamlIdResolver implements SamlUserIdentifierR
           result.getErrorMessages().forEach(LOG::debug);
         }
       }
-    }
-
-    if (!collectedIds.isEmpty()) {
-      return SamlUserIdentifierResolutionResult.success(collectedIds);
     }
 
     if (!collectedIds.isEmpty()) {
