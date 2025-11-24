@@ -152,10 +152,6 @@ public abstract class BaseAccessTokenBuilder implements AccessTokenBuilder {
       builder.claim(ACR, savedAuth.getAdditionalInfo().get(ACR));
     }
 
-    /* update token scopes filtering the requested ones */
-//    Set<String> requestedScopes = getRequestedScopes(token, authentication);
-//    token.setScope(scopeFilter.filterScopes(requestedScopes, authentication));
-
     /* include scope claim if configured */
     if (isIncludeScope() && !token.getScope().isEmpty()) {
       builder.claim(BaseExtraClaimNames.SCOPE, token.getScope().stream().collect(joining(SPACE)));

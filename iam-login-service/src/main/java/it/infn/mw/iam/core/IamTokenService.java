@@ -220,8 +220,6 @@ public class IamTokenService implements OAuth2TokenEntityService {
     if (isAuthenticationInProgress(authentication.getUserAuthentication())) {
       throw new InvalidGrantException("User is not fully authenticated.");
     }
-    // OAuth2AccessTokenEntity token =
-    // super.createAccessToken(scopeFilter.filterScopes(authentication));
 
     OAuth2Request request = authentication.getOAuth2Request();
 
@@ -383,8 +381,6 @@ public class IamTokenService implements OAuth2TokenEntityService {
       account = accountRepository.findByUsername(username);
     }
 
-    // authHolder = scopeFilter.filterScopes(authHolder);
-
     ClientDetailsEntity requestingClient =
         clientService.findClientByClientId(authRequest.getClientId())
           .orElseThrow(
@@ -517,7 +513,6 @@ public class IamTokenService implements OAuth2TokenEntityService {
         || iamProperties.getAccessToken().isStoreOnDatabase()) {
       return entity.getAuthenticationHolder().getAuthentication();
     }
-    // access token
     Set<String> scopes = entity.getScope();
     Map<String, Object> additionalInfo = entity.getAdditionalInformation();
     Set<String> audiences = new HashSet<>();
