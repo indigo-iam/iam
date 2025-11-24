@@ -57,6 +57,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AARCHintService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
@@ -133,6 +134,9 @@ public class IamWebSecurityConfig {
     private ExternalAuthenticationHintService hintService;
 
     @Autowired
+    private AARCHintService aarcHintService;
+
+    @Autowired
     private IamProperties iamProperties;
 
     @Autowired
@@ -160,8 +164,9 @@ public class IamWebSecurityConfig {
     }
 
     protected AuthenticationEntryPoint entryPoint() {
+
       LoginUrlAuthenticationEntryPoint delegate = new LoginUrlAuthenticationEntryPoint("/login");
-      return new HintAwareAuthenticationEntryPoint(delegate, hintService);
+      return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
 

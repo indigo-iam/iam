@@ -85,7 +85,7 @@
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
     <jacoco-plugin.version>0.8.7</jacoco-plugin.version>
     <jib-maven-plugin.version>3.1.4</jib-maven-plugin.version>
-
+    <sonar-maven-plugin.version>5.3.0.6276</sonar-maven-plugin.version>
 
     <jsr250-api.version>1.0</jsr250-api.version>
     <jakarta.xml.bind-api.version>2.3.2</jakarta.xml.bind-api.version>
@@ -349,6 +349,12 @@
         <version>${jaxb-runtime.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.sonarsource.scanner.maven</groupId>
+        <artifactId>sonar-maven-plugin</artifactId>
+        <version>${sonar-maven-plugin.version}</version>
+      </dependency>
+
     </dependencies>
 
   </dependencyManagement>
@@ -375,6 +381,11 @@
           <groupId>com.google.cloud.tools</groupId>
           <artifactId>jib-maven-plugin</artifactId>
           <version>${jib-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>${sonar-maven-plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
