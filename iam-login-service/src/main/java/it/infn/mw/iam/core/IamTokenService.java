@@ -103,7 +103,7 @@ import it.infn.mw.iam.persistence.repository.IamOAuthRefreshTokenRepository;
 import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 
 @SuppressWarnings("deprecation")
-//@Service("defaultOAuth2ProviderTokenService")
+// @Service("defaultOAuth2ProviderTokenService")
 @Service
 @Primary
 public class IamTokenService implements OAuth2TokenEntityService {
@@ -135,8 +135,8 @@ public class IamTokenService implements OAuth2TokenEntityService {
       IamAuthenticationHolderRepository authenticationHolderRepo, IamClientRepository clientRepo,
       ClientService clientService, IamAccountRepository accountRepository,
       JWTSigningAndValidationService jwtSigningService, TokenRevocationService revocationService,
-      OIDCTokenService connectTokenService, SystemScopeService scopeService, JWTProfileResolver profileResolver, 
-      ApplicationEventPublisher eventPublisher,
+      OIDCTokenService connectTokenService, SystemScopeService scopeService,
+      JWTProfileResolver profileResolver, ApplicationEventPublisher eventPublisher,
       IamProperties iamProperties, ScopeFilter scopeFilter) {
 
     this.accessTokenRepo = accessTokenRepo;
@@ -276,7 +276,8 @@ public class IamTokenService implements OAuth2TokenEntityService {
         scopeService.fromStrings(scopeFilter.filterScopes(request.getScope(), authentication));
     scopes = scopeService.removeReservedScopes(scopes);
     accessToken.setScope(scopeService.toStrings(scopes));
-    accessToken.setExpiration(computeExpiration(request.getRequestParameters(), client, tokenIssueInstant));
+    accessToken
+      .setExpiration(computeExpiration(request.getRequestParameters(), client, tokenIssueInstant));
 
     AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
     authHolder.setAuthentication(authentication);
@@ -284,7 +285,8 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
     // attach a refresh token, if this client is allowed to request them, the user gets the
     // offline scope and grant type differs from client credentials
-    if (client.isAllowRefresh() && accessToken.getScope().contains(SystemScopeService.OFFLINE_ACCESS)
+    if (client.isAllowRefresh()
+        && accessToken.getScope().contains(SystemScopeService.OFFLINE_ACCESS)
         && !request.getGrantType().equals("client_credentials")) {
 
       accessToken.setRefreshToken(createRefreshToken(client, authHolder));
@@ -307,11 +309,10 @@ public class IamTokenService implements OAuth2TokenEntityService {
      * Also, there must be a user authentication involved in the request for it to be considered
      * OIDC and not OAuth, so we check for that as well.
      */
-    if (request.getScope().contains(SystemScopeService.OPENID_SCOPE)
-        && account.isPresent()) {
+    if (request.getScope().contains(SystemScopeService.OPENID_SCOPE) && account.isPresent()) {
 
-      JWT idToken = connectTokenService.createIdToken(client, request,
-          Date.from(tokenIssueInstant), account.get().getUuid(), accessToken);
+      JWT idToken = connectTokenService.createIdToken(client, request, Date.from(tokenIssueInstant),
+          account.get().getUuid(), accessToken);
 
       accessToken.setIdToken(idToken);
     }
@@ -367,9 +368,22 @@ public class IamTokenService implements OAuth2TokenEntityService {
     }
     OAuth2RefreshTokenEntity refreshToken = getRefreshToken(refreshTokenValue);
     ClientDetailsEntity client = refreshToken.getClient();
-
     AuthenticationHolderEntity authHolder = refreshToken.getAuthenticationHolder();
-    authHolder = scopeFilter.filterScopes(authHolder);
+
+    OAuth2Request newOAuth2Request =
+        authHolder.getAuthentication().getOAuth2Request().refresh(authRequest);
+    OAuth2Authentication newOAuth2Authentication =
+        new OAuth2Authentication(newOAuth2Request, authHolder.getUserAuth());
+
+    JWTProfile profile = profileResolver.resolveProfile(client.getScope());
+
+    Optional<IamAccount> account = Optional.empty();
+    if (!newOAuth2Authentication.isClientOnly()) {
+      String username = newOAuth2Authentication.getName();
+      account = accountRepository.findByUsername(username);
+    }
+
+    // authHolder = scopeFilter.filterScopes(authHolder);
 
     ClientDetailsEntity requestingClient =
         clientService.findClientByClientId(authRequest.getClientId())
@@ -378,10 +392,11 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
     /* client validation */
     if (!requestingClient.isActive()) {
-      throw new InvalidClientException("Suspendend client '" + client.getClientId() + "'");
+      throw new InvalidClientException("Suspended client '" + client.getClientId() + "'");
     }
     if (!requestingClient.isAllowRefresh()) {
-      throw new InvalidClientException("Client '" + client.getClientId() + "' does not allow refreshing access token!");
+      throw new InvalidClientException(
+          "Client '" + client.getClientId() + "' does not allow refreshing access token!");
     }
     if (!requestingClient.getClientId().equals(client.getClientId())) {
       revocationService.revokeRefreshToken(refreshToken);
@@ -397,37 +412,11 @@ public class IamTokenService implements OAuth2TokenEntityService {
     Instant tokenIssueInstant = clock.instant();
     OAuth2AccessTokenEntity token = new OAuth2AccessTokenEntity();
 
-    Set<String> reservedScopes = scopeService.toStrings(scopeService.getReserved());
-
-    // Scopes linked to the refresh token, i.e. authorized by the user
-    Set<String> authorizedScopes =
-        Sets.newHashSet(authHolder.getAuthentication().getOAuth2Request().getScope());
-    authorizedScopes.removeAll(reservedScopes);
-
-    // Scopes requested in this refresh token flow
-    Set<String> requestedScopes = Sets.newHashSet();
-    if (authRequest.getScope() != null) {
-      requestedScopes.addAll(authRequest.getScope());
-    }
-    requestedScopes.removeAll(reservedScopes);
-
-    if (!requestedScopes.isEmpty()) {
-      // Check for upscoping
-      if (scopeService.scopesMatch(authorizedScopes, requestedScopes)) {
-        token.setScope(requestedScopes);
-      } else {
-        String errorMsg = "Up-scoping is not allowed.";
-        LOG.error(errorMsg);
-        throw new InvalidScopeException(errorMsg);
-      }
-
-    } else {
-      // Preserve scopes linked to the original refresh token
-      token.setScope(authorizedScopes);
-    }
+    token.setScope(computeScopes(authRequest, refreshToken, account));
 
     token.setClient(client);
-    token.setExpiration(computeExpiration(authRequest.getRequestParameters(), client, tokenIssueInstant));
+    token.setExpiration(
+        computeExpiration(authRequest.getRequestParameters(), client, tokenIssueInstant));
 
     if (client.isReuseRefreshToken()) {
       // if the client re-uses refresh tokens, do that
@@ -441,18 +430,7 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
     token.setAuthenticationHolder(authHolder);
 
-    OAuth2Request newOAuth2Request =
-        authHolder.getAuthentication().getOAuth2Request().refresh(authRequest);
-    OAuth2Authentication newOAuth2Authentication =
-        new OAuth2Authentication(newOAuth2Request, authHolder.getUserAuth());
 
-    JWTProfile profile = profileResolver.resolveProfile(client.getScope());
-
-    Optional<IamAccount> account = Optional.empty();
-    if (!newOAuth2Authentication.isClientOnly()) {
-      String username = newOAuth2Authentication.getName();
-      account = accountRepository.findByUsername(username);
-    }
     JWTClaimsSet atClaims = profile.getAccessTokenBuilder()
       .buildAccessToken(token, newOAuth2Authentication, account, tokenIssueInstant);
 
@@ -486,6 +464,42 @@ public class IamTokenService implements OAuth2TokenEntityService {
 
     eventPublisher.publishEvent(new AccessTokenIssuedEvent(this, token));
     return token;
+  }
+
+  private Set<String> computeScopes(TokenRequest authRequest, OAuth2RefreshTokenEntity refreshToken,
+      Optional<IamAccount> account) {
+
+    /* load reserved scopes from db */
+    Set<String> reservedScopes = scopeService.toStrings(scopeService.getReserved());
+    /* retrieve authorized scopes from refresh token */
+    Set<String> authorizedScopes = Sets.newHashSet(
+        refreshToken.getAuthenticationHolder().getAuthentication().getOAuth2Request().getScope());
+    authorizedScopes.removeAll(reservedScopes);
+    /* get cuirrent requested scopes, if present */
+    Set<String> requestedScopes = new HashSet<>();
+    if (authRequest.getScope() != null) {
+      requestedScopes.addAll(authRequest.getScope());
+    }
+    requestedScopes.removeAll(reservedScopes);
+
+    /* compute scopes to be filtered */
+    Set<String> scopesToFilter = new HashSet<>();
+    if (requestedScopes.isEmpty()) {
+      scopesToFilter.addAll(authorizedScopes);
+    } else {
+      /* Check for up-scoping */
+      if (!scopeService.scopesMatch(authorizedScopes, requestedScopes)) {
+        String errorMsg = "Up-scoping is not allowed.";
+        LOG.error(errorMsg);
+        throw new InvalidScopeException(errorMsg);
+      }
+      scopesToFilter.addAll(requestedScopes);
+    }
+
+    if (account.isPresent()) {
+      return scopeFilter.filterScopes(scopesToFilter, account.get());
+    }
+    return scopeFilter.filterScopes(refreshToken.getAuthenticationHolder()).getScope();
   }
 
   private boolean isAuthenticationInProgress(Authentication userAuth) {
@@ -660,7 +674,8 @@ public class IamTokenService implements OAuth2TokenEntityService {
     }
   }
 
-  private Date computeExpiration(Map<String, String> requestParameters, ClientDetailsEntity client, Instant tokenIssueInstant) {
+  private Date computeExpiration(Map<String, String> requestParameters, ClientDetailsEntity client,
+      Instant tokenIssueInstant) {
 
     Optional<Integer> expiresIn = getExpiresIn(requestParameters);
     int validityInSeconds = 3600;
@@ -671,15 +686,15 @@ public class IamTokenService implements OAuth2TokenEntityService {
     if (expiresIn.isEmpty() || expiresIn.get() <= 0) {
       return Date.from(tokenIssueInstant.plus(validityInSeconds, ChronoUnit.SECONDS));
     }
-    return Date.from(tokenIssueInstant.plus(Math.min(expiresIn.get(), validityInSeconds), ChronoUnit.SECONDS));
+    return Date.from(
+        tokenIssueInstant.plus(Math.min(expiresIn.get(), validityInSeconds), ChronoUnit.SECONDS));
   }
 
   private Optional<Integer> getExpiresIn(Map<String, String> requestParameters) {
 
     try {
       if (requestParameters.containsKey(EXPIRES_IN_KEY)) {
-        return Optional.of(Integer
-          .valueOf(requestParameters.get(EXPIRES_IN_KEY)));
+        return Optional.of(Integer.valueOf(requestParameters.get(EXPIRES_IN_KEY)));
       }
       return Optional.empty();
     } catch (NumberFormatException e) {
