@@ -5,7 +5,7 @@ on:
       - develop
 
   pull_request:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, reopened]
 
 jobs:
   build:
