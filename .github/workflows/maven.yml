@@ -21,7 +21,9 @@ jobs:
         java-version: 17
 
     - name: License check
-      run: mvn -B license:check
+      run: |
+        mvn -version
+        mvn -B license:check
 
     - name: Build, test, package
       env:
