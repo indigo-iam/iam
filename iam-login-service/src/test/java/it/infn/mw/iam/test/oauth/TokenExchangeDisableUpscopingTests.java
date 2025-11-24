@@ -34,6 +34,7 @@ import org.junit.runner.RunWith;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -132,6 +133,7 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
     }
 
     @Test
+    @DirtiesContext
     public void testTokenExchangeForClientCredentialsDisableUpscopingDisableTokenScopes()
             throws Exception {
         properties.getAccessToken().setIncludeScope(false);
@@ -159,6 +161,7 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
     }
 
     @Test
+    @DirtiesContext
     public void testTokenExchangeForClientCredentialsDisableUpscopingTokenWithoutScopes()
             throws Exception {
         properties.getAccessToken().setIncludeScope(false);
