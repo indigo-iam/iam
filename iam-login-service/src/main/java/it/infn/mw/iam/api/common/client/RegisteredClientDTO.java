@@ -255,7 +255,7 @@ public class RegisteredClientDTO {
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
       ClientViews.DynamicRegistration.class})
-  @Size(max = 4096, groups = {OnClientCreation.class, OnClientUpdate.class})
+  @Size(max = 65535, groups = {OnClientCreation.class, OnClientUpdate.class})
   private String jwk;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
