@@ -220,6 +220,7 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       RegisteredClientDTO dtoClient = clientMapper.createClientDtoFromRpMetadata(rpRequest);
       dtoClient.setExpiration(validTrustChain.resolveExpirationTime());
       dtoClient.setClientId(clientId);
+      dtoClient.setRequestObjectSigningAlgorithm(jwt.getHeader().getAlgorithm());
 
       Optional<ClientDetailsEntity> maybeClient = clientRepo.findByClientId(clientId);
       if (maybeClient.isPresent()
@@ -348,10 +349,11 @@ public class IamAuthorizationRequestFilter extends GenericFilterBean {
       response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       response.setContentType("text/html;charset=UTF-8");
       response.getWriter()
-        .write("<html><head><title>OAuth Error</title></head><body>"
-            + "<h2>Authorization Error</h2>" + "<p><strong>Error:</strong>"
-            + StringEscapeUtils.escapeHtml(error) + "</p>" + "<p><strong>Description:</strong>"
-            + StringEscapeUtils.escapeHtml(description) + "</p>" + "</body></html>");
+        .write(
+            "<html><head><title>OAuth Error</title></head><body>" + "<h2>Authorization Error</h2>"
+                + "<p><strong>error:</strong> " + StringEscapeUtils.escapeHtml(error) + "</p>"
+                + "<p><strong>error_description:</strong> "
+                + StringEscapeUtils.escapeHtml(description) + "</p>" + "</body></html>");
     }
   }
 

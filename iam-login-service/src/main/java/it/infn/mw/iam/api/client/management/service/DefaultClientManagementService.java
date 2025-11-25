@@ -134,7 +134,7 @@ public class DefaultClientManagementService implements ClientManagementService {
       ClientRelyingPartyEntity clientRelyingParty =
           new ClientRelyingPartyEntity(entity, client.getExpiration(), client.getEntityId());
       entity.setClientRelyingParty(clientRelyingParty);
-      entity.setRequestObjectSigningAlg(JWSAlgorithm.RS256);
+      entity.setRequestObjectSigningAlg(client.getRequestObjectSigningAlgorithm());
     }
 
     defaultsService.setupClientDefaults(entity);
