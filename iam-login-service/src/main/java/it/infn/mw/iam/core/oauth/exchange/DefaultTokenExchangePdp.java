@@ -20,6 +20,7 @@ import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.invalidS
 import static it.infn.mw.iam.core.oauth.exchange.TokenExchangePdpResult.notApplicable;
 import static java.util.Comparator.comparing;
 
+import java.text.ParseException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -120,7 +121,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
           result.add(scopeMatcherRegistry.findMatcherForScope(scope));
         }
         return result;
-      } catch (Throwable e) {
+      } catch (ParseException e) {
         throw new InvalidRequestException("cannot verify requested scopes with subject token");
       }
     } else {
@@ -132,7 +133,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
   }
 
   private TokenExchangePdpResult verifyScopes(TokenExchangePolicy p, TokenRequest request,
-      ClientDetailsEntity origin, ClientDetails destination) {
+      ClientDetailsEntity origin) {
 
     if (p.isDeny() || request.getScope().isEmpty()) {
       return fromPolicy(p);
@@ -178,7 +179,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
       readLock.lock();
       return applicablePolicies(origin, destination).stream()
         .max(comparing(TokenExchangePolicy::rank).thenComparing(TokenExchangePolicy::getRule))
-        .map(p -> verifyScopes(p, request, origin, destination))
+        .map(p -> verifyScopes(p, request, origin))
         .orElse(notApplicable());
     } finally {
       readLock.unlock();
