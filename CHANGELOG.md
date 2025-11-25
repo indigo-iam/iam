@@ -7,6 +7,7 @@
 * Restore local login link for hidden case
 * Fix group membership requests acceptance and refusal propagation properly
 * Fix registration's form fields configuration by making it case insensitive
+* Make it clear for admins how strong is the client reset operation
 
 ## 1.13.1 (2025-11-20)
 
