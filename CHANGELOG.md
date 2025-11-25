@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.2 (2025-11-25)
+
+## What's Changed
+
+* Restore local login link for hidden case
+* Fix group membership requests acceptance and refusal propagation properly
+* Fix registration's form fields configuration by making it case insensitive
+
 ## 1.13.1 (2025-11-20)
 
 ## What's Changed
