@@ -187,9 +187,8 @@ public class IamOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
       clientId = authenticatedClient.getClientId();
     } else {
       if (!clientId.equals(authenticatedClient.getClientId())) {
-        LOG.warn("Given client ID " + EventUtils.sanitize(clientId)
-            + " does not match authenticated client "
-            + EventUtils.sanitize(authenticatedClient.getClientId()));
+        LOG.warn("Given client ID {} does not match authenticated client {}",
+            EventUtils.sanitize(clientId), EventUtils.sanitize(authenticatedClient.getClientId()));
         throw new InvalidClientException("Given client ID does not match authenticated client");
       }
     }
