@@ -121,7 +121,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
           result.add(scopeMatcherRegistry.findMatcherForScope(scope));
         }
         return result;
-      } catch (ParseException e) {
+      } catch (NullPointerException | ParseException e) {
         throw new InvalidRequestException("cannot verify requested scopes with subject token");
       }
     } else {
