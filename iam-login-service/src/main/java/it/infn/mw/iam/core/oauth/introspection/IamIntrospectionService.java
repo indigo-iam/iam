@@ -29,8 +29,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -40,6 +43,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.audit.events.tokens.IntrospectionEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.core.oauth.exceptions.UnauthorizedClientException;
 import it.infn.mw.iam.core.oauth.introspection.model.IntrospectionResponse;
 import it.infn.mw.iam.core.oauth.introspection.model.TokenTypeHint;
@@ -53,24 +57,26 @@ public class IamIntrospectionService
 
   private static final Logger LOG = LoggerFactory.getLogger(IamIntrospectionService.class);
 
-  private static final String NOT_ALLOWED_CLIENT_ERROR =
-      "Client %s is not allowed to call introspection endpoint";
-  private static final String SUSPENDED_CLIENT_ERROR =
-      "Client %s has been suspended and is not allowed to call introspection endpoint";
+  private static final String NOT_ALLOWED_CLIENT_ERROR = "Client %s is not allowed to call introspection endpoint";
+  private static final String SUSPENDED_CLIENT_ERROR = "Client %s has been suspended and is not allowed to call introspection endpoint";
 
   private final JWTProfileResolver profileResolver;
   private final OAuth2TokenEntityService tokenService;
   private final ClientService clientService;
   private final ApplicationEventPublisher eventPublisher;
+  private final IamProperties iamProperties;
+  private final OpaqueTokenIntrospector introspector;
 
   public IamIntrospectionService(JWTProfileResolver profileResolver,
       OAuth2TokenEntityService tokenService, ClientService clientService,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher, IamProperties iamProperties, OpaqueTokenIntrospector introspector) {
 
     this.profileResolver = profileResolver;
     this.tokenService = tokenService;
     this.clientService = clientService;
     this.eventPublisher = eventPublisher;
+    this.iamProperties = iamProperties;
+    this.introspector = introspector;
   }
 
   @Override
@@ -89,6 +95,7 @@ public class IamIntrospectionService
       info = getTokenInfo(tokenValue, tokenTypeHint);
       validateClient(authenticatedClient);
 
+      // Token issued by this server
       switch (info.tokenType) {
         case REFRESH_TOKEN:
           OAuth2RefreshTokenEntity rt = tokenService.getRefreshToken(tokenValue);
@@ -96,8 +103,18 @@ public class IamIntrospectionService
           break;
         case ACCESS_TOKEN:
         default:
-          OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
-          response = introspectAccessToken(authenticatedClient, at, info);
+          String issuer = info.claims.getIssuer();
+
+          if (iamProperties.getIssuer().equals(issuer)) {
+            OAuth2AccessTokenEntity at = tokenService.readAccessToken(tokenValue);
+            response = introspectAccessToken(authenticatedClient, at, info);
+          } else {
+            // Calls the introspector and gets the OAuth2AuthenticatedPrincipal
+            OAuth2AuthenticatedPrincipal introspectionResult = introspector.introspect(tokenValue);
+
+            // Converts the attributes of the principal to IntrospectionResponse
+            response = convertIntrospectionResponse(introspectionResult);
+          }
           break;
       }
 
@@ -114,6 +131,11 @@ public class IamIntrospectionService
     } catch (ParseException e) {
 
       LOG.info("Failed introspection of token, malformed token: {}", e.getMessage());
+      return IntrospectionResponse.inactive();
+
+    } catch (RestClientException e) {
+
+      LOG.info("Failed introspection of token, discovery failed: {}", e.getMessage());
       return IntrospectionResponse.inactive();
     }
 
@@ -172,8 +194,8 @@ public class IamIntrospectionService
     JWTProfile profile = profileResolver.resolveProfile(rt.getClient().getScope(),
         rt.getAuthenticationHolder().getAuthentication().getOAuth2Request().getScope());
     profile.getIntrospectionResultHelper()
-      .assembleIntrospectionResult(rt, authenticatedClient)
-      .forEach(builder::addField);
+        .assembleIntrospectionResult(rt, authenticatedClient)
+        .forEach(builder::addField);
     // add all the others avoiding duplicates/override
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
@@ -188,8 +210,8 @@ public class IamIntrospectionService
     IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(true);
     JWTProfile profile = profileResolver.resolveProfile(at.getClient().getScope(), at.getScope());
     profile.getIntrospectionResultHelper()
-      .assembleIntrospectionResult(at, authenticatedClient)
-      .forEach(builder::addField);
+        .assembleIntrospectionResult(at, authenticatedClient)
+        .forEach(builder::addField);
     // add all the others avoiding duplicates/override
     info.claims.getClaims().forEach(builder::addFieldIfAbsent);
     return builder.build();
@@ -204,13 +226,27 @@ public class IamIntrospectionService
   private ClientDetailsEntity loadClient(Authentication auth) {
 
     return clientService
-      .findClientByClientId(
-          auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
-              : auth.getName())
-      .orElseThrow();
+        .findClientByClientId(
+            auth instanceof OAuth2Authentication oauth2 ? oauth2.getOAuth2Request().getClientId()
+                : auth.getName())
+        .orElseThrow();
   }
 
   public record TokenInfo(String tokenValue, TokenTypeHint tokenType, JWTClaimsSet claims,
       String jti) {
+  }
+
+  private IntrospectionResponse convertIntrospectionResponse(OAuth2AuthenticatedPrincipal principal) {
+    // Creates a builder for costructing the IntrospectionResponse
+    IntrospectionResponse.Builder builder = new IntrospectionResponse.Builder(principal.getAttribute("active"));
+    /**
+     * Returns a map which contains all the claims associated to the principal
+     * and iterates over them calling builder.addField(key, value)
+     * Every claim gets copied as additional field
+     */
+    principal.getAttributes().forEach(builder::addField);
+    // Creates the final IntrospectionResponse object from the builder and returns
+    // it
+    return builder.build();
   }
 }
