@@ -283,16 +283,16 @@ function RegistrationController(
 				if (
 					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() == "mandatory"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = true;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = true;
 				} else if (
 					$scope.config.fields[field]["fieldBehaviour"].toLowerCase() === "optional"
 				) {
-					$scope.fields[field].showField = true;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = true;
+					$scope.fields[field.toLowerCase()].required = false;
 				} else {
-					$scope.fields[field].showField = false;
-					$scope.fields[field].required = false;
+					$scope.fields[field.toLowerCase()].showField = false;
+					$scope.fields[field.toLowerCase()].required = false;
 				}
 			}
 		}

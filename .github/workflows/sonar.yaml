@@ -1,3 +1,4 @@
+name: Sonar analysis
 
 on:
   push:
