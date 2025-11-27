@@ -16,20 +16,19 @@
 package it.infn.mw.iam.test.oauth;
 
 import static it.infn.mw.iam.api.client.util.ClientSuppliers.clientNotFound;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Date;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,8 +47,8 @@ import com.nimbusds.jwt.JWTParser;
 import it.infn.mw.iam.api.client.management.service.ClientManagementService;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.common.client.RegisteredClientDTO;
+import it.infn.mw.iam.core.IamTokenService;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
-import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 
 @SuppressWarnings("deprecation")
 @RunWith(SpringRunner.class)
@@ -67,7 +66,7 @@ public class TokenLifetimeConfigurableTests {
 
         private static final String SCOPE = "openid profile offline_access";
         private static final String CUSTOM_LIFETIME = "300";
-        private static final String INVALID_PARAMETER = IamTokenEnhancer.INVALID_PARAMETER;
+        private static final String INVALID_PARAMETER = IamTokenService.INVALID_PARAMETER;
 
         private static final long TOLERANCE = 5;
         private static final long DEFAULT_ACCESS_TOKEN_LIFETIME = 3600L;
