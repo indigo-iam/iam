@@ -55,5 +55,15 @@
                 </div>
             </div>
         </div>
+        <!-- Actually let's place it here  -->
+        <div ng-show="$root.loggedUser.isAdmin">
+            <label>Up scoping</label>
+            <div class="checkbox" ng-attr-title="{{($ctrl.client.up_scoping_enabled) ? 'Un-check to disable upcoping': 'Check to enable upscoping'}}" ng-click="$ctrl.changeUpScopingValue()">
+                <label>
+                    <input type="checkbox" ng-model="$ctrl.client.up_scoping_enabled">
+                    Up scoping for token-exchange is allowed
+                </label>
+            </div>
+        </div>
     </div>
 </div>

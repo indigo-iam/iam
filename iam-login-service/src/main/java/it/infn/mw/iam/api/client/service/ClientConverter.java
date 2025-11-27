@@ -97,6 +97,7 @@ public class ClientConverter {
     }
 
     client.setRequireAuthTime(Boolean.valueOf(dto.isRequireAuthTime()));
+    client.setUpScopingAllowed(dto.isUpScopingEnabled());
 
     return client;
   }
@@ -170,6 +171,7 @@ public class ClientConverter {
     }
 
     clientDTO.setActive(entity.isActive());
+    clientDTO.setUpScopingEnabled(entity.isUpScopingAllowed());
     clientDTO.setStatusChangedOn(entity.getStatusChangedOn());
     clientDTO.setStatusChangedBy(entity.getStatusChangedBy());
 
@@ -201,6 +203,8 @@ public class ClientConverter {
     client.setScope(cloneSet(dto.getScope()));
 
     client.setGrantTypes(new HashSet<>());
+
+    client.setUpScopingAllowed(dto.isUpScopingEnabled());
 
     if (!isNull(dto.getGrantTypes())) {
       client.setGrantTypes(

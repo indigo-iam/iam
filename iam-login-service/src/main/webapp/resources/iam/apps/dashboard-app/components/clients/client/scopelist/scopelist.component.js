@@ -25,11 +25,16 @@
         self.customScopes = customScopes;
         self.visibleSystemScopes = visibleSystemScopes;
         self.isRestrictedSystemScope = isRestrictedSystemScope;
+        self.changeUpScopingValue = changeUpScopingValue;
 
         self.limited = true;
         self.scopeMap = {};
 
         self.$onInit = function () {
+            if (self.client.up_scoping_enabled == null) {
+                self.client.up_scoping_enabled = true;
+            }
+
             updateScopeMap();
             $scope.$watch('$ctrl.client.scope', function (newVal, oldVal) {
                 updateScopeMap();
@@ -85,6 +90,10 @@
             }
 
             updateScopeMap();
+        }
+
+        function changeUpScopingValue() {
+            self.client.up_scoping_enabled = ! self.client.up_scoping_enabled;
         }
 
         function isCustomScope(scope) {
