@@ -41,8 +41,8 @@ import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.schema.XSAny;
 import org.springframework.security.saml.SAMLCredential;
 
-import it.infn.mw.iam.authn.saml.util.EPTIDUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.ChainedCollectingSamlIdResolver;
+import it.infn.mw.iam.authn.saml.util.EPTIDUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.NameIdUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.NamedSamlUserIdentifierResolver;
 import it.infn.mw.iam.authn.saml.util.PersistentNameIdUserIdentifierResolver;
@@ -200,7 +200,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void firstApplicableChainedResolverTest() {
+  public void ChainedResolverReturnsErrorsIfNoMatchedSamlIds() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
@@ -236,7 +236,7 @@ public class ResolverTests {
   }
 
   @Test
-  public void firstApplicableChainedResolverTestSuccess() {
+  public void ChainedResolverTestSuccess() {
 
     SamlIdResolvers resolvers = new SamlIdResolvers();
 
