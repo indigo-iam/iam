@@ -43,7 +43,7 @@ public class BasicAuthLoggingFilter extends OncePerRequestFilter {
         String base64 = auth.substring("Basic ".length());
         log.debug("Received Basic Authorization header (Base64 only): {}", base64);
       }
-      filterChain.doFilter(request, response);
     }
+    filterChain.doFilter(request, response);
   }
 }
