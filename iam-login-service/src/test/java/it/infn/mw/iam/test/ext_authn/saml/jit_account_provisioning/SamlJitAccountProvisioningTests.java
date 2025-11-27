@@ -184,7 +184,6 @@ public class SamlJitAccountProvisioningTests extends SamlAuthenticationTestSuppo
 
     assertThat(newProvisionedAccount.getUuid(), equalTo(provisionedAccount.getUuid()));
     assertThat(accountCreatedEventListener.getCount(), equalTo(1L));
-
   }
 
   @Test

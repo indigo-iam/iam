@@ -15,7 +15,7 @@
  */
 package it.infn.mw.iam.test.ext_authn.saml.jit_account_provisioning;
 
-import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.resolutionSuccess;
+import static it.infn.mw.iam.authn.saml.util.SamlUserIdentifierResolutionResult.success;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.DEFAULT_IDP_ID;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T1_EPUID;
 import static it.infn.mw.iam.test.ext_authn.saml.SamlAuthenticationTestSupport.T1_GIVEN_NAME;
@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -68,7 +69,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Mock
   private InactiveAccountAuthenticationHander inactiveAccountHander;
-  
+
   @Mock
   private MappingPropertiesResolver mpResolver;
 
@@ -90,12 +91,12 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
     });
 
     when(resolver.resolveSamlUserIdentifier(any()))
-      .thenReturn(SamlUserIdentifierResolutionResult.resolutionFailure("No suitable user id found"));
+      .thenReturn(SamlUserIdentifierResolutionResult.failure(List.of("No suitable user id found")));
 
     AttributeMappingProperties defaultMappingProps = new AttributeMappingProperties();
-    
+
     when(mpResolver.resolveMappingProperties(Mockito.any())).thenReturn(defaultMappingProps);
-    
+
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.empty(), mpResolver);
   }
@@ -124,7 +125,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Test(expected = UsernameNotFoundException.class)
   public void testMissingEmailSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     try {
       userDetailsService.loadUserBySAML(cred);
     } catch (UsernameNotFoundException e) {
@@ -137,7 +138,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Test(expected = UsernameNotFoundException.class)
   public void testMissingGivenNameSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
 
     try {
@@ -152,7 +153,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Test(expected = UsernameNotFoundException.class)
   public void testMissingFamilyNameSamlCredentialSanityCheck() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
     when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
@@ -169,7 +170,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Test
   public void testSamlIdIsUsedForUsername() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
     when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
@@ -182,7 +183,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
 
   @Test
   public void uuidIsUsedForAccountUsernameIfResolvedIdLongerThan128Chars() {
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(LONG_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(LONG_SAML_ID)));
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
     when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
       .thenReturn(T1_GIVEN_NAME);
@@ -198,7 +199,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.of(trustedIdps), mpResolver);
 
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     when(cred.getRemoteEntityID()).thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
 
     try {
@@ -217,7 +218,7 @@ public class JitUserDetailServiceTests extends JitUserDetailsServiceTestsSupport
     userDetailsService = new JustInTimeProvisioningSAMLUserDetailsService(resolver, accountService,
         inactiveAccountHander, accountRepo, Optional.of(trustedIdps), mpResolver);
 
-    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(resolutionSuccess(T1_SAML_ID));
+    when(resolver.resolveSamlUserIdentifier(cred)).thenReturn(success(List.of(T1_SAML_ID)));
     when(cred.getRemoteEntityID()).thenReturn(SamlAuthenticationTestSupport.DEFAULT_IDP_ID);
     when(cred.getAttributeAsString(Saml2Attribute.MAIL.getAttributeName())).thenReturn(T1_MAIL);
     when(cred.getAttributeAsString(Saml2Attribute.GIVEN_NAME.getAttributeName()))
