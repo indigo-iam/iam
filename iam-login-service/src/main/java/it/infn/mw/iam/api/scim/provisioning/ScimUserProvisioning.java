@@ -559,8 +559,8 @@ public class ScimUserProvisioning
 
       // Ensure that all values in the certificate is populated, as this is not
       // true for the IndigoUser, when it comes to certificates
-      IamX509Certificate updatedCertificate =
-          x509CertificateConverter.entityFromDto(indigoUser.getCertificates().get(0));
+      IamX509Certificate updatedCertificate = indigoUser.getCertificates().isEmpty() ? null
+          : x509CertificateConverter.entityFromDto(indigoUser.getCertificates().get(0));
 
       if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
 

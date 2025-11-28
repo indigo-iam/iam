@@ -4,6 +4,6 @@ Name: ${name}
 Username: ${username}
 Email: ${email}
 SubjectDN: ${subjectDn!"(unknown subject DN)"}
-IssuerDN:  ${issuerDn!"(unknown issuer DN)"}
+IssuerDN: ${issuerDn!"(unknown issuer DN)"}
 
 The ${organisationName} registration service

@@ -521,6 +521,15 @@ public class TransientNotificationFactory implements NotificationFactory {
   private Map<String, Object> getObjectForCertificateMessage(IamAccount account,
       IamX509Certificate x509Certificate) {
 
+    //Temp test
+/*     String name = null;
+    String username = null;
+    String email = null;
+
+    String issuerDn = null;
+    String subjectDn = null; */
+
+
     String name = account.getUserInfo().getName();
     String username = account.getUsername();
     String email = account.getUserInfo().getEmail();
