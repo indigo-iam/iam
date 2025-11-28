@@ -554,11 +554,9 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
-  private Map<String, Object> getObjectForCertificateMessage(IamAccount account,
-      IamX509Certificate x509Credential) {
+  private Map<String, Object> getObjectForCertificateMessage(IamAccount a, IamX509Certificate c) {
 
-    return generateCertificateModel(account.getUserInfo().getName(), account.getUsername(),
-        account.getUserInfo().getEmail(), organisationName, x509Credential.getSubjectDn(),
-        x509Credential.getIssuerDn());
+    return generateCertificateModel(a.getUserInfo().getName(), a.getUsername(),
+        a.getUserInfo().getEmail(), organisationName, c.getSubjectDn(), c.getIssuerDn());
   }
 }
