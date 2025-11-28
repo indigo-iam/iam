@@ -526,7 +526,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
       IamX509Certificate x509Credential) {
 
-    String subject = "New x509Certificate linked to user";
+    String subject = "New X.509 certificate linked";
     Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
 
     IamEmailNotification notification =
@@ -542,7 +542,7 @@ public class TransientNotificationFactory implements NotificationFactory {
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
       IamX509Certificate x509Credential) {
 
-    String subject = "Removed x509Certificate from user";
+    String subject = "Unlinked X.509 certificate";
     Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
 
     IamEmailNotification notification =
