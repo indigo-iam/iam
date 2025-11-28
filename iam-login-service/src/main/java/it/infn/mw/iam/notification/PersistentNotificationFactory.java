@@ -18,10 +18,9 @@ package it.infn.mw.iam.notification;
 import java.util.List;
 import java.util.Map;
 
-import freemarker.template.Configuration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import freemarker.template.Configuration;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
 import it.infn.mw.iam.notification.service.resolver.GroupManagerNotificationDeliveryStrategy;
@@ -33,7 +32,6 @@ public class PersistentNotificationFactory extends TransientNotificationFactory 
 
   final IamEmailNotificationRepository repo;
 
-  @Autowired
   public PersistentNotificationFactory(Configuration fm, NotificationProperties np,
       IamEmailNotificationRepository repo, AdminNotificationDeliveryStrategy ands,
       GroupManagerNotificationDeliveryStrategy gmds,

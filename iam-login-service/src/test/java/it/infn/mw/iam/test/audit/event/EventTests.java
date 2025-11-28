@@ -358,7 +358,7 @@ public class EventTests extends X509TestSupport {
 
     Assert.assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
-        notificationProperties.getSubjectPrefix() + " New x509Certificate linked to user"));
+        notificationProperties.getSubjectPrefix() + " New X.509 certificate linked"));
 
     assertThat(pending.get(0).getReceivers().get(0).getEmailAddress(),
         containsString(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses().get(0)));
@@ -408,7 +408,7 @@ public class EventTests extends X509TestSupport {
 
     Assert.assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
-        notificationProperties.getSubjectPrefix() + " New x509Certificate linked to user"));
+        notificationProperties.getSubjectPrefix() + " New X.509 certificate linked"));
     assertThat(pending.get(0).getReceivers().get(0).getEmailAddress(),
         containsString(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses().get(0)));
     assertThat(pending.get(0).getBody(),
@@ -525,7 +525,7 @@ public class EventTests extends X509TestSupport {
 
     Assert.assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
-        notificationProperties.getSubjectPrefix() + " Removed x509Certificate from user"));
+        notificationProperties.getSubjectPrefix() + " Unlinked X.509 certificate"));
     assertThat(pending.get(0).getReceivers().get(0).getEmailAddress(),
         containsString(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses().get(0)));
     assertThat(pending.get(0).getBody(), containsString(
@@ -574,7 +574,7 @@ public class EventTests extends X509TestSupport {
 
     Assert.assertEquals(1, pending.size());
     assertThat(pending.get(0).getSubject(), containsString(
-        notificationProperties.getSubjectPrefix() + " Removed x509Certificate from user"));
+        notificationProperties.getSubjectPrefix() + " Unlinked X.509 certificate"));
     assertThat(pending.get(0).getReceivers().get(0).getEmailAddress(),
         containsString(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses().get(0)));
     assertThat(pending.get(0).getBody(), containsString(
