@@ -53,6 +53,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -484,7 +485,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   @Override
   public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
+      IamX509Certificate x509Credential) {
 
     String subject = "New x509Certificate linked to user";
 
@@ -502,7 +503,7 @@ public class TransientNotificationFactory implements NotificationFactory {
 
   @Override
   public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
+      IamX509Certificate x509Credential) {
 
     String subject = "Removed x509Certificate from user";
 
@@ -518,14 +519,14 @@ public class TransientNotificationFactory implements NotificationFactory {
   }
 
   private Map<String, Object> getObjectForCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
+      IamX509Certificate x509Certificate) {
 
     String name = account.getUserInfo().getName();
     String username = account.getUsername();
     String email = account.getUserInfo().getEmail();
 
-    String issuerDn = x509Credential.getIssuer();
-    String subjectDn = x509Credential.getSubject();
+    String issuerDn = x509Certificate.getIssuerDn();
+    String subjectDn = x509Certificate.getSubjectDn();
 
     return generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
   }

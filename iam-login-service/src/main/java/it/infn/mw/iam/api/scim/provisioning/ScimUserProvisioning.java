@@ -76,6 +76,7 @@ import it.infn.mw.iam.core.user.exception.UserAlreadyExistsException;
 import it.infn.mw.iam.notification.NotificationFactory;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamGroupRepository;
 import it.infn.mw.iam.persistence.repository.IamOAuthAccessTokenRepository;
@@ -102,6 +103,7 @@ public class ScimUserProvisioning
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
+  private final X509CertificateConverter x509CertificateConverter;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -119,6 +121,7 @@ public class ScimUserProvisioning
     this.accountRepository = accountRepository;
     this.userConverter = userConverter;
     this.notificationFactory = notificationFactory;
+    this.x509CertificateConverter = x509CertificateConverter;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
@@ -527,8 +530,8 @@ public class ScimUserProvisioning
       account.touch();
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
-        u.publishUpdateEvent(this, eventPublisher);
         handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
+        u.publishUpdateEvent(this, eventPublisher);
       }
     }
   }
@@ -553,16 +556,20 @@ public class ScimUserProvisioning
     // Checking if the certificate update is true and only then is it generating the
     // notification/log update
     if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+
+      // Ensure that all values in the certificate is populated, as this is not
+      // true for the IndigoUser, when it comes to certificates
+      IamX509Certificate updatedCertificate =
+          x509CertificateConverter.entityFromDto(indigoUser.getCertificates().get(0));
+
       if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
 
-        notificationFactory.createLinkedCertificateMessage(account,
-            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
+        notificationFactory.createLinkedCertificateMessage(account, updatedCertificate);
       }
 
       else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
 
-        notificationFactory.createUnlinkedCertificateMessage(account,
-            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
+        notificationFactory.createUnlinkedCertificateMessage(account, updatedCertificate);
       }
     }
   }

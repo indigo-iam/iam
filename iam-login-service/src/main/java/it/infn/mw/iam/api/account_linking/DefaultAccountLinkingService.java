@@ -173,6 +173,11 @@ public class DefaultAccountLinkingService
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+        notificationFactory.createLinkedCertificateMessage(userAccount, linkedCertificate
+          .orElseThrow(() -> new IllegalArgumentException("Certificate should be present")));
+      }
+
       eventPublisher.publishEvent(new X509CertificateUpdatedEvent(this, userAccount,
           String.format("User '%s' has updated its linked certificate with subject '%s'",
               userAccount.getUsername(), x509Credential.getSubject()),
@@ -190,14 +195,15 @@ public class DefaultAccountLinkingService
       userAccount.getX509Certificates().add(newCert);
       userAccount.touch();
       iamAccountRepository.save(userAccount);
+
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+        notificationFactory.createLinkedCertificateMessage(userAccount, newCert);
+      }
+
       eventPublisher.publishEvent(new X509CertificateLinkedEvent(this, userAccount,
           String.format("User '%s' linked certificate with subject '%s' to his/her membership",
               userAccount.getUsername(), x509Credential.getSubject()),
           x509Credential));
-    }
-
-    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
-      notificationFactory.createLinkedCertificateMessage(userAccount, x509Credential);
     }
   }
 
@@ -224,22 +230,15 @@ public class DefaultAccountLinkingService
       userAccount.touch();
       iamAccountRepository.save(userAccount);
 
+      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
+        notificationFactory.createUnlinkedCertificateMessage(userAccount, certificate
+          .orElseThrow(() -> new IllegalArgumentException("Certificate should be present")));
+      }
 
       eventPublisher.publishEvent(new X509CertificateUnlinkedEvent(this, userAccount, String.format(
           "User '%s' unlinked certificate with subject '%s' and issuer '%s' from his/her membership",
           userAccount.getUsername(), certificateSubject, certificateIssuer), certificateSubject,
           certificateIssuer));
-
-      if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
-
-        IamX509AuthenticationCredential iamX509AuthenticationCredential =
-            new IamX509AuthenticationCredential.Builder().issuer(certificate.get().getIssuerDn())
-              .subject(certificate.get().getSubjectDn())
-              .build();
-
-        notificationFactory.createUnlinkedCertificateMessage(userAccount,
-            iamX509AuthenticationCredential);
-      }
     }
   }
 
