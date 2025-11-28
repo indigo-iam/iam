@@ -16,6 +16,7 @@
 package it.infn.mw.iam.config;
 
 import java.io.IOException;
+import java.util.Enumeration;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -35,15 +36,30 @@ public class BasicAuthLoggingFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
+
     if (log.isDebugEnabled()) {
 
-      String auth = request.getHeader("Authorization");
+      // Hierarchical dump of all headers
+      Enumeration<String> headerNames = request.getHeaderNames();
 
-      if (auth != null && auth.startsWith("Basic ")) {
-        String base64 = auth.substring("Basic ".length());
-        log.debug("Received Basic Authorization header (Base64 only): {}", base64);
+      if (headerNames != null) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Incoming Request Headers ===\n");
+        sb.append(request.getMethod()).append(" ").append(request.getRequestURI()).append("\n");
+
+        while (headerNames.hasMoreElements()) {
+          String name = headerNames.nextElement();
+
+          Enumeration<String> values = request.getHeaders(name);
+          while (values.hasMoreElements()) {
+            sb.append(name).append(": ").append(values.nextElement()).append("\n");
+          }
+        }
+
+        log.debug(sb.toString());
       }
     }
+
     filterChain.doFilter(request, response);
   }
 }
