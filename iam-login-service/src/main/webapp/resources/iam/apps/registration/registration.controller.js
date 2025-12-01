@@ -180,8 +180,12 @@ function RegistrationController(
 	}
 
 	function populateValue(info, name) {
-		if (typeof $scope.config.fields != 'undefined' && typeof $scope.config.fields[name] != 'undefined' && typeof $scope.config.fields[name].externalAuthAttribute != 'undefined') {
-			return lookupAuthInfo(info, $scope.config.fields[name].externalAuthAttribute);
+		const fieldName = name.toUpperCase();
+		const hasExternalAttributeDefined = Boolean(typeof $scope.config.fields != 'undefined' 
+			&& typeof $scope.config.fields[fieldName] != 'undefined' 
+			&& typeof $scope.config.fields[fieldName].externalAuthAttribute != 'undefined');
+		if (hasExternalAttributeDefined) {
+			return lookupAuthInfo(info, $scope.config.fields[fieldName].externalAuthAttribute);
 		}
 	}
 
@@ -194,6 +198,7 @@ function RegistrationController(
 				familyname: populateValue(info, 'surname'),
 				username: populateValue(info, 'username'),
 				email: populateValue(info, 'email'),
+				affiliation: populateValue(info, 'affiliation'),
 				notes: '',
 			};
 
