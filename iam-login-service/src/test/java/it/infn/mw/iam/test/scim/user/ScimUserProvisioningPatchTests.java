@@ -250,12 +250,12 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Test
   public void testAddAndRemoveMultipleX509Certificate() throws Exception {
 
-    ScimUser lennon_update = ScimUser.builder()
+    ScimUser lennonUpdate = ScimUser.builder()
       .addX509Certificate(X509CERT_TEST)
       .addX509Certificate(X509CERT_TEST2)
       .build();
 
-    scimUtils.patchUser(lennon.getId(), add, lennon_update);
+    scimUtils.patchUser(lennon.getId(), add, lennonUpdate);
 
     ScimUser updatedUser = scimUtils.getUser(lennon.getId());
     List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -269,9 +269,9 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     assertThat(updatedUserCertList.stream().map(u -> u.getDisplay()).toList(),
         containsInAnyOrder(X509CERT_TEST.getDisplay(), X509CERT_TEST2.getDisplay()));
 
-    ScimUser lennon_remove = ScimUser.builder().addX509Certificate(X509CERT_TEST).build();
+    ScimUser lennonRemove = ScimUser.builder().addX509Certificate(X509CERT_TEST).build();
 
-    scimUtils.patchUser(lennon.getId(), remove, lennon_remove);
+    scimUtils.patchUser(lennon.getId(), remove, lennonRemove);
 
     updatedUser = scimUtils.getUser(lennon.getId());
     assertThat(updatedUser.getIndigoUser().getCertificates(), hasSize(1));
@@ -281,9 +281,9 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     assertThat(updatedUser.getIndigoUser().getCertificates().get(0).getDisplay(),
         equalTo(X509CERT_TEST2.getDisplay()));
 
-    ScimUser lennon_remove_second = ScimUser.builder().addX509Certificate(X509CERT_TEST2).build();
+    ScimUser lennonRemoveSecond = ScimUser.builder().addX509Certificate(X509CERT_TEST2).build();
 
-    scimUtils.patchUser(lennon.getId(), remove, lennon_remove_second);
+    scimUtils.patchUser(lennon.getId(), remove, lennonRemoveSecond);
 
     updatedUser = scimUtils.getUser(lennon.getId());
 

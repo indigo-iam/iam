@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItems;
 
 import java.util.List;
-import java.util.Optional;
 
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.add;
 import static it.infn.mw.iam.api.scim.model.ScimPatchOperation.ScimPatchOperationType.remove;
@@ -161,12 +160,12 @@ public class CertificateLinkingNotificationAdminEnabledTests extends X509TestSup
                         .display(TEST_2_CERT_LABEL)
                         .build();
 
-                ScimUser user_update = ScimUser.builder()
+                ScimUser userUpdate = ScimUser.builder()
                         .addX509Certificate(cert)
                         .addX509Certificate(cert2)
                         .build();
 
-                scimUtils.patchUser(user.getId(), add, user_update);
+                scimUtils.patchUser(user.getId(), add, userUpdate);
 
                 ScimUser updatedUser = scimUtils.getUser(user.getId());
                 List<ScimX509Certificate> updatedUserCertList =
@@ -183,27 +182,25 @@ public class CertificateLinkingNotificationAdminEnabledTests extends X509TestSup
 
                 // Checking that the 2 notifications were made
 
-                Optional<IamAccount> account = accountRepo.findByUuid(user.getId());
-                if (!account.isPresent()) {
-                        Assert.fail("Account not found");
-                }
+                account = accountRepo.findByUuid(user.getId())
+                        .orElseThrow(IllegalArgumentException::new);
 
                 assertThat(emails.stream().map(u -> u.getBody()).toList(), containsInAnyOrder(
                                 getLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.get().getUserInfo().getEmail(),
-                                                TEST_2_SUBJECT, TEST_2_ISSUER,
+                                                account.getUserInfo().getEmail(), TEST_2_SUBJECT,
+                                                TEST_2_ISSUER,
                                                 properties.getOrganisation().getName()),
                                 getLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.get().getUserInfo().getEmail(),
-                                                TEST_0_SUBJECT, TEST_0_ISSUER,
+                                                account.getUserInfo().getEmail(), TEST_0_SUBJECT,
+                                                TEST_0_ISSUER,
                                                 properties.getOrganisation().getName())));
 
-                ScimUser user_remove = ScimUser.builder()
+                ScimUser userRemove = ScimUser.builder()
                         .addX509Certificate(cert)
                         .addX509Certificate(cert2)
                         .build();
 
-                scimUtils.patchUser(user.getId(), remove, user_remove);
+                scimUtils.patchUser(user.getId(), remove, userRemove);
 
                 updatedUser = scimUtils.getUser(user.getId());
                 updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
@@ -219,12 +216,12 @@ public class CertificateLinkingNotificationAdminEnabledTests extends X509TestSup
 
                 assertThat(emails.stream().map(u -> u.getBody()).toList(), hasItems(
                                 getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.get().getUserInfo().getEmail(),
-                                                TEST_2_SUBJECT, TEST_2_ISSUER,
+                                                account.getUserInfo().getEmail(), TEST_2_SUBJECT,
+                                                TEST_2_ISSUER,
                                                 properties.getOrganisation().getName()),
                                 getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.get().getUserInfo().getEmail(),
-                                                TEST_0_SUBJECT, TEST_0_ISSUER,
+                                                account.getUserInfo().getEmail(), TEST_0_SUBJECT,
+                                                TEST_0_ISSUER,
                                                 properties.getOrganisation().getName())));
 
 
