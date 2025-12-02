@@ -144,6 +144,31 @@ public class ProfileSelectorTests {
 
     profile = profileResolver.resolveProfile(Set.of(), Set.of());
     assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("wlcg"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("aarc"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("kc"));
+    assertThat(profile, is(iamProfile));
+  }
+
+  @Test
+  public void oneProfileLeadToCorrectJwtProfile() {
+
+    JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "wlcg"), Set.of());
+    assertThat(profile, is(wlcgProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "aarc"), Set.of());
+    assertThat(profile, is(aarcProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "kc"), Set.of());
+    assertThat(profile, is(kcProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "iam"), Set.of());
+    assertThat(profile, is(iamProfile));
   }
 
 }
