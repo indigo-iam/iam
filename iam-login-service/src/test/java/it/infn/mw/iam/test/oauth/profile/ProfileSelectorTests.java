@@ -119,4 +119,22 @@ public class ProfileSelectorTests {
     assertThat(profile, is(iamProfile));
 
   }
+
+  @Test
+  public void multipleProfilesLeadToRequestedProfile() {
+
+    Set<String> clientScopes = Set.of("openid", "aarc", "wlcg");
+
+    JWTProfile profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "wlcg"));
+    assertThat(profile, is(wlcgProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "aarc"));
+    assertThat(profile, is(aarcProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "wlcg", "aarc"));
+    assertThat(profile, is(iamProfile));
+  }
 }

@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class ScopeAwareProfileResolver implements JWTProfileResolver {
@@ -32,22 +33,48 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
   }
 
   @Override
-  public JWTProfile resolveProfile(Set<String> clientScopes) {
+  public JWTProfile resolveProfile(Set<String> scopes) {
 
-    if (clientScopes == null) {
+    if (Objects.isNull(scopes)) {
       throw new IllegalArgumentException("null list of scopes");
     }
-
-    Set<JWTProfile> matchedProfiles = clientScopes
-      .stream()
-      .filter(profileMap.keySet()::contains)
-      .map(profileMap::get)
-      .collect(toCollection(LinkedHashSet::new));
-
-    if (matchedProfiles.isEmpty() || matchedProfiles.size() > 1) {
+    if (scopes.isEmpty()) {
       return defaultProfile;
     }
 
+    Set<JWTProfile> matchedProfiles = matches(scopes);
+    if (matchedProfiles.isEmpty() || matchedProfiles.size() > 1) {
+      return defaultProfile;
+    }
     return matchedProfiles.iterator().next();
+  }
+
+  @Override
+  public JWTProfile resolveProfile(Set<String> clientScopes, Set<String> requestedScopes) {
+
+    if (Objects.isNull(clientScopes) || Objects.isNull(requestedScopes)) {
+      throw new IllegalArgumentException("null list of scopes");
+    }
+    if (clientScopes.isEmpty() && requestedScopes.isEmpty()) {
+      return defaultProfile;
+    }
+
+    Set<JWTProfile> clientMatches = matches(clientScopes);
+    if (clientMatches.isEmpty() || clientMatches.size() > 1) {
+      Set<JWTProfile> requestedMatches = matches(requestedScopes);
+      if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
+        return defaultProfile;
+      }
+      return requestedMatches.iterator().next();
+    }
+    return clientMatches.iterator().next();
+  }
+
+  private Set<JWTProfile> matches(Set<String> clientScopes) {
+
+    return clientScopes.stream()
+      .filter(profileMap.keySet()::contains)
+      .map(profileMap::get)
+      .collect(toCollection(LinkedHashSet::new));
   }
 }

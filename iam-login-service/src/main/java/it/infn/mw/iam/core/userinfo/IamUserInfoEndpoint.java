@@ -85,7 +85,8 @@ public class IamUserInfoEndpoint {
     LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
         username);
 
-    JWTProfile profile = profileResolver.resolveProfile(client.get().getScope());
+    JWTProfile profile =
+        profileResolver.resolveProfile(client.get().getScope(), auth.getOAuth2Request().getScope());
     Set<String> scopes = scopeResolver.resolveScope(auth);
     Map<String, Object> claims =
         profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
