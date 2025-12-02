@@ -35,18 +35,7 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
   @Override
   public JWTProfile resolveProfile(Set<String> scopes) {
 
-    if (Objects.isNull(scopes)) {
-      throw new IllegalArgumentException("null list of scopes");
-    }
-    if (scopes.isEmpty()) {
-      return defaultProfile;
-    }
-
-    Set<JWTProfile> matchedProfiles = matches(scopes);
-    if (matchedProfiles.isEmpty() || matchedProfiles.size() > 1) {
-      return defaultProfile;
-    }
-    return matchedProfiles.iterator().next();
+    return resolveProfile(scopes, Set.of());
   }
 
   @Override
@@ -60,14 +49,18 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
     }
 
     Set<JWTProfile> clientMatches = matches(clientScopes);
-    if (clientMatches.isEmpty() || clientMatches.size() > 1) {
-      Set<JWTProfile> requestedMatches = matches(requestedScopes);
-      if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
-        return defaultProfile;
-      }
-      return requestedMatches.iterator().next();
+    if (clientMatches.isEmpty()) {
+      return defaultProfile;
     }
-    return clientMatches.iterator().next();
+    if (clientMatches.size() == 1) {
+      return clientMatches.iterator().next();
+    }
+    // clientMatches.size() > 1
+    Set<JWTProfile> requestedMatches = matches(requestedScopes);
+    if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
+      return defaultProfile;
+    }
+    return requestedMatches.iterator().next();
   }
 
   private Set<JWTProfile> matches(Set<String> clientScopes) {
