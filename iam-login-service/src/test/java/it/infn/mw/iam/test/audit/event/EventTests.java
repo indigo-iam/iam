@@ -18,7 +18,6 @@ package it.infn.mw.iam.test.audit.event;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static it.infn.mw.iam.test.scim.ScimUtils.SCIM_CLIENT_ID;
@@ -64,7 +63,6 @@ import it.infn.mw.iam.audit.events.account.ssh.SshKeyRemovedEvent;
 import it.infn.mw.iam.audit.events.account.x509.X509CertificateAddedEvent;
 import it.infn.mw.iam.audit.events.account.x509.X509CertificateRemovedEvent;
 import it.infn.mw.iam.authn.saml.util.SamlAttributeNames;
-import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.repository.IamEmailNotificationRepository;
