@@ -131,10 +131,10 @@ public class ProfileSelectorTests {
     profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "aarc"));
     assertThat(profile, is(aarcProfile));
 
-    profile = profileResolver.resolveProfile(Set.of("openid"));
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid"));
     assertThat(profile, is(iamProfile));
 
-    profile = profileResolver.resolveProfile(Set.of("openid", "wlcg", "aarc"));
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "wlcg", "aarc"));
     assertThat(profile, is(iamProfile));
   }
 }
