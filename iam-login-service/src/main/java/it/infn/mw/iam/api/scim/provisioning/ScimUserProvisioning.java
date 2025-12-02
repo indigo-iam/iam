@@ -530,8 +530,8 @@ public class ScimUserProvisioning
       account.touch();
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
-        u.publishUpdateEvent(this, eventPublisher);
         handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
+        u.publishUpdateEvent(this, eventPublisher);
       }
     }
   }
@@ -563,9 +563,9 @@ public class ScimUserProvisioning
     if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())
         && TRUE.equals(notificationProperties.getCertificateUpdate())) {
       indigoUser.getCertificates()
-      .stream()
-      .map(x509Converter::entityFromDto)
-      .forEach(c -> notificationFactory.createUnlinkedCertificateMessage(account, c));
+        .stream()
+        .map(x509Converter::entityFromDto)
+        .forEach(c -> notificationFactory.createUnlinkedCertificateMessage(account, c));
     }
   }
 
