@@ -363,7 +363,7 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
     client.setActive(true);
-    client.setUpScopingAllowed(true);
+    client.setUpScopingEnabled(true);
 
     if (hasRelyingParty(request)) {
       ClientRelyingPartyEntity clientRelyingParty =

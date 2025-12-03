@@ -145,7 +145,7 @@ public class DefaultTokenExchangePdp implements TokenExchangePdp, InitializingBe
 
 
 
-    if (!origin.isUpScopingAllowed() && !subjectToken.isBlank()) {
+    if (!origin.isUpScopingEnabled() && !subjectToken.isBlank()) {
       scopeMatchers = extractScopesFromToken(subjectToken);
       invalidScopeMessage = "scope not allowed by subject token configuration";
 
