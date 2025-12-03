@@ -42,7 +42,6 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import it.infn.mw.iam.api.account.password_reset.PasswordResetController;
-import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.core.IamDeliveryStatus;
 import it.infn.mw.iam.core.IamNotificationType;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -53,6 +52,7 @@ import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamNotificationReceiver;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public class TransientNotificationFactory implements NotificationFactory {
 
@@ -112,8 +112,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     String recipient = request.getAccount().getUserInfo().getName();
     String resetPasswordUrl = String.format("%s%s/%s", baseUrl,
         PasswordResetController.BASE_TOKEN_URL, request.getAccount().getResetKey());
-
-
 
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
@@ -482,54 +480,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     return notification;
   }
 
-  @Override
-  public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
-
-    String subject = "New x509Certificate linked to user";
-
-    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
-
-    IamEmailNotification notification =
-        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
-            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
-
-
-    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
-
-    return notification;
-  }
-
-  @Override
-  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
-
-    String subject = "Removed x509Certificate from user";
-
-    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
-
-    IamEmailNotification notification =
-        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
-            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
-
-    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
-
-    return notification;
-  }
-
-  private Map<String, Object> getObjectForCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential) {
-
-    String name = account.getUserInfo().getName();
-    String username = account.getUsername();
-    String email = account.getUserInfo().getEmail();
-
-    String issuerDn = x509Credential.getIssuer();
-    String subjectDn = x509Credential.getSubject();
-
-    return generateCertificateModel(name, username, email, organisationName, subjectDn, issuerDn);
-  }
-
   private Map<String, Object> generateCertificateModel(String name, String username, String email,
       String organisationName, String subjectDn, String issuerDn) {
     Map<String, Object> model = new HashMap<>();
@@ -568,5 +518,43 @@ public class TransientNotificationFactory implements NotificationFactory {
       LOG.error("Exception encountered when attempting to create message: {}", e.toString());
       return null;
     }
+  }
+
+  @Override
+  public IamEmailNotification createLinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Credential) {
+
+    String subject = "New X.509 certificate linked";
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
+
+    IamEmailNotification notification =
+        createMessage("linkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK, subject,
+            adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+    LOG.debug("Linked a x509 certificate to the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  @Override
+  public IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
+      IamX509Certificate x509Credential) {
+
+    String subject = "Unlinked X.509 certificate";
+    Map<String, Object> model = getObjectForCertificateMessage(account, x509Credential);
+
+    IamEmailNotification notification =
+        createMessage("unLinkedCertificate.ftl", model, IamNotificationType.CERTIFICATE_LINK,
+            subject, adminNotificationDeliveryStrategy.resolveAdminEmailAddresses());
+
+    LOG.debug("Unlinked a x509 certificate from the account {}", account.getUuid());
+
+    return notification;
+  }
+
+  private Map<String, Object> getObjectForCertificateMessage(IamAccount a, IamX509Certificate c) {
+
+    return generateCertificateModel(a.getUserInfo().getName(), a.getUsername(),
+        a.getUserInfo().getEmail(), organisationName, c.getSubjectDn(), c.getIssuerDn());
   }
 }

@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -77,7 +78,8 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  private final String PICTURE_URL = "http://iosicongallery.com/img/512/angry-birds-2-2016.png";
+  private static final String PICTURE_URL =
+      "https://cdn.jim-nielsen.com/ios/512/angry-birds-2-2024-09-01.png?rf=1024";
 
   private ScimUser lennon;
   private ScimUser lincoln;
@@ -242,6 +244,49 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
     scimUtils.patchUser(lennon.getId(), remove, lennon_remove);
 
     updatedUser = scimUtils.getUser(lennon.getId());
+    assertTrue(updatedUser.getIndigoUser().getCertificates().isEmpty());
+  }
+
+  @Test
+  public void testAddAndRemoveMultipleX509Certificate() throws Exception {
+
+    ScimUser lennonUpdate = ScimUser.builder()
+      .addX509Certificate(X509CERT_TEST)
+      .addX509Certificate(X509CERT_TEST2)
+      .build();
+
+    scimUtils.patchUser(lennon.getId(), add, lennonUpdate);
+
+    ScimUser updatedUser = scimUtils.getUser(lennon.getId());
+    List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
+
+    assertThat(updatedUserCertList, hasSize(equalTo(2)));
+
+    assertThat(updatedUserCertList.stream().map(u -> u.getPemEncodedCertificate()).toList(),
+        containsInAnyOrder(X509CERT_TEST.getPemEncodedCertificate(),
+            X509CERT_TEST2.getPemEncodedCertificate()));
+
+    assertThat(updatedUserCertList.stream().map(u -> u.getDisplay()).toList(),
+        containsInAnyOrder(X509CERT_TEST.getDisplay(), X509CERT_TEST2.getDisplay()));
+
+    ScimUser lennonRemove = ScimUser.builder().addX509Certificate(X509CERT_TEST).build();
+
+    scimUtils.patchUser(lennon.getId(), remove, lennonRemove);
+
+    updatedUser = scimUtils.getUser(lennon.getId());
+    assertThat(updatedUser.getIndigoUser().getCertificates(), hasSize(1));
+    assertThat(updatedUser.getIndigoUser().getCertificates().get(0).getPemEncodedCertificate(),
+        equalTo(X509CERT_TEST2.getPemEncodedCertificate()));
+
+    assertThat(updatedUser.getIndigoUser().getCertificates().get(0).getDisplay(),
+        equalTo(X509CERT_TEST2.getDisplay()));
+
+    ScimUser lennonRemoveSecond = ScimUser.builder().addX509Certificate(X509CERT_TEST2).build();
+
+    scimUtils.patchUser(lennon.getId(), remove, lennonRemoveSecond);
+
+    updatedUser = scimUtils.getUser(lennon.getId());
+
     assertTrue(updatedUser.getIndigoUser().getCertificates().isEmpty());
   }
 

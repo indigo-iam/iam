@@ -20,12 +20,12 @@ import java.util.Optional;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 
-import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamAup;
 import it.infn.mw.iam.persistence.model.IamEmailNotification;
 import it.infn.mw.iam.persistence.model.IamGroupRequest;
 import it.infn.mw.iam.persistence.model.IamRegistrationRequest;
+import it.infn.mw.iam.persistence.model.IamX509Certificate;
 
 public interface NotificationFactory {
 
@@ -68,8 +68,8 @@ public interface NotificationFactory {
   IamEmailNotification createRevokeServiceAccountMessage(IamAccount account);
 
   IamEmailNotification createLinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential);
+      IamX509Certificate x509Credential);
 
   IamEmailNotification createUnlinkedCertificateMessage(IamAccount account,
-      IamX509AuthenticationCredential x509Credential);
+      IamX509Certificate x509Credential);
 }
