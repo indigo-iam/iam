@@ -82,7 +82,7 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
 
         ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
             .orElseThrow(NoSuchElementException::new);
-        client.setUpScopingAllowed(false);
+        client.setUpScopingEnabled(false);
         clientRepository.save(client);
     }
 
@@ -91,7 +91,7 @@ public class TokenExchangeDisableUpscopingTests extends EndpointsTestUtils {
     public void cleanUp() {
         ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
             .orElseThrow(NoSuchElementException::new);
-        client.setUpScopingAllowed(true);
+        client.setUpScopingEnabled(true);
         clientRepository.save(client);
     }
 
