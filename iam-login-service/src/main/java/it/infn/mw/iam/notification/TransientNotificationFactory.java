@@ -113,8 +113,6 @@ public class TransientNotificationFactory implements NotificationFactory {
     String resetPasswordUrl = String.format("%s%s/%s", baseUrl,
         PasswordResetController.BASE_TOKEN_URL, request.getAccount().getResetKey());
 
-
-
     Map<String, Object> model = new HashMap<>();
     model.put(RECIPIENT_FIELD, recipient);
 

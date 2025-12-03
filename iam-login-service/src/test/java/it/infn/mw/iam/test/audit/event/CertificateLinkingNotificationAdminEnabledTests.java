@@ -69,257 +69,239 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
-@SpringBootTest(classes = {
-                IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-                webEnvironment = WebEnvironment.MOCK,
-                properties = {"notification.certificateUpdate = true",
-                                "notification.admin-notification-policy = notify-admins"})
+@SpringBootTest(
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"notification.certificateUpdate = true",
+        "notification.admin-notification-policy = notify-admins"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 @Transactional
 public class CertificateLinkingNotificationAdminEnabledTests extends X509TestSupport
-                implements CertificateLinkingNotificationUtil {
+    implements CertificateLinkingNotificationUtil {
 
-        private static final String USERNAME = "event_user";
-        private static final String GIVENNAME = "Event";
-        private static final String FAMILYNAME = "User";
-        private static final String EMAIL = "event_user@localhost";
+  private static final String USERNAME = "event_user";
+  private static final String GIVENNAME = "Event";
+  private static final String FAMILYNAME = "User";
+  private static final String EMAIL = "event_user@localhost";
 
-        private static final String USERNAME_MESSAGE_CHECK =
-                        String.format("username: '%s'", USERNAME);
+  private static final String USERNAME_MESSAGE_CHECK = String.format("username: '%s'", USERNAME);
 
-        @Autowired
-        private IamAuditEventLogger logger;
+  @Autowired
+  private IamAuditEventLogger logger;
 
-        @Autowired
-        private IamAccountService accountService;
+  @Autowired
+  private IamAccountService accountService;
 
-        @Autowired
-        private IamAccountRepository accountRepo;
+  @Autowired
+  private IamAccountRepository accountRepo;
 
-        @Autowired
-        private ScimUserProvisioning userProvisioning;
+  @Autowired
+  private ScimUserProvisioning userProvisioning;
 
-        @Autowired
-        private IamEmailNotificationRepository emailRepo;
+  @Autowired
+  private IamEmailNotificationRepository emailRepo;
 
-        @Autowired
-        private IamProperties properties;
+  @Autowired
+  private IamProperties properties;
 
-        @Autowired
-        private ScimRestUtilsMvc scimUtils;
+  @Autowired
+  private ScimRestUtilsMvc scimUtils;
 
-        @Autowired
-        private MockOAuth2Filter mockOAuth2Filter;
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
 
-        @Autowired
-        private AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
+  @Autowired
+  private AdminNotificationDeliveryStrategy adminNotificationDeliveryStrategy;
 
-        private IamAccount account;
-        private ScimUser user;
+  private IamAccount account;
+  private ScimUser user;
 
-        @Before
-        public void setup() {
+  @Before
+  public void setup() {
 
-                ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-                        .pemEncodedCertificate(TEST_1_CERT_STRING)
-                        .display(TEST_1_CERT_LABEL)
-                        .build();
+    ScimX509Certificate test1Cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .display(TEST_1_CERT_LABEL)
+      .build();
 
-                user = ScimUser.builder(USERNAME)
-                        .buildName(GIVENNAME, FAMILYNAME)
-                        .buildEmail(EMAIL)
-                        .addX509Certificate(test1Cert)
-                        .build();
+    user = ScimUser.builder(USERNAME)
+      .buildName(GIVENNAME, FAMILYNAME)
+      .buildEmail(EMAIL)
+      .addX509Certificate(test1Cert)
+      .build();
 
-                user = userProvisioning.create(user);
-                account = accountService.findByUuid(user.getId())
-                        .orElseThrow(IllegalArgumentException::new);
+    user = userProvisioning.create(user);
+    account = accountService.findByUuid(user.getId()).orElseThrow(IllegalArgumentException::new);
 
-                assertNotNull(account);
+    assertNotNull(account);
 
-                mockOAuth2Filter.cleanupSecurityContext();
-        }
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
-        @After
-        public void teardown() {
-                userProvisioning.delete(account.getUuid());
-                mockOAuth2Filter.cleanupSecurityContext();
-        }
+  @After
+  public void teardown() {
+    userProvisioning.delete(account.getUuid());
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
-        @Test
-        public void testScimPatchAddAndRemoveCertificateNotification() throws Exception {
+  @Test
+  public void testScimPatchAddAndRemoveCertificateNotification() throws Exception {
 
-                // Building the certificates
-                ScimX509Certificate cert = ScimX509Certificate.builder()
-                        .pemEncodedCertificate(TEST_0_CERT_STRING)
-                        .display(TEST_0_CERT_LABEL)
-                        .build();
+    // Building the certificates
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .display(TEST_0_CERT_LABEL)
+      .build();
 
-                ScimX509Certificate cert2 = ScimX509Certificate.builder()
-                        .pemEncodedCertificate(TEST_2_CERT_STRING)
-                        .display(TEST_2_CERT_LABEL)
-                        .build();
+    ScimX509Certificate cert2 = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_2_CERT_STRING)
+      .display(TEST_2_CERT_LABEL)
+      .build();
 
-                ScimUser userUpdate = ScimUser.builder()
-                        .addX509Certificate(cert)
-                        .addX509Certificate(cert2)
-                        .build();
+    ScimUser userUpdate =
+        ScimUser.builder().addX509Certificate(cert).addX509Certificate(cert2).build();
 
-                scimUtils.patchUser(user.getId(), add, userUpdate);
+    scimUtils.patchUser(user.getId(), add, userUpdate);
 
-                ScimUser updatedUser = scimUtils.getUser(user.getId());
-                List<ScimX509Certificate> updatedUserCertList =
-                                updatedUser.getIndigoUser().getCertificates();
+    ScimUser updatedUser = scimUtils.getUser(user.getId());
+    List<ScimX509Certificate> updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
 
-                assertThat(updatedUserCertList, hasSize(equalTo(3)));
+    assertThat(updatedUserCertList, hasSize(equalTo(3)));
 
-                // Ensuring two Linking messages was made
-                assertThat(emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING).size(),
-                                equalTo(2));
+    // Ensuring two Linking messages was made
+    assertThat(emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING).size(), equalTo(2));
 
-                List<IamEmailNotification> emails =
-                                emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
+    List<IamEmailNotification> emails = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                // Checking that the 2 notifications were made
+    // Checking that the 2 notifications were made
 
-                account = accountRepo.findByUuid(user.getId())
-                        .orElseThrow(IllegalArgumentException::new);
+    account = accountRepo.findByUuid(user.getId()).orElseThrow(IllegalArgumentException::new);
 
-                assertThat(emails.stream().map(u -> u.getBody()).toList(), containsInAnyOrder(
-                                getLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.getUserInfo().getEmail(), TEST_2_SUBJECT,
-                                                TEST_2_ISSUER,
-                                                properties.getOrganisation().getName()),
-                                getLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.getUserInfo().getEmail(), TEST_0_SUBJECT,
-                                                TEST_0_ISSUER,
-                                                properties.getOrganisation().getName())));
+    assertThat(emails.stream().map(u -> u.getBody()).toList(),
+        containsInAnyOrder(
+            getLinkMessage(user.getName().getFormatted(), user.getUserName(),
+                account.getUserInfo().getEmail(), TEST_2_SUBJECT, TEST_2_ISSUER,
+                properties.getOrganisation().getName()),
+            getLinkMessage(user.getName().getFormatted(), user.getUserName(),
+                account.getUserInfo().getEmail(), TEST_0_SUBJECT, TEST_0_ISSUER,
+                properties.getOrganisation().getName())));
 
-                ScimUser userRemove = ScimUser.builder()
-                        .addX509Certificate(cert)
-                        .addX509Certificate(cert2)
-                        .build();
+    ScimUser userRemove =
+        ScimUser.builder().addX509Certificate(cert).addX509Certificate(cert2).build();
 
-                scimUtils.patchUser(user.getId(), remove, userRemove);
+    scimUtils.patchUser(user.getId(), remove, userRemove);
 
-                updatedUser = scimUtils.getUser(user.getId());
-                updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
+    updatedUser = scimUtils.getUser(user.getId());
+    updatedUserCertList = updatedUser.getIndigoUser().getCertificates();
 
 
-                assertThat(updatedUserCertList, hasSize(equalTo(1)));
+    assertThat(updatedUserCertList, hasSize(equalTo(1)));
 
-                // Ensuring two Un-Linking messages was made
-                assertThat(emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING).size(),
-                                equalTo(4));
+    // Ensuring two Un-Linking messages was made
+    assertThat(emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING).size(), equalTo(4));
 
-                emails = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
+    emails = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                assertThat(emails.stream().map(u -> u.getBody()).toList(), hasItems(
-                                getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.getUserInfo().getEmail(), TEST_2_SUBJECT,
-                                                TEST_2_ISSUER,
-                                                properties.getOrganisation().getName()),
-                                getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
-                                                account.getUserInfo().getEmail(), TEST_0_SUBJECT,
-                                                TEST_0_ISSUER,
-                                                properties.getOrganisation().getName())));
+    assertThat(emails.stream().map(u -> u.getBody()).toList(),
+        hasItems(
+            getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
+                account.getUserInfo().getEmail(), TEST_2_SUBJECT, TEST_2_ISSUER,
+                properties.getOrganisation().getName()),
+            getUnLinkMessage(user.getName().getFormatted(), user.getUserName(),
+                account.getUserInfo().getEmail(), TEST_0_SUBJECT, TEST_0_ISSUER,
+                properties.getOrganisation().getName())));
 
 
-                List<String> receivers = emails.stream()
-                        .flatMap(n -> n.getReceivers().stream())
-                        .map(r -> r.getEmailAddress())
-                        .distinct()
-                        .toList();
+    List<String> receivers = emails.stream()
+      .flatMap(n -> n.getReceivers().stream())
+      .map(r -> r.getEmailAddress())
+      .distinct()
+      .toList();
 
-                assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(),
-                                equalTo(receivers));
-        }
+    assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(), equalTo(receivers));
+  }
 
-        @Test
-        public void testAddX509CertificateEventNotification() {
+  @Test
+  public void testAddX509CertificateEventNotification() {
 
-                ScimX509Certificate cert = ScimX509Certificate.builder()
-                        .pemEncodedCertificate(TEST_0_CERT_STRING)
-                        .display(TEST_0_CERT_LABEL)
-                        .subjectDn(TEST_0_SUBJECT)
-                        .issuerDn(TEST_0_ISSUER)
-                        .build();
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .display(TEST_0_CERT_LABEL)
+      .subjectDn(TEST_0_SUBJECT)
+      .issuerDn(TEST_0_ISSUER)
+      .build();
 
-                ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
+    ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
 
-                ScimUserPatchRequest req = ScimUserPatchRequest.builder().add(update).build();
-                userProvisioning.update(account.getUuid(), req.getOperations());
+    ScimUserPatchRequest req = ScimUserPatchRequest.builder().add(update).build();
+    userProvisioning.update(account.getUuid(), req.getOperations());
 
-                IamAuditApplicationEvent event = logger.getLastEvent();
-                assertThat(event, instanceOf(X509CertificateAddedEvent.class));
-                assertNotNull(event.getMessage());
-                assertThat(event.getMessage(), containsString("Add x509 certificate to user"));
-                assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
-                assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
-                assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
-                assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-                assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    IamAuditApplicationEvent event = logger.getLastEvent();
+    assertThat(event, instanceOf(X509CertificateAddedEvent.class));
+    assertNotNull(event.getMessage());
+    assertThat(event.getMessage(), containsString("Add x509 certificate to user"));
+    assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
+    assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
+    assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
+    assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
+    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
 
-                List<IamEmailNotification> pending =
-                                emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
+    List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(1, pending.size());
+    Assert.assertEquals(1, pending.size());
 
-                Assert.assertEquals(pending.get(0).getBody(), getLinkMessage(
-                                account.getUserInfo().getName(), account.getUsername(),
-                                account.getUserInfo().getEmail(), TEST_0_SUBJECT, TEST_0_ISSUER,
-                                properties.getOrganisation().getName()));
+    Assert.assertEquals(pending.get(0).getBody(),
+        getLinkMessage(account.getUserInfo().getName(), account.getUsername(),
+            account.getUserInfo().getEmail(), TEST_0_SUBJECT, TEST_0_ISSUER,
+            properties.getOrganisation().getName()));
 
-                List<String> receivers = pending.stream()
-                        .flatMap(n -> n.getReceivers().stream())
-                        .map(r -> r.getEmailAddress())
-                        .toList();
+    List<String> receivers = pending.stream()
+      .flatMap(n -> n.getReceivers().stream())
+      .map(r -> r.getEmailAddress())
+      .toList();
 
-                assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(),
-                                equalTo(receivers));
-        }
+    assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(), equalTo(receivers));
+  }
 
-        @Test
-        public void testRemoveX509CertificateEventEventNotification() {
+  @Test
+  public void testRemoveX509CertificateEventEventNotification() {
 
-                ScimX509Certificate cert = ScimX509Certificate.builder()
-                        .pemEncodedCertificate(TEST_1_CERT_STRING)
-                        .display(TEST_1_CERT_LABEL)
-                        .subjectDn(TEST_1_SUBJECT)
-                        .issuerDn(TEST_1_ISSUER)
-                        .build();
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .display(TEST_1_CERT_LABEL)
+      .subjectDn(TEST_1_SUBJECT)
+      .issuerDn(TEST_1_ISSUER)
+      .build();
 
-                ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
+    ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
 
-                ScimUserPatchRequest req = ScimUserPatchRequest.builder().remove(update).build();
-                userProvisioning.update(account.getUuid(), req.getOperations());
+    ScimUserPatchRequest req = ScimUserPatchRequest.builder().remove(update).build();
+    userProvisioning.update(account.getUuid(), req.getOperations());
 
-                IamAuditApplicationEvent event = logger.getLastEvent();
-                assertThat(event, instanceOf(X509CertificateRemovedEvent.class));
-                assertNotNull(event.getMessage());
-                assertThat(event.getMessage(), containsString("Remove x509 certificate from user"));
-                assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
-                assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
-                assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
-                assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-                assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    IamAuditApplicationEvent event = logger.getLastEvent();
+    assertThat(event, instanceOf(X509CertificateRemovedEvent.class));
+    assertNotNull(event.getMessage());
+    assertThat(event.getMessage(), containsString("Remove x509 certificate from user"));
+    assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
+    assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
+    assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
+    assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
+    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
 
-                List<IamEmailNotification> pending =
-                                emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
+    List<IamEmailNotification> pending = emailRepo.findByDeliveryStatus(IamDeliveryStatus.PENDING);
 
-                Assert.assertEquals(1, pending.size());
+    Assert.assertEquals(1, pending.size());
 
-                Assert.assertEquals(pending.get(0).getBody(), getUnLinkMessage(
-                                account.getUserInfo().getName(), account.getUsername(),
-                                account.getUserInfo().getEmail(), TEST_1_SUBJECT, TEST_1_ISSUER,
-                                properties.getOrganisation().getName()));
+    Assert.assertEquals(pending.get(0).getBody(),
+        getUnLinkMessage(account.getUserInfo().getName(), account.getUsername(),
+            account.getUserInfo().getEmail(), TEST_1_SUBJECT, TEST_1_ISSUER,
+            properties.getOrganisation().getName()));
 
-                List<String> receivers = pending.stream()
-                        .flatMap(n -> n.getReceivers().stream())
-                        .map(r -> r.getEmailAddress())
-                        .toList();
+    List<String> receivers = pending.stream()
+      .flatMap(n -> n.getReceivers().stream())
+      .map(r -> r.getEmailAddress())
+      .toList();
 
-                assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(),
-                                equalTo(receivers));
-        }
+    assertThat(adminNotificationDeliveryStrategy.resolveAdminEmailAddresses(), equalTo(receivers));
+  }
 }

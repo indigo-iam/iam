@@ -57,116 +57,115 @@ import it.infn.mw.iam.test.util.oauth.MockOAuth2Filter;
 @RunWith(SpringRunner.class)
 @IamMockMvcIntegrationTest
 @SpringBootTest(
-        classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
-        webEnvironment = WebEnvironment.MOCK,
-        properties = {"notification.admin-notification-policy = notify-admins"})
+    classes = {IamLoginService.class, CoreControllerTestSupport.class, ScimRestUtilsMvc.class},
+    webEnvironment = WebEnvironment.MOCK,
+    properties = {"notification.admin-notification-policy = notify-admins"})
 @WithMockOAuthUser(clientId = SCIM_CLIENT_ID, scopes = {SCIM_READ_SCOPE, SCIM_WRITE_SCOPE})
 public class CertificateLinkingNotificationAdminDisabledTests extends X509TestSupport {
 
-    private static final String USERNAME = "event_user";
-    private static final String GIVENNAME = "Event";
-    private static final String FAMILYNAME = "User";
-    private static final String EMAIL = "event_user@localhost";
+  private static final String USERNAME = "event_user";
+  private static final String GIVENNAME = "Event";
+  private static final String FAMILYNAME = "User";
+  private static final String EMAIL = "event_user@localhost";
 
-    private static final String USERNAME_MESSAGE_CHECK = String.format("username: '%s'", USERNAME);
+  private static final String USERNAME_MESSAGE_CHECK = String.format("username: '%s'", USERNAME);
 
-    @Autowired
-    private IamAuditEventLogger logger;
+  @Autowired
+  private IamAuditEventLogger logger;
 
-    @Autowired
-    private IamAccountService accountService;
+  @Autowired
+  private IamAccountService accountService;
 
-    @Autowired
-    private ScimUserProvisioning userProvisioning;
+  @Autowired
+  private ScimUserProvisioning userProvisioning;
 
-    @Autowired
-    private IamEmailNotificationRepository emailRepo;
+  @Autowired
+  private IamEmailNotificationRepository emailRepo;
 
-    @Autowired
-    private MockOAuth2Filter mockOAuth2Filter;
+  @Autowired
+  private MockOAuth2Filter mockOAuth2Filter;
 
-    private IamAccount account;
-    private ScimUser user;
+  private IamAccount account;
+  private ScimUser user;
 
-    @Before
-    public void setup() {
+  @Before
+  public void setup() {
 
-        ScimX509Certificate test1Cert = ScimX509Certificate.builder()
-            .pemEncodedCertificate(TEST_1_CERT_STRING)
-            .display(TEST_1_CERT_LABEL)
-            .build();
+    ScimX509Certificate test1Cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .display(TEST_1_CERT_LABEL)
+      .build();
 
-        user = ScimUser.builder(USERNAME)
-            .buildName(GIVENNAME, FAMILYNAME)
-            .buildEmail(EMAIL)
-            .addX509Certificate(test1Cert)
-            .build();
+    user = ScimUser.builder(USERNAME)
+      .buildName(GIVENNAME, FAMILYNAME)
+      .buildEmail(EMAIL)
+      .addX509Certificate(test1Cert)
+      .build();
 
-        user = userProvisioning.create(user);
-        account =
-                accountService.findByUuid(user.getId()).orElseThrow(IllegalArgumentException::new);
+    user = userProvisioning.create(user);
+    account = accountService.findByUuid(user.getId()).orElseThrow(IllegalArgumentException::new);
 
-        assertNotNull(account);
+    assertNotNull(account);
 
-        mockOAuth2Filter.cleanupSecurityContext();
-    }
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
-    @After
-    public void teardown() {
-        userProvisioning.delete(account.getUuid());
-        mockOAuth2Filter.cleanupSecurityContext();
-    }
+  @After
+  public void teardown() {
+    userProvisioning.delete(account.getUuid());
+    mockOAuth2Filter.cleanupSecurityContext();
+  }
 
-    @Test
-    public void testAddX509CertificateEventNotificationUpdateFalse() {
+  @Test
+  public void testAddX509CertificateEventNotificationUpdateFalse() {
 
-        ScimX509Certificate cert = ScimX509Certificate.builder()
-            .pemEncodedCertificate(TEST_0_CERT_STRING)
-            .display(TEST_0_CERT_LABEL)
-            .build();
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_0_CERT_STRING)
+      .display(TEST_0_CERT_LABEL)
+      .build();
 
-        ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
+    ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
 
-        ScimUserPatchRequest req = ScimUserPatchRequest.builder().add(update).build();
-        userProvisioning.update(account.getUuid(), req.getOperations());
+    ScimUserPatchRequest req = ScimUserPatchRequest.builder().add(update).build();
+    userProvisioning.update(account.getUuid(), req.getOperations());
 
-        IamAuditApplicationEvent event = logger.getLastEvent();
-        assertThat(event, instanceOf(X509CertificateAddedEvent.class));
-        assertNotNull(event.getMessage());
-        assertThat(event.getMessage(), containsString("Add x509 certificate to user"));
-        assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
-        assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
-        assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
-        assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
-        assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
+    IamAuditApplicationEvent event = logger.getLastEvent();
+    assertThat(event, instanceOf(X509CertificateAddedEvent.class));
+    assertNotNull(event.getMessage());
+    assertThat(event.getMessage(), containsString("Add x509 certificate to user"));
+    assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
+    assertThat(event.getMessage(), containsString("label=" + TEST_0_CERT_LABEL));
+    assertThat(event.getMessage(), containsString("subjectDn=" + TEST_0_SUBJECT));
+    assertThat(event.getMessage(), containsString("issuerDn=" + TEST_0_ISSUER));
+    assertThat(event.getMessage(), containsString("certificate=" + TEST_0_CERT_STRING));
 
-        assertThat(emailRepo.countAllMessages(), equalTo(0));
-    }
+    assertThat(emailRepo.countAllMessages(), equalTo(0));
+  }
 
 
-    @Test
-    public void testRemoveX509CertificateEventEventNotificationUpdateFalse() {
+  @Test
+  public void testRemoveX509CertificateEventEventNotificationUpdateFalse() {
 
-        ScimX509Certificate cert = ScimX509Certificate.builder()
-            .pemEncodedCertificate(TEST_1_CERT_STRING)
-            .display(TEST_1_CERT_LABEL)
-            .build();
+    ScimX509Certificate cert = ScimX509Certificate.builder()
+      .pemEncodedCertificate(TEST_1_CERT_STRING)
+      .display(TEST_1_CERT_LABEL)
+      .build();
 
-        ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
+    ScimUser update = ScimUser.builder().addX509Certificate(cert).build();
 
-        ScimUserPatchRequest req = ScimUserPatchRequest.builder().remove(update).build();
-        userProvisioning.update(account.getUuid(), req.getOperations());
+    ScimUserPatchRequest req = ScimUserPatchRequest.builder().remove(update).build();
+    userProvisioning.update(account.getUuid(), req.getOperations());
 
-        IamAuditApplicationEvent event = logger.getLastEvent();
-        assertThat(event, instanceOf(X509CertificateRemovedEvent.class));
-        assertNotNull(event.getMessage());
-        assertThat(event.getMessage(), containsString("Remove x509 certificate from user"));
-        assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
-        assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
-        assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
-        assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
-        assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
+    IamAuditApplicationEvent event = logger.getLastEvent();
+    assertThat(event, instanceOf(X509CertificateRemovedEvent.class));
+    assertNotNull(event.getMessage());
+    assertThat(event.getMessage(), containsString("Remove x509 certificate from user"));
+    assertThat(event.getMessage(), containsString(USERNAME_MESSAGE_CHECK));
+    assertThat(event.getMessage(), containsString("label=" + TEST_1_CERT_LABEL));
+    assertThat(event.getMessage(), containsString("subjectDn=" + TEST_1_SUBJECT));
+    assertThat(event.getMessage(), containsString("issuerDn=" + TEST_1_ISSUER));
+    assertThat(event.getMessage(), containsString("certificate=" + TEST_1_CERT_STRING));
 
-        assertThat(emailRepo.countAllMessages(), equalTo(0));
-    }
+    assertThat(emailRepo.countAllMessages(), equalTo(0));
+  }
 }

@@ -78,7 +78,7 @@ public class ScimUserProvisioningPatchTests extends ScimUserTestSupport {
   @Autowired
   private MockOAuth2Filter mockOAuth2Filter;
 
-  private final String PICTURE_URL =
+  private static final String PICTURE_URL =
       "https://cdn.jim-nielsen.com/ios/512/angry-birds-2-2024-09-01.png?rf=1024";
 
   private ScimUser lennon;
