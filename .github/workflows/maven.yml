@@ -4,27 +4,26 @@ on: [push, pull_request]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        java-version: [17]
-
     runs-on: ubuntu-latest
 
     steps:
+
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
-    - name: Set up JDK ${{matrix.java-version}}
-      uses: actions/setup-java@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
       with:
         distribution: temurin
         cache: maven
-        java-version: ${{matrix.java-version}}
+        java-version: 17
 
     - name: License check
-      run: mvn -B license:check
+      run: |
+        mvn -version
+        mvn -B license:check
 
     - name: Build, test, package
       env:
@@ -43,8 +42,8 @@ jobs:
         cp iam-test-client/target/iam-test-client.jar iam-test-client/docker
 
     - name: Generate buildpacks
-      run: mvn -DskipTests -U -B -q spring-boot:build-image
-    
+      run: mvn -DskipTests -U -B -q spring-boot:build-image -Dspring-boot.build-image.builder=paketobuildpacks/builder:tiny
+
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v3
     
@@ -83,7 +82,7 @@ jobs:
           type=ref,event=tag
 
     - name: Build & push iam-login-service docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         tags: ${{ steps.ls-meta.outputs.tags }}
         labels: ${{ steps.ls-meta.outputs.labels }}
@@ -93,7 +92,7 @@ jobs:
         push: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     - name: Build & push iam-test-client docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         tags: ${{ steps.tc-meta.outputs.tags }}
         labels: ${{ steps.tc-meta.outputs.labels }}

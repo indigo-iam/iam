@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import it.infn.mw.iam.api.scim.controller.utils.JsonDateSerializer;
-import it.infn.mw.iam.authn.x509.IamX509AuthenticationCredential;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ScimX509Certificate {
@@ -118,12 +117,6 @@ public class ScimX509Certificate {
 
   public Date getProxyExpirationTime() {
     return proxyExpirationTime;
-  }
-
-  public IamX509AuthenticationCredential asIamX509AuthenticationCredential() {
-    return new IamX509AuthenticationCredential.Builder().issuer(getIssuerDn())
-      .subject(getSubjectDn())
-      .build();
   }
 
   public static class Builder {

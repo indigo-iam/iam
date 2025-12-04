@@ -33,6 +33,7 @@ import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PASSWO
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_PICTURE;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_SERVICE_ACCOUNT;
 import static it.infn.mw.iam.api.scim.updater.UpdaterType.ACCOUNT_REPLACE_USERNAME;
+import static java.lang.Boolean.TRUE;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -102,6 +103,7 @@ public class ScimUserProvisioning
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
+  private final X509CertificateConverter x509Converter;
 
   private ApplicationEventPublisher eventPublisher;
 
@@ -112,7 +114,7 @@ public class ScimUserProvisioning
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties,
-      IamGroupRepository groupRepository) {
+      IamGroupRepository groupRepository, X509CertificateConverter x509Converter) {
 
     this.notificationProperties = notificationProperties;
     this.accountService = accountService;
@@ -122,6 +124,7 @@ public class ScimUserProvisioning
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
+    this.x509Converter = x509Converter;
   }
 
 
@@ -527,14 +530,15 @@ public class ScimUserProvisioning
       account.touch();
       accountRepository.save(account);
       for (AccountUpdater u : updatesToPublish) {
-        u.publishUpdateEvent(this, eventPublisher);
         handleSpecificUpdateType(account, u, op.getValue().getIndigoUser());
+        u.publishUpdateEvent(this, eventPublisher);
       }
     }
   }
 
   private void handleSpecificUpdateType(IamAccount account, AccountUpdater u,
       ScimIndigoUser indigoUser) {
+
     if (ACCOUNT_REPLACE_ACTIVE.equals(u.getType())) {
       if (account.isActive()) {
         notificationFactory.createAccountRestoredMessage(account);
@@ -549,21 +553,19 @@ public class ScimUserProvisioning
         notificationFactory.createRevokeServiceAccountMessage(account);
       }
     }
-
-    // Checking if the certificate update is true and only then is it generating the
-    // notification/log update
-    if (Boolean.TRUE.equals(notificationProperties.getCertificateUpdate())) {
-      if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())) {
-
-        notificationFactory.createLinkedCertificateMessage(account,
-            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
-      }
-
-      else if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())) {
-
-        notificationFactory.createUnlinkedCertificateMessage(account,
-            indigoUser.getCertificates().get(0).asIamX509AuthenticationCredential());
-      }
+    if (ACCOUNT_ADD_X509_CERTIFICATE.equals(u.getType())
+        && TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      indigoUser.getCertificates()
+        .stream()
+        .map(x509Converter::entityFromDto)
+        .forEach(c -> notificationFactory.createLinkedCertificateMessage(account, c));
+    }
+    if (ACCOUNT_REMOVE_X509_CERTIFICATE.equals(u.getType())
+        && TRUE.equals(notificationProperties.getCertificateUpdate())) {
+      indigoUser.getCertificates()
+        .stream()
+        .map(x509Converter::entityFromDto)
+        .forEach(c -> notificationFactory.createUnlinkedCertificateMessage(account, c));
     }
   }
 

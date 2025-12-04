@@ -22,7 +22,6 @@ import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 
 import it.infn.mw.iam.authn.ExternalAuthenticationHandlerSupport;
@@ -37,9 +36,10 @@ public class SAMLUserDetailsServiceSupport {
   private final InactiveAccountAuthenticationHander inactiveAccountHandler;
   private final SamlUserIdentifierResolver resolver;
 
-  protected SAMLUserDetailsServiceSupport(InactiveAccountAuthenticationHander inactiveAccountHandler,
+  protected SAMLUserDetailsServiceSupport(
+      InactiveAccountAuthenticationHander inactiveAccountHandler,
       SamlUserIdentifierResolver resolver) {
-    
+
     this.inactiveAccountHandler = inactiveAccountHandler;
     this.resolver = resolver;
   }
@@ -63,9 +63,7 @@ public class SAMLUserDetailsServiceSupport {
         Arrays.asList(ExternalAuthenticationHandlerSupport.EXT_AUTHN_UNREGISTERED_USER_AUTH));
   }
 
-  protected IamSamlId resolveSamlId(SAMLCredential credential) {
-    return resolver.resolveSamlUserIdentifier(credential).getResolvedId()
-      .orElseThrow(() -> new UsernameNotFoundException(
-          "Could not extract a user identifier from the SAML assertion"));
+  protected List<IamSamlId> resolveSamlIds(SAMLCredential credential) {
+    return resolver.resolveSamlUserIdentifier(credential).getResolvedIds();
   }
 }

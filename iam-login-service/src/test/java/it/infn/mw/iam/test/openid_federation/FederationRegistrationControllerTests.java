@@ -17,6 +17,7 @@ package it.infn.mw.iam.test.openid_federation;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +44,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -207,21 +209,38 @@ public class FederationRegistrationControllerTests {
       .andExpect(jsonPath("$.error_description", equalTo("Invalid audience")));
   }
 
+  private int countInactiveClients() {
+    int count = 0;
+    for (ClientDetailsEntity c : clientRepo.findAll()) {
+      if (!c.isActive()) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   @Test
+  @Transactional
   public void testClientDisabledWhenExpired() throws Exception {
     fakeChain = TrustChainTestFactory.createRpToTaChain(null, null, REDIRECT_URI);
-    Optional<ClientDetailsEntity> client = clientRepo.findByClientId("client-cred");
-    assertTrue(client.isPresent());
+    ClientDetailsEntity client = clientRepo.findByClientId("client-cred").orElseThrow();
 
     Date now = new Date();
     long oneDayInMillis = 24 * 60 * 60 * 1000;
     Date yesterday = new Date(now.getTime() - oneDayInMillis);
-    ClientRelyingPartyEntity entity = new ClientRelyingPartyEntity(client.get(), yesterday,
+    ClientRelyingPartyEntity entity = new ClientRelyingPartyEntity(client, yesterday,
         fakeChain.getLeafSelfStatement().getEntityID().getValue());
-    client.get().setClientRelyingParty(entity);
+    client.setClientRelyingParty(entity);
+    clientRepo.save(client);
+
+    assertEquals(0, countInactiveClients());
 
     taskConfig.disableExpiredClients();
-    assertFalse(client.get().isActive());
+    client = clientRepo.findByClientId("client-cred").orElseThrow();
+    Date lastUpdate = client.getStatusChangedOn();
+
+    assertFalse(client.isActive());
+    assertEquals(1, countInactiveClients());
 
     mvc
       .perform(post("/token").param("grant_type", "client_credentials")
@@ -231,7 +250,11 @@ public class FederationRegistrationControllerTests {
       .andExpect(jsonPath("$.error", equalTo("invalid_client")))
       .andExpect(jsonPath("$.error_description", equalTo("Client is suspended: client-cred")));
 
-    client.get().setActive(true);
+    taskConfig.disableExpiredClients();
+    client = clientRepo.findByClientId("client-cred").orElseThrow();
+
+    // check that the client has been disabled only once
+    assertEquals(0, lastUpdate.compareTo(client.getStatusChangedOn()));
   }
 
   @Test

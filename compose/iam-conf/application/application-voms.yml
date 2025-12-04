@@ -1,0 +1,21 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+  forward-headers-strategy: native
+
+spring:
+  main:
+    banner-mode: "off" 
+
+voms:
+  tls:
+    certificate-path: /etc/grid-security/voms/star_test_example.cert.pem
+    private-key-path: /etc/grid-security/voms/star_test_example.key.pem
+    trust-anchors-dir: /etc/grid-security/certificates
+    trust-anchors-refresh-interval-secs: 14400
+  aa:
+    host: voms.test.example
+    port: ${server.port}
+    vo-name: indigo-dc
+    optional-group-label: voms.role
+    use-legacy-fqan-encoding: true

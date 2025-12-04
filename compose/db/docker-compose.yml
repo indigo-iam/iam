@@ -1,0 +1,25 @@
+volumes:
+  db_data:
+  
+services:
+
+  db:
+    image: mysql:8
+    container_name: db
+    hostname: db
+    volumes:
+     - db_data:/var/lib/mysql
+     - ./iam-test-dump.sql:/docker-entrypoint-initdb.d/iam-test-dump.sql
+    
+    env_file:
+      - ./db.env
+
+    ports:
+      - "3306:3306"
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "3306", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
