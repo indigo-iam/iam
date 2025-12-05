@@ -24,6 +24,9 @@ import java.util.Set;
 
 public class ScopeAwareProfileResolver implements JWTProfileResolver {
 
+  public static final String MISMATCH_ERROR =
+      "JWT profile requested doesn't match the ones allowed for the client";
+
   private final Map<String, JWTProfile> profileMap;
   private final JWTProfile defaultProfile;
 
@@ -59,6 +62,10 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
     Set<JWTProfile> requestedMatches = matches(requestedScopes);
     if (requestedMatches.isEmpty() || requestedMatches.size() > 1) {
       return defaultProfile;
+    }
+    if (!clientMatches.containsAll(requestedMatches)) {
+      throw new IllegalArgumentException(
+          "JWT profile requested doesn't match the ones allowed for the client");
     }
     return requestedMatches.iterator().next();
   }
