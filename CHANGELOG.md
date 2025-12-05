@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.13.3 (2025-12-05)
+
+## What's Changed
+
+* Don't fallback on default JWT profile
+* Evaluate all SAML ids resolved on login
+* Fix registration form pre-filled issue
+* Convert the SCIM X.509 DTO before sending email
+
 ## 1.13.2 (2025-11-25)
 
 ## What's Changed
