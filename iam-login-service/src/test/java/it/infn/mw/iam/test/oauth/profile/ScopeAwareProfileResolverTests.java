@@ -17,15 +17,16 @@ package it.infn.mw.iam.test.oauth.profile;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
 
@@ -39,10 +40,10 @@ import it.infn.mw.iam.core.oauth.profile.keycloak.KeycloakOidcScopes;
 import it.infn.mw.iam.core.oauth.profile.wlcg.WlcgOidcScopes;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
-public class ProfileSelectorTests {
+@ExtendWith(MockitoExtension.class)
+class ScopeAwareProfileResolverTests {
 
-  public static final String CLIENT_ID = "client";
+  static final String CLIENT_ID = "client";
 
   @Mock
   ClientDetailsService clientsService;
@@ -64,8 +65,8 @@ public class ProfileSelectorTests {
 
   ScopeAwareProfileResolver profileResolver;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     Map<String, JWTProfile> profileMap = Maps.newHashMap();
 
     profileMap.put(AarcOidcScopes.AARC, aarcProfile);
@@ -76,20 +77,20 @@ public class ProfileSelectorTests {
     profileResolver = new ScopeAwareProfileResolver(iamProfile, profileMap);
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void nullClientThrowException() throws Exception {
-    profileResolver.resolveProfile(null);
+  @Test
+  void nullClientThrowException() {
+    assertThrows(IllegalArgumentException.class, () -> profileResolver.resolveProfile(null));
   }
 
   @Test
-  public void profileNotFoundLeadsToDefaultProfile() {
+  void profileNotFoundLeadsToDefaultProfile() {
 
     JWTProfile profile = profileResolver.resolveProfile(Set.of("openid"));
     assertThat(profile, is(iamProfile));
   }
 
   @Test
-  public void multipleProfilesLeadToDefaultProfile() {
+  void multipleClientProfilesLeadToDefaultProfileWithNoRequested() {
 
     JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "iam", "wlcg"));
     assertThat(profile, is(iamProfile));
@@ -118,5 +119,71 @@ public class ProfileSelectorTests {
     profile = profileResolver.resolveProfile(Set.of("openid", "kc", "wlcg"));
     assertThat(profile, is(iamProfile));
 
+    profile = profileResolver.resolveProfile(Set.of());
+    assertThat(profile, is(iamProfile));
   }
+
+  @Test
+  void multipleClientProfilesLeadToRequestedProfileIfAllowed() {
+
+    Set<String> clientScopes = Set.of("openid", "aarc", "wlcg");
+
+    JWTProfile profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "wlcg"));
+    assertThat(profile, is(wlcgProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "aarc"));
+    assertThat(profile, is(aarcProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "wlcg", "aarc"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid", "wlcg", "kc"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(clientScopes, Set.of("openid"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of());
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("wlcg"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("aarc"));
+    assertThat(profile, is(iamProfile));
+
+    profile = profileResolver.resolveProfile(Set.of(), Set.of("kc"));
+    assertThat(profile, is(iamProfile));
+  }
+
+  @Test
+  void requestedProfileIsNotAllowed() {
+
+    Set<String> clientScopes = Set.of("openid", "aarc", "wlcg");
+    Set<String> requestedScopes = Set.of("openid", "kc");
+
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> profileResolver.resolveProfile(clientScopes, requestedScopes));
+    assertThat(ScopeAwareProfileResolver.MISMATCH_ERROR, is(e.getMessage()));
+  }
+
+  @Test
+  void oneProfileLeadToCorrectJwtProfile() {
+
+    JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "wlcg"), Set.of());
+    assertThat(profile, is(wlcgProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "aarc"), Set.of());
+    assertThat(profile, is(aarcProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "kc"), Set.of());
+    assertThat(profile, is(kcProfile));
+
+    profile = profileResolver.resolveProfile(Set.of("openid", "iam"), Set.of());
+    assertThat(profile, is(iamProfile));
+  }
+
 }

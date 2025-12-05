@@ -130,7 +130,8 @@ public class IamTokenEnhancer extends ConnectTokenEnhancer {
 
     Instant tokenIssueInstant = clock.instant();
 
-    JWTProfile profile = profileResolver.resolveProfile(client.getScope());
+    JWTProfile profile =
+        profileResolver.resolveProfile(client.getScope(), originalAuthRequest.getScope());
 
     accessTokenEntity
       .setExpiration(computeExpTime(authentication, accessTokenEntity, tokenIssueInstant));
