@@ -64,8 +64,7 @@ public class ScopeAwareProfileResolver implements JWTProfileResolver {
       return defaultProfile;
     }
     if (!clientMatches.containsAll(requestedMatches)) {
-      throw new IllegalArgumentException(
-          "JWT profile requested doesn't match the ones allowed for the client");
+      throw new IllegalArgumentException(MISMATCH_ERROR);
     }
     return requestedMatches.iterator().next();
   }

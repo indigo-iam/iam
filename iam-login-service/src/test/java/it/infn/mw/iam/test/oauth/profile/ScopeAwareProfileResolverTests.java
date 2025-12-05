@@ -78,7 +78,7 @@ class ScopeAwareProfileResolverTests {
   }
 
   @Test
-  void nullClientThrowException() throws Exception {
+  void nullClientThrowException() {
     assertThrows(IllegalArgumentException.class, () -> profileResolver.resolveProfile(null));
   }
 
@@ -90,7 +90,7 @@ class ScopeAwareProfileResolverTests {
   }
 
   @Test
-  void multipleProfilesLeadToDefaultProfile() {
+  void multipleClientProfilesLeadToDefaultProfileWithNoRequested() {
 
     JWTProfile profile = profileResolver.resolveProfile(Set.of("openid", "iam", "wlcg"));
     assertThat(profile, is(iamProfile));
@@ -124,7 +124,7 @@ class ScopeAwareProfileResolverTests {
   }
 
   @Test
-  void multipleProfilesLeadToRequestedProfile() {
+  void multipleClientProfilesLeadToRequestedProfileIfAllowed() {
 
     Set<String> clientScopes = Set.of("openid", "aarc", "wlcg");
 
@@ -157,9 +157,16 @@ class ScopeAwareProfileResolverTests {
 
     profile = profileResolver.resolveProfile(Set.of(), Set.of("kc"));
     assertThat(profile, is(iamProfile));
+  }
+
+  @Test
+  void requestedProfileIsNotAllowed() {
+
+    Set<String> clientScopes = Set.of("openid", "aarc", "wlcg");
+    Set<String> requestedScopes = Set.of("openid", "kc");
 
     IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-        () -> profileResolver.resolveProfile(clientScopes, Set.of("openid", "kc")));
+        () -> profileResolver.resolveProfile(clientScopes, requestedScopes));
     assertThat(ScopeAwareProfileResolver.MISMATCH_ERROR, is(e.getMessage()));
   }
 
