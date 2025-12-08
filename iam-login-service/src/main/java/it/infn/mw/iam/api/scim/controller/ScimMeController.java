@@ -40,7 +40,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
@@ -79,7 +78,6 @@ public class ScimMeController implements ApplicationEventPublisherAware {
   private ApplicationEventPublisher eventPublisher;
 
   private final Set<UpdaterType> enabledUpdaters;
-  private final AccountUtils accountUtils;
 
   public ScimMeController(IamAccountRepository accountRepository,
       IamGroupRepository groupRepository, IamAccountService accountService,
@@ -88,17 +86,14 @@ public class ScimMeController implements ApplicationEventPublisherAware {
       PasswordEncoder passwordEncoder, OidcIdConverter oidcIdConverter,
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, ScimUserProvisioning scimUserProvisioning,
-      UsernameValidator usernameValidator, AccountUtils accountUtils) {
+      UsernameValidator usernameValidator, Set<UpdaterType> enabledUpdaters) {
 
     this.iamAccountRepository = accountRepository;
     this.userConverter = userConverter;
-    this.accountUtils = accountUtils;
+    this.enabledUpdaters = enabledUpdaters;
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
-
-    enabledUpdaters = scimUserProvisioning.getEnabledUpdaters();
-
   }
 
   public void setApplicationEventPublisher(ApplicationEventPublisher publisher) {
@@ -137,7 +132,7 @@ public class ScimMeController implements ApplicationEventPublisherAware {
     boolean hasChanged = false;
 
     for (AccountUpdater u : updaters) {
-      if (!accountUtils.isAdmin(account) && !enabledUpdaters.contains(u.getType())) {
+      if (!enabledUpdaters.contains(u.getType())) {
         throw new ScimPatchOperationNotSupported(u.getType().getDescription() + " not supported");
       }
       if (u.update()) {
