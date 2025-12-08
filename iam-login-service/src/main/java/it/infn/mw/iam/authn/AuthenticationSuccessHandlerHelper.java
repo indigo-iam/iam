@@ -17,6 +17,7 @@ package it.infn.mw.iam.authn;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Optional;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,8 +32,13 @@ import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.common.NoSuchAccountError;
 import it.infn.mw.iam.authn.util.Authorities;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
+import it.infn.mw.iam.persistence.model.IamAccount;
+import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
+import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
 import it.infn.mw.iam.service.aup.AUPSignatureCheckService;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import static it.infn.mw.iam.authn.multi_factor_authentication.MfaVerifyController.MFA_VERIFY_URL;
@@ -46,13 +52,18 @@ public class AuthenticationSuccessHandlerHelper {
   private final String iamBaseUrl;
   private final AUPSignatureCheckService aupSignatureCheckService;
   private final IamAccountRepository accountRepo;
+  private final IamTotpMfaRepository totpMfaRepository;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public AuthenticationSuccessHandlerHelper(AccountUtils accountUtils, String iamBaseUrl,
-      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo) {
+      AUPSignatureCheckService aupSignatureCheckService, IamAccountRepository accountRepo,
+    IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountUtils = accountUtils;
     this.iamBaseUrl = iamBaseUrl;
     this.aupSignatureCheckService = aupSignatureCheckService;
     this.accountRepo = accountRepo;
+    this.totpMfaRepository = totpMfaRepository;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   public void handle(HttpServletRequest request, HttpServletResponse response,
@@ -63,9 +74,23 @@ public class AuthenticationSuccessHandlerHelper {
       logger.warn("Response has already been committed. Unable to redirect to " + MFA_VERIFY_URL);
     } else if (isPreAuthenticated) {
       response.sendRedirect(MFA_VERIFY_URL);
+    } else if (iamTotpMfaProperties.isMultiFactorMandatory() && !isMfaActive(authentication)) {
+      response.sendRedirect("/iam/mfa/acivate");
     } else {
       continueWithDefaultSuccessHandler(request, response, authentication);
     }
+  }
+
+  private boolean isMfaActive(Authentication authentication) {
+    final String username = authentication.getName();
+    IamAccount account = accountRepo.findByUsername(username)
+        .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+
+    Optional<IamTotpMfa> totpMfaOptional = totpMfaRepository.findByAccount(account);
+    if (totpMfaOptional.isPresent()) {
+      return totpMfaOptional.get().isActive();
+    }
+    return false;
   }
 
   /**

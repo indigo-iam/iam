@@ -34,13 +34,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import dev.samstevens.totp.exceptions.QrGenerationException;
+import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
+import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
 import it.infn.mw.iam.api.common.ErrorDTO;
 import it.infn.mw.iam.api.common.NoSuchAccountError;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.ExtendedAuthenticationToken;
 import it.infn.mw.iam.persistence.model.IamAccount;
 import it.infn.mw.iam.persistence.model.IamTotpMfa;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
+import it.infn.mw.iam.util.mfa.IamTotpMfaEncryptionAndDecryptionUtil;
 
 /**
  * Presents the step-up authentication page for verifying identity after successful username +
@@ -53,11 +59,18 @@ public class MfaVerifyController {
   public static final String MFA_VERIFY_URL = "/iam/verify";
   final IamAccountRepository accountRepository;
   final IamTotpMfaRepository totpMfaRepository;
+  private final AccountUtils accountUtils;
+  private final IamTotpMfaService iamTotpMfaService;
+  private final IamTotpMfaProperties iamTotpMfaProperties;
 
   public MfaVerifyController(IamAccountRepository accountRepository,
-      IamTotpMfaRepository totpMfaRepository) {
+      IamTotpMfaRepository totpMfaRepository, AccountUtils accountUtils, 
+      IamTotpMfaService iamTotpMfaService, IamTotpMfaProperties iamTotpMfaProperties) {
     this.accountRepository = accountRepository;
     this.totpMfaRepository = totpMfaRepository;
+    this.accountUtils = accountUtils;
+    this.iamTotpMfaService = iamTotpMfaService;
+    this.iamTotpMfaProperties = iamTotpMfaProperties;
   }
 
   @PreAuthorize("hasRole('PRE_AUTHENTICATED')")
@@ -89,6 +102,37 @@ public class MfaVerifyController {
       token.setPreAuthenticated(true);
       SecurityContextHolder.getContext().setAuthentication(token);
     }
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @GetMapping(value = "/iam/mfa/acivate")
+  public String getActivateMfaView(Authentication authentication, ModelMap model) {
+    String dataUri = "";
+    final String username = accountUtils.getAuthenticatedUserAccount().get().getUsername();
+    //final String username = ((User)authentication.getPrincipal()).getUsername();
+
+    IamAccount account = accountRepository.findByUsername(username)
+        .orElseThrow(() -> NoSuchAccountError.forUsername(username));
+
+    IamTotpMfa totpMfa = iamTotpMfaService.addTotpMfaSecret(account);
+    String mfaSecret = IamTotpMfaEncryptionAndDecryptionUtil.decryptSecret(totpMfa.getSecret(),
+        iamTotpMfaProperties.getPasswordToEncryptOrDecrypt());
+
+    try {
+      dataUri = iamTotpMfaService.generateQRCodeFromSecret(mfaSecret, account.getUsername());
+    } catch (QrGenerationException e) {
+      throw new BadMfaCodeError("Could not generate QR code");
+    }
+
+    model.addAttribute("mfaSecret", mfaSecret);
+    model.addAttribute("dataUri", dataUri);
+    model.addAttribute("codeMinlength", 6);
+
+    if (authentication instanceof PreAuthenticatedAuthenticationToken preAuthenticatedAuthenticationToken) {
+      setAuthentication(preAuthenticatedAuthenticationToken);
+    }
+
+    return "iam/activateMfa";
   }
 
   @ResponseStatus(code = HttpStatus.BAD_REQUEST)

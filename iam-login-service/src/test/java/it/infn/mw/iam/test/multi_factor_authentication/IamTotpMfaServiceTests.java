@@ -42,11 +42,13 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import dev.samstevens.totp.code.CodeVerifier;
+import dev.samstevens.totp.qr.QrGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.DefaultIamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppDisabledEvent;
 import it.infn.mw.iam.audit.events.account.multi_factor_authentication.AuthenticatorAppEnabledEvent;
+import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.user.exception.MfaSecretAlreadyBoundException;
@@ -80,6 +82,12 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
 
   @Mock
   private IamTotpMfaProperties iamTotpMfaProperties;
+  
+  @Mock
+  private QrGenerator qrGenerator;
+
+  @Mock
+  private IamProperties iamProperties;
 
   @Captor
   private ArgumentCaptor<ApplicationEvent> eventCaptor;
@@ -94,7 +102,7 @@ public class IamTotpMfaServiceTests extends IamTotpMfaServiceTestSupport {
     when(codeVerifier.isValidCode(anyString(), anyString())).thenReturn(true);
 
     service = new DefaultIamTotpMfaService(iamAccountService, repository, secretGenerator,
-        codeVerifier, eventPublisher, iamTotpMfaProperties);
+        codeVerifier, eventPublisher, iamTotpMfaProperties, qrGenerator, iamProperties);
   }
 
   @After

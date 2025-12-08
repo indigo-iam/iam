@@ -74,6 +74,7 @@ import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
 import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
 import it.infn.mw.iam.config.IamProperties.RegistrationField;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -140,6 +141,9 @@ public class IamWebSecurityConfig {
 
     @Autowired
     private IamProperties iamProperties;
+
+    @Autowired
+    private IamTotpMfaProperties iamTotpMfaProperties;
 
     @Autowired
     public void configureGlobal(final AuthenticationManagerBuilder auth) throws Exception {
@@ -224,7 +228,7 @@ public class IamWebSecurityConfig {
     @Bean
     public AuthenticationSuccessHandlerHelper authenticationSuccessHandlerHelper() {
       return new AuthenticationSuccessHandlerHelper(accountUtils, iamBaseUrl,
-          aupSignatureCheckService, accountRepo);
+          aupSignatureCheckService, accountRepo, totpMfaRepository, iamTotpMfaProperties);
     }
 
     public ExtendedAuthenticationFilter extendedAuthenticationFilter() throws Exception {

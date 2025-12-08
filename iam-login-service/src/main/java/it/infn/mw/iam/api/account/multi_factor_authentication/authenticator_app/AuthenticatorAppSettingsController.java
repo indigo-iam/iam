@@ -15,8 +15,12 @@
  */
 package it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app;
 
-import static dev.samstevens.totp.util.Utils.getDataUriForImage;
+import static it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter.REQUESTING_MFA;
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 import org.springframework.http.HttpStatus;
@@ -28,9 +32,7 @@ import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.QrGenerationException;
-import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrGenerator;
 import it.infn.mw.iam.api.account.multi_factor_authentication.IamTotpMfaService;
 import it.infn.mw.iam.api.account.multi_factor_authentication.authenticator_app.error.BadMfaCodeError;
@@ -106,7 +108,7 @@ public class AuthenticatorAppSettingsController {
     try {
       SecretAndDataUriDTO dto = new SecretAndDataUriDTO(mfaSecret);
 
-      String dataUri = generateQRCodeFromSecret(mfaSecret, account.getUsername());
+      String dataUri = service.generateQRCodeFromSecret(mfaSecret, account.getUsername());
       dto.setDataUri(dataUri);
 
       return dto;
@@ -122,12 +124,14 @@ public class AuthenticatorAppSettingsController {
    * @param code the TOTP to verify
    * @param validationResult result of validation checks on the code
    * @return nothing
+   * @throws IOException 
    */
   @PreAuthorize("hasRole('USER')")
   @PostMapping(value = ENABLE_URL, produces = MediaType.TEXT_PLAIN_VALUE)
   @ResponseBody
-  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code,
-      BindingResult validationResult) {
+  public void enableAuthenticatorApp(@ModelAttribute @Valid CodeDTO code, 
+    @RequestParam(required = false, defaultValue = "false") boolean redirect,
+      BindingResult validationResult, HttpServletResponse response, HttpSession session) throws IOException {
     if (validationResult.hasErrors()) {
       throw new BadMfaCodeError(BAD_CODE);
     }
@@ -150,6 +154,11 @@ public class AuthenticatorAppSettingsController {
 
     service.enableTotpMfa(account);
     notificationFactory.createMfaEnableMessage(account);
+    session.removeAttribute(REQUESTING_MFA);
+
+    if(redirect){
+      response.sendRedirect("/dashboard");
+    }
   }
 
 
@@ -218,31 +227,6 @@ public class AuthenticatorAppSettingsController {
       auth = oauth.getUserAuthentication();
     }
     return auth.getName();
-  }
-
-  /**
-   * Constructs a data URI for displaying a QR code of the TOTP secret for the user to scan Takes in
-   * details about the issuer, length of TOTP and period of expiry from application properties
-   * 
-   * @param secret the TOTP secret
-   * @param username the logged-in user (attaches a username to the secret in the authenticator app)
-   * @return the data URI to be used with an <img> tag
-   * @throws QrGenerationException
-   */
-  private String generateQRCodeFromSecret(String secret, String username)
-      throws QrGenerationException {
-
-    QrData data = new QrData.Builder().label(username)
-      .secret(secret)
-      .issuer("INDIGO IAM" + " - " + iamProperties.getOrganisation().getName())
-      .algorithm(HashingAlgorithm.SHA1)
-      .digits(6)
-      .period(30)
-      .build();
-
-    byte[] imageData = qrGenerator.generate(data);
-    String mimeType = qrGenerator.getImageMimeType();
-    return getDataUriForImage(imageData, mimeType);
   }
 
 

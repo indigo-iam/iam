@@ -47,6 +47,7 @@ import com.google.common.collect.Maps;
 import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.client.service.ClientService;
 import it.infn.mw.iam.api.scim.converter.SshKeyConverter;
+import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.core.oauth.attributes.AttributeMapHelper;
 import it.infn.mw.iam.core.oauth.profile.IamTokenEnhancer;
 import it.infn.mw.iam.core.oauth.profile.JWTProfile;
@@ -87,6 +88,7 @@ import it.infn.mw.iam.core.oauth.scope.matchers.ScopeMatchersPropertiesParser;
 import it.infn.mw.iam.core.oauth.scope.pdp.ScopeFilter;
 import it.infn.mw.iam.core.user.IamAccountService;
 import it.infn.mw.iam.core.web.aup.EnforceAupFilter;
+import it.infn.mw.iam.core.web.multi_factor_authentication.EnforceMfaFilter;
 import it.infn.mw.iam.notification.NotificationProperties;
 import it.infn.mw.iam.notification.service.resolver.AddressResolutionService;
 import it.infn.mw.iam.notification.service.resolver.AdminNotificationDeliveryStrategy;
@@ -308,6 +310,15 @@ public class IamConfig {
       AccountUtils utils, IamAupRepository repo) {
     EnforceAupFilter aupFilter = new EnforceAupFilter(service, utils, repo);
     FilterRegistrationBean<EnforceAupFilter> frb = new FilterRegistrationBean<>(aupFilter);
+    frb.setOrder(Ordered.LOWEST_PRECEDENCE);
+    return frb;
+  }
+
+  @Bean
+  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AUPSignatureCheckService service,
+      AccountUtils utils, IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(service, utils, totpMfaRepository, iamTotpMfaProperties);
+    FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
   }
