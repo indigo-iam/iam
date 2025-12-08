@@ -57,6 +57,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.filter.GenericFilterBean;
 
 import it.infn.mw.iam.api.account.AccountUtils;
+import it.infn.mw.iam.authn.AARCHintService;
 import it.infn.mw.iam.authn.AuthenticationSuccessHandlerHelper;
 import it.infn.mw.iam.authn.CheckMultiFactorIsEnabledSuccessHandler;
 import it.infn.mw.iam.authn.ExternalAuthenticationHintService;
@@ -71,6 +72,8 @@ import it.infn.mw.iam.authn.x509.IamX509AuthenticationUserDetailService;
 import it.infn.mw.iam.authn.x509.IamX509PreauthenticationProcessingFilter;
 import it.infn.mw.iam.authn.x509.X509AuthenticationCredentialExtractor;
 import it.infn.mw.iam.config.IamProperties;
+import it.infn.mw.iam.config.IamProperties.ExternalAuthAttributeSectionBehaviour;
+import it.infn.mw.iam.config.IamProperties.RegistrationField;
 import it.infn.mw.iam.core.IamLocalAuthenticationProvider;
 import it.infn.mw.iam.persistence.repository.IamAccountRepository;
 import it.infn.mw.iam.persistence.repository.IamTotpMfaRepository;
@@ -133,6 +136,9 @@ public class IamWebSecurityConfig {
     private ExternalAuthenticationHintService hintService;
 
     @Autowired
+    private AARCHintService aarcHintService;
+
+    @Autowired
     private IamProperties iamProperties;
 
     @Autowired
@@ -156,12 +162,14 @@ public class IamWebSecurityConfig {
 
     public IamX509PreauthenticationProcessingFilter iamX509Filter() {
       return new IamX509PreauthenticationProcessingFilter(x509CredentialExtractor,
-          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()), certRepo);
+          iamX509AuthenticationProvider(), successHandler(authenticationSuccessHandlerHelper()),
+          certRepo, iamProperties);
     }
 
     protected AuthenticationEntryPoint entryPoint() {
+
       LoginUrlAuthenticationEntryPoint delegate = new LoginUrlAuthenticationEntryPoint("/login");
-      return new HintAwareAuthenticationEntryPoint(delegate, hintService);
+      return new HintAwareAuthenticationEntryPoint(delegate, hintService, aarcHintService);
     }
 
 
@@ -243,8 +251,21 @@ public class IamWebSecurityConfig {
 
     public static final String START_REGISTRATION_ENDPOINT = "/start-registration";
 
+
+    private UserLoginConfig userLoginConfig;
+    private GenericFilterBean authorizationRequestFilter;
+    private IamProperties iamProperties;
+
+
     @Autowired
-    IamProperties iamProperties;
+    public RegistrationConfig(UserLoginConfig userLoginConfig,
+        @Qualifier("mitreAuthzRequestFilter") GenericFilterBean authorizationRequestFilter,
+        IamProperties iamProperties) {
+      this.userLoginConfig = userLoginConfig;
+      this.authorizationRequestFilter = authorizationRequestFilter;
+      this.iamProperties = iamProperties;
+    }
+
 
     AccessDeniedHandler accessDeniedHandler() {
       return (request, response, authError) -> {
@@ -270,11 +291,41 @@ public class IamWebSecurityConfig {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-      http.requestMatchers()
-        .antMatchers(START_REGISTRATION_ENDPOINT)
-        .and()
-        .sessionManagement()
-        .enableSessionUrlRewriting(false);
+      boolean registrationCertField = iamProperties.getRegistration().getFields() != null
+          && !iamProperties.getRegistration().getFields().isEmpty()
+          && iamProperties.getRegistration().getFields().get(RegistrationField.CERTIFICATE) != null
+          && iamProperties.getRegistration()
+            .getFields()
+            .get(RegistrationField.CERTIFICATE)
+            .getFieldBehaviour() != null;
+
+      if (registrationCertField && !iamProperties.getRegistration()
+        .getFields()
+        .get(RegistrationField.CERTIFICATE)
+        .getFieldBehaviour()
+        .equals(ExternalAuthAttributeSectionBehaviour.HIDDEN)) {
+        http.requestMatchers()
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false)
+          .and()
+          .addFilterBefore(authorizationRequestFilter, SecurityContextPersistenceFilter.class)
+          .anonymous()
+          .and()
+          .csrf()
+          .requireCsrfProtectionMatcher(new AntPathRequestMatcher("/authorize"))
+          .disable()
+          .addFilter(userLoginConfig.iamX509Filter());
+      } else {
+        http.requestMatchers()
+          .antMatchers(START_REGISTRATION_ENDPOINT)
+          .and()
+          .sessionManagement()
+          .enableSessionUrlRewriting(false);
+      }
+
+
 
       if (iamProperties.getRegistration().isRequireExternalAuthentication()) {
         http.authorizeRequests()

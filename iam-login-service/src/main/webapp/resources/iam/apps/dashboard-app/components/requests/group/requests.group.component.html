@@ -16,7 +16,7 @@
 
 -->
 <div class="box box-solid no-padding no-shadow no-border" ngcloak>
-    <div class="box-header with-border" ng-show="$ctrl.requests.length > 0">
+    <div class="box-header with-border" ng-show="$ctrl.requests.length > 0 || $ctrl.filter">
         <div class="input-group">
             <input placeholder="Filter group requests..." ng-model="$ctrl.filter" class="form-control" />
             <div class="input-group-btn">

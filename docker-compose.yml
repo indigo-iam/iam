@@ -1,20 +1,14 @@
-version: '3.5'
-
 volumes:
-  logs:
-  db_data:
   trust:
+  cabundle:
+  hostcerts:
+  usercerts:
 
 services:
 
   db:
     image: ${DB_IMAGE}
-      #volumes:
-      # - db_data:/var/lib/mysql
-
-    # The setting below enables custom configuration
-    # that turns on the MySQL query log
-    #   - ./compose/mariadb:/etc/mysql/conf.d
+    container_name: db
     
     environment:
       TZ: Europe/Rome
@@ -26,16 +20,21 @@ services:
     ports:
       - "3306:3306"
 
-  trust:
-    image: indigoiam/trustanchors
-    command: /bin/true
-    volumes:
-      - trust:/etc/grid-security/certificates
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "3306", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 0s
 
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
+  trust:
+    build:
+      context: ./compose/trust-anchors
+    volumes:
+      - trust:/trust-anchors
+      - cabundle:/etc/pki
+      - hostcerts:/hostcerts
+      - usercerts:/usercerts
 
   iam-be:
     container_name: iam-be
@@ -45,51 +44,43 @@ services:
 
     environment:
       TZ: Europe/Rome
-      IAM_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1044 -Dspring.profiles.active=mysql-test -debug
-      IAM_JAR: /code/iam-login-service/target/iam-login-service.war
-      IAM_HOST: iam.local.io
+      IAM_JAVA_OPTS: -Dspring-boot.run.profiles=mysql-test
       IAM_BASE_URL: https://iam.local.io
       IAM_ISSUER: https://iam.local.io/
       IAM_FORWARD_HEADERS_STRATEGY: native
       IAM_NOTIFICATION_DISABLE: "true"
 
       IAM_DB_HOST: db
+      IAM_DB_NAME: iam
       IAM_DB_USERNAME: iam
       IAM_DB_PASSWORD: pwd
 
-      IAM_GOOGLE_CLIENT_ID: ${IAM_GOOGLE_CLIENT_ID}
-      IAM_GOOGLE_CLIENT_SECRET: ${IAM_GOOGLE_CLIENT_SECRET}
-
-      IAM_IAM_TEST_CLIENT_ID: ${IAM_IAM_TEST_CLIENT_ID}
-      IAM_IAM_TEST_CLIENT_SECRET: ${IAM_IAM_TEST_CLIENT_SECRET}
-
       IAM_JWT_DEFAULT_PROFILE: wlcg
-
-      # IAM_SAML_IDP_METADATA: file:///code/compose/metadata/test-idp.cloud.cnaf.infn.it.metadata.xml 
-      # IAM_SAML_ENTITY_ID: urn:iam:iam-devel
-      # IAM_SAML_ENTITY_ID: https://iam.local.io
+      IAM_ACCESS_TOKEN_INCLUDE_SCOPE: "true"
+      IAM_ACCESS_TOKEN_INCLUDE_NBF: "true"
       
-      # IAM_RCAUTH_ENABLED: "false"
+      # IAM_RCAUTH_ENABLED: "true"
       # IAM_RCAUTH_CLIENT_ID: ${IAM_RCAUTH_CLIENT_ID}
       # IAM_RCAUTH_CLIENT_SECRET: ${IAM_RCAUTH_CLIENT_SECRET}
       # IAM_RCAUTH_ISSUER: ${IAM_RCAUTH_ISSUER}
 
-    ports:
-      - "1044:1044"
-
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      trust:
+        condition: service_completed_successfully
 
     volumes:
       - trust:/etc/grid-security/certificates
-      - logs:/var/log/iam
-      - .:/code:ro
       - /dev/urandom:/dev/random
-        # - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
-        # - ./compose/metadata/iam.local.io.metadata.xml:/indigo-iam/iam.local.io.metadata.xml:ro
-        # - ./compose/metadata/spid-idp.example.metadata.xml:/indigo-iam/spid-idp.example.metadata.xml:ro
-        # - ./compose/custom-saml/application-saml.yml:/indigo-iam/config/application-saml.yml:ro
-        # - ./compose/multiple-oidc-providers/application.yml:/indigo-iam/config/application.yml
+      # - ./compose/custom-logging/logback-spring.xml:/indigo-iam/logback-spring.xml:ro
+      - .:/indigo-iam:ro
+      - ./target:/indigo-iam/target:rw
+      - ./iam-common/target:/indigo-iam/iam-common/target:rw
+      - ./iam-login-service/target:/indigo-iam/iam-login-service/target:rw
+      - ./iam-persistence/target:/indigo-iam/iam-persistence/target:rw
+      - ./iam-test-client/target:/indigo-iam/iam-test-client/target:rw
+      - ./iam-voms-aa/target:/indigo-iam/iam-voms-aa/target:rw
 
   client:
     build:
@@ -101,32 +92,47 @@ services:
     environment:
       TZ: Europe/Rome
       IAM_CLIENT_PORT: 8080
-      IAM_CLIENT_JAVA_OPTS: -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:server=y,transport=dt_socket,suspend=n,address=1045
-      IAM_CLIENT_ISSUER: https://iam.local.io/
-      IAM_CLIENT_REDIRECT_URIS: https://iam.local.io/iam-test-client/openid_connect_login
-      IAM_FORWARD_HEADERS_STRATEGY: native
+      IAM_CLIENT_FORWARD_HEADERS_STRATEGY: native
       IAM_CLIENT_TLS_USE_GRID_TRUST_ANCHORS: "true"
-      #IAM_CLIENT_EXT_AUTHN_HINT: saml:exampleIdp
-      IAM_CLIENT_JAR: /code/iam-test-client/target/iam-test-client.jar
 
-    ports:
-      - "1045:1045"
+      IAM_HOST: iam.local.io
+      IAM_CLIENT_ISSUER: https://iam.local.io/
+      IAM_CLIENT_ID: client
+      IAM_CLIENT_SECRET: secret
+      IAM_CLIENT_REDIRECT_URIS: https://iam.local.io/iam-test-client/openid_connect_login
+      IAM_CLIENT_SCOPES: openid profile email offline_access
+      IAM_CLIENT_RESOURCE: http://example1.com http://example2.com http://example3.com
+
+      #IAM_CLIENT_EXT_AUTHN_HINT: saml:exampleIdp
+
+    depends_on:
+      trust:
+        condition: service_completed_successfully
 
     volumes:
       - trust:/etc/grid-security/certificates
-      - .:/code:ro
+      - /dev/urandom:/dev/random
+      - .:/app:ro
+      - ./target:/app/target:rw
+      - ./iam-common/target:/app/iam-common/target:rw
+      - ./iam-login-service/target:/app/iam-login-service/target:rw
+      - ./iam-persistence/target:/app/iam-persistence/target:rw
+      - ./iam-test-client/target:/app/iam-test-client/target:rw
+      - ./iam-voms-aa/target:/app/iam-voms-aa/target:rw
 
   iam:
-    build:
-      context: ./docker/nginx/
+    image: ${NGINX_IMAGE}
+    container_name: iam
 
     depends_on:
-      - iam-be
-      - client
+      iam-be:
+        condition: service_started
+      client:
+        condition: service_started
+      trust:
+        condition: service_completed_successfully
 
     dns_search: local.io
-
-    container_name: iam
 
     environment:
       TZ: Europe/Rome
@@ -138,6 +144,10 @@ services:
 
     volumes:
       - /dev/urandom:/dev/random
+      - cabundle:/etc/pki
+      - hostcerts:/certs
+      - ./compose/nginx/iam.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./compose/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
     networks:
       default:

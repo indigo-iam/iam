@@ -15,9 +15,6 @@
  */
 package it.infn.mw.iam.core.userinfo;
 
-import static java.lang.String.valueOf;
-import static org.springframework.security.oauth2.core.oidc.StandardClaimNames.SUB;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -88,14 +85,13 @@ public class IamUserInfoEndpoint {
     LOG.debug("Userinfo endpoint: client [id={}] requested user [username={}] info", clientId,
         username);
 
-    JWTProfile profile = profileResolver.resolveProfile(client.get().getScope());
+    JWTProfile profile =
+        profileResolver.resolveProfile(client.get().getScope(), auth.getOAuth2Request().getScope());
     Set<String> scopes = scopeResolver.resolveScope(auth);
     Map<String, Object> claims =
         profile.getUserinfoHelper().resolveScopeClaims(scopes, account.get(), auth);
 
-    UserInfoResponse.Builder builder = new UserInfoResponse.Builder(valueOf(claims.get(SUB)));
-    claims.forEach(builder::addField);
-    return builder.build();
+    return new UserInfoResponse(claims);
   }
 
   @ResponseStatus(value = HttpStatus.NOT_FOUND)

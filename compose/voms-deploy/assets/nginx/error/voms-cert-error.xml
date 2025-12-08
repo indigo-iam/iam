@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<voms>
-  <error>
-    <code>1005</code>
-    <message>SSL certificate error: invalid or missing client certificate.</message>
-  </error>
-</voms>

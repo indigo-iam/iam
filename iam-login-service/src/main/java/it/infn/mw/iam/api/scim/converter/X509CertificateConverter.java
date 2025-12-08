@@ -18,7 +18,6 @@ package it.infn.mw.iam.api.scim.converter;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import eu.emi.security.authn.x509.impl.X500NameUtils;
@@ -34,7 +33,6 @@ public class X509CertificateConverter
   private final X509CertificateChainParser parser;
 
 
-  @Autowired
   public X509CertificateConverter(X509CertificateChainParser parser) {
     this.parser = parser;
   }

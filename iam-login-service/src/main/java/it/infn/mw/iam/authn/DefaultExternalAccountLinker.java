@@ -81,7 +81,9 @@ public class DefaultExternalAccountLinker implements ExternalAccountLinker {
         (SAMLCredential) token.getExternalAuthentication().getCredentials();
 
     final IamSamlId iamSamlId = samlUserIdResolver.resolveSamlUserIdentifier(credential)
-      .getResolvedId()
+      .getResolvedIds()
+      .stream()
+      .findFirst()
       .orElseThrow(() -> new UsernameNotFoundException(
           "Could not extract a user identifier from the SAML assertion"));
 
@@ -110,5 +112,4 @@ public class DefaultExternalAccountLinker implements ExternalAccountLinker {
     repo.save(targetAccount);
 
   }
-
 }

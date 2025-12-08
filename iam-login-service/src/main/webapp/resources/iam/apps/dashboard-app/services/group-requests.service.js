@@ -29,7 +29,8 @@
             submit: submit,
             abortRequest: abortRequest,
             rejectRequest: rejectRequest,
-            approveRequest: approveRequest
+            approveRequest: approveRequest,
+            searchGroupRequests: searchGroupRequests
         };
 
         return service;
@@ -95,6 +96,16 @@
 
         function getGroupRequests(params) {
             return $http.get("/iam/group_requests", {
+                params: params
+            }).then(function(res) {
+                return res.data;
+            }).catch(function(res) {
+                return $q.reject(res);
+            });
+        }
+
+        function searchGroupRequests(params) {
+            return $http.get("/iam/group_requests/search", {
                 params: params
             }).then(function(res) {
                 return res.data;

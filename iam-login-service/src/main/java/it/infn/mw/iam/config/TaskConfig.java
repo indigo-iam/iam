@@ -150,7 +150,7 @@ public class TaskConfig implements SchedulingConfigurer {
 
   @Scheduled(fixedDelay = ONE_DAY_MSEC, initialDelay = TEN_MINUTES_MSEC)
   public void disableExpiredClients() {
-    List<ClientDetailsEntity> clients = clientRepo.findByExpirationBefore(new Date());
+    List<ClientDetailsEntity> clients = clientRepo.findActiveClientsExpiredBefore(new Date());
     for (ClientDetailsEntity client : clients) {
       clientService.updateClientStatus(client, false, "expired_client_task");
     }
