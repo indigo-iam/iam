@@ -1,0 +1,93 @@
+{
+  "creators": [
+    {
+      "name": "Agostini, Federica",
+      "orcid": "0000-0001-6753-948X",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Balci, Berk",
+      "orcid": "0009-0003-1045-8162",
+      "affiliation": "CERN"
+    },
+    {
+      "name": "Caberletti, Marco",
+      "orcid": "0000-0002-9209-3894"
+    },
+    {
+      "name": "Ceccanti, Andrea",
+      "orcid": "0000-0002-7655-1074"
+    },
+    {
+      "name": "Chung, Donald",
+      "affiliation": "STFC"
+    },
+    {
+      "name": "Dack, Thomas",
+      "orcid": "0000-0003-3805-4402",
+      "affiliation": "STFC"
+    },
+    {
+      "name": "Furnell, Will",
+      "affiliation": "STFC"
+    }
+    {
+      "name": "Garai, Manoj",
+      "affiliation": "STFC"
+    },
+    {
+      "name": "Gasparetto, Jacopo",
+      "orcid": "0000-0001-5063-4253",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Giacomini, Francesco",
+      "orcid": "0000-0002-3129-2814",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Glendenning, Sam",
+      "affiliation": "STFC",
+    },
+    {
+      "name": "Machalet, Patrick",
+      "affiliation": "CERN"
+    }
+    {
+      "name": "Marcato, Davide",
+      "orcid": "0000-0002-9744-8367",
+      "affiliation": "INFN Laboratori Nazionali di Legnaro"
+    },
+    {
+      "name": "Miccoli, Roberta",
+      "orcid": "0009-0004-1010-1507",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Mutadich, Mia",
+      "affiliation": "CERN"
+    },
+    {
+      "name": "Short, Hannah",
+      "orcid": "0000-0003-2187-0980",
+      "affiliation": "CERN"
+    },
+    {
+      "name": "Vennapusa, Saiteja Reddy",
+      "affiliation": "STFC"
+    },
+    {
+      "name": "Vianello, Enrico",
+      "orcid": "0009-0009-6852-885X",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Vilaca, Marcelo",
+      "affiliation": "INFN-CNAF"
+    },
+    {
+      "name": "Zotti, Stefano Enrico",
+      "affiliation": "INFN-CNAF"
+    }
+  ]
+}
