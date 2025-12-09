@@ -59,8 +59,6 @@ import it.infn.mw.iam.api.common.ClientViews;
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
 @ValidTokenEndpointAuthMethod(groups = {OnClientCreation.class, OnClientUpdate.class,
     OnDynamicClientRegistration.class, OnDynamicClientUpdate.class})
-@JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-    ClientViews.DynamicRegistration.class})
 /**
  * 
  * This DTO is an annotation mess!
@@ -72,9 +70,8 @@ public class RegisteredClientDTO {
   @Null(message = "must be null in client registration requests",
       groups = OnDynamicClientRegistration.class)
   @ClientIdAvailable(groups = OnClientCreation.class)
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientId;
 
   @Null(message = "must be null in client registration requests",
@@ -90,24 +87,21 @@ public class RegisteredClientDTO {
       message = "Invalid length: must be between 4 and 256 characters")
   @NotBlank(groups = {OnDynamicClientRegistration.class, OnClientCreation.class},
       message = "should not be blank")
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientName;
 
   @Size(max = 1024,
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
           OnClientCreation.class, OnClientUpdate.class},
       message = "Invalid ength: must be at most 1024 characters")
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientDescription;
 
   @Valid
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<@RedirectURI(message = "not a valid URL",
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
           OnClientCreation.class, OnClientUpdate.class}) String> redirectUris;
@@ -118,8 +112,7 @@ public class RegisteredClientDTO {
   @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class})
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String clientUri;
 
   @Size(max = 2048,
@@ -128,26 +121,22 @@ public class RegisteredClientDTO {
   @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class})
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String tosUri;
 
   @Valid
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<@Email(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class}) String> contacts;
 
   @NotEmpty(message = "Invalid client: empty grant type")
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<AuthorizationGrantType> grantTypes;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-    ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-    ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<OAuthResponseType> responseTypes;
 
   @Size(max = 2048,
@@ -156,8 +145,7 @@ public class RegisteredClientDTO {
   @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class})
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String policyUri;
 
   @Size(max = 2048,
@@ -166,13 +154,11 @@ public class RegisteredClientDTO {
   @URL(groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
       OnClientCreation.class, OnClientUpdate.class})
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String jwksUri;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private TokenEndpointAuthenticationMethod tokenEndpointAuthMethod;
 
   @Valid
@@ -181,9 +167,8 @@ public class RegisteredClientDTO {
           OnClientCreation.class, OnClientUpdate.class})
   @JsonSerialize(using = CollectionAsStringSerializer.class)
   @JsonDeserialize(using = StringAsSetOfStringsDeserializer.class)
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Set<@NotBlank(
       groups = {OnDynamicClientRegistration.class, OnDynamicClientUpdate.class,
           OnClientCreation.class, OnClientUpdate.class},
@@ -213,18 +198,15 @@ public class RegisteredClientDTO {
   private Integer deviceCodeValiditySeconds;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Integer defaultMaxAge;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private boolean reuseRefreshToken;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
-      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class,
-      ClientViews.NoSecretManagementRegistration.class})
+      ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private boolean dynamicallyRegistered;
 
   @JsonView({ClientViews.Full.class, ClientViews.ClientManagement.class,
@@ -255,21 +237,21 @@ public class RegisteredClientDTO {
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Date clientIdIssuedAt;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Date createdAt;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private LocalDate lastUsed;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private Date expiration;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   @JsonFormat(shape = JsonFormat.Shape.STRING)
   private String entityId;
@@ -287,15 +269,15 @@ public class RegisteredClientDTO {
           OnDynamicClientUpdate.class})
   private String codeChallengeMethod;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private boolean active;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private Date statusChangedOn;
 
-  @JsonView({ClientViews.Limited.class, ClientViews.Full.class, ClientViews.ClientManagement.class,
+  @JsonView({ClientViews.Limited.class, ClientViews.ClientManagement.class,
       ClientViews.NoSecretDynamicRegistration.class, ClientViews.DynamicRegistration.class})
   private String statusChangedBy;
 
