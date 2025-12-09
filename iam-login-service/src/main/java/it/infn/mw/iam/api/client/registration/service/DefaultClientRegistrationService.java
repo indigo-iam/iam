@@ -363,7 +363,12 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     defaultsService.setupClientDefaults(client);
     client.setDynamicallyRegistered(true);
     client.setActive(true);
-    client.setUpScopingEnabled(true);
+    // only allow to disable upscoping for admins
+    if (accountUtils.isAdmin(authentication)) {
+      client.setUpScopingEnabled(request.isUpScopingEnabled());;
+    } else {
+      client.setUpScopingEnabled(true);
+    }
 
     if (hasRelyingParty(request)) {
       ClientRelyingPartyEntity clientRelyingParty =
@@ -451,6 +456,11 @@ public class DefaultClientRegistrationService implements ClientRegistrationServi
     newClient.setCreatedAt(oldClient.getCreatedAt());
     newClient.setReuseRefreshToken(oldClient.isReuseRefreshToken());
     newClient.setActive(oldClient.isActive());
+
+    // If user isn't admin upscoping doesn't change
+    if (!accountUtils.isAdmin(authentication)) {
+      newClient.setUpScopingEnabled(oldClient.isUpScopingEnabled());;
+    }
 
     if (registrationProperties.isAdminOnlyCustomScopes() && !accountUtils.isAdmin(authentication)) {
       removeCustomScopes(newClient);
