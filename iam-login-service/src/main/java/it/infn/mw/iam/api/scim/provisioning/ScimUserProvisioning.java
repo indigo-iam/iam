@@ -37,9 +37,11 @@ import static java.lang.Boolean.TRUE;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -47,6 +49,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import it.infn.mw.iam.api.account.AccountUtils;
 import it.infn.mw.iam.api.common.OffsetPageable;
 import it.infn.mw.iam.api.scim.converter.OidcIdConverter;
 import it.infn.mw.iam.api.scim.converter.SamlIdConverter;
@@ -87,7 +90,6 @@ import it.infn.mw.iam.registration.validation.UsernameValidator;
 public class ScimUserProvisioning
     implements ScimProvisioning<ScimUser, ScimUser>, ApplicationEventPublisherAware {
 
-
   protected static final EnumSet<UpdaterType> SUPPORTED_UPDATER_TYPES =
       EnumSet.of(ACCOUNT_ADD_OIDC_ID, ACCOUNT_REMOVE_OIDC_ID, ACCOUNT_ADD_SAML_ID,
           ACCOUNT_REMOVE_SAML_ID, ACCOUNT_ADD_SSH_KEY, ACCOUNT_REMOVE_SSH_KEY,
@@ -96,13 +98,14 @@ public class ScimUserProvisioning
           ACCOUNT_REPLACE_PASSWORD, ACCOUNT_REPLACE_PICTURE, ACCOUNT_REPLACE_USERNAME,
           ACCOUNT_REMOVE_PICTURE, ACCOUNT_REPLACE_SERVICE_ACCOUNT, ACCOUNT_REPLACE_AFFILIATION);
 
-
   private final IamAccountService accountService;
   private final IamAccountRepository accountRepository;
   private final UserConverter userConverter;
   private final DefaultAccountUpdaterFactory updatersFactory;
   private final NotificationFactory notificationFactory;
   private final NotificationProperties notificationProperties;
+  private final Set<UpdaterType> enabledUpdaters;
+  private final AccountUtils accountUtils;
   private final X509CertificateConverter x509Converter;
 
   private ApplicationEventPublisher eventPublisher;
@@ -114,7 +117,8 @@ public class ScimUserProvisioning
       SamlIdConverter samlIdConverter, SshKeyConverter sshKeyConverter,
       X509CertificateConverter x509CertificateConverter, UsernameValidator usernameValidator,
       NotificationFactory notificationFactory, NotificationProperties notificationProperties,
-      IamGroupRepository groupRepository, X509CertificateConverter x509Converter) {
+      IamGroupRepository groupRepository, Set<UpdaterType> enabledUpdaters,
+      AccountUtils accountUtils, X509CertificateConverter x509Converter) {
 
     this.notificationProperties = notificationProperties;
     this.accountService = accountService;
@@ -124,13 +128,12 @@ public class ScimUserProvisioning
     this.updatersFactory = new DefaultAccountUpdaterFactory(passwordEncoder, accountRepository,
         accountService, accessTokenRepo, refreshTokenRepo, oidcIdConverter, samlIdConverter,
         sshKeyConverter, x509CertificateConverter, usernameValidator, groupRepository);
+    this.enabledUpdaters = enabledUpdaters;
+    this.accountUtils = accountUtils;
     this.x509Converter = x509Converter;
   }
 
-
-
   private ScimFilter parseFilters(final String filtersParameter) {
-
 
     StringBuilder regex = new StringBuilder();
 
@@ -573,7 +576,37 @@ public class ScimUserProvisioning
   public void update(final String id, final List<ScimPatchOperation<ScimUser>> operations) {
 
     IamAccount account = accountRepository.findByUuid(id).orElseThrow(() -> noUserMappedToId(id));
+    Optional<IamAccount> currentUserAccount = accountUtils.getAuthenticatedUserAccount();
 
-    operations.forEach(op -> executePatchOperation(account, op));
+    if (shouldExecuteAsUser(currentUserAccount)) {
+      operations.forEach(op -> executePatchOperationByUser(account, op));
+    } else {
+      operations.forEach(op -> executePatchOperation(account, op));
+    }
+  }
+
+  private boolean shouldExecuteAsUser(Optional<IamAccount> currentUserAccount) {
+    return currentUserAccount.isPresent() && !accountUtils.isAdmin(currentUserAccount.get());
+  }
+
+  private void executePatchOperationByUser(IamAccount account, ScimPatchOperation<ScimUser> op) {
+
+    List<AccountUpdater> updaters = updatersFactory.getUpdatersForPatchOperation(account, op);
+
+    for (AccountUpdater updater : updaters) {
+      if (!enabledUpdaters.contains(updater.getType())) {
+        throw new ScimPatchOperationNotSupported(
+            updater.getType().getDescription() + " not supported");
+      }
+    }
+
+    List<AccountUpdater> updatesToPublish =
+        updaters.stream().filter(AccountUpdater::update).toList();
+
+    if (!updatesToPublish.isEmpty()) {
+      account.touch();
+      accountRepository.save(account);
+      updatesToPublish.forEach(u -> u.publishUpdateEvent(this, eventPublisher));
+    }
   }
 }
