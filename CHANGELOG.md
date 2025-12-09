@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.13.3 (2025-12-09)
+
+## What's Changed
+
+* Don't fallback on default JWT profile when the requested scopes clarifies the desired one
+* Evaluate all SAML identifiers resolved on login to avoid errors after a change in strategy
+* Fix issue about missing pre-filled registration values
+* Convert the SCIM X.509 DTO before sending email to avoid wrong notification and an error on uploading PEM certificates
+
 ## 1.13.2 (2025-11-25)
 
 ## What's Changed
