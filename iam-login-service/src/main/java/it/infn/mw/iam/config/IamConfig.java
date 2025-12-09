@@ -315,9 +315,9 @@ public class IamConfig {
   }
 
   @Bean
-  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AUPSignatureCheckService service,
-      AccountUtils utils, IamTotpMfaRepository totpMfaRepository, IamTotpMfaProperties iamTotpMfaProperties) {
-    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(service, utils, totpMfaRepository, iamTotpMfaProperties);
+  FilterRegistrationBean<EnforceMfaFilter> emforceMfaFilter(AccountUtils utils, IamTotpMfaRepository totpMfaRepository,
+      IamTotpMfaProperties iamTotpMfaProperties) {
+    EnforceMfaFilter enforceMfaFilter = new EnforceMfaFilter(utils, totpMfaRepository, iamTotpMfaProperties);
     FilterRegistrationBean<EnforceMfaFilter> frb = new FilterRegistrationBean<>(enforceMfaFilter);
     frb.setOrder(Ordered.LOWEST_PRECEDENCE);
     return frb;
