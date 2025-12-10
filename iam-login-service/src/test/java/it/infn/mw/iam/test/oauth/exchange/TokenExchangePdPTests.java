@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.TokenRequest;
 
 import it.infn.mw.iam.core.oauth.exchange.DefaultTokenExchangePdp;
@@ -90,7 +90,7 @@ class TokenExchangePdPTests extends TokenExchangePdpTestSupport {
         .collect(toSet()));
     lenient().when(repo.findAll()).thenReturn(emptyList());
     pdp.reloadPolicies();
-    when(request.getRequestParameters()).thenReturn(Map.of("subject_token", ""));
+    lenient().when(request.getRequestParameters()).thenReturn(Map.of("subject_token", ""));
   }
 
   @Test

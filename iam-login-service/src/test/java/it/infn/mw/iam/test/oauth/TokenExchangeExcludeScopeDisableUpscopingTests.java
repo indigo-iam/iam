@@ -20,7 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,15 +28,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.NoSuchElementException;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -47,7 +49,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @IamMockMvcIntegrationTest
 public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTestUtils {
 
@@ -70,7 +73,7 @@ public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTes
     @Autowired
     private IamClientRepository clientRepository;
 
-    @Before
+    @BeforeAll
     public void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
@@ -85,7 +88,7 @@ public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTes
     }
 
 
-    @After
+    @AfterAll
     public void cleanUp() {
         ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
             .orElseThrow(NoSuchElementException::new);
@@ -106,7 +109,7 @@ public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTes
                 .param("scope", "read-tasks"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
+            .andExpect(jsonPath("$.scope", containsString("read-tasks")))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -159,8 +162,7 @@ public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTes
     // Upscoping disabled, Access token without scopes, Iam settings without scopes, Using upscoping
     // in the exchange for offline access
     @Test
-    public void testTokenExchangeForClientCredentialsUpscopingOfflineAccess()
-            throws Exception {
+    public void testTokenExchangeForClientCredentialsUpscopingOfflineAccess() throws Exception {
 
         String tokenResponse = mvc
             .perform(post(TOKEN_ENDPOINT).with(httpBasic(ACTOR_CLIENT_ID, ACTOR_CLIENT_SECRET))
@@ -170,7 +172,8 @@ public class TokenExchangeExcludeScopeDisableUpscopingTests extends EndpointsTes
                 .param("scope", "read-tasks offline_access"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks offline_access"))))
+            .andExpect(jsonPath("$.scope",
+                    allOf(containsString("read-tasks"), containsString("offline_access"))))
             .andReturn()
             .getResponse()
             .getContentAsString();

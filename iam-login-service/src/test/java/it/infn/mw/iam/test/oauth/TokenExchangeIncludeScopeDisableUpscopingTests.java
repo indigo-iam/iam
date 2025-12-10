@@ -28,15 +28,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.NoSuchElementException;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWT;
@@ -46,7 +48,8 @@ import it.infn.mw.iam.persistence.repository.client.IamClientRepository;
 import it.infn.mw.iam.test.util.annotation.IamMockMvcIntegrationTest;
 
 @SuppressWarnings("deprecation")
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @IamMockMvcIntegrationTest
 @TestPropertySource(properties = {"iam.access_token.include_scope=true"})
 public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTestUtils {
@@ -67,7 +70,7 @@ public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTes
     @Autowired
     private IamClientRepository clientRepository;
 
-    @Before
+    @BeforeAll
     public void setup() throws Exception {
         accessToken = new AccessTokenGetter().grantType("client_credentials")
             .clientId("client-cred")
@@ -82,7 +85,7 @@ public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTes
     }
 
 
-    @After
+    @AfterAll
     public void cleanUp() {
         ClientDetailsEntity client = clientRepository.findByClientId("client-cred")
             .orElseThrow(NoSuchElementException::new);
@@ -102,7 +105,7 @@ public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTes
                 .param("scope", "read-tasks"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"))))
+            .andExpect(jsonPath("$.scope", containsString("read-tasks")))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -145,7 +148,7 @@ public class TokenExchangeIncludeScopeDisableUpscopingTests extends EndpointsTes
                 .param("scope", "read-tasks offline_access"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.access_token").exists())
-            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks offline_access"))))
+            .andExpect(jsonPath("$.scope", allOf(containsString("read-tasks"), containsString("offline_access"))))
             .andReturn()
             .getResponse()
             .getContentAsString();
