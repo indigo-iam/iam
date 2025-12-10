@@ -51,7 +51,7 @@ public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
     * Optional previous admin key; required only when rotating to a new key so that
     * existing secrets can be re-encrypted.
   */
-  @Value("${mfa.old-password-to-decrypt:}")
+  @Value("${mfa.old-password-to-decrypt}")
   private String previousMfaKey;
 
   private final PasswordEncoder passwordEncoder;
