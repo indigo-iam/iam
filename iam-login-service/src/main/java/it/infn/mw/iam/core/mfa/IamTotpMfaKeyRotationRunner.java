@@ -17,6 +17,7 @@ package it.infn.mw.iam.core.mfa;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import it.infn.mw.iam.config.mfa.IamTotpMfaProperties;
 import it.infn.mw.iam.persistence.model.IamTotpAdminKey;
 import it.infn.mw.iam.persistence.repository.IamTotpAdminKeyRepository;
 import it.infn.mw.iam.util.mfa.IamTotpMfaInvalidArgumentError;
@@ -40,7 +40,20 @@ public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(IamTotpMfaKeyRotationRunner.class);
 
-  private final IamTotpMfaProperties iamTotpMfaProperties;
+  /**
+    * The current admin key used to encrypt/decrypt TOTP secrets.
+    * MUST be provided when MFA is enabled.
+  */
+  @Value("${mfa.password-to-encrypt-and-decrypt}")
+  private String currentMfaKey;
+
+  /**
+    * Optional previous admin key; required only when rotating to a new key so that
+    * existing secrets can be re-encrypted.
+  */
+  @Value("${mfa.old-password-to-decrypt:}")
+  private String previousMfaKey;
+
   private final PasswordEncoder passwordEncoder;
   private final IamTotpAdminKeyRepository repository;
   private final IamTotpSecretRotationService iamTotpSecretRotationService;
@@ -48,12 +61,10 @@ public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
  
 
   public IamTotpMfaKeyRotationRunner(
-      IamTotpMfaProperties iamTotpMfaProperties,
       IamTotpAdminKeyRepository repository,
       PasswordEncoder passwordEncoder,
       IamTotpSecretRotationService iamTotpSecretRotationService
       ) {
-    this.iamTotpMfaProperties = iamTotpMfaProperties;
     this.repository = repository;
     this.passwordEncoder = passwordEncoder;
     this.iamTotpSecretRotationService = iamTotpSecretRotationService;
@@ -61,17 +72,6 @@ public class IamTotpMfaKeyRotationRunner implements ApplicationRunner {
 
   @Override
   public void run(ApplicationArguments args) {
-    /**
-     * The current admin key used to encrypt/decrypt TOTP secrets.
-     * MUST be provided when MFA is enabled.
-     */
-    final String currentMfaKey = iamTotpMfaProperties.getPasswordToEncryptOrDecrypt();
-
-    /**
-     * Optional previous admin key; required only when rotating to a new key so that
-     * existing secrets can be re-encrypted.
-     */
-    final String previousMfaKey = iamTotpMfaProperties.getOldPasswordToDecrypt();
 
     final String storedHash = repository.findCurrentHash();
 
